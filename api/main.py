@@ -109,6 +109,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.middleware.gzip import GZipMiddleware
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+# Cache Control Middleware
+@app.middleware("http")
+async def add_cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+
+    # Aggressive caching for static assets (1 year)
+    if any(
+        path.startswith(prefix)
+        for prefix in ["/assets/", "/_next/", "/api/library/covers/", "/api/profiles/"]
+    ):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    # Short cache for HTML (1 hour, must revalidate)
+    elif path.endswith(".html") or path == "/" or not "." in path.split("/")[-1]:
+        response.headers["Cache-Control"] = "public, max-age=3600, must-revalidate"
+    # No cache for API endpoints
+    elif path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+
+    return response
+
 
 @app.get("/api_health")
 async def health_check():
@@ -140,14 +168,14 @@ if enable_miniapp:
     if os.path.exists(COVERS_DIR):
         app.mount(
             "/api/library/covers",
-            StaticFiles(directory=COVERS_DIR),
+            StaticFiles(directory=COVERS_DIR, html=False),
             name="library_covers",
         )
 
     if os.path.exists(PROFILES_DIR):
         app.mount(
             "/api/profiles",
-            StaticFiles(directory=PROFILES_DIR),
+            StaticFiles(directory=PROFILES_DIR, html=False),
             name="user_profiles",
         )
 

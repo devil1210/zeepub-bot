@@ -37,7 +37,20 @@ def create_library_engine():
     if "+asyncpg" in db_url:
         db_url = db_url.replace("+asyncpg", "", 1)
 
-    return create_engine(db_url, echo=False, pool_pre_ping=True)
+    # Optimized connection pool settings for production
+    return create_engine(
+        db_url,
+        echo=False,
+        pool_pre_ping=True,  # Verify connections before using
+        pool_size=10,  # Base pool size (concurrent connections)
+        max_overflow=20,  # Additional connections when pool is exhausted
+        pool_recycle=3600,  # Recycle connections after 1 hour
+        pool_timeout=30,  # Wait up to 30s for available connection
+        connect_args={
+            "connect_timeout": 10,  # Connection timeout
+            "options": "-c statement_timeout=30000",  # 30s query timeout
+        },
+    )
 
 
 engine = create_library_engine()

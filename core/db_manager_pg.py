@@ -44,12 +44,19 @@ class PostgresManager:
         elif db_url.startswith("postgresql://") and "+asyncpg" not in db_url:
             db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
         try:
+            # Optimized async connection pool settings for production
             engine_args = {
                 "echo": False,
-                "pool_pre_ping": True,
-                "pool_size": config.DB_POOL_SIZE,
-                "max_overflow": config.DB_MAX_OVERFLOW,
-                "connect_args": {"server_settings": {"jit": "off"}},
+                "pool_pre_ping": True,  # Verify connections before using
+                "pool_size": config.DB_POOL_SIZE or 10,  # Base pool size
+                "max_overflow": config.DB_MAX_OVERFLOW or 20,  # Additional connections
+                "pool_recycle": 3600,  # Recycle connections after 1 hour
+                "pool_timeout": 30,  # Wait up to 30s for available connection
+                "connect_args": {
+                    "server_settings": {"jit": "off"},  # Disable JIT for faster simple queries
+                    "timeout": 10,  # Connection timeout (10s)
+                    "command_timeout": 30,  # Query timeout (30s)
+                },
             }
 
             self.engine = create_async_engine(db_url, **engine_args)

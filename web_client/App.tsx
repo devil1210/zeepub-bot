@@ -20,6 +20,7 @@ import { UploadEpub } from './pages/Upload';
 import { AIHub } from './pages/AIHub';
 import { Series, Volume, Book } from './types';
 import { LoginGate } from './components/LoginGate';
+import { registerServiceWorker } from './src/utils/serviceWorker';
 
 // Custom hook to bridge legacy onNavigate prop to React Router
 const useLegacyNavigation = () => {
@@ -238,6 +239,15 @@ const AppContentWrapper: React.FC = () => {
 }
 
 const App: React.FC = () => {
+  // Register Service Worker on mount
+  useEffect(() => {
+    registerServiceWorker().then((registered) => {
+      if (registered) {
+        console.log('✅ Service Worker registered for offline support');
+      }
+    });
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider>

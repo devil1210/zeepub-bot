@@ -105,13 +105,12 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
         v_limit = data.get("limit", 100)
         v_offset = data.get("offset", 0)
 
-        # Obtener metadata oficial de la serie
-        async with pg_manager.get_session() as session:
-            stmt_s = select(SeriesMetadata).where(SeriesMetadata.series_hash == s_hash)
-            res_s = await session.execute(stmt_s)
-            series = res_s.scalar_one_or_none()
+        # Optimization: Fetch metadata and volumes in parallel
+        series_task = LibraryService.get_series_metadata(s_hash)
+        volumes_task = LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
 
-        volumes = await LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
+        series, volumes = await asyncio.gather(series_task, volumes_task)
+
         if not series and not volumes:
             raise HTTPException(status_code=404, detail="Serie no encontrada")
 

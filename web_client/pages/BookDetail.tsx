@@ -154,6 +154,10 @@ export const BookDetail: React.FC<BookDetailProps> = ({
           setCurSeries(mappedSeries);
           setLocalRating(mappedVolume.rating);
           setLocalDownloadCount(mappedVolume.downloadCount || 0);
+
+          if (bookData.is_downloaded) {
+            setHasDownloaded(true);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch book detail", err);
@@ -214,22 +218,6 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   }, [onBack, setContextType, setVisible, registerCallbacks, hasDownloaded, onNavigate, setCustomActions]);
 
 
-  // Check persistent download status
-  useEffect(() => {
-    if (!curVolume) return;
-    const checkDownloadStatus = async () => {
-      try {
-        const historyRes = await api.getDownloadHistory();
-        if (historyRes && historyRes.downloads) {
-          const found = historyRes.downloads.some((d: any) => d.id === curVolume.id || d.title === curVolume.title);
-          if (found) setHasDownloaded(true);
-        }
-      } catch (err) {
-        console.error("Failed to check download history", err);
-      }
-    };
-    checkDownloadStatus();
-  }, [curVolume?.id, curVolume?.title]);
 
   const handleSearch = (term?: string, type?: string) => {
     if (term && onSearch) {

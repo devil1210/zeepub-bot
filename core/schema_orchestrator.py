@@ -127,7 +127,9 @@ class SchemaOrchestrator:
                     "users", "can_upload_epub", "BOOLEAN DEFAULT FALSE"
                 )
                 await SchemaOrchestrator._check_and_add_column(
-                    "users", "updated_at", "TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())"
+                    "users",
+                    "updated_at",
+                    "TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())",
                 )
                 await SchemaOrchestrator._check_and_add_column(
                     "users", "created_at", "TIMESTAMP DEFAULT NOW()"

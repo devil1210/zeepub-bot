@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useTheme } from './ThemeContext';
 import { setSimulatedLevelHeader } from '../src/services/api';
 import { supabase } from '../src/services/supabase';
+import { preloadCriticalResources } from '../src/utils/telegramOptimizations';
 
 
 interface TelegramUser {
@@ -236,42 +237,64 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     // Check if running inside Telegram
-    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData) {
+    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
       const tg = (window as any).Telegram.WebApp;
       setWebApp(tg);
       setIsTelegram(true);
 
-      // Initialize
+      // Telegram Mini App Optimizations
+      try {
+        // Expand to full viewport height (critical for mobile)
+        tg.expand();
+
+        // Enable closing confirmation to prevent accidental exits
+        tg.enableClosingConfirmation();
+
+        // Set header color to match theme
+        tg.setHeaderColor('#0f172a');
+
+        // Enable vertical swipes (better mobile UX)
+        if (tg.isVerticalSwipesEnabled !== undefined) {
+          tg.disableVerticalSwipes();
+        }
+
+        // Optimize viewport for safe areas (notches, etc)
+        if (tg.viewportStableHeight) {
+          document.documentElement.style.setProperty(
+            '--tg-viewport-stable-height',
+            `${tg.viewportStableHeight}px`
+          );
+        }
+
+        console.log('✅ Telegram Mini App optimizations applied');
+      } catch (e) {
+        console.warn('⚠️ Some Telegram optimizations failed:', e);
+      }
+
+      if (tg.initDataUnsafe?.user) {
+        const tgUser = tg.initDataUnsafe.user;
+        setUser({
+          id: tgUser.id,
+          first_name: tgUser.first_name,
+          last_name: tgUser.last_name,
+          username: tgUser.username,
+          language_code: tgUser.language_code,
+          photo_url: tgUser.photo_url
+        });
+        fetchBetaTesterStatus(tgUser.id);
+      }
+
+      setIsExpanded(tg.isExpanded);
       tg.ready();
       setReady(true);
 
-      // Expand by default
-      if (!tg.isExpanded) {
-        tg.expand();
-        setIsExpanded(true);
-      }
+      // Preload critical resources for better performance
+      preloadCriticalResources();
 
-      // Get user data
-      if (tg.initDataUnsafe?.user) {
-        setUser(tg.initDataUnsafe.user);
-        // Fetch beta tester status
-        fetchBetaTesterStatus(tg.initDataUnsafe.user.id);
-      }
-
-      // Initial status fetch
       refreshStatus();
       refreshBotInfo();
-
     } else {
-      // Fallback for browser mode
-      console.log("Telegram WebApp not detected or no initData. Running in browser mode.");
-      setIsTelegram(false);
       setReady(true);
-
-      // We don't mock 'user' anymore by default to enable the LoginGate
-      // refreshBotInfo and status will attempt to fetch based on Supabase JWT if present
-      refreshBotInfo();
-      refreshStatus();
     }
   }, []);
 

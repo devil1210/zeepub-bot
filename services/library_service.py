@@ -308,18 +308,13 @@ class LibraryService:
         """Retorna los volúmenes de una serie agrupada (Async). Validado con Pydantic."""
         async with pg_manager.get_session() as session:
             try:
-                # Subquery for download count per volume
-                dl_subquery = (
-                    select(func.count(UserDownload.id))
-                    .where(UserDownload.book_hash == LocalBook.book_hash)
-                    .correlate(LocalBook)
-                    .scalar_subquery()
-                )
-
+                # Optimized query using outer join and group_by for much faster performance on large series
                 stmt = (
-                    select(LocalBook, dl_subquery.label("download_count"))
+                    select(LocalBook, func.count(UserDownload.id).label("download_count"))
+                    .outerjoin(UserDownload, UserDownload.book_hash == LocalBook.book_hash)
                     .where(LocalBook.series_hash == series_hash)
-                    .order_by(LocalBook.volume.asc())
+                    .group_by(LocalBook.id)
+                    .order_by(LocalBook.volume.asc(), LocalBook.id.asc())
                 )
 
                 if limit:
@@ -334,14 +329,25 @@ class LibraryService:
                     dl_count = row[1] or 0
 
                     b_dict = b.to_dict()
+                    # Ensure series name is present for DTO consistency
+                    if not b_dict.get("series"):
+                        b_dict["series"] = b_dict.get("title")
 
                     dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=b.cover_low)
                     results.append(dto.model_dump())
 
                 return results
             except Exception as e:
-                logger.error(f"[LibraryService.get_series_volumes] Error: {e}")
+                logger.error(f"[LibraryService.get_series_volumes] Error: {e}", exc_info=True)
                 return []
+
+    @staticmethod
+    async def get_series_metadata(series_hash: str) -> SeriesMetadata | None:
+        """Obtiene la metadata de una serie por su hash (Async)."""
+        async with pg_manager.get_session() as session:
+            stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == series_hash)
+            res = await session.execute(stmt)
+            return res.scalar_one_or_none()
 
     @staticmethod
     async def get_book_by_id(book_id: int) -> dict[str, Any] | None:

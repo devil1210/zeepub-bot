@@ -107,7 +107,7 @@ export const useSeriesDetails = (initialSeries: Series, settings: any, webApp: a
                         setVolumes(mappedVols);
 
                         const volCovers = mappedVols.map(v => getCoverUrl(v.coverUrl, v.coverThumbUrl, settings.coverQuality));
-                        preloadImages(volCovers);
+                        preloadImages(volCovers.slice(0, 6));
 
                         if (mappedVols.length > 0) {
                             const firstVol = [...mappedVols].sort((a, b) => (numA(a) - numB(b)))[0];

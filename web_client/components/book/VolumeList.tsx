@@ -30,6 +30,7 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                         <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] rounded-premium-sm overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
                             <img
                                 alt={vol.title}
+                                loading="lazy"
                                 className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
                                 src={getCoverUrl(vol.coverUrl, vol.coverThumbUrl, settings.coverQuality)}
                             />
@@ -104,6 +105,7 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                         <div className="relative aspect-[2/3] w-full overflow-hidden bg-white/5 shadow-2xl">
                             <img
                                 alt={vol.title}
+                                loading="lazy"
                                 className="absolute inset-0 w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
                                 src={getCoverUrl(vol.coverUrl, vol.coverThumbUrl, settings.coverQuality)}
                             />
