@@ -1,6 +1,5 @@
 # handlers/command_handlers.py
 
-import html
 import logging
 from datetime import datetime, timedelta
 
@@ -10,13 +9,13 @@ from telegram.ext import CommandHandler, ContextTypes
 
 from config.config_settings import config
 from core.state_manager import state_manager
-from services.opds_service import get_cached_feed, mostrar_colecciones
+from services.opds_service import mostrar_colecciones
 from services.user_service import get_effective_user
 
 # from utils.http_client import parse_feed_from_url  <-- Removing this
 from utils.decorators import rate_limit
 from utils.download_limiter import downloads_left
-from utils.helpers import build_search_url, get_thread_id, is_command_for_bot
+from utils.helpers import get_thread_id, is_command_for_bot
 
 logger = logging.getLogger(__name__)
 
@@ -486,48 +485,10 @@ class CommandHandlers:
         if context.args:
             # Hay término: /search harry potter
             termino = " ".join(context.args).strip()
-            logger.debug(f"Usuario {uid} buscando con /search: {termino}")
+            from services.opds_service import buscar_zeepubs_directo
 
-            search_url = build_search_url(termino, uid)
-            logger.debug(f"URL de búsqueda: {search_url}")
-            feed = await get_cached_feed(search_url)
-
-            if not feed or not getattr(feed, "entries", []):
-                keyboard = [
-                    [InlineKeyboardButton("🔄 Volver a buscar", callback_data="buscar")],
-                    [
-                        InlineKeyboardButton(
-                            "📚 Ir a colecciones", callback_data="volver_colecciones"
-                        )
-                    ],
-                ]
-
-                cms = context.application.plugin_manager.get_plugin("custom_messages")
-                base_no = f"🔍 Mmm, no encontré nada para: {termino}"
-
-                safe_term = html.escape(termino)
-                text_no = base_no
-                if cms and cms.enabled:
-                    text_no = cms.get_text(
-                        "search_no_results",
-                        Termino=safe_term,
-                    )
-
-                await context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text=text_no,
-                    reply_markup=InlineKeyboardMarkup(keyboard),
-                    message_thread_id=thread_id,
-                    parse_mode=ParseMode.HTML,
-                )
-            else:
-                logger.debug(f"Encontrados {len(feed.entries)} resultados")
-                # Asegurar que los resultados aparezcan en el chat actual
-                st["destino"] = update.effective_chat.id
-                st["chat_origen"] = update.effective_chat.id
-                await mostrar_colecciones(
-                    update, context, search_url, from_collection=False, new_message=True
-                )
+            await buscar_zeepubs_directo(update, context, uid, query=termino)
+            return
         else:
             st["esperando_busqueda"] = True
             cms = context.application.plugin_manager.get_plugin("custom_messages")

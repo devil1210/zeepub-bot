@@ -83,7 +83,9 @@ class LibraryService:
                     b_dict = b.to_dict()
 
                     # Map to DTO
-                    dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=b.cover_low)
+                    dto = BookDTO(
+                        **b_dict, download_count=dl_count, coverUrl=b.cover_medium or b.cover_low
+                    )
                     results.append(dto.model_dump())
 
                 total_pages = (total_items + items_per_page - 1) // items_per_page
@@ -333,7 +335,9 @@ class LibraryService:
                     if not b_dict.get("series"):
                         b_dict["series"] = b_dict.get("title")
 
-                    dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=b.cover_low)
+                    dto = BookDTO(
+                        **b_dict, download_count=dl_count, coverUrl=b.cover_medium or b.cover_low
+                    )
                     results.append(dto.model_dump())
 
                 return results
@@ -376,7 +380,9 @@ class LibraryService:
 
                 b_dict = book.to_dict()
 
-                dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=book.cover_low)
+                dto = BookDTO(
+                    **b_dict, download_count=dl_count, coverUrl=book.cover_medium or book.cover_low
+                )
                 return dto.model_dump()
             except Exception as e:
                 logger.error(f"[LibraryService.get_book_by_id] Error: {e}")

@@ -278,14 +278,42 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   };
 
   const formatDate = (dateStr?: string) => {
-    if (!dateStr || dateStr === 'N/A' || dateStr === 'Reciente') return 'N/A';
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    } catch {
-      return dateStr;
+    if (!dateStr || dateStr === 'N/A' || dateStr === 'Reciente' || dateStr === 'undefined') return 'N/A';
+
+    // Clean string from known noise
+    let cleanStr = dateStr.trim();
+    if (cleanStr.includes('T00:00:00')) {
+      cleanStr = cleanStr.split('T')[0];
     }
+
+    // Try standard parsing
+    let d = new Date(cleanStr);
+
+    // If invalid, try to check if DD and MM are swapped (e.g. 1998-18-09)
+    if (isNaN(d.getTime())) {
+      const parts = cleanStr.split(/[-/]/);
+      if (parts.length === 3) {
+        const year = parts[0].length === 4 ? parts[0] : parts[2];
+        const p1 = parseInt(parts[1]);
+        const p2 = parseInt(parts[2].length === 4 ? parts[1] : parts[2]);
+
+        // If year is first (YYYY-DD-MM)
+        if (parts[0].length === 4) {
+          if (p1 > 12 && p2 <= 12) {
+            // Likely YYYY-DD-MM
+            d = new Date(`${year}-${parts[2]}-${parts[1]}`);
+          }
+        }
+      }
+    }
+
+    if (isNaN(d.getTime())) return cleanStr; // Return as is if still invalid
+
+    return d.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   const formatReadingTime = (minutes?: number) => {

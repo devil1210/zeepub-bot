@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 import re
 import uuid
 from difflib import SequenceMatcher
@@ -40,11 +41,12 @@ async def get_cached_feed(url: str):
 async def mostrar_colecciones(
     update,
     context: ContextTypes.DEFAULT_TYPE,
-    url: str,
+    url: str = None,
     from_collection: bool = False,
     new_message: bool = False,
+    feed: Any = None,
 ):
-    """Mostrar colecciones o libros basados en un feed OPDS."""
+    """Mostrar colecciones o libros basados en un feed OPDS o manual."""
     uid = update.effective_user.id
     from core.state_manager import state_manager
 
@@ -54,8 +56,12 @@ async def mostrar_colecciones(
     if "historial" not in st:
         st["historial"] = []
 
-    # Usar get_cached_feed en lugar de parse_feed_from_url directo
-    feed = await get_cached_feed(url)
+    # Usar feed manual si se proporciona, sino descargar de URL
+    if not feed and url:
+        feed = await get_cached_feed(url)
+    elif not feed and not url:
+        logger.error("mostrar_colecciones called without url and without feed")
+        return
 
     if not feed or not getattr(feed, "entries", []):
         msg = "❌ No se pudo leer el feed o no hay resultados."
@@ -311,11 +317,55 @@ async def mostrar_colecciones(
         await update.callback_query.edit_message_text(title, reply_markup=reply_markup)
 
 
-async def buscar_zeepubs_directo(update, context, uid: int):
-    """Acceso directo a ZeePubs [ES] detectándolo en el feed."""
+async def buscar_zeepubs_directo(update, context, uid: int, query: str = None):
+    """Acceso directo a ZeePubs [ES] detectándolo en el feed o búsqueda directa."""
     from core.state_manager import state_manager
 
     st = state_manager.get_user_state(uid)
+
+    if query:
+        # Lógica de búsqueda (Local + OPDS fallback)
+        from types import SimpleNamespace
+
+        from services.library_service import LibraryService
+
+        search_res = await LibraryService.search_books(query, items_per_page=20)
+        local_results = search_res.get("results", [])
+
+        if local_results:
+            fake_entries = []
+            for b in local_results:
+                entry = SimpleNamespace(
+                    title=b["title"],
+                    author=b["author"] or "Desconocido",
+                    link=b.get("filepath", ""),
+                    links=[
+                        SimpleNamespace(rel="acquisition", href=b.get("filepath", "")),
+                        SimpleNamespace(
+                            rel="image",
+                            href=b.get("cover_medium") or b.get("cover_low") or "",
+                        ),
+                    ],
+                )
+                fake_entries.append(entry)
+
+            fake_feed = SimpleNamespace(
+                feed=SimpleNamespace(title=f"🔍 Resultados Locales: {query}", links=[]),
+                entries=fake_entries,
+            )
+            st["titulo"] = f"🔍 Resultados: {query}"
+            await mostrar_colecciones(update, context, feed=fake_feed, new_message=True)
+            return
+
+        # Si no hay local, buscar en el root OPDS
+        from utils.helpers import build_search_url
+
+        search_url = build_search_url(query, uid)
+        await mostrar_colecciones(
+            update, context, search_url, from_collection=False, new_message=True
+        )
+        return
+
     url = st.get("opds_root")
     logger.debug("Intentando acceso directo a ZeePubs desde %s", url)
     # Usar caché también aquí
