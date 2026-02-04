@@ -21,6 +21,12 @@ class BookDTO(BaseModel):
     book_type: str | None = None
     cover: str | None = None
     coverUrl: str | None = None  # Simplified path for some views
+    
+    # Detailed Cover Paths
+    cover_low: str | None = None
+    cover_medium: str | None = None
+    cover_high: str | None = None
+    cover_original: str | None = None
     description: str | None = None
     tags: list[str] = Field(default_factory=list)
     demographics: list[str] | None = None
