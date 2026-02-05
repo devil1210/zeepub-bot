@@ -15,3 +15,7 @@ ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS can_download boolean DEFAULT tr
 ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS can_read boolean DEFAULT true;
 ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS has_library_access boolean DEFAULT true;
 ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS can_request_books boolean DEFAULT true;
+
+-- Add missing AI Learning Feedback columns
+ALTER TABLE ai_learning_feedback ADD COLUMN IF NOT EXISTS proposed_spanish text;
+ALTER TABLE ai_learning_feedback ADD COLUMN IF NOT EXISTS final_spanish text;
