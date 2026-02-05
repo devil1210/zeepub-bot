@@ -17,9 +17,9 @@ Usage:
     python geo_checker.py <project_path>
 """
 
-import sys
-import re
 import json
+import re
+import sys
 from pathlib import Path
 
 # Fix Windows console encoding

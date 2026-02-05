@@ -5,7 +5,8 @@ Usage: ./extract-transcript.py VIDEO_ID [LANGUAGE_CODE]
 """
 
 import sys
-from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound
+
+from youtube_transcript_api import NoTranscriptFound, TranscriptsDisabled, YouTubeTranscriptApi
 
 
 def extract_transcript(video_id, language="en"):

@@ -5,20 +5,19 @@ Transcreve áudio para texto e gera atas/resumos usando LLM.
 """
 
 import os
-import sys
-import json
-import subprocess
 import shutil
+import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 
 # Rich for beautiful terminal output
 try:
-    from rich.console import Console
-    from rich.prompt import Prompt
-    from rich.panel import Panel
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
     from rich import print as rprint
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
+    from rich.prompt import Prompt
 
     RICH_AVAILABLE = True
 except ImportError:
@@ -26,10 +25,9 @@ except ImportError:
     print("⚠️  Installing rich for better UI...")
     subprocess.run([sys.executable, "-m", "pip", "install", "--user", "rich"], check=False)
     from rich.console import Console
-    from rich.prompt import Prompt
     from rich.panel import Panel
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
-    from rich import print as rprint
+    from rich.progress import Progress, SpinnerColumn, TextColumn
+    from rich.prompt import Prompt
 
 # tqdm for progress bars
 try:
@@ -436,7 +434,7 @@ def main():
     transcription_data = transcribe_audio(args.audio_file, model=args.model)
 
     # Gerar texto do transcript
-    transcript_text = f"# Transcrição de Áudio\n\n"
+    transcript_text = "# Transcrição de Áudio\n\n"
     transcript_text += f"**Arquivo:** {Path(args.audio_file).name}\n"
     transcript_text += f"**Idioma:** {transcription_data['language'].upper()}\n"
     transcript_text += f"**Data:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"

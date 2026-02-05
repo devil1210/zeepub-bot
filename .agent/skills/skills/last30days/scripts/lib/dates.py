@@ -1,10 +1,9 @@
 """Date utilities for last30days skill."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Tuple
 
 
-def get_date_range(days: int = 30) -> Tuple[str, str]:
+def get_date_range(days: int = 30) -> tuple[str, str]:
     """Get the date range for the last N days.
 
     Returns:
@@ -15,7 +14,7 @@ def get_date_range(days: int = 30) -> Tuple[str, str]:
     return from_date.isoformat(), today.isoformat()
 
 
-def parse_date(date_str: Optional[str]) -> Optional[datetime]:
+def parse_date(date_str: str | None) -> datetime | None:
     """Parse a date string in various formats.
 
     Supports: YYYY-MM-DD, ISO 8601, Unix timestamp
@@ -48,7 +47,7 @@ def parse_date(date_str: Optional[str]) -> Optional[datetime]:
     return None
 
 
-def timestamp_to_date(ts: Optional[float]) -> Optional[str]:
+def timestamp_to_date(ts: float | None) -> str | None:
     """Convert Unix timestamp to YYYY-MM-DD string."""
     if ts is None:
         return None
@@ -59,7 +58,7 @@ def timestamp_to_date(ts: Optional[float]) -> Optional[str]:
         return None
 
 
-def get_date_confidence(date_str: Optional[str], from_date: str, to_date: str) -> str:
+def get_date_confidence(date_str: str | None, from_date: str, to_date: str) -> str:
     """Determine confidence level for a date.
 
     Args:
@@ -90,7 +89,7 @@ def get_date_confidence(date_str: Optional[str], from_date: str, to_date: str) -
         return "low"
 
 
-def days_ago(date_str: Optional[str]) -> Optional[int]:
+def days_ago(date_str: str | None) -> int | None:
     """Calculate how many days ago a date is.
 
     Returns None if date is invalid or missing.
@@ -107,7 +106,7 @@ def days_ago(date_str: Optional[str]) -> Optional[int]:
         return None
 
 
-def recency_score(date_str: Optional[str], max_days: int = 30) -> int:
+def recency_score(date_str: str | None, max_days: int = 30) -> int:
     """Calculate recency score (0-100).
 
     0 days ago = 100, max_days ago = 0, clamped.

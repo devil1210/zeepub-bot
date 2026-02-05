@@ -1,8 +1,8 @@
 import logging
-from typing import Any
 import re
 import uuid
 from difflib import SequenceMatcher
+from typing import Any
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
@@ -325,7 +325,6 @@ async def buscar_zeepubs_directo(update, context, uid: int, query: str = None):
 
     if query:
         # Lógica de búsqueda (Local + OPDS fallback)
-        from types import SimpleNamespace
 
         from services.library_service import LibraryService
 

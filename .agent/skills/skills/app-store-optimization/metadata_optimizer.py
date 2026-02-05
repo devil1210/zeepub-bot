@@ -3,8 +3,7 @@ Metadata optimization module for App Store Optimization.
 Optimizes titles, descriptions, and keyword fields with platform-specific character limit validation.
 """
 
-from typing import Dict, List, Any, Optional, Tuple
-import re
+from typing import Any
 
 
 class MetadataOptimizer:
@@ -37,8 +36,8 @@ class MetadataOptimizer:
         self.limits = self.CHAR_LIMITS[platform]
 
     def optimize_title(
-        self, app_name: str, target_keywords: List[str], include_brand: bool = True
-    ) -> Dict[str, Any]:
+        self, app_name: str, target_keywords: list[str], include_brand: bool = True
+    ) -> dict[str, Any]:
         """
         Optimize app title with keyword integration.
 
@@ -125,8 +124,8 @@ class MetadataOptimizer:
         }
 
     def optimize_description(
-        self, app_info: Dict[str, Any], target_keywords: List[str], description_type: str = "full"
-    ) -> Dict[str, Any]:
+        self, app_info: dict[str, Any], target_keywords: list[str], description_type: str = "full"
+    ) -> dict[str, Any]:
         """
         Optimize app description with keyword integration and conversion focus.
 
@@ -146,8 +145,8 @@ class MetadataOptimizer:
             return self._optimize_full_description(app_info, target_keywords)
 
     def optimize_keyword_field(
-        self, target_keywords: List[str], app_title: str = "", app_description: str = ""
-    ) -> Dict[str, Any]:
+        self, target_keywords: list[str], app_title: str = "", app_description: str = ""
+    ) -> dict[str, Any]:
         """
         Optimize Apple's 100-character keyword field.
 
@@ -213,7 +212,7 @@ class MetadataOptimizer:
             ],
         }
 
-    def validate_character_limits(self, metadata: Dict[str, str]) -> Dict[str, Any]:
+    def validate_character_limits(self, metadata: dict[str, str]) -> dict[str, Any]:
         """
         Validate all metadata fields against platform character limits.
 
@@ -259,7 +258,7 @@ class MetadataOptimizer:
 
         return validation_results
 
-    def calculate_keyword_density(self, text: str, target_keywords: List[str]) -> Dict[str, Any]:
+    def calculate_keyword_density(self, text: str, target_keywords: list[str]) -> dict[str, Any]:
         """
         Calculate keyword density in text.
 
@@ -298,8 +297,8 @@ class MetadataOptimizer:
         }
 
     def _build_title_with_keywords(
-        self, app_name: str, keywords: List[str], max_length: int
-    ) -> Optional[str]:
+        self, app_name: str, keywords: list[str], max_length: int
+    ) -> str | None:
         """Build title combining app name and keywords within limit."""
         separators = [" - ", ": ", " | "]
 
@@ -312,8 +311,8 @@ class MetadataOptimizer:
         return None
 
     def _optimize_short_description(
-        self, app_info: Dict[str, Any], target_keywords: List[str]
-    ) -> Dict[str, Any]:
+        self, app_info: dict[str, Any], target_keywords: list[str]
+    ) -> dict[str, Any]:
         """Optimize Google Play short description (80 chars)."""
         max_length = self.limits["short_description"]
 
@@ -333,8 +332,8 @@ class MetadataOptimizer:
         }
 
     def _optimize_subtitle(
-        self, app_info: Dict[str, Any], target_keywords: List[str]
-    ) -> Dict[str, Any]:
+        self, app_info: dict[str, Any], target_keywords: list[str]
+    ) -> dict[str, Any]:
         """Optimize Apple App Store subtitle (30 chars)."""
         max_length = self.limits["subtitle"]
 
@@ -355,8 +354,8 @@ class MetadataOptimizer:
         }
 
     def _optimize_full_description(
-        self, app_info: Dict[str, Any], target_keywords: List[str]
-    ) -> Dict[str, Any]:
+        self, app_info: dict[str, Any], target_keywords: list[str]
+    ) -> dict[str, Any]:
         """Optimize full app description (4000 chars for both platforms)."""
         max_length = self.limits.get("description", self.limits.get("full_description", 4000))
 
@@ -417,7 +416,7 @@ class MetadataOptimizer:
             },
         }
 
-    def _remove_plural_duplicates(self, keywords: List[str]) -> List[str]:
+    def _remove_plural_duplicates(self, keywords: list[str]) -> list[str]:
         """Remove plural forms if singular exists."""
         deduplicated = []
         singular_set = set()
@@ -435,7 +434,7 @@ class MetadataOptimizer:
 
         return deduplicated
 
-    def _build_keyword_field(self, keywords: List[str], max_length: int) -> str:
+    def _build_keyword_field(self, keywords: list[str], max_length: int) -> str:
         """Build comma-separated keyword field within character limit."""
         keyword_field = ""
 
@@ -448,7 +447,7 @@ class MetadataOptimizer:
 
         return keyword_field
 
-    def _calculate_coverage(self, keywords: List[str], text: str) -> Dict[str, int]:
+    def _calculate_coverage(self, keywords: list[str], text: str) -> dict[str, int]:
         """Calculate how many keywords are covered in text."""
         text_lower = text.lower()
         coverage = {}
@@ -479,8 +478,8 @@ class MetadataOptimizer:
             return "Too High: Keyword stuffing detected - rewrite for natural flow"
 
     def _generate_density_recommendations(
-        self, keyword_densities: Dict[str, Dict[str, Any]]
-    ) -> List[str]:
+        self, keyword_densities: dict[str, dict[str, Any]]
+    ) -> list[str]:
         """Generate recommendations based on keyword density analysis."""
         recommendations = []
 
@@ -499,7 +498,7 @@ class MetadataOptimizer:
 
         return recommendations
 
-    def _recommend_title_option(self, options: List[Dict[str, Any]]) -> str:
+    def _recommend_title_option(self, options: list[dict[str, Any]]) -> str:
         """Recommend best title option based on strategy."""
         if not options:
             return "No valid options available"
@@ -514,8 +513,8 @@ class MetadataOptimizer:
 
 
 def optimize_app_metadata(
-    platform: str, app_info: Dict[str, Any], target_keywords: List[str]
-) -> Dict[str, Any]:
+    platform: str, app_info: dict[str, Any], target_keywords: list[str]
+) -> dict[str, Any]:
     """
     Convenience function to optimize all metadata fields.
 

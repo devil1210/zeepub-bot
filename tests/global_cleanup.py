@@ -1,6 +1,7 @@
+import logging
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-import logging
 
 # Config log
 logging.basicConfig(level=logging.INFO)

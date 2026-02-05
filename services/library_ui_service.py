@@ -1,9 +1,11 @@
 import logging
 import uuid
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
-from services.library_service import LibraryService
+
 from core.state_manager import state_manager
+from services.library_service import LibraryService
 
 logger = logging.getLogger(__name__)
 

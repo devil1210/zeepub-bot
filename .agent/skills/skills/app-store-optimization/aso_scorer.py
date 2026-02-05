@@ -3,7 +3,7 @@ ASO scoring module for App Store Optimization.
 Calculates comprehensive ASO health score across multiple dimensions.
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Any
 
 
 class ASOScorer:
@@ -35,11 +35,11 @@ class ASOScorer:
 
     def calculate_overall_score(
         self,
-        metadata: Dict[str, Any],
-        ratings: Dict[str, Any],
-        keyword_performance: Dict[str, Any],
-        conversion: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        metadata: dict[str, Any],
+        ratings: dict[str, Any],
+        keyword_performance: dict[str, Any],
+        conversion: dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Calculate comprehensive ASO score (0-100).
 
@@ -116,7 +116,7 @@ class ASOScorer:
             "weaknesses": self._identify_weaknesses(self.score_breakdown),
         }
 
-    def score_metadata_quality(self, metadata: Dict[str, Any]) -> float:
+    def score_metadata_quality(self, metadata: dict[str, Any]) -> float:
         """
         Score metadata quality (0-100).
 
@@ -184,7 +184,7 @@ class ASOScorer:
 
         return round(sum(scores), 1)
 
-    def score_ratings_reviews(self, ratings: Dict[str, Any]) -> float:
+    def score_ratings_reviews(self, ratings: dict[str, Any]) -> float:
         """
         Score ratings and reviews (0-100).
 
@@ -239,7 +239,7 @@ class ASOScorer:
 
         return round(min(total_score, 100), 1)
 
-    def score_keyword_performance(self, keyword_performance: Dict[str, Any]) -> float:
+    def score_keyword_performance(self, keyword_performance: dict[str, Any]) -> float:
         """
         Score keyword ranking performance (0-100).
 
@@ -292,7 +292,7 @@ class ASOScorer:
 
         return round(min(total_score, 100), 1)
 
-    def score_conversion_metrics(self, conversion: Dict[str, Any]) -> float:
+    def score_conversion_metrics(self, conversion: dict[str, Any]) -> float:
         """
         Score conversion performance (0-100).
 
@@ -344,7 +344,7 @@ class ASOScorer:
         ratings_score: float,
         keyword_score: float,
         conversion_score: float,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Generate prioritized recommendations based on scores."""
         recommendations = []
 
@@ -449,7 +449,7 @@ class ASOScorer:
         else:
             return "Poor - Requires immediate ASO overhaul"
 
-    def _prioritize_actions(self, recommendations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _prioritize_actions(self, recommendations: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Prioritize actions by impact and urgency."""
         # Sort by priority (high first) and expected impact
         priority_order = {"high": 0, "medium": 1, "low": 2}
@@ -460,7 +460,7 @@ class ASOScorer:
 
         return sorted_recommendations[:3]  # Top 3 priority actions
 
-    def _identify_strengths(self, score_breakdown: Dict[str, Any]) -> List[str]:
+    def _identify_strengths(self, score_breakdown: dict[str, Any]) -> list[str]:
         """Identify areas of strength (scores >= 75)."""
         strengths = []
 
@@ -470,7 +470,7 @@ class ASOScorer:
 
         return strengths if strengths else ["Focus on building strengths across all areas"]
 
-    def _identify_weaknesses(self, score_breakdown: Dict[str, Any]) -> List[str]:
+    def _identify_weaknesses(self, score_breakdown: dict[str, Any]) -> list[str]:
         """Identify areas needing improvement (scores < 60)."""
         weaknesses = []
 
@@ -484,11 +484,11 @@ class ASOScorer:
 
 
 def calculate_aso_score(
-    metadata: Dict[str, Any],
-    ratings: Dict[str, Any],
-    keyword_performance: Dict[str, Any],
-    conversion: Dict[str, Any],
-) -> Dict[str, Any]:
+    metadata: dict[str, Any],
+    ratings: dict[str, Any],
+    keyword_performance: dict[str, Any],
+    conversion: dict[str, Any],
+) -> dict[str, Any]:
     """
     Convenience function to calculate ASO score.
 

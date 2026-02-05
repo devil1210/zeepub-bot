@@ -1,6 +1,5 @@
 # handlers/message_handlers.py
 
-import html
 import logging
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -8,10 +7,10 @@ from telegram.ext import ContextTypes
 
 from config.config_settings import config
 from core.state_manager import state_manager
-from services.opds_service import get_cached_feed, mostrar_colecciones
+from services.opds_service import mostrar_colecciones
 
 # from utils.http_client import parse_feed_from_url
-from utils.helpers import build_search_url, get_thread_id
+from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
 

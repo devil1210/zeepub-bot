@@ -6,10 +6,11 @@ with all core components: Transcriber, Agent, Synthesizer, and WebSocket integra
 """
 
 import asyncio
-from typing import Dict, AsyncGenerator
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from dataclasses import dataclass
 import logging
+from collections.abc import AsyncGenerator
+from dataclasses import dataclass
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -88,7 +89,7 @@ class BaseWorker:
 class DeepgramTranscriber(BaseWorker):
     """Converts audio chunks to text transcriptions using Deepgram"""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         super().__init__(asyncio.Queue(), asyncio.Queue())
         self.config = config
         self.is_muted = False
@@ -140,7 +141,7 @@ class DeepgramTranscriber(BaseWorker):
 class GeminiAgent(BaseWorker):
     """LLM-powered conversational agent using Google Gemini"""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         super().__init__(asyncio.Queue(), asyncio.Queue())
         self.config = config
         self.conversation_history = []
@@ -185,7 +186,7 @@ class GeminiAgent(BaseWorker):
 class ElevenLabsSynthesizer:
     """Converts text to speech using ElevenLabs"""
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config
 
     async def create_speech(self, message: str, chunk_size: int = 1024) -> SynthesisResult:

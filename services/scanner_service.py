@@ -292,6 +292,7 @@ class ScannerService:
 
             # --- AI PROPOSALS (Background Gardener) ---
             # Si hubo cambios o es un escaneo completo, generar propuestas para series 'tocadas'
+            # Y si está activado el modo background, buscar otras series candidatas (Jardinero)
             touched_hashes = results.get("touched_series_hashes", set())
 
             # Check user setting
@@ -299,10 +300,41 @@ class ScannerService:
 
             bg_ai_enabled = get_setting("enable_background_ai_scan", "false").lower() == "true"
 
-            if touched_hashes and bg_ai_enabled:
+            if bg_ai_enabled:
                 try:
-                    logger.info(f"Generando propuestas IA para {len(touched_hashes)} series...")
-                    for s_hash in touched_hashes:
+                    candidates = list(touched_hashes)
+                    SCAN_LIMIT = 5  # Max proposals per scan cycle to avoid rate limits
+
+                    # Si tenemos espacio, buscar en el backlog (series con libros pero sin feedback ni propuestas)
+                    if len(candidates) < SCAN_LIMIT:
+                        needed = SCAN_LIMIT - len(candidates)
+                        # Query compleja: Series con > 2 libros, sin feedback, sin propuestas pendientes
+                        # SQL Raw para eficiencia
+                        from sqlalchemy import text
+
+                        backlog_query = text("""
+                            SELECT lb.series_hash
+                            FROM local_books lb
+                            WHERE lb.series_hash NOT IN (SELECT series_hash FROM ai_learning_feedback)
+                              AND lb.series_hash NOT IN (SELECT series_hash FROM metadata_proposals WHERE status='pending')
+                              AND lb.series_hash IS NOT NULL
+                            GROUP BY lb.series_hash
+                            HAVING COUNT(*) >= 2
+                            LIMIT :limit
+                        """)
+                        res = session.execute(backlog_query, {"limit": needed})
+                        for row in res:
+                            candidates.append(row[0])
+
+                    processed_count = 0
+                    logger.info(
+                        f"AI Gardener: Procesando {len(candidates)} candidatos (Limit: {SCAN_LIMIT})..."
+                    )
+
+                    for s_hash in candidates:
+                        if processed_count >= SCAN_LIMIT:
+                            break
+
                         # Solo si no tiene propuesta pendiente Y no ha sido revisada recientemente (feedback)
                         exists_pending = (
                             session.query(MetadataProposal)
@@ -310,11 +342,7 @@ class ScannerService:
                             .first()
                         )
 
-                        from handlers.epub_upload_handler import table_exists  # for dynamic check
-
-                        # Check if already reviewed in learning feedback
-                        from sqlalchemy import text
-
+                        # Check if already reviewed in learning feedback (Double check for touched ones)
                         reviewed = session.execute(
                             text(
                                 "SELECT 1 FROM ai_learning_feedback WHERE series_hash = :h LIMIT 1"
@@ -333,14 +361,17 @@ class ScannerService:
                             series_books = (
                                 session.query(LocalBook).filter_by(series_hash=s_hash).all()
                             )
-                            if len(series_books) >= 3:  # Solo para series con cierto volumen
+                            # Relaxed constraint for backlog items, but keep sanity
+                            if series_books:
                                 try:
+                                    logger.info(f"AI Analysis: {s_hash[:8]} - {current_name}")
                                     proposal = await AIService.analyze_series_for_updates(
                                         s_hash,
                                         current_name,
                                         [b.to_dict() for b in series_books],
                                         current_s.series_spanish if current_s else None,
                                     )
+                                    processed_count += 1
                                 except Exception as ae:
                                     logger.warning(
                                         f"Error generando propuesta IA para {s_hash}: {ae}"
@@ -354,7 +385,7 @@ class ScannerService:
                                         status="pending",
                                     )
                                     session.add(p_obj)
-                    session.commit()
+                                    session.commit()  # Commit per proposal
                 except Exception as ae:
                     logger.warning(f"Error generando propuestas IA en segundo plano: {ae}")
 

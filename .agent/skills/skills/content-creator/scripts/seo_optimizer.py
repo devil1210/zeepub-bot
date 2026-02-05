@@ -4,8 +4,6 @@ SEO Content Optimizer - Analyzes and optimizes content for SEO
 """
 
 import re
-from typing import Dict, List, Set
-import json
 
 
 class SEOOptimizer:
@@ -63,8 +61,8 @@ class SEOOptimizer:
         }
 
     def analyze(
-        self, content: str, target_keyword: str = None, secondary_keywords: List[str] = None
-    ) -> Dict:
+        self, content: str, target_keyword: str = None, secondary_keywords: list[str] = None
+    ) -> dict:
         """Analyze content for SEO optimization"""
 
         analysis = {
@@ -94,7 +92,7 @@ class SEOOptimizer:
 
         return analysis
 
-    def _analyze_keywords(self, content: str, primary: str, secondary: List[str]) -> Dict:
+    def _analyze_keywords(self, content: str, primary: str, secondary: list[str]) -> dict:
         """Analyze keyword usage and density"""
         content_lower = content.lower()
         word_count = len(content.split())
@@ -136,7 +134,7 @@ class SEOOptimizer:
 
         return results
 
-    def _analyze_structure(self, content: str) -> Dict:
+    def _analyze_structure(self, content: str) -> dict:
         """Analyze content structure for SEO"""
         lines = content.split("\n")
 
@@ -192,7 +190,7 @@ class SEOOptimizer:
 
         return structure
 
-    def _analyze_readability(self, content: str) -> Dict:
+    def _analyze_readability(self, content: str) -> dict:
         """Analyze content readability"""
         sentences = re.split(r"[.!?]+", content)
         words = content.split()
@@ -222,7 +220,7 @@ class SEOOptimizer:
             "avg_sentence_length": round(avg_sentence_length, 1),
         }
 
-    def _extract_lsi_keywords(self, content: str, primary_keyword: str) -> List[str]:
+    def _extract_lsi_keywords(self, content: str, primary_keyword: str) -> list[str]:
         """Extract potential LSI (semantically related) keywords"""
         words = re.findall(r"\b[a-z]+\b", content.lower())
         word_freq = {}
@@ -245,7 +243,7 @@ class SEOOptimizer:
 
         return lsi_keywords
 
-    def _generate_meta_suggestions(self, content: str, keyword: str = None) -> Dict:
+    def _generate_meta_suggestions(self, content: str, keyword: str = None) -> dict:
         """Generate SEO meta tag suggestions"""
         # Extract first sentence for description base
         sentences = re.split(r"[.!?]+", content)
@@ -280,7 +278,7 @@ class SEOOptimizer:
 
         return suggestions
 
-    def _calculate_seo_score(self, analysis: Dict) -> int:
+    def _calculate_seo_score(self, analysis: dict) -> int:
         """Calculate overall SEO optimization score"""
         score = 0
         max_score = 100
@@ -324,7 +322,7 @@ class SEOOptimizer:
 
         return min(score, max_score)
 
-    def _generate_recommendations(self, analysis: Dict) -> List[str]:
+    def _generate_recommendations(self, analysis: dict) -> list[str]:
         """Generate SEO improvement recommendations"""
         recommendations = []
 
@@ -371,7 +369,7 @@ class SEOOptimizer:
 
 
 def optimize_content(
-    content: str, keyword: str = None, secondary_keywords: List[str] = None
+    content: str, keyword: str = None, secondary_keywords: list[str] = None
 ) -> str:
     """Main function to optimize content"""
     optimizer = SEOOptimizer()
@@ -387,16 +385,16 @@ def optimize_content(
         "=== SEO Content Analysis ===",
         f"Overall SEO Score: {results['optimization_score']}/100",
         f"Content Length: {results['content_length']} words",
-        f"",
+        "",
         "Content Structure:",
         f"  Headings: {results['structure_analysis']['headings']['total']}",
         f"  Paragraphs: {results['structure_analysis']['paragraphs']}",
         f"  Avg Paragraph Length: {results['structure_analysis']['avg_paragraph_length']} words",
         f"  Internal Links: {results['structure_analysis']['links']['internal']}",
         f"  External Links: {results['structure_analysis']['links']['external']}",
-        f"",
+        "",
         f"Readability: {results['readability']['level']} (Score: {results['readability']['score']})",
-        f"",
+        "",
     ]
 
     if results["keyword_analysis"]:
@@ -408,7 +406,7 @@ def optimize_content(
                 f"  Count: {kw['count']}",
                 f"  Density: {kw['density']:.2%}",
                 f"  In First Paragraph: {'Yes' if kw['in_first_paragraph'] else 'No'}",
-                f"",
+                "",
             ]
         )
 
@@ -425,7 +423,7 @@ def optimize_content(
                 f"  Title: {results['meta_suggestions']['title']}",
                 f"  Description: {results['meta_suggestions']['meta_description']}",
                 f"  URL Slug: {results['meta_suggestions']['url_slug']}",
-                f"",
+                "",
             ]
         )
 
@@ -445,7 +443,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) > 1:
-        with open(sys.argv[1], "r") as f:
+        with open(sys.argv[1]) as f:
             content = f.read()
 
         keyword = sys.argv[2] if len(sys.argv) > 2 else None

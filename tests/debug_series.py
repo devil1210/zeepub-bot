@@ -1,6 +1,7 @@
-from utils.library_db import get_session
-from models.library_models import SeriesMetadata, LocalBook
 import json
+
+from models.library_models import LocalBook, SeriesMetadata
+from utils.library_db import get_session
 
 with get_session() as session:
     series = (

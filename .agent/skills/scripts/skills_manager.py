@@ -9,8 +9,8 @@ Usage:
   python3 scripts/skills_manager.py disable SKILL # Disable a skill
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 SKILLS_DIR = Path(__file__).parent.parent / "skills"
@@ -85,7 +85,7 @@ def disable_skill(skill_name):
 
     if source.is_symlink():
         print(f"⚠️  Cannot disable symlink: {skill_name}")
-        print(f"   (Remove the symlink manually if needed)")
+        print("   (Remove the symlink manually if needed)")
         return False
 
     DISABLED_DIR.mkdir(exist_ok=True)

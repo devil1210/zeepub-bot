@@ -6,9 +6,9 @@ that properly buffers responses to prevent audio jumping.
 """
 
 import asyncio
-from typing import AsyncGenerator, List, Dict
-from dataclasses import dataclass
 import logging
+from collections.abc import AsyncGenerator
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,9 @@ class GeminiAgent:
     - Handles interrupts gracefully
     """
 
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config
-        self.conversation_history: List[Message] = []
+        self.conversation_history: list[Message] = []
         self.system_prompt = config.get("prompt", "You are a helpful AI assistant.")
         self.current_task = None
 
@@ -98,7 +98,7 @@ class GeminiAgent:
 
             yield GeneratedResponse(message=full_response.strip(), is_interruptible=True)
 
-    def _build_gemini_contents(self) -> List[Dict]:
+    def _build_gemini_contents(self) -> list[dict]:
         """
         Build conversation contents for Gemini API
 
@@ -173,7 +173,7 @@ class GeminiAgent:
             self.current_task.cancel()
             logger.info("🛑 [AGENT] Cancelled current generation task")
 
-    def get_conversation_history(self) -> List[Message]:
+    def get_conversation_history(self) -> list[Message]:
         """Get the full conversation history"""
         return self.conversation_history.copy()
 

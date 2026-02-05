@@ -2983,6 +2983,53 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 f"📝 Applying AI changes - Series: {proposed_series}, Spanish: {proposed_spanish}"
             )
 
+            # --- HASH MIGRATION LOGIC ---
+            # Si el nombre de la serie cambia, el hash DEBE cambiar para mantener la integridad.
+            from utils.helpers import generate_series_hash
+
+            new_hash = generate_series_hash(
+                proposed_series,
+                series.author if series else None,
+                series.book_type if series else None,
+            )
+
+            effective_hash = series_hash
+            target_series_id = series.id if series else None
+
+            # Si el hash cambió, migrar todo
+            if new_hash != series_hash:
+                logger.info(f"🔄 Migrando serie de {series_hash} a {new_hash} (Nombre cambiado)")
+
+                # Check collision (Merge Scenario)
+                existing_target_series = (
+                    session.query(SeriesMetadata).filter_by(series_hash=new_hash).first()
+                )
+
+                if existing_target_series:
+                    logger.info(f"Target series {new_hash} exists. Merging into it.")
+                    target_series_id = existing_target_series.id
+                    effective_hash = new_hash
+                    # Merge tags/metadata logic implied: we keep target or mix
+                    # Update target with proposed name/spanish if target matches proposed
+                    existing_target_series.series_name = proposed_series
+                    existing_target_series.series_spanish = proposed_spanish or proposed_series
+                    if proposal.get("description"):
+                        existing_target_series.description = proposal["description"]
+
+                    # Delete old series metadata stub if distinct
+                    if series and series.id != existing_target_series.id:
+                        session.delete(series)
+
+                    series = existing_target_series  # Point reference to target
+                else:
+                    # Just update the hash of the current series
+                    if series:
+                        series.series_hash = new_hash
+                        effective_hash = new_hash
+                    else:
+                        # Should have been created above, but safety check
+                        pass
+
             if series:
                 series.series_name = proposed_series
                 series.series_spanish = proposed_spanish or series.series_spanish or proposed_series
@@ -2995,16 +3042,9 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                     new_base_tags = set(proposal["genres"])
                     series.tags = list(current_tags | new_base_tags)
             else:
-                # Create if missing
-                series = SeriesMetadata(
-                    series_hash=series_hash,
-                    series_name=proposed_series,
-                    series_spanish=proposed_spanish or proposed_series,
-                    tags=proposal.get("genres"),
-                    description=proposal.get("description"),
-                )
-                session.add(series)
-                session.flush()
+                # Esta rama solo se alcanza si NO existía serie y NO hubo colisión (new created)
+                # Ya se creó arriba con series_hash original, pero si el hash era distinto...
+                pass
 
             # 1.1 Update Translator Group Metadata
             group_full = proposal.get("group_full")
@@ -3024,8 +3064,8 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                     new_group = TranslatorsGroup(name=group_full, siglas=group_siglas)
                     session.add(new_group)
 
-            # Cloud Sync immediately if enabled
-            if config.ENABLE_SUPABASE:
+            # Cloud Sync immediately if enabled (Using updated series/hash)
+            if config.ENABLE_SUPABASE and series:
                 try:
                     from core.supabase_manager import supabase_manager
 
@@ -3046,12 +3086,13 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 except Exception as cloud_e:
                     logger.warning(f"Failed to sync series to cloud: {cloud_e}")
 
-            # Update all books in this hash group to the new series name and link them
+            # Update all books in this hash group (OLD hash) to the new info using effective_hash
             stmt = select(LocalBook).where(LocalBook.series_hash == series_hash)
             books = session.execute(stmt).scalars().all()
 
             for book in books:
-                book.series_metadata_id = series.id
+                book.series_metadata_id = series.id if series else None
+                book.series_hash = effective_hash  # Critical Update
                 book.series = proposed_series
                 book.is_uncensored = proposal.get("is_uncensored_series", False)
                 book.series_spanish = proposed_spanish or series.series_spanish or proposed_series
@@ -3066,7 +3107,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             # Commit metadata changes immediately to ensure they're visible to subsequent AI analysis
             session.commit()
             logger.info(
-                f"✅ Series metadata updated and committed: {proposed_series} (ES: {proposed_spanish})"
+                f"✅ Series metadata updated and committed: {proposed_series} (ES: {proposed_spanish}) Hash: {effective_hash}"
             )
 
         # 2. Apply File Renames
@@ -3108,7 +3149,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         # 3. Consolidar metadata de serie tras los cambios
         from services.scanner_service import ScannerService
 
-        ScannerService.sync_series_metadata(session, series_hash)
+        ScannerService.sync_series_metadata(session, effective_hash)
         session.commit()
 
         # 4. Log feedback for learning
@@ -3123,7 +3164,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             status = "edited"
 
         await AIService.log_feedback(
-            series_hash=series_hash,
+            series_hash=effective_hash,
             original=proposal.get("current_series"),
             proposed=proposal.get("proposed_series"),
             final=proposed_series,

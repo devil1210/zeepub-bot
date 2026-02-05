@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from typing import Any
+
 from sqlalchemy import func, select
 
 from core.db_manager_pg import pg_manager

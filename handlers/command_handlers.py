@@ -9,7 +9,6 @@ from telegram.ext import CommandHandler, ContextTypes
 
 from config.config_settings import config
 from core.state_manager import state_manager
-from services.opds_service import mostrar_colecciones
 from services.library_ui_service import mostrar_menu_principal
 from services.user_service import get_effective_user
 

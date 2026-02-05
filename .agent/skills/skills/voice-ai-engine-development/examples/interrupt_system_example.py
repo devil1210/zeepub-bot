@@ -6,10 +6,10 @@ that allows users to interrupt the bot mid-sentence.
 """
 
 import asyncio
-import threading
-from typing import Any
-from dataclasses import dataclass
 import logging
+import threading
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -325,7 +325,7 @@ async def example_interrupt_scenario():
     # Wait for synthesis to finish
     message_sent, was_cut_off = await synthesis_task
 
-    print(f"\n✅ Result:")
+    print("\n✅ Result:")
     print(f"   - Message sent: '{message_sent}'")
     print(f"   - Was cut off: {was_cut_off}")
 

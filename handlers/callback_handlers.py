@@ -8,17 +8,17 @@ from telegram.ext import CallbackQueryHandler, ContextTypes, MessageHandler, fil
 
 from config.config_settings import config
 from core.state_manager import state_manager
+from services.library_ui_service import (
+    mostrar_autores_local,
+    mostrar_generos,
+    mostrar_menu_principal,
+    mostrar_series,
+    mostrar_volumenes_local,
+)
 from services.opds_service import (
     buscar_zeepubs_directo,
     mostrar_colecciones,
     mostrar_recomendaciones,
-)
-from services.library_ui_service import (
-    mostrar_menu_principal,
-    mostrar_generos,
-    mostrar_series,
-    mostrar_volumenes_local,
-    mostrar_autores_local,
 )
 from services.telegram_service import publicar_libro
 
