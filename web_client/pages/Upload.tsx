@@ -62,6 +62,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
     const [isBulk, setIsBulk] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [discardedCount, setDiscardedCount] = useState(0);
+    const [pendingFilesCount, setPendingFilesCount] = useState(0);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,6 +95,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                 return;
             }
             setFile(selectedFile);
+            setPendingFilesCount(1);
             setIsBulk(false);
             setError(null);
             startUpload(selectedFile);
@@ -104,6 +106,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                 setError('Ninguno de los archivos seleccionados es un EPUB válido');
                 return;
             }
+            setPendingFilesCount(validFiles.length);
             setIsBulk(true);
             setError(null);
             startBulkUpload(validFiles);
@@ -346,47 +349,75 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                 )}
 
                 {(status === 'uploading' || status === 'analyzing') && (
-                    <div className="glass-panel rounded-[2.5rem] p-12 text-center border border-white/5 flex flex-col items-center justify-center gap-10" style={glassStyle}>
-                        <div className="relative">
-                            <svg className="w-32 h-32 transform -rotate-90">
+                    <div className="glass-panel rounded-[2.5rem] p-16 text-center border border-white/5 flex flex-col items-center justify-center gap-12 relative overflow-hidden" style={glassStyle}>
+                        {/* Progressive Background Glow */}
+                        <div
+                            className="absolute -top-24 -left-24 w-64 h-64 bg-primary/20 blur-[100px] transition-all duration-1000"
+                            style={{ opacity: (status === 'uploading' ? uploadProgress : 100) / 100 }}
+                        ></div>
+
+                        <div className="relative group">
+                            {/* Outer Glow Ring */}
+                            <div className="absolute inset-[-12px] bg-primary/10 rounded-full blur-xl animate-pulse"></div>
+
+                            <svg className="w-40 h-40 transform -rotate-90 relative z-10" viewBox="0 0 140 140">
+                                {/* Track */}
                                 <circle
-                                    cx="64"
-                                    cy="64"
-                                    r="58"
+                                    cx="70"
+                                    cy="70"
+                                    r="62"
                                     stroke="currentColor"
                                     strokeWidth="8"
                                     fill="transparent"
-                                    className="text-white/5"
+                                    className="text-white/[0.03]"
                                 />
+                                {/* Progress with Glow */}
                                 <circle
-                                    cx="64"
-                                    cy="64"
-                                    r="58"
+                                    cx="70"
+                                    cy="70"
+                                    r="62"
                                     stroke="currentColor"
                                     strokeWidth="8"
                                     fill="transparent"
                                     strokeLinecap="round"
-                                    strokeDasharray={364.4}
-                                    strokeDashoffset={364.4 - (364.4 * (status === 'uploading' ? uploadProgress : 100)) / 100}
-                                    className="text-primary transition-all duration-300 ease-out"
+                                    strokeDasharray={389.5} // 2 * PI * 62
+                                    strokeDashoffset={389.5 - (389.5 * (status === 'uploading' ? uploadProgress : 100)) / 100}
+                                    className="text-primary transition-all duration-500 ease-out shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.5)]"
+                                    style={{
+                                        filter: 'drop-shadow(0 0 8px rgba(var(--color-primary-rgb), 0.6))'
+                                    }}
                                 />
                             </svg>
-                            <div className="absolute inset-0 flex items-center justify-center">
+
+                            <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
                                 {status === 'uploading' ? (
-                                    <span className="text-xl font-black text-white">{uploadProgress}%</span>
+                                    <>
+                                        <span className="text-3xl font-black text-white leading-none">{uploadProgress}%</span>
+                                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">Subiendo</span>
+                                    </>
                                 ) : (
-                                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                                    <div className="flex flex-col items-center">
+                                        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-2">Analizando</span>
+                                    </div>
                                 )}
                             </div>
                         </div>
 
-                        <div>
-                            <h2 className="text-2xl font-black text-white mb-3">
-                                {status === 'uploading' ? 'Subiendo archivos...' : 'Procesando metadatos...'}
+                        <div className="relative z-10">
+                            <h2 className="text-3xl font-black text-white mb-4 tracking-tight">
+                                {status === 'uploading' ? 'Transfiriendo archivos...' : 'Procesando Inteligencia...'}
                             </h2>
-                            <p className="text-gray-400 text-sm italic">
-                                {isBulk ? `${bulkResults.length} archivos` : file?.name}
-                            </p>
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="px-6 py-2 rounded-full bg-white/5 border border-white/5 backdrop-blur-md">
+                                    <p className="text-gray-300 text-xs font-bold uppercase tracking-wider">
+                                        {isBulk ? `${pendingFilesCount} archivos en cola` : file?.name}
+                                    </p>
+                                </div>
+                                <p className="text-gray-500 text-[10px] font-medium uppercase tracking-[0.1em] h-4">
+                                    {status === 'analyzing' && 'Extrayendo metadatos y normalizando series...'}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 )}
