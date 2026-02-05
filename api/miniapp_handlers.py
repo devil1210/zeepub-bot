@@ -1107,6 +1107,26 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
         return {"success": False, "message": str(e)}
 
 
+async def handle_admin_cleanup_library(data: dict[str, Any], user_data: dict[str, Any]):
+    """Checks for physical existence of all books and cleans up the database."""
+    check_staff(user_data)
+
+    from services.scanner_service import ScannerService
+    from utils.library_db import get_session
+
+    try:
+        with get_session() as session:
+            stats = ScannerService.cleanup_library_orphans(session)
+            return {
+                "success": True,
+                "message": f"Limpieza completada: Se eliminaron {stats['deleted_books']} libros y {stats['deleted_series']} series inexistentes.",
+                "stats": stats,
+            }
+    except Exception as e:
+        logger.error(f"Error during library cleanup: {e}")
+        return {"success": False, "message": f"Error during cleanup: {str(e)}"}
+
+
 async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, Any]):
     """Activates forced scan for a specific series."""
     check_staff(user_data)

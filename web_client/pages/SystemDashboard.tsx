@@ -392,6 +392,31 @@ export const SystemDashboard: React.FC = () => {
                         <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all duration-700"></div>
                     </div>
 
+                    {/* Clean Library */}
+                    <div className="glass-panel p-6 rounded-premium flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="flex flex-col">
+                                <h4 className="font-black text-white text-[10px] uppercase tracking-widest mb-1">Limpiar Librería</h4>
+                                <p className="text-[11px] text-gray-500 leading-relaxed max-w-[180px]">Verifica existencia física y elimina huérfanos.</p>
+                            </div>
+                            <div className="p-3 bg-red-500/20 rounded-premium-sm text-red-500 border border-red-500/20 shadow-lg shadow-red-500/10">
+                                <Trash2 className="w-5 h-5" />
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                if (confirm('¿Deseas verificar la existencia física de todos los archivos y limpiar registros huérfanos?')) {
+                                    handleAction('Limpieza', api.adminCleanupLibrary);
+                                }
+                            }}
+                            disabled={loading}
+                            className="mt-4 w-full py-3 text-[10px] font-black text-center bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 rounded-premium-sm transition-all uppercase tracking-widest active:scale-95 disabled:opacity-50 relative z-10"
+                        >
+                            {actionLoading === 'Limpieza' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Limpiar Librería"}
+                        </button>
+                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-red-500/5 rounded-full blur-2xl group-hover:bg-red-500/10 transition-all duration-700"></div>
+                    </div>
+
                     {/* Enrich Metadata */}
                     <div className="glass-panel p-6 rounded-premium flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
                         <div className="flex justify-between items-start mb-4 relative z-10">
