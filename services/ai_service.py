@@ -165,6 +165,12 @@ class AIService:
         - Filename Original: "{filename}"
         - Metadata Cruda (Contiene 'publisher'): {json.dumps(raw_meta, default=str)}
         
+        REGLAS DE CATEGORIZACIÓN:
+        - **Book Type**: Identifica si es "Novela Ligera" (Publicada por editorial), "Novela Web" (Publicada en sitios como Syosetu), "Manga" u otro.
+        - **Genres**: Devuelve una lista de etiquetas estándar (ej: Fantasía, Romance, Acción, Isekai, RPG).
+        - **Demography**: Identifica Seinen, Shonen, Shoujo, Josei.
+        - **Description**: Si la descripción actual es nula o está muy sucia (con código HTML o metadatos técnicos), genera una versión limpia y atractiva de máximo 500 caracteres.
+
         {{group_context}}
 
         Devuelve SOLO un JSON:
@@ -177,6 +183,10 @@ class AIService:
             "suggested_filename": "string",
             "is_uncensored": boolean,
             "color_mode": "color" | "bw" | "mixed",
+            "book_type": "string",
+            "genres": ["string"],
+            "demographics": ["string"],
+            "cleaned_description": "string",
             "confidence": float
         }}
         """
@@ -425,12 +435,19 @@ class AIService:
 
             if names_match and not proposal["changes"]:
                 # Series is already perfect - keep the names as-is, just add a note
-                if not proposal["reason"]:
-                    proposal["reason"] = (
-                        "✅ El estado actual coincide perfectamente con la estandarización sugerida. No se requieren cambios."
-                    )
-                # Add a flag to indicate no action needed (but DON'T change the names!)
+                proposal["reason"] = (
+                    "✨ El estado actual coincide plenamente con los registros de la base de datos y el título canónico en ambos idiomas. "
+                    "No se requieren cambios de nombre ni metadatos."
+                )
+                # Add a flag to indicate no action needed
                 proposal["no_changes_needed"] = True
+                proposal["is_perfect_match"] = True
+                proposal["confidence"] = 1.0  # Perfect match = 100% confidence
+            elif names_match:
+                proposal["reason"] = (
+                    "✅ Los nombres de la serie ya son correctos, pero algunos archivos pueden beneficiarse de una normalización "
+                    "en su formato de nombre (VXX [Grupo])."
+                )
 
             return proposal
 

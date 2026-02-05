@@ -2742,7 +2742,8 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
                         SELECT series_hash, MAX(created_at) as max_date
                         FROM ai_learning_feedback
                         GROUP BY series_hash
-                    ) latest ON f.series_hash = latest.series_hash AND f.created_at = latest.max_date
+                    ) latest ON f.series_hash = latest.series_hash 
+                    AND f.created_at = latest.max_date
                     ORDER BY f.created_at DESC
                     LIMIT :limit OFFSET :offset
                 """)
@@ -3114,7 +3115,9 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         from services.ai_service import AIService
 
         status = "accepted"
-        if proposed_series != proposal.get("proposed_series") or proposed_spanish != proposal.get(
+        if proposal.get("is_perfect_match"):
+            status = "accepted"  # IA was right that nothing was needed
+        elif proposed_series != proposal.get("proposed_series") or proposed_spanish != proposal.get(
             "proposed_spanish"
         ):
             status = "edited"
@@ -3138,7 +3141,10 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
     return {
         "success": True,
-        "message": f"Cambios aplicados. {updated_count} actualizaciones.",
+        "message": "Cambios aplicados correctamente."
+        if updated_count > 0 or proposal.get("is_perfect_match")
+        else "No se detectaron cambios pendientes.",
+        "updated_count": updated_count,
         "errors": errors,
     }
 

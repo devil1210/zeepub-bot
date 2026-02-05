@@ -293,6 +293,16 @@ class EPUBUploader:
                     metadata["is_uncensored"] = 1 if ai_data["is_uncensored"] else 0
                 if ai_data.get("color_mode"):
                     metadata["color_mode"] = ai_data["color_mode"]
+
+                # --- NUEVA CATEGORIZACIÓN ---
+                if ai_data.get("book_type"):
+                    metadata["book_type"] = ai_data["book_type"]
+                if ai_data.get("genres"):
+                    metadata["tags"] = ", ".join(ai_data["genres"])
+                if ai_data.get("demographics"):
+                    metadata["demography"] = ai_data["demographics"]
+                if ai_data.get("cleaned_description"):
+                    metadata["description"] = ai_data["cleaned_description"]
             else:
                 logger.warning("🤖 AI Analysis skipped or failed (using standard regex logic)")
 
@@ -1092,6 +1102,31 @@ class EPUBUploader:
 
             if scan_result and (scan_result.get("added") or scan_result.get("updated")):
                 logger.info(f"✅ Libro indexado inmediatamente: {full_path}")
+
+                # ACTUALIZACIÓN PROACTIVA: Aplicar metadata confirmada/IA que el scanner no pudo ver
+                with get_session() as session:
+                    # Buscar el libro por su nueva ruta
+                    book = session.query(LocalBook).filter_by(filepath=str(full_path)).first()
+                    if book:
+                        if metadata.get("series_spanish"):
+                            book.series_spanish = metadata["series_spanish"]
+                        if metadata.get("book_type"):
+                            book.book_type = metadata["book_type"]
+                        if metadata.get("is_uncensored") is not None:
+                            book.is_uncensored = metadata["is_uncensored"]
+                        if metadata.get("color_mode"):
+                            book.color_mode = metadata["color_mode"]
+                        if metadata.get("description"):
+                            book.description = metadata["description"]
+
+                        # Guardar cambios
+                        session.commit()
+
+                        # Sincronizar la serie global si es necesario
+                        if book.series_hash:
+                            ScannerService.sync_series_metadata(session, book.series_hash)
+                            session.commit()
+
                 return True
             elif scan_result and scan_result.get("duplicates"):
                 logger.warning(f"⚠️ Libro detectado como duplicado durante indexado: {full_path}")
