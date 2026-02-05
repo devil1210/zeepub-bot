@@ -18,7 +18,7 @@ from services.library_ui_service import (
     mostrar_generos,
     mostrar_series,
     mostrar_volumenes_local,
-    mostrar_autores_local
+    mostrar_autores_local,
 )
 from services.telegram_service import publicar_libro
 
@@ -229,7 +229,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         origin = parts[1]
         filter_v = parts[2]
         page = int(parts[3])
-        await mostrar_series(update, context, origin_type=origin, filter_val=filter_v or None, page=page)
+        await mostrar_series(
+            update, context, origin_type=origin, filter_val=filter_v or None, page=page
+        )
         return
 
     # Selección de colección
