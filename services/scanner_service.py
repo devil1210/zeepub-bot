@@ -1392,6 +1392,14 @@ class ScannerService:
                 if book.series_hash:
                     affected_hashes.add(book.series_hash)
                 
+                # Desvincular de tablas históricas para evitar ForeignKeyViolation
+                from models.download_models import DownloadHistory
+                from models.library_models import UserDownload, UserRating
+                
+                session.query(DownloadHistory).filter_by(book_id=book.id).update({DownloadHistory.book_id: None})
+                session.query(UserDownload).filter_by(book_id=book.id).update({UserDownload.book_id: None})
+                session.query(UserRating).filter_by(book_id=book.id).update({UserRating.book_id: None})
+
                 session.delete(book)
                 deleted_books += 1
         
