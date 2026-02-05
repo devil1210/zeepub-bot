@@ -1335,3 +1335,107 @@ class ScannerService:
                 session.add(new_group)
         except Exception as e:
             logger.warning(f"Error sincronizando grupo de traducción: {e}")
+
+    @staticmethod
+    def cleanup_library_orphans(session, user_id=None):
+        """
+        Verifica la existencia física de CADA libro en la base de datos local.
+        IMPORTANTE: NO ELIMINA ARCHIVOS FÍSICOS. Solo actualiza la base de datos
+        si el archivo YA NO ESTÁ en el disco.
+        """
+        logger.info("Iniciando Verificación de Integridad de la Librería...")
+        
+        from models.library_models import LocalBook, SeriesMetadata, ArchivedBook, ArchivedSeries, LibraryCleanupLog
+        
+        deleted_books = 0
+        deleted_series = 0
+        affected_hashes = set()
+        
+        # 1. Obtener todos los libros
+        books = session.query(LocalBook).all()
+        total_checked = len(books)
+        logger.info(f"Verificando existencia física de {total_checked} libros...")
+
+        for book in books:
+            # Protección de plataforma (Linux path on Windows)
+            if book.filepath and book.filepath.startswith("/") and os.name == "nt":
+                continue
+
+            if not book.filepath or not os.path.exists(book.filepath):
+                logger.warning(f"ARCHIVO NO ENCONTRADO EN DISCO: {book.filepath}")
+                
+                # Archivar registro de libro
+                archived = ArchivedBook(
+                    series_hash=book.series_hash,
+                    book_hash=book.book_hash,
+                    title=book.title,
+                    filename=book.filename,
+                    last_filepath=book.filepath,
+                    volume=book.volume,
+                    author=book.author,
+                    book_type=book.book_type,
+                    original_book_id=book.id,
+                    reason="physically_missing_detected"
+                )
+                session.add(archived)
+                
+                if book.series_hash:
+                    affected_hashes.add(book.series_hash)
+                
+                session.delete(book)
+                deleted_books += 1
+        
+        session.commit()
+
+        # 2. Verificar series huérfanas
+        if affected_hashes:
+            for s_hash in affected_hashes:
+                count = session.query(LocalBook).filter_by(series_hash=s_hash).count()
+                if count == 0:
+                    series = session.query(SeriesMetadata).filter_by(series_hash=s_hash).first()
+                    if series:
+                        logger.info(f"Archivando serie ahora vacía: {series.series_name}")
+                        archived_s = ArchivedSeries(
+                            series_name=series.series_name,
+                            series_spanish=series.series_spanish,
+                            series_hash=series.series_hash,
+                            author=series.author,
+                            description=series.description,
+                            tags=series.tags,
+                            cover_url=series.cover_url,
+                            book_type=series.book_type,
+                            publisher=series.publisher,
+                            original_series_id=series.id
+                        )
+                        session.add(archived_s)
+                        session.delete(series)
+                        deleted_series += 1
+            
+            session.commit()
+        
+        # 3. Forzar Recálculo de Conteos para TODAS las series activas (mantenimiento preventivo)
+        all_series = session.query(SeriesMetadata).all()
+        for s in all_series:
+            real_count = session.query(LocalBook).filter_by(series_hash=s.series_hash).count()
+            if s.book_count != real_count:
+                s.book_count = real_count
+        
+        session.commit()
+        
+        # 4. Registrar en el log histórico
+        cleanup_log = LibraryCleanupLog(
+            performed_by=user_id,
+            total_books_checked=total_checked,
+            missing_books_found=deleted_books,
+            empty_series_removed=deleted_series,
+            status="success"
+        )
+        session.add(cleanup_log)
+        session.commit()
+        
+        return {
+            "deleted_books": deleted_books,
+            "deleted_series": deleted_series,
+            "total_books": session.query(LocalBook).count(),
+            "total_series": session.query(SeriesMetadata).count()
+        }

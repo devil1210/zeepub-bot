@@ -1116,7 +1116,7 @@ async def handle_admin_cleanup_library(data: dict[str, Any], user_data: dict[str
 
     try:
         with get_session() as session:
-            stats = ScannerService.cleanup_library_orphans(session)
+            stats = ScannerService.cleanup_library_orphans(session, user_id=user_data.get("user_id"))
             return {
                 "success": True,
                 "message": f"Limpieza completada: Se eliminaron {stats['deleted_books']} libros y {stats['deleted_series']} series inexistentes.",

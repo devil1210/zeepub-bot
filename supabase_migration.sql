@@ -19,3 +19,20 @@ ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS can_request_books boolean DEFAU
 -- Add missing AI Learning Feedback columns
 ALTER TABLE ai_learning_feedback ADD COLUMN IF NOT EXISTS proposed_spanish text;
 ALTER TABLE ai_learning_feedback ADD COLUMN IF NOT EXISTS final_spanish text;
+
+-- Archived Books safety columns
+ALTER TABLE archived_books ADD COLUMN IF NOT EXISTS author text;
+ALTER TABLE archived_books ADD COLUMN IF NOT EXISTS book_type text;
+ALTER TABLE archived_books ADD COLUMN IF NOT EXISTS reason text;
+
+-- Cleanup Logs Table
+CREATE TABLE IF NOT EXISTS library_cleanup_logs (
+    id SERIAL PRIMARY KEY,
+    performed_by bigint,
+    total_books_checked integer DEFAULT 0,
+    missing_books_found integer DEFAULT 0,
+    empty_series_removed integer DEFAULT 0,
+    status text,
+    error_message text,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+);

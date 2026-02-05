@@ -485,4 +485,21 @@ class ArchivedBook(Base):
 
     archived_at = Column(DateTime, default=datetime.utcnow)
     original_book_id = Column(Integer)  # ID original para referencia
-    reason = Column(String(255))  # Ej: "physically_deleted", "manual_archive"
+    reason = Column(String(100))  # Ej: "physically_deleted", "manual_archive"
+
+
+class LibraryCleanupLog(Base):
+    """
+    Registro histórico de las operaciones de limpieza y mantenimiento de la librería.
+    """
+
+    __tablename__ = "library_cleanup_logs"
+
+    id = Column(Integer, primary_key=True)
+    performed_by = Column(Integer)  # user_id
+    total_books_checked = Column(Integer, default=0)
+    missing_books_found = Column(Integer, default=0)
+    empty_series_removed = Column(Integer, default=0)
+    status = Column(String(50))  # "success", "error"
+    error_message = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
