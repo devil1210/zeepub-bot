@@ -39,6 +39,8 @@ class ScannerService:
         "current_source": "",
         "results": {},
         "start_time": None,
+        "last_run": None,
+        "error_message": None,
     }
 
     # Géneros que son "rasgos" de edición y deben bueblear a la serie si algún volumen los tiene
@@ -70,14 +72,15 @@ class ScannerService:
             return False
 
         ScannerService._is_scanning = True
-        ScannerService._current_progress = {
+        ScannerService._current_progress.update({
             "status": "scanning",
             "scanned": 0,
             "total": 0,
             "current_source": "Iniciando...",
             "results": {},
             "start_time": datetime.utcnow().isoformat(),
-        }
+            "error_message": None,
+        })
         session = get_session()
         try:
             results = {
@@ -430,17 +433,24 @@ class ScannerService:
                 logger.warning(f"Error en limpieza final de series: {ce}")
 
             logger.info(f"Escaneo completado: {results}")
-            ScannerService._current_progress["status"] = "completed"
-            ScannerService._current_progress["results"] = results
+            ScannerService._current_progress.update({
+                "status": "completed",
+                "results": results,
+                "last_run": datetime.utcnow().isoformat()
+            })
             return results
         except Exception as e:
             logger.error(f"Error en sync_all: {e}")
+            ScannerService._current_progress.update({
+                "status": "error",
+                "error_message": str(e),
+                "last_run": datetime.utcnow().isoformat()
+            })
             return None
         finally:
             session.close()
             ScannerService._is_scanning = False
-            if ScannerService._current_progress.get("status") == "scanning":
-                ScannerService._current_progress["status"] = "idle"
+            # No resetear a 'idle' si terminó con éxito o error para que el usuario vea el log
 
     async def sync_path(self, path: str, source_id: int = 1, force_scan: bool = True):
         """

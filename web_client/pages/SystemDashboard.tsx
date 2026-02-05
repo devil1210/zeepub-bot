@@ -12,7 +12,9 @@ import {
     HardDrive,
     RotateCcw,
     TrendingUp,
-    Palette
+    Palette,
+    XCircle,
+    Info
 } from 'lucide-react';
 import { api } from '../src/services/api';
 import { useTheme } from '../contexts/ThemeContext';
@@ -33,9 +35,7 @@ export const SystemDashboard: React.FC = () => {
                 const res = await api.getAdminScanStatus();
                 if (res.success) {
                     setScanStatus(res.progress);
-                    if (!res.is_scanning && res.progress?.status === 'completed') {
-                        // Keep success state for 5 seconds then clear
-                        setTimeout(() => setScanStatus(null), 5000);
+                    if (!res.is_scanning && (res.progress?.status === 'completed' || res.progress?.status === 'error')) {
                         clearInterval(interval);
                     }
                 }
@@ -288,23 +288,37 @@ export const SystemDashboard: React.FC = () => {
             </div>
 
             {/* Scanning Progress Alert */}
-            {scanStatus && (
-                <div className={`glass-panel p-6 rounded-premium border ${scanStatus.status === 'completed' ? 'border-green-500/30' : 'border-primary/30'} animate-in slide-in-from-top duration-300`}>
+            {scanStatus && scanStatus.status !== 'idle' && (
+                <div className={`glass-panel p-6 rounded-premium border ${scanStatus.status === 'completed' ? 'border-green-500/30' :
+                        scanStatus.status === 'error' ? 'border-red-500/30' : 'border-primary/30'
+                    } animate-in slide-in-from-top duration-300 relative group`}>
+
+                    <button
+                        onClick={() => setScanStatus(null)}
+                        className="absolute top-4 right-4 p-1 rounded-full text-gray-500 hover:text-white hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100"
+                        title="Cerrar Log"
+                    >
+                        <XCircle className="w-4 h-4" />
+                    </button>
+
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${scanStatus.status === 'completed' ? 'bg-green-500/20 text-green-500' : 'bg-primary/20 text-primary'}`}>
+                            <div className={`p-2 rounded-lg ${scanStatus.status === 'completed' ? 'bg-green-500/20 text-green-500' :
+                                    scanStatus.status === 'error' ? 'bg-red-500/20 text-red-500' : 'bg-primary/20 text-primary'
+                                }`}>
                                 <Activity className={`w-5 h-5 ${scanStatus.status === 'scanning' ? 'animate-pulse' : ''}`} />
                             </div>
                             <div>
                                 <h4 className="text-sm font-black text-white uppercase tracking-widest">
-                                    {scanStatus.status === 'completed' ? 'Escaneo Completado' : 'Escaneando Biblioteca...'}
+                                    {scanStatus.status === 'completed' ? 'Escaneo Completado' :
+                                        scanStatus.status === 'error' ? 'Error en el Escaneo' : 'Escaneando Biblioteca...'}
                                 </h4>
                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
-                                    {scanStatus.current_source || 'Inicializando tareas...'}
+                                    {scanStatus.status === 'error' ? scanStatus.error_message : (scanStatus.current_source || 'Inicializando tareas...')}
                                 </p>
                             </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right mr-8">
                             <span className="text-xl font-black text-white">{scanStatus.scanned || 0}</span>
                             <span className="text-[10px] text-gray-500 ml-2 font-black uppercase">Libros</span>
                         </div>
@@ -312,8 +326,10 @@ export const SystemDashboard: React.FC = () => {
 
                     <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5 mb-4">
                         <div
-                            className={`h-full transition-all duration-500 ${scanStatus.status === 'completed' ? 'bg-green-500' : 'bg-primary animate-pulse'}`}
-                            style={{ width: scanStatus.status === 'completed' ? '100%' : '65%' }}
+                            className={`h-full transition-all duration-500 ${scanStatus.status === 'completed' ? 'bg-green-500' :
+                                    scanStatus.status === 'error' ? 'bg-red-500' : 'bg-primary animate-pulse'
+                                }`}
+                            style={{ width: (scanStatus.status === 'completed' || scanStatus.status === 'error') ? '100%' : '65%' }}
                         ></div>
                     </div>
 
@@ -335,6 +351,14 @@ export const SystemDashboard: React.FC = () => {
                                 <span className="text-[9px] text-gray-500 uppercase font-black">Duplicados</span>
                                 <span className="text-sm font-bold text-amber-400">{scanStatus.results.duplicates || 0}</span>
                             </div>
+                        </div>
+                    )}
+                    {(scanStatus.status === 'completed' || scanStatus.status === 'error') && scanStatus.last_run && (
+                        <div className="mt-4 pt-2 border-t border-white/5 flex justify-between items-center text-[10px] text-gray-500 font-mono">
+                            <span>Último Ejecución: {new Date(scanStatus.last_run).toLocaleString()}</span>
+                            <span className="flex items-center gap-1 uppercase tracking-tighter">
+                                <Info className="w-3 h-3" /> Estado: {scanStatus.status}
+                            </span>
                         </div>
                     )}
                 </div>
