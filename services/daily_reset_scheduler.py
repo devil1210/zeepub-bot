@@ -34,7 +34,7 @@ async def daily_reset_loop(bot=None):
                     from config.config_settings import config
                     from services.stats_service import get_daily_stats, reset_stats
 
-                    data = get_daily_stats()
+                    data = await get_daily_stats()
 
                     # Formatear breakdown
                     by_role = data.get("by_role", {})
@@ -61,7 +61,7 @@ async def daily_reset_loop(bot=None):
                             logger.error(f"Error enviando reporte a admin {admin_id}: {e}")
 
                     # Resetear stats
-                    reset_stats()
+                    await reset_stats()
                 except Exception as e:
                     logger.error(f"Error generando reporte diario: {e}")
 

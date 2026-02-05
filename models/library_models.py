@@ -409,7 +409,9 @@ class AILearningFeedback(Base):
     series_hash = Column(String(64), index=True, nullable=False)
     original_name = Column(String, nullable=False)
     proposed_name = Column(String, nullable=False)
+    proposed_spanish = Column(String)
     final_name = Column(String)
+    final_spanish = Column(String)
     status = Column(String(20), nullable=False)  # accepted, rejected, edited, manual
     ai_reason = Column(String)
     user_reason = Column(String)

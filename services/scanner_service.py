@@ -249,7 +249,11 @@ class ScannerService:
                         )
 
                         count_moved = 0
+                        affected_hashes = set()
                         for orphan in orphans_list:
+                            if orphan.series_hash:
+                                affected_hashes.add(orphan.series_hash)
+
                             # Verify if already in duplicates to avoid spam
                             exists = (
                                 session.query(DuplicateBook)
@@ -273,9 +277,18 @@ class ScannerService:
                         if count_moved > 0 or len(orphans_list) > 0:
                             session.commit()
 
+                            # Sincronizar metadata para series que perdieron libros huérfanos
+                            for h in affected_hashes:
+                                self.sync_series_metadata(session, h)
+                            session.commit()
+
                         results["orphans_detected"] = len(orphans_list)
                         results["orphans_moved_to_duplicates"] = count_moved
                         results["removed"] = results.get("removed", 0) + len(orphans_list)
+
+                        if "touched_series_hashes" not in results:
+                            results["touched_series_hashes"] = set()
+                        results["touched_series_hashes"].update(affected_hashes)
 
             # --- AI PROPOSALS (Background Gardener) ---
             # Si hubo cambios o es un escaneo completo, generar propuestas para series 'tocadas'
@@ -290,13 +303,26 @@ class ScannerService:
                 try:
                     logger.info(f"Generando propuestas IA para {len(touched_hashes)} series...")
                     for s_hash in touched_hashes:
-                        # Solo si no tiene propuesta pendiente
-                        exists = (
+                        # Solo si no tiene propuesta pendiente Y no ha sido revisada recientemente (feedback)
+                        exists_pending = (
                             session.query(MetadataProposal)
                             .filter_by(series_hash=s_hash, status="pending")
                             .first()
                         )
-                        if not exists:
+
+                        from handlers.epub_upload_handler import table_exists  # for dynamic check
+
+                        # Check if already reviewed in learning feedback
+                        from sqlalchemy import text
+
+                        reviewed = session.execute(
+                            text(
+                                "SELECT 1 FROM ai_learning_feedback WHERE series_hash = :h LIMIT 1"
+                            ),
+                            {"h": s_hash},
+                        ).first()
+
+                        if not exists_pending and not reviewed:
                             current_s = (
                                 session.query(SeriesMetadata).filter_by(series_hash=s_hash).first()
                             )
@@ -313,6 +339,7 @@ class ScannerService:
                                         s_hash,
                                         current_name,
                                         [b.to_dict() for b in series_books],
+                                        current_s.series_spanish if current_s else None,
                                     )
                                 except Exception as ae:
                                     logger.warning(

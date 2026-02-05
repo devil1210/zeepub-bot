@@ -141,7 +141,7 @@ async def can_download(uid: int, tg_user: Any | None = None) -> bool:
     return left > 0
 
 
-def record_download(uid: int) -> None:
+async def record_download(uid: int) -> None:
     """
     Incrementa el contador de descargas usadas en el estado del usuario
     y lo persiste en disco.
@@ -159,6 +159,6 @@ def record_download(uid: int) -> None:
     try:
         from services.stats_service import record_activity
 
-        record_activity(uid, "download")
+        await record_activity(uid, "download")
     except Exception as e:
         logger.error(f"Error registrando estadísticas: {e}")

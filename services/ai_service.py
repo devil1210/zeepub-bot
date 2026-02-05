@@ -233,7 +233,10 @@ class AIService:
 
     @staticmethod
     async def analyze_series_for_updates(
-        series_hash: str, current_series_name: str, books: list[dict[str, Any]]
+        series_hash: str,
+        current_series_name: str,
+        books: list[dict[str, Any]],
+        current_spanish_name: str = None,
     ) -> dict[str, Any]:
         """
         Analiza un grupo de libros y propone estandarización.
@@ -247,7 +250,9 @@ class AIService:
         REGLAS DE IDIOMA:
         - El campo 'reason' (explicación) debe estar SIEMPRE en ESPAÑOL.
         
-        Nombre Actual en DB: "{current_series_name}"
+        Nombre Actual en DB (English): "{current_series_name}"
+        Nombre Actual en DB (Spanish): "{current_spanish_name or 'No establecido'}"
+        
         Datos de libros (filename y publisher): {json.dumps([{"f": b.get("filename"), "p": b.get("publisher")} for b in books[:15]], indent=2)}
         
         Tareas:
@@ -341,6 +346,7 @@ class AIService:
             proposal = {
                 "series_hash": series_hash,
                 "current_series": current_series_name,
+                "current_spanish": current_spanish_name,
                 "proposed_series": analysis.get("proposed_english"),
                 "proposed_spanish": analysis.get("proposed_spanish"),
                 "group_full": analysis.get("group_full", "Unknown"),
@@ -412,8 +418,13 @@ class AIService:
                     )
 
             # Check if there is NO CHANGE at all (Series matches AND no files renamed)
-            # IMPORTANT: Do NOT overwrite the series names. Just mark that no changes are needed.
-            if proposal["proposed_series"] == current_series_name and not proposal["changes"]:
+            # IMPORTANT: We compare both English and Spanish names
+            names_match = (
+                proposal["proposed_series"] == current_series_name
+                and (not current_spanish_name or proposal["proposed_spanish"] == current_spanish_name)
+            )
+
+            if names_match and not proposal["changes"]:
                 # Series is already perfect - keep the names as-is, just add a note
                 if not proposal["reason"]:
                     proposal["reason"] = (
@@ -506,7 +517,9 @@ class AIService:
         original: str,
         proposed: str,
         final: str,
-        status: str,
+        proposed_spanish: str = None,
+        final_spanish: str = None,
+        status: str = "accepted",
         ai_reason: str = None,
     ):
         """Guarda retroalimentación para el aprendizaje de la IA."""
@@ -518,14 +531,16 @@ class AIService:
 
             with get_session() as session:
                 query = text("""
-                    INSERT INTO ai_learning_feedback (series_hash, original_name, proposed_name, final_name, status, ai_reason)
-                    VALUES (:h, :o, :p, :f, :s, :r)
+                    INSERT INTO ai_learning_feedback (series_hash, original_name, proposed_name, final_name, proposed_spanish, final_spanish, status, ai_reason)
+                    VALUES (:h, :o, :p, :f, :ps, :fs, :s, :r)
                 """)
                 params = {
                     "h": series_hash,
                     "o": original or "Unknown",
                     "p": proposed or final or original or "Unknown",
                     "f": final or proposed or original or "Unknown",
+                    "ps": proposed_spanish,
+                    "fs": final_spanish,
                     "s": status,
                     "r": ai_reason,
                 }
@@ -544,6 +559,8 @@ class AIService:
                         "original_name": original or "Unknown",
                         "proposed_name": proposed or final or original or "Unknown",
                         "final_name": final or proposed or original or "Unknown",
+                        "proposed_spanish": proposed_spanish,
+                        "final_spanish": final_spanish,
                         "status": status,
                         "ai_reason": ai_reason,
                     }

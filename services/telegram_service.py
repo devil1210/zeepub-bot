@@ -894,7 +894,7 @@ async def enviar_libro_directo(
                     logger.error(f"Failed to log book history in enviar_libro_directo: {e}")
 
             # 8. Registrar descarga y notificar
-            record_download(user_id)
+            await record_download(user_id)
             logger.info(f"[enviar_libro_directo] Descarga registrada para user {user_id}")
 
             # Gamificación: Incrementar contador total

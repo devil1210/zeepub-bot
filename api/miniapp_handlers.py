@@ -2815,11 +2815,17 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
             rep_book = books[0]  # Usar cualquiera como representante base
             current_name = rep_book.series or series_name or rep_book.title
 
+            # Obtener nombre español si ya existe
+            from models.library_models import SeriesMetadata
+
+            series_meta = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
+            current_spanish = series_meta.series_spanish if series_meta else rep_book.series_spanish
+
             # --- DRY RUN MODE (PROPOSAL) ---
             if dry_run:
                 books_dicts = [b.to_dict() for b in books]
                 proposal = await AIService.analyze_series_for_updates(
-                    series_hash, current_name, books_dicts
+                    series_hash, current_name, books_dicts, current_spanish
                 )
 
                 if "error" in proposal:
@@ -2874,7 +2880,7 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
             # Ya NO aplicamos cambios directamente. Guardamos como propuesta.
             books_dicts = [b.to_dict() for b in books]
             proposal = await AIService.analyze_series_for_updates(
-                series_hash, current_name, books_dicts
+                series_hash, current_name, books_dicts, current_spanish
             )
 
             if not proposal or "error" in proposal:
@@ -2978,7 +2984,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
             if series:
                 series.series_name = proposed_series
-                series.series_spanish = proposed_spanish or proposed_series
+                series.series_spanish = proposed_spanish or series.series_spanish or proposed_series
                 if proposal.get("description"):
                     series.description = proposal["description"]
 
@@ -3045,12 +3051,9 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
             for book in books:
                 book.series_metadata_id = series.id
-                book.series = proposed_series  # English
-                book.series_spanish = (
-                    proposed_spanish or proposed_series
-                )  # Spanish (Always set for consistency)
-
+                book.series = proposed_series
                 book.is_uncensored = proposal.get("is_uncensored_series", False)
+                book.series_spanish = proposed_spanish or series.series_spanish or proposed_series
 
                 # Aprovechar y actualizar volumen si está en la propuesta
                 orig_filename = book.filename or book.title
@@ -3111,7 +3114,9 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         from services.ai_service import AIService
 
         status = "accepted"
-        if proposed_series != proposal.get("proposed_series"):
+        if proposed_series != proposal.get("proposed_series") or proposed_spanish != proposal.get(
+            "proposed_spanish"
+        ):
             status = "edited"
 
         await AIService.log_feedback(
@@ -3119,6 +3124,8 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             original=proposal.get("current_series"),
             proposed=proposal.get("proposed_series"),
             final=proposed_series,
+            proposed_spanish=proposal.get("proposed_spanish"),
+            final_spanish=proposed_spanish,
             status=status,
             ai_reason=proposal.get("reason"),
         )

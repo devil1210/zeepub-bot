@@ -1,9 +1,10 @@
 import logging
+from datetime import datetime
 from typing import Any
-
 from sqlalchemy import func, select
 
 from core.db_manager_pg import pg_manager
+from models.download_models import DownloadHistory
 from models.library_models import LocalBook, UserRating
 from models.user_models import User, UserLevel
 from repositories.download_repository import download_repo
@@ -74,3 +75,79 @@ class StatsService:
 
 
 stats_service = StatsService()
+
+
+# --- Top-level functions for legacy compatibility and scheduled tasks ---
+
+
+async def record_activity(user_id: int, action: str):
+    """
+    Registers a user activity for stats purposes.
+    Currently, download actions are already tracked in download_history.
+    """
+    logger.debug(f"Activity recorded for user {user_id}: {action}")
+    # In the future, we could store this in a dedicated activity_log table.
+    pass
+
+
+async def get_daily_stats() -> dict[str, Any]:
+    """
+    Returns statistics for the current day.
+    """
+    async with pg_manager.get_session() as session:
+        try:
+            now = datetime.utcnow()
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+            # 1. Total downloads today
+            total_downloads = (
+                await session.execute(
+                    select(func.count(DownloadHistory.id)).where(
+                        DownloadHistory.downloaded_at >= today_start
+                    )
+                )
+            ).scalar() or 0
+
+            # 2. Unique users today
+            unique_users = (
+                await session.execute(
+                    select(func.count(func.distinct(DownloadHistory.user_id))).where(
+                        DownloadHistory.downloaded_at >= today_start
+                    )
+                )
+            ).scalar() or 0
+
+            # 3. Breakdown by role
+            role_breakdown_stmt = (
+                select(UserLevel.name, func.count(DownloadHistory.id))
+                .join(User, DownloadHistory.user_id == User.telegram_id)
+                .join(UserLevel, User.level_id == UserLevel.id)
+                .where(DownloadHistory.downloaded_at >= today_start)
+                .group_by(UserLevel.name)
+            )
+            role_breakdown = (await session.execute(role_breakdown_stmt)).fetchall()
+
+            return {
+                "total_downloads": total_downloads,
+                "unique_users": unique_users,
+                "by_role": {name: count for name, count in role_breakdown},
+                "success": True,
+            }
+        except Exception as e:
+            logger.error(f"Error getting daily stats: {e}")
+            return {
+                "total_downloads": 0,
+                "unique_users": 0,
+                "by_role": {},
+                "success": False,
+                "error": str(e),
+            }
+
+
+async def reset_stats():
+    """
+    Resets daily statistics if there are any temporary counters.
+    Download history is immutable, so this is mostly for other metrics.
+    """
+    logger.info("Daily stats reset executed.")
+    pass

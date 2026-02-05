@@ -800,6 +800,12 @@ export const AIHub: React.FC = () => {
                                             <p className="text-lg font-medium text-white break-words leading-relaxed whitespace-pre-wrap">
                                                 {proposal.current_series}
                                             </p>
+                                            {proposal.current_spanish && (
+                                                <p className="text-sm text-red-500/50 mt-2 flex items-center gap-2">
+                                                    <span className="text-[10px] font-black bg-red-500/10 px-1.5 rounded text-red-500/70">ES</span>
+                                                    {proposal.current_spanish}
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* Proposed Name Card */}
