@@ -2,7 +2,7 @@
 python-telegram-bot[job-queue]==22.6
 
 # HTTP client y soporte async
-aiohttp==3.11.12
+aiohttp==3.12.1
 aiofiles==25.1.0
 httpx==0.28.1
 prometheus_client==0.21.1
@@ -49,5 +49,5 @@ supabase==2.27.3
 google-generativeai==0.8.4
 
 # Pydantic (Latest stable for FastAPI 0.128+)
-pydantic==2.11.0
+pydantic==2.12.5
 pydantic-core==2.41.5
