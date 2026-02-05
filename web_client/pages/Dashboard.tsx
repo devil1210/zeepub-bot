@@ -1,26 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import {
   Search,
-  Zap,
   BookOpen,
   Settings,
-  TrendingUp,
-  Download,
-  Star,
+  ArrowDownToLine,
   Library,
   ShieldCheck,
   Copy,
   Upload,
   History,
   ShieldHalf,
-  ArrowDownToLine,
-  BrainCircuit
+  BrainCircuit,
+  Download,
+  Star
 } from 'lucide-react';
-import { api } from '../src/services/api';
 import { useTelegram } from '../contexts/TelegramContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { preloadImages } from '../src/utils/imagePreloader';
 import { useNavigation } from '../contexts/NavigationContext';
+import { useDashboardData } from '../hooks/useDashboardData';
 
 // Modular Components
 import { DashboardHero } from '../components/dashboard/DashboardHero';
@@ -39,62 +36,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { user: tgUser, status, showRecommendations, extendedInfo, isAdmin } = useTelegram();
   const { settings } = useTheme();
   const { setVisible } = useNavigation();
-  const [history, setHistory] = useState<any[]>([]);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // Use SWR Hook for Data Fetching
+  const { history, recommendations, loading } = useDashboardData();
 
   useEffect(() => {
     setVisible(false);
     return () => setVisible(true);
   }, [setVisible]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const historyPromise = api.getDownloadHistory();
-        let recommendationsRes;
-        const today = new Date().toDateString();
-        const cachedRecs = localStorage.getItem('zeepub_daily_recs');
-        const cachedDate = localStorage.getItem('zeepub_recs_date');
-
-        if (showRecommendations) {
-          if (cachedRecs && cachedDate === today) {
-            try {
-              const parsed = JSON.parse(cachedRecs);
-              setRecommendations(parsed);
-              preloadImages(parsed.map((r: any) => r.cover_thumb || r.cover || ''));
-              recommendationsRes = { results: parsed };
-            } catch (e) {
-              recommendationsRes = api.getRecommendations(4);
-            }
-          } else {
-            recommendationsRes = api.getRecommendations(4);
-          }
-        }
-
-        const [historyRes, recRes] = await Promise.all([
-          historyPromise,
-          recommendationsRes instanceof Promise ? recommendationsRes : Promise.resolve(recommendationsRes)
-        ]);
-
-        if (historyRes && historyRes.downloads) {
-          setHistory(historyRes.downloads);
-        }
-
-        if (showRecommendations && recRes && recRes.results && !(cachedRecs && cachedDate === today)) {
-          setRecommendations(recRes.results);
-          localStorage.setItem('zeepub_daily_recs', JSON.stringify(recRes.results));
-          localStorage.setItem('zeepub_recs_date', today);
-          preloadImages(recRes.results.map((r: any) => r.cover_thumb || r.cover || ''));
-        }
-      } catch (error) {
-        console.error("❌ Dashboard data fetch failed", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [showRecommendations]);
 
   const userName = extendedInfo?.nickname || extendedInfo?.name || (tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : (status?.user?.username || "Lector"));
   const userLevel = status?.user?.status_label || "Lector";

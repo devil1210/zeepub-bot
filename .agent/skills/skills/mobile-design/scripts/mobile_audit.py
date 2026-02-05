@@ -65,10 +65,10 @@ Analyzes React Native / Flutter code for compliance with:
 Total: 50+ mobile-specific checks
 """
 
-import json
+import sys
 import os
 import re
-import sys
+import json
 from pathlib import Path
 
 
@@ -81,7 +81,7 @@ class MobileAuditor:
 
     def audit_file(self, filepath: str) -> None:
         try:
-            with open(filepath, encoding="utf-8", errors="replace") as f:
+            with open(filepath, "r", encoding="utf-8", errors="replace") as f:
                 content = f.read()
         except:
             return
@@ -829,6 +829,7 @@ class MobileAuditor:
                     ".next",
                     "ios",
                     "android",
+                    "build",
                     ".idea",
                 }
             ]

@@ -4,8 +4,9 @@ Type Coverage Checker - Measures TypeScript/Python type coverage.
 Identifies untyped functions, any usage, and type safety issues.
 """
 
-import re
 import sys
+import re
+import subprocess
 from pathlib import Path
 
 # Fix Windows console encoding for Unicode output

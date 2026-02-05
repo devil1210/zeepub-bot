@@ -5,12 +5,11 @@ Recalculates all formulas in an Excel file using LibreOffice
 """
 
 import json
+import sys
+import subprocess
 import os
 import platform
-import subprocess
-import sys
 from pathlib import Path
-
 from openpyxl import load_workbook
 
 
@@ -26,7 +25,7 @@ def setup_libreoffice_macro():
     macro_file = os.path.join(macro_dir, "Module1.xba")
 
     if os.path.exists(macro_file):
-        with open(macro_file) as f:
+        with open(macro_file, "r") as f:
             if "RecalculateAndSave" in f.read():
                 return True
 

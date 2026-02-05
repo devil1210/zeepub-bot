@@ -4,9 +4,9 @@ i18n Checker - Detects hardcoded strings and missing translations.
 Scans for untranslated text in React, Vue, and Python files.
 """
 
-import json
-import re
 import sys
+import re
+import json
 from pathlib import Path
 
 # Fix Windows console encoding for Unicode output

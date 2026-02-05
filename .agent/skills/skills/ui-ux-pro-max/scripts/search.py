@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 UI/UX Pro Max Search - BM25 search engine for UI/UX style guides
 Usage: python search.py "<query>" [--domain <domain>] [--stack <stack>] [--max-results 3]
@@ -9,10 +10,8 @@ Stacks: html-tailwind, react, nextjs
 """
 
 import argparse
-
+from core import CSV_CONFIG, AVAILABLE_STACKS, MAX_RESULTS, search, search_stack
 from design_system import generate_design_system
-
-from core import AVAILABLE_STACKS, CSV_CONFIG, MAX_RESULTS, search, search_stack
 
 
 def format_output(result):
@@ -22,10 +21,10 @@ def format_output(result):
 
     output = []
     if result.get("stack"):
-        output.append("## UI Pro Max Stack Guidelines")
+        output.append(f"## UI Pro Max Stack Guidelines")
         output.append(f"**Stack:** {result['stack']} | **Query:** {result['query']}")
     else:
-        output.append("## UI Pro Max Search Results")
+        output.append(f"## UI Pro Max Search Results")
         output.append(f"**Domain:** {result['domain']} | **Query:** {result['query']}")
     output.append(f"**Source:** {result['file']} | **Found:** {result['count']} results\n")
 

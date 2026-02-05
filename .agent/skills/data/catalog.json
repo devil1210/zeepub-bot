@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-02-04T08:08:20.870Z",
-  "total": 631,
+  "generatedAt": "2026-02-05T08:27:17.364Z",
+  "total": 634,
   "skills": [
     {
       "id": "3d-web-experience",
@@ -1107,6 +1107,34 @@
         "gaps"
       ],
       "path": "skills/attack-tree-construction/SKILL.md"
+    },
+    {
+      "id": "audio-transcriber",
+      "name": "audio-transcriber",
+      "description": "Transform audio recordings into professional Markdown documentation with intelligent summaries using LLM integration",
+      "category": "data-ai",
+      "tags": [
+        "audio",
+        "transcription",
+        "whisper",
+        "meeting-minutes",
+        "speech-to-text"
+      ],
+      "triggers": [
+        "audio",
+        "transcription",
+        "whisper",
+        "meeting-minutes",
+        "speech-to-text",
+        "transcriber",
+        "transform",
+        "recordings",
+        "professional",
+        "markdown",
+        "documentation",
+        "intelligent"
+      ],
+      "path": "skills/audio-transcriber/SKILL.md"
     },
     {
       "id": "auth-implementation-patterns",
@@ -9794,6 +9822,29 @@
       "path": "skills/openapi-spec-generation/SKILL.md"
     },
     {
+      "id": "oss-hunter",
+      "name": "oss-hunter",
+      "description": "Automatically hunt for high-impact OSS contribution opportunities in trending repositories.",
+      "category": "general",
+      "tags": [
+        "oss",
+        "hunter"
+      ],
+      "triggers": [
+        "oss",
+        "hunter",
+        "automatically",
+        "hunt",
+        "high",
+        "impact",
+        "contribution",
+        "opportunities",
+        "trending",
+        "repositories"
+      ],
+      "path": "skills/oss-hunter/SKILL.md"
+    },
+    {
       "id": "page-cro",
       "name": "page-cro",
       "description": "Analyze and optimize individual pages for conversion performance. Use when the user wants to improve conversion rates, diagnose why a page is underperforming, or increase the effectiveness of marketing pages (homepage, landing pages, pricing, feature pages, or blog posts). This skill focuses on diagnosis, prioritization, and testable recommendations— not blind optimization.",
@@ -10675,24 +10726,27 @@
     {
       "id": "prompt-engineer",
       "name": "prompt-engineer",
-      "description": "Expert prompt engineer specializing in advanced prompting techniques, LLM optimization, and AI system design. Masters chain-of-thought, constitutional AI, and production prompt strategies. Use when building AI features, improving agent performance, or crafting system prompts.",
-      "category": "data-ai",
+      "description": "Transforms user prompts into optimized prompts using frameworks (RTF, RISEN, Chain of Thought, RODES, Chain of Density, RACE, RISE, STAR, SOAP, CLEAR, GROW)",
+      "category": "general",
       "tags": [
-        "prompt"
+        "prompt-engineering",
+        "optimization",
+        "frameworks",
+        "ai-enhancement"
       ],
       "triggers": [
+        "prompt-engineering",
+        "optimization",
+        "frameworks",
+        "ai-enhancement",
         "prompt",
         "engineer",
-        "specializing",
-        "prompting",
-        "techniques",
-        "llm",
-        "optimization",
-        "ai",
-        "masters",
-        "chain",
-        "thought",
-        "constitutional"
+        "transforms",
+        "user",
+        "prompts",
+        "optimized",
+        "rtf",
+        "risen"
       ],
       "path": "skills/prompt-engineer/SKILL.md"
     },
@@ -12671,25 +12725,27 @@
     {
       "id": "skill-creator",
       "name": "skill-creator",
-      "description": "Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations.",
-      "category": "general",
+      "description": "This skill should be used when the user asks to create a new skill, build a skill, make a custom skill, develop a CLI skill, or wants to extend the CLI with new capabilities. Automates the entire skill creation workflow from brainstorming to installation.",
+      "category": "workflow",
       "tags": [
-        "skill",
-        "creator"
+        "automation",
+        "scaffolding",
+        "skill-creation",
+        "meta-skill"
       ],
       "triggers": [
+        "automation",
+        "scaffolding",
+        "skill-creation",
+        "meta-skill",
         "skill",
         "creator",
-        "creating",
-        "effective",
-        "skills",
         "should",
         "used",
-        "users",
-        "want",
+        "user",
+        "asks",
         "new",
-        "update",
-        "existing"
+        "custom"
       ],
       "path": "skills/skill-creator/SKILL.md"
     },
@@ -15344,6 +15400,34 @@
         "asks"
       ],
       "path": "skills/xss-html-injection/SKILL.md"
+    },
+    {
+      "id": "youtube-summarizer",
+      "name": "youtube-summarizer",
+      "description": "Extract transcripts from YouTube videos and generate comprehensive, detailed summaries using intelligent analysis frameworks",
+      "category": "general",
+      "tags": [
+        "video",
+        "summarization",
+        "transcription",
+        "youtube",
+        "content-analysis"
+      ],
+      "triggers": [
+        "video",
+        "summarization",
+        "transcription",
+        "youtube",
+        "content-analysis",
+        "summarizer",
+        "extract",
+        "transcripts",
+        "videos",
+        "generate",
+        "detailed",
+        "summaries"
+      ],
+      "path": "skills/youtube-summarizer/SKILL.md"
     },
     {
       "id": "zapier-make-patterns",

@@ -10,14 +10,14 @@ def update_readme():
     index_path = os.path.join(base_dir, "skills_index.json")
 
     print(f"📖 Reading skills index from: {index_path}")
-    with open(index_path, encoding="utf-8") as f:
+    with open(index_path, "r", encoding="utf-8") as f:
         skills = json.load(f)
 
     total_skills = len(skills)
     print(f"🔢 Total skills found: {total_skills}")
 
     print(f"📝 Updating README at: {readme_path}")
-    with open(readme_path, encoding="utf-8") as f:
+    with open(readme_path, "r", encoding="utf-8") as f:
         content = f.read()
 
     # 1. Update Title Count

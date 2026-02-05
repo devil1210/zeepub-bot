@@ -1,9 +1,11 @@
 """Terminal UI utilities for last30days skill."""
 
-import random
+import os
 import sys
-import threading
 import time
+import threading
+import random
+from typing import Optional
 
 # Check if we're in a real terminal (not captured by Claude Code)
 IS_TTY = sys.stderr.isatty()
@@ -138,7 +140,7 @@ class Spinner:
         self.message = message
         self.color = color
         self.running = False
-        self.thread: threading.Thread | None = None
+        self.thread: Optional[threading.Thread] = None
         self.frame_idx = 0
         self.shown_static = False
 
@@ -187,7 +189,7 @@ class ProgressDisplay:
 
     def __init__(self, topic: str, show_banner: bool = True):
         self.topic = topic
-        self.spinner: Spinner | None = None
+        self.spinner: Optional[Spinner] = None
         self.start_time = time.time()
 
         if show_banner:

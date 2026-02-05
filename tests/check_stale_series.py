@@ -9,14 +9,16 @@ session = Session()
 try:
     count = session.execute(text("SELECT count(*) FROM series_metadata")).scalar()
     print(f"Total series: {count}")
-    
-    stale_series = session.execute(text("""
+
+    stale_series = session.execute(
+        text("""
         SELECT sm.series_name, sm.book_count 
         FROM series_metadata sm 
         LEFT JOIN local_books lb ON sm.series_hash = lb.series_hash 
         WHERE lb.id IS NULL AND sm.book_count > 0
-    """)).fetchall()
-    
+    """)
+    ).fetchall()
+
     print(f"Stale series (book_count > 0 but 0 books in DB): {len(stale_series)}")
     for s in stale_series:
         print(f" - {s[0]} (count: {s[1]})")

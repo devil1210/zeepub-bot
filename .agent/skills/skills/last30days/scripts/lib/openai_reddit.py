@@ -3,7 +3,7 @@
 import json
 import re
 import sys
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from . import http
 
@@ -102,9 +102,9 @@ def search_reddit(
     from_date: str,
     to_date: str,
     depth: str = "default",
-    mock_response: dict | None = None,
+    mock_response: Optional[Dict] = None,
     _retry: bool = False,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """Search Reddit for relevant threads using OpenAI Responses API.
 
     Args:
@@ -150,7 +150,7 @@ def search_reddit(
     return http.post(OPENAI_RESPONSES_URL, payload, headers=headers, timeout=timeout)
 
 
-def parse_reddit_response(response: dict[str, Any]) -> list[dict[str, Any]]:
+def parse_reddit_response(response: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Parse OpenAI response to extract Reddit items.
 
     Args:

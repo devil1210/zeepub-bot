@@ -1,5 +1,5 @@
-import json
 import os
+import json
 import re
 
 import yaml
@@ -45,7 +45,7 @@ def generate_index(skills_dir, output_file):
             }
 
             try:
-                with open(skill_path, encoding="utf-8") as f:
+                with open(skill_path, "r", encoding="utf-8") as f:
                     content = f.read()
             except Exception as e:
                 print(f"⚠️ Error reading {skill_path}: {e}")

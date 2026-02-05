@@ -5,12 +5,12 @@ Individual browser session for persistent NotebookLM conversations
 Based on the original NotebookLM API implementation
 """
 
-import sys
 import time
+import sys
+from typing import Any, Dict, Optional
 from pathlib import Path
-from typing import Any
 
-from patchright.sync_api import BrowserContext
+from patchright.sync_api import BrowserContext, Page
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -54,7 +54,7 @@ class BrowserSession:
 
         # Create new page (tab) in context
         self.page = self.context.new_page()
-        print("  🌐 Navigating to NotebookLM...")
+        print(f"  🌐 Navigating to NotebookLM...")
 
         try:
             # Navigate to notebook
@@ -92,7 +92,7 @@ class BrowserSession:
                 'textarea[aria-label="Feld für Anfragen"]', timeout=5000, state="visible"
             )
 
-    def ask(self, question: str) -> dict[str, Any]:
+    def ask(self, question: str) -> Dict[str, Any]:
         """
         Ask a question in this session
 
@@ -153,7 +153,7 @@ class BrowserSession:
             print(f"  ❌ Error: {e}")
             return {"status": "error", "question": question, "error": str(e), "session_id": self.id}
 
-    def _snapshot_latest_response(self) -> str | None:
+    def _snapshot_latest_response(self) -> Optional[str]:
         """Get the current latest response text"""
         try:
             # Use correct NotebookLM selector
@@ -164,7 +164,7 @@ class BrowserSession:
             pass
         return None
 
-    def _wait_for_latest_answer(self, previous_answer: str | None, timeout: int = 120) -> str:
+    def _wait_for_latest_answer(self, previous_answer: Optional[str], timeout: int = 120) -> str:
         """Wait for and extract the new answer"""
         start_time = time.time()
         last_candidate = None
@@ -231,7 +231,7 @@ class BrowserSession:
 
         print(f"✅ Session {self.id} closed")
 
-    def get_info(self) -> dict[str, Any]:
+    def get_info(self) -> Dict[str, Any]:
         """Get information about this session"""
         return {
             "id": self.id,

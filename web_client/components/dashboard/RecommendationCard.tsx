@@ -19,6 +19,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({ book, se
                 <img
                     src={getCoverUrl(book, book.cover_thumb || book.cover, settings.coverQuality)}
                     alt={book.title}
+                    loading="lazy"
                     className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
                 />
                 <div className="absolute top-3 right-3 z-10">

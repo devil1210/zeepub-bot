@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { debounce } from 'perfect-debounce';
 import {
     Search as SearchIcon,
     LayoutGrid,
@@ -30,6 +31,27 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
 }) => {
     const { settings } = useTheme();
 
+    // Local state for immediate UI feedback
+    const [localTerm, setLocalTerm] = useState(searchTerm);
+
+    // Sync local state when external searchTerm changes (e.g. via navigation)
+    useEffect(() => {
+        setLocalTerm(searchTerm);
+    }, [searchTerm]);
+
+    // Debounce the global state update to prevent excessive context re-renders
+    const debouncedUpdate = useMemo(() => {
+        return debounce((term: string) => {
+            onSearchChange(term);
+        }, 300);
+    }, [onSearchChange]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newVal = e.target.value;
+        setLocalTerm(newVal);
+        debouncedUpdate(newVal);
+    };
+
     return (
         <div
             className="z-30 px-4 md:px-8 py-3 md:py-4 border-b border-white/5"
@@ -49,8 +71,8 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                             className="block w-full pl-12 pr-28 py-3.5 rounded-premium-sm border border-white/10 bg-white/5 text-white placeholder-gray-500 focus:ring-2 focus:ring-primary/50 focus:border-primary focus:bg-white/10 text-sm transition-all shadow-inner"
                             placeholder="Busca por título, autor, género o ISBN..."
                             type="text"
-                            value={searchTerm}
-                            onChange={(e) => onSearchChange(e.target.value)}
+                            value={localTerm}
+                            onChange={handleInputChange}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                     onSearchSubmit?.();

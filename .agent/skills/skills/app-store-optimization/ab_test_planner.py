@@ -3,8 +3,8 @@ A/B testing module for App Store Optimization.
 Plans and tracks A/B tests for metadata and visual assets.
 """
 
+from typing import Dict, List, Any, Optional
 import math
-from typing import Any
 
 
 class ABTestPlanner:
@@ -32,11 +32,11 @@ class ABTestPlanner:
     def design_test(
         self,
         test_type: str,
-        variant_a: dict[str, Any],
-        variant_b: dict[str, Any],
+        variant_a: Dict[str, Any],
+        variant_b: Dict[str, Any],
         hypothesis: str,
         success_metric: str = "conversion_rate",
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """
         Design an A/B test with hypothesis and variables.
 
@@ -74,7 +74,7 @@ class ABTestPlanner:
         minimum_detectable_effect: float,
         confidence_level: str = "standard",
         power: float = 0.80,
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """
         Calculate required sample size for statistical significance.
 
@@ -132,7 +132,7 @@ class ABTestPlanner:
         variant_a_visitors: int,
         variant_b_conversions: int,
         variant_b_visitors: int,
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """
         Calculate statistical significance of test results.
 
@@ -211,7 +211,7 @@ class ABTestPlanner:
             "decision": decision,
         }
 
-    def track_test_results(self, test_id: str, results_data: dict[str, Any]) -> dict[str, Any]:
+    def track_test_results(self, test_id: str, results_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Track ongoing test results and provide recommendations.
 
@@ -259,7 +259,7 @@ class ABTestPlanner:
             "next_steps": self._determine_next_steps(significance, progress_percentage),
         }
 
-    def generate_test_report(self, test_id: str, final_results: dict[str, Any]) -> dict[str, Any]:
+    def generate_test_report(self, test_id: str, final_results: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate final test report with insights and recommendations.
 
@@ -307,7 +307,7 @@ class ABTestPlanner:
         timestamp = int(time.time())
         return f"{test_type}_{timestamp}"
 
-    def _get_secondary_metrics(self, test_type: str) -> list[str]:
+    def _get_secondary_metrics(self, test_type: str) -> List[str]:
         """Get secondary metrics to track for test type."""
         metrics_map = {
             "icon": ["tap_through_rate", "impression_count", "brand_recall"],
@@ -317,7 +317,7 @@ class ABTestPlanner:
         }
         return metrics_map.get(test_type, ["tap_through_rate"])
 
-    def _get_test_best_practices(self, test_type: str) -> list[str]:
+    def _get_test_best_practices(self, test_type: str) -> List[str]:
         """Get best practices for specific test type."""
         practices_map = {
             "icon": [
@@ -349,7 +349,7 @@ class ABTestPlanner:
 
     def _estimate_test_duration(
         self, required_sample_size: int, baseline_conversion: float
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """Estimate test duration based on typical traffic levels."""
         # Assume different daily traffic scenarios
         traffic_scenarios = {
@@ -370,8 +370,8 @@ class ABTestPlanner:
         return estimates
 
     def _generate_sample_size_recommendations(
-        self, sample_size: int, duration_estimates: dict[str, Any]
-    ) -> list[str]:
+        self, sample_size: int, duration_estimates: Dict[str, Any]
+    ) -> List[str]:
         """Generate recommendations based on sample size."""
         recommendations = []
 
@@ -419,7 +419,7 @@ class ABTestPlanner:
         is_significant_95: bool,
         is_significant_90: bool,
         total_visitors: int,
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """Generate test decision and recommendation."""
         if total_visitors < 1000:
             return {
@@ -464,8 +464,8 @@ class ABTestPlanner:
             }
 
     def _generate_tracking_recommendations(
-        self, significance: dict[str, Any], progress: float, test_type: str
-    ) -> list[str]:
+        self, significance: Dict[str, Any], progress: float, test_type: str
+    ) -> List[str]:
         """Generate recommendations for ongoing test."""
         recommendations = []
 
@@ -484,7 +484,7 @@ class ABTestPlanner:
 
         return recommendations
 
-    def _determine_next_steps(self, significance: dict[str, Any], progress: float) -> str:
+    def _determine_next_steps(self, significance: Dict[str, Any], progress: float) -> str:
         """Determine next steps for test."""
         if progress < 100:
             return f"Continue test until reaching 100% sample size (currently {progress:.0f}%)"
@@ -499,8 +499,8 @@ class ABTestPlanner:
             return "Test inconclusive - either keep A or design new test"
 
     def _generate_test_insights(
-        self, test: dict[str, Any], significance: dict[str, Any], results: dict[str, Any]
-    ) -> list[str]:
+        self, test: Dict[str, Any], significance: Dict[str, Any], results: Dict[str, Any]
+    ) -> List[str]:
         """Generate insights from test results."""
         insights = []
 
@@ -523,8 +523,8 @@ class ABTestPlanner:
         return insights
 
     def _create_implementation_plan(
-        self, test: dict[str, Any], significance: dict[str, Any]
-    ) -> list[dict[str, str]]:
+        self, test: Dict[str, Any], significance: Dict[str, Any]
+    ) -> List[Dict[str, str]]:
         """Create implementation plan for winning variant."""
         plan = []
 
@@ -550,7 +550,7 @@ class ABTestPlanner:
 
         return plan
 
-    def _extract_learnings(self, test: dict[str, Any], significance: dict[str, Any]) -> list[str]:
+    def _extract_learnings(self, test: Dict[str, Any], significance: Dict[str, Any]) -> List[str]:
         """Extract key learnings from test."""
         learnings = []
 
@@ -570,11 +570,11 @@ class ABTestPlanner:
 
 def plan_ab_test(
     test_type: str,
-    variant_a: dict[str, Any],
-    variant_b: dict[str, Any],
+    variant_a: Dict[str, Any],
+    variant_b: Dict[str, Any],
     hypothesis: str,
     baseline_conversion: float,
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """
     Convenience function to plan an A/B test.
 

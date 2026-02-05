@@ -8,20 +8,29 @@ session = Session()
 
 try:
     # Check hashes
-    res = session.execute(text("SELECT series_hash, series_name FROM series_metadata WHERE series_name ILIKE '%Classroom of the Elite 2nd Year%'")).first()
+    res = session.execute(
+        text(
+            "SELECT series_hash, series_name FROM series_metadata WHERE series_name ILIKE '%Classroom of the Elite 2nd Year%'"
+        )
+    ).first()
     if res:
         s_hash, s_name = res
         print(f"Series: {s_name}")
         print(f"Hash in Metadata: {s_hash}")
-        
+
         # Check books in archive
-        archived = session.execute(text("SELECT book_hash, title, series_hash FROM archived_books WHERE series_hash = :h"), {"h": s_hash}).fetchall()
+        archived = session.execute(
+            text("SELECT book_hash, title, series_hash FROM archived_books WHERE series_hash = :h"),
+            {"h": s_hash},
+        ).fetchall()
         print(f"Archived books for this hash: {len(archived)}")
         for i, a in enumerate(archived):
-            print(f"  {i+1}. {a[1]} (Hash: {a[2]})")
-            
+            print(f"  {i + 1}. {a[1]} (Hash: {a[2]})")
+
         # Check total books for this hash
-        current = session.execute(text("SELECT count(*) FROM local_books WHERE series_hash = :h"), {"h": s_hash}).scalar()
+        current = session.execute(
+            text("SELECT count(*) FROM local_books WHERE series_hash = :h"), {"h": s_hash}
+        ).scalar()
         print(f"Current books for this hash: {current}")
 
 except Exception as e:

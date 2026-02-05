@@ -1,6 +1,6 @@
-import argparse
 import os
 import re
+import argparse
 import sys
 
 WHEN_TO_USE_PATTERNS = [
@@ -55,7 +55,7 @@ def validate_skills(skills_dir, strict_mode=False):
             rel_path = os.path.relpath(skill_path, skills_dir)
 
             try:
-                with open(skill_path, encoding="utf-8") as f:
+                with open(skill_path, "r", encoding="utf-8") as f:
                     content = f.read()
             except Exception as e:
                 errors.append(f"❌ {rel_path}: Unreadable file - {str(e)}")

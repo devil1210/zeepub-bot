@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.9.0] - 2026-02-05 - "OSS Hunter & Universal Skills"
+
+> Automated contribution hunting and universal CLI AI skills (Audio, YouTube, Prompt Engineering).
+
+### Added
+
+- **New Skill**: `oss-hunter` – Automated tool for finding high-impact Open Source contributions (Good First Issues, Help Wanted) in trending repositories.
+- **New Skill**: `audio-transcriber` – Transform audio recordings into professional Markdown with Whisper integration.
+- **New Skill**: `youtube-summarizer` – Generate comprehensive summaries/notes from YouTube videos.
+- **New Skill**: `prompt-engineer` (Enhanced) – Now includes 11 optimization frameworks (RTF, RISEN, etc.).
+- **Registry**: 634 skills (from 626). Catalog regenerated.
+
+### Changed
+
+- **CLI AI Skills**: Merged core skills from `ericgandrade/cli-ai-skills`.
+
+### Contributors
+
+- [@jackjin1997](https://github.com/jackjin1997) - OSS Hunter (PR #61)
+- [@ericgandrade](https://github.com/ericgandrade) - CLI AI Skills (PR #62)
+
 ## [4.7.0] - 2026-02-03 - "Installer Fix & OpenCode Docs"
 
 > Critical installer fix for Windows and OpenCode documentation completion.

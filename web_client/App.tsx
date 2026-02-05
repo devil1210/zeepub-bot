@@ -1,54 +1,71 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { MemoryRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { TelegramProvider, useTelegram } from './contexts/TelegramContext';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
 import { Layout } from './components/Layout';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { Dashboard } from './pages/Dashboard';
-import { Search } from './pages/Search';
-import { Admin } from './pages/Admin';
-import { Reader } from './pages/Reader';
-import { Settings } from './pages/Settings';
-import { SeriesDetail } from './pages/SeriesDetail';
-import { BookDetail } from './pages/BookDetail';
-import { BookDetailById } from './pages/BookDetailById';
-import { RequestBook } from './pages/RequestBook';
-import { Library } from './pages/Library';
-import { Downloads } from './pages/Downloads';
-import { UploadEpub } from './pages/Upload';
-import { AIHub } from './pages/AIHub';
-import { Series, Volume, Book } from './types';
+
+// Lazy loading pages for performance optimization
+const Dashboard = React.lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const Search = React.lazy(() => import('./pages/Search').then(m => ({ default: m.Search })));
+const Admin = React.lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
+const Reader = React.lazy(() => import('./pages/Reader').then(m => ({ default: m.Reader })));
+const Settings = React.lazy(() => import('./pages/Settings').then(m => ({ default: m.Settings })));
+const RequestBook = React.lazy(() => import('./pages/RequestBook').then(m => ({ default: m.RequestBook })));
+const Library = React.lazy(() => import('./pages/Library').then(m => ({ default: m.Library })));
+const Downloads = React.lazy(() => import('./pages/Downloads').then(m => ({ default: m.Downloads })));
+const UploadEpub = React.lazy(() => import('./pages/Upload').then(m => ({ default: m.UploadEpub })));
+const AIHub = React.lazy(() => import('./pages/AIHub').then(m => ({ default: m.AIHub })));
+const BookDetailById = React.lazy(() => import('./pages/BookDetailById').then(m => ({ default: m.BookDetailById })));
+
+import { Series, Volume } from './types';
 import { LoginGate } from './components/LoginGate';
 import { registerServiceWorker } from './src/utils/serviceWorker';
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+  </div>
+);
 
 // Custom hook to bridge legacy onNavigate prop to React Router
 const useLegacyNavigation = () => {
   const navigate = useNavigate();
 
   return (tab: string, series?: Series | null, volume?: Volume | null) => {
-    // Handle 'book:ID' shortcut
-    if (tab.startsWith('book:')) {
-      const bookId = tab.split(':')[1];
-      navigate(`/book/${bookId}`);
-      return;
-    }
+    const performNavigation = () => {
+      // Handle 'book:ID' shortcut
+      if (tab.startsWith('book:')) {
+        const bookId = tab.split(':')[1];
+        navigate(`/book/${bookId}`);
+        return;
+      }
 
-    // Handle Volume Detail (BookDetail)
-    if (volume && series) {
-      navigate(`/read/${series.id}/${volume.id}`, { state: { series, volume } });
-      return;
-    }
+      // Handle Volume Detail (BookDetail)
+      if (volume && series) {
+        navigate(`/read/${series.id}/${volume.id}`, { state: { series, volume } });
+        return;
+      }
 
-    // Handle Series Detail
-    if (series) {
-      navigate(`/series/${series.id}`, { state: { series } });
-      return;
-    }
+      // Handle Series Detail
+      if (series) {
+        navigate(`/series/${series.id}`, { state: { series } });
+        return;
+      }
 
-    // Handle Main Tabs
-    const path = tab === 'dashboard' ? '/' : `/${tab}`;
-    navigate(path);
+      // Handle Main Tabs
+      const path = tab === 'dashboard' ? '/' : `/${tab}`;
+      navigate(path);
+    };
+
+    // Use View Transitions API if available
+    if (document.startViewTransition) {
+      document.startViewTransition(() => performNavigation());
+    } else {
+      performNavigation();
+    }
   };
 };
 
@@ -163,39 +180,41 @@ const AppContent: React.FC = () => {
       <HistoryTracker />
       <TelegramNavigationHandler />
       <Layout activeTab={getActiveTab(location.pathname)} onTabChange={onNavigate}>
-        <Routes>
-          <Route path="/" element={<PageWrapper Component={Dashboard} />} />
-          <Route path="/search" element={<Search onNavigate={onNavigate} onSelectSeries={(s) => onNavigate('search', s)} />} />
-          <Route path="/library" element={
-            <Library
-              onNavigate={onNavigate}
-              onSelectBook={(bookId) => {
-                onNavigate(`book:${bookId}`);
-              }}
-            />
-          } />
-          <Route path="/requests" element={<PageWrapper Component={RequestBook} />} />
-          <Route path="/settings" element={<PageWrapper Component={Settings} />} />
-          <Route path="/downloads" element={
-            <Downloads
-              onNavigate={onNavigate}
-              onBookClick={() => onNavigate('search')}
-            />
-          } />
-          <Route path="/upload" element={<PageWrapper Component={UploadEpub} />} />
-          <Route path="/ai" element={
-            isAdmin ? <PageWrapper Component={AIHub} /> : <Navigate to="/" replace />
-          } />
-          <Route path="/admin" element={
-            isAdmin ? <PageWrapper Component={Admin} /> : <Navigate to="/" replace />
-          } />
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<PageWrapper Component={Dashboard} />} />
+            <Route path="/search" element={<Search onNavigate={onNavigate} onSelectSeries={(s) => onNavigate('search', s)} />} />
+            <Route path="/library" element={
+              <Library
+                onNavigate={onNavigate}
+                onSelectBook={(bookId) => {
+                  onNavigate(`book:${bookId}`);
+                }}
+              />
+            } />
+            <Route path="/requests" element={<PageWrapper Component={RequestBook} />} />
+            <Route path="/settings" element={<PageWrapper Component={Settings} />} />
+            <Route path="/downloads" element={
+              <Downloads
+                onNavigate={onNavigate}
+                onBookClick={() => onNavigate('search')}
+              />
+            } />
+            <Route path="/upload" element={<PageWrapper Component={UploadEpub} />} />
+            <Route path="/ai" element={
+              isAdmin ? <PageWrapper Component={AIHub} /> : <Navigate to="/" replace />
+            } />
+            <Route path="/admin" element={
+              isAdmin ? <PageWrapper Component={Admin} /> : <Navigate to="/" replace />
+            } />
 
-          {/* Details Routes - All consolidated to use IDs from URL */}
-          <Route path="/book/:bookId" element={<UniversalDetailWrapper />} />
-          <Route path="/series/:seriesId" element={<UniversalDetailWrapper />} />
-          <Route path="/read/:seriesId/:volumeId" element={<UniversalDetailWrapper />} />
-          <Route path="/reader" element={<Reader onClose={() => onNavigate('dashboard')} />} />
-        </Routes>
+            {/* Details Routes - All consolidated to use IDs from URL */}
+            <Route path="/book/:bookId" element={<UniversalDetailWrapper />} />
+            <Route path="/series/:seriesId" element={<UniversalDetailWrapper />} />
+            <Route path="/read/:seriesId/:volumeId" element={<UniversalDetailWrapper />} />
+            <Route path="/reader" element={<Reader onClose={() => onNavigate('dashboard')} />} />
+          </Routes>
+        </Suspense>
       </Layout>
     </>
   );

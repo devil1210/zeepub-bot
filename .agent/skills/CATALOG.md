@@ -1,8 +1,8 @@
 # Skill Catalog
 
-Generated at: 2026-02-04T08:08:20.870Z
+Generated at: 2026-02-05T08:27:17.364Z
 
-Total skills: 631
+Total skills: 634
 
 ## architecture (62)
 
@@ -125,6 +125,7 @@ Total skills: 631
 | `analytics-tracking` | Design, audit, and improve analytics tracking systems that produce reliable, decision-ready data. Use when the user wants to set up, fix, or evaluate analyti... | analytics, tracking | analytics, tracking, audit, improve, produce, reliable, decision, data, user, wants, set, up |
 | `angular-ui-patterns` | Modern Angular UI patterns for loading states, error handling, and data display. Use when building UI components, handling async data, or managing component ... | angular, ui | angular, ui, loading, states, error, handling, data, display, building, components, async, managing |
 | `api-documenter` | Master API documentation with OpenAPI 3.1, AI-powered tools, and modern developer experience practices. Create interactive docs, generate SDKs, and build com... | api, documenter | api, documenter, documentation, openapi, ai, powered, developer, experience, interactive, docs, generate, sdks |
+| `audio-transcriber` | Transform audio recordings into professional Markdown documentation with intelligent summaries using LLM integration | audio, transcription, whisper, meeting-minutes, speech-to-text | audio, transcription, whisper, meeting-minutes, speech-to-text, transcriber, transform, recordings, professional, markdown, documentation, intelligent |
 | `autonomous-agent-patterns` | Design patterns for building autonomous coding agents. Covers tool integration, permission systems, browser automation, and human-in-the-loop workflows. Use ... | autonomous, agent | autonomous, agent, building, coding, agents, covers, integration, permission, browser, automation, human, loop |
 | `autonomous-agents` | Autonomous agents are AI systems that can independently decompose goals, plan actions, execute tools, and self-correct without constant human guidance. The c... | autonomous, agents | autonomous, agents, ai, independently, decompose, goals, plan, actions, execute, self, correct, without |
 | `beautiful-prose` | Hard-edged writing style contract for timeless, forceful English prose without AI tics | beautiful, prose | beautiful, prose, hard, edged, writing, style, contract, timeless, forceful, english, without, ai |
@@ -181,7 +182,6 @@ Total skills: 631
 | `prisma-expert` | Prisma ORM expert for schema design, migrations, query optimization, relations modeling, and database operations. Use PROACTIVELY for Prisma schema issues, m... | prisma | prisma, orm, schema, migrations, query, optimization, relations, modeling, database, operations, proactively, issues |
 | `programmatic-seo` | Design and evaluate programmatic SEO strategies for creating SEO-driven pages at scale using templates and structured data. Use when the user mentions progra... | programmatic, seo | programmatic, seo, evaluate, creating, driven, pages, scale, structured, data, user, mentions, directory |
 | `prompt-caching` | Caching strategies for LLM prompts including Anthropic prompt caching, response caching, and CAG (Cache Augmented Generation) Use when: prompt caching, cache... | prompt, caching | prompt, caching, llm, prompts, including, anthropic, response, cag, cache, augmented, generation |
-| `prompt-engineer` | Expert prompt engineer specializing in advanced prompting techniques, LLM optimization, and AI system design. Masters chain-of-thought, constitutional AI, an... | prompt | prompt, engineer, specializing, prompting, techniques, llm, optimization, ai, masters, chain, thought, constitutional |
 | `prompt-engineering-patterns` | Master advanced prompt engineering techniques to maximize LLM performance, reliability, and controllability in production. Use when optimizing prompts, impro... | prompt, engineering | prompt, engineering, techniques, maximize, llm, performance, reliability, controllability, optimizing, prompts, improving, outputs |
 | `rag-engineer` | Expert in building Retrieval-Augmented Generation systems. Masters embedding models, vector databases, chunking strategies, and retrieval optimization for LL... | rag | rag, engineer, building, retrieval, augmented, generation, masters, embedding, models, vector, databases, chunking |
 | `rag-implementation` | Build Retrieval-Augmented Generation (RAG) systems for LLM applications with vector databases and semantic search. Use when implementing knowledge-grounded A... | rag | rag, retrieval, augmented, generation, llm, applications, vector, databases, semantic, search, implementing, knowledge |
@@ -298,7 +298,7 @@ TRIGGER: "shopify", "shopify app", "checkout extension",... | shopify | shopify,
 | `viral-generator-builder` | Expert in building shareable generator tools that go viral - name generators, quiz makers, avatar creators, personality tests, and calculator tools. Covers t... | viral, generator, builder | viral, generator, builder, building, shareable, go, name, generators, quiz, makers, avatar, creators |
 | `webapp-testing` | Toolkit for interacting with and testing local web applications using Playwright. Supports verifying frontend functionality, debugging UI behavior, capturing... | webapp | webapp, testing, toolkit, interacting, local, web, applications, playwright, supports, verifying, frontend, functionality |
 
-## general (129)
+## general (131)
 
 | Skill | Description | Tags | Triggers |
 | --- | --- | --- | --- |
@@ -392,6 +392,7 @@ TRIGGER: "shopify", "shopify app", "checkout extension",... | shopify | shopify,
 | `nosql-expert` | Expert guidance for distributed NoSQL databases (Cassandra, DynamoDB). Focuses on mental models, query-first modeling, single-table design, and avoiding hot ... | nosql | nosql, guidance, distributed, databases, cassandra, dynamodb, mental, models, query, first, modeling, single |
 | `obsidian-clipper-template-creator` | Guide for creating templates for the Obsidian Web Clipper. Use when you want to create a new clipping template, understand available variables, or format cli... | obsidian, clipper, creator | obsidian, clipper, creator, creating, web, want, new, clipping, understand, available, variables, format |
 | `onboarding-cro` | When the user wants to optimize post-signup onboarding, user activation, first-run experience, or time-to-value. Also use when the user mentions "onboarding ... | onboarding, cro | onboarding, cro, user, wants, optimize, post, signup, activation, first, run, experience, time |
+| `oss-hunter` | Automatically hunt for high-impact OSS contribution opportunities in trending repositories. | oss, hunter | oss, hunter, automatically, hunt, high, impact, contribution, opportunities, trending, repositories |
 | `paid-ads` | When the user wants help with paid advertising campaigns on Google Ads, Meta (Facebook/Instagram), LinkedIn, Twitter/X, or other ad platforms. Also use when ... | paid, ads | paid, ads, user, wants, advertising, campaigns, google, meta, facebook, instagram, linkedin, twitter |
 | `paypal-integration` | Integrate PayPal payment processing with support for express checkout, subscriptions, and refund management. Use when implementing PayPal payments, processin... | paypal, integration | paypal, integration, integrate, payment, processing, express, checkout, subscriptions, refund, implementing, payments, online |
 | `performance-profiling` | Performance profiling principles. Measurement, analysis, and optimization techniques. | performance, profiling | performance, profiling, principles, measurement, analysis, optimization, techniques |
@@ -401,6 +402,7 @@ TRIGGER: "shopify", "shopify app", "checkout extension",... | shopify | shopify,
 | `posix-shell-pro` | Expert in strict POSIX sh scripting for maximum portability across Unix-like systems. Specializes in shell scripts that run on any POSIX-compliant shell (das... | posix, shell | posix, shell, pro, strict, sh, scripting, maximum, portability, unix, like, specializes, scripts |
 | `pptx-official` | Presentation creation, editing, and analysis. When Claude needs to work with presentations (.pptx files) for: (1) Creating new presentations, (2) Modifying o... | pptx, official | pptx, official, presentation, creation, editing, analysis, claude, work, presentations, files, creating, new |
 | `privilege-escalation-methods` | This skill should be used when the user asks to "escalate privileges", "get root access", "become administrator", "privesc techniques", "abuse sudo", "exploi... | privilege, escalation, methods | privilege, escalation, methods, skill, should, used, user, asks, escalate, privileges, get, root |
+| `prompt-engineer` | Transforms user prompts into optimized prompts using frameworks (RTF, RISEN, Chain of Thought, RODES, Chain of Density, RACE, RISE, STAR, SOAP, CLEAR, GROW) | prompt-engineering, optimization, frameworks, ai-enhancement | prompt-engineering, optimization, frameworks, ai-enhancement, prompt, engineer, transforms, user, prompts, optimized, rtf, risen |
 | `prompt-library` | Curated collection of high-quality prompts for various use cases. Includes role-based prompts, task-specific templates, and prompt refinement techniques. Use... | prompt, library | prompt, library, curated, collection, high, quality, prompts, various, cases, includes, role, task |
 | `receiving-code-review` | Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technic... | receiving, code | receiving, code, review, feedback, before, implementing, suggestions, especially, seems, unclear, technically, questionable |
 | `referral-program` | When the user wants to create, optimize, or analyze a referral program, affiliate program, or word-of-mouth strategy. Also use when the user mentions 'referr... | referral, program | referral, program, user, wants, optimize, analyze, affiliate, word, mouth, mentions, ambassador, viral |
@@ -409,7 +411,6 @@ TRIGGER: "shopify", "shopify app", "checkout extension",... | shopify | shopify,
 | `sharp-edges` | Identify error-prone APIs and dangerous configurations | sharp, edges | sharp, edges, identify, error, prone, apis, dangerous, configurations |
 | `shellcheck-configuration` | Master ShellCheck static analysis configuration and usage for shell script quality. Use when setting up linting infrastructure, fixing code issues, or ensuri... | shellcheck, configuration | shellcheck, configuration, static, analysis, usage, shell, script, quality, setting, up, linting, infrastructure |
 | `signup-flow-cro` | When the user wants to optimize signup, registration, account creation, or trial activation flows. Also use when the user mentions "signup conversions," "reg... | signup, flow, cro | signup, flow, cro, user, wants, optimize, registration, account, creation, trial, activation, flows |
-| `skill-creator` | Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capa... | skill, creator | skill, creator, creating, effective, skills, should, used, users, want, new, update, existing |
 | `skill-rails-upgrade` | Analyze Rails apps and provide upgrade assessments | skill, rails, upgrade | skill, rails, upgrade, analyze, apps, provide, assessments |
 | `slack-gif-creator` | Knowledge and utilities for creating animated GIFs optimized for Slack. Provides constraints, validation tools, and animation concepts. Use when users reques... | slack, gif, creator | slack, gif, creator, knowledge, utilities, creating, animated, gifs, optimized, provides, constraints, validation |
 | `social-content` | When the user wants help creating, scheduling, or optimizing social media content for LinkedIn, Twitter/X, Instagram, TikTok, Facebook, or other platforms. A... | social, content | social, content, user, wants, creating, scheduling, optimizing, media, linkedin, twitter, instagram, tiktok |
@@ -431,6 +432,7 @@ TRIGGER: "shopify", "shopify app", "checkout extension",... | shopify | shopify,
 | `writing-plans` | Use when you have a spec or requirements for a multi-step task, before touching code | writing, plans | writing, plans, spec, requirements, multi, step, task, before, touching, code |
 | `writing-skills` | Use when creating, updating, or improving agent skills. | writing, skills | writing, skills, creating, updating, improving, agent |
 | `x-article-publisher-skill` | Publish articles to X/Twitter | x, article, publisher, skill | x, article, publisher, skill, publish, articles, twitter |
+| `youtube-summarizer` | Extract transcripts from YouTube videos and generate comprehensive, detailed summaries using intelligent analysis frameworks | video, summarization, transcription, youtube, content-analysis | video, summarization, transcription, youtube, content-analysis, summarizer, extract, transcripts, videos, generate, detailed, summaries |
 
 ## infrastructure (79)
 
@@ -660,7 +662,7 @@ TRIGGER: "shopify", "shopify app", "checkout extension",... | shopify | shopify,
 | `unit-testing-test-generate` | Generate comprehensive, maintainable unit tests across languages with strong coverage and edge case focus. | unit, generate | unit, generate, testing, test, maintainable, tests, languages, strong, coverage, edge, case |
 | `web3-testing` | Test smart contracts comprehensively using Hardhat and Foundry with unit tests, integration tests, and mainnet forking. Use when testing Solidity contracts, ... | web3 | web3, testing, test, smart, contracts, comprehensively, hardhat, foundry, unit, tests, integration, mainnet |
 
-## workflow (16)
+## workflow (17)
 
 | Skill | Description | Tags | Triggers |
 | --- | --- | --- | --- |
@@ -678,5 +680,6 @@ TRIGGER: "shopify", "shopify app", "checkout extension",... | shopify | shopify,
 | `kaizen` | Guide for continuous improvement, error proofing, and standardization. Use this skill when the user wants to improve code quality, refactor, or discuss proce... | kaizen | kaizen, continuous, improvement, error, proofing, standardization, skill, user, wants, improve, code, quality |
 | `mermaid-expert` | Create Mermaid diagrams for flowcharts, sequences, ERDs, and architectures. Masters syntax for all diagram types and styling. Use PROACTIVELY for visual docu... | mermaid | mermaid, diagrams, flowcharts, sequences, erds, architectures, masters, syntax, all, diagram, types, styling |
 | `pdf-official` | Comprehensive PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms. When Claude needs ... | pdf, official | pdf, official, manipulation, toolkit, extracting, text, tables, creating, new, pdfs, merging, splitting |
+| `skill-creator` | This skill should be used when the user asks to create a new skill, build a skill, make a custom skill, develop a CLI skill, or wants to extend the CLI with ... | automation, scaffolding, skill-creation, meta-skill | automation, scaffolding, skill-creation, meta-skill, skill, creator, should, used, user, asks, new, custom |
 | `team-collaboration-issue` | You are a GitHub issue resolution expert specializing in systematic bug investigation, feature implementation, and collaborative development workflows. Your ... | team, collaboration, issue | team, collaboration, issue, github, resolution, specializing, systematic, bug, investigation, feature, collaborative, development |
 | `track-management` | Use this skill when creating, managing, or working with Conductor tracks - the logical work units for features, bugs, and refactors. Applies to spec.md, plan... | track | track, skill, creating, managing, working, conductor, tracks, logical, work, units, features, bugs |

@@ -3,8 +3,9 @@
 Brand Voice Analyzer - Analyzes content to establish and maintain brand voice consistency
 """
 
-import json
 import re
+from typing import Dict, List, Tuple
+import json
 
 
 class BrandVoiceAnalyzer:
@@ -24,7 +25,7 @@ class BrandVoiceAnalyzer:
             },
         }
 
-    def analyze_text(self, text: str) -> dict:
+    def analyze_text(self, text: str) -> Dict:
         """Analyze text for brand voice characteristics"""
         text_lower = text.lower()
         word_count = len(text.split())
@@ -89,7 +90,7 @@ class BrandVoiceAnalyzer:
 
         return max(1, syllable_count)
 
-    def _analyze_sentences(self, text: str) -> dict:
+    def _analyze_sentences(self, text: str) -> Dict:
         """Analyze sentence structure"""
         sentences = re.split(r"[.!?]+", text)
         sentences = [s.strip() for s in sentences if s.strip()]
@@ -110,7 +111,7 @@ class BrandVoiceAnalyzer:
 
         return {"average_length": round(avg_length, 1), "variety": variety, "count": len(sentences)}
 
-    def _generate_recommendations(self, analysis: dict) -> list[str]:
+    def _generate_recommendations(self, analysis: Dict) -> List[str]:
         """Generate recommendations based on analysis"""
         recommendations = []
 
@@ -143,11 +144,11 @@ def analyze_content(content: str, output_format: str = "json") -> str:
     else:
         # Human-readable format
         output = [
-            "=== Brand Voice Analysis ===",
+            f"=== Brand Voice Analysis ===",
             f"Word Count: {results['word_count']}",
             f"Readability Score: {results['readability_score']:.1f}/100",
-            "",
-            "Voice Profile:",
+            f"",
+            f"Voice Profile:",
         ]
 
         for dimension, profile in results["voice_profile"].items():
@@ -155,13 +156,13 @@ def analyze_content(content: str, output_format: str = "json") -> str:
 
         output.extend(
             [
-                "",
-                "Sentence Analysis:",
+                f"",
+                f"Sentence Analysis:",
                 f"  Average Length: {results['sentence_analysis']['average_length']} words",
                 f"  Variety: {results['sentence_analysis']['variety']}",
                 f"  Total Sentences: {results['sentence_analysis']['count']}",
-                "",
-                "Recommendations:",
+                f"",
+                f"Recommendations:",
             ]
         )
 
@@ -175,7 +176,7 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) > 1:
-        with open(sys.argv[1]) as f:
+        with open(sys.argv[1], "r") as f:
             content = f.read()
 
         output_format = sys.argv[2] if len(sys.argv) > 2 else "text"

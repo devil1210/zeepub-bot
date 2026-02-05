@@ -59,6 +59,7 @@ Usa estos comandos para tareas repetitivas y asegurar la calidad:
 - **`/glass-check`**: Auditoría estética para asegurar cumplimiento de estándares Glassmorphism/Premium.
 - **`/push`**: Sincronizar cambios localmente y subir al repositorio remoto automáticamente.
 - **`/release`**: Flujo maestro de despliegue (Audit -> Sync -> Push).
+- **`/startup`**: Proceso de inicialización (Sincronización de skills, carga de reglas y auditoría rápida).
 - **`/sync-skills`**: Descarga e instala las últimas capacidades desde el repositorio central de skills.
 
 ## 📡 Protocolo de Sincronización

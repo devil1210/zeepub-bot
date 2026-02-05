@@ -5,7 +5,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 with get_session() as session:
-    names = ['Classroom of the Elite 2nd Year', 'Baka and Test: Summon the Beasts']
+    names = ["Classroom of the Elite 2nd Year", "Baka and Test: Summon the Beasts"]
     series = session.query(SeriesMetadata).filter(SeriesMetadata.series_name.in_(names)).all()
     for s in series:
         books_count = session.query(SeriesMetadata.book_count).filter_by(id=s.id).scalar()

@@ -7,22 +7,21 @@ Automatically test and optimize prompts using A/B testing and metrics tracking.
 
 import json
 import time
-from concurrent.futures import ThreadPoolExecutor
+from typing import List, Dict, Any
 from dataclasses import dataclass
-from typing import Any
-
+from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 
 
 @dataclass
 class TestCase:
-    input: dict[str, Any]
+    input: Dict[str, Any]
     expected_output: str
-    metadata: dict[str, Any] = None
+    metadata: Dict[str, Any] = None
 
 
 class PromptOptimizer:
-    def __init__(self, llm_client, test_suite: list[TestCase]):
+    def __init__(self, llm_client, test_suite: List[TestCase]):
         self.client = llm_client
         self.test_suite = test_suite
         self.results_history = []
@@ -33,8 +32,8 @@ class PromptOptimizer:
         self.executor.shutdown(wait=True)
 
     def evaluate_prompt(
-        self, prompt_template: str, test_cases: list[TestCase] = None
-    ) -> dict[str, float]:
+        self, prompt_template: str, test_cases: List[TestCase] = None
+    ) -> Dict[str, float]:
         """Evaluate a prompt template against test cases in parallel."""
         if test_cases is None:
             test_cases = self.test_suite
@@ -99,7 +98,7 @@ class PromptOptimizer:
         overlap = len(response_words & expected_words)
         return overlap / len(expected_words)
 
-    def optimize(self, base_prompt: str, max_iterations: int = 5) -> dict[str, Any]:
+    def optimize(self, base_prompt: str, max_iterations: int = 5) -> Dict[str, Any]:
         """Iteratively optimize a prompt."""
         current_prompt = base_prompt
         best_prompt = base_prompt
@@ -159,7 +158,7 @@ class PromptOptimizer:
             "history": self.results_history,
         }
 
-    def generate_variations(self, prompt: str, current_metrics: dict) -> list[str]:
+    def generate_variations(self, prompt: str, current_metrics: Dict) -> List[str]:
         """Generate prompt variations to test."""
         variations = []
 
@@ -207,7 +206,7 @@ Input: Sample input
 Output: Sample output
 """
 
-    def compare_prompts(self, prompt_a: str, prompt_b: str) -> dict[str, Any]:
+    def compare_prompts(self, prompt_a: str, prompt_b: str) -> Dict[str, Any]:
         """A/B test two prompts."""
         print("Testing Prompt A...")
         metrics_a = self.evaluate_prompt(prompt_a)

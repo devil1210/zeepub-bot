@@ -405,6 +405,15 @@
     "source": "unknown"
   },
   {
+    "id": "audio-transcriber",
+    "path": "skills/audio-transcriber",
+    "category": "uncategorized",
+    "name": "audio-transcriber",
+    "description": "Transform audio recordings into professional Markdown documentation with intelligent summaries using LLM integration",
+    "risk": "safe",
+    "source": "unknown"
+  },
+  {
     "id": "auth-implementation-patterns",
     "path": "skills/auth-implementation-patterns",
     "category": "uncategorized",
@@ -3582,6 +3591,15 @@
     "source": "unknown"
   },
   {
+    "id": "oss-hunter",
+    "path": "skills/oss-hunter",
+    "category": "uncategorized",
+    "name": "oss-hunter",
+    "description": "Automatically hunt for high-impact OSS contribution opportunities in trending repositories.",
+    "risk": "safe",
+    "source": "https://github.com/jackjin1997/ClawForge"
+  },
+  {
     "id": "page-cro",
     "path": "skills/page-cro",
     "category": "uncategorized",
@@ -3910,8 +3928,8 @@
     "path": "skills/prompt-engineer",
     "category": "uncategorized",
     "name": "prompt-engineer",
-    "description": "Expert prompt engineer specializing in advanced prompting techniques, LLM optimization, and AI system design. Masters chain-of-thought, constitutional AI, and production prompt strategies. Use when building AI features, improving agent performance, or crafting system prompts.",
-    "risk": "unknown",
+    "description": "Transforms user prompts into optimized prompts using frameworks (RTF, RISEN, Chain of Thought, RODES, Chain of Density, RACE, RISE, STAR, SOAP, CLEAR, GROW)",
+    "risk": "safe",
     "source": "unknown"
   },
   {
@@ -4639,8 +4657,8 @@
     "path": "skills/skill-creator",
     "category": "uncategorized",
     "name": "skill-creator",
-    "description": "Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations.",
-    "risk": "unknown",
+    "description": "This skill should be used when the user asks to create a new skill, build a skill, make a custom skill, develop a CLI skill, or wants to extend the CLI with new capabilities. Automates the entire skill creation workflow from brainstorming to installation.",
+    "risk": "safe",
     "source": "unknown"
   },
   {
@@ -5667,6 +5685,15 @@
     "name": "xlsx",
     "description": "Comprehensive spreadsheet creation, editing, and analysis with support for formulas, formatting, data analysis, and visualization. When Claude needs to work with spreadsheets (.xlsx, .xlsm, .csv, .tsv, etc) for: (1) Creating new spreadsheets with formulas and formatting, (2) Reading or analyzing data, (3) Modify existing spreadsheets while preserving formulas, (4) Data analysis and visualization in spreadsheets, or (5) Recalculating formulas",
     "risk": "unknown",
+    "source": "unknown"
+  },
+  {
+    "id": "youtube-summarizer",
+    "path": "skills/youtube-summarizer",
+    "category": "uncategorized",
+    "name": "youtube-summarizer",
+    "description": "Extract transcripts from YouTube videos and generate comprehensive, detailed summaries using intelligent analysis frameworks",
+    "risk": "safe",
     "source": "unknown"
   },
   {

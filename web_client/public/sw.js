@@ -49,24 +49,34 @@ self.addEventListener('fetch', (event) => {
     // Skip non-GET requests
     if (request.method !== 'GET') return;
 
-    // API requests - Network First (with fallback)
+    // API requests - Stale-While-Revalidate (Fastest for Mini Apps)
     if (url.pathname.startsWith('/api/')) {
+        // Skip certain API calls that should always be fresh or are POST
+        const skipSWR = url.pathname.includes('/bot/status') ||
+            url.pathname.includes('/auth/') ||
+            request.method !== 'GET';
+
+        if (skipSWR) {
+            event.respondWith(fetch(request));
+            return;
+        }
+
         event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    // Clone and cache successful responses
-                    if (response.ok) {
-                        const responseClone = response.clone();
-                        caches.open(RUNTIME_CACHE).then((cache) => {
-                            cache.put(request, responseClone);
-                        });
-                    }
-                    return response;
-                })
-                .catch(() => {
-                    // Fallback to cache if network fails
-                    return caches.match(request);
-                })
+            caches.open(RUNTIME_CACHE).then((cache) => {
+                return cache.match(request).then((cachedResponse) => {
+                    const fetchedResponse = fetch(request).then((networkResponse) => {
+                        if (networkResponse.ok) {
+                            cache.put(request, networkResponse.clone());
+                        }
+                        return networkResponse;
+                    }).catch(() => {
+                        // Silent fail for background fetch
+                    });
+
+                    // Return cached response immediately if exists, otherwise wait for network
+                    return cachedResponse || fetchedResponse;
+                });
+            })
         );
         return;
     }

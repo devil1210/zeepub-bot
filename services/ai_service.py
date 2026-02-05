@@ -251,7 +251,7 @@ class AIService:
         - El campo 'reason' (explicación) debe estar SIEMPRE en ESPAÑOL.
         
         Nombre Actual en DB (English): "{current_series_name}"
-        Nombre Actual en DB (Spanish): "{current_spanish_name or 'No establecido'}"
+        Nombre Actual en DB (Spanish): "{current_spanish_name or "No establecido"}"
         
         Datos de libros (filename y publisher): {json.dumps([{"f": b.get("filename"), "p": b.get("publisher")} for b in books[:15]], indent=2)}
         
@@ -419,9 +419,8 @@ class AIService:
 
             # Check if there is NO CHANGE at all (Series matches AND no files renamed)
             # IMPORTANT: We compare both English and Spanish names
-            names_match = (
-                proposal["proposed_series"] == current_series_name
-                and (not current_spanish_name or proposal["proposed_spanish"] == current_spanish_name)
+            names_match = proposal["proposed_series"] == current_series_name and (
+                not current_spanish_name or proposal["proposed_spanish"] == current_spanish_name
             )
 
             if names_match and not proposal["changes"]:

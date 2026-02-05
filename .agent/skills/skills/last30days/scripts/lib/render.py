@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import List, Optional
 
 from . import schema
 
@@ -134,7 +135,7 @@ def render_compact(report: schema.Report, limit: int = 15, missing_keys: str = "
 
             # Top comment insights
             if item.comment_insights:
-                lines.append("  Insights:")
+                lines.append(f"  Insights:")
                 for insight in item.comment_insights[:3]:
                     lines.append(f"    - {insight}")
 
@@ -357,9 +358,9 @@ def render_full_report(report: schema.Report) -> str:
 
 def write_outputs(
     report: schema.Report,
-    raw_openai: dict | None = None,
-    raw_xai: dict | None = None,
-    raw_reddit_enriched: list | None = None,
+    raw_openai: Optional[dict] = None,
+    raw_xai: Optional[dict] = None,
+    raw_reddit_enriched: Optional[list] = None,
 ):
     """Write all output files.
 
