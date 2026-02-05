@@ -1355,7 +1355,13 @@ class ScannerService:
         """
         logger.info("Iniciando Verificación de Integridad de la Librería...")
         
-        from models.library_models import LocalBook, SeriesMetadata, ArchivedBook, ArchivedSeries, LibraryCleanupLog
+        from models.library_models import (
+            ArchivedBook,
+            ArchivedSeries,
+            LibraryCleanupLog,
+            LocalBook,
+            SeriesMetadata,
+        )
         
         deleted_books = 0
         deleted_series = 0

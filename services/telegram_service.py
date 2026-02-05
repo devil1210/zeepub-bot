@@ -308,7 +308,7 @@ async def publicar_libro(
                 user_state["meta_pendiente"] = meta
 
                 # Calculate size for display
-                if isinstance(epub_downloaded, (bytes, bytearray)):
+                if isinstance(epub_downloaded, bytes | bytearray):
                     meta["size_mb"] = len(epub_downloaded) / (1024 * 1024)
                 elif isinstance(epub_downloaded, str):
                     meta["size_mb"] = os.path.getsize(epub_downloaded) / (1024 * 1024)
@@ -388,7 +388,8 @@ async def descargar_epub_pendiente(
         thread_id_destino = None
         # Opcional: Avisar en el grupo que se envió al privado?
         # Por ahora lo hacemos silencioso o asumimos que 'prep' message (line 564) iría al privado.
-        # Pero wait, line 564 usa 'destino'. Si cambiamos destino a uid, el mensaje "Preparando..." va al privado.
+        # Pero wait, line 564 usa 'destino'. Si cambiamos destino a uid, 
+        # el mensaje "Preparando..." va al privado.
         # Eso es correcto.
 
     # Borrar botones (siempre)
@@ -720,7 +721,8 @@ async def enviar_libro_directo(
                 # Enviar Portada y Caption al usuario
                 if portada_data:
                     # Enviar portada sola primero? O con caption?
-                    # User request: "mensaje que se enviara al char priavdo sera la vista previa facebbok (inluyendo la portada antes del mensaje principal)"
+                    # User request: "mensaje que se enviara al char priavdo sera la vista previa
+                    # facebbok (inluyendo la portada antes del mensaje principal)"
                     # Esto suena a: Foto con caption, o Foto y luego Texto.
                     # El bot actual suele enviar Foto con caption corto, y luego Texto largo.
                     # Pero para FB preview, mejor todo en uno si cabe, o separado.
@@ -751,12 +753,14 @@ async def enviar_libro_directo(
                 # O subir como multipart/form-data.
                 # La API actual usa 'url' param.
                 # Si tenemos cover_url y es http, usamos esa.
-                # Si no, tendríamos que subir bytes. La implementación actual de /api/facebook/publish usa 'url'.
+                # Si no, tendríamos que subir bytes. La implementación actual de
+                # /api/facebook/publish usa 'url'.
                 # Vamos a intentar usar cover_url si existe.
 
                 fb_cover_url = cover_url
                 if not fb_cover_url and portada_data:
-                    # Si tenemos bytes pero no URL pública, es un problema para la API simple de 'url'.
+                    # Si tenemos bytes pero no URL pública, es un problema
+                    # para la API simple de 'url'.
                     # Podríamos subir bytes a FB, pero requiere cambiar la lógica de publicación.
                     # Por ahora, si no hay URL pública, avisamos.
                     # OJO: extract_cover_from_epub devuelve bytes.
@@ -769,7 +773,8 @@ async def enviar_libro_directo(
                 if not fb_cover_url or not fb_cover_url.startswith("http"):
                     await bot.send_message(
                         chat_id=user_id,
-                        text="⚠️ No se pudo obtener una URL pública para la portada. Facebook requiere una URL pública.",
+                        text="⚠️ No se pudo obtener una URL pública para la portada. "
+                        "Facebook requiere una URL pública.",
                     )
                     return False
 

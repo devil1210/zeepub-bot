@@ -4,10 +4,11 @@ import sys
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sqlalchemy import text
-from core.db_manager_pg import pg_manager
-from utils.library_db import get_session
 import logging
+
+from sqlalchemy import text
+
+from utils.library_db import get_session
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

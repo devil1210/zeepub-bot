@@ -147,6 +147,7 @@ async def handle_bot_request(
         # Mapping of actions to their respective handlers
         from api.miniapp_handlers import (
             handle_admin_backup_library,
+            handle_admin_cleanup_library,
             handle_admin_clear_duplicates,
             handle_admin_delete_duplicate,
             handle_admin_enrich_metadata,
@@ -171,7 +172,6 @@ async def handle_bot_request(
             handle_admin_save_tier_config,
             handle_admin_save_user_permissions,
             handle_admin_scan_library,
-            handle_admin_cleanup_library,
             handle_admin_scan_series,
             handle_admin_scan_status,
             handle_admin_scan_user,

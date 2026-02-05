@@ -3163,7 +3163,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                     
                     if os.path.exists(new_path) and not os.path.samefile(old_path, new_path):
                          # File system collision check (just in case DB is out of sync)
-                         errors.append(f"No se puede renombrar: El archivo destino ya existe en disco")
+                         errors.append("No se puede renombrar: El archivo destino ya existe en disco")
                          continue
 
                     try:

@@ -7,16 +7,16 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Override DATABASE_URL to use localhost tunnel
 os.environ["DATABASE_URL"] = "postgresql://zeepub:zeepub@localhost:5432/zeepub"
 
-import asyncio
-from models.library_models import LocalBook, SeriesMetadata, ArchivedBook, ArchivedSeries
 # Re-create engine with new URL
 from config.config_settings import config
+
 config.DATABASE_URL = os.environ["DATABASE_URL"]
 import utils.library_db
-utils.library_db.engine = utils.library_db.create_library_engine() # Force re-init with new URL
-from utils.library_db import get_session
 
+utils.library_db.engine = utils.library_db.create_library_engine() # Force re-init with new URL
 import logging
+
+from utils.library_db import get_session
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("cleanup")
