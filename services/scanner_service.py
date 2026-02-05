@@ -72,15 +72,17 @@ class ScannerService:
             return False
 
         ScannerService._is_scanning = True
-        ScannerService._current_progress.update({
-            "status": "scanning",
-            "scanned": 0,
-            "total": 0,
-            "current_source": "Iniciando...",
-            "results": {},
-            "start_time": datetime.utcnow().isoformat(),
-            "error_message": None,
-        })
+        ScannerService._current_progress.update(
+            {
+                "status": "scanning",
+                "scanned": 0,
+                "total": 0,
+                "current_source": "Iniciando...",
+                "results": {},
+                "start_time": datetime.utcnow().isoformat(),
+                "error_message": None,
+            }
+        )
         session = get_session()
         try:
             results = {
@@ -433,19 +435,23 @@ class ScannerService:
                 logger.warning(f"Error en limpieza final de series: {ce}")
 
             logger.info(f"Escaneo completado: {results}")
-            ScannerService._current_progress.update({
-                "status": "completed",
-                "results": results,
-                "last_run": datetime.utcnow().isoformat()
-            })
+            ScannerService._current_progress.update(
+                {
+                    "status": "completed",
+                    "results": results,
+                    "last_run": datetime.utcnow().isoformat(),
+                }
+            )
             return results
         except Exception as e:
             logger.error(f"Error en sync_all: {e}")
-            ScannerService._current_progress.update({
-                "status": "error",
-                "error_message": str(e),
-                "last_run": datetime.utcnow().isoformat()
-            })
+            ScannerService._current_progress.update(
+                {
+                    "status": "error",
+                    "error_message": str(e),
+                    "last_run": datetime.utcnow().isoformat(),
+                }
+            )
             return None
         finally:
             session.close()
@@ -1354,7 +1360,7 @@ class ScannerService:
         si el archivo YA NO ESTÁ en el disco.
         """
         logger.info("Iniciando Verificación de Integridad de la Librería...")
-        
+
         from models.library_models import (
             ArchivedBook,
             ArchivedSeries,
@@ -1362,11 +1368,11 @@ class ScannerService:
             LocalBook,
             SeriesMetadata,
         )
-        
+
         deleted_books = 0
         deleted_series = 0
         affected_hashes = set()
-        
+
         # 1. Obtener todos los libros
         books = session.query(LocalBook).all()
         total_checked = len(books)
@@ -1379,7 +1385,7 @@ class ScannerService:
 
             if not book.filepath or not os.path.exists(book.filepath):
                 logger.warning(f"ARCHIVO NO ENCONTRADO EN DISCO: {book.filepath}")
-                
+
                 # Archivar registro de libro
                 archived = ArchivedBook(
                     series_hash=book.series_hash,
@@ -1391,24 +1397,30 @@ class ScannerService:
                     author=book.author,
                     book_type=book.book_type,
                     original_book_id=book.id,
-                    reason="physically_missing_detected"
+                    reason="physically_missing_detected",
                 )
                 session.add(archived)
-                
+
                 if book.series_hash:
                     affected_hashes.add(book.series_hash)
-                
+
                 # Desvincular de tablas históricas para evitar ForeignKeyViolation
                 from models.download_models import DownloadHistory
                 from models.library_models import UserDownload, UserRating
-                
-                session.query(DownloadHistory).filter_by(book_id=book.id).update({DownloadHistory.book_id: None})
-                session.query(UserDownload).filter_by(book_id=book.id).update({UserDownload.book_id: None})
-                session.query(UserRating).filter_by(book_id=book.id).update({UserRating.book_id: None})
+
+                session.query(DownloadHistory).filter_by(book_id=book.id).update(
+                    {DownloadHistory.book_id: None}
+                )
+                session.query(UserDownload).filter_by(book_id=book.id).update(
+                    {UserDownload.book_id: None}
+                )
+                session.query(UserRating).filter_by(book_id=book.id).update(
+                    {UserRating.book_id: None}
+                )
 
                 session.delete(book)
                 deleted_books += 1
-        
+
         session.commit()
 
         # 2. Verificar series huérfanas
@@ -1429,37 +1441,37 @@ class ScannerService:
                             cover_url=series.cover_url,
                             book_type=series.book_type,
                             publisher=series.publisher,
-                            original_series_id=series.id
+                            original_series_id=series.id,
                         )
                         session.add(archived_s)
                         session.delete(series)
                         deleted_series += 1
-            
+
             session.commit()
-        
+
         # 3. Forzar Recálculo de Conteos para TODAS las series activas (mantenimiento preventivo)
         all_series = session.query(SeriesMetadata).all()
         for s in all_series:
             real_count = session.query(LocalBook).filter_by(series_hash=s.series_hash).count()
             if s.book_count != real_count:
                 s.book_count = real_count
-        
+
         session.commit()
-        
+
         # 4. Registrar en el log histórico
         cleanup_log = LibraryCleanupLog(
             performed_by=user_id,
             total_books_checked=total_checked,
             missing_books_found=deleted_books,
             empty_series_removed=deleted_series,
-            status="success"
+            status="success",
         )
         session.add(cleanup_log)
         session.commit()
-        
+
         return {
             "deleted_books": deleted_books,
             "deleted_series": deleted_series,
             "total_books": session.query(LocalBook).count(),
-            "total_series": session.query(SeriesMetadata).count()
+            "total_series": session.query(SeriesMetadata).count(),
         }

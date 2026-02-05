@@ -1116,7 +1116,9 @@ async def handle_admin_cleanup_library(data: dict[str, Any], user_data: dict[str
 
     try:
         with get_session() as session:
-            stats = ScannerService.cleanup_library_orphans(session, user_id=user_data.get("user_id"))
+            stats = ScannerService.cleanup_library_orphans(
+                session, user_id=user_data.get("user_id")
+            )
             return {
                 "success": True,
                 "message": f"Limpieza completada: Se eliminaron {stats['deleted_books']} libros y {stats['deleted_series']} series inexistentes.",
@@ -3158,13 +3160,17 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                     # Check for DB collision first
                     collision = session.query(LocalBook).filter_by(filepath=new_path).first()
                     if collision and collision.id != book.id:
-                        errors.append(f"No se puede renombrar: El destino ya existe en la BD (ID: {collision.id})")
+                        errors.append(
+                            f"No se puede renombrar: El destino ya existe en la BD (ID: {collision.id})"
+                        )
                         continue
-                    
+
                     if os.path.exists(new_path) and not os.path.samefile(old_path, new_path):
-                         # File system collision check (just in case DB is out of sync)
-                         errors.append("No se puede renombrar: El archivo destino ya existe en disco")
-                         continue
+                        # File system collision check (just in case DB is out of sync)
+                        errors.append(
+                            "No se puede renombrar: El archivo destino ya existe en disco"
+                        )
+                        continue
 
                     try:
                         shutil.move(old_path, new_path)

@@ -17,4 +17,4 @@ description: Flujo completo de producción: Auditoría + DB Sync + Push.
    `npx antigravity-run /push`
 
 5. Notificar fin de ciclo de vida:
-   `echo "[RELEASE] Ciclo de vida v3.5.0 completado con éxito. Sistema en producción."`
+   `echo "[RELEASE] Ciclo de vida v3.6.3 completado con éxito. Sistema en producción."`

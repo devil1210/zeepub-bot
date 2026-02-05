@@ -219,6 +219,9 @@ def extract_spanish_series_from_filename(filename: str) -> str:
     vol_pattern = r"(?:\s*[\-\–\—\−]?\s*(?:Volumen|Vol\.?|Tomo|v\.?|V)\s*\d+(?:\.\d+)?.*)"
     name = re.sub(vol_pattern, "", name, flags=re.IGNORECASE).strip()
 
+    # 4. Quitar subtítulos tras ~ o | si los hay (Normalización de serie)
+    name = re.split(r"\s+[\~～\|¦]\s+", name)[0].strip()
+
     # 4. Quitar guiones y símbolos al final que puedan haber quedado
     name = re.sub(r"[\-\–\—\−\―\:\.\s]+$", "", name).strip()
 
@@ -245,7 +248,13 @@ def process_book_identity_comprehensive(
 
     title = meta.get("title") or original_filename or "Sin título"
     author = normalize_author_name(meta.get("author"))
-    series = meta.get("series")
+    series_meta = meta.get("series")
+    # Si la serie viene con subtítulos en la metadata (ej: "Serie ~ Subtítulo"), limpiarla
+    if series_meta:
+        series_parsed_meta = parse_metadata_from_title(series_meta)
+        series = series_parsed_meta.get("series") or series_meta
+    else:
+        series = None
     volume = meta.get("volume")
     translator = meta.get("translator")
     layout_by = meta.get("layout_by")
@@ -287,6 +296,10 @@ def process_book_identity_comprehensive(
     ui_title = parsed.get("clean_title") or clean_metadata_tags(title)
     if not series and parsed.get("series"):
         series = parsed["series"]
+
+    # Normalización final de la serie para asegurar que no queden espacios extra o símbolos
+    if series:
+        series = series.strip()
     if volume is None and parsed.get("volume"):
         try:
             volume = float(parsed["volume"])
@@ -562,10 +575,10 @@ def parse_metadata_from_title(title_str: str) -> dict:
         ).strip()
 
     # 3. Split parts by various hyphen types, colons, or dots to find English vs Romaji
-    # re handles various hyphen types: - (hyphen), – (en dash), — (em dash), − (minus), ― (horizontal bar)
-    # Also support : and . as separators if followed by space
-    # REQUIRE spaces around hyphens/colons/dots to avoid splitting names like Arya-san or St. Louis
-    separators = r"\s+[\-\–\—\−\―\:\.]\s+|\s*[:]\s+"
+    # re handles various hyphen types: - (hyphen), – (en dash), — (em dash), − (minus), ― (horizontal bar), ~ (tilde), ～ (full-width tilde)
+    # Also support : and . as separators if followed by space, and | (pipe)
+    # REQUIRE spaces around hyphens/colons/dots/tildes to avoid splitting names like Arya-san or St. Louis
+    separators = r"\s+[\-\–\—\−\―\:\.\~～\|¦]\s+|\s*[:：]\s+"
     parts = [p.strip() for p in re.split(separators, clean_no_vol) if p.strip()]
 
     romaji = ""

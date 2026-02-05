@@ -14,9 +14,10 @@ from utils.library_db import get_session
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def fix_schema():
     logger.info("Checking and fixing ai_learning_feedback schema...")
-    
+
     with get_session() as session:
         # Check if column proposed_spanish exists
         try:
@@ -27,10 +28,12 @@ def fix_schema():
                 WHERE table_name='ai_learning_feedback' AND column_name='proposed_spanish';
             """)
             result = session.execute(check_query).scalar()
-            
+
             if not result:
                 logger.info("Adding missing column 'proposed_spanish'...")
-                session.execute(text("ALTER TABLE ai_learning_feedback ADD COLUMN proposed_spanish VARCHAR"))
+                session.execute(
+                    text("ALTER TABLE ai_learning_feedback ADD COLUMN proposed_spanish VARCHAR")
+                )
                 session.commit()
             else:
                 logger.info("Column 'proposed_spanish' already exists.")
@@ -42,19 +45,22 @@ def fix_schema():
                 WHERE table_name='ai_learning_feedback' AND column_name='final_spanish';
             """)
             result_final = session.execute(check_query_final).scalar()
-            
+
             if not result_final:
                 logger.info("Adding missing column 'final_spanish'...")
-                session.execute(text("ALTER TABLE ai_learning_feedback ADD COLUMN final_spanish VARCHAR"))
+                session.execute(
+                    text("ALTER TABLE ai_learning_feedback ADD COLUMN final_spanish VARCHAR")
+                )
                 session.commit()
             else:
                 logger.info("Column 'final_spanish' already exists.")
-                
+
             logger.info("Schema fix completed successfully.")
-            
+
         except Exception as e:
             logger.error(f"Error updating schema: {e}")
             session.rollback()
+
 
 if __name__ == "__main__":
     fix_schema()

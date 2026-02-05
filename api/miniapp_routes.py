@@ -496,10 +496,11 @@ async def upload_epub_miniapp(
     temp_dir.mkdir(exist_ok=True)
 
     try:
-        # Guardar archivo temporal
+        # Guardar archivo temporal usando chunks para evitar consumo excesivo de RAM
         temp_file = temp_dir / f"app_{user_data['user_id']}_{datetime.now().timestamp()}.epub"
         with open(temp_file, "wb") as f:
-            f.write(await file.read())
+            while chunk := await file.read(1024 * 1024):  # 1MB chunks
+                f.write(chunk)
 
         # Analizar EPUB
         metadata = await epub_uploader.analyze_epub(temp_file, file.filename, user_data["user_id"])
@@ -636,7 +637,8 @@ async def upload_epub_bulk(
                 / f"bulk_{user_data['user_id']}_{datetime.now().timestamp()}_{file.filename}"
             )
             with open(temp_file, "wb") as f:
-                f.write(await file.read())
+                while chunk := await file.read(1024 * 1024):  # 1MB chunks
+                    f.write(chunk)
 
             metadata = await epub_uploader.analyze_epub(
                 temp_file, file.filename, user_data["user_id"]

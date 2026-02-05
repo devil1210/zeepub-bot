@@ -63,6 +63,8 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
     const [isDragging, setIsDragging] = useState(false);
     const [discardedCount, setDiscardedCount] = useState(0);
     const [pendingFilesCount, setPendingFilesCount] = useState(0);
+    const [currentFilesIndex, setCurrentFilesIndex] = useState(0);
+    const [uploadingFiles, setUploadingFiles] = useState<File[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -168,31 +170,63 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
     const startBulkUpload = async (files: File[]) => {
         setStatus('uploading');
         setUploadProgress(0);
+        setCurrentFilesIndex(0);
+        setBulkResults([]);
+        setUploadingFiles(files);
 
-        try {
-            const res = await api.uploadEpubBulk(files, (progress) => {
-                setUploadProgress(progress);
-                if (progress === 100) setStatus('analyzing');
-            });
+        const results: any[] = [];
+        let completed = 0;
 
-            if (res.results) {
-                setBulkResults(res.results);
-                // Pre-seleccionar solo los que NO son duplicados exactos
-                const preSelected = new Set<string>();
-                res.results.forEach(r => {
-                    if (r.success && r.upload_id && !r.metadata?.identity_match) {
-                        preSelected.add(r.upload_id);
-                    }
+        for (let i = 0; i < files.length; i++) {
+            const f = files[i];
+            setCurrentFilesIndex(i + 1);
+            setUploadProgress(0);
+
+            try {
+                const res = await api.uploadEpub(f, (progress) => {
+                    setUploadProgress(progress);
                 });
-                setSelectedIds(preSelected);
-                setStatus('reviewing');
-            } else {
-                setError('Error al procesar la subida masiva');
-                setStatus('error');
+
+                if (res.success) {
+                    results.push({
+                        filename: f.name,
+                        success: true,
+                        upload_id: res.upload_id,
+                        metadata: res.metadata
+                    });
+                } else {
+                    results.push({
+                        filename: f.name,
+                        success: false,
+                        error: res.error || 'Error de análisis'
+                    });
+                }
+            } catch (err: any) {
+                console.error(`Error uploading ${f.name}:`, err);
+                results.push({
+                    filename: f.name,
+                    success: false,
+                    error: err.message || 'Error de conexión'
+                });
             }
-        } catch (err: any) {
-            console.error('Bulk upload error:', err);
-            setError(err.message || 'Error en la conexión con el servidor');
+
+            completed++;
+            // Actualizar vista previa parcial para dar feedback
+            setBulkResults([...results]);
+        }
+
+        if (results.length > 0) {
+            // Pre-seleccionar automáticamente lo que no es duplicado
+            const preSelected = new Set<string>();
+            results.forEach(r => {
+                if (r.success && r.upload_id && !r.metadata?.identity_match) {
+                    preSelected.add(r.upload_id);
+                }
+            });
+            setSelectedIds(preSelected);
+            setStatus('reviewing');
+        } else {
+            setError('No se pudo procesar ningún archivo');
             setStatus('error');
         }
     };
@@ -411,9 +445,14 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                             <div className="flex flex-col items-center gap-2">
                                 <div className="px-6 py-2 rounded-full bg-white/5 border border-white/5 backdrop-blur-md">
                                     <p className="text-gray-300 text-xs font-bold uppercase tracking-wider">
-                                        {isBulk ? `${pendingFilesCount} archivos en cola` : file?.name}
+                                        {isBulk ? `Archivo ${currentFilesIndex} de ${pendingFilesCount}` : file?.name}
                                     </p>
                                 </div>
+                                {isBulk && (
+                                    <p className="text-primary/70 text-[10px] font-black uppercase tracking-widest mt-1">
+                                        {uploadingFiles[currentFilesIndex - 1]?.name}
+                                    </p>
+                                )}
                                 <p className="text-gray-500 text-[10px] font-medium uppercase tracking-[0.1em] h-4">
                                     {status === 'analyzing' && 'Extrayendo metadatos y normalizando series...'}
                                 </p>

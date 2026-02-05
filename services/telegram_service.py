@@ -42,7 +42,7 @@ async def send_photo_bytes(
     if not data_or_path:
         return None
     try:
-        if isinstance(data_or_path, (bytes, bytearray)):
+        if isinstance(data_or_path, bytes | bytearray):
             bio = io.BytesIO(data_or_path)
             bio.name = filename
             bio.seek(0)
@@ -143,7 +143,7 @@ async def send_doc_bytes(
     if not data_or_path:
         return None
     try:
-        if isinstance(data_or_path, (bytes, bytearray)):
+        if isinstance(data_or_path, bytes | bytearray):
             bio = io.BytesIO(data_or_path)
             bio.name = filename
             bio.seek(0)
@@ -388,7 +388,7 @@ async def descargar_epub_pendiente(
         thread_id_destino = None
         # Opcional: Avisar en el grupo que se envió al privado?
         # Por ahora lo hacemos silencioso o asumimos que 'prep' message (line 564) iría al privado.
-        # Pero wait, line 564 usa 'destino'. Si cambiamos destino a uid, 
+        # Pero wait, line 564 usa 'destino'. Si cambiamos destino a uid,
         # el mensaje "Preparando..." va al privado.
         # Eso es correcto.
 
@@ -638,7 +638,8 @@ async def enviar_libro_directo(
             logger.debug(f"Iniciando extracción de metadatos para: {title}")
             meta = await enrich_metadata_from_epub(epub_bytes, download_url, meta)
             logger.debug(
-                f"Metadatos extraídos - titulo_serie: {meta.get('titulo_serie')}, internal_title: {meta.get('internal_title')}, autor: {meta.get('autor')}"
+                f"Metadatos extraídos - titulo_serie: {meta.get('titulo_serie')}, "
+                f"internal_title: {meta.get('internal_title')}, autor: {meta.get('autor')}"
             )
 
         # 5. Preparar Portada
@@ -681,7 +682,7 @@ async def enviar_libro_directo(
             link_block = f"⬇️ Descarga: {public_link}"
 
             # 3. Info del archivo (Actualizado, Tamaño)
-            if isinstance(epub_bytes, (bytes, bytearray)):
+            if isinstance(epub_bytes, bytes | bytearray):
                 size_mb = len(epub_bytes) / (1024 * 1024)
             elif isinstance(epub_bytes, str) and await asyncio.to_thread(
                 os.path.exists, epub_bytes
@@ -829,7 +830,7 @@ async def enviar_libro_directo(
 
             # 7. Enviar Archivo EPUB
             # Calcular tamaño
-            if isinstance(epub_bytes, (bytes, bytearray)):
+            if isinstance(epub_bytes, bytes | bytearray):
                 size_mb = len(epub_bytes) / (1024 * 1024)
             elif isinstance(epub_bytes, str) and await asyncio.to_thread(
                 os.path.exists, epub_bytes
@@ -1077,7 +1078,7 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     # 3. Info del archivo (Actualizado, Tamaño) - Versión removida según solicitud
     epub_buffer = user_state.get("epub_buffer")
     if epub_buffer:
-        if isinstance(epub_buffer, (bytes, bytearray)):
+        if isinstance(epub_buffer, bytes | bytearray):
             size_mb = len(epub_buffer) / (1024 * 1024)
         elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
             size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
@@ -1386,7 +1387,7 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
 
     # Info adicional si tenemos EPUB
     if epub_buffer:
-        if isinstance(epub_buffer, (bytes, bytearray)):
+        if isinstance(epub_buffer, bytes | bytearray):
             size_mb = len(epub_buffer) / (1024 * 1024)
         elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
             size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
