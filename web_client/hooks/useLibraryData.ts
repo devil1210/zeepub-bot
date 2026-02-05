@@ -17,7 +17,7 @@ export const useLibraryData = () => {
                 author: item.author || 'Autor desconocido',
                 vol: item.volume || '?',
                 time: item.timeAgo || 'Hace poco',
-                cover: item.coverUrl || item.volume?.coverUrl || item.volume?.cover || `/api/library/covers/default.jpg`,
+                cover: item.cover || item.coverUrl || item.cover_medium || item.cover_low || `/api/library/covers/default.jpg`,
                 isNew: false,
                 updated: false
             }));

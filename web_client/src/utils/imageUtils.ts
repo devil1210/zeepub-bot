@@ -24,16 +24,30 @@ export const getCoverUrl = (
     thumbPath: string | undefined,
     quality: 'pequeña' | 'mediana' | 'grande' | 'original'
 ): string => {
-    // Handle legacy string format
+    // Handle legacy string format or string-based cover URLs
     if (typeof coverPaths === 'string') {
         const coverPath = coverPaths;
+
+        // If it's a local API cover path, we can attempt to switch quality variants
+        if (coverPath.includes('/api/library/covers/')) {
+            const base = coverPath.replace(/_(low|medium|high|original)\.jpg$/, '');
+            switch (quality) {
+                case 'pequeña':
+                    return thumbPath || `${base}_low.jpg`;
+                case 'mediana':
+                    return `${base}_medium.jpg`;
+                case 'grande':
+                    return `${base}_high.jpg`;
+                case 'original':
+                    return `${base}_original.jpg`;
+                default:
+                    return coverPath;
+            }
+        }
+
         switch (quality) {
             case 'pequeña':
                 return thumbPath || coverPath;
-            case 'mediana':
-            case 'grande':
-            case 'original':
-                return coverPath;
             default:
                 return coverPath;
         }

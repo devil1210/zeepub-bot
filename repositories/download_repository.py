@@ -124,10 +124,26 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
         try:
             async with pg_manager.get_session() as session:
                 query = text("""
-                    SELECT id, book_id, book_hash, title, author, file_size, downloaded_at, romaji_title, series, volume, translator, clean_title
-                    FROM download_history
-                    WHERE user_id = :user_id
-                    ORDER BY downloaded_at DESC
+                    SELECT 
+                        dh.id, 
+                        dh.book_id, 
+                        dh.book_hash, 
+                        dh.title, 
+                        dh.author, 
+                        dh.file_size, 
+                        dh.downloaded_at, 
+                        dh.romaji_title, 
+                        dh.series, 
+                        dh.volume, 
+                        dh.translator, 
+                        dh.clean_title,
+                        lb.cover_medium,
+                        lb.cover_low,
+                        lb.cover_original
+                    FROM download_history dh
+                    LEFT JOIN local_books lb ON dh.book_id = lb.id OR dh.book_hash = lb.book_hash
+                    WHERE dh.user_id = :user_id
+                    ORDER BY dh.downloaded_at DESC
                     LIMIT :limit
                 """)
                 result = await session.execute(query, {"user_id": user_id, "limit": limit})
@@ -138,6 +154,13 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                     if item.get("downloaded_at"):
                         # Ensure it's serializable
                         item["downloaded_at"] = item["downloaded_at"].isoformat()
+
+                    # Add compatibility cover field
+                    item["cover"] = (
+                        item.get("cover_medium")
+                        or item.get("cover_low")
+                        or item.get("cover_original")
+                    )
                     results.append(item)
                 return results
         except Exception as e:
