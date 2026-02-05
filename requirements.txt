@@ -1,49 +1,49 @@
 # Telegram Bot Framework
-python-telegram-bot[job-queue]==21.10
+python-telegram-bot[job-queue]==22.6
 
 # HTTP client y soporte async
-aiohttp==3.11.11
-aiofiles==24.1.0
-httpx==0.27.2
-prometheus_client==0.21.1
+aiohttp==3.12.1
+aiofiles==25.1.4
+httpx==0.29.1
+prometheus_client==0.23.1
 
 # OPDS & feeds
 feedparser==6.0.11
 lxml==5.3.1
 
 # Configuración
-python-dotenv==1.0.1
+python-dotenv==1.2.1
 
 # Typing para compatibilidad
-typing-extensions==4.12.2
+typing-extensions==4.15.0
 
 # Utilidades
 nest-asyncio==1.6.0
-rich==13.9.4
+rich==14.3.2
 psutil==7.0.0
 python-dateutil==2.9.0.post0
-Pillow==11.1.0
+Pillow==11.2.1
 
 # Desarrollo y pruebas
-pytest==8.3.4
-pytest-asyncio==0.25.3
-ruff==0.9.3
+pytest==9.1.5
+pytest-asyncio==1.3.0
+ruff==0.15.0
 
 # API (Mini App Backend)
-fastapi==0.115.8
-uvicorn==0.34.0
-python-multipart==0.0.20
+fastapi==0.122.5
+uvicorn==0.40.0
+python-multipart==0.0.22
 
 # Optional DB backend via SQLAlchemy (supports external DBs like Postgres)
-SQLAlchemy==2.0.37
+SQLAlchemy==2.0.46
 psycopg2-binary==2.9.10
-asyncpg==0.30.0
-alembic==1.15.2
+asyncpg==0.31.2
+alembic==1.15.3
 
 # Metadata Extraction
-beautifulsoup4==4.12.3
+beautifulsoup4==4.13.3
 EbookLib==0.18
 
 # Supabase
-supabase==2.10.0
-google-generativeai==0.8.3
+supabase==2.27.3
+google-generativeai==0.8.4
