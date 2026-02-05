@@ -3135,6 +3135,17 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 new_path = os.path.join(dir_name, proposed_filename)
 
                 if old_path != new_path:
+                    # Check for DB collision first
+                    collision = session.query(LocalBook).filter_by(filepath=new_path).first()
+                    if collision and collision.id != book.id:
+                        errors.append(f"No se puede renombrar: El destino ya existe en la BD (ID: {collision.id})")
+                        continue
+                    
+                    if os.path.exists(new_path) and not os.path.samefile(old_path, new_path):
+                         # File system collision check (just in case DB is out of sync)
+                         errors.append(f"No se puede renombrar: El archivo destino ya existe en disco")
+                         continue
+
                     try:
                         shutil.move(old_path, new_path)
                         book.filepath = new_path

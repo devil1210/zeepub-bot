@@ -223,6 +223,11 @@ def check_migrations():
                 add_column_if_missing("archived_books", "author", "VARCHAR(255)")
                 add_column_if_missing("archived_books", "book_type", "VARCHAR(100)")
 
+            # 10. ai_learning_feedback columns
+            if table_exists("ai_learning_feedback"):
+                add_column_if_missing("ai_learning_feedback", "proposed_spanish", "VARCHAR")
+                add_column_if_missing("ai_learning_feedback", "final_spanish", "VARCHAR")
+
             _log.info(f"Migrations for {engine.dialect.name} completed.")
 
     except Exception as e:
