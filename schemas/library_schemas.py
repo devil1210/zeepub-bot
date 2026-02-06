@@ -17,6 +17,7 @@ class BookDTO(BaseModel):
     cleanTitle: str | None = None
     author: str | None = None
     series: str | None = None
+    series_english: str | None = None
     volume: float | None = None
     book_type: str | None = None
     cover: str | None = None
@@ -70,6 +71,7 @@ class SeriesDTO(BaseModel):
     title: str
     series: str
     series_spanish: str | None = None
+    series_english: str | None = None
     author: str | None = None
     description: str | None = None
     cover: str | None = None

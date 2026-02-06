@@ -3053,7 +3053,9 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                         pass
 
             if series:
+                # series_name sigue siendo el nombre visual principal corregido
                 series.series_name = proposed_series
+                series.series_english = proposed_series  # Nueva columna específica para IA
                 series.series_spanish = proposed_spanish or series.series_spanish or proposed_series
                 if proposal.get("description"):
                     series.description = proposal["description"]
@@ -3096,6 +3098,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                         "series_hash": series.series_hash,
                         "series_name": series.series_name,
                         "series_spanish": series.series_spanish,
+                        "series_english": series.series_english,  # Sync new col to cloud
                         "description": series.description,
                         "tags": series.tags,
                         "author": series.author,
@@ -3114,8 +3117,10 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
             for book in books:
                 book.series_metadata_id = series.id if series else None
-                book.series_hash = effective_hash  # Critical Update
-                book.series = proposed_series
+                # Preservamos series_hash y series original para que el hash de identidad (metadata) no cambie nunca
+                # book.series_hash = effective_hash  <- ELIMINADO en paso previo
+                # book.series = proposed_series      <- ELIMINADO en paso previo
+                book.series_english = proposed_series  # Nueva columna visual (IA)
                 book.is_uncensored = proposal.get("is_uncensored_series", False)
                 book.series_spanish = proposed_spanish or series.series_spanish or proposed_series
 

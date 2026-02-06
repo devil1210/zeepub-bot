@@ -33,6 +33,7 @@ class LibraryService:
                     LocalBook.author.ilike(pattern),
                     LocalBook.series.ilike(pattern),
                     LocalBook.series_spanish.ilike(pattern),
+                    LocalBook.series_english.ilike(pattern),
                     LocalBook.romaji_title.ilike(pattern),
                     LocalBook.english_title.ilike(pattern),
                     LocalBook.spanish_title.ilike(pattern),
@@ -141,6 +142,7 @@ class LibraryService:
                         [
                             SeriesMetadata.series_name.ilike(pattern),
                             SeriesMetadata.series_spanish.ilike(pattern),
+                            SeriesMetadata.series_english.ilike(pattern),
                         ]
                     )
 
@@ -262,9 +264,10 @@ class LibraryService:
                     dto = SeriesDTO(
                         id=f"series_{s.series_hash}",
                         series_hash=s.series_hash,
-                        title=s.series_name,
-                        series=s.series_name,
+                        title=s.series_english or s.series_name,
+                        series=s.series_english or s.series_name,
                         series_spanish=s.series_spanish,
+                        series_english=s.series_english,
                         author=s.author,
                         description=s.description,
                         cover=s.cover_url,

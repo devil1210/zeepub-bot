@@ -850,6 +850,7 @@ class ScannerService:
             book.translator = identity["translator"]
             book.layout_by = identity["layout_by"]
             book.series_spanish = identity["series_spanish"]
+            book.series_english = identity["series_english"]
             book.edition = identity["edition"]
 
             # Japanese Names
@@ -914,9 +915,10 @@ class ScannerService:
             book.is_uncensored = meta.get("is_uncensored", 0)
             book.color_mode = meta.get("color_mode")
 
-            # --- GENERAR HASHES ---
-            book.series_hash = self._generate_series_hash(book)
-            book.book_hash = self._generate_book_hash(book)
+            # --- GENERAR HASHES (TEMPORALES) ---
+            # Usamos el objeto 'book' como contenedor temporal de metadata
+            target_series_hash = self._generate_series_hash(book)
+            target_book_hash = self._generate_book_hash(book)
 
             # Advertencia de tags legacy para unificación
             legacy_tags = ["[BN]", "[COLOR]", "[SC]", "[SIN CENSURA]", "[B&W]"]
@@ -928,44 +930,54 @@ class ScannerService:
                     )
                     break
 
-            # Check for duplicates by filepath
+            # Check for duplicates and hash conflicts
+            # Guardamos la metadata extraída en un objeto temporal si es necesario copiarla luego
+            extracted_book_data = book  # 'book' ya tiene la metadata seteada arriba
+
             with session.no_autoflush:
                 existing_same_file = (
                     session.query(LocalBook).filter(LocalBook.filepath == filepath).first()
                 )
 
-                outcome = "updated"
                 if existing_same_file:
-                    # Si el hash cambió, verificar conflictos
-                    if existing_same_file.book_hash != book.book_hash:
+                    # Caso 1: El archivo ya existe en la DB (por filepath).
+                    # Verificamos si al actualizar la metadata genera un hash que YA tiene OTRO archivo.
+                    if existing_same_file.book_hash != target_book_hash:
                         hash_conflict = (
                             session.query(LocalBook)
                             .filter(
-                                LocalBook.book_hash == book.book_hash,
+                                LocalBook.book_hash == target_book_hash,
                                 LocalBook.id != existing_same_file.id,
                             )
                             .first()
                         )
 
                         if hash_conflict:
-                            # Conflict detected
                             logger.warning(
-                                f"📕 Duplicado detectado por hash conflict: {book.title}"
+                                f"📕 Duplicado detectado por cambio de metadata (Hash Conflict): {book.title} -> {hash_conflict.filepath}"
                             )
-                            # ... registrar duplicado ...
                             return "duplicate"
 
-                    # Actualizar el registro existente con la nueva metadata escaneada
-                    self._copy_metadata_to_existing(book, existing_same_file)
+                    # Si no hay conflicto y el archivo ya existía, preservamos sus hashes originales
+                    # de metadata (Identidad inmutable) según pedido del usuario.
                     book = existing_same_file
-                    logger.debug(f"Actualizando archivo existente con nueva metadata: {filepath}")
-                else:
-                    # New file
+                    if not book.series_hash or force_scan:
+                        book.series_hash = target_series_hash
+                    if not book.book_hash or force_scan:
+                        book.book_hash = target_book_hash
 
-                    # Check if there's another file with same content (real duplicate)
+                    # No sobreescribir book.series (Metadata de Identidad) con la corrección IA
+                    # si ya existe, a menos que se fuerce.
+                    if not book.series or force_scan:
+                        book.series = extracted_book_data.series
+
+                    outcome = "updated"
+                else:
+                    # Caso 2: Nuevo archivo en disco (no encontrado por filepath).
+                    # Verificar si existe otro registro con el mismo contenido/hash.
                     existing_with_same_hash = (
                         session.query(LocalBook)
-                        .filter(LocalBook.book_hash == book.book_hash)
+                        .filter(LocalBook.book_hash == target_book_hash)
                         .first()
                     )
 
@@ -973,33 +985,33 @@ class ScannerService:
                         # Conflict detected based on Content Hash.
                         # Check if the "original" file still exists on disk.
                         if not os.path.exists(existing_with_same_hash.filepath):
-                            # The original file is GONE. This is likely a RENAME or MOVE operation.
-                            # Instead of creating a duplicate, we MIGRATE the record to the new filepath.
+                            # Migración (Rename/Move): El archivo cambió de sitio pero el contenido es el mismo.
                             logger.info(
                                 f"🔄 Migración detectada (Renombrado/Movido): {existing_with_same_hash.filepath} -> {filepath}"
                             )
+                            # Actualizamos el registro viejo con la nueva ubicación y la metadata
+                            self._copy_metadata_to_existing(
+                                extracted_book_data, existing_with_same_hash
+                            )
 
-                            # Update identity of the existing record
-                            existing_with_same_hash.filepath = filepath
-                            existing_with_same_hash.filename = os.path.basename(filepath)
-                            existing_with_same_hash.file_size = size
-                            existing_with_same_hash.file_modified_at = mtime
-                            existing_with_same_hash.source_id = source.id
-
-                            # Update metadata using the fresh scan
-                            self._copy_metadata_to_existing(book, existing_with_same_hash)
-
-                            # Point 'book' to the managed instance so covers are updated on IT
                             book = existing_with_same_hash
-                            session.add(book)
+                            book.filepath = filepath
+                            book.filename = os.path.basename(filepath)
+                            book.file_size = size
+                            book.file_modified_at = mtime
+                            book.source_id = source.id
+                            # En migración por renombrado, preservamos IDENTIDAD original (hashes)
+                            # pero actualizamos por si acaso si son nulos.
+                            if not book.series_hash or force_scan:
+                                book.series_hash = target_series_hash
+                            if not book.book_hash or force_scan:
+                                book.book_hash = target_book_hash
+
                             outcome = "updated"
                         else:
-                            # This is a REAL duplicate (two different files, same content, both exist)
-                            # We SKIP it but record it
+                            # Duplicado REAL: Dos archivos distintos con el mismo contenido.
                             logger.warning(f"📕 Duplicado detectado: {book.title}")
-
                             try:
-                                # Check duplicate record existence
                                 dup_exists = (
                                     session.query(DuplicateBook)
                                     .filter_by(duplicate_filepath=filepath)
@@ -1007,22 +1019,22 @@ class ScannerService:
                                 )
                                 if not dup_exists:
                                     dup = DuplicateBook(
-                                        book_hash=book.book_hash,
+                                        book_hash=target_book_hash,
                                         original_filepath=existing_with_same_hash.filepath,
                                         duplicate_filepath=filepath,
                                         title=book.title,
                                         author=book.author,
                                     )
                                     session.add(dup)
-                                    # Force commit
                                     session.commit()
                             except Exception as de:
-                                logger.error(f"Error guardando registro de duplicado: {de}")
+                                logger.error(f"Error registrando duplicado: {de}")
                                 session.rollback()
-
                             return "duplicate"
                     else:
-                        # New unique file, add to session
+                        # Archivo nuevo y único en todo sentido.
+                        book.series_hash = target_series_hash
+                        book.book_hash = target_book_hash
                         session.add(book)
                         outcome = "added"
 
@@ -1217,6 +1229,7 @@ class ScannerService:
         target_book.is_uncensored = source_book.is_uncensored
         target_book.color_mode = source_book.color_mode
         target_book.series_spanish = source_book.series_spanish
+        target_book.series_english = source_book.series_english
         target_book.edition = source_book.edition
         target_book.isbn = source_book.isbn
         target_book.asin = source_book.asin
@@ -1252,6 +1265,7 @@ class ScannerService:
             archived_s = ArchivedSeries(
                 series_name=series.series_name,
                 series_spanish=series.series_spanish,
+                series_english=series.series_english,
                 series_hash=series.series_hash,
                 author=series.author,
                 description=series.description,
@@ -1290,6 +1304,13 @@ class ScannerService:
             for b in books:
                 if hasattr(b, "series_spanish") and b.series_spanish:
                     series.series_spanish = b.series_spanish
+                    break
+
+        # Consolidate series_english
+        if not series.series_english:
+            for b in books:
+                if hasattr(b, "series_english") and b.series_english:
+                    series.series_english = b.series_english
                     break
 
         # 3. Synchronize Cover URL (Ensure it has one and it follows the new low-quality naming)

@@ -348,6 +348,7 @@ def process_book_identity_comprehensive(
         "layout_by": layout_by,
         "language": language,
         "series_spanish": series_spanish,
+        "series_english": series,  # Por defecto coincide con la serie de metadata original
         "title": ui_title,
         "published_at": meta.get("published_at"),
         "edition": meta.get("edition"),
@@ -503,7 +504,7 @@ def generar_slug_from_meta(meta: dict) -> str:
         titulo_serie = meta
     if not titulo_serie:
         return ""
-    base_titulo = titulo_serie.split(":", 1)[0].strip()
+    base_titulo = titulo_serie.strip()
     base_titulo = re.sub(r"\[.*?\]", "", base_titulo)
     base_titulo = base_titulo.split("-", 1)[0].strip()
     base_titulo = base_titulo.replace("×", "x")
@@ -578,7 +579,7 @@ def parse_metadata_from_title(title_str: str) -> dict:
     # re handles various hyphen types: - (hyphen), – (en dash), — (em dash), − (minus), ― (horizontal bar), ~ (tilde), ～ (full-width tilde)
     # Also support : and . as separators if followed by space, and | (pipe)
     # REQUIRE spaces around hyphens/colons/dots/tildes to avoid splitting names like Arya-san or St. Louis
-    separators = r"\s+[\-\–\—\−\―\:\.\~～\|¦]\s+|\s*[:：]\s+"
+    separators = r"\s+[\-\–\—\−\―\.\~～\|¦]\s+"
     parts = [p.strip() for p in re.split(separators, clean_no_vol) if p.strip()]
 
     romaji = ""

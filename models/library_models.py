@@ -41,6 +41,9 @@ class SeriesMetadata(Base):
     id = Column(Integer, primary_key=True)
     series_name = Column(String(255), nullable=False)
     series_spanish = Column(String(255))
+    series_english = Column(
+        String(255)
+    )  # Nueva columna para visualización coherente (Modificable por IA)
     spanish_title = Column(String(255))  # Para paridad con LocalBook
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
@@ -90,6 +93,7 @@ class UploadBook(Base):
     title = Column(String(512), nullable=False)
     series = Column(String(255))
     series_spanish = Column(String(255))
+    series_english = Column(String(255))
     volume = Column(Float)
     author = Column(String(255))
     author_jap = Column(String(255))
@@ -175,6 +179,7 @@ class LocalBook(Base):
     jap_title = Column(String(512))
     series = Column(String(255))
     series_spanish = Column(String(255))  # New column for Spanish series name from filename
+    series_english = Column(String(255))  # New column for English series name for display
     volume = Column(Float)  # Soporta 1, 1.5, etc
     edition = Column(String(255))  # Ej: "Honorificos", "Colector", etc.
 
@@ -253,6 +258,7 @@ class LocalBook(Base):
             "englishTitle": self.english_title,
             "japTitle": self.jap_title,
             "series": self.series,
+            "series_english": self.series_english,
             "seriesHash": self.series_hash,
             "seriesIndex": self.volume,
             "volume": self.volume,
@@ -449,6 +455,7 @@ class ArchivedSeries(Base):
     id = Column(Integer, primary_key=True)
     series_name = Column(String(255), nullable=False)
     series_spanish = Column(String(255))
+    series_english = Column(String(255))
     spanish_title = Column(String(255))
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 

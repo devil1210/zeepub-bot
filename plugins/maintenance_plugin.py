@@ -220,7 +220,21 @@ class MaintenancePlugin(BasePlugin):
         msg = await update.message.reply_text("🔍 Escaneando...")
         scanner = ScannerService(libs_json)
         results = await scanner.sync_all(force_scan=True)
-        await msg.edit_text(f"✅ Escaneo completado: {results}")
+        if not results:
+            await msg.edit_text("❌ El escaneo falló o no devolvió resultados.")
+            return
+
+        summary = (
+            f"✅ <b>Escaneo completado</b>\n\n"
+            f"📚 Total escaneados: {results.get('total_scanned', 0)}\n"
+            f"✨ Añadidos: {results.get('added', 0)}\n"
+            f"📝 Actualizados: {results.get('updated', 0)}\n"
+            f"📕 Duplicados: {results.get('duplicates', 0)}\n"
+            f"📂 Fuentes: {results.get('sources_scanned', 0)}\n"
+            f"🧹 Eliminados: {results.get('removed', 0)}\n"
+            f"📦 Archivados: {results.get('archived', 0)}"
+        )
+        await msg.edit_text(summary, parse_mode="HTML")
 
     async def find_duplicates(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         from sqlalchemy import text
