@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import axios from 'axios';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { useNavigation } from '@shared/contexts/NavigationContext';
 import {
@@ -66,6 +67,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const isFirstRender = useRef(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMounted = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const responsiveColumns = useResponsiveColumns();
 
   // Determine actual columns based on view mode
@@ -74,7 +76,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   }, [viewMode, responsiveColumns]);
 
   useEffect(() => {
-    return () => { isMounted.current = false; };
+    return () => {
+      isMounted.current = false;
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -113,10 +118,22 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   }, [totalPages, registerCallbacks]);
 
   const doSearch = async (query: string, page: number) => {
+    // Abort previous request if any
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     setLoading(true);
     try {
       const searchScope = selectedScope === 'TODOS' ? '' : selectedScope.toLowerCase();
-      const res = await api.searchBooks(query, page, searchScope, activeSort);
+      const res = await api.searchBooks(
+        query,
+        page,
+        searchScope,
+        activeSort,
+        abortControllerRef.current.signal
+      );
 
       if (res && Array.isArray(res.results)) {
         const mapped: Series[] = res.results.map((item: any) => {
@@ -195,7 +212,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         setTotalPages(1);
         setTotalResults(0);
       }
-    } catch (e) {
+    } catch (e: any) {
+      if (axios.isCancel(e)) return;
       console.error("Search error", e);
     } finally {
       if (isMounted.current) {

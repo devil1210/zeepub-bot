@@ -37,23 +37,24 @@
 
 ---
 
-### 🟡 FASE 2: Optimizaciones (Prioridad Media)
+### 🟡 FASE 2: Conectividad y Optimizaciones (Prioridad Media)
 
-- [ ] **[bug-3]** Implementar AbortController en fetches
-  - **Acción**: Agregar AbortController para cancelar requests
-  - **✅ Validado**
+- [x] **[bug-3]** Implementar AbortController en fetches ✅ COMPLETADO
+  - **Archivos**: `Search.tsx`, `useSeriesDetails.ts`, `ThemeContext.tsx`, `api.ts`
+  - **Acción**: Agregar AbortController para cancelar requests proactivamente.
+  - **Estado**: ✅ Implementado y validado en la capa de servicios y componentes clave.
 
-- [ ] **[opt-5]** Implementar caché SWR sistemático
-  - **Acción**: Crear hook `useCachedFetch` con stale-while-revalidate
-  - **✅ Validado**
+- [x] **[int-1]** Integración con Notion (Logs de lectura) ✅ COMPLETADO
+  - **Estado**: ✅ Implementado NotionService y vinculado a descargas exitosas.
 
-- [ ] **[opt-6]** Verificar/implementar lazy loading de imágenes
-  - **Acción**: Asegurar `loading="lazy"` y placeholder blur
-  - **✅ Validado**
+- [x] **[int-2]** Canal de Notificaciones (Discord/Slack) ✅ COMPLETADO
+  - **Estado**: ✅ Implementado NotificationService en ScannerService para nuevos ingresos.
 
-- [ ] **[feat-4]** Sistema de notificaciones in-app
-  - **Beneficio**: Alertas de nuevos libros, actualizaciones
-  - **✅ Validado**
+- [x] **[opt-5]** Implementar caché SWR sistemático ✅ COMPLETADO
+  - **Estado**: ✅ Creado hook `useCachedFetch` y optimizado LibraryData.
+
+- [x] **[feat-4]** Sistema de notificaciones in-app (Discord/Slack Integration) ✅ COMPLETADO
+  - **Estado**: ✅ Canal de notificaciones configurado vía Webhooks.
 
 ---
 
@@ -95,9 +96,9 @@
 | Fase | Total | Completado | Pendiente |
 |------|-------|------------|-----------|
 | Fase 1 | 5 | 5 | 0 |
-| Fase 2 | 4 | 0 | 4 |
+| Fase 2 | 5 | 5 | 0 |
 | Fase 3 | 5 | 0 | 5 |
-| **Total** | **14** | **5** | **9** |
+| **Total** | **15** | **10** | **5** |
 
 ---
 

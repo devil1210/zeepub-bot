@@ -63,11 +63,15 @@ apiClient.interceptors.request.use(async (config) => {
 });
 
 
-export const rpc = async <T = any>(action: string, data: any = {}): Promise<T> => {
+export const rpc = async <T = any>(action: string, data: any = {}, signal?: AbortSignal): Promise<T> => {
     try {
-        const response = await apiClient.post(API_URL, { action, data });
+        const response = await apiClient.post(API_URL, { action, data }, { signal });
         return response.data;
     } catch (error: any) {
+        if (axios.isCancel(error)) {
+            console.log(`RPC Cancelled [${action}]`);
+            throw error;
+        }
         console.error(`RPC Error [${action}]:`, error);
         if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail);
@@ -76,7 +80,7 @@ export const rpc = async <T = any>(action: string, data: any = {}): Promise<T> =
     }
 };
 
-export const uploadFile = async <T = any>(url: string, file: File, onProgress?: (progress: number) => void): Promise<T> => {
+export const uploadFile = async <T = any>(url: string, file: File, onProgress?: (progress: number) => void, signal?: AbortSignal): Promise<T> => {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -85,6 +89,7 @@ export const uploadFile = async <T = any>(url: string, file: File, onProgress?: 
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
+            signal,
             onUploadProgress: (progressEvent) => {
                 if (onProgress && progressEvent.total) {
                     const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -94,6 +99,10 @@ export const uploadFile = async <T = any>(url: string, file: File, onProgress?: 
         });
         return response.data;
     } catch (error: any) {
+        if (axios.isCancel(error)) {
+            console.log(`Upload Cancelled [${url}]`);
+            throw error;
+        }
         console.error(`Upload Error [${url}]:`, error);
         if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail);
@@ -104,18 +113,18 @@ export const uploadFile = async <T = any>(url: string, file: File, onProgress?: 
 
 export const api = {
     // Status & User
-    getUserStatus: () => rpc('user_status'),
+    getUserStatus: (signal?: AbortSignal) => rpc('user_status', {}, signal),
     getDownloadHistory: () => rpc('user_downloads_history'),
 
     // Search & Content
-    searchBooks: (query: string, page: number = 1, type: string = 'all', sort: string = 'a-z') =>
-        rpc('search', { query, page, type, sort }),
+    searchBooks: (query: string, page: number = 1, type: string = 'all', sort: string = 'a-z', signal?: AbortSignal) =>
+        rpc('search', { query, page, type, sort }, signal),
 
-    getRecommendations: (limit: number = 10) =>
-        rpc('recommendations', { limit }),
+    getRecommendations: (limit: number = 10, signal?: AbortSignal) =>
+        rpc('recommendations', { limit }, signal),
 
-    getBookDetail: (bookId: string) =>
-        rpc('book-detail', { bookId }),
+    getBookDetail: (bookId: string, signal?: AbortSignal) =>
+        rpc('book-detail', { bookId }, signal),
 
     // Actions
     requestDownload: (bookId: string, target: 'private' | 'group' | 'channel' = 'private') =>
@@ -128,7 +137,7 @@ export const api = {
         rpc('remove_rating', { bookId }),
 
     // Config
-    getUiSettings: () => rpc('ui_settings', { subAction: 'get', role: 'auto' }),
+    getUiSettings: (signal?: AbortSignal) => rpc('ui_settings', { subAction: 'get', role: 'auto' }, signal),
     savePersonalSettings: (settings: any) =>
         rpc('ui_settings', { subAction: 'set', role: 'personal', settings }),
 

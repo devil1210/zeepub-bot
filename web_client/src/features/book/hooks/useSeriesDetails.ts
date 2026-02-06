@@ -33,10 +33,12 @@ export const useSeriesDetails = (initialSeries: Series, settings: any, webApp: a
 
     useEffect(() => {
         let isMounted = true;
+        const controller = new AbortController();
+
         const fetchData = async () => {
             setLoading(true);
             try {
-                const data = await api.getBookDetail(initialSeries.id);
+                const data = await api.getBookDetail(initialSeries.id, controller.signal);
                 if (data && isMounted) {
                     setRealSeries({
                         ...initialSeries,
@@ -121,7 +123,8 @@ export const useSeriesDetails = (initialSeries: Series, settings: any, webApp: a
                         }
                     }
                 }
-            } catch (err) {
+            } catch (err: any) {
+                if (err.name === 'CanceledError' || err.name === 'AbortError') return;
                 console.error("Error fetching series details", err);
             } finally {
                 if (isMounted) setLoading(false);
@@ -132,7 +135,10 @@ export const useSeriesDetails = (initialSeries: Series, settings: any, webApp: a
         const numB = (v: Volume) => typeof v.volumeNumber === 'string' ? parseFloat(v.volumeNumber) : (v.volumeNumber || 0);
 
         fetchData();
-        return () => { isMounted = false; };
+        return () => {
+            isMounted = false;
+            controller.abort();
+        };
     }, [initialSeries.id]);
 
     return {

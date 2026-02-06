@@ -114,6 +114,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Load from backend with smart caching
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
+
     const loadWithCache = async () => {
       try {
         const { api } = await import('@shared/services/api');
@@ -128,7 +130,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         console.log("🎨 Loading UI settings...");
         // 2. Check backend version
-        const backendSettings = await api.getUiSettings();
+        const backendSettings = await api.getUiSettings(controller.signal);
         console.log("🎨 Backend UI settings received:", backendSettings);
 
         if (backendSettings && isMounted) {
@@ -148,7 +150,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             console.log(`✅ Using cached theme (v${cached.version})`);
           }
         }
-      } catch (e) {
+      } catch (e: any) {
+        if (e.name === 'CanceledError' || e.name === 'AbortError') return;
         console.error("❌ Failed to load theme:", e);
       } finally {
         if (isMounted) {
@@ -170,6 +173,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     return () => {
       isMounted = false;
+      controller.abort();
       clearTimeout(timeout);
     };
   }, []);

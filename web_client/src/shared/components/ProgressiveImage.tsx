@@ -59,7 +59,8 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
                 <img
                     src={src}
                     alt={alt}
-                    className={`transition-opacity duration-700 ease-in-out ${isLoaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-sm scale-105'
+                    loading="lazy"
+                    className={`transition-all duration-1000 ease-out ${isLoaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-xl scale-110'
                         } ${className}`}
                     onLoad={() => setIsLoaded(true)}
                     {...props}

@@ -136,6 +136,13 @@ class BotConfig:
             self._ai_key_logged = True
         return key
 
+    # Notion Integration
+    NOTION_TOKEN: str = os.getenv("NOTION_TOKEN", "")
+    NOTION_DATABASE_ID: str = os.getenv("NOTION_DATABASE_ID", "")
+
+    # Notifications (Discord/Slack)
+    NOTIFICATION_WEBHOOK_URL: str = os.getenv("NOTIFICATION_WEBHOOK_URL", "")
+
     # SQLAlchemy URL
     # PostgreSQL es obligatorio.
     DATABASE_URL: str = field(init=False)

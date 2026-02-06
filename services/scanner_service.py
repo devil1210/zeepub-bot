@@ -19,6 +19,8 @@ from models.library_models import (
 )
 from services.ai_service import AIService
 from services.hash_service import hash_service
+from services.identity.identity_service import identity_service
+from services.notification_service import notification_service
 from utils.epub_extractor import EpubMetadataExtractor
 from utils.library_db import COVERS_DIR, get_session
 
@@ -109,6 +111,8 @@ class ScannerService:
 
             results["sources_scanned"] = len(local_libs_map)
 
+            all_new_books = []
+
             for name, path in local_libs_map.items():
                 ScannerService._current_progress["current_source"] = name
                 logger.info(f"Iniciando escaneo de fuente: {name} ({path})")
@@ -123,6 +127,10 @@ class ScannerService:
                 source_results, found_files = await self._scan_directory(
                     source, session, force_scan, soft_scan
                 )
+
+                # Collect new books for global notification
+                if "added_books_details" in source_results:
+                    all_new_books.extend(source_results["added_books_details"])
 
                 # Update global results
                 for k, v in source_results.items():
@@ -466,6 +474,12 @@ class ScannerService:
                 logger.warning(f"Error en limpieza final de series: {ce}")
 
             logger.info(f"Escaneo completado: {results}")
+
+            # --- POST-SCAN ACTIONS ---
+            # 1. Notify new books
+            if all_new_books:
+                asyncio.create_task(notification_service.notify_new_books(all_new_books))
+
             ScannerService._current_progress.update(
                 {
                     "status": "completed",
@@ -694,6 +708,19 @@ class ScannerService:
 
                     if book_res == "added":
                         results["added"] += 1
+                        # Collect basic data for notifications
+                        added_book = session.query(LocalBook).filter_by(filepath=full_path).first()
+                        if added_book:
+                            if "added_books_details" not in results:
+                                results["added_books_details"] = []
+                            results["added_books_details"].append(
+                                {
+                                    "title": added_book.title,
+                                    "series": added_book.series,
+                                    "volume": added_book.volume,
+                                    "author": added_book.author,
+                                }
+                            )
                     elif book_res == "updated":
                         results["updated"] += 1
                     elif book_res == "duplicate":

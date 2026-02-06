@@ -29,6 +29,7 @@ from services.opds_service import get_cached_feed
 from services.rating_service import RatingService
 from services.rbac_service import rbac_service
 from services.settings_service import get_setting, set_setting
+from services.notion_service import notion_service
 from utils.helpers import (
     parse_metadata_from_title,
 )
@@ -489,6 +490,20 @@ async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
             "title_override": title,
         },
     )
+
+    # 4. Log to Notion if successful
+    if success:
+        # We fire and forget or at least don't block the response
+        asyncio.create_task(
+            notion_service.log_reading(
+                user_name=user_data.get("nickname") or user_data.get("name") or f"User_{user_id}",
+                book_title=book_metadata.get("title", title),
+                series_name=book_metadata.get("series")
+                or book_metadata.get("title", "Serie Desconocida"),
+                volume=str(book_metadata.get("volume", "1")),
+                author=book_metadata.get("author", "Desconocido"),
+            )
+        )
 
     return {"success": success}
 
