@@ -2,6 +2,7 @@ import React from 'react';
 import { Star, Book } from 'lucide-react';
 import { Series } from '@shared/types';
 import { getCoverUrl } from '@shared/utils/imageUtils';
+import { ProgressiveImage } from '@shared/components/ProgressiveImage';
 
 interface SearchCardGridProps {
     series: Series;
@@ -9,7 +10,7 @@ interface SearchCardGridProps {
     onClick: () => void;
 }
 
-export const SearchCardGrid: React.FC<SearchCardGridProps> = ({ series, settings, onClick }) => {
+export const SearchCardGrid: React.FC<SearchCardGridProps> = React.memo(({ series, settings, onClick }) => {
     return (
         <div
             onClick={onClick}
@@ -17,7 +18,7 @@ export const SearchCardGrid: React.FC<SearchCardGridProps> = ({ series, settings
         >
             {/* Image Container */}
             <div className="relative aspect-[2/3] overflow-hidden bg-white/5">
-                <img
+                <ProgressiveImage
                     alt={series.title}
                     className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-1000 opacity-90 group-hover:opacity-100"
                     src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality)}
@@ -66,4 +67,4 @@ export const SearchCardGrid: React.FC<SearchCardGridProps> = ({ series, settings
             <div className="absolute -inset-20 bg-primary/5 blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
         </div>
     );
-};
+});

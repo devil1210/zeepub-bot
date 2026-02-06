@@ -13,7 +13,12 @@ export interface Book {
   author: string;
   coverUrl: string | CoverPaths;
   coverThumbUrl?: string;
-  format: 'EPUB' | 'PDF' | 'MOBI';
+  format: string;
+  book_type?: string;
+  bookType?: string;
+  volumeNumber?: number | string;
+  translator?: string;
+  typesetter?: string;
   rating: number;
   size: string;
   tags: string[];

@@ -29,7 +29,7 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
             <div
                 className="glass-panel w-full max-w-2xl rounded-premium overflow-hidden border border-white/10 shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
                 style={{
-                    background: `rgba(var(--glass-rgb), ${settings.interfaceOpacity})`,
+                    background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
                     backdropFilter: `blur(${settings.glassBlur}px)`,
                 }}
             >

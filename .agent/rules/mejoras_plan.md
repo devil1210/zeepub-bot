@@ -10,11 +10,10 @@
 
 ### 🔴 FASE 1: Fundamentos (Prioridad Alta)
 
-- [ ] **[arch-3]** Reorganización estructura web-client ⏸️ APLAZADO
+- [x] **[arch-3]** Reorganización estructura web-client ✅ COMPLETADO
   - **Archivos**: `web_client/` completo
   - **Acción**: Reorganizar a estructura features-based
-  - **Estado**: ⏸️ Aplazado - requiere ~60+ cambios de imports
-  - **Propuesta**: Documentada en `arch3_proposal.md` para migración gradual futura
+  - **Estado**: ✅ Completado - Estructura normalizada con alias y feature-based.
 
 - [ ] **[bug-2]** Auditoría de Memory Leaks en useEffect
   - **Archivos**: `web_client/contexts/*.tsx`, `web_client/hooks/*.ts`
@@ -95,10 +94,10 @@
 
 | Fase | Total | Completado | Pendiente |
 |------|-------|------------|-----------|
-| Fase 1 | 5 | 0 | 5 |
+| Fase 1 | 5 | 1 | 4 |
 | Fase 2 | 4 | 0 | 4 |
 | Fase 3 | 5 | 0 | 5 |
-| **Total** | **14** | **0** | **14** |
+| **Total** | **14** | **1** | **13** |
 
 ---
 

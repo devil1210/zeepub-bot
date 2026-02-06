@@ -7,8 +7,7 @@ import {
     List,
     RefreshCw,
     Layers,
-    ChevronLeft,
-    ChevronRight
+    Infinity as InfinityIcon
 } from 'lucide-react';
 
 interface SearchHeaderProps {
@@ -92,47 +91,29 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                        {/* View Toggles */}
-                        <div className="bg-black/20 p-1 rounded-lg border border-white/5 flex shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                        {/* Compact Toggles (Only 2 Icons) */}
+                        <div className="flex items-center gap-2">
+                            {/* Toggle View: List <-> Grid */}
                             <button
-                                onClick={() => onViewModeChange('list')}
-                                className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
-                                title="Vista de Lista"
+                                onClick={() => onViewModeChange(viewMode === 'grid' ? 'list' : 'grid')}
+                                className="p-2.5 rounded-premium-sm bg-white/5 border border-white/5 hover:border-primary/50 text-gray-400 hover:text-primary transition-all shadow-lg active:scale-90"
+                                title={viewMode === 'grid' ? "Cambiar a Lista" : "Cambiar a Cuadrícula"}
                             >
-                                <List className="w-4 h-4" />
+                                {viewMode === 'grid' ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
                             </button>
+
+                            {/* Toggle Mode: Infinite <-> Paginated */}
                             <button
-                                onClick={() => onViewModeChange('grid')}
-                                className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-white'}`}
-                                title="Vista de Cuadrícula"
+                                onClick={() => updateSettings({ listMode: settings.listMode === 'infinite' ? 'paginated' : 'infinite' })}
+                                className="p-2.5 rounded-premium-sm bg-white/5 border border-white/5 hover:border-primary/50 text-gray-400 hover:text-primary transition-all shadow-lg active:scale-90"
+                                title={settings.listMode === 'infinite' ? "Cambiar a Paginado" : "Cambiar a Infinito"}
                             >
-                                <LayoutGrid className="w-4 h-4" />
+                                {settings.listMode === 'infinite' ? <InfinityIcon className="w-5 h-5 text-primary" /> : <Layers className="w-5 h-5" />}
                             </button>
                         </div>
 
-                        {/* List Mode Toggle (Paginated/Infinite) */}
-                        <div className="bg-black/20 p-1 rounded-lg border border-white/5 flex shrink-0">
-                            <button
-                                onClick={() => settings.listMode !== 'paginated' && updateSettings({ listMode: 'paginated' })}
-                                className={`p-2 rounded-md transition-all ${settings.listMode === 'paginated' ? 'bg-primary/30 text-primary shadow-sm' : 'text-gray-400 hover:text-white'}`}
-                                title="Paginado"
-                            >
-                                <div className="flex items-center gap-0.5">
-                                    <ChevronLeft className="w-3 h-3" />
-                                    <ChevronRight className="w-3 h-3" />
-                                </div>
-                            </button>
-                            <button
-                                onClick={() => settings.listMode !== 'infinite' && updateSettings({ listMode: 'infinite' })}
-                                className={`p-2 rounded-md transition-all ${settings.listMode === 'infinite' ? 'bg-primary/30 text-primary shadow-sm' : 'text-gray-400 hover:text-white'}`}
-                                title="Scroll Infinito"
-                            >
-                                <Layers className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        {loading && <RefreshCw className="w-5 h-5 animate-spin text-[var(--color-primary)]" />}
+                        {loading && <div className="ml-2"><RefreshCw className="w-5 h-5 animate-spin text-primary" /></div>}
                     </div>
                 </div>
             </div>

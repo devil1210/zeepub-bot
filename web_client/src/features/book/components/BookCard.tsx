@@ -1,7 +1,7 @@
 import React from 'react';
 import { Download, Star } from 'lucide-react';
 import { Book } from '@shared/types';
-import { ProgressiveImage } from '../ProgressiveImage';
+import { ProgressiveImage } from '@shared/components/ProgressiveImage';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { getCoverUrl } from '@shared/utils/imageUtils';
 
@@ -19,7 +19,7 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
     <div className="group relative glass-panel rounded-premium-sm overflow-hidden border border-white/5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full">
       <div className="absolute top-3 right-3 z-10">
         <span className="bg-black/70 dark:bg-black/70 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider border border-white/10 shadow-sm">
-          {book.bookType || book.format}
+          {book.book_type || book.format}
         </span>
       </div>
 

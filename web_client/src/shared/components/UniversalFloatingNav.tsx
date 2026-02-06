@@ -56,13 +56,17 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             case 'search':
                 return (
                     <>
-                        <NavButton
-                            onClick={handlePrevPage}
-                            disabled={currentPage === 1}
-                            icon={ChevronLeft}
-                            label="Anterior"
-                        />
-                        <NavDivider />
+                        {settings.listMode !== 'infinite' && (
+                            <>
+                                <NavButton
+                                    onClick={handlePrevPage}
+                                    disabled={currentPage === 1}
+                                    icon={ChevronLeft}
+                                    label="Anterior"
+                                />
+                                <NavDivider />
+                            </>
+                        )}
                         <NavButton
                             onClick={() => setMenuOpen(!isMenuOpen)}
                             isActive={isMenuOpen}
@@ -76,26 +80,46 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                             icon={Home}
                             label="Inicio"
                         />
-                        <NavDivider />
-                        <NavButton
-                            onClick={handleNextPage}
-                            disabled={currentPage === totalPages}
-                            icon={ChevronRight}
-                            label="Siguiente"
-                        />
+                        {settings.listMode !== 'infinite' ? (
+                            <>
+                                <NavDivider />
+                                <NavButton
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === totalPages}
+                                    icon={ChevronRight}
+                                    label="Siguiente"
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <NavDivider />
+                                <NavButton
+                                    onClick={() => {
+                                        const main = document.querySelector('main');
+                                        if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    icon={ArrowUp}
+                                    label="Arriba"
+                                />
+                            </>
+                        )}
                     </>
                 );
 
             case 'series':
                 return (
                     <>
-                        <NavButton
-                            onClick={handlePrevPage}
-                            disabled={currentPage === 1}
-                            icon={ChevronLeft}
-                            label="Anterior"
-                        />
-                        <NavDivider />
+                        {settings.listMode !== 'infinite' && (
+                            <>
+                                <NavButton
+                                    onClick={handlePrevPage}
+                                    disabled={currentPage === 1}
+                                    icon={ChevronLeft}
+                                    label="Anterior"
+                                />
+                                <NavDivider />
+                            </>
+                        )}
                         <NavButton
                             onClick={() => setMenuOpen(!isMenuOpen)}
                             isActive={isMenuOpen}
@@ -104,13 +128,17 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                             highlightOnActive
                         />
                         <NavDivider />
-                        <NavButton
-                            onClick={handleNextPage}
-                            disabled={currentPage === totalPages}
-                            icon={ChevronRight}
-                            label="Siguiente"
-                        />
-                        <NavDivider />
+                        {settings.listMode !== 'infinite' && (
+                            <>
+                                <NavButton
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === totalPages}
+                                    icon={ChevronRight}
+                                    label="Siguiente"
+                                />
+                                <NavDivider />
+                            </>
+                        )}
                         <NavButton
                             onClick={handleBack}
                             icon={Reply}

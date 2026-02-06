@@ -28,6 +28,7 @@ export interface NavigationState {
     customTitle?: string;
     backAction?: () => void;
     homeAction?: () => void;
+    actionButtons?: NavActionButton[];
     // History stack management
     historyStack: string[];
 }

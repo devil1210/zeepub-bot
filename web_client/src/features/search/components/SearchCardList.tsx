@@ -2,6 +2,7 @@ import React from 'react';
 import { Star, Download, Book, PlusCircle } from 'lucide-react';
 import { Series } from '@shared/types';
 import { getCoverUrl } from '@shared/utils/imageUtils';
+import { ProgressiveImage } from '@shared/components/ProgressiveImage';
 
 interface SearchCardListProps {
     series: Series;
@@ -9,7 +10,7 @@ interface SearchCardListProps {
     onClick: () => void;
 }
 
-export const SearchCardList: React.FC<SearchCardListProps> = ({ series, settings, onClick }) => {
+export const SearchCardList: React.FC<SearchCardListProps> = React.memo(({ series, settings, onClick }) => {
     return (
         <div
             onClick={onClick}
@@ -17,7 +18,7 @@ export const SearchCardList: React.FC<SearchCardListProps> = ({ series, settings
         >
             {/* Left: Cover Image */}
             <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] shadow-2xl rounded-premium-sm overflow-hidden bg-white/5 border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
-                <img
+                <ProgressiveImage
                     alt={series.title}
                     className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
                     src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality)}
@@ -95,4 +96,4 @@ export const SearchCardList: React.FC<SearchCardListProps> = ({ series, settings
             </div>
         </div>
     );
-};
+});

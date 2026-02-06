@@ -151,7 +151,9 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           .filter(Boolean);
 
         preloadImages(currentCovers as string[]);
-        scrollToTop();
+        if (settings.listMode !== 'infinite' || page === 1) {
+          scrollToTop();
+        }
 
         if (page < (res.totalPages || 1)) {
           api.searchBooks(query, page + 1, searchScope, activeSort).then(nextRes => {
@@ -240,8 +242,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   };
 
   useEffect(() => {
-    scrollToTop('smooth');
-  }, [currentPage]);
+    if (settings.listMode !== 'infinite' || currentPage === 1) {
+      scrollToTop('smooth');
+    }
+  }, [currentPage, settings.listMode]);
 
   const currentSeries = useMemo(() => series, [series]);
 
