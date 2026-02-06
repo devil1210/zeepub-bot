@@ -32,6 +32,7 @@ export const DuplicatesDashboard: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedDuplicate, setSelectedDuplicate] = useState<DuplicateEntry | null>(null);
     const [rechecking, setRechecking] = useState(false);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     const fetchDuplicates = async () => {
         setLoading(true);
@@ -74,6 +75,31 @@ export const DuplicatesDashboard: React.FC = () => {
             console.error('Error rechecking duplicates:', error);
         } finally {
             setRechecking(false);
+        }
+    };
+
+    const handleDeleteFile = async (id: number, target: 'original' | 'duplicate') => {
+        const isOriginal = target === 'original';
+        const confirmMsg = isOriginal
+            ? '¿Estás SEGURO de borrar el archivo ORIGINAL de la biblioteca?\n\nEsta acción eliminará el archivo físico del disco y el registro de la biblioteca. Es irreversible.'
+            : '¿Estás seguro de borrar esta copia rechazada?\n\nSe eliminará el archivo del disco para resolver el conflicto.';
+
+        if (!confirm(confirmMsg)) return;
+
+        setDeletingId(id);
+        try {
+            const res = await (api as any).adminDeleteDuplicateItem(id, target);
+            if (res.success) {
+                setDuplicates(prev => prev.filter(dup => dup.id !== id));
+                setSelectedDuplicate(null);
+            } else {
+                alert(`Error: ${res.message}`);
+            }
+        } catch (error) {
+            console.error('Error deleting duplicate file:', error);
+            alert('Fallo crítico al intentar borrar el archivo.');
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -250,19 +276,39 @@ export const DuplicatesDashboard: React.FC = () => {
                                 <div className="space-y-6">
                                     <h4 className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-4">Conflicto de Contenido</h4>
 
-                                    <div className="p-6 bg-green-500/5 border border-green-500/10 rounded-premium-sm space-y-2">
-                                        <div className="flex items-center gap-2 text-green-500 mb-2">
-                                            <CheckCircle className="w-4 h-4" />
-                                            <span className="text-[10px] font-black uppercase tracking-wider">Libro en Biblioteca (Original)</span>
+                                    <div className="p-6 bg-green-500/5 border border-green-500/10 rounded-premium-sm space-y-2 relative group-item">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2 text-green-500">
+                                                <CheckCircle className="w-4 h-4" />
+                                                <span className="text-[10px] font-black uppercase tracking-wider">Libro en Biblioteca (Original)</span>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteFile(selectedDuplicate.id, 'original')}
+                                                disabled={deletingId !== null}
+                                                className="p-1.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded transition-all disabled:opacity-30"
+                                                title="Borrar archivo original del disco"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
                                         <p className="text-xs text-white font-bold">{selectedDuplicate.title}</p>
                                         <p className="text-[10px] text-gray-400 font-mono break-all leading-relaxed">{selectedDuplicate.original}</p>
                                     </div>
 
-                                    <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-premium-sm space-y-2">
-                                        <div className="flex items-center gap-2 text-red-500 mb-2">
-                                            <AlertTriangle className="w-4 h-4" />
-                                            <span className="text-[10px] font-black uppercase tracking-wider">Copia Rechazada (Nuevo)</span>
+                                    <div className="p-6 bg-red-500/5 border border-red-500/10 rounded-premium-sm space-y-2 relative">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2 text-red-500">
+                                                <AlertTriangle className="w-4 h-4" />
+                                                <span className="text-[10px] font-black uppercase tracking-wider">Copia Rechazada (Nuevo)</span>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteFile(selectedDuplicate.id, 'duplicate')}
+                                                disabled={deletingId !== null}
+                                                className="p-1.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded transition-all disabled:opacity-30"
+                                                title="Borrar este archivo duplicado del disco"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
                                         <p className="text-xs text-white font-bold">{selectedDuplicate.title}</p>
                                         <p className="text-[10px] text-gray-400 font-mono break-all leading-relaxed">{selectedDuplicate.duplicate}</p>
@@ -314,12 +360,11 @@ export const DuplicatesDashboard: React.FC = () => {
                                 Entendido
                             </button>
                             <button
-                                className="px-8 py-3 bg-primary hover:brightness-110 text-white rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20"
-                                onClick={() => {
-                                    alert("Funcionalidad de borrado físico no disponible por seguridad. Por favor, elimina el archivo manualmente en el servidor.");
-                                }}
+                                className="px-8 py-3 bg-primary hover:brightness-110 text-white rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                                disabled={deletingId !== null}
+                                onClick={() => handleDeleteFile(selectedDuplicate.id, 'duplicate')}
                             >
-                                Ignorar Conflicto
+                                {deletingId !== null ? 'Borrando...' : 'Borrar Duplicado'}
                             </button>
                         </div>
                     </div>

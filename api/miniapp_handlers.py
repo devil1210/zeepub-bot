@@ -2310,6 +2310,110 @@ async def handle_admin_delete_duplicate(data: dict[str, Any], user_data: dict[st
         return {"success": False, "message": str(e)}
 
 
+async def handle_admin_delete_duplicate_item(data: dict[str, Any], user_data: dict[str, Any]):
+    """Borra físicamente un archivo (original o duplicado) asociado a un conflicto de duplicidad."""
+    check_staff(user_data)
+
+    dup_id = data.get("id")
+    target = data.get("target")  # "original" o "duplicate"
+
+    if not dup_id or not target:
+        raise HTTPException(status_code=400, detail="Faltan parámetros 'id' o 'target'")
+
+    session = get_session()
+    try:
+        dup_record = session.query(DuplicateBook).filter_by(id=dup_id).first()
+        if not dup_record:
+            return {"success": False, "message": "Registro de duplicado no encontrado"}
+
+        path_to_delete = (
+            dup_record.original_filepath if target == "original" else dup_record.duplicate_filepath
+        )
+
+        if not path_to_delete:
+            return {"success": False, "message": f"Ruta de archivo {target} no definida"}
+
+        # 1. Borrar archivo físico
+        if os.path.exists(path_to_delete):
+            try:
+                os.remove(path_to_delete)
+                logger.info(f"Archivo {target} eliminado: {path_to_delete}")
+            except Exception as e:
+                logger.error(f"Error borrando archivo físico {path_to_delete}: {e}")
+                return {"success": False, "message": f"Error al borrar archivo físico: {e}"}
+        else:
+            logger.warning(f"Archivo a borrar no existe en disco: {path_to_delete}")
+
+        # 2. Si es el original, limpiar también de LocalBook y sus portadas
+        if target == "original":
+            book = session.query(LocalBook).filter(LocalBook.filepath == path_to_delete).first()
+            if book:
+                # 2.1 Archivar antes de borrar (Historial)
+                from models.library_models import ArchivedBook
+
+                archived = ArchivedBook(
+                    series_hash=book.series_hash,
+                    book_hash=book.book_hash,
+                    title=book.title,
+                    filename=book.filename,
+                    last_filepath=book.filepath,
+                    volume=book.volume,
+                    author=book.author,
+                    book_type=book.book_type,
+                    original_book_id=book.id,
+                    reason="manual_duplicate_resolution",
+                )
+                session.add(archived)
+
+                # 2.2 Desvincular de tablas históricas para evitar ForeignKeyViolation
+                from models.download_models import DownloadHistory
+                from models.library_models import UserDownload, UserRating
+
+                session.query(DownloadHistory).filter(DownloadHistory.book_id == book.id).update(
+                    {DownloadHistory.book_id: None}, synchronize_session=False
+                )
+                session.query(UserDownload).filter(UserDownload.book_id == book.id).update(
+                    {UserDownload.book_id: None}, synchronize_session=False
+                )
+                session.query(UserRating).filter(UserRating.book_id == book.id).update(
+                    {UserRating.book_id: None}, synchronize_session=False
+                )
+
+                # 2.3 Borrar portadas si existen
+                if book.cover_path:
+                    try:
+                        from utils.library_db import COVERS_DIR
+
+                        cover_file = book.cover_path.replace("/api/library/covers/", "")
+                        cover_full_path = os.path.join(COVERS_DIR, cover_file)
+                        if os.path.exists(cover_full_path):
+                            os.remove(cover_full_path)
+                        thumb_path = cover_full_path.replace(".jpg", "_thumb.jpg")
+                        if os.path.exists(thumb_path):
+                            os.remove(thumb_path)
+                    except Exception as ce:
+                        logger.error(f"Error borrando portadas: {ce}")
+
+                session.delete(book)
+                logger.info(f"Libro archivado y eliminado de LocalBook: {path_to_delete}")
+
+        # 3. Eliminar el registro de duplicado
+        session.delete(dup_record)
+        session.commit()
+
+        return {
+            "success": True,
+            "message": f"Archivo {target} y sus registros eliminados correctamente.",
+        }
+
+    except Exception as e:
+        logger.error(f"Error en handle_admin_delete_duplicate_item: {e}")
+        session.rollback()
+        return {"success": False, "message": str(e)}
+    finally:
+        session.close()
+
+
 async def handle_update_user_setting(data: dict[str, Any], user_data: dict[str, Any]):
     """Actualiza una o múltiples configuraciones del usuario."""
     from services.user_service import update_user_setting
