@@ -495,11 +495,10 @@ async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
     if success:
         # We fire and forget or at least don't block the response
         asyncio.create_task(
-            notion_service.log_reading(
+            notion_service.log_download(
                 user_name=user_data.get("nickname") or user_data.get("name") or f"User_{user_id}",
                 book_title=book_metadata.get("title", title),
-                series_name=book_metadata.get("series")
-                or book_metadata.get("title", "Serie Desconocida"),
+                series_name=book_metadata.get("series", "Single"),
                 volume=str(book_metadata.get("volume", "1")),
                 author=book_metadata.get("author", "Desconocido"),
             )

@@ -33,7 +33,7 @@ class NotionService:
                 logger.error(f"❌ Error connecting to Notion: {e}")
                 return False
 
-    async def log_reading(
+    async def log_download(
         self,
         user_name: str,
         book_title: str,
@@ -41,13 +41,13 @@ class NotionService:
         volume: str = "1",
         author: str = "Desconocido",
     ):
-        """Logs a reading event."""
+        """Logs a download event."""
         payload = {
             "parent": {"database_id": config.NOTION_DATABASE_ID},
-            "icon": {"emoji": "📖"},
+            "icon": {"emoji": "📥"},
             "properties": {
                 "Título": {"title": [{"text": {"content": book_title}}]},
-                "Tipo": {"select": {"name": "Lectura"}},
+                "Tipo": {"select": {"name": "Descarga"}},
                 "Serie": {"rich_text": [{"text": {"content": series_name}}]},
                 "Volumen": {
                     "number": float(volume)
@@ -61,7 +61,34 @@ class NotionService:
         }
         success = await self._send_to_notion(payload)
         if success:
-            logger.info(f"✅ Reading log added to Notion: {book_title}")
+            logger.info(f"✅ Download log added to Notion: {book_title}")
+        return success
+
+    async def log_social_publish(
+        self,
+        platform: str,
+        title: str,
+        series: str = "",
+        user: str = "System",
+        details: str = ""
+    ):
+        """Logs a publication to social media (Facebook/Telegram)."""
+        emoji = "🔵" if platform.lower() == "facebook" else "🔹"
+        payload = {
+            "parent": {"database_id": config.NOTION_DATABASE_ID},
+            "icon": {"emoji": emoji},
+            "properties": {
+                "Título": {"title": [{"text": {"content": title}}]},
+                "Tipo": {"select": {"name": platform.capitalize()}},
+                "Serie": {"rich_text": [{"text": {"content": series}}]},
+                "Comentarios": {"rich_text": [{"text": {"content": details}}]},
+                "Usuario": {"rich_text": [{"text": {"content": user}}]},
+                "Fecha": {"date": {"start": datetime.utcnow().isoformat()}},
+            },
+        }
+        success = await self._send_to_notion(payload)
+        if success:
+            logger.info(f"✅ Social publish logged to Notion: {platform} - {title}")
         return success
 
     async def log_feedback(self, user_name: str, message: str, category: str = "Sugerencia"):
