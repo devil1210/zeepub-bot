@@ -9,15 +9,15 @@ from telegram.ext import CallbackQueryHandler, ContextTypes, MessageHandler, fil
 from config.config_settings import config
 from core.state_manager import state_manager
 
-# from services.library_service import LibraryService
-# from services.library_ui_service import (
-#     mostrar_autores_local,
-#     mostrar_generos,
-#     mostrar_menu_principal,
-#     mostrar_resultados_locales,
-#     mostrar_series,
-#     mostrar_volumenes_local,
-# )
+from services.library_service import LibraryService
+from services.library_ui_service import (
+    mostrar_autores_local,
+    mostrar_generos,
+    mostrar_menu_principal,
+    mostrar_resultados_locales,
+    mostrar_series,
+    mostrar_volumenes_local,
+)
 
 logger = logging.getLogger(__name__)
 

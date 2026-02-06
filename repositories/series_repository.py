@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from sqlalchemy import and_, delete, func, select
+from sqlalchemy import and_, cast, delete, func, or_, select, String
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
