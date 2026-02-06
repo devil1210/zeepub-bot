@@ -25,11 +25,11 @@ from models.library_models import (
 from repositories.download_repository import download_repo
 from repositories.user_repository import user_repo
 from services.library_service import LibraryService
+from services.notion_service import notion_service
 from services.opds_service import get_cached_feed
 from services.rating_service import RatingService
 from services.rbac_service import rbac_service
 from services.settings_service import get_setting, set_setting
-from services.notion_service import notion_service
 from utils.helpers import (
     parse_metadata_from_title,
 )
