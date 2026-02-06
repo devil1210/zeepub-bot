@@ -32,11 +32,12 @@ export const useSeriesDetails = (initialSeries: Series, settings: any, webApp: a
     };
 
     useEffect(() => {
+        let isMounted = true;
         const fetchData = async () => {
             setLoading(true);
             try {
                 const data = await api.getBookDetail(initialSeries.id);
-                if (data) {
+                if (data && isMounted) {
                     setRealSeries({
                         ...initialSeries,
                         ...data,
@@ -123,7 +124,7 @@ export const useSeriesDetails = (initialSeries: Series, settings: any, webApp: a
             } catch (err) {
                 console.error("Error fetching series details", err);
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
 
@@ -131,6 +132,7 @@ export const useSeriesDetails = (initialSeries: Series, settings: any, webApp: a
         const numB = (v: Volume) => typeof v.volumeNumber === 'string' ? parseFloat(v.volumeNumber) : (v.volumeNumber || 0);
 
         fetchData();
+        return () => { isMounted = false; };
     }, [initialSeries.id]);
 
     return {

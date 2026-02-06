@@ -56,6 +56,11 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const isFirstRender = useRef(true);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => { isMounted.current = false; };
+  }, []);
 
   useEffect(() => {
     setPageInfo(currentPage, totalPages);
@@ -134,6 +139,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           };
         });
 
+        if (!isMounted.current) return;
+
         // In infinite mode, append results; in paginated mode, replace
         if (settings.listMode === 'infinite' && page > 1) {
           setSeries(prev => [...prev, ...mapped]);
@@ -176,8 +183,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
     } catch (e) {
       console.error("Search error", e);
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (isMounted.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
     }
   };
 

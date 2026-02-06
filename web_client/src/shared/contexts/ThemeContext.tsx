@@ -113,13 +113,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Load from backend with smart caching
   useEffect(() => {
+    let isMounted = true;
     const loadWithCache = async () => {
       try {
         const { api } = await import('@shared/services/api');
 
         // 1. Try to load from CloudStorage first (instant)
         const cached = await loadFromCloudStorage();
-        if (cached) {
+        if (cached && isMounted) {
           setSettings(cached.settings);
           setSettingsVersion(cached.version || 0);
           setIsLoading(false); // Show UI immediately with cached data
@@ -130,7 +131,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const backendSettings = await api.getUiSettings();
         console.log("🎨 Backend UI settings received:", backendSettings);
 
-        if (backendSettings) {
+        if (backendSettings && isMounted) {
           const backendVersion = backendSettings.ui_version || backendSettings.last_updated || 0;
 
           // 3. Only update if backend has newer version
@@ -150,20 +151,27 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } catch (e) {
         console.error("❌ Failed to load theme:", e);
       } finally {
-        console.log("🎨 Theme loading finished.");
-        setIsLoading(false);
+        if (isMounted) {
+          console.log("🎨 Theme loading finished.");
+          setIsLoading(false);
+        }
       }
     };
 
     // Safety timeout: don't let the loading screen hang forever
     const timeout = setTimeout(() => {
-      if (isLoading) {
+      if (isLoading && isMounted) {
         console.warn("⚠️ Theme loading timed out, starting with defaults.");
         setIsLoading(false);
       }
     }, 3500);
 
-    loadWithCache().finally(() => clearTimeout(timeout));
+    loadWithCache();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+    };
   }, []);
 
   useEffect(() => {

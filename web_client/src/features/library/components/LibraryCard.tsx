@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { memo } from 'react';
+import { ProgressiveImage } from '@shared/components/ProgressiveImage';
 
 interface LibraryCardProps {
     book: {
@@ -14,7 +15,7 @@ interface LibraryCardProps {
     onClick: () => void;
 }
 
-export const LibraryCard: React.FC<LibraryCardProps> = ({ book, onClick }) => {
+export const LibraryCard = memo<LibraryCardProps>(({ book, onClick }) => {
     return (
         <div
             onClick={onClick}
@@ -36,10 +37,12 @@ export const LibraryCard: React.FC<LibraryCardProps> = ({ book, onClick }) => {
 
             {/* Image Container */}
             <div className="relative aspect-[2/3] w-full overflow-hidden rounded-[1.75rem] bg-white/5 shadow-2xl border border-white/10">
-                <div
-                    className="absolute inset-0 bg-cover bg-center transition-all duration-1000 group-hover:scale-110 grayscale-[30%] group-hover:grayscale-0"
-                    style={{ backgroundImage: `url("${book.cover}")` }}
-                ></div>
+                <ProgressiveImage
+                    src={book.cover}
+                    alt={book.title}
+                    className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 grayscale-[30%] group-hover:grayscale-0"
+                    containerClassName="absolute inset-0"
+                />
 
                 <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
 
@@ -67,4 +70,6 @@ export const LibraryCard: React.FC<LibraryCardProps> = ({ book, onClick }) => {
             <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
         </div>
     );
-};
+});
+
+LibraryCard.displayName = 'LibraryCard';

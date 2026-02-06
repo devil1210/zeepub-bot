@@ -21,22 +21,25 @@ export const useCloudStorage = <T,>(key: string, defaultValue: T) => {
 
     // Load from CloudStorage on mount
     useEffect(() => {
+        let isMounted = true;
         if (!isCloudStorageAvailable()) {
             // Fallback: try to load from localStorage
             try {
                 const saved = localStorage.getItem(key);
-                if (saved) {
+                if (saved && isMounted) {
                     setValue(JSON.parse(saved) as T);
                 }
             } catch (e) {
                 console.error(`Error loading from localStorage for ${key}:`, e);
             }
-            setIsLoading(false);
+            if (isMounted) setIsLoading(false);
             return;
         }
 
         // Use Telegram CloudStorage
         window.Telegram.WebApp.CloudStorage.getItem(key, (error, result) => {
+            if (!isMounted) return;
+
             if (error) {
                 console.error(`CloudStorage getItem error for ${key}:`, error);
                 // Fallback to localStorage on error
@@ -61,6 +64,8 @@ export const useCloudStorage = <T,>(key: string, defaultValue: T) => {
             }
             setIsLoading(false);
         });
+
+        return () => { isMounted = false; };
     }, [key]);
 
     // Save to CloudStorage

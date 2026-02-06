@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Download, Star } from 'lucide-react';
 import { Book } from '@shared/types';
 import { ProgressiveImage } from '@shared/components/ProgressiveImage';
@@ -11,7 +11,7 @@ interface BookCardProps {
   compact?: boolean;
 }
 
-export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = false }) => {
+export const BookCard = memo<BookCardProps>(({ book, onDownload, compact = false }) => {
   const { settings } = useTheme();
   const coverSrc = getCoverUrl(book.coverUrl, book.coverThumbUrl, settings.coverQuality);
 
@@ -69,4 +69,6 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onDownload, compact = 
       </div>
     </div>
   );
-};
+});
+
+BookCard.displayName = 'BookCard';

@@ -15,15 +15,15 @@
   - **Acción**: Reorganizar a estructura features-based
   - **Estado**: ✅ Completado - Estructura normalizada con alias y feature-based.
 
-- [ ] **[bug-2]** Auditoría de Memory Leaks en useEffect
+- [x] **[bug-2]** Auditoría de Memory Leaks en useEffect ✅ COMPLETADO
   - **Archivos**: `web_client/contexts/*.tsx`, `web_client/hooks/*.ts`
   - **Acción**: Verificar cleanup en cada useEffect
-  - **✅ Validado**
+  - **Estado**: ✅ Corregido en contextos y hooks clave con isMounted flags.
 
-- [ ] **[opt-3]** Aplicar React.memo a componentes de lista
+- [x] **[opt-3]** Aplicar React.memo a componentes de lista ✅ COMPLETADO
   - **Archivos**: `BookCard.tsx`, `LibraryCard.tsx`, `SearchCardGrid.tsx`
   - **Acción**: Envolver componentes costosos con React.memo
-  - **✅ Validado**
+  - **Estado**: ✅ Aplicado en componentes de búsqueda y tarjetas de libros.
 
 - [ ] **[opt-4]** Implementar virtualización para listas grandes
   - **Dependencia**: `@tanstack/react-virtual`
@@ -94,10 +94,10 @@
 
 | Fase | Total | Completado | Pendiente |
 |------|-------|------------|-----------|
-| Fase 1 | 5 | 1 | 4 |
+| Fase 1 | 5 | 3 | 2 |
 | Fase 2 | 4 | 0 | 4 |
 | Fase 3 | 5 | 0 | 5 |
-| **Total** | **14** | **1** | **13** |
+| **Total** | **14** | **3** | **11** |
 
 ---
 
