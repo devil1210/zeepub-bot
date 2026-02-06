@@ -16,22 +16,14 @@ from services.cache_service import cache_manager
 logger = logging.getLogger(__name__)
 
 
-class UserRepository(BaseRepository[dict[str, Any]]):
-    # ... (existing init) ...
-
+class UserRepository(BaseRepository[User]):
     """
-    REPOS_DIR = "users"
     Repositorio para gestión de usuarios (roles, expiración, status).
     Migrado totalmente a PostgreSQL (ORM) con fallback a Supabase REST.
-    SQLite eliminado.
     """
 
-    def __init__(self, db=None):
-        # db parameter kept for backward compatibility with base class signature but unused
-        self.table_name = "users"
-        from core.supabase_manager import supabase_manager
-
-        self.supabase = supabase_manager
+    def __init__(self, db_manager=None):
+        super().__init__(db_manager or pg_manager, "users")
 
     def _parse_datetime(self, dt_str: Any) -> datetime | None:
         if not dt_str:
@@ -124,105 +116,27 @@ class UserRepository(BaseRepository[dict[str, Any]]):
             "email": user.email,
         }
 
-    async def get_by_id(self, telegram_id: int) -> dict[str, Any] | None:
-        # 1. Cache-First
-        cached_user = await cache_manager.get_user(telegram_id)
-        if cached_user:
-            return cached_user
+    async def get_by_id(self, telegram_id: int) -> User | None:
+        """Obtiene un usuario por su ID de Telegram (PK)."""
+        async with pg_manager.get_session() as session:
+            stmt = (
+                select(User)
+                .options(selectinload(User.ui_settings), selectinload(User.level_info))
+                .where(User.telegram_id == telegram_id)
+            )
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
 
-        # 2. Postgres ORM (Primary)
-        try:
-            async with pg_manager.get_session() as session:
-                stmt = (
-                    select(User)
-                    .options(selectinload(User.ui_settings), selectinload(User.level_info))
-                    .where(User.telegram_id == telegram_id)
-                )
-
-                result = await session.execute(stmt)
-                user = result.scalar_one_or_none()
-
-                if user:
-                    return self._to_dict(user)
-        except Exception as e:
-            logger.error(f"Postgres ORM Error in get_by_id: {e}")
-
-        # 3. Supabase REST (Secondary Fallback)
-        if self.supabase.is_active:
-            try:
-                cols = "telegram_id, level, expires_at, role, nickname, name, username, insignias, settings, total_downloads, level_id, beta_tester, has_library_access, can_request_books, photo_url, can_upload_epub, email"
-                res = (
-                    self.supabase.get_client()
-                    .table("users")
-                    .select(cols)
-                    .eq("telegram_id", telegram_id)
-                    .execute()
-                )
-                if res.data:
-                    user = res.data[0]
-                    # basic mapping for fallback
-                    return {
-                        "telegram_id": int(user["telegram_id"]),
-                        "level": user.get("level", "free"),
-                        "expires_at": self._parse_datetime(user["expires_at"]),
-                        "role": user.get("role"),
-                        "nickname": user["nickname"],
-                        "name": user.get("name"),
-                        "username": user.get("username"),
-                        "roles": [],
-                        "insignias": user.get("insignias") or [],
-                        "settings": user.get("settings") or {},
-                        "total_downloads": user["total_downloads"] or 0,
-                        "level_id": user.get("level_id", 6),
-                        "can_upload_epub": user.get("can_upload_epub", False),
-                        "photo_url": user.get("photo_url"),
-                        "email": user.get("email"),
-                    }
-            except Exception as e:
-                logger.error(f"Supabase error in get_by_id: {e}")
-
-        return None
-
-    async def get_by_email(self, email: str) -> dict[str, Any] | None:
+    async def get_by_email(self, email: str) -> User | None:
         """Busca un usuario por su correo electrónico."""
-        try:
-            async with pg_manager.get_session() as session:
-                stmt = (
-                    select(User)
-                    .options(selectinload(User.ui_settings), selectinload(User.level_info))
-                    .where(User.email == email.lower())
-                )
-                result = await session.execute(stmt)
-                user = result.scalar_one_or_none()
-                if user:
-                    return self._to_dict(user)
-        except Exception as e:
-            logger.error(f"Error fetching user by email: {e}")
-
-        # Fallback Supabase
-        if self.supabase.is_active:
-            try:
-                res = (
-                    self.supabase.get_client()
-                    .table("users")
-                    .select("*")
-                    .eq("email", email.lower())
-                    .execute()
-                )
-                if res.data:
-                    user_data = res.data[0]
-                    return {
-                        "telegram_id": int(user_data["telegram_id"]),
-                        "email": user_data.get("email"),
-                        "level": user_data.get("level", "free"),
-                        "role": user_data.get("role"),
-                        "nickname": user_data.get("nickname"),
-                        "name": user_data.get("name"),
-                        "username": user_data.get("username"),
-                    }
-            except Exception as e:
-                logger.error(f"Supabase error in get_by_email: {e}")
-        return None
+        async with pg_manager.get_session() as session:
+            stmt = (
+                select(User)
+                .options(selectinload(User.ui_settings), selectinload(User.level_info))
+                .where(User.email == email.lower())
+            )
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
 
     # ... CRUD methods ... (create, update, delete, upsert kept as is or simplified)
 
@@ -714,19 +628,24 @@ class UserRepository(BaseRepository[dict[str, Any]]):
             role="user",
         )
 
-    async def create(self, entity: dict[str, Any]) -> dict[str, Any]:
-        return await self.upsert(
-            entity["telegram_id"],
-            entity.get("level", "free"),
-            entity.get("expires_at"),
-            entity.get("role"),
-            created_by=entity.get("created_by"),
-        )
+    async def create(self, entity: User) -> User:
+        """Crea un nuevo usuario."""
+        async with pg_manager.get_session() as session:
+            session.add(entity)
+            await session.commit()
+            await session.refresh(entity)
+            return entity
 
-    async def update(self, entity: dict[str, Any]) -> dict[str, Any]:
-        return await self.upsert(
-            entity["telegram_id"], entity.get("level", "free"), entity.get("expires_at")
-        )
+    async def update(self, entity: User) -> User:
+        """Actualiza un usuario existente."""
+        async with pg_manager.get_session() as session:
+            # merged_entity = await session.merge(entity) # Alternativa
+            # For simplicity, we assume the session is handled outside if needed,
+            # but for our repo pattern, we usually get and update.
+            # If we pass a detached object:
+            await session.merge(entity)
+            await session.commit()
+            return entity
 
     async def delete(self, telegram_id: int) -> bool:
         # Postgres ORM
@@ -750,123 +669,72 @@ class UserRepository(BaseRepository[dict[str, Any]]):
     async def upsert(
         self,
         telegram_id: int,
-        level: str,
+        level: str = "free",
         expires_at: datetime | None = None,
         role: str | None = None,
-        created_by: int | None = None,
         nickname: str | None = None,
         name: str | None = None,
         username: str | None = None,
-        roles: list | None = None,
         insignias: list | None = None,
         level_id: int | None = None,
         email: str | None = None,
-        has_library_access: bool | None = None,
-        can_request_books: bool | None = None,
-        can_upload_epub: bool | None = None,
         photo_url: str | None = None,
         settings: dict | None = None,
-        allow_theme_templates: bool | None = None,
         sync_to_supabase: bool = False,
-    ):
-        level_to_tier_id = {
-            "admin": 1,
-            "staff": 2,
-            "premium": 3,
-            "vip": 4,
-            "white": 5,
-            "free": 6,
-            "user": 6,
-        }
-        lvl_str = str(level).lower() if level is not None else "free"
-        level_id = level_id if level_id is not None else level_to_tier_id.get(lvl_str, 6)
+    ) -> User:
+        """
+        Inserta o actualiza un usuario en PostgreSQL y opcionalmente sincroniza con Supabase.
+        Retorna el objeto User actualizado.
+        """
+        level_to_id = {"admin": 1, "staff": 2, "premium": 3, "vip": 4, "white": 5, "free": 6}
+        final_level_id = level_id or level_to_id.get(level.lower(), 6)
 
-        # 1. Postgres ORM
-        try:
-            async with pg_manager.get_session() as session:
-                stmt = select(User).where(User.telegram_id == telegram_id)
-                result = await session.execute(stmt)
-                user = result.scalar_one_or_none()
+        async with pg_manager.get_session() as session:
+            stmt = select(User).where(User.telegram_id == telegram_id)
+            user = (await session.execute(stmt)).scalar_one_or_none()
 
-                if not user:
-                    user = User(telegram_id=telegram_id)
-                    session.add(user)
+            if not user:
+                user = User(telegram_id=telegram_id)
+                session.add(user)
 
-                user.level_id = level_id
-                if expires_at is not None:
-                    user.expires_at = expires_at
-                if role is not None:
-                    user.role = role
-                if nickname is not None:
-                    user.nickname = nickname
-                if name is not None:
-                    user.name = name
-                if username is not None:
-                    user.username = username
-                if insignias is not None:
-                    user.insignias = insignias
-                if email is not None:
-                    user.email = email
-                if has_library_access is not None:
-                    user.has_library_access = has_library_access
-                if can_request_books is not None:
-                    user.can_request_books = can_request_books
-                if can_upload_epub is not None:
-                    user.can_upload_epub = can_upload_epub
-                if photo_url is not None:
-                    user.photo_url = photo_url
-                if settings is not None:
-                    user.settings = settings
-                if allow_theme_templates is not None:
-                    user.allow_theme_templates = allow_theme_templates
+            user.level_id = final_level_id
+            if expires_at is not None:
+                user.expires_at = expires_at
+            if role is not None:
+                user.role = role
+            if nickname is not None:
+                user.nickname = nickname
+            if name is not None:
+                user.name = name
+            if username is not None:
+                user.username = username
+            if insignias is not None:
+                user.insignias = insignias
+            if email is not None:
+                user.email = email
+            if photo_url is not None:
+                user.photo_url = photo_url
+            if settings is not None:
+                user.settings = settings
 
-                await session.commit()
-                await cache_manager.delete_user(telegram_id)
+            await session.commit()
+            await session.refresh(user)
 
-                # 2. Supabase Fallback
-                data = {
-                    "telegram_id": telegram_id,
-                    "level": lvl_str,
-                    "level_id": level_id,
-                }
-                if expires_at is not None:
-                    data["expires_at"] = (
-                        expires_at.isoformat() if hasattr(expires_at, "isoformat") else expires_at
-                    )
-                if role is not None:
-                    data["role"] = role
-                if nickname is not None:
-                    data["nickname"] = nickname
-                if name is not None:
-                    data["name"] = name
-                if username is not None:
-                    data["username"] = username
-                if insignias is not None:
-                    data["insignias"] = insignias
-                if email is not None:
-                    data["email"] = email
-                if has_library_access is not None:
-                    data["has_library_access"] = has_library_access
-                if can_request_books is not None:
-                    data["can_request_books"] = can_request_books
-                if can_upload_epub is not None:
-                    data["can_upload_epub"] = can_upload_epub
-                if photo_url is not None:
-                    data["photo_url"] = photo_url
-                if settings is not None:
-                    data["settings"] = settings
+            # Sincronización proactiva o reactiva
+            if sync_to_supabase and self.supabase.is_active:
+                try:
+                    data = user.to_dict()  # User model should have to_dict (it has, I checked)
+                    # Use table.upsert...
+                    self.supabase.get_client().table(self.table_name).upsert(data).execute()
+                except Exception as e:
+                    logger.warning(f"Error sync user {telegram_id} to Supabase: {e}")
+            else:
+                from core.optimized_sync_engine import optimized_sync_engine
 
-                if sync_to_supabase:
-                    self.supabase.get_client().table("users").upsert(data).execute()
-                else:
-                    from core.optimized_sync_engine import optimized_sync_engine
+                await optimized_sync_engine.mark_user_changed(telegram_id)
 
-                    await optimized_sync_engine.mark_user_changed(telegram_id)
-
-            return {"telegram_id": telegram_id, "level": lvl_str}
-        except Exception as e:
-            logger.error(f"Upsert user error: {e}")
-            return {"success": False, "error": str(e)}
+            await cache_manager.delete_user(telegram_id)
+            return user
 
     # ... and many other methods ...
     # Note: I am simplifying the migration for the purpose of the task.

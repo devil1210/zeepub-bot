@@ -65,12 +65,7 @@ class NotionService:
         return success
 
     async def log_social_publish(
-        self,
-        platform: str,
-        title: str,
-        series: str = "",
-        user: str = "System",
-        details: str = ""
+        self, platform: str, title: str, series: str = "", user: str = "System", details: str = ""
     ):
         """Logs a publication to social media (Facebook/Telegram)."""
         emoji = "🔵" if platform.lower() == "facebook" else "🔹"

@@ -194,7 +194,62 @@ async def fix_schema_if_needed():
                 )
             )
 
+            # --- TABLAS DE PUBLICACIÓN (FASE 3) ---
+            await conn.execute(
+                text("""
+                CREATE TABLE IF NOT EXISTS publication_channels (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL,
+                    platform VARCHAR(20) NOT NULL,
+                    target_id VARCHAR(100) NOT NULL,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    config JSONB,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+                );
+            """)
+            )
+
+            await conn.execute(
+                text("""
+                CREATE TABLE IF NOT EXISTS publication_templates (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(100) NOT NULL,
+                    content TEXT NOT NULL,
+                    platform VARCHAR(20) NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+                );
+            """)
+            )
+
+            await conn.execute(
+                text("""
+                CREATE TABLE IF NOT EXISTS publication_queue (
+                    id SERIAL PRIMARY KEY,
+                    book_hash VARCHAR(64) NOT NULL,
+                    channel_id INTEGER REFERENCES publication_channels(id),
+                    template_id INTEGER REFERENCES publication_templates(id),
+                    scheduled_for TIMESTAMP WITH TIME ZONE NOT NULL,
+                    status VARCHAR(20) DEFAULT 'pending',
+                    published_at TIMESTAMP WITH TIME ZONE,
+                    error_message TEXT,
+                    payload JSONB,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+                );
+            """)
+            )
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_publication_queue_status ON publication_queue(status);"
+                )
+            )
+            await conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS idx_publication_queue_scheduled ON publication_queue(scheduled_for);"
+                )
+            )
+
         await engine.dispose()
+
         logger.info("Database schema check completed successfully.")
 
     except Exception as e:
@@ -241,7 +296,19 @@ async def initialize_application():
         replace_existing=True,
     )
 
+    # Schedule publication queue processing every 5 minutes
+    from services.publisher.publisher_service import publisher_service
+
+    scheduler.add_job(
+        lambda: asyncio.create_task(publisher_service.process_queue()),
+        "interval",
+        minutes=5,
+        id="publication_queue_processing",
+        replace_existing=True,
+    )
+
     scheduler.start()
+
     logger.info("Daily theme sync scheduled for 3:00 AM")
     logger.info("Automatic library scan scheduled every 2 hours")
 

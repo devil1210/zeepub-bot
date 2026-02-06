@@ -35,8 +35,7 @@ async def upsert_user(
     level_id: int | None = None,
 ):
     """
-    Agrega o actualiza un usuario.
-    Si duration_months/days es None y no existe, es 'infinito'.
+    Agrega o actualiza un usuario delegando al repositorio.
     """
     expires_at = None
     from datetime import timedelta
@@ -46,20 +45,17 @@ async def upsert_user(
     if duration_days is not None:
         expires_at = now + timedelta(days=duration_days)
     elif duration_months is not None:
-        # Simple approximation: 30 days * months
         days = duration_months * 30
         expires_at = now + timedelta(days=days)
 
     await user_repo.upsert(
-        telegram_id,
-        level,
-        expires_at,
-        role,
-        created_by,
-        nickname,
-        name,
-        username,
-        roles,
+        telegram_id=telegram_id,
+        level=level,
+        expires_at=expires_at,
+        role=role,
+        nickname=nickname,
+        name=name,
+        username=username,
         level_id=level_id,
     )
     await user_cache.invalidate(f"user_effective:{telegram_id}")
@@ -105,12 +101,24 @@ async def get_user_info(telegram_id: int) -> dict[str, Any] | None:
     """
     Retorna info del usuario desde DB.
     """
-    return await user_repo.get_by_id(telegram_id)
+    # 1. Cache-First (Opcional, el repo lo hacía antes pero ahora lo centralizamos aquí o en el repo)
+    cached_user = await cache_manager.get_user(telegram_id)
+    if cached_user:
+        return cached_user
+
+    user = await user_repo.get_by_id(telegram_id)
+    if user:
+        user_dict = user_repo._to_dict(user)
+        # 2. Update Cache
+        await cache_manager.set_user(telegram_id, user_dict)
+        return user_dict
+    return None
 
 
 async def get_user_by_email(email: str) -> dict[str, Any] | None:
     """Busca un usuario por su correo electrónico."""
-    return await user_repo.get_by_email(email)
+    user = await user_repo.get_by_email(email)
+    return user_repo._to_dict(user) if user else None
 
 
 async def get_effective_user(

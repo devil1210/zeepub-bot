@@ -1,5 +1,8 @@
 import logging
+import os
+import re
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -33,7 +36,6 @@ class TelegramPublisherProvider(PublisherProvider):
         Implementation of book announcement for Telegram.
         """
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-        from telegram.error import BadRequest
 
         from services.telegram_service import send_photo_bytes
         from utils.helpers import (
@@ -54,6 +56,7 @@ class TelegramPublisherProvider(PublisherProvider):
         caption = formatear_mensaje_portada(book_data)
         cover_data = book_data.get("cover_bytes") or book_data.get("cover")
 
+        # El helper send_photo_bytes ya maneja el fallback de thread internamente
         await send_photo_bytes(
             self.bot,
             target_id,
@@ -68,23 +71,8 @@ class TelegramPublisherProvider(PublisherProvider):
             book_data.get("description") or book_data.get("summary") or book_data.get("sinopsis")
         )
 
-        # Fallback for OPDS synopsis fetching if not in book_data
-        if not sinopsis:
-            series_id = book_data.get("series_id")
-            volume_id = book_data.get("volume_id")
-            if series_id:
-                from services.metadata_service import (
-                    obtener_sinopsis_opds,
-                    obtener_sinopsis_opds_volumen,
-                )
-
-                try:
-                    if volume_id:
-                        sinopsis = await obtener_sinopsis_opds_volumen(series_id, volume_id)
-                    if not sinopsis:
-                        sinopsis = await obtener_sinopsis_opds(series_id)
-                except Exception:
-                    pass
+        # No OPDS fallback needed in local-only mode
+        pass
 
         if sinopsis:
             sinopsis_esc = escapar_html(sinopsis)
@@ -95,15 +83,14 @@ class TelegramPublisherProvider(PublisherProvider):
                 else f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>"
             )
             try:
-                await self.bot.send_message(
+                await self._send_message(
                     chat_id=target_id,
                     text=text,
                     parse_mode="HTML",
-                    message_thread_id=thread_id,
+                    thread_id=thread_id,
                 )
-            except BadRequest as e:
-                if "thread not found" in str(e).lower():
-                    await self.bot.send_message(chat_id=target_id, text=text, parse_mode="HTML")
+            except Exception as e:
+                logger.error(f"Error sending synopsis: {e}")
 
         # 3. Send Buttons/Interactive part
         if options.get("with_buttons", True):
@@ -121,19 +108,19 @@ class TelegramPublisherProvider(PublisherProvider):
 
             try:
                 # Send Info Message
-                msg_info = await self.bot.send_message(
+                msg_info = await self._send_message(
                     chat_id=target_id,
                     text=info_text,
                     parse_mode="HTML",
-                    message_thread_id=thread_id,
+                    thread_id=thread_id,
                 )
 
                 # Send Buttons Message
-                msg_buttons = await self.bot.send_message(
+                msg_buttons = await self._send_message(
                     chat_id=target_id,
                     text="¿Deseas descargar este libro?",
                     reply_markup=InlineKeyboardMarkup(keyboard),
-                    message_thread_id=thread_id,
+                    thread_id=thread_id,
                 )
 
                 # Return IDs if needed for state management
@@ -141,18 +128,38 @@ class TelegramPublisherProvider(PublisherProvider):
                     options["state"]["msg_info_id"] = msg_info.message_id
                     options["state"]["msg_botones_id"] = msg_buttons.message_id
 
-            except BadRequest as e:
-                if "thread not found" in str(e).lower():
-                    await self.bot.send_message(
-                        chat_id=target_id, text=info_text, parse_mode="HTML"
-                    )
-                    await self.bot.send_message(
-                        chat_id=target_id,
-                        text="¿Deseas descargar este libro?",
-                        reply_markup=InlineKeyboardMarkup(keyboard),
-                    )
+            except Exception as e:
+                logger.error(f"Error sending action buttons: {e}")
 
         return True
+
+    async def _send_message(
+        self, chat_id, text, parse_mode=None, reply_markup=None, thread_id=None
+    ):
+        """Helper to send messages with thread fallback."""
+        from telegram.error import BadRequest
+
+        try:
+            return await self.bot.send_message(
+                chat_id=chat_id,
+                text=text,
+                parse_mode=parse_mode,
+                reply_markup=reply_markup,
+                message_thread_id=thread_id,
+            )
+        except BadRequest as e:
+            if "thread not found" in str(e).lower() and thread_id:
+                logger.warning(
+                    f"Thread {thread_id} not found in {chat_id}, falling back to main chat."
+                )
+                return await self.bot.send_message(
+                    chat_id=chat_id,
+                    text=text,
+                    parse_mode=parse_mode,
+                    reply_markup=reply_markup,
+                    message_thread_id=None,
+                )
+            raise e
 
     def _format_info_text(self, meta: dict[str, Any]) -> str:
         from utils.helpers import generar_slug_from_meta
@@ -220,83 +227,132 @@ class FacebookPublisherProvider(PublisherProvider):
             # a. Title
             title_block = formatear_titulo_fb(book_data)
 
-            # b. Public Link
-            download_url = book_data.get("url") or book_data.get("filepath")
-            public_link = download_url
-            if download_url:
-                # Try to short url
+            # b. Generate Direct Download Link (Secure short URL)
+            raw_url = (
+                book_data.get("filepath") or book_data.get("download_url") or book_data.get("url")
+            )
+            public_link = None
+            if raw_url:
                 try:
                     from utils.url_cache import create_short_url
 
                     dl_domain = config.DL_DOMAIN.rstrip("/")
                     if not dl_domain.startswith("http"):
                         dl_domain = f"https://{dl_domain}"
-                    url_hash = create_short_url(download_url, book_title=book_data.get("title"))
-                    public_link = f"{dl_domain}/api/dl/{url_hash}"
-                except Exception:
-                    pass
 
-            link_block = f"⬇️ Descarga: {public_link}" if public_link else ""
+                    url_hash = create_short_url(
+                        raw_url,
+                        book_title=book_data.get("title"),
+                        series_name=book_data.get("series"),
+                    )
+                    public_link = f"{dl_domain}/api/dl/{url_hash}"
+                except Exception as e:
+                    logger.error(f"Failed to create secure link for FB: {e}")
+                    # If short url fails, we DO NOT expose the raw_url if it is a local path
+                    if raw_url.startswith("http"):
+                        public_link = raw_url
+                    else:
+                        public_link = None
+
+            link_block = f"🚀 Descarga Directa: {public_link}" if public_link else ""
 
             # c. Metadata
             metadata_block = formatear_metadata_fb(book_data)
 
             # d. Synopsis
+            from utils.helpers import limpiar_html_basico
+
             sinopsis = book_data.get("sinopsis") or book_data.get("description")
             sinopsis_block = ""
             if sinopsis:
-                # Strip HTML for FB?
-                # FB supports partial formatting but safer to strip complex html
-                import re
-
-                clean_syn = re.sub(r"<.*?>", "", sinopsis)
+                # FB doesn't support blockquotes/b/i tags via API usually
+                clean_syn = limpiar_html_basico(sinopsis)
                 sinopsis_block = f"Sinopsis:\n{clean_syn}"
 
             parts = [title_block, link_block, metadata_block, sinopsis_block]
             caption = "\n\n".join(p for p in parts if p).strip()
+            # Clean HTML tags that might remain in metadata formatting
+            caption = re.sub(r"<.*?>", "", caption)
 
-        # 3. Get Cover URL
+            # FB length limit check
+            if len(caption) > 2100:
+                caption = caption[:2097] + "..."
+
+        # 3. Handle Cover (URL vs Binary)
         cover_url = book_data.get("cover_url") or book_data.get("portada")
+        cover_binary = book_data.get("cover_bytes") or book_data.get("cover")
 
-        # If no public URL, we might need to upload bytes...
-        # Current logic is URL based.
-        if not cover_url or not cover_url.startswith("http"):
-            # Attempt to use 'cover' if it is a URL
-            c = book_data.get("cover")
-            if isinstance(c, str) and c.startswith("http"):
-                cover_url = c
-
-        if not cover_url or not cover_url.startswith("http"):
-            logger.error("Facebook requires a public cover URL.")
-            return False
+        # Fallback if cover is a local path string
+        if isinstance(cover_binary, str) and not cover_binary.startswith("http"):
+            if os.path.exists(cover_binary):
+                with open(cover_binary, "rb") as f:
+                    cover_binary = f.read()
+            else:
+                cover_binary = None
 
         # 4. Post to Graph API
         try:
-            url = f"https://graph.facebook.com/{config.FACEBOOK_GROUP_ID}/photos"
-            params = {
-                "url": cover_url,
-                "caption": caption,
-                "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
-            }
+            import httpx
 
             async with httpx.AsyncClient() as client:
-                resp = await client.post(url, params=params, timeout=30)
-                if resp.status_code != 200:
-                    logger.error(f"FB Error: {resp.text}")
-                    return False
+                if cover_binary and (not cover_url or not cover_url.startswith("http")):
+                    # Multipart upload for binary data
+                    return await self._upload_photo_binary(client, config, cover_binary, caption)
 
-            return True
+                if cover_url and cover_url.startswith("http"):
+                    # URL-based upload
+                    url = f"https://graph.facebook.com/{config.FACEBOOK_GROUP_ID}/photos"
+                    params = {
+                        "url": cover_url,
+                        "caption": caption,
+                        "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
+                    }
+                    resp = await client.post(url, params=params, timeout=30)
+                    if resp.status_code != 200:
+                        logger.error(f"FB URL Post Error: {resp.text}")
+                        # If URL failed, try binary if available
+                        if cover_binary:
+                            return await self._upload_photo_binary(
+                                client, config, cover_binary, caption
+                            )
+                        return False
+                    return True
+
+                logger.error("No valid cover source (URL or binary) for Facebook post.")
+                return False
+
         except Exception as e:
             logger.error(f"Error publishing to Facebook: {e}")
             return False
 
+    async def _upload_photo_binary(self, client, config, binary_data, caption):
+        """Uploads a photo using multipart/form-data."""
+        url = f"https://graph.facebook.com/{config.FACEBOOK_GROUP_ID}/photos"
+        files = {"source": ("cover.jpg", binary_data, "image/jpeg")}
+        data = {
+            "caption": caption,
+            "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
+        }
+        try:
+            resp = await client.post(url, data=data, files=files, timeout=60)
+            if resp.status_code != 200:
+                logger.error(f"FB Binary Post Error: {resp.text}")
+                return False
+            return True
+        except Exception as e:
+            logger.error(f"FB Binary Upload Exception: {e}")
+            return False
+
 
 class PublisherService:
-    def __init__(self, default_provider: PublisherProvider = None):
+    def __init__(self, default_provider: PublisherProvider = None, pub_repo=None):
         self.providers = {
             "telegram": default_provider or TelegramPublisherProvider(),
             "facebook": FacebookPublisherProvider(),
         }
+        from repositories.publication_repository import pub_repo as default_repo
+
+        self.repo = pub_repo or default_repo
 
     async def announce(
         self,
@@ -305,10 +361,100 @@ class PublisherService:
         book_data: dict[str, Any],
         options: dict[str, Any] | None = None,
     ) -> bool:
+        """Envia una publicación inmediata."""
         provider = self.providers.get(platform)
         if not provider:
+            logger.error(f"Provider not found for platform: {platform}")
             return False
         return await provider.announce_book(target_id, book_data, options)
 
+    async def schedule_publication(
+        self,
+        book_hash: str,
+        channel_id: int,
+        scheduled_for: datetime,
+        template_id: int | None = None,
+        payload: dict | None = None,
+    ) -> Any:
+        """Programa una publicación en la cola."""
+        from models.publication_models import PublicationQueue
 
+        item = PublicationQueue(
+            book_hash=book_hash,
+            channel_id=channel_id,
+            template_id=template_id,
+            scheduled_for=scheduled_for,
+            status="pending",
+            payload=payload,
+        )
+        return await self.repo.create(item)
+
+    async def process_queue(self):
+        """Procesa los ítems pendientes en la cola."""
+        pending = await self.repo.get_pending_queue()
+        if not pending:
+            return
+
+        logger.info(f"Procesando {len(pending)} publicaciones programadas...")
+
+        for item in pending:
+            try:
+                # 1. Marcar como procesando
+                item.status = "publishing"
+                await self.repo.update(item)
+
+                # 2. Obtener datos del libro si no están en payload
+                book_data = item.payload
+                if not book_data:
+                    from repositories.book_repository import book_repo
+
+                    book = await book_repo.get_by_hash(item.book_hash)
+                    if not book:
+                        raise Exception(f"Book with hash {item.book_hash} not found")
+                    book_data = book.to_dict()
+
+                # 3. Aplicar plantilla si existe
+                options = {}
+                if item.template:
+                    options["caption"] = self._apply_template(item.template.content, book_data)
+
+                # 4. Publicar
+                success = await self.announce(
+                    platform=item.channel.platform,
+                    target_id=item.channel.target_id,
+                    book_data=book_data,
+                    options=options,
+                )
+
+                if success:
+                    item.status = "sent"
+                    item.published_at = datetime.utcnow()
+                else:
+                    item.status = "failed"
+                    item.error_message = "Provider announce_book returned False"
+
+            except Exception as e:
+                logger.error(f"Error publishing queued item {item.id}: {e}")
+                item.status = "failed"
+                item.error_message = str(e)
+
+            await self.repo.update(item)
+
+    def _apply_template(self, template_str: str, data: dict) -> str:
+        """Aplica placeholders básicos a una plantilla."""
+        try:
+            return template_str.format(
+                title=data.get("title", ""),
+                author=data.get("author", "Desconocido"),
+                series=data.get("series", ""),
+                volume=data.get("volume", ""),
+                description=data.get("description", ""),
+                tags=", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else "",
+            )
+        except Exception as e:
+            logger.warning(f"Error applying template: {e}")
+            return template_str
+
+
+# Instancia global
 publisher_service = PublisherService()

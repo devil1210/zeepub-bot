@@ -36,7 +36,7 @@ def upgrade():
     # Populate data from local_books
     # Extract acronyms from brackets in filename
     # Postgres substring format: substring(string from pattern)
-    op.execute("""
+    op.execute(r"""
         INSERT INTO translators_groups (name, siglas)
         SELECT DISTINCT 
             publisher, 

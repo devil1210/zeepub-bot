@@ -1,14 +1,12 @@
-import asyncio
 import hashlib
 import hmac
 import json
 import logging
 import os
 from typing import Any
-from urllib.parse import parse_qs, unquote, urljoin, urlparse
+from urllib.parse import unquote, urlparse
 
 import aiofiles
-import aiohttp
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
@@ -17,432 +15,11 @@ from api.deps import (
     require_mini_app_access,
 )
 from config.config_settings import config
-from services.epub_service import (
-    extract_internal_title,
-    parse_opf_from_epub,
-)
-from services.opds_service import get_cached_feed
-from utils.helpers import (
-    build_search_url,
-    extract_author,
-    find_zeepubs_destino,
-    formatear_mensaje_portada,
-    parse_metadata_from_title,
-)
 from utils.http_client import fetch_bytes
 from utils.url_cache import get_url_from_hash
 
 router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
-
-
-@router.get("/feed")
-async def get_feed(
-    url: str | None = None,
-    admin_mode: bool = False,
-    user_data: dict[str, Any] = Depends(require_mini_app_access),
-):
-    """
-    Obtiene el feed OPDS.
-    """
-    current_uid = user_data.get("user_id", 0)
-    role = user_data.get("role", "free")
-    is_admin = role == "admin"
-    has_evil_access = is_admin or role == "staff"
-
-    # Determinar URL base si no se proporciona o es raíz
-    if not url or url == "/":
-        if is_admin and admin_mode:
-            target_url = config.OPDS_ROOT_EVIL
-        else:
-            target_url = config.OPDS_ROOT_START
-    else:
-        # Security: Prevent unauthorized users from accessing Evil Root manually
-        if not has_evil_access and (
-            config.OPDS_ROOT_EVIL_SUFFIX in url or config.OPDS_ROOT_EVIL in url
-        ):
-            logger.warning(
-                f"Unauthorized {current_uid} (Role: {role}) tried to access Evil Root: {url}"
-            )
-            target_url = config.OPDS_ROOT_START
-        else:
-            target_url = url
-
-    logger.info(f"Fetching feed from target_url: {target_url}")
-    try:
-        feed = await get_cached_feed(target_url)
-        if not feed:
-            raise HTTPException(status_code=404, detail="No se pudo cargar el feed")
-
-        # Helper para normalizar URLs
-        def normalize_url(href):
-            if not href:
-                return None
-            if href.startswith("http"):
-                return href
-
-            # Use the actual feed URL as base for relative links
-            return urljoin(target_url, href)
-
-        # Convertir feedparser object a dict serializable
-        entries = []
-        titles_to_exclude = {
-            "en el puente",
-            "listas de lectura",
-            "deseo leer",
-            "todas las colecciones",
-        }
-        # For Evil Root, only keep these
-        titles_to_keep_evil = {
-            "actualizado recientemente",
-            "añadido recientemente",
-            "todas las bibliotecas",
-            "all libraries",
-            "mi catálogo",
-            "biblioteca zeepubs",
-        }
-
-        is_root = not url or url == "/"
-
-        for entry in getattr(feed, "entries", []):
-            title = entry.get("title", "Sin título")
-            title_low = title.lower()
-
-            # Filtering logic
-            if is_root:
-                if admin_mode:
-                    if title_low not in titles_to_keep_evil:
-                        continue
-                else:
-                    if title_low in titles_to_exclude:
-                        continue
-
-            # Special handling for "Todas las bibliotecas"
-            entry_override_url = None
-            if title == "Todas las bibliotecas" or title == "All libraries":
-                title = "Mi Catálogo"
-                try:
-                    libraries_url = None
-                    for link in getattr(entry, "links", []):
-                        if link.get("rel") == "subsection":
-                            libraries_url = normalize_url(link.get("href"))
-                            break
-                    if libraries_url:
-                        lib_feed = await get_cached_feed(libraries_url)
-                        direct_url = find_zeepubs_destino(lib_feed, prefer_libraries=True)
-                        if direct_url:
-                            sub_lib_feed = await get_cached_feed(direct_url)
-                            deep_link = None
-                            for sub_entry in getattr(sub_lib_feed, "entries", []):
-                                for sub_link in getattr(sub_entry, "links", []):
-                                    if sub_link.get("rel") == "subsection":
-                                        deep_link = normalize_url(sub_link.get("href"))
-                                        break
-                                if deep_link:
-                                    break
-                            entry_override_url = deep_link or direct_url
-                except Exception as e:
-                    logger.warning(f"Error resolving direct link for ZeePubs: {e}")
-
-            # Basic metadata
-            cover_url = None
-            subsection_url = None
-            for link in getattr(entry, "links", []):
-                link_type = link.get("type", "")
-                link_rel = link.get("rel", "")
-                if (
-                    "image" in link_type
-                    or "cover" in link_rel
-                    or link_rel == "http://opds-spec.org/image"
-                ):
-                    cover_url = normalize_url(link.get("href"))
-                elif link_rel == "subsection":
-                    subsection_url = entry_override_url or normalize_url(link.get("href"))
-
-            if not cover_url and hasattr(entry, "content"):
-                for content in entry.content:
-                    if "image" in content.get("type", ""):
-                        cover_url = normalize_url(content.get("value"))
-                        break
-
-            publisher = entry.get("dc_publisher") or entry.get("dcterms_publisher")
-            language = entry.get("dc_language") or entry.get("dcterms_language")
-            published = entry.get("published") or entry.get("issued")
-            year = published[:4] if published and len(published) >= 4 else None
-
-            isbn = None
-            identifier = entry.get("identifier")
-            if identifier and "isbn" in identifier.lower():
-                isbn = identifier.split(":")[-1].strip()
-
-            detail_url = None
-            size = None
-            file_type = None
-            for link in getattr(entry, "links", []):
-                rel = link.get("rel", "")
-                l_type = link.get("type", "")
-                href = normalize_url(link.get("href"))
-                if rel == "self" or rel == "alternate" or "type=entry" in l_type:
-                    if not detail_url or rel == "self":
-                        detail_url = href
-                elif "acquisition" in rel or "epub" in l_type:
-                    file_type = l_type
-                    size = link.get("contentlength") or link.get("length")
-
-            if not detail_url and entry.get("id"):
-                detail_url = normalize_url(entry.get("id"))
-
-            # --- NEW ROBUST METADATA ---
-            is_folder = subsection_url is not None
-            author = extract_author(entry, is_folder=is_folder)
-
-            raw_tags = getattr(entry, "tags", [])
-            categories = [
-                tag.get("label") or tag.get("term")
-                for tag in raw_tags
-                if tag.get("label") or tag.get("term")
-            ]
-
-            title_meta = parse_metadata_from_title(title)
-
-            # Series/Volume extraction from entry metadata (like in search)
-            entry_series = entry.get("calibre_series") or entry.get("schema_series")
-            entry_series_index = entry.get("calibre_series_index")
-
-            # Fallback to title parsing if metadata is missing
-            final_series = entry_series or title_meta.get("series", "")
-            final_series_index = entry_series_index or title_meta.get("volume", "")
-
-            entries.append(
-                {
-                    "title": title,
-                    "author": author,
-                    "summary": entry.get("summary", ""),
-                    "id": entry.get("id", ""),
-                    "cover_url": cover_url,
-                    "subsection_url": subsection_url,
-                    "detail_url": detail_url,
-                    "publisher": publisher,
-                    "language": language,
-                    "isbn": isbn,
-                    "year": year,
-                    "size": size,
-                    "file_type": file_type,
-                    "is_folder": is_folder,
-                    "series": final_series,
-                    "volume": final_series_index,
-                    "seriesIndex": final_series_index,
-                    "tags": title_meta.get("tags", []),
-                    "cleanTitle": title_meta.get("clean_title", title),
-                    "romaji": title_meta.get("romaji", ""),
-                    "updatedDate": entry.get("updated", ""),
-                    "categories": categories,
-                    "links": [
-                        {
-                            "href": normalize_url(link_obj.get("href")),
-                            "rel": link_obj.get("rel"),
-                            "type": link_obj.get("type"),
-                        }
-                        for link_obj in getattr(entry, "links", [])
-                    ],
-                }
-            )
-
-        # 3. Add "Todas las colecciones" to specific sub-feeds as requested
-        sub_feeds = ["/on-deck", "/reading-list", "/want-to-read"]
-        if any(sub in target_url for sub in sub_feeds):
-            # Find base OPDS URL to point collections link correctly
-            base_opds = target_url
-            for sub in sub_feeds:
-                if sub in base_opds:
-                    base_opds = base_opds.split(sub)[0]
-                    break
-
-            entries.append(
-                {
-                    "id": "injected-collections",
-                    "title": "Todas las colecciones",
-                    "author": "Sistema",
-                    "summary": "Navegar por todas las colecciones",
-                    "cover_url": None,
-                    "subsection_url": f"{base_opds.rstrip('/')}/collections",
-                    "detail_url": None,
-                    "links": [
-                        {
-                            "rel": "subsection",
-                            "href": f"{base_opds.rstrip('/')}/collections",
-                            "type": "application/atom+xml;profile=opds-catalog;kind=navigation",
-                        }
-                    ],
-                }
-            )
-
-        # Second pass: fetch covers for folders that don't have one
-
-        async def fetch_folder_cover(res):
-            if res["subsection_url"] and not res["cover_url"]:
-                try:
-                    sub_feed = await get_cached_feed(res["subsection_url"])
-                    sub_entries = getattr(sub_feed, "entries", [])
-                    if sub_entries:
-                        first_book = sub_entries[0]
-                        for link_obj in getattr(first_book, "links", []):
-                            l_type = link_obj.get("type", "")
-                            l_rel = link_obj.get("rel", "")
-                            if (
-                                "image" in l_type
-                                or "cover" in l_rel
-                                or l_rel == "http://opds-spec.org/image"
-                            ):
-                                res["cover_url"] = normalize_url(link_obj.get("href"))
-                                break
-                except httpx.HTTPStatusError as e:
-                    logger.warning(f"HTTP error fetching sub-feed {res['subsection_url']}: {e}")
-                except httpx.RequestError as e:
-                    logger.warning(f"Request error fetching sub-feed {res['subsection_url']}: {e}")
-                except Exception as e:
-                    logger.warning(
-                        f"Unexpected error fetching sub-feed {res['subsection_url']}: {e}"
-                    )
-
-        folder_tasks = [
-            fetch_folder_cover(e) for e in entries if e["subsection_url"] and not e["cover_url"]
-        ]
-        if folder_tasks:
-            # We process sequential for the main feed to avoid overloading the OPDS server
-            # but we use a small concurrency limit
-            await asyncio.gather(*folder_tasks[:10])
-
-        # Extract pagination links from feed.links
-        next_page = None
-        prev_page = None
-        first_page = None
-        last_page = None
-
-        for link in getattr(feed.feed, "links", []):
-            rel = link.get("rel", "")
-            href = normalize_url(link.get("href"))
-            if rel == "next":
-                next_page = href
-            elif rel == "previous" or rel == "prev":
-                prev_page = href
-            elif rel == "first":
-                first_page = href
-            elif rel == "last":
-                last_page = href
-
-        # Try to guess current page
-        current_page = 1
-        if url and "page=" in url:
-            parsed = urlparse(url)
-            params = parse_qs(parsed.query)
-            try:
-                current_page = int(params.get("page", [1])[0])
-            except ValueError:
-                logger.debug(f"Could not parse page number from URL: {url}")
-            except Exception as e:
-                logger.warning(f"Unexpected error parsing page number from URL: {e}")
-
-        # Total pages
-        total_pages = None
-        total_results = feed.feed.get("opensearch_totalresults")
-        items_per_page = feed.feed.get("opensearch_itemsperpage")
-        if total_results and items_per_page:
-            try:
-                total_pages = (int(total_results) + int(items_per_page) - 1) // int(items_per_page)
-            except ValueError:
-                logger.debug(
-                    f"Could not calculate total pages from results={total_results}, items_per_page={items_per_page}"
-                )
-            except Exception as e:
-                logger.warning(f"Unexpected error calculating total pages: {e}")
-        processed_links = [
-            {
-                "href": normalize_url(link_obj.get("href")),
-                "rel": link_obj.get("rel"),
-                "type": link_obj.get("type"),
-            }
-            for link_obj in getattr(feed.feed, "links", [])
-        ]
-
-        return {
-            "title": getattr(feed.feed, "title", "ZeePub Feed"),
-            "links": processed_links,
-            "entries": entries,
-            "nextPage": next_page,
-            "prevPage": prev_page,
-            "firstPage": first_page,
-            "lastPage": last_page,
-            "currentPage": current_page,
-            "totalPages": total_pages,
-        }
-    except HTTPException as e:
-        raise e
-    except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP error fetching feed: {e}")
-        raise HTTPException(
-            status_code=e.response.status_code,
-            detail=f"Error fetching feed: {e.response.text}",
-        )
-    except httpx.RequestError as e:
-        logger.error(f"Request error fetching feed: {e}")
-        raise HTTPException(status_code=500, detail=f"Network error fetching feed: {e}")
-    except Exception as e:
-        logger.error(f"Unexpected error fetching feed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/search")
-async def search_books(
-    q: str = Query(..., min_length=1),
-    user_data: dict[str, Any] = Depends(require_mini_app_access),
-):
-    """
-    Busca libros en el servidor OPDS.
-    """
-    current_uid = user_data.get("user_id", 0)
-    # Usamos el UID validado para construir la URL de búsqueda (si es necesario)
-    search_url = build_search_url(q, uid=current_uid)
-    return await get_feed(url=search_url, user_data=user_data)
-
-
-@router.get("/image/{rest_of_path:path}")
-async def proxy_image(rest_of_path: str, request: Request):
-    """
-    Proxies image requests to the upstream OPDS server.
-    """
-    try:
-        upstream_base = config.OPDS_SERVER_URL.rstrip("/")
-        # Try both /api/image and direct paths
-        full_url = f"{upstream_base}/api/image/{rest_of_path}"
-        query_params = dict(request.query_params)
-
-        headers = {"User-Agent": "ZeePubBot/4.5 (Proxy)", "Accept": "image/*, */*"}
-
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-            logger.info(f"Proxying image: {full_url} with params {query_params}")
-            resp = await client.get(
-                full_url, params=query_params, auth=config.OPDS_AUTH, headers=headers
-            )
-
-            if resp.status_code == 404:
-                # Fallback to direct path
-                alt_url = f"{upstream_base}/{rest_of_path}"
-                logger.debug(f"Image 404 at {full_url}, trying {alt_url}")
-                resp = await client.get(
-                    alt_url, params=query_params, auth=config.OPDS_AUTH, headers=headers
-                )
-
-            resp.raise_for_status()
-
-            return Response(
-                content=resp.content,
-                media_type=resp.headers.get("content-type", "image/jpeg"),
-                headers={"Cache-Control": "public, max-age=86400"},
-            )
-    except Exception as e:
-        logger.error(f"Image proxy error for {rest_of_path}: {e}")
-        raise HTTPException(status_code=404, detail="Image not found")
 
 
 @router.get("/bot/avatar")
@@ -480,113 +57,6 @@ async def bot_avatar_proxy(file_id: str = Query(...)):
         return RedirectResponse(url="/robot-librarian.jpg")
 
 
-@router.get("/tunnel/opds")
-async def tunnel_opds(
-    url: str = Query(..., description="Target OPDS URL"),
-    admin_mode: bool = Query(False, description="Whether to show full admin catalog"),
-    user_data: dict[str, Any] = Depends(require_mini_app_access),
-):
-    """
-    Proxies OPDS requests directly to the server, injecting credentials.
-    Returns raw XML or modified XML for UI improvements.
-    """
-    current_uid = user_data.get("user_id", 0)
-
-    # Normalize URL: support root fallback and relative paths
-    if not url or url == "/":
-        if user_data.get("role") == "admin" and admin_mode:
-            target_url = config.OPDS_ROOT_EVIL
-        else:
-            target_url = config.OPDS_ROOT_START
-    elif not url.startswith("http"):
-        base = config.OPDS_SERVER_URL.rstrip("/")
-        if url.startswith("/"):
-            target_url = f"{base}{url}"
-        else:
-            target_url = f"{base}/{url}"
-    else:
-        target_url = url
-
-    logger.info(f"Tunneling OPDS -> {target_url} for user {current_uid} (admin_mode={admin_mode})")
-
-    headers = {
-        "User-Agent": "ZeePubBot/4.5 (OPDS Tunnel)",
-        "Accept": "application/atom+xml,application/xml;q=0.9,*/*;q=0.8",
-    }
-
-    try:
-        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
-            r = await client.get(target_url, auth=config.OPDS_AUTH, headers=headers)
-
-            if r.status_code >= 400:
-                logger.error(
-                    f"Upstream OPDS error {r.status_code} for {target_url}: {r.text[:200]}"
-                )
-                return Response(
-                    content=f"Error upstream: {r.status_code}",
-                    status_code=r.status_code,
-                )
-
-            content_type = r.headers.get("content-type", "")
-
-            # If it's XML, we might want to modify it (renaming, relinking)
-            if "xml" in content_type and (user_data.get("role") != "admin" or not admin_mode):
-                import re
-
-                xml_text = r.text
-
-                # 1. Rename and Relink "Todas las bibliotecas" -> "Biblioteca Zeepubs"
-                if "Todas las bibliotecas" in xml_text:
-                    xml_text = xml_text.replace("Todas las bibliotecas", "Biblioteca Zeepubs")
-                    # Relink /libraries -> /libraries/1 for direct library access
-                    xml_text = re.sub(r'/libraries(?=["\s/])(?!/1)', "/libraries/1", xml_text)
-
-                # 2. Hide unwanted sections from the ROOT feed (Mi Catálogo)
-                if "<id>root</id>" in xml_text or "<id>libraries</id>" in xml_text:
-                    to_hide = [
-                        "En el puente",
-                        "Listas de lectura",
-                        "Deseo leer",
-                        "Todas las colecciones",
-                        "Actualizado recientemente",
-                        "Añadido recientemente",
-                    ]
-                    for title in to_hide:
-                        # Refined pattern: ensure we don't cross <entry> boundaries
-                        pattern = rf"<entry>(?:(?!</entry>)[\s\S])*?<title>{re.escape(title)}</title>[\s\S]*?</entry>"
-                        xml_text = re.sub(pattern, "", xml_text)
-
-                # 3. Add "Todas las colecciones" to specific sub-feeds as requested
-                sub_feeds = ["/on-deck", "/reading-list", "/want-to-read"]
-                if any(sub in target_url for sub in sub_feeds) and "</feed>" in xml_text:
-                    # Find base OPDS URL to point collections link correctly
-                    base_opds = target_url
-                    for sub in sub_feeds:
-                        if sub in base_opds:
-                            base_opds = base_opds.split(sub)[0]
-                            break
-
-                    extra_entry = f"""
-  <entry>
-    <updated>2025-12-26T12:00:00</updated>
-    <id>allCollections-injected</id>
-    <title>Todas las colecciones</title>
-    <content type="text">Navegar por colecciones</content>
-    <link rel="subsection" type="application/atom+xml;profile=opds-catalog;kind=navigation" href="{base_opds}/collections" />
-  </entry>
-"""
-                    xml_text = xml_text.replace("</feed>", extra_entry + "</feed>")
-
-                return Response(content=xml_text.encode("utf-8"), media_type=content_type)
-
-            # For non-XML (binary icons, etc), stream it
-            return StreamingResponse(r.aiter_bytes(), media_type=content_type)
-
-    except Exception as e:
-        logger.error(f"Tunnel exception for {target_url}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
 @router.get("/dl/{url_hash}")
 async def short_download(url_hash: str):
     """
@@ -603,10 +73,9 @@ async def short_download(url_hash: str):
         parsed = urlparse(url)
         title = unquote(parsed.path.split("/")[-1]).replace(".epub", "")
 
-        # Redirigir al endpoint público
-        from fastapi.responses import RedirectResponse
-
-        return RedirectResponse(url=f"/api/public/dl?url={url}&title={title}")
+        # Llamar directamente a la lógica de descarga pública (proxy)
+        # Esto evita redirecciones que expongan la URL real en el navegador
+        return await public_download(url=url, title=title)
     except Exception as e:
         logger.error(f"Error decoding short URL: {e}")
         raise HTTPException(status_code=404, detail="Invalid short URL")
@@ -614,26 +83,31 @@ async def short_download(url_hash: str):
 
 @router.get("/public/dl")
 async def public_download(
-    url: str = Query(..., description="Source EPUB URL"),
+    url: str = Query(..., description="Source EPUB URL or Local Path"),
     title: str = Query("libro", description="Filename hint"),
 ):
     """
     Proxy público para descargas.
-    Sirve el archivo desde la fuente OPDS original.
+    Sirve el archivo desde una URL remota o un path local.
     """
     try:
-        # Validar URL básica para evitar SSRF flagrante (aunque fetch_bytes ya es genérico)
+        # 1. Caso Path Local
+        if os.path.exists(url) and os.path.isfile(url):
+            from fastapi.responses import FileResponse
+
+            logger.info(f"Serving local file: {url}")
+            return FileResponse(
+                path=url,
+                media_type="application/epub+zip",
+                filename=f"{title}.epub",
+            )
+
+        # 2. Caso URL Remota (Mantenemos compatibilidad por si acaso, pero sin OPDS_AUTH)
         if not url.startswith("http"):
-            raise HTTPException(status_code=400, detail="Invalid URL")
+            raise HTTPException(status_code=400, detail="Invalid URL or file not found")
 
-        # Usar fetch_bytes para obtener el contenido (memoria o archivo temp)
-        # Nota: fetch_bytes maneja archivos grandes escribiendo a disco
-
-        auth = None
-        if config.OPDS_AUTH:
-            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
-
-        data = await fetch_bytes(url, timeout=120, auth=auth)
+        logger.info(f"Proxying remote download: {url}")
+        data = await fetch_bytes(url, timeout=120)
 
         if not data:
             raise HTTPException(status_code=404, detail="Could not fetch file")
@@ -661,9 +135,6 @@ async def public_download(
                 headers={"Content-Disposition": f'attachment; filename="{title}.epub"'},
             )
         else:
-            # Son bytes en memoria
-            # StreamingResponse espera un iterador o bytes-like object?
-            # Response normal funciona para bytes.
             return Response(
                 content=data,
                 media_type="application/epub+zip",
@@ -848,7 +319,6 @@ async def get_config(user_data: dict[str, Any] = Depends(require_mini_app_access
     response = {
         "is_admin": is_admin,
         "is_facebook_publisher": is_publisher,
-        "admin_root_url": config.OPDS_ROOT_EVIL if is_admin else None,
         "destinations": [],
     }
 
@@ -974,7 +444,7 @@ async def download_book(
 async def zitadel_enrich_token(request: Request):
     """
     Endpoint para ZITADEL Actions v2 (Function: preuserinfo).
-    Enriquece el token con roles de Kavita y preferred_username.
+    Enriquece el token con roles y preferred_username.
     """
     try:
         # Leer body raw

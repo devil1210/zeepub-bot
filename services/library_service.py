@@ -5,6 +5,8 @@ from sqlalchemy import String, and_, cast, exists, func, or_, select
 
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, SeriesMetadata, UserDownload
+from repositories.book_repository import book_repo
+from repositories.series_repository import series_repo
 from schemas.library_schemas import BookDTO, CoverUrlDTO, SeriesDTO
 
 logger = logging.getLogger(__name__)
@@ -20,97 +22,15 @@ class LibraryService:
         source_id: int | None = None,
     ) -> dict[str, Any]:
         """
-        Realiza una búsqueda de libros utilizando PostgreSQL ILIKE (Async).
-        Optimizado con subconsulta para conteo de descargas y validación Pydantic.
+        Realiza una búsqueda de libros delegando al repositorio.
         """
-        async with pg_manager.get_session() as session:
-            try:
-                pattern = f"%{query}%"
-
-                # Filtros base
-                filters = [
-                    LocalBook.title.ilike(pattern),
-                    LocalBook.author.ilike(pattern),
-                    LocalBook.series.ilike(pattern),
-                    LocalBook.series_spanish.ilike(pattern),
-                    LocalBook.series_english.ilike(pattern),
-                    LocalBook.romaji_title.ilike(pattern),
-                    LocalBook.english_title.ilike(pattern),
-                    LocalBook.spanish_title.ilike(pattern),
-                ]
-
-                if search_type in ("all", "todos", "genres", "géneros", "tags"):
-                    filters.append(cast(LocalBook.tags, String).ilike(pattern))
-                if search_type in ("all", "todos", "demographics", "demografía"):
-                    filters.append(cast(LocalBook.demographics, String).ilike(pattern))
-                if search_type in ("all", "todos", "translator", "traductor", "group", "grupo"):
-                    filters.append(LocalBook.translator.ilike(pattern))
-                if search_type in ("all", "todos", "illustrator", "ilustrador"):
-                    filters.append(LocalBook.illustrator.ilike(pattern))
-                if search_type in ("all", "todos", "layout", "maquetador", "typesetter"):
-                    filters.append(LocalBook.layout_by.ilike(pattern))
-                if search_type in ("all", "todos", "isbn"):
-                    filters.append(LocalBook.isbn.ilike(pattern))
-
-                # Subquery for download count
-                dl_subquery = (
-                    select(func.count(UserDownload.id))
-                    .where(UserDownload.book_hash == LocalBook.book_hash)
-                    .correlate(LocalBook)
-                    .scalar_subquery()
-                )
-
-                stmt = select(LocalBook, dl_subquery.label("download_count")).where(or_(*filters))
-
-                if source_id:
-                    stmt = stmt.where(LocalBook.source_id == source_id)
-
-                # Count total
-                count_stmt = select(func.count()).select_from(stmt.subquery())
-                total_items = (await session.execute(count_stmt)).scalar() or 0
-
-                # Pagination
-                start = (page - 1) * items_per_page
-                stmt = stmt.order_by(LocalBook.title.asc()).offset(start).limit(items_per_page)
-
-                result = await session.execute(stmt)
-                rows = result.all()  # [(book, dl_count), ...]
-
-                results = []
-                for row in rows:
-                    b = row[0]
-                    dl_count = row[1] or 0
-
-                    b_dict = b.to_dict()
-
-                    # Map to DTO
-                    dto = BookDTO(
-                        **b_dict, download_count=dl_count, coverUrl=b.cover_medium or b.cover_low
-                    )
-                    results.append(dto.model_dump())
-
-                total_pages = (total_items + items_per_page - 1) // items_per_page
-
-                return {
-                    "results": results,
-                    "items": results,
-                    "currentPage": page,
-                    "page": page,
-                    "totalPages": total_pages,
-                    "totalItems": total_items,
-                    "total": total_items,
-                }
-            except Exception as e:
-                logger.error(f"[LibraryService.search_books] Error: {e}")
-                return {
-                    "results": [],
-                    "items": [],
-                    "currentPage": page,
-                    "page": page,
-                    "totalPages": 0,
-                    "totalItems": 0,
-                    "total": 0,
-                }
+        return await book_repo.search_books(
+            query=query,
+            page=page,
+            items_per_page=items_per_page,
+            search_type=search_type,
+            source_id=source_id,
+        )
 
     @staticmethod
     async def search_series(
@@ -351,45 +271,21 @@ class LibraryService:
     @staticmethod
     async def get_series_metadata(series_hash: str) -> SeriesMetadata | None:
         """Obtiene la metadata de una serie por su hash (Async)."""
-        async with pg_manager.get_session() as session:
-            stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == series_hash)
-            res = await session.execute(stmt)
-            return res.scalar_one_or_none()
+        return await series_repo.get_by_hash(series_hash)
 
     @staticmethod
     async def get_book_by_id(book_id: int) -> dict[str, Any] | None:
-        """Busca un libro por su ID con validación Pydantic."""
-        async with pg_manager.get_session() as session:
-            try:
-                # Subquery for DL count
-                dl_subquery = (
-                    select(func.count(UserDownload.id))
-                    .where(UserDownload.book_hash == LocalBook.book_hash)
-                    .correlate(LocalBook)
-                    .scalar_subquery()
-                )
+        """Busca un libro por su ID delegando al repositorio."""
+        book = await book_repo.get_by_id(book_id)
+        if not book:
+            return None
 
-                stmt = select(LocalBook, dl_subquery.label("download_count")).where(
-                    LocalBook.id == book_id
-                )
-                res = await session.execute(stmt)
-                row = res.one_or_none()
+        # Conteo de descargas se puede añadir al DTO si es necesario
+        cover_url = book.cover_medium or book.cover_low or book.cover_original
+        b_dict = book.to_dict()
 
-                if not row:
-                    return None
-
-                book = row[0]
-                dl_count = row[1] or 0
-
-                b_dict = book.to_dict()
-
-                dto = BookDTO(
-                    **b_dict, download_count=dl_count, coverUrl=book.cover_medium or book.cover_low
-                )
-                return dto.model_dump()
-            except Exception as e:
-                logger.error(f"[LibraryService.get_book_by_id] Error: {e}")
-                return None
+        dto = BookDTO(**b_dict, download_count=0, coverUrl=cover_url)
+        return dto.model_dump()
 
     @staticmethod
     async def update_book_metadata(book_id: int, updates: dict[str, Any]) -> bool:

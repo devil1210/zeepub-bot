@@ -21,15 +21,8 @@ class BotConfig:
     # Si no se define BASE_URL, se construye usando PUBLIC_DOMAIN
     BASE_URL: str = os.getenv("BASE_URL", "")
 
-    # URL base del servidor OPDS (ej: https://apps.tailfe99c.ts.net)
-    OPDS_SERVER_URL: str = os.getenv("OPDS_SERVER_URL", "")
-
     # URL de la Mini App (para botones y referencias)
     WEBAPP_URL: str = os.getenv("WEBAPP_URL", "")
-
-    # Variables originales del .env (son los sufijos/rutas)
-    OPDS_ROOT_START_SUFFIX: str = os.getenv("OPDS_ROOT_START", "")
-    OPDS_ROOT_EVIL_SUFFIX: str = os.getenv("OPDS_ROOT_EVIL", "")
 
     SECRET_SEED: str = os.getenv("SECRET_SEED", "")
 
@@ -152,38 +145,7 @@ class BotConfig:
         self.DATABASE_URL = os.getenv("DATABASE_URL", "")
 
     @property
-    def OPDS_ROOT_START(self) -> str:
-        # Usa el servidor OPDS si está definido, sino usa BASE_URL (fallback)
-        base = self.OPDS_SERVER_URL if self.OPDS_SERVER_URL else self.BASE_URL
-        return f"{base}{self.OPDS_ROOT_START_SUFFIX}"
-
-    @property
-    def OPDS_ROOT_EVIL(self) -> str:
-        base = self.OPDS_SERVER_URL if self.OPDS_SERVER_URL else self.BASE_URL
-        return f"{base}{self.OPDS_ROOT_EVIL_SUFFIX}"
-
-    @property
-    def OPDS_AUTH(self) -> tuple[str, str]:
-        """
-        Retorna las credenciales OPDS (usuario, pass) %SAME% autenticación.
-        Asumimos que están en variables de entorno OPDS_USER y OPDS_PASS.
-        Si no están, retorna None o tupla vacía.
-        """
-        user = os.getenv("OPDS_USER", "")
-        password = os.getenv("OPDS_PASS", "")
-        if user and password:
-            # Ignorar si son placeholders comunes
-            placeholders = {
-                "tu_usuario",
-                "tu_password",
-                "USERNAME",
-                "PASSWORD",
-                "user",
-                "pass",
-            }
-            if user in placeholders or password in placeholders:
-                return None
-            return (user, password)
+    def OPDS_AUTH(self) -> None:
         return None
 
     def validate(self) -> tuple[bool, list[str]]:
@@ -210,11 +172,6 @@ class BotConfig:
                 "⚠️ Usando SQLite. Se recomienda migrar a PostgreSQL según el manifiesto."
             )
 
-        # Validar que al menos tengamos los sufijos (usando los nombres del .env)
-        if not self.OPDS_ROOT_START_SUFFIX:
-            errors.append("OPDS_ROOT_START")
-        if not self.OPDS_ROOT_EVIL_SUFFIX:
-            errors.append("OPDS_ROOT_EVIL")
         if not self.SECRET_SEED:
             errors.append("SECRET_SEED")
         if not self.DONATION_URL:

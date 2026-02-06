@@ -10,7 +10,8 @@ import {
   Palette,
   FileWarning,
   UploadCloud,
-  Layers
+  Layers,
+  Send
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { useNavigation } from '@shared/contexts/NavigationContext';
@@ -21,6 +22,7 @@ import { AccessDashboard } from './AccessDashboard';
 import { AppearanceDashboard } from '@features/settings/pages/AppearanceDashboard';
 import { DuplicatesDashboard } from './DuplicatesDashboard';
 import { UploadHistoryDashboard } from '@features/upload/pages/UploadHistoryDashboard';
+import { PublisherDashboard } from '@features/publisher/pages/PublisherDashboard';
 import { useTelegram } from '@shared/contexts/TelegramContext';
 
 interface AdminProps {
@@ -37,7 +39,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const setIsViewSelectorOpen = setMenuOpen;
 
   // Derived state from URL
-  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads') || 'monitor';
+  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads' | 'publisher') || 'monitor';
   const selectedUserId = searchParams.get('userId');
   const tierName = searchParams.get('tierName');
   const tierColor = searchParams.get('tierColor');
@@ -91,6 +93,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       { id: 'access', label: 'Acceso', icon: ShieldCheck },
       { id: 'duplicates', label: 'Duplicados', icon: FileWarning },
       { id: 'uploads', label: 'Subidas', icon: UploadCloud },
+      { id: 'publisher', label: 'Publicador', icon: Send },
     ];
 
     setCustomActions({
@@ -186,6 +189,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
         );
       case 'duplicates': return <DuplicatesDashboard />;
       case 'uploads': return <UploadHistoryDashboard />;
+      case 'publisher': return <PublisherDashboard />;
       default: return <MonitorDashboard />;
     }
   };

@@ -1,0 +1,163 @@
+import logging
+from datetime import datetime
+
+from sqlalchemy import and_, delete, select, update
+from sqlalchemy.orm import selectinload
+
+from core.db_manager_pg import pg_manager
+from models.publication_models import PublicationChannel, PublicationQueue, PublicationTemplate
+from repositories.base_repository import BaseRepository
+
+logger = logging.getLogger(__name__)
+
+
+class PublicationRepository(BaseRepository[PublicationQueue]):
+    """
+    Repositorio para la gestión de todo lo relacionado con publicaciones:
+    Canales, Plantillas y Cola de Publicación.
+    """
+
+    def __init__(self, db_manager=None):
+        super().__init__(db_manager or pg_manager, "publication_queue")
+
+    # --- Publication Queue Methods ---
+
+    async def get_by_id(self, queue_id: int) -> PublicationQueue | None:
+        async with self.db_manager.get_session() as session:
+            stmt = (
+                select(PublicationQueue)
+                .options(
+                    selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template)
+                )
+                .where(PublicationQueue.id == queue_id)
+            )
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+
+    async def create(self, item: PublicationQueue) -> PublicationQueue:
+        async with self.db_manager.get_session() as session:
+            session.add(item)
+            await session.commit()
+            await session.refresh(item)
+            return item
+
+    async def update(self, item: PublicationQueue) -> PublicationQueue:
+        async with self.db_manager.get_session() as session:
+            session.add(item)
+            await session.commit()
+            await session.refresh(item)
+            return item
+
+    async def delete(self, queue_id: int) -> bool:
+        async with self.db_manager.get_session() as session:
+            stmt = delete(PublicationQueue).where(PublicationQueue.id == queue_id)
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount > 0
+
+    async def get_pending_queue(self, limit: int = 50) -> list[PublicationQueue]:
+        """Obtiene las publicaciones pendientes cuya fecha de programación ya pasó."""
+        now = datetime.utcnow()
+        async with self.db_manager.get_session() as session:
+            stmt = (
+                select(PublicationQueue)
+                .options(
+                    selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template)
+                )
+                .where(
+                    and_(
+                        PublicationQueue.status == "pending", PublicationQueue.scheduled_for <= now
+                    )
+                )
+                .order_by(PublicationQueue.scheduled_for.asc())
+                .limit(limit)
+            )
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_full_queue(
+        self, status: str | None = None, limit: int = 100
+    ) -> list[PublicationQueue]:
+        """Obtiene el historial/estado de la cola."""
+        async with self.db_manager.get_session() as session:
+            stmt = select(PublicationQueue).options(
+                selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template)
+            )
+            if status:
+                stmt = stmt.where(PublicationQueue.status == status)
+
+            stmt = stmt.order_by(PublicationQueue.scheduled_for.desc()).limit(limit)
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    # --- Publication Channel Methods ---
+
+    async def get_channels(self, active_only: bool = True) -> list[PublicationChannel]:
+        async with self.db_manager.get_session() as session:
+            stmt = select(PublicationChannel)
+            if active_only:
+                stmt = stmt.where(PublicationChannel.is_active == True)
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def create_channel(self, channel: PublicationChannel) -> PublicationChannel:
+        async with self.db_manager.get_session() as session:
+            session.add(channel)
+            await session.commit()
+            await session.refresh(channel)
+            return channel
+
+    async def update_channel(self, channel_id: int, data: dict) -> bool:
+        async with self.db_manager.get_session() as session:
+            stmt = (
+                update(PublicationChannel).where(PublicationChannel.id == channel_id).values(**data)
+            )
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount > 0
+
+    async def delete_channel(self, channel_id: int) -> bool:
+        async with self.db_manager.get_session() as session:
+            stmt = delete(PublicationChannel).where(PublicationChannel.id == channel_id)
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount > 0
+
+    # --- Publication Template Methods ---
+
+    async def get_templates(self, platform: str | None = None) -> list[PublicationTemplate]:
+        async with self.db_manager.get_session() as session:
+            stmt = select(PublicationTemplate)
+            if platform:
+                stmt = stmt.where(PublicationTemplate.platform == platform)
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def create_template(self, template: PublicationTemplate) -> PublicationTemplate:
+        async with self.db_manager.get_session() as session:
+            session.add(template)
+            await session.commit()
+            await session.refresh(template)
+            return template
+
+    async def update_template(self, template_id: int, data: dict) -> bool:
+        async with self.db_manager.get_session() as session:
+            stmt = (
+                update(PublicationTemplate)
+                .where(PublicationTemplate.id == template_id)
+                .values(**data)
+            )
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount > 0
+
+    async def delete_template(self, template_id: int) -> bool:
+        async with self.db_manager.get_session() as session:
+            stmt = delete(PublicationTemplate).where(PublicationTemplate.id == template_id)
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount > 0
+
+
+# Instancia global
+pub_repo = PublicationRepository()

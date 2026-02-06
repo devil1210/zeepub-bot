@@ -2,81 +2,19 @@ import html
 import os
 import re
 from typing import Any
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
-from config.config_settings import config
 from utils.epub_extractor import clean_metadata_tags
 
 
 def extract_creators_by_role(entry, role_code: str) -> str | None:
-    """Extrae personas de una entrada OPDS filtrando por rol (ill, trl, bkp, etc)."""
-    creators = []
-
-    # 1. Buscar en authors con atributo role
-    authors = getattr(entry, "authors", [])
-    for a in authors:
-        role = getattr(a, "role", None)
-        if role == role_code:
-            name = getattr(a, "name", None)
-            if isinstance(name, str):
-                creators.append(name)
-
-    # 2. Buscar en namespaces dc:creator o dc:contributor
-    # Algunas fuentes usan dc_creator_ill, dc_creator_trl o similar si se mapean
-    if hasattr(entry, "get"):
-        val = entry.get(f"dc_creator_{role_code}") or entry.get(f"dc_contributor_{role_code}")
-        if isinstance(val, str):
-            creators.append(val)
-
-    if creators:
-        return " - ".join(creators)
+    """DESACTIVADO."""
     return None
 
 
 def extract_author(entry, is_folder=False) -> str:
-    """Extrae el autor de una entrada OPDS de forma robusta."""
-    # Intentar autores sin rol o con rol aut/author
-    creators = []
-    authors = getattr(entry, "authors", [])
-    for a in authors:
-        role = getattr(a, "role", None)
-        if not role or role in ("aut", "author"):
-            name = getattr(a, "name", None)
-            if name:
-                creators.append(name)
-
-    if creators:
-        return " - ".join(creators)
-
-    # Fallback legacy logic
-    author = None
-    single_author = entry.get("author") if hasattr(entry, "get") else getattr(entry, "author", None)
-    if hasattr(single_author, "name"):
-        author = single_author.name
-    elif isinstance(single_author, dict):
-        author = single_author.get("name")
-    elif isinstance(single_author, str) and single_author:
-        author = single_author
-
-    if not author:
-        detail = (
-            entry.get("author_detail")
-            if hasattr(entry, "get")
-            else getattr(entry, "author_detail", None)
-        )
-        if detail:
-            author = detail.get("name") if hasattr(detail, "get") else getattr(detail, "name", None)
-
-    if not author:
-        if hasattr(entry, "get"):
-            author = entry.get("dc_creator") or entry.get("dcterms_creator")
-        else:
-            author = getattr(entry, "dc_creator", None) or getattr(entry, "dcterms_creator", None)
-
-    if not author:
-        author = "Colección" if is_folder else "Desconocido"
-
-    return author
+    """DESACTIVADO."""
+    return "Desconocido"
 
 
 def get_thread_id(update) -> int:
@@ -409,90 +347,12 @@ def limpiar_html_basico(texto_html: str) -> str:
 
 
 def build_search_url(query: str, uid: int = None, role: str = None) -> str:
-    # Default to START
-    root = config.OPDS_ROOT_START
-
-    # If role is provided, use it for root determination
-    if role:
-        if role == "admin":
-            root = config.OPDS_ROOT_EVIL
-        else:
-            root = config.OPDS_ROOT_START
-    elif uid:
-        # Fallback to legacy config check if role not provided
-        is_admin = uid in config.ADMIN_USERS
-        if is_admin:
-            root = config.OPDS_ROOT_EVIL
-        else:
-            root = config.OPDS_ROOT_START
-
-    if "/series" in root:
-        root_series = root.split("?")[0]
-    else:
-        root_series = f"{root}/series"
-    return f"{root_series}?query={query}"
+    """DESACTIVADO."""
+    return ""
 
 
 def find_zeepubs_destino(feed, prefer_libraries: bool = False):
-    import logging
-
-    if not feed:
-        logging.debug("find_zeepubs_destino: feed is None")
-        return None
-    entries = getattr(feed, "entries", [])
-    logging.debug(
-        "find_zeepubs_destino: feed title=%s entries=%d",
-        getattr(feed, "feed", {}).get("title", None),
-        len(entries),
-    )
-
-    def norm(s):
-        return " ".join((s or "").split()).casefold()
-
-    candidatos = []
-    for entry in entries:
-        title = getattr(entry, "title", "")
-        logging.debug("find_zeepubs_destino: entry.title=%r", title)
-        tnorm = norm(title)
-        for link in getattr(entry, "links", []):
-            rel = getattr(link, "rel", "")
-            href = getattr(link, "href", "")
-            logging.debug(" find link rel=%r href=%r (entry=%r)", rel, href, title)
-            if rel == "subsection" and href:
-                full = abs_url(config.BASE_URL, href)
-                candidatos.append((title, full))
-                if "zeepub" in tnorm or "zeepubs" in tnorm or tnorm == norm("ZeePubs [ES]"):
-                    logging.debug(
-                        "find_zeepubs_destino: título coincide con 'zeepub(s)': %r -> %s",
-                        title,
-                        full,
-                    )
-                    return full
-    if prefer_libraries:
-        for title, href in candidatos:
-            path = urlparse(href).path.lower()
-            if "/libraries" in path or "/collections" in path or "/library" in path:
-                logging.debug(
-                    "find_zeepubs_destino: (prefer_libraries) href contains pattern, choosing %s (title=%r)",
-                    href,
-                    title,
-                )
-                return href
-        for title, href in candidatos:
-            if "bibliotec" in norm(title):
-                logging.debug(
-                    "find_zeepubs_destino: (prefer_libraries) title suggests 'biblioteca', choosing %s (title=%r)",
-                    href,
-                    title,
-                )
-                return href
-    if len(candidatos) == 1:
-        logging.debug("find_zeepubs_destino: unique candidate, returning %s", candidatos[0][1])
-        return candidatos[0][1]
-    logging.debug(
-        "find_zeepubs_destino: no destination found (candidates=%s)",
-        [c for _, c in candidatos],
-    )
+    """DESACTIVADO."""
     return None
 
 

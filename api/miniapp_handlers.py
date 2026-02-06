@@ -26,13 +26,9 @@ from repositories.download_repository import download_repo
 from repositories.user_repository import user_repo
 from services.library_service import LibraryService
 from services.notion_service import notion_service
-from services.opds_service import get_cached_feed
 from services.rating_service import RatingService
 from services.rbac_service import rbac_service
 from services.settings_service import get_setting, set_setting
-from utils.helpers import (
-    parse_metadata_from_title,
-)
 from utils.library_db import get_session
 
 logger = logging.getLogger(__name__)
@@ -61,7 +57,7 @@ def check_staff(user_data: dict[str, Any]):
 
 
 async def handle_search(data: dict[str, Any], user_data: dict[str, Any]):
-    """Busca libros en la base de datos local o en el servidor OPDS."""
+    """Busca libros en la base de datos local."""
     user_data.get("user_id", 0)
     user_data.get("level", "free")
     query = data.get("query")
@@ -81,7 +77,7 @@ async def handle_search(data: dict[str, Any], user_data: dict[str, Any]):
 
 
 async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
-    """Devuelve el detalle de un libro desde la base de datos local o OPDS."""
+    """Devuelve el detalle de un libro desde la base de datos local."""
     user_id = user_data.get("user_id", 0)
     book_id_raw = data.get("bookId")
     logger.info(f"[book-detail] Request received - bookId: {book_id_raw}")
@@ -639,25 +635,8 @@ async def handle_get_download_count(data: dict[str, Any], user_data: dict[str, A
             local_book.get("cleanTitle")
             book_hash_for_query = local_book.get("book_hash")
     else:
-        # It's a URL (OPDS)
-        try:
-            feed = await get_cached_feed(book_id)
-            if feed:
-                entries = getattr(feed, "entries", [])
-                entry = (
-                    entries[0] if entries else (feed.feed if getattr(feed, "feed", None) else None)
-                )
-                if entry:
-                    title_for_query = entry.get("title")
-                    meta = parse_metadata_from_title(title_for_query)
-                    meta.get("clean_title")
-                    # For OPDS books we don't have a stable binary hash,
-                    # but we can simulate one if we want consistency across scanners.
-                    # For now, title-based fallback in repository will handle it.
-        except Exception as e:
-            logger.error(
-                f"[handle_get_download_count] Error resolving OPDS title for {book_id}: {e}"
-            )
+        # No OPDS fallback
+        pass
 
     if not title_for_query and not book_hash_for_query:
         return {"count": 0}
@@ -3610,3 +3589,168 @@ async def handle_ai_reset_series(data: dict[str, Any], user_data: dict[str, Any]
             "success": True,
             "message": "Metadatos de la serie reseteados. El Jardinero IA la procesará en breve.",
         }
+
+
+# --- Publication Handlers (Fase 3) ---
+
+
+async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
+    check_staff(user_data)
+    from repositories.publication_repository import pub_repo
+
+    status = data.get("status")
+    limit = data.get("limit", 50)
+    items = await pub_repo.get_full_queue(status=status, limit=limit)
+    return {
+        "items": [
+            {
+                "id": i.id,
+                "book_hash": i.book_hash,
+                "channel": i.channel.name if i.channel else "Unknown",
+                "platform": i.channel.platform if i.channel else "Unknown",
+                "scheduled_for": i.scheduled_for.isoformat(),
+                "status": i.status,
+                "published_at": i.published_at.isoformat() if i.published_at else None,
+                "error": i.error_message,
+                "payload": i.payload,
+            }
+            for i in items
+        ]
+    }
+
+
+async def handle_pub_get_channels(data: dict[str, Any], user_data: dict[str, Any]):
+    check_staff(user_data)
+    from repositories.publication_repository import pub_repo
+
+    channels = await pub_repo.get_channels(active_only=False)
+    return {
+        "channels": [
+            {
+                "id": c.id,
+                "name": c.name,
+                "platform": c.platform,
+                "target_id": c.target_id,
+                "is_active": c.is_active,
+                "config": c.config,
+            }
+            for c in channels
+        ]
+    }
+
+
+async def handle_pub_save_channel(data: dict[str, Any], user_data: dict[str, Any]):
+    check_admin(user_data)
+    from models.publication_models import PublicationChannel
+    from repositories.publication_repository import pub_repo
+
+    channel_id = data.get("id")
+    channel_data = {
+        "name": data["name"],
+        "platform": data["platform"],
+        "target_id": data["target_id"],
+        "is_active": data.get("is_active", True),
+        "config": data.get("config", {}),
+    }
+
+    if channel_id:
+        await pub_repo.update_channel(channel_id, channel_data)
+    else:
+        channel = PublicationChannel(**channel_data)
+        await pub_repo.create_channel(channel)
+    return {"success": True}
+
+
+async def handle_pub_delete_channel(data: dict[str, Any], user_data: dict[str, Any]):
+    check_admin(user_data)
+    from repositories.publication_repository import pub_repo
+
+    channel_id = data.get("id")
+    if not channel_id:
+        raise HTTPException(status_code=400, detail="Falta id")
+    await pub_repo.delete_channel(channel_id)
+    return {"success": True}
+
+
+async def handle_pub_get_templates(data: dict[str, Any], user_data: dict[str, Any]):
+    check_staff(user_data)
+    from repositories.publication_repository import pub_repo
+
+    templates = await pub_repo.get_templates(platform=data.get("platform"))
+    return {
+        "templates": [
+            {"id": t.id, "name": t.name, "content": t.content, "platform": t.platform}
+            for t in templates
+        ]
+    }
+
+
+async def handle_pub_save_template(data: dict[str, Any], user_data: dict[str, Any]):
+    check_admin(user_data)
+    from models.publication_models import PublicationTemplate
+    from repositories.publication_repository import pub_repo
+
+    template_id = data.get("id")
+    template_data = {
+        "name": data["name"],
+        "content": data["content"],
+        "platform": data["platform"],
+    }
+
+    if template_id:
+        await pub_repo.update_template(template_id, template_data)
+    else:
+        template = PublicationTemplate(**template_data)
+        await pub_repo.create_template(template)
+    return {"success": True}
+
+
+async def handle_pub_delete_template(data: dict[str, Any], user_data: dict[str, Any]):
+    check_admin(user_data)
+    from repositories.publication_repository import pub_repo
+
+    template_id = data.get("id")
+    if not template_id:
+        raise HTTPException(status_code=400, detail="Falta id")
+    await pub_repo.delete_template(template_id)
+    return {"success": True}
+
+
+async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
+    check_staff(user_data)
+    from services.publisher.publisher_service import publisher_service
+
+    book_hash = data["book_hash"]
+    channel_id = data["channel_id"]
+    scheduled_for_str = data["scheduled_for"]
+    template_id = data.get("template_id")
+    payload = data.get("payload")
+
+    # Parse ISO date
+    try:
+        from datetime import datetime
+
+        scheduled_for = datetime.fromisoformat(scheduled_for_str.replace("Z", "+00:00"))
+    except Exception as e:
+        logger.error(f"Error parsing date {scheduled_for_str}: {e}")
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido")
+
+    await publisher_service.schedule_publication(
+        book_hash=book_hash,
+        channel_id=channel_id,
+        scheduled_for=scheduled_for,
+        template_id=template_id,
+        payload=payload,
+    )
+    return {"success": True}
+
+
+async def handle_pub_delete_queue_item(data: dict[str, Any], user_data: dict[str, Any]):
+    check_staff(user_data)
+    from repositories.publication_repository import pub_repo
+
+    item_id = data.get("id")
+    if not item_id:
+        raise HTTPException(status_code=400, detail="Falta id")
+    await pub_repo.delete(item_id)
+    return {"success": True}

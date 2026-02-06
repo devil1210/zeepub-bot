@@ -144,7 +144,6 @@ async def handle_bot_request(
         logger.info(f"Miniapp action: {action} User: {user_id} Level: {user_level}")
 
     try:
-        # Mapping of actions to their respective handlers
         from api.miniapp_handlers import (
             handle_admin_backup_library,
             handle_admin_cleanup_library,
@@ -200,6 +199,16 @@ async def handle_bot_request(
             handle_feedback,
             handle_get_download_count,
             handle_get_user_audit_history,
+            handle_pub_delete_channel,
+            handle_pub_delete_queue_item,
+            handle_pub_delete_template,
+            handle_pub_get_channels,
+            # Publication handlers
+            handle_pub_get_queue,
+            handle_pub_get_templates,
+            handle_pub_save_channel,
+            handle_pub_save_template,
+            handle_pub_schedule,
             handle_rate_book,
             handle_rating_breakdown,
             handle_recommendations,
@@ -281,6 +290,16 @@ async def handle_bot_request(
             "admin_scan_status": handle_admin_scan_status,
             "admin_get_system_logs": handle_admin_get_system_logs,
             "admin_send_logs_telegram": handle_admin_send_logs_telegram,
+            # Publication actions
+            "pub_get_queue": handle_pub_get_queue,
+            "pub_get_channels": handle_pub_get_channels,
+            "pub_save_channel": handle_pub_save_channel,
+            "pub_delete_channel": handle_pub_delete_channel,
+            "pub_get_templates": handle_pub_get_templates,
+            "pub_save_template": handle_pub_save_template,
+            "pub_delete_template": handle_pub_delete_template,
+            "pub_schedule": handle_pub_schedule,
+            "pub_delete_queue_item": handle_pub_delete_queue_item,
         }
 
         if action == "admin_bulk_upload_confirm":

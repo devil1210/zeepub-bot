@@ -20,7 +20,8 @@ Este archivo es la **Única Fuente de Verdad** para el comportamiento del asiste
 5.  **Validación Pre-Vuelo**: Antes de push/commit: check de sintaxis (`py_compile`), linter (`ruff check`) y formatter (`ruff format`).
 6.  **Normalización de Datos**: El hash del libro es sagrado. Usar siempre `utils.helpers` e integrar IA (`services/ai_service`) como paso previo para `series_spanish` y `volume`.
 7.  **Single Floating Nav**: Todas las páginas deben integrarse en `UniversalFloatingNav.tsx` vía `NavigationContext.tsx`. Prohibido crear navbars paralelas.
-8.  **Auditoría de Producción**: Antes de despliegues mayores o cambios estructurales, invocar `@production-code-audit`.
+8.  **Operación Local Estricta**: El bot opera exclusivamente con archivos locales. Se eliminan todas las dependencias y referencias a Kavita u OPDS externo para la gestión de la biblioteca.
+9.  **Auditoría de Producción**: Antes de despliegues mayores o cambios estructurales, invocar `@production-code-audit`.
 
 ## 🚀 Capacidades Core Activas (v3.5.0)
 
