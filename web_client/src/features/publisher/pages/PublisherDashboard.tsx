@@ -16,13 +16,14 @@ import {
     Type,
     Facebook,
     Send as TelegramIcon,
-    RefreshCw
+    RefreshCw,
+    Star
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 
 export const PublisherDashboard: React.FC = () => {
     const { settings } = useTheme();
-    const { queue, channels, templates, loading, deleteQueueItem, refresh } = usePublisher();
+    const { queue, channels, discoveredChats, templates, loading, deleteQueueItem, refresh, toggleFavorite, promoteDiscovered } = usePublisher();
     const [activeTab, setActiveTab] = useState<'queue' | 'channels' | 'templates'>('queue');
 
 
@@ -132,32 +133,102 @@ export const PublisherDashboard: React.FC = () => {
                 )}
 
                 {activeTab === 'channels' && (
-                    <div className="flex flex-col gap-3">
-                        <div className="flex justify-between items-center px-1">
-                            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Canales Vinculados</h2>
-                            <button className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20">
-                                <Plus className="w-3.5 h-3.5" /> Nuevo
-                            </button>
+                    <div className="flex flex-col gap-6">
+                        {/* Authorized Channels */}
+                        <div className="flex flex-col gap-3">
+                            <div className="flex justify-between items-center px-1">
+                                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Canales Vinculados</h2>
+                                <button className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20">
+                                    <Plus className="w-3.5 h-3.5" /> Nuevo
+                                </button>
+                            </div>
+
+                            {channels.length === 0 ? (
+                                <div className="p-8 text-center glass-panel rounded-premium opacity-50">
+                                    <p className="text-xs text-gray-400">No hay canales configurados</p>
+                                </div>
+                            ) : (
+                                channels.map(channel => (
+                                    <div key={channel.id} className={`glass-panel rounded-premium p-4 border flex items-center justify-between group transition-all ${channel.is_favorite ? 'border-yellow-500/20 bg-yellow-500/5' : 'border-white/5'}`}>
+                                        <div className="flex items-center gap-4">
+                                            <div className={`p-3 rounded-2xl ${channel.platform === 'telegram' ? 'bg-blue-500/10 text-blue-400' : 'bg-primary/10 text-primary'
+                                                } shadow-inner relative`}>
+                                                {channel.platform === 'telegram' ? <TelegramIcon className="w-5 h-5" /> : <Facebook className="w-5 h-5" />}
+                                                {channel.is_favorite && (
+                                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-[#1a1b1e] shadow-sm transform rotate-12" />
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-black uppercase tracking-wider">{channel.name}</span>
+                                                    {channel.is_favorite && <span className="text-[9px] text-yellow-500/80 font-bold bg-yellow-500/10 px-1.5 py-0.5 rounded-full">FAVORITO</span>}
+                                                </div>
+                                                <span className="text-[10px] text-gray-500 font-medium">{channel.target_id}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => toggleFavorite(channel.id)}
+                                                className={`p-2 transition-colors ${channel.is_favorite ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-600 hover:text-yellow-400'}`}
+                                                title={channel.is_favorite ? "Quitar de favoritos" : "Marcar como favorito"}
+                                            >
+                                                <Star className={`w-4 h-4 ${channel.is_favorite ? 'fill-yellow-400' : ''}`} />
+                                            </button>
+                                            <button className="p-2 text-gray-400 hover:text-white transition-colors"><Edit3 className="w-4 h-4" /></button>
+                                            <button className="p-2 text-gray-400 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
 
-                        {channels.map(channel => (
-                            <div key={channel.id} className="glass-panel rounded-premium p-4 border border-white/5 flex items-center justify-between group">
-                                <div className="flex items-center gap-4">
-                                    <div className={`p-3 rounded-2xl ${channel.platform === 'telegram' ? 'bg-blue-500/10 text-blue-400' : 'bg-primary/10 text-primary'
-                                        } shadow-inner`}>
-                                        {channel.platform === 'telegram' ? <TelegramIcon className="w-5 h-5" /> : <Facebook className="w-5 h-5" />}
+                        {/* Discovered Chats */}
+                        {discoveredChats && discoveredChats.length > 0 && (
+                            <div className="flex flex-col gap-3 pt-4 border-t border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                <div className="flex justify-between items-center px-1">
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="text-xs font-black uppercase tracking-[0.2em] text-cyan-400/80">Chats Descubiertos</h2>
+                                        <span className="px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-[9px] font-bold text-cyan-400 border border-cyan-500/20">
+                                            {discoveredChats.length}
+                                        </span>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-xs font-black uppercase tracking-wider">{channel.name}</span>
-                                        <span className="text-[10px] text-gray-500 font-medium">{channel.target_id}</span>
-                                    </div>
+                                    <span className="text-[9px] text-gray-500 uppercase font-medium">Auto-detect</span>
                                 </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button className="p-2 text-gray-400 hover:text-white transition-colors"><Edit3 className="w-4 h-4" /></button>
-                                    <button className="p-2 text-gray-400 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+
+                                <div className="grid grid-cols-1 gap-2">
+                                    {discoveredChats.map(chat => (
+                                        <div key={chat.chat_id} className="glass-panel rounded-premium p-3 border border-white/5 flex items-center justify-between group hover:border-cyan-500/30 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400">
+                                                    <TelegramIcon className="w-4 h-4" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[11px] font-bold text-gray-200">{chat.title}</span>
+                                                    <div className="flex items-center gap-2 text-[9px] text-gray-500">
+                                                        <span>{chat.type}</span>
+                                                        <span>•</span>
+                                                        <span>{chat.member_count} miembros</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {chat.is_promoted ? (
+                                                <span className="text-[9px] text-green-400 font-bold px-2 py-1 bg-green-500/10 rounded-full flex items-center gap-1">
+                                                    <CheckCircle2 className="w-3 h-3" /> AÑADIDO
+                                                </span>
+                                            ) : (
+                                                <button
+                                                    onClick={() => promoteDiscovered(chat.chat_id, chat.title)}
+                                                    className="opacity-60 group-hover:opacity-100 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[9px] font-black uppercase tracking-wider transition-all"
+                                                >
+                                                    Agregar <Plus className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        ))}
+                        )}
                     </div>
                 )}
 

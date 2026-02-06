@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { publisherApi, PublicationQueueItem, PublicationChannel, PublicationTemplate } from '../services/publisherApi';
+import { publisherApi, PublicationQueueItem, PublicationChannel, PublicationTemplate, DiscoveredChat } from '../services/publisherApi';
 
 export const usePublisher = () => {
     const [queue, setQueue] = useState<PublicationQueueItem[]>([]);
     const [channels, setChannels] = useState<PublicationChannel[]>([]);
+    const [discoveredChats, setDiscoveredChats] = useState<DiscoveredChat[]>([]);
     const [templates, setTemplates] = useState<PublicationTemplate[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -17,7 +18,11 @@ export const usePublisher = () => {
                 publisherApi.getTemplates()
             ]);
             setQueue(qRes.items || []);
+
+            // cRes now returns { channels: [], discovered: [] }
             setChannels(cRes.channels || []);
+            setDiscoveredChats(cRes.discovered || []);
+
             setTemplates(tRes.templates || []);
         } catch (err: any) {
             setError(err.message || 'Error fetching publisher data');
@@ -48,6 +53,18 @@ export const usePublisher = () => {
         return res;
     };
 
+    const toggleFavorite = async (id: number) => {
+        const res = await publisherApi.toggleFavorite(id);
+        if (res.success) await fetchData();
+        return res;
+    };
+
+    const promoteDiscovered = async (chatId: string, name: string) => {
+        const res = await publisherApi.promoteDiscovered(chatId, name);
+        if (res.success) await fetchData();
+        return res;
+    };
+
     const saveTemplate = async (template: Partial<PublicationTemplate>) => {
         const res = await publisherApi.saveTemplate(template);
         if (res.success) await fetchData();
@@ -57,6 +74,7 @@ export const usePublisher = () => {
     return {
         queue,
         channels,
+        discoveredChats,
         templates,
         loading,
         error,
@@ -64,6 +82,8 @@ export const usePublisher = () => {
         schedulePublication,
         deleteQueueItem,
         saveChannel,
+        toggleFavorite,
+        promoteDiscovered,
         saveTemplate
     };
 };

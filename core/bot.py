@@ -20,7 +20,6 @@ from core.bot_initializer import BotInitializer
 from core.error_handler import ErrorHandler
 from core.session_manager import session_manager
 from handlers.callback_handlers import (
-    abrir_zeepubs,
     buscar_epub,
     button_handler,
     set_destino,
@@ -84,7 +83,6 @@ class ZeePubBot:
         # Total pages
         self.app.add_handler(CallbackQueryHandler(set_destino, pattern="^destino"))
         self.app.add_handler(CallbackQueryHandler(buscar_epub, pattern="^buscar"))
-        self.app.add_handler(CallbackQueryHandler(abrir_zeepubs, pattern="^abrir"))
 
         self.app.add_handler(CallbackQueryHandler(button_handler), group=1)
 
@@ -102,7 +100,6 @@ class ZeePubBot:
             MessageHandler(filters.PHOTO | filters.Document.ALL, handle_donation_proof)
         )
 
-        # EPUB Upload Handler
         try:
             from handlers.epub_upload_handler import setup_upload_handlers
 
@@ -110,6 +107,42 @@ class ZeePubBot:
             logger.info("EPUB upload handler registered successfully")
         except Exception as e:
             logger.error(f"Error registering EPUB upload handler: {e}")
+
+        # Chat Discovery Handler
+        try:
+            from handlers.chat_discovery_handler import chat_discovery_handler
+
+            # MY_CHAT_MEMBER: Cambios de status del bot
+            self.app.add_handler(
+                MessageHandler(
+                    filters.StatusUpdate.CHAT_CREATED
+                    | filters.StatusUpdate.NEW_CHAT_MEMBERS
+                    | filters.StatusUpdate.LEFT_CHAT_MEMBER,
+                    chat_discovery_handler,
+                )
+            )
+            # Escuchar mensajes en grupos/canales también (si es admin y ve mensajes)
+            # Usamos un filtro light para no procesar todo el texto aquí, mejor TypeHandler de Update
+            # Pero MessageHandler con filtro de chat type es suficiente
+            self.app.add_handler(
+                MessageHandler(
+                    (filters.ChatType.GROUPS | filters.ChatType.CHANNEL) & ~filters.COMMAND,
+                    chat_discovery_handler,
+                ),
+                group=20,  # Grupo bajo prioridad, solo escucha
+            )
+
+            # Chat Member Updated (cuando cambian permisos del bot)
+            from telegram.ext import ChatMemberHandler
+
+            self.app.add_handler(
+                ChatMemberHandler(chat_discovery_handler, ChatMemberHandler.MY_CHAT_MEMBER),
+                group=20,
+            )
+
+            logger.info("Chat discovery handlers registered")
+        except Exception as e:
+            logger.error(f"Error registering chat discovery: {e}")
 
     def start(self):
         """Arranca el bot en polling (bloqueante, modo legacy)."""

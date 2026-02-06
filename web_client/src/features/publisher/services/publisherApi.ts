@@ -18,6 +18,7 @@ export interface PublicationChannel {
     platform: string;
     target_id: string;
     is_active: boolean;
+    is_favorite?: boolean;
     config?: any;
 }
 
@@ -28,10 +29,20 @@ export interface PublicationTemplate {
     platform: string;
 }
 
+export interface DiscoveredChat {
+    chat_id: string;
+    title: string;
+    type: string;
+    member_count: number;
+    username?: string;
+    is_promoted: boolean; // Computed on frontend/backend if needed, or check against existing channels
+}
+
 export const publisherApi = {
     getQueue: (status?: string) =>
         api.rpc('pub_get_queue', { status }),
 
+    // Updated to return both channels and discovered
     getChannels: () =>
         api.rpc('pub_get_channels'),
 
@@ -43,6 +54,12 @@ export const publisherApi = {
 
     deleteChannel: (id: number) =>
         api.rpc('pub_delete_channel', { id }),
+
+    toggleFavorite: (id: number) =>
+        api.rpc('pub_toggle_favorite', { id }),
+
+    promoteDiscovered: (chat_id: string, name: string) =>
+        api.rpc('pub_promote_discovered', { chat_id, name }),
 
     saveTemplate: (template: Partial<PublicationTemplate>) =>
         api.rpc('pub_save_template', template),

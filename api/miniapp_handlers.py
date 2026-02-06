@@ -3621,22 +3621,12 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
 
 async def handle_pub_get_channels(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
-    from repositories.publication_repository import pub_repo
-
-    channels = await pub_repo.get_channels(active_only=False)
-    return {
-        "channels": [
-            {
-                "id": c.id,
-                "name": c.name,
-                "platform": c.platform,
-                "target_id": c.target_id,
-                "is_active": c.is_active,
-                "config": c.config,
-            }
-            for c in channels
-        ]
-    }
+    from services.publisher.publisher_service import publisher_service
+    
+    # Obtener canales y chats descubiertos
+    result = await publisher_service.get_channels_with_discovery(active_only=False)
+    
+    return result
 
 
 async def handle_pub_save_channel(data: dict[str, Any], user_data: dict[str, Any]):
@@ -3650,6 +3640,7 @@ async def handle_pub_save_channel(data: dict[str, Any], user_data: dict[str, Any
         "platform": data["platform"],
         "target_id": data["target_id"],
         "is_active": data.get("is_active", True),
+        "is_favorite": data.get("is_favorite", False),
         "config": data.get("config", {}),
     }
 
@@ -3658,6 +3649,36 @@ async def handle_pub_save_channel(data: dict[str, Any], user_data: dict[str, Any
     else:
         channel = PublicationChannel(**channel_data)
         await pub_repo.create_channel(channel)
+    return {"success": True}
+
+
+async def handle_pub_toggle_favorite(data: dict[str, Any], user_data: dict[str, Any]):
+    """Alterna el estado favorito de un canal."""
+    check_admin(user_data)
+    from services.publisher.publisher_service import publisher_service
+    channel_id = data.get("id")
+    if not channel_id:
+        raise HTTPException(status_code=400, detail="Missing id")
+        
+    success = await publisher_service.toggle_favorite(int(channel_id))
+    return {"success": success}
+
+
+async def handle_pub_promote_discovered(data: dict[str, Any], user_data: dict[str, Any]):
+    """Promueve un chat descubierto a canal oficial."""
+    check_admin(user_data)
+    from services.publisher.publisher_service import publisher_service
+    
+    chat_id = data.get("chat_id")
+    name = data.get("name")
+    
+    if not chat_id or not name:
+        raise HTTPException(status_code=400, detail="Missing params")
+        
+    result = await publisher_service.promote_discovered_to_channel(str(chat_id), name)
+    if not result:
+        return {"success": False, "message": "Canal ya existe o error"}
+        
     return {"success": True}
 
 

@@ -97,8 +97,47 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
             stmt = select(PublicationChannel)
             if active_only:
                 stmt = stmt.where(PublicationChannel.is_active == True)
+            
+            # Ordenar: Favoritos primero, luego alfabético
+            stmt = stmt.order_by(PublicationChannel.is_favorite.desc(), PublicationChannel.name.asc())
+            
             result = await session.execute(stmt)
             return list(result.scalars().all())
+
+    async def get_discovered_chats(self, limit: int = 20) -> list:
+        from models.publication_models import DiscoveredChat
+        async with self.db_manager.get_session() as session:
+            stmt = select(DiscoveredChat).order_by(DiscoveredChat.last_seen_at.desc()).limit(limit)
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def save_discovered_chat(self, chat_id: str, title: str, chat_type: str, username: str = None, member_count: int = 0):
+        from models.publication_models import DiscoveredChat
+        async with self.db_manager.get_session() as session:
+            # Upsert
+            stmt = select(DiscoveredChat).where(DiscoveredChat.chat_id == str(chat_id))
+            result = await session.execute(stmt)
+            existing = result.scalar_one_or_none()
+
+            if existing:
+                existing.title = title
+                existing.type = chat_type
+                existing.username = username
+                if member_count > 0:
+                    existing.member_count = member_count
+                existing.last_seen_at = datetime.utcnow()
+                session.add(existing)
+            else:
+                new_chat = DiscoveredChat(
+                    chat_id=str(chat_id),
+                    title=title,
+                    type=chat_type,
+                    username=username,
+                    member_count=member_count
+                )
+                session.add(new_chat)
+            
+            await session.commit()
 
     async def create_channel(self, channel: PublicationChannel) -> PublicationChannel:
         async with self.db_manager.get_session() as session:

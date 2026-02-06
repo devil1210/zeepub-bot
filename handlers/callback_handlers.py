@@ -8,19 +8,16 @@ from telegram.ext import CallbackQueryHandler, ContextTypes, MessageHandler, fil
 
 from config.config_settings import config
 from core.state_manager import state_manager
-from services.library_ui_service import (
-    mostrar_autores_local,
-    mostrar_generos,
-    mostrar_menu_principal,
-    mostrar_series,
-    mostrar_volumenes_local,
-)
-from services.opds_service import (
-    buscar_zeepubs_directo,
-    mostrar_colecciones,
-    mostrar_recomendaciones,
-)
-from services.telegram_service import publicar_libro
+
+# from services.library_service import LibraryService
+# from services.library_ui_service import (
+#     mostrar_autores_local,
+#     mostrar_generos,
+#     mostrar_menu_principal,
+#     mostrar_resultados_locales,
+#     mostrar_series,
+#     mostrar_volumenes_local,
+# )
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +44,8 @@ async def set_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer(text)
 
         # Ir directamente a la Biblioteca Local (basada en BD local)
+        from services.library_ui_service import mostrar_menu_principal
+
         await mostrar_menu_principal(update, context)
         return
 
@@ -75,6 +74,8 @@ async def ver_catalogo_normal(update: Update, context: ContextTypes.DEFAULT_TYPE
     st = state_manager.get_user_state(uid)
 
     st["titulo"] = "📚 Biblioteca Local"
+    from services.library_ui_service import mostrar_menu_principal
+
     await mostrar_menu_principal(update, context)
 
 
@@ -89,8 +90,11 @@ async def handle_manual_destino(update: Update, context: ContextTypes.DEFAULT_TY
     st["destino"] = destino_text
     st.pop("esperando_destino_manual", None)
     st["titulo"] = "📚 Categorías"
-    # Mostrar colecciones Evil con el nuevo destino
-    await mostrar_colecciones(update, context, st["opds_root"], from_collection=False)
+
+    # Redirigir siempre a menú principal local
+    from services.library_ui_service import mostrar_menu_principal
+
+    await mostrar_menu_principal(update, context)
 
 
 async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -157,12 +161,38 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
     termino = update.message.text.strip()
     st.pop("esperando_busqueda", None)
-    # Lanza búsqueda y muestra resultados
-    await buscar_zeepubs_directo(update, context, uid, termino)
+
+    # Lanza búsqueda local y muestra resultados
+    res = await LibraryService.search_books(termino)
+    results_list = res.get("results", [])
+    await mostrar_resultados_locales(update, context, termino, results_list)
 
 
 async def abrir_zeepubs(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await mostrar_menu_principal(update, context)
+
+
+async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Maneja el botón 'Buscar EPUB': pide texto al usuario."""
+    query = update.callback_query
+    try:
+        await query.answer()
+    except Exception:
+        pass
+
+    uid = update.effective_user.id
+    st = state_manager.get_user_state(uid)
+
+    st["esperando_busqueda"] = True
+    st["current_view"] = "search"
+
+    cms = context.application.plugin_manager.get_plugin("custom_messages")
+    base_text = "🔍 ¿Qué libro buscas? Escribe el título o autor:"
+    text = base_text
+    if cms and cms.enabled:
+        text = await cms.get_text("search_prompt")
+
+    await query.message.reply_text(text)
 
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -195,13 +225,23 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Recomendaciones (v6.1.0)
+    from services.library_ui_service import (
+        mostrar_autores_local,
+        mostrar_generos,
+        mostrar_series,
+        mostrar_volumenes_local,
+    )
+
     if data == "rec|ver":
-        if user_info.get("role") in ("admin", "staff"):
-            await mostrar_recomendaciones(update, context)
-        else:
-            await query.answer(
-                "⛔ Esta función está en Beta exclusiva para Staff.", show_alert=True
-            )
+        # Deshabilitado temporalmente hasta tener implementacion local
+        await query.answer("⚠️ Función en mantenimiento.", show_alert=True)
+        return
+
+    # Ver Catálogo Normal (Local)
+    if data == "ver_catalogo_normal":
+        from services.library_ui_service import mostrar_menu_principal
+
+        await mostrar_menu_principal(update, context)
         return
 
     # === Local Navigation Dispatchers ===
@@ -234,7 +274,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # Selección de colección
+    # Selección de colección (Series Local)
     if data.startswith("col|"):
         idx = int(data.split("|", 1)[1])
         col = st["colecciones"].get(idx)
@@ -244,37 +284,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 series_hash = href.split("|")[1]
                 await mostrar_volumenes_local(update, context, series_hash)
                 return
-
-            titulo_col = col.get("titulo", "").lower()
-
-            # Si no es admin y es "Todas las bibliotecas", saltar a ZeePubs [ES] directamente
-            if uid not in config.ADMIN_USERS and "todas las bibliotecas" in titulo_col:
-                from services.opds_service import get_zeepubs_first_library
-
-                root_page = {
-                    "titulo": "📚 Todas las bibliotecas",
-                    "url": st.get("opds_root"),
-                    "type": "root",
-                }
-                st["historial"] = [root_page]
-                st["titulo"] = "📁 Biblioteca ZeePubs"
-
-                zeepubs_first_url = await get_zeepubs_first_library(st.get("opds_root"))
-                await mostrar_colecciones(update, context, zeepubs_first_url, from_collection=True)
             else:
-                # Navegar normalmente a la colección (para admins o colecciones que no sean "Todas las bibliotecas")
-                current_page = {
-                    "titulo": st.get("titulo", ""),
-                    "url": st.get("url", ""),
-                    "type": "collection",
-                }
-                if "historial" not in st:
-                    st["historial"] = []
-                st["historial"].append(current_page)
-
-                st["titulo"] = f"📁 {col['titulo']}"
-                st["url"] = col["href"]
-                await mostrar_colecciones(update, context, col["href"], from_collection=True)
+                # Si no es local, ignorar o mostrar error, ya que OPDS está deshabilitado
+                await query.answer("⚠️ Recurso no disponible localmente.", show_alert=True)
         return
 
     # Selección de libro
@@ -294,23 +306,17 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Stateless lookup from DB (for recommendations/scheduler)
             try:
                 local_id = int(key.split("_")[1])
-                from sqlalchemy import select
+                from repositories.book_repository import book_repo
 
-                from core.db_manager_pg import pg_manager
-                from models.library_models import LocalBook
-
-                async with pg_manager.get_session() as session:
-                    stmt = select(LocalBook).where(LocalBook.id == local_id)
-                    res = await session.execute(stmt)
-                    book_db = res.scalar_one_or_none()
-                    if book_db:
-                        # Construct pseudo 'libro' dict
-                        libro = {
-                            "titulo": book_db.title,
-                            "portada": book_db.cover_path,
-                            "descarga": book_db.filepath,
-                            "href": book_db.filepath,
-                        }
+                book_db = await book_repo.get_by_id(local_id)
+                if book_db:
+                    # Construct pseudo 'libro' dict
+                    libro = {
+                        "titulo": book_db.title,
+                        "portada": book_db.cover_path,
+                        "descarga": book_db.filepath,
+                        "href": book_db.filepath,
+                    }
             except Exception as e:
                 logger.error(f"Error fetching local book {key}: {e}")
 
@@ -366,11 +372,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 st["pending_pub_menu_prep"] = menu_prep
                 st["publish_command_origin"] = update.effective_chat.id
                 st["publish_command_thread_id"] = st.get("message_thread_id")
+                st["publish_command_thread_id"] = st.get("message_thread_id")
                 from services.telegram_service import _publish_choice_facebook
 
                 await _publish_choice_facebook(update, context, uid)
                 return
             elif default_target == "telegram":
+                from services.telegram_service import publicar_libro
+
                 await publicar_libro(
                     update,
                     context,
@@ -396,6 +405,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # If no temp target is set, fall through to normal behavior (no menu)
 
         # Publicar EPUB (non-publishers or publisher with no temp)
+        # Publicar EPUB (non-publishers or publisher with no temp)
+        from services.telegram_service import publicar_libro
+
         await publicar_libro(
             update,
             context,
@@ -451,6 +463,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 menu_prep = st.pop("pending_pub_menu_prep", None)
                 st.pop("pending_pub_book", None)
                 # Call publicar_libro using stored href/portada/title
+                # Call publicar_libro using stored href/portada/title
+                from services.telegram_service import publicar_libro
+
                 await publicar_libro(
                     update,
                     context,
@@ -519,110 +534,19 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # For non-admin publishers, proceed to show the normal collections
         # menu now (but don't ask for Evil destination). If the user picked
-        # Facebook, assume publishing in the current chat.
-        if uid not in config.ADMIN_USERS:
-            root = config.OPDS_ROOT_START
-            st["opds_root"] = root
-            st["opds_root_base"] = root
-            st["historial"] = []
-            st["ultima_pagina"] = root
-            if choice == "facebook":
-                st["destino"] = update.effective_chat.id
-                st["chat_origen"] = update.effective_chat.id
-            await mostrar_colecciones(update, context, root, from_collection=False)
-            return
+        # Facebook, assume publishing in this chat as destination.
 
-        # If the user is an admin+publisher, choose subsequent behavior now:
-        # - If they picked 'telegram' we configure Evil root and show the destination selector.
-        # - If they picked 'facebook' assume "aquí" and enter Evil root directly
-        #   (publisher flow will create FB preview on selection). Non-admin
-        #   publishers continue to the normal start flow.
-        if uid in config.ADMIN_USERS:
-            if choice == "telegram":
-                # Configure Evil root BEFORE showing destination selector
-                st["opds_root"] = config.OPDS_ROOT_EVIL
-                st["opds_root_base"] = config.OPDS_ROOT_EVIL
-                st["historial"] = []
-                st["ultima_pagina"] = config.OPDS_ROOT_EVIL
+        # SIEMPRE redigir a menú local ya que OPDS está deshabilitado
+        st["historial"] = []
+        if choice == "facebook":
+            st["destino"] = update.effective_chat.id
+            st["chat_origen"] = update.effective_chat.id
 
-                keyboard = [
-                    [InlineKeyboardButton("📍 Aquí", callback_data="destino|aqui")],
-                    [InlineKeyboardButton("📣 BotTest", callback_data="destino|@ZeePubBotTest")],
-                    [InlineKeyboardButton("📣 ZeePubs", callback_data="destino|@ZeePubs")],
-                    [InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")],
-                ]
-                try:
-                    cms = context.application.plugin_manager.get_plugin("custom_messages")
-                    base_evil_tg = "🔧 Modo Evil: ¿Dónde quieres publicar?"
-                    text_evil_tg = (
-                        await cms.get_text("evil_mode_prompt")
-                        if (cms and cms.enabled)
-                        else base_evil_tg
-                    )
-                    await query.edit_message_text(
-                        text=text_evil_tg,
-                        reply_markup=InlineKeyboardMarkup(keyboard),
-                    )
-                except Exception:
-                    try:
-                        cms = context.application.plugin_manager.get_plugin("custom_messages")
-                        base_evil_tg = "🔧 Modo Evil: ¿Dónde quieres publicar?"
-                        text_evil_tg = (
-                            await cms.get_text("evil_mode_prompt")
-                            if (cms and cms.enabled)
-                            else base_evil_tg
-                        )
-                        await query.answer(text_evil_tg)
-                    except Exception:
-                        pass
-                return
-
-            if choice == "facebook":
-                # Admin+publisher; assume publishing in this chat and enter Evil root
-                st["opds_root"] = config.OPDS_ROOT_EVIL
-                st["opds_root_base"] = config.OPDS_ROOT_EVIL
-                st["historial"] = []
-                st["ultima_pagina"] = config.OPDS_ROOT_EVIL
-                st["destino"] = update.effective_chat.id
-                st["chat_origen"] = update.effective_chat.id
-                try:
-                    cms = context.application.plugin_manager.get_plugin("custom_messages")
-                    base_evil_fb = "✅ Publicación temporal en Facebook seleccionada — entrando a Evil (publicación en este chat)."
-                    text_evil_fb = (
-                        await cms.get_text("evil_facebook_selected")
-                        if (cms and cms.enabled)
-                        else base_evil_fb
-                    )
-                    await query.edit_message_text(text_evil_fb)
-                except Exception:
-                    try:
-                        cms = context.application.plugin_manager.get_plugin("custom_messages")
-                        base_evil_fb = (
-                            "🔧 Publicación temporal en Facebook seleccionada — entrando a Evil"
-                        )
-                        text_evil_fb = (
-                            await cms.get_text("evil_facebook_selected")
-                            if (cms and cms.enabled)
-                            else base_evil_fb
-                        )
-                        await query.answer(text_evil_fb)
-                    except Exception:
-                        pass
-                # show evil collections directly
-                await mostrar_colecciones(update, context, st["opds_root"], from_collection=False)
-                return
-        try:
-            await query.edit_message_text(text)
-        except Exception:
-            try:
-                await query.answer(text)
-            except Exception:
-                logger.debug("Could not send set_publish_temp response")
+        await mostrar_menu_principal(update, context)
         return
 
-    # Subir nivel (usar historial para ir al nivel anterior)
+    # Subir nivel
     if data == "subir_nivel":
-        # === Local Navigation Back Logic ===
         view = st.get("current_view")
         if view == "series_list":
             prev_view = st.get("prev_view_local")
@@ -635,64 +559,17 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 await mostrar_menu_principal(update, context)
                 return
-        if view in ("genres", "authors", "all_series", "newest"):
+        if view in ("genres", "authors", "all_series", "newest", "search_results", "volumes_local"):
             await mostrar_menu_principal(update, context)
             return
-        if view == "volumes_local":
-            await mostrar_series(
-                update,
-                context,
-                origin_type=st.get("origin_type"),
-                filter_val=st.get("filter_val"),
-                page=st.get("current_page", 1),
-            )
-            return
 
-        # Original OPDS back logic
-        if "historial" not in st:
-            st["historial"] = []
-
-        if st["historial"]:
-            last_page = st["historial"].pop()
-            if last_page and last_page.get("url"):
-                st["titulo"] = last_page["titulo"]
-                st["url"] = last_page["url"]
-                await mostrar_colecciones(update, context, last_page["url"], from_collection=True)
-            else:
-                root = st.get("opds_root_base") or st.get("opds_root")
-                st["titulo"] = "📚 Categorías"
-                st["url"] = root
-                await mostrar_colecciones(update, context, root, from_collection=False)
-        else:
-            root = st.get("opds_root_base") or st.get("opds_root")
-            st["titulo"] = "📚 Categorías"
-            st["url"] = root
-            await mostrar_colecciones(update, context, root, from_collection=False)
-        return
-
-    # Navegación paginada (solo dentro de la misma página, sin historial)
-    if data.startswith("nav|"):
-        direction = data.split("|", 1)[1]
-        nav_url = st.get("nav", {}).get(direction)
-        if nav_url:
-            st["url"] = nav_url
-            await mostrar_colecciones(update, context, nav_url, from_collection=False)
-        else:
-            cms = context.application.plugin_manager.get_plugin("custom_messages")
-            base_text = "🚫 No hay más páginas"
-            text = base_text
-            if cms and cms.enabled:
-                text = await cms.get_text("no_more_pages")
-            await query.answer(text)
+        # Default back to main
+        await mostrar_menu_principal(update, context)
         return
 
     # Volver a categorías raíz
     if data == "volver_colecciones":
-        root = st.get("opds_root_base") or st.get("opds_root")
-        st["historial"] = []
-        st["titulo"] = "📚 Categorías"
-        st["url"] = root
-        await mostrar_colecciones(update, context, root, from_collection=False)
+        await mostrar_menu_principal(update, context)
         return
 
     # Volver a última página donde se listaban los EPUB
@@ -703,45 +580,18 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
-        last_url = st.get("ultima_pagina")
-        if last_url:
-            # Opcional: Si también guardas el título anterior, úsalo aquí
-            st["titulo"] = "📚 Última página"
-            st["url"] = last_url
-            # Usar new_message=True para que no borre el mensaje del libro
-            await mostrar_colecciones(
-                update, context, last_url, from_collection=True, new_message=True
-            )
+        # Si estábamos en volumes_local o search_results
+
+        # Por simplicidad, volvemos al menú principal o tratamos de recrear la vista.
+        # Dado que no guardamos el objeto "search_results" en estado completo,
+        # lo más seguro es volver al menú principal en modo local estricto
+        # O volver a la serie si tenemos hash
+
+        current_series_hash = st.get("current_series_hash")
+        if current_series_hash:
+            await mostrar_volumenes_local(update, context, current_series_hash)
         else:
-            # Si no hay última página guardada, usar historial como antes
-            if "historial" not in st:
-                st["historial"] = []
-            if st["historial"]:
-                last_page = st["historial"].pop()
-                if last_page and last_page.get("url"):
-                    st["titulo"] = last_page["titulo"]
-                    st["url"] = last_page["url"]
-                    await mostrar_colecciones(
-                        update,
-                        context,
-                        last_page["url"],
-                        from_collection=True,
-                        new_message=True,
-                    )
-                else:
-                    root = st.get("opds_root_base") or st.get("opds_root")
-                    st["titulo"] = "📚 Categorías"
-                    st["url"] = root
-                    await mostrar_colecciones(
-                        update, context, root, from_collection=False, new_message=True
-                    )
-            else:
-                root = st.get("opds_root_base") or st.get("opds_root")
-                st["titulo"] = "📚 Categorías"
-                st["url"] = root
-                await mostrar_colecciones(
-                    update, context, root, from_collection=False, new_message=True
-                )
+            await mostrar_menu_principal(update, context)
         return
 
     # Cerrar menú

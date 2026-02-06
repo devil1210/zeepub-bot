@@ -7,8 +7,9 @@ from telegram.ext import ContextTypes
 
 from config.config_settings import config
 from core.state_manager import state_manager
-from services.opds_service import mostrar_colecciones
+from services.library_service import LibraryService
 
+# from services.library_ui_service import mostrar_menu_principal, mostrar_resultados_locales
 # from utils.http_client import parse_feed_from_url
 from utils.helpers import get_thread_id
 
@@ -218,7 +219,9 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if st.get("esperando_destino_manual"):
         st["esperando_destino_manual"] = False
         st["destino"] = text
-        await mostrar_colecciones(update, context, st["opds_root"], from_collection=False)
+        from services.library_ui_service import mostrar_menu_principal
+
+        await mostrar_menu_principal(update, context)
         return
 
     # 3) Búsqueda de EPUB
@@ -235,9 +238,12 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if t_id:
                 effective_thread_id = t_id
 
-        from services.opds_service import buscar_zeepubs_directo
+        # Búsqueda local
+        from services.library_ui_service import mostrar_resultados_locales
 
-        await buscar_zeepubs_directo(update, context, uid, text)
+        res = await LibraryService.search_books(text)
+        results_list = res.get("results", [])
+        await mostrar_resultados_locales(update, context, text, results_list)
         return
 
     # 4) Cualquier otro texto - solo responder en chats privados

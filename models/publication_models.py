@@ -18,11 +18,30 @@ class PublicationChannel(Base):
     platform = Column(String(20), nullable=False)  # 'telegram', 'facebook'
     target_id = Column(String(100), nullable=False)  # '@ZeePubs' o ID numérico
     is_active = Column(Boolean, default=True)
+    is_favorite = Column(Boolean, default=False)
     config = Column(JSON)  # Configuración extra (thread_id, tokens específicos, etc.)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relación con la cola
     queued_items = relationship("PublicationQueue", back_populates="channel")
+
+
+class DiscoveredChat(Base):
+    """
+    Chats descubiertos automáticamente por el bot (candidatos a canales).
+    """
+
+    __tablename__ = "discovered_chats"
+
+    id = Column(Integer, primary_key=True)
+    chat_id = Column(String(100), unique=True, nullable=False)  # ID de Telegram
+    title = Column(String(255), nullable=False)
+    type = Column(String(50))  # group, supergroup, channel
+    member_count = Column(Integer, default=0)
+    username = Column(String(100), nullable=True)
+    
+    last_seen_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class PublicationTemplate(Base):

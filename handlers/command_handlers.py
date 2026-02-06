@@ -481,9 +481,14 @@ class CommandHandlers:
         if context.args:
             # Hay término: /search harry potter
             termino = " ".join(context.args).strip()
-            from services.opds_service import buscar_zeepubs_directo
 
-            await buscar_zeepubs_directo(update, context, uid, query=termino)
+            from services.library_service import LibraryService
+            from services.library_ui_service import mostrar_resultados_locales
+
+            # Búsqueda local
+            res = await LibraryService.search_books(termino)
+            results_list = res.get("results", [])
+            await mostrar_resultados_locales(update, context, termino, results_list)
             return
         else:
             st["esperando_busqueda"] = True
