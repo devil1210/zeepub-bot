@@ -325,7 +325,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       <div className="flex-1 px-4 pb-32 md:pb-6">
         <div className="max-w-[1800px] mx-auto space-y-3">
           {series.length > 0 && (
-            <WindowVirtualizer>
+            <div className="w-full">
               {rows.map((row, rowIndex) => (
                 <div
                   key={rowIndex}
@@ -359,7 +359,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                   )}
                 </div>
               ))}
-            </WindowVirtualizer>
+            </div>
           )}
 
           {/* Pagination or Infinite Load indicator */}
