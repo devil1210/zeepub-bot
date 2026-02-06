@@ -22,6 +22,7 @@ interface ThemeSettings {
   cardGlowIntensity: number;
   borderRadius: number;
   borderWidth: number;
+  listMode: 'infinite' | 'paginated';
 }
 
 interface ThemeContextType {
@@ -51,6 +52,7 @@ const defaultSettings: ThemeSettings = {
   cardGlowIntensity: 0.5,
   borderRadius: 24,
   borderWidth: 1,
+  listMode: 'paginated',
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

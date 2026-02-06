@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-02-05T08:27:17.364Z",
+  "generatedAt": "2026-02-06T08:53:44.091Z",
   "bundles": {
     "core-dev": {
       "description": "Core development skills across languages, frameworks, and backend/frontend fundamentals.",
@@ -38,6 +38,7 @@
         "documentation-generation-doc-generate",
         "documentation-templates",
         "dotnet-architect",
+        "dotnet-backend",
         "dotnet-backend-patterns",
         "exa-search",
         "fastapi-pro",
@@ -112,6 +113,7 @@
         "shodan-reconnaissance",
         "shopify-apps",
         "shopify-development",
+        "slack-automation",
         "slack-bot-builder",
         "stitch-ui-design",
         "swiftui-expert-skill",
@@ -164,6 +166,7 @@
         "deployment-pipeline-design",
         "design-orchestration",
         "docker-expert",
+        "dotnet-backend",
         "ethical-hacking-methodology",
         "find-bugs",
         "firebase",
@@ -236,6 +239,7 @@
       "skills": [
         "backend-architect",
         "devops-troubleshooter",
+        "freshservice-automation",
         "gitops-workflow",
         "helm-chart-scaffolding",
         "istio-traffic-management",
@@ -285,6 +289,8 @@
         "fp-ts-react",
         "frontend-dev-guidelines",
         "gdpr-data-handling",
+        "google-analytics-automation",
+        "googlesheets-automation",
         "graphql",
         "hugging-face-jobs",
         "hybrid-cloud-networking",
@@ -293,6 +299,7 @@
         "kpi-dashboard-design",
         "legal-advisor",
         "loki-mode",
+        "mailchimp-automation",
         "ml-pipeline-workflow",
         "moodle-external-api-development",
         "neon-postgres",
@@ -311,6 +318,7 @@
         "scala-pro",
         "schema-markup",
         "segment-cdp",
+        "sendgrid-automation",
         "senior-architect",
         "seo-audit",
         "spark-optimization",
@@ -318,10 +326,12 @@
         "sql-optimization-patterns",
         "sql-pro",
         "sqlmap-database-pentesting",
+        "supabase-automation",
         "unity-ecs-patterns",
         "using-neon",
         "vector-database-engineer",
-        "xlsx-official"
+        "xlsx-official",
+        "youtube-automation"
       ]
     },
     "ops-core": {
@@ -384,6 +394,7 @@
         "observability-monitoring-slo-implement",
         "performance-engineer",
         "performance-testing-review-ai-review",
+        "pipedrive-automation",
         "postmortem-writing",
         "prometheus-configuration",
         "readme",

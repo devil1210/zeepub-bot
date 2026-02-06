@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.10.0] - 2026-02-06 - "Composio Automation + .NET Backend"
+
+> A major expansion focused on practical app automation and stronger backend engineering coverage.
+
+### Added
+
+- **79 new skills total**.
+- **78 Composio/Rube automation skills** (PR #64), with operational playbooks for:
+- CRM and sales stacks (`HubSpot`, `Pipedrive`, `Salesforce`, `Zoho CRM`, `Close`).
+- Collaboration and project tools (`Notion`, `ClickUp`, `Asana`, `Jira`, `Confluence`, `Trello`, `Monday`).
+- Messaging and support channels (`Slack`, `Discord`, `Teams`, `Intercom`, `Freshdesk`, `Zendesk`).
+- Marketing and analytics systems (`Google Analytics`, `Mixpanel`, `PostHog`, `Segment`, `Mailchimp`, `Klaviyo`).
+- Infra/dev tooling (`GitHub`, `GitLab`, `CircleCI`, `Datadog`, `PagerDuty`, `Vercel`, `Render`).
+- **1 new `dotnet-backend` skill** (PR #65) with:
+- ASP.NET Core 8+ API patterns (Minimal APIs + controller-based).
+- EF Core usage guidance, JWT auth examples, and background worker templates.
+- Explicit trigger guidance and documented limitations.
+- **Registry size increased to 713 skills** (from 634).
+
+### Changed
+
+- Regenerated and synced discovery artifacts after merging both PRs:
+- `README.md` (counts + contributor updates)
+- `skills_index.json`
+- `CATALOG.md`
+- `data/catalog.json`
+- `data/bundles.json`
+- `data/aliases.json`
+- Release metadata updated for `v4.10.0`:
+- `package.json` / `package-lock.json` version bump
+- GitHub Release object published with release notes
+
+### Contributors
+
+- [@sohamganatra](https://github.com/sohamganatra) - 78 Composio automation skills (PR #64)
+- [@Nguyen-Van-Chan](https://github.com/Nguyen-Van-Chan) - .NET backend skill (PR #65)
+
 ## [4.9.0] - 2026-02-05 - "OSS Hunter & Universal Skills"
 
 > Automated contribution hunting and universal CLI AI skills (Audio, YouTube, Prompt Engineering).

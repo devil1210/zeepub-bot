@@ -5,7 +5,10 @@ import {
     Search as SearchIcon,
     LayoutGrid,
     List,
-    RefreshCw
+    RefreshCw,
+    Layers,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 
 interface SearchHeaderProps {
@@ -29,7 +32,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
     onViewModeChange,
     loading
 }) => {
-    const { settings } = useTheme();
+    const { settings, updateSettings } = useTheme();
 
     // Local state for immediate UI feedback
     const [localTerm, setLocalTerm] = useState(searchTerm);
@@ -105,6 +108,27 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                                 title="Vista de Cuadrícula"
                             >
                                 <LayoutGrid className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* List Mode Toggle (Paginated/Infinite) */}
+                        <div className="bg-black/20 p-1 rounded-lg border border-white/5 flex shrink-0">
+                            <button
+                                onClick={() => settings.listMode !== 'paginated' && updateSettings({ listMode: 'paginated' })}
+                                className={`p-2 rounded-md transition-all ${settings.listMode === 'paginated' ? 'bg-primary/30 text-primary shadow-sm' : 'text-gray-400 hover:text-white'}`}
+                                title="Paginado"
+                            >
+                                <div className="flex items-center gap-0.5">
+                                    <ChevronLeft className="w-3 h-3" />
+                                    <ChevronRight className="w-3 h-3" />
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => settings.listMode !== 'infinite' && updateSettings({ listMode: 'infinite' })}
+                                className={`p-2 rounded-md transition-all ${settings.listMode === 'infinite' ? 'bg-primary/30 text-primary shadow-sm' : 'text-gray-400 hover:text-white'}`}
+                                title="Scroll Infinito"
+                            >
+                                <Layers className="w-4 h-4" />
                             </button>
                         </div>
 

@@ -821,16 +821,7 @@ class MobileAuditor:
                 d
                 for d in dirs
                 if d
-                not in {
-                    "node_modules",
-                    ".git",
-                    "dist",
-                    "build",
-                    ".next",
-                    "ios",
-                    "android",
-                    ".idea",
-                }
+                not in {"node_modules", ".git", "dist", "build", ".next", "ios", "android", ".idea"}
             ]
             for file in files:
                 if Path(file).suffix in extensions:

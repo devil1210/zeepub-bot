@@ -52,6 +52,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const [currentPage, setCurrentPage] = useState(navState.currentPage || 1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalResults, setTotalResults] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const isFirstRender = useRef(true);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -133,7 +134,12 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           };
         });
 
-        setSeries(mapped);
+        // In infinite mode, append results; in paginated mode, replace
+        if (settings.listMode === 'infinite' && page > 1) {
+          setSeries(prev => [...prev, ...mapped]);
+        } else {
+          setSeries(mapped);
+        }
         setTotalPages(res.totalPages || 1);
         setTotalResults(res.totalResults || mapped.length);
 
@@ -169,6 +175,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       console.error("Search error", e);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -238,6 +245,27 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
   const currentSeries = useMemo(() => series, [series]);
 
+  // Infinite scroll detection
+  useEffect(() => {
+    if (settings.listMode !== 'infinite') return;
+
+    const mainContainer = document.querySelector('main');
+    if (!mainContainer) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = mainContainer;
+      const nearBottom = scrollTop + clientHeight >= scrollHeight - 200;
+
+      if (nearBottom && !loading && !loadingMore && currentPage < totalPages) {
+        setLoadingMore(true);
+        setCurrentPage(prev => prev + 1);
+      }
+    };
+
+    mainContainer.addEventListener('scroll', handleScroll);
+    return () => mainContainer.removeEventListener('scroll', handleScroll);
+  }, [settings.listMode, loading, loadingMore, currentPage, totalPages]);
+
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-300 relative" ref={scrollContainerRef}>
       <SearchScopeModal
@@ -271,11 +299,26 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
             </div>
           )}
 
-          <SearchPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalResults={totalResults}
-          />
+          {/* Pagination or Infinite Load indicator */}
+          {settings.listMode === 'paginated' ? (
+            <SearchPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalResults={totalResults}
+            />
+          ) : loadingMore ? (
+            <div className="flex justify-center py-8">
+              <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+            </div>
+          ) : currentPage < totalPages ? (
+            <div className="text-center py-6 text-gray-500 text-sm">
+              Desplázate para cargar más...
+            </div>
+          ) : series.length > 0 ? (
+            <div className="text-center py-6 text-gray-500 text-sm">
+              ✓ Fin de los resultados
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
