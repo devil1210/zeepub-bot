@@ -61,6 +61,31 @@ class HashService:
         lang_norm = cls.norm_string(language or "es")
         ed_norm = cls.norm_string(edition)
 
+        # Normalizar edición para evitar duplicidad con is_uncensored y color_mode
+        # Esto asegura que "Color" como tag o como property generen el mismo hash
+        if ed_norm:
+            import re
+
+            # Lista de términos redundantes a eliminar de la cadena de edición
+            # (Ya están representados en las flags is_uncensored y color_mode)
+            redundant = [
+                r"ilustraciones a color",
+                r"full color",
+                r"color",
+                r"sin censura",
+                r"uncensored",
+                r"no censura",
+                r"blanco y negro",
+                r"b&w",
+                r"b&n",
+                r"grayscale",
+                r"b/n",
+            ]
+            for pattern in redundant:
+                ed_norm = re.sub(rf"\b{pattern}\b", "", ed_norm, flags=re.IGNORECASE)
+            # Limpiar espacios extra resultantes
+            ed_norm = " ".join(ed_norm.split()).strip()
+
         # Cadena de identidad determinista según especificación estricta del usuario
         # trans/layout/lang/edition names used here must match previous usage to avoid hash drift
         identity = (
