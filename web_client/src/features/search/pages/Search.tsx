@@ -12,11 +12,21 @@ import { Series } from '@shared/types';
 import { SearchScopeModal } from '../components/SearchScopeModal';
 import { api } from '@shared/services/api';
 import { preloadImages } from '@shared/utils/imagePreloader';
+import { WindowVirtualizer } from 'virtua';
+import { useResponsiveColumns } from '@shared/hooks/useResponsiveColumns';
 
 // Modular Components
 import { SearchCardList } from '../components/SearchCardList';
 import { SearchCardGrid } from '../components/SearchCardGrid';
 import { SearchPagination } from '../components/SearchPagination';
+
+const chunkArray = <T,>(array: T[], size: number): T[][] => {
+  const chunked: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunked.push(array.slice(i, i + size));
+  }
+  return chunked;
+};
 
 interface SearchProps {
   onSelectSeries: (series: Series) => void;
@@ -54,9 +64,14 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const [totalResults, setTotalResults] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const isFirstRender = useRef(true);
-
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMounted = useRef(true);
+  const responsiveColumns = useResponsiveColumns();
+
+  // Determine actual columns based on view mode
+  const columns = useMemo(() => {
+    return viewMode === 'list' ? 1 : responsiveColumns;
+  }, [viewMode, responsiveColumns]);
 
   useEffect(() => {
     return () => { isMounted.current = false; };
@@ -257,6 +272,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   }, [currentPage, settings.listMode]);
 
   const currentSeries = useMemo(() => series, [series]);
+  const rows = useMemo(() => chunkArray(currentSeries, columns), [currentSeries, columns]);
 
   // Infinite scroll detection
   useEffect(() => {
@@ -290,26 +306,42 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
       <div className="flex-1 px-4 pb-32 md:pb-6">
         <div className="max-w-[1800px] mx-auto space-y-3">
-          {viewMode === 'list' ? (
-            currentSeries.map((series) => (
-              <SearchCardList
-                key={series.id}
-                series={series}
-                settings={settings}
-                onClick={() => handleSelectSeries(series)}
-              />
-            ))
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {currentSeries.map((series) => (
-                <SearchCardGrid
-                  key={series.id}
-                  series={series}
-                  settings={settings}
-                  onClick={() => handleSelectSeries(series)}
-                />
+          {series.length > 0 && (
+            <WindowVirtualizer>
+              {rows.map((row, rowIndex) => (
+                <div
+                  key={rowIndex}
+                  className={viewMode === 'list' ? 'space-y-3 mb-3' : 'grid gap-6 mb-6'}
+                  style={viewMode === 'grid' ? {
+                    gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`
+                  } : undefined}
+                >
+                  {row.map((item) => (
+                    viewMode === 'list' ? (
+                      <SearchCardList
+                        key={item.id}
+                        series={item}
+                        settings={settings}
+                        onClick={() => handleSelectSeries(item)}
+                      />
+                    ) : (
+                      <SearchCardGrid
+                        key={item.id}
+                        series={item}
+                        settings={settings}
+                        onClick={() => handleSelectSeries(item)}
+                      />
+                    )
+                  ))}
+                  {/* Filler for grid alignment */}
+                  {viewMode === 'grid' && row.length < columns && (
+                    Array.from({ length: columns - row.length }).map((_, i) => (
+                      <div key={`filler-${i}`} />
+                    ))
+                  )}
+                </div>
               ))}
-            </div>
+            </WindowVirtualizer>
           )}
 
           {/* Pagination or Infinite Load indicator */}

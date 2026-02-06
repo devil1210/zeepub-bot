@@ -25,10 +25,10 @@
   - **Acción**: Envolver componentes costosos con React.memo
   - **Estado**: ✅ Aplicado en componentes de búsqueda y tarjetas de libros.
 
-- [ ] **[opt-4]** Implementar virtualización para listas grandes
-  - **Dependencia**: `@tanstack/react-virtual`
-  - **Acción**: Virtualizar listas de libros/series
-  - **✅ Validado**
+- [x] **[opt-4]** Implementar virtualización para listas grandes ✅ COMPLETADO
+  - **Archivos**: `Search.tsx`, `Library.tsx`
+  - **Acción**: Implementar `virtua` (VList/WindowVirtualizer) para manejo eficiente de memoria.
+  - **Estado**: ✅ Completado usando `virtua` para máximo rendimiento en scroll infinito y grids.
 
 - [/] **[NEW]** Toggle lista infinita/paginada en catálogo
   - **Archivos**: Componentes de catálogo
@@ -94,10 +94,10 @@
 
 | Fase | Total | Completado | Pendiente |
 |------|-------|------------|-----------|
-| Fase 1 | 5 | 3 | 2 |
+| Fase 1 | 5 | 5 | 0 |
 | Fase 2 | 4 | 0 | 4 |
 | Fase 3 | 5 | 0 | 5 |
-| **Total** | **14** | **3** | **11** |
+| **Total** | **14** | **5** | **9** |
 
 ---
 
