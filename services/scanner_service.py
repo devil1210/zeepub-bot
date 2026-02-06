@@ -6,7 +6,7 @@ import os
 import re
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from models.library_models import (
     ArchivedBook,
@@ -347,7 +347,6 @@ class ScannerService:
                         needed = SCAN_LIMIT - len(candidates)
                         # Query compleja: Series con > 2 libros, sin feedback, sin propuestas pendientes
                         # SQL Raw para eficiencia
-                        from sqlalchemy import text
 
                         backlog_query = text("""
                             SELECT lb.series_hash
@@ -1005,6 +1004,27 @@ class ScannerService:
                             logger.warning(
                                 f"📕 Duplicado detectado por cambio de metadata (Hash Conflict): {book.title} -> {hash_conflict.filepath}"
                             )
+                            # Registrar en tabla de duplicados para que aparezca en el Dashboard
+                            try:
+                                dup_exists = (
+                                    session.query(DuplicateBook)
+                                    .filter_by(duplicate_filepath=filepath)
+                                    .first()
+                                )
+                                if not dup_exists:
+                                    dup = DuplicateBook(
+                                        book_hash=target_book_hash,
+                                        original_filepath=hash_conflict.filepath,
+                                        duplicate_filepath=filepath,
+                                        title=book.title,
+                                        author=book.author,
+                                    )
+                                    session.add(dup)
+                                    session.commit()
+                            except Exception as de:
+                                logger.error(f"Error registrando duplicado por conflicto: {de}")
+                                session.rollback()
+
                             return "duplicate"
 
                     # Si no hay conflicto y el archivo ya existía, preservamos sus hashes originales
