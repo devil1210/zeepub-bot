@@ -25,6 +25,7 @@ export const SystemDashboard: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [scanStatus, setScanStatus] = useState<any>(null);
+    const [softScan, setSoftScan] = useState(true); // Default to soft scan as it's safer/faster
 
     // Polling for scan status
     useEffect(() => {
@@ -290,7 +291,7 @@ export const SystemDashboard: React.FC = () => {
             {/* Scanning Progress Alert */}
             {scanStatus && scanStatus.status !== 'idle' && (
                 <div className={`glass-panel p-6 rounded-premium border ${scanStatus.status === 'completed' ? 'border-green-500/30' :
-                        scanStatus.status === 'error' ? 'border-red-500/30' : 'border-primary/30'
+                    scanStatus.status === 'error' ? 'border-red-500/30' : 'border-primary/30'
                     } animate-in slide-in-from-top duration-300 relative group`}>
 
                     <button
@@ -304,7 +305,7 @@ export const SystemDashboard: React.FC = () => {
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                             <div className={`p-2 rounded-lg ${scanStatus.status === 'completed' ? 'bg-green-500/20 text-green-500' :
-                                    scanStatus.status === 'error' ? 'bg-red-500/20 text-red-500' : 'bg-primary/20 text-primary'
+                                scanStatus.status === 'error' ? 'bg-red-500/20 text-red-500' : 'bg-primary/20 text-primary'
                                 }`}>
                                 <Activity className={`w-5 h-5 ${scanStatus.status === 'scanning' ? 'animate-pulse' : ''}`} />
                             </div>
@@ -327,7 +328,7 @@ export const SystemDashboard: React.FC = () => {
                     <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5 mb-4">
                         <div
                             className={`h-full transition-all duration-500 ${scanStatus.status === 'completed' ? 'bg-green-500' :
-                                    scanStatus.status === 'error' ? 'bg-red-500' : 'bg-primary animate-pulse'
+                                scanStatus.status === 'error' ? 'bg-red-500' : 'bg-primary animate-pulse'
                                 }`}
                             style={{ width: (scanStatus.status === 'completed' || scanStatus.status === 'error') ? '100%' : '65%' }}
                         ></div>
@@ -406,13 +407,34 @@ export const SystemDashboard: React.FC = () => {
                                 <Activity className="w-5 h-5" />
                             </div>
                         </div>
-                        <button
-                            onClick={() => handleAction('Escaneo', () => api.adminScanLibrary(true))}
-                            disabled={loading}
-                            className="mt-4 w-full py-3 text-[10px] font-black text-center bg-primary hover:bg-primary-dark text-white rounded-premium-sm transition-all uppercase tracking-widest shadow-xl shadow-primary/20 active:scale-95 disabled:opacity-50 relative z-10"
-                        >
-                            {actionLoading === 'Escaneo' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Ejecutar Escaneo"}
-                        </button>
+                        <div className="flex flex-col gap-3 relative z-10 mt-auto">
+                            <label className="flex items-center gap-3 cursor-pointer group/label">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={softScan}
+                                        onChange={(e) => setSoftScan(e.target.checked)}
+                                    />
+                                    <div className="w-8 h-4 bg-white/10 rounded-full peer peer-checked:bg-primary/40 transition-all border border-white/5"></div>
+                                    <div className="absolute left-1 top-1 w-2 h-2 bg-gray-400 rounded-full transition-all peer-checked:left-5 peer-checked:bg-primary"></div>
+                                </div>
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest group-hover/label:text-white transition-colors">
+                                    Escaneo Suave (24h)
+                                </span>
+                            </label>
+
+                            <button
+                                onClick={() => handleAction('Escaneo', () => api.adminScanLibrary(true, softScan))}
+                                disabled={loading}
+                                className={`w-full py-3 text-[10px] font-black text-center rounded-premium-sm transition-all uppercase tracking-widest active:scale-95 disabled:opacity-50 ${softScan
+                                        ? 'bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30'
+                                        : 'bg-primary hover:bg-primary-dark text-white shadow-xl shadow-primary/20'
+                                    }`}
+                            >
+                                {actionLoading === 'Escaneo' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : (softScan ? "Ejecutar Quick Scan" : "Ejecutar Deep Scan")}
+                            </button>
+                        </div>
                         <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-all duration-700"></div>
                     </div>
 

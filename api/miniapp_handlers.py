@@ -1065,14 +1065,15 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
     check_staff(user_data)
 
     force = data.get("force", False)
+    soft = data.get("soft", False)
 
-    async def run_scan_in_thread(scanner_obj, force_val):
+    async def run_scan_in_thread(scanner_obj, force_val, soft_val):
         """Runs the scan in a separate thread with its own event loop."""
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            logger.info(f"Background scan thread started (Force: {force_val})")
-            loop.run_until_complete(scanner_obj.sync_all(force_scan=force_val))
+            logger.info(f"Background scan thread started (Force: {force_val}, Soft: {soft_val})")
+            loop.run_until_complete(scanner_obj.sync_all(force_scan=force_val, soft_scan=soft_val))
             logger.info("Background scan thread completed successfully.")
         except Exception as e:
             logger.error(f"Background scan thread error: {e}")
@@ -1095,7 +1096,7 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
         scanner = ScannerService(libs_json)
 
         # Start the intensive task in a separate THREAD to avoid blocking main loop
-        t = threading.Thread(target=run_scan_in_thread, args=(scanner, force))
+        t = threading.Thread(target=run_scan_in_thread, args=(scanner, force, soft))
         t.start()
 
         return {

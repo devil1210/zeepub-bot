@@ -63,7 +63,7 @@ class ScannerService:
             logger.error(f"Error parseando configuración de librerías: {e}")
             self.libraries = {}
 
-    async def sync_all(self, force_scan=False):
+    async def sync_all(self, force_scan=False, soft_scan=False):
         """
         Sincroniza todas las fuentes configuradas.
         """
@@ -121,7 +121,7 @@ class ScannerService:
                     session.commit()
 
                 source_results, found_files = await self._scan_directory(
-                    source, session, force_scan
+                    source, session, force_scan, soft_scan
                 )
 
                 # Update global results
@@ -134,100 +134,132 @@ class ScannerService:
                         results[k] = v
 
                 # --- PRUNING: Delete books in DB not found on disk ---
-                try:
-                    # Get all DB filepaths for this source
-                    db_books = (
-                        session.query(LocalBook.filepath)
-                        .filter(LocalBook.source_id == source.id)
-                        .all()
-                    )
-                    db_paths = {b[0] for b in db_books}
-
-                    missing_paths = db_paths - found_files
-                    if missing_paths:
-                        logger.info(
-                            f"Detectados {len(missing_paths)} libros eliminados físicamente. Archivando en DB..."
+                # Saltamos pruning en escaneo suave para máxima velocidad
+                if soft_scan:
+                    logger.info(f"Escaneo suave activado para {name}. Saltando pruning.")
+                else:
+                    try:
+                        # Get all DB filepaths for this source
+                        db_books = (
+                            session.query(LocalBook.filepath)
+                            .filter(LocalBook.source_id == source.id)
+                            .all()
                         )
+                        db_paths = {b[0] for b in db_books}
 
-                        missing_list = list(missing_paths)
-                        chunk_size = 500
-                        affected_series_hashes = set()
-
-                        for i in range(0, len(missing_list), chunk_size):
-                            chunk = missing_list[i : i + chunk_size]
-
-                            # 1. Obtener objetos completos para archivar
-                            books_to_archive = (
-                                session.query(LocalBook).filter(LocalBook.filepath.in_(chunk)).all()
+                        missing_paths = db_paths - found_files
+                        if missing_paths:
+                            logger.info(
+                                f"Detectados {len(missing_paths)} libros eliminados físicamente. Archivando en DB..."
                             )
 
-                            for b in books_to_archive:
-                                if b.series_hash:
-                                    affected_series_hashes.add(b.series_hash)
+                            missing_list = list(missing_paths)
+                            chunk_size = 500
+                            affected_series_hashes = set()
 
-                                # Crear registro de archivo
-                                archived = ArchivedBook(
-                                    series_hash=b.series_hash,
-                                    book_hash=b.book_hash,
-                                    title=b.title,
-                                    filename=b.filename,
-                                    last_filepath=b.filepath,
-                                    volume=b.volume,
-                                    author=b.author,
-                                    book_type=b.book_type,
-                                    original_book_id=b.id,
-                                    reason="physically_deleted",
+                            for i in range(0, len(missing_list), chunk_size):
+                                chunk = missing_list[i : i + chunk_size]
+
+                                # 1. Obtener objetos completos para archivar
+                                books_to_archive = (
+                                    session.query(LocalBook)
+                                    .filter(LocalBook.filepath.in_(chunk))
+                                    .all()
                                 )
-                                session.add(archived)
-                                results["archived"] = results.get("archived", 0) + 1
 
-                            # 2. Eliminar de la tabla principal
-                            session.query(LocalBook).filter(LocalBook.filepath.in_(chunk)).delete(
-                                synchronize_session=False
-                            )
-                            session.commit()  # Commit chunks to keep memory clean
+                                for b in books_to_archive:
+                                    if b.series_hash:
+                                        affected_series_hashes.add(b.series_hash)
 
-                            # Ceder control
-                            await asyncio.sleep(0)
-
-                        # 3. Verificar series huérfanas
-                        for s_hash in affected_series_hashes:
-                            # Contar si quedan libros en LocalBook para esta serie
-                            count = session.query(LocalBook).filter_by(series_hash=s_hash).count()
-                            if count == 0:
-                                # Archivar serie
-                                series = (
-                                    session.query(SeriesMetadata)
-                                    .filter_by(series_hash=s_hash)
-                                    .first()
-                                )
-                                if series:
-                                    logger.info(
-                                        f"Archivando serie completa por falta de volúmenes: {series.series_name}"
+                                    # Crear registro de archivo
+                                    archived = ArchivedBook(
+                                        series_hash=b.series_hash,
+                                        book_hash=b.book_hash,
+                                        title=b.title,
+                                        filename=b.filename,
+                                        last_filepath=b.filepath,
+                                        volume=b.volume,
+                                        author=b.author,
+                                        book_type=b.book_type,
+                                        original_book_id=b.id,
+                                        reason="physically_deleted",
                                     )
-                                    archived_s = ArchivedSeries(
-                                        series_name=series.series_name,
-                                        series_spanish=series.series_spanish,
-                                        series_hash=series.series_hash,
-                                        author=series.author,
-                                        description=series.description,
-                                        tags=series.tags,
-                                        cover_url=series.cover_url,
-                                        book_type=series.book_type,
-                                        publisher=series.publisher,
-                                        original_series_id=series.id,
-                                    )
-                                    session.add(archived_s)
-                                    session.delete(series)
+                                    session.add(archived)
                                     results["archived"] = results.get("archived", 0) + 1
-                                    session.commit()
 
-                        results["removed"] = results.get("removed", 0) + len(missing_paths)
-                except Exception as e:
-                    logger.error(f"Error durante pruning de {name}: {e}")
+                                # 1.1 Desvincular de tablas históricas para evitar ForeignKeyViolation
+                                from models.download_models import DownloadHistory
+                                from models.library_models import UserDownload, UserRating
 
-                source.last_scanned = datetime.utcnow()
-                session.commit()
+                                book_ids = [b.id for b in books_to_archive]
+                                if book_ids:
+                                    session.query(DownloadHistory).filter(
+                                        DownloadHistory.book_id.in_(book_ids)
+                                    ).update(
+                                        {DownloadHistory.book_id: None}, synchronize_session=False
+                                    )
+
+                                    session.query(UserDownload).filter(
+                                        UserDownload.book_id.in_(book_ids)
+                                    ).update(
+                                        {UserDownload.book_id: None}, synchronize_session=False
+                                    )
+
+                                    session.query(UserRating).filter(
+                                        UserRating.book_id.in_(book_ids)
+                                    ).update({UserRating.book_id: None}, synchronize_session=False)
+
+                                # 2. Eliminar de la tabla principal
+                                session.query(LocalBook).filter(
+                                    LocalBook.filepath.in_(chunk)
+                                ).delete(synchronize_session=False)
+                                session.commit()  # Commit chunks to keep memory clean
+
+                                # Ceder control
+                                await asyncio.sleep(0)
+
+                            # 3. Verificar series huérfanas
+                            for s_hash in affected_series_hashes:
+                                # Contar si quedan libros en LocalBook para esta serie
+                                count = (
+                                    session.query(LocalBook).filter_by(series_hash=s_hash).count()
+                                )
+                                if count == 0:
+                                    # Archivar serie
+                                    series = (
+                                        session.query(SeriesMetadata)
+                                        .filter_by(series_hash=s_hash)
+                                        .first()
+                                    )
+                                    if series:
+                                        logger.info(
+                                            f"Archivando serie completa por falta de volúmenes: {series.series_name}"
+                                        )
+                                        archived_s = ArchivedSeries(
+                                            series_name=series.series_name,
+                                            series_spanish=series.series_spanish,
+                                            series_hash=series.series_hash,
+                                            author=series.author,
+                                            description=series.description,
+                                            tags=series.tags,
+                                            cover_url=series.cover_url,
+                                            book_type=series.book_type,
+                                            publisher=series.publisher,
+                                            original_series_id=series.id,
+                                        )
+                                        session.add(archived_s)
+                                        session.delete(series)
+                                        results["archived"] = results.get("archived", 0) + 1
+                                        session.commit()
+
+                            results["removed"] = results.get("removed", 0) + len(missing_paths)
+                    except Exception as e:
+                        logger.error(f"Error durante pruning de {name}: {e}")
+                        session.rollback()
+
+                if not soft_scan:
+                    source.last_scanned = datetime.utcnow()
+                    session.commit()
 
                 session.commit()
 
@@ -615,7 +647,7 @@ class ScannerService:
             session.close()
             ScannerService._is_scanning = False
 
-    async def _scan_directory(self, source, session, force_scan=False):
+    async def _scan_directory(self, source, session, force_scan=False, soft_scan=False):
         """
         Recorre el directorio y procesa archivos nuevos o modificados.
         """
@@ -636,6 +668,23 @@ class ScannerService:
                     results["total_scanned"] += 1
                     full_path = os.path.join(root, file)
                     found_files.add(full_path)
+
+                    # Escaneo suave: Solo archivos modificados en las últimas 24 horas
+                    if soft_scan:
+                        try:
+                            mtime = os.path.getmtime(full_path)
+                            mod_time = datetime.fromtimestamp(mtime)
+                            if (datetime.now() - mod_time).total_seconds() > 86400:
+                                # Opcional: Si el archivo es nuevo no registrado, igual procesarlo.
+                                # Pero por ahora, el usuario pide estrictamente "cambiados en el último día".
+                                # Para mayor seguridad, si no está en la DB, lo procesamos.
+                                exists_in_db = (
+                                    session.query(LocalBook).filter_by(filepath=full_path).first()
+                                )
+                                if exists_in_db:
+                                    continue
+                        except Exception:
+                            pass
 
                     # El tercer valor retornado por _process_book será el series_hash si se procesó
                     book_res, s_hash = await self._process_book_with_hash(
