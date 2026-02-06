@@ -28,6 +28,10 @@ import { StatsWidget } from '../components/StatsWidget';
 import { ActivityFeed } from '../components/ActivityFeed';
 import { QuoteWidget } from '../components/QuoteWidget';
 
+import { RequestBookModal } from '@shared/components/RequestBookModal';
+import { ReportIssueModal } from '@shared/components/ReportIssueModal';
+import { MessageSquarePlus } from 'lucide-react';
+
 interface DashboardProps {
   onNavigate?: (tab: string) => void;
 }
@@ -36,6 +40,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { user: tgUser, status, showRecommendations, extendedInfo, isAdmin } = useTelegram();
   const { settings } = useTheme();
   const { setVisible } = useNavigation();
+
+  const [isRequestModalOpen, setIsRequestModalOpen] = React.useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
 
   // Use SWR Hook for Data Fetching
   const { history, recommendations, loading } = useDashboardData();
@@ -58,21 +65,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     progressPercent = (downloadsUsed / downloadsLimit) * 100;
   }
 
+  const handleAction = (id: string) => {
+    if (id === 'requests') {
+      setIsRequestModalOpen(true);
+    } else if (id === 'feedback') {
+      setIsReportModalOpen(true);
+    } else if (onNavigate) {
+      onNavigate(id);
+    }
+  };
+
   const mainActions = [
     { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar Todo', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
     { id: 'library', icon: Library, label: 'Biblioteca', desc: 'Mis Libros', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.has_library_access !== false },
     { id: 'requests', icon: BookOpen, label: 'Pedidos', desc: 'Solicitar Libros', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', visible: status?.user?.can_request_books !== false },
-    { id: 'ai', icon: BrainCircuit, label: 'AI Hub', desc: 'IA Gardener', color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: isAdmin },
-    { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Personalización', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: true },
+    { id: 'feedback', icon: MessageSquarePlus, label: 'Feedback', desc: 'Sugerencias/Bugs', color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20', visible: true },
   ].filter(a => a.visible);
 
   const controlActions = [
     { id: 'downloads', icon: ArrowDownToLine, label: 'Descargas', desc: 'Mis Libros', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
     { id: 'upload', icon: Upload, label: 'Subir Epub', desc: 'Aportar Contenido', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.can_upload_epub !== false },
+    { id: 'ai', icon: BrainCircuit, label: 'AI Hub', desc: 'IA Gardener', color: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: isAdmin }, // Moved AI Hub here
     { id: 'admin?view=duplicates', icon: Copy, label: 'Duplicados', desc: 'Gestión DB', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', visible: isAdmin },
     { id: 'admin', icon: ShieldCheck, label: 'Admin Panel', desc: 'Sistema Global', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', visible: isAdmin },
     { id: 'admin?view=uploads', icon: History, label: 'Subidas', desc: 'Historial Global', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: isAdmin },
     { id: 'admin?view=access', icon: ShieldHalf, label: 'Niveles', desc: 'Accesos', color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/20', visible: isAdmin },
+    { id: 'settings', icon: Settings, label: 'Ajustes', desc: 'Personalización', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', visible: true }, // Moved settings here
   ].filter(a => a.visible);
 
   const recentActivities = [
@@ -91,12 +109,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             insignias={extendedInfo?.insignias}
           />
 
-          <DashboardSearch onSearchClick={() => onNavigate && onNavigate('search')} />
+          <DashboardSearch onSearchClick={() => handleAction('search')} />
 
           <QuickActions
             title="Acceso Directo"
             actions={mainActions}
-            onNavigate={(id) => onNavigate && onNavigate(id)}
+            onNavigate={handleAction}
           />
 
           {showRecommendations && (
@@ -104,15 +122,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               loading={loading}
               recommendations={recommendations}
               settings={settings}
-              onNavigate={(id) => onNavigate && onNavigate(id)}
-              onExploreMore={() => onNavigate && onNavigate('search')}
+              onNavigate={handleAction}
+              onExploreMore={() => handleAction('search')}
             />
           )}
 
           <QuickActions
             title="Panel de Control"
             actions={controlActions}
-            onNavigate={(id) => onNavigate && onNavigate(id)}
+            onNavigate={handleAction}
           />
         </div>
 
@@ -140,6 +158,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           />
         </div>
       </div>
+
+      <RequestBookModal
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
+      />
+      <ReportIssueModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+      />
     </div>
   );
 };

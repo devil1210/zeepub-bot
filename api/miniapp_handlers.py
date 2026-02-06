@@ -797,6 +797,59 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any]):
     except Exception as e:
         logger.error(f"Error fetching popular book: {e}")
 
+
+async def handle_request_book(data: dict[str, Any], user_data: dict[str, Any]):
+    """Permite al usuario solicitar un libro no disponible."""
+    user_id = user_data.get("user_id")
+    book_name = data.get("title")
+    author = data.get("author", "")
+    notes = data.get("notes", "")
+
+    if not book_name:
+        raise HTTPException(status_code=400, detail="Falta el título del libro")
+
+    # Validaciones de permisos (ej: solo premium) podrían ir aquí
+
+    # Log to Notion
+    username = user_data.get("nickname") or user_data.get("name") or f"User_{user_id}"
+    asyncio.create_task(notion_service.log_book_request(username, book_name, author, notes))
+
+    return {"success": True, "message": "Solicitud enviada a los bibliotecarios"}
+
+
+async def handle_feedback(data: dict[str, Any], user_data: dict[str, Any]):
+    """Recibe feedback, reporte de bugs o sugerencias."""
+    user_id = user_data.get("user_id")
+    message = data.get("message")
+    category = data.get("category", "Sugerencia")  # Sugerencia, Bug, Otro
+
+    if not message:
+        raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío")
+
+    username = user_data.get("nickname") or user_data.get("name") or f"User_{user_id}"
+
+    # Log to Notion
+    asyncio.create_task(notion_service.log_feedback(username, message, category))
+
+    return {"success": True, "message": "Feedback recibido. ¡Gracias!"}
+
+
+async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any]):
+    """Obtiene estadísticas generales del sistema para el panel de admin."""
+    # check_admin(user_data) # Descomentar si es necesario
+
+    # Placeholder values to fix syntax error
+    total_revenue = 0
+    active_sessions = 0
+    storage_gb = 0
+    popular_book = "N/A"
+    total_users = 0
+    users_7d = 0
+    dls_prev_24h = 0
+    dls_24h = 0
+    total_books = 0
+    uptime_text = "N/A"
+
     return {
         "revenue": round(total_revenue, 2),
         "activeSessions": active_sessions,

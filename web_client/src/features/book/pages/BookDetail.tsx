@@ -429,7 +429,11 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-900 dark:text-gray-100 bg-transparent">
-      <ReportIssueModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
+      <ReportIssueModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        contextData={`Book: ${displayData.title} (ID: ${bookId || initialVolume?.id})`}
+      />
       <RatingModal
         isOpen={isRatingModalOpen}
         onClose={() => setIsRatingModalOpen(false)}

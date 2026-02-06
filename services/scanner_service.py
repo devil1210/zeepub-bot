@@ -19,7 +19,6 @@ from models.library_models import (
 )
 from services.ai_service import AIService
 from services.hash_service import hash_service
-from services.identity.identity_service import identity_service
 from services.notification_service import notification_service
 from utils.epub_extractor import EpubMetadataExtractor
 from utils.library_db import COVERS_DIR, get_session

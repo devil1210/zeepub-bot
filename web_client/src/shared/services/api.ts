@@ -136,6 +136,12 @@ export const api = {
     removeRating: (bookId: string) =>
         rpc('remove_rating', { bookId }),
 
+    sendFeedback: (message: string, category: string) =>
+        rpc('feedback', { message, category }),
+
+    requestBook: (title: string, author: string, notes?: string) =>
+        rpc('request_book', { title, author, notes }),
+
     // Config
     getUiSettings: (signal?: AbortSignal) => rpc('ui_settings', { subAction: 'get', role: 'auto' }, signal),
     savePersonalSettings: (settings: any) =>

@@ -1,6 +1,8 @@
 import logging
+from typing import Any
+
 import httpx
-from typing import List, Dict, Any
+
 from config.config_settings import config
 
 logger = logging.getLogger(__name__)
@@ -8,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class NotificationService:
     @staticmethod
-    async def notify_new_books(books_data: List[Dict[str, Any]]):
+    async def notify_new_books(books_data: list[dict[str, Any]]):
         """
         Sends a notification to Discord/Slack when new books are indexed.
         """

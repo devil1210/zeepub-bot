@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Zap,
     Send,
     Sparkles,
     X,
     Star,
-    CheckCircle2
+    CheckCircle2,
+    Loader2,
+    Check
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
+import { api } from '../services/api';
 
 interface RequestBookModalProps {
     isOpen: boolean;
@@ -16,8 +19,39 @@ interface RequestBookModalProps {
 
 export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onClose }) => {
     const { settings } = useTheme();
+    const [title, setTitle] = useState('');
+    const [author, setAuthor] = useState('');
+    const [isbn, setIsbn] = useState('');
+    const [priority, setPriority] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
 
     if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
+        try {
+            const notes = `ISBN: ${isbn}. Priority: ${priority ? 'High' : 'Normal'}`;
+            await api.requestBook(title, author, notes);
+
+            setIsSuccess(true);
+            setTimeout(() => {
+                onClose();
+                setIsSuccess(false);
+                setTitle('');
+                setAuthor('');
+                setIsbn('');
+                setPriority(false);
+            }, 1500);
+        } catch (error) {
+            console.error('Error requesting book:', error);
+            setIsSubmitting(false);
+            // Could show error state here
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
@@ -58,7 +92,7 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
                         Envía una solicitud y nuestra comunidad ayudará a localizar el ePub por ti. Las solicitudes suelen procesarse en menos de 24h.
                     </p>
 
-                    <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); onClose(); }}>
+                    <form className="space-y-6" onSubmit={handleSubmit}>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="col-span-2">
                                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1.5 ml-1">
@@ -69,6 +103,8 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
                                     placeholder="ej. Project Hail Mary"
                                     required
                                     type="text"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
                                 />
                             </div>
                             <div className="col-span-2 md:col-span-1">
@@ -80,6 +116,8 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
                                     placeholder="ej. Andy Weir"
                                     required
                                     type="text"
+                                    value={author}
+                                    onChange={(e) => setAuthor(e.target.value)}
                                 />
                             </div>
                             <div className="col-span-2 md:col-span-1">
@@ -90,32 +128,55 @@ export const RequestBookModal: React.FC<RequestBookModalProps> = ({ isOpen, onCl
                                     className="w-full rounded-premium-sm bg-black/40 border border-white/5 text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none placeholder-gray-600 py-3 px-4 transition-all text-sm"
                                     placeholder="ej. 978-0593135204"
                                     type="text"
+                                    value={isbn}
+                                    onChange={(e) => setIsbn(e.target.value)}
                                 />
                             </div>
                         </div>
 
-                        <div className="bg-white/5 rounded-premium-sm p-4 border border-white/5 flex items-center justify-between group cursor-pointer hover:border-primary/50 transition-colors">
+                        <div
+                            className={`bg-white/5 rounded-premium-sm p-4 border flex items-center justify-between group cursor-pointer transition-colors ${priority ? 'border-primary/50 bg-primary/5' : 'border-white/5 hover:border-primary/50'}`}
+                            onClick={() => setPriority(!priority)}
+                        >
                             <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-premium-sm bg-primary/10 text-primary border border-primary/10">
+                                <div className={`p-2 rounded-premium-sm text-primary border transition-colors ${priority ? 'bg-primary/20 border-primary/20' : 'bg-primary/10 border-primary/10'}`}>
                                     <Zap className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-bold text-white group-hover:text-primary transition-colors">Solicitud Prioritaria</h3>
+                                    <h3 className={`text-sm font-bold transition-colors ${priority ? 'text-primary' : 'text-white group-hover:text-primary'}`}>Solicitud Prioritaria</h3>
                                     <p className="text-[10px] text-gray-500 mt-0.5">Sube esta solicitud al principio de la cola</p>
                                 </div>
                             </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input className="sr-only peer" type="checkbox" />
+                            <label className="relative inline-flex items-center cursor-pointer pointer-events-none">
+                                <input className="sr-only peer" type="checkbox" checked={priority} readOnly />
                                 <div className="w-10 h-5.5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-primary"></div>
                             </label>
                         </div>
 
                         <button
-                            className="w-full bg-primary hover:bg-primary-dark text-white font-black uppercase tracking-widest text-xs py-4 px-6 rounded-premium-sm shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
+                            className={`w-full text-white font-black uppercase tracking-widest text-xs py-4 px-6 rounded-premium-sm shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed ${isSuccess
+                                    ? 'bg-green-500 shadow-green-500/20'
+                                    : 'bg-primary hover:bg-primary-dark shadow-primary/20'
+                                }`}
                             type="submit"
+                            disabled={isSubmitting || isSuccess}
                         >
-                            <span>Enviar Solicitud</span>
-                            <Send className="w-4 h-4" />
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Enviando...</span>
+                                </>
+                            ) : isSuccess ? (
+                                <>
+                                    <Check className="w-4 h-4" />
+                                    <span>¡Enviado!</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span>Enviar Solicitud</span>
+                                    <Send className="w-4 h-4" />
+                                </>
+                            )}
                         </button>
                     </form>
 
