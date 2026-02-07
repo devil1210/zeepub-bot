@@ -176,7 +176,7 @@ class CommandHandlers:
         if uid in config.ADMIN_USERS and not is_publisher:
             # Administradores entran directamente en el menú Evil (sin contraseña)
             if uid in config.ADMIN_USERS:
-                root = config.OPDS_ROOT_EVIL
+                root = config.BASE_URL
                 st["opds_root"] = root
                 st["opds_root_base"] = root
                 st["historial"] = []
@@ -420,7 +420,7 @@ class CommandHandlers:
         """Handle /evil: inicia modo privado solicitando contraseña."""
         uid = update.effective_user.id
         st = state_manager.get_user_state(uid)
-        st["opds_root"] = config.OPDS_ROOT_EVIL
+        st["opds_root"] = config.BASE_URL
         st["historial"] = []
         st["esperando_password"] = True
         st["historial"] = []

@@ -261,7 +261,7 @@ async def publicar_libro(
         chat_origen = user_state.get("chat_origen") or destino
         series_id = user_state.get("series_id")
         volume_id = user_state.get("volume_id")
-        user_state["ultima_pagina"] = user_state.get("url", config.OPDS_ROOT_START)
+        user_state["ultima_pagina"] = user_state.get("url", config.BASE_URL)
 
         # Topic resolution for Catalog
         thread_id_destino = thread_id_origen if destino == chat_origen else None
