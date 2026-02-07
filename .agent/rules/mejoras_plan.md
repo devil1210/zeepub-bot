@@ -30,10 +30,15 @@
   - **Acción**: Implementar `virtua` (VList/WindowVirtualizer) para manejo eficiente de memoria.
   - **Estado**: ✅ Completado usando `virtua` para máximo rendimiento en scroll infinito y grids.
 
-- [/] **[NEW]** Toggle lista infinita/paginada en catálogo
-  - **Archivos**: Componentes de catálogo
-  - **Acción**: Agregar toggle para alternar entre modos de visualización
-  - **✅ Validado**
+- [x] **[NEW]** Toggle lista infinita/paginada en catálogo ✅ COMPLETADO
+  - **Archivos**: `Search.tsx`, `Library.tsx`
+  - **Acción**: Agregar toggle para alternar entre modos de visualización.
+  - **Estado**: ✅ Implementado en el buscador y el catálogo principal.
+
+- [x] **[AI-FIX]** Persistencia y Migración de Identidad IA ✅ COMPLETADO
+  - **Archivos**: `api/miniapp_handlers.py`, `ai_library_gardener.py`, `AIHub.tsx`
+  - **Acción**: Corregir desaparición de propuestas, migración de hashes y evitar duplicidad en el jardinero.
+  - **Estado**: ✅ Implementado en v3.6.6. Base sólida para el mantenimiento autónomo.
 
 ---
 
@@ -60,25 +65,22 @@
 
 ### 🟢 FASE 3: Sistema de Publicación (Importante, después de arch-2)
 
-- [ ] **[arch-2]** Abstraer capa Repository en backend
+- [x] **[arch-2]** Abstraer capa Repository en backend ✅ COMPLETADO
   - **Acción**: Crear capa Repository para abstracción de datos
-  - **✅ Validado**
+  - **Estado**: ✅ PublicationRepository refactorizado y optimizado.
 
-- [ ] **[feat-1]** Editor Rich Text para publicaciones
-  - **Stack**: TipTap o Lexical
-  - **✅ Validado**
+- [x] **[feat-1]** Editor Rich Text para publicaciones ✅ COMPLETADO
+  - **Stack**: TipTap
+  - **Estado**: ✅ Componente RichTextEditor implementado e integrado en la gestión de plantillas.
 
-- [ ] **[feat-2]** Sistema de programación de publicaciones
-  - **Stack**: Calendario visual + cron jobs
-  - **✅ Validado**
+- [x] **[feat-2]** Sistema de programación de publicaciones ✅ COMPLETADO
+  - **Estado**: ✅ Scheduler implementado, integrado en el arranque del bot y con modal de programación en el frontend.
 
-- [ ] **[feat-6]** Sistema de plantillas de publicación
-  - **Beneficio**: Publicaciones más rápidas y consistentes
-  - **✅ Validado**
+- [x] **[feat-6]** Sistema de plantillas de publicación ✅ COMPLETADO
+  - **Estado**: ✅ Gestión de plantillas con editor Rich Text (TipTap) e integración en el flujo de publicación.
 
-- [ ] **[feat-7]** Multi-canal: publicar en varios canales
-  - **Beneficio**: Distribución de contenido eficiente
-  - **✅ Validado**
+- [x] **[feat-7]** Multi-canal: publicar en varios canales ✅ COMPLETADO
+  - **Estado**: ✅ Soporte para múltiples canales en el repositorio, servicio y UI de programación.
 
 ---
 
@@ -95,11 +97,11 @@
 
 | Fase | Total | Completado | Pendiente |
 |------|-------|------------|-----------|
-| Fase 1 | 5 | 5 | 0 |
+| Fase 1 | 6 | 6 | 0 |
 | Fase 2 | 5 | 5 | 0 |
-| Fase 3 | 5 | 0 | 5 |
-| **Total** | **15** | **10** | **5** |
+| Fase 3 | 5 | 5 | 0 |
+| **Total** | **16** | **16** | **0** |
 
 ---
 
-*Actualizado: 2026-02-06*
+*Actualizado: 2026-02-07 (Post Fix IA v3.6.6)*

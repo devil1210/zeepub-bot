@@ -5,6 +5,7 @@ import os
 from config.config_settings import config
 from services.backup_scheduler import start_backup_scheduler
 from services.daily_reset_scheduler import start_daily_reset_scheduler
+from services.publisher.publisher_scheduler import start_publisher_scheduler
 from services.recommendation_scheduler import start_recommendations_scheduler
 from services.weekly_reports import start_weekly_scheduler
 from utils.download_limiter import load_downloads
@@ -32,6 +33,7 @@ class BotInitializer:
             ("backup", start_backup_scheduler),
             ("daily_reset", start_daily_reset_scheduler),
             ("recommendations", start_recommendations_scheduler),
+            ("publisher", start_publisher_scheduler),
         ]
 
         # Pre-load needed data for schedulers if any
@@ -44,8 +46,8 @@ class BotInitializer:
             try:
                 # Some funcs expect bot, some expect application.
                 # Weekly, Backup, Daily expect bot (legacy behavior)
-                # Recommendations now expects application for job_queue
-                if name == "recommendations":
+                # Recommendations and Publisher now expect application for job_queue
+                if name in ["recommendations", "publisher"]:
                     scheduler_func(application)
                 else:
                     scheduler_func(bot)

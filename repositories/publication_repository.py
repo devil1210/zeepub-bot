@@ -5,7 +5,12 @@ from sqlalchemy import and_, delete, select, update
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
-from models.publication_models import PublicationChannel, PublicationQueue, PublicationTemplate
+from models.publication_models import (
+    DiscoveredChat,
+    PublicationChannel,
+    PublicationQueue,
+    PublicationTemplate,
+)
 from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
@@ -42,6 +47,7 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
             return item
 
     async def update(self, item: PublicationQueue) -> PublicationQueue:
+        # Nota: BaseRepository pide 'entity', PublicationRepository usaba 'item'
         async with self.db_manager.get_session() as session:
             session.add(item)
             await session.commit()
@@ -92,52 +98,24 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
 
     # --- Publication Channel Methods ---
 
+    async def get_channel_by_id(self, channel_id: int) -> PublicationChannel | None:
+        """Obtiene un canal por su ID."""
+        async with self.db_manager.get_session() as session:
+            return await session.get(PublicationChannel, channel_id)
+
     async def get_channels(self, active_only: bool = True) -> list[PublicationChannel]:
         async with self.db_manager.get_session() as session:
             stmt = select(PublicationChannel)
             if active_only:
                 stmt = stmt.where(PublicationChannel.is_active == True)
-            
+
             # Ordenar: Favoritos primero, luego alfabético
-            stmt = stmt.order_by(PublicationChannel.is_favorite.desc(), PublicationChannel.name.asc())
-            
+            stmt = stmt.order_by(
+                PublicationChannel.is_favorite.desc(), PublicationChannel.name.asc()
+            )
+
             result = await session.execute(stmt)
             return list(result.scalars().all())
-
-    async def get_discovered_chats(self, limit: int = 20) -> list:
-        from models.publication_models import DiscoveredChat
-        async with self.db_manager.get_session() as session:
-            stmt = select(DiscoveredChat).order_by(DiscoveredChat.last_seen_at.desc()).limit(limit)
-            result = await session.execute(stmt)
-            return list(result.scalars().all())
-
-    async def save_discovered_chat(self, chat_id: str, title: str, chat_type: str, username: str = None, member_count: int = 0):
-        from models.publication_models import DiscoveredChat
-        async with self.db_manager.get_session() as session:
-            # Upsert
-            stmt = select(DiscoveredChat).where(DiscoveredChat.chat_id == str(chat_id))
-            result = await session.execute(stmt)
-            existing = result.scalar_one_or_none()
-
-            if existing:
-                existing.title = title
-                existing.type = chat_type
-                existing.username = username
-                if member_count > 0:
-                    existing.member_count = member_count
-                existing.last_seen_at = datetime.utcnow()
-                session.add(existing)
-            else:
-                new_chat = DiscoveredChat(
-                    chat_id=str(chat_id),
-                    title=title,
-                    type=chat_type,
-                    username=username,
-                    member_count=member_count
-                )
-                session.add(new_chat)
-            
-            await session.commit()
 
     async def create_channel(self, channel: PublicationChannel) -> PublicationChannel:
         async with self.db_manager.get_session() as session:
@@ -163,6 +141,11 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
             return result.rowcount > 0
 
     # --- Publication Template Methods ---
+
+    async def get_template_by_id(self, template_id: int) -> PublicationTemplate | None:
+        """Obtiene una plantilla por su ID."""
+        async with self.db_manager.get_session() as session:
+            return await session.get(PublicationTemplate, template_id)
 
     async def get_templates(self, platform: str | None = None) -> list[PublicationTemplate]:
         async with self.db_manager.get_session() as session:
@@ -196,6 +179,48 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
             result = await session.execute(stmt)
             await session.commit()
             return result.rowcount > 0
+
+    # --- Discovered Chats Methods ---
+
+    async def get_discovered_chats(self, limit: int = 20) -> list[DiscoveredChat]:
+        async with self.db_manager.get_session() as session:
+            stmt = select(DiscoveredChat).order_by(DiscoveredChat.last_seen_at.desc()).limit(limit)
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def save_discovered_chat(
+        self,
+        chat_id: str,
+        title: str,
+        chat_type: str,
+        username: str = None,
+        member_count: int = 0,
+    ):
+        async with self.db_manager.get_session() as session:
+            # Upsert
+            stmt = select(DiscoveredChat).where(DiscoveredChat.chat_id == str(chat_id))
+            result = await session.execute(stmt)
+            existing = result.scalar_one_or_none()
+
+            if existing:
+                existing.title = title
+                existing.type = chat_type
+                existing.username = username
+                if member_count > 0:
+                    existing.member_count = member_count
+                existing.last_seen_at = datetime.utcnow()
+                session.add(existing)
+            else:
+                new_chat = DiscoveredChat(
+                    chat_id=str(chat_id),
+                    title=title,
+                    type=chat_type,
+                    username=username,
+                    member_count=member_count,
+                )
+                session.add(new_chat)
+
+            await session.commit()
 
 
 # Instancia global

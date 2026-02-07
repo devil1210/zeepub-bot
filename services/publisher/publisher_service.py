@@ -461,18 +461,18 @@ class PublisherService:
         """
         channels = await self.repo.get_channels(active_only=active_only)
         discovered = await self.repo.get_discovered_chats(limit=50)
-        
+
         # Mapeamos a diccionarios simples
         return {
             "channels": [
                 {
-                    "id": c.id, 
-                    "name": c.name, 
-                    "platform": c.platform, 
-                    "target_id": c.target_id, 
+                    "id": c.id,
+                    "name": c.name,
+                    "platform": c.platform,
+                    "target_id": c.target_id,
                     "is_favorite": c.is_favorite,
-                    "is_active": c.is_active
-                } 
+                    "is_active": c.is_active,
+                }
                 for c in channels
             ],
             "discovered": [
@@ -481,16 +481,15 @@ class PublisherService:
                     "title": d.title,
                     "type": d.type,
                     "member_count": d.member_count,
-                    "last_seen_at": d.last_seen_at.isoformat() if d.last_seen_at else None
+                    "last_seen_at": d.last_seen_at.isoformat() if d.last_seen_at else None,
                 }
                 for d in discovered
-            ]
+            ],
         }
 
     async def toggle_favorite(self, channel_id: int) -> bool:
         """Alterna el estado de favorito de un canal."""
-        channel = await self.repo.get_channels(active_only=False) # Inefficiente si hay muchos, pero seguro son pocos
-        target = next((c for c in channel if c.id == channel_id), None)
+        target = await self.repo.get_channel_by_id(channel_id)
         if target:
             new_val = not target.is_favorite
             return await self.repo.update_channel(channel_id, {"is_favorite": new_val})
@@ -499,18 +498,18 @@ class PublisherService:
     async def promote_discovered_to_channel(self, chat_id: str, name: str) -> Any:
         """Convierte un chat descubierto en un canal de publicación oficial."""
         from models.publication_models import PublicationChannel
-        
+
         # Check if already exists
         channels = await self.repo.get_channels(active_only=False)
         if any(c.target_id == str(chat_id) for c in channels):
             return None
-            
+
         new_channel = PublicationChannel(
             name=name,
-            platform="telegram", # Asumimos telegram por ahora
+            platform="telegram",  # Asumimos telegram por ahora
             target_id=str(chat_id),
             is_active=True,
-            is_favorite=True # Promovidos suelen ser importantes
+            is_favorite=True,  # Promovidos suelen ser importantes
         )
         return await self.repo.create_channel(new_channel)
 

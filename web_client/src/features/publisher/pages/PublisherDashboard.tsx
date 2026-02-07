@@ -20,6 +20,8 @@ import {
     Star
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
+import { TemplateModal } from '../components/TemplateModal';
+import { PublicationTemplate } from '../services/publisherApi';
 
 export const PublisherDashboard: React.FC = () => {
     const { settings } = useTheme();
@@ -30,12 +32,26 @@ export const PublisherDashboard: React.FC = () => {
         templates,
         loading,
         error,
-        deleteQueueItem,
         refresh,
+        deleteQueueItem,
         toggleFavorite,
-        promoteDiscovered
+        promoteDiscovered,
+        saveTemplate,
+        deleteTemplate
     } = usePublisher();
     const [activeTab, setActiveTab] = useState<'queue' | 'channels' | 'templates'>('queue');
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    const [editingTemplate, setEditingTemplate] = useState<PublicationTemplate | null>(null);
+
+    const handleCreateTemplate = () => {
+        setEditingTemplate(null);
+        setIsTemplateModalOpen(true);
+    };
+
+    const handleEditTemplate = (template: PublicationTemplate) => {
+        setEditingTemplate(template);
+        setIsTemplateModalOpen(true);
+    };
 
     if (loading) {
         return (
@@ -276,7 +292,10 @@ export const PublisherDashboard: React.FC = () => {
                     <div className="flex flex-col gap-3">
                         <div className="flex justify-between items-center px-1">
                             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Plantillas de Texto</h2>
-                            <button className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20">
+                            <button
+                                onClick={handleCreateTemplate}
+                                className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                            >
                                 <Plus className="w-3.5 h-3.5" /> Nueva
                             </button>
                         </div>
@@ -292,18 +311,37 @@ export const PublisherDashboard: React.FC = () => {
                                         {template.platform}
                                     </div>
                                 </div>
-                                <div className="p-3 bg-black/20 rounded-premium-sm text-[10px] text-gray-300 leading-relaxed italic whitespace-pre-line border border-white/5">
-                                    {template.content.length > 150 ? template.content.substring(0, 150) + '...' : template.content}
-                                </div>
-                                <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button className="p-2 text-gray-400 hover:text-white transition-colors"><Edit3 className="w-4 h-4" /></button>
-                                    <button className="p-2 text-gray-400 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                <div
+                                    className="p-3 bg-black/20 rounded-premium-sm text-[10px] text-gray-300 leading-relaxed italic whitespace-pre-line border border-white/5 line-clamp-3 prose prose-invert max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: template.content }}
+                                />
+                                <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={() => handleEditTemplate(template)}
+                                        className="p-2 text-gray-400 hover:text-white transition-colors"
+                                    >
+                                        <Edit3 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => deleteTemplate(template.id)}
+                                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 )}
             </div>
+
+            <TemplateModal
+                isOpen={isTemplateModalOpen}
+                onClose={() => setIsTemplateModalOpen(false)}
+                onSave={saveTemplate}
+                editingTemplate={editingTemplate}
+            />
         </div>
     );
 };
+

@@ -39,7 +39,7 @@ class DiscoveredChat(Base):
     type = Column(String(50))  # group, supergroup, channel
     member_count = Column(Integer, default=0)
     username = Column(String(100), nullable=True)
-    
+
     last_seen_at = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
 

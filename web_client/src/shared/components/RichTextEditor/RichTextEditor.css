@@ -1,0 +1,48 @@
+.rich-text-editor-container .ProseMirror {
+    outline: none !important;
+    min-height: 15rem;
+}
+
+.rich-text-editor-container .ProseMirror p {
+    margin-bottom: 0.5rem;
+}
+
+.rich-text-editor-container .ProseMirror a {
+    color: rgb(var(--color-primary));
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.rich-text-editor-container .ProseMirror ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.rich-text-editor-container .ProseMirror ol {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.rich-text-editor-container .ProseMirror blockquote {
+    border-left: 3px solid rgba(255, 255, 255, 0.2);
+    padding-left: 1rem;
+    margin-left: 0;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.rich-text-editor-container .ProseMirror.ProseMirror-focused {
+    outline: none;
+}
+
+/* Placeholder style */
+.rich-text-editor-container .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: rgba(255, 255, 255, 0.3);
+    pointer-events: none;
+    height: 0;
+    font-style: italic;
+}

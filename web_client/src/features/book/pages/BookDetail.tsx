@@ -18,6 +18,7 @@ import { BookCover } from '../components/BookCover';
 import { BookActions } from '../components/BookActions';
 import { BookHeader } from '../components/BookHeader';
 import { BookSpecs } from '../components/BookSpecs';
+import { ScheduleModal } from '@features/publisher/components/ScheduleModal';
 
 interface BookDetailProps {
   volume?: Volume;
@@ -48,6 +49,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   // UI State
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [localRating, setLocalRating] = useState(initialVolume?.rating || 0);
   const [localDownloadCount, setLocalDownloadCount] = useState(initialVolume?.downloadCount || 0);
@@ -463,6 +465,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                 onDownload={handleDownload}
                 onOpenRating={() => setIsRatingModalOpen(true)}
                 onOpenReport={() => setIsReportModalOpen(true)}
+                onOpenSchedule={() => setIsScheduleModalOpen(true)}
                 rating={localRating}
               />
 
@@ -561,6 +564,13 @@ export const BookDetail: React.FC<BookDetailProps> = ({
           </div>
         </div>
       </div>
+
+      <ScheduleModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        bookHash={curVolume.seriesId || 'unknown'}
+        bookTitle={displayData.title}
+      />
     </div>
   );
 };

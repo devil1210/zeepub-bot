@@ -96,7 +96,6 @@ async def handle_manual_destino(update: Update, context: ContextTypes.DEFAULT_TY
     await mostrar_menu_principal(update, context)
 
 
-
 async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Captura texto tras /search o tras inline 'Buscar EPUB'."""
     uid = update.effective_user.id
@@ -134,9 +133,7 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat.type == "private":
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_search = "🔍 ¿Qué libro buscas? Escribe el título o autor:"
-        text_search = (
-            await cms.get_text("search_prompt") if (cms and cms.enabled) else base_search
-        )
+        text_search = await cms.get_text("search_prompt") if (cms and cms.enabled) else base_search
         await query.edit_message_text(text_search)
         return
 
@@ -151,9 +148,7 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Bot es admin: puede recibir mensajes normales
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_search = "🔍 ¿Qué libro buscas? Escribe el título o autor:"
-        text_search = (
-            await cms.get_text("search_prompt") if (cms and cms.enabled) else base_search
-        )
+        text_search = await cms.get_text("search_prompt") if (cms and cms.enabled) else base_search
         await query.edit_message_text(text_search)
     else:
         # Bot NO es admin: solo recibe comandos
@@ -171,7 +166,6 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text_instr,
             parse_mode="HTML",
         )
-
 
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):

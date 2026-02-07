@@ -42,7 +42,7 @@ export const usePublisher = () => {
     }, [fetchData]);
 
     const schedulePublication = async (data: any) => {
-        const res = await publisherApi.schedule(data);
+        const res = await publisherApi.schedulePublication(data);
         if (res.success) await fetchData();
         return res;
     };
@@ -77,6 +77,13 @@ export const usePublisher = () => {
         return res;
     };
 
+    const deleteTemplate = async (id: number) => {
+        if (!window.confirm('¿Estás seguro de eliminar esta plantilla?')) return;
+        const res = await publisherApi.deleteTemplate(id);
+        if (res.success) await fetchData();
+        return res;
+    };
+
     return {
         queue,
         channels,
@@ -90,6 +97,7 @@ export const usePublisher = () => {
         saveChannel,
         toggleFavorite,
         promoteDiscovered,
-        saveTemplate
+        saveTemplate,
+        deleteTemplate
     };
 };

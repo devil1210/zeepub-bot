@@ -67,8 +67,13 @@ export const publisherApi = {
     deleteTemplate: (id: number) =>
         api.rpc('pub_delete_template', { id }),
 
-    schedule: (data: { book_hash: string; channel_id: number; scheduled_for: string; template_id?: number; payload?: any }) =>
-        api.rpc('pub_schedule', data),
+    schedulePublication: (data: {
+        book_hash: string;
+        channel_id: number;
+        scheduled_for: string;
+        template_id?: number;
+        payload?: any;
+    }) => api.rpc('pub_schedule', data),
 
     deleteQueueItem: (id: number) =>
         api.rpc('pub_delete_queue_item', { id }),

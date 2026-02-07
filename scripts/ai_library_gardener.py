@@ -4,7 +4,7 @@ import logging
 import os
 
 from rich.console import Console
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, text
 
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, MetadataProposal, SeriesMetadata
