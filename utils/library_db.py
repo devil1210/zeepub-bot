@@ -246,6 +246,7 @@ def init_library_db():
         import models.user_models  # noqa
         import models.library_models  # noqa
         import models.download_models  # noqa
+        import models.publication_models  # noqa
 
         # Asegurar que app_themes se cree si no existe (importado en user_models)
 

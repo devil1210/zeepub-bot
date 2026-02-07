@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from sqlalchemy import String, and_, cast, exists, func, or_, select
+from sqlalchemy import String, and_, cast, exists, func, or_, select, text
 
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, SeriesMetadata, UserDownload
@@ -611,3 +611,115 @@ class LibraryService:
             except Exception as e:
                 logger.error(f"Error filtering series by author: {e}")
                 return {"items": [], "total": 0}
+
+    @staticmethod
+    async def find_ai_series_duplicates() -> list[dict[str, Any]]:
+        """
+        Escanea la biblioteca en busca de series con nombres similares (English/Spanish)
+        pero con hashes distintos, indicando posibles duplicados.
+        """
+        async with pg_manager.get_session() as session:
+            try:
+                # 1. Obtener todas las series
+                stmt = select(SeriesMetadata).order_by(SeriesMetadata.author, SeriesMetadata.series_name)
+                res = await session.execute(stmt)
+                series_list = res.scalars().all()
+
+                from difflib import SequenceMatcher
+
+                from services.ai_service import AIService
+
+                suggestions = []
+                processed_pairs = set()
+
+                # Agrupar por autor para optimizar
+                author_map: dict[str, list[SeriesMetadata]] = {}
+                for s in series_list:
+                    auth = (s.author or "Unknown").lower().strip()
+                    if auth not in author_map:
+                        author_map[auth] = []
+                    author_map[auth].append(s)
+
+                for auth, group in author_map.items():
+                    if len(group) < 2:
+                        continue
+
+                    for i, s1 in enumerate(group):
+                        for s2 in group[i + 1 :]:
+                            pair_id = tuple(sorted([s1.series_hash, s2.series_hash]))
+                            if pair_id in processed_pairs:
+                                continue
+                            processed_pairs.add(pair_id)
+
+                            # 2. Heurística inicial
+                            n1_en = (s1.series_english or s1.series_name or "").lower()
+                            n1_es = (s1.series_spanish or "").lower()
+                            n2_en = (s2.series_english or s2.series_name or "").lower()
+                            n2_es = (s2.series_spanish or "").lower()
+
+                            similarities = [
+                                SequenceMatcher(None, n1_en, n2_en).ratio(),
+                                SequenceMatcher(None, n1_es, n2_es).ratio() if n1_es and n2_es else 0,
+                                SequenceMatcher(None, n1_en, n2_es).ratio() if n1_en and n2_es else 0,
+                                SequenceMatcher(None, n1_es, n2_en).ratio() if n1_es and n2_en else 0,
+                            ]
+                            max_sim = max(similarities)
+
+                            if max_sim > 0.7:
+                                ai_result = await AIService.analyze_potential_merge(
+                                    s1.to_dict(),
+                                    s2.to_dict()
+                                )
+
+                                if ai_result and ai_result.get("is_same"):
+                                    suggestions.append({
+                                        "series_a": {
+                                            "hash": s1.series_hash,
+                                            "name": s1.series_name,
+                                            "english": s1.series_english,
+                                            "spanish": s1.series_spanish,
+                                            "author": s1.author,
+                                            "count": s1.book_count
+                                        },
+                                        "series_b": {
+                                            "hash": s2.series_hash,
+                                            "name": s2.series_name,
+                                            "english": s2.series_english,
+                                            "spanish": s2.series_spanish,
+                                            "author": s2.author,
+                                            "count": s2.book_count
+                                        },
+                                        "reason": ai_result.get("reason"),
+                                        "confidence": ai_result.get("confidence"),
+                                        "suggested_name": ai_result.get("suggested_main_name")
+                                    })
+
+                return suggestions
+
+            except Exception as e:
+                logger.error(f"[LibraryService.find_ai_series_duplicates] Error: {e}", exc_info=True)
+                return []
+
+    @staticmethod
+    async def merge_series(target_hash: str, source_hash: str, new_name: str = None) -> bool:
+        """Fusiona source_hash dentro de target_hash."""
+        async with pg_manager.get_session() as session:
+            try:
+                # 1. Actualizar libros
+                stmt_books = text("UPDATE local_books SET series_hash = :t, series = COALESCE(:n, series) WHERE series_hash = :s")
+                await session.execute(stmt_books, {"t": target_hash, "s": source_hash, "n": new_name})
+
+                # 2. Borrar metadata vieja de source
+                stmt_del = text("DELETE FROM series_metadata WHERE series_hash = :s")
+                await session.execute(stmt_del, {"s": source_hash})
+
+                # 3. Actualizar nombre de target
+                if new_name:
+                    stmt_upd = text("UPDATE series_metadata SET series_name = :n WHERE series_hash = :h")
+                    await session.execute(stmt_upd, {"n": new_name, "h": target_hash})
+
+                await session.commit()
+                return True
+            except Exception as e:
+                logger.error(f"Error merging series: {e}")
+                return False

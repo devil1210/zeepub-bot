@@ -49,8 +49,9 @@ def check_staff(user_data: dict[str, Any]):
     if not rbac_service.is_staff(user_data):
         logger.warning(f"Staff Access Denied for user {uid} (Level: {user_data.get('level')})")
         raise HTTPException(
-            status_code=403, detail="Acceso denegado: Se requieren permisos de Staff"
+            status_code=403, detail=f"Acceso denegado: Se requieren permisos de Staff (Tu nivel: {user_data.get('level')})"
         )
+    logger.info(f"Staff access verified for user {uid}")
 
 
 # --- Handlers ---
@@ -2649,6 +2650,43 @@ async def handle_admin_clear_duplicates(data: dict[str, Any], user_data: dict[st
         session.close()
 
 
+async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data: dict[str, Any]):
+    """Ejecuta escaneo de series similares con IA."""
+    check_staff(user_data)
+    from services.library_service import LibraryService
+    
+    try:
+        suggestions = await LibraryService.find_ai_series_duplicates()
+        return {"success": True, "suggestions": suggestions}
+    except Exception as e:
+        logger.error(f"Error in AI duplicate scan: {e}")
+        return {"success": False, "message": str(e)}
+
+
+async def handle_admin_merge_series(data: dict[str, Any], user_data: dict[str, Any]):
+    """Fusiona dos series bajo un mismo hash y nombre."""
+    check_staff(user_data)
+    
+    target_hash = data.get("target_hash")
+    source_hash = data.get("source_hash")
+    new_name = data.get("new_name")
+
+    if not target_hash or not source_hash:
+        return {"success": False, "message": "Faltan hashes para la fusión"}
+
+    from services.library_service import LibraryService
+    
+    try:
+        success = await LibraryService.merge_series(target_hash, source_hash, new_name)
+        if success:
+            return {"success": True, "message": "Series fusionadas correctamente"}
+        else:
+            return {"success": False, "message": "Error al fusionar series"}
+    except Exception as e:
+        logger.error(f"Error merging series: {e}")
+        return {"success": False, "message": str(e)}
+
+
 async def handle_admin_get_system_logs(data: dict[str, Any], user_data: dict[str, Any]):
     """Retorna los últimos logs capturados en memoria con opción de filtrado."""
     check_staff(user_data)
@@ -3580,12 +3618,14 @@ async def handle_ai_reset_series(data: dict[str, Any], user_data: dict[str, Any]
 
 
 async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
+    logger.info(f"handle_pub_get_queue called by user {user_data.get('user_id')}")
     check_staff(user_data)
     from repositories.publication_repository import pub_repo
 
     status = data.get("status")
     limit = data.get("limit", 50)
     items = await pub_repo.get_full_queue(status=status, limit=limit)
+    logger.info(f"Found {len(items)} items in publication queue")
     return {
         "items": [
             {
@@ -3605,11 +3645,13 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
 
 
 async def handle_pub_get_channels(data: dict[str, Any], user_data: dict[str, Any]):
+    logger.info(f"handle_pub_get_channels called by user {user_data.get('user_id')}")
     check_staff(user_data)
     from services.publisher.publisher_service import publisher_service
     
     # Obtener canales y chats descubiertos
     result = await publisher_service.get_channels_with_discovery(active_only=False)
+    logger.info(f"Found {len(result.get('channels', []))} channels and {len(result.get('discovered', []))} discovered chats")
     
     return result
 
@@ -3739,7 +3781,7 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
         scheduled_for = datetime.fromisoformat(scheduled_for_str.replace("Z", "+00:00"))
     except Exception as e:
         logger.error(f"Error parsing date {scheduled_for_str}: {e}")
-        raise HTTPException(status_code=400, detail="Formato de fecha inválido")
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido") from e
 
     await publisher_service.schedule_publication(
         book_hash=book_hash,

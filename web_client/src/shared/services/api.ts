@@ -241,6 +241,9 @@ export const api = {
     adminRecheckDuplicates: () => rpc('admin_recheck_duplicates'),
     adminClearDuplicates: () => rpc('admin_clear_duplicates'),
     adminDeleteDuplicateItem: (id: number, target: 'original' | 'duplicate') => rpc('admin_delete_duplicate_item', { id, target }),
+    adminAiSeriesDuplicateScan: () => rpc('admin_ai_series_duplicate_scan'),
+    adminMergeSeries: (targetHash: string, sourceHash: string, newName?: string) =>
+        rpc('admin_merge_series', { target_hash: targetHash, source_hash: sourceHash, new_name: newName }),
     adminScanUser: (userId: string) => rpc('admin_scan_user', { userId }),
     getSystemLogs: (level: string = 'INFO', hours?: number) => rpc('admin_get_system_logs', { level, hours }),
     sendLogsToTelegram: (level: string = 'DEBUG', hours?: number) => rpc('admin_send_logs_telegram', { level, hours }),

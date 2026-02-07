@@ -145,6 +145,7 @@ async def handle_bot_request(
 
     try:
         from api.miniapp_handlers import (
+            handle_admin_ai_series_duplicate_scan,
             handle_admin_backup_library,
             handle_admin_cleanup_library,
             handle_admin_clear_duplicates,
@@ -163,6 +164,7 @@ async def handle_bot_request(
             handle_admin_get_tiers,
             handle_admin_get_user_permissions,
             handle_admin_get_users,
+            handle_admin_merge_series,
             handle_admin_recheck_duplicates,
             handle_admin_rename_themes,
             handle_admin_reset_library,
@@ -280,6 +282,8 @@ async def handle_bot_request(
             "admin_rename_themes": handle_admin_rename_themes,
             "admin_find_duplicates": handle_admin_find_duplicates,
             "admin_delete_duplicate": handle_admin_delete_duplicate,
+            "admin_ai_series_duplicate_scan": handle_admin_ai_series_duplicate_scan,
+            "admin_merge_series": handle_admin_merge_series,
             "admin_delete_duplicate_item": handle_admin_delete_duplicate_item,
             "admin_enrich_metadata": handle_admin_enrich_metadata,
             "update_user_setting": handle_update_user_setting,

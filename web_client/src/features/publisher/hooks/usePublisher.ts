@@ -11,12 +11,17 @@ export const usePublisher = () => {
 
     const fetchData = useCallback(async () => {
         setLoading(true);
+        setError(null);
         try {
+            console.log("Fetching publisher data...");
             const [qRes, cRes, tRes] = await Promise.all([
                 publisherApi.getQueue(),
                 publisherApi.getChannels(),
                 publisherApi.getTemplates()
             ]);
+
+            console.log("Publisher data received:", { qRes, cRes, tRes });
+
             setQueue(qRes.items || []);
 
             // cRes now returns { channels: [], discovered: [] }
@@ -25,6 +30,7 @@ export const usePublisher = () => {
 
             setTemplates(tRes.templates || []);
         } catch (err: any) {
+            console.error("Error fetching publisher data:", err);
             setError(err.message || 'Error fetching publisher data');
         } finally {
             setLoading(false);

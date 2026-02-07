@@ -23,9 +23,49 @@ import { useTheme } from '@shared/contexts/ThemeContext';
 
 export const PublisherDashboard: React.FC = () => {
     const { settings } = useTheme();
-    const { queue, channels, discoveredChats, templates, loading, deleteQueueItem, refresh, toggleFavorite, promoteDiscovered } = usePublisher();
+    const {
+        queue,
+        channels,
+        discoveredChats,
+        templates,
+        loading,
+        error,
+        deleteQueueItem,
+        refresh,
+        toggleFavorite,
+        promoteDiscovered
+    } = usePublisher();
     const [activeTab, setActiveTab] = useState<'queue' | 'channels' | 'templates'>('queue');
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="loader ring-2 ring-primary ring-offset-2 rounded-full w-8 h-8 animate-spin"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-4">
+                <div className="glass-panel border-red-500/30 p-6 flex flex-col items-center gap-4 text-center">
+                    <div className="p-3 rounded-full bg-red-500/10 text-red-500">
+                        <span className="material-icons-round text-3xl">error_outline</span>
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-white mb-1">Error al cargar el Publicador</h3>
+                        <p className="text-gray-400 max-w-xs mx-auto">{error}</p>
+                    </div>
+                    <button
+                        onClick={refresh}
+                        className="px-6 py-2 bg-primary rounded-premium text-white font-medium hover:brightness-110 active:scale-95 transition-all"
+                    >
+                        Reintentar
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     const getStatusIcon = (status: string) => {
         switch (status) {
