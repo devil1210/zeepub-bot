@@ -24,10 +24,16 @@ async def get_series_for_proposal(limit: int = 20):
     Prioriza series con nombres "sucios" o sin series_spanish.
     """
     async with pg_manager.get_session() as session:
-        # Encontrar series que no tienen propuesta pendiente
+        # Subquery para pendientes
         pending_subquery = select(MetadataProposal.series_hash).where(
             MetadataProposal.status == "pending"
         )
+
+        # SQL crudo para el feedback de aprendizaje (más fácil para NOT IN por ahora)
+        feedback_hashes_result = await session.execute(
+            text("SELECT series_hash FROM ai_learning_feedback")
+        )
+        feedback_hashes = [r[0] for r in feedback_hashes_result.fetchall()]
 
         # Series candidatas:
         # - series_spanish nulo o vacío
@@ -44,6 +50,7 @@ async def get_series_for_proposal(limit: int = 20):
                 )
             )
             .where(LocalBook.series_hash.notin_(pending_subquery))
+            .where(LocalBook.series_hash.notin_(feedback_hashes))
             .group_by(LocalBook.series_hash)
             .limit(limit)
         )
@@ -252,22 +259,22 @@ async def main():
                 f"[bold cyan]Lote completado: {batch_count} propuestas de enriquecimiento generadas.[/bold cyan]"
             )
 
-        # 2. Si no hubo enriquecimientos, buscar fusiones
-        if batch_count == 0:
-            console.print("[yellow]Buscando posibles fusiones de series duplicadas...[/yellow]")
-            merge_count = await find_merges(limit=5)
-            if merge_count == 0:
-                console.print(
-                    "[bold blue]✨ No se encontraron series pendientes de análisis ni de fusión.[/bold blue]"
-                )
-                break
+        # 2. Buscar fusiones (siempre, no solo si batch_count == 0, para mayor proactividad)
+        console.print("[yellow]Buscando posibles fusiones de series duplicadas...[/yellow]")
+        merge_count = await find_merges(limit=5)
+        if merge_count > 0:
             console.print(
                 f"[bold magenta]Se detectaron {merge_count} posibles fusiones.[/bold magenta]"
             )
 
-        # Pausa entre lotes
-        console.print("esperando 10 segundos para el siguiente lote...")
-        await asyncio.sleep(10)
+        if batch_count == 0 and merge_count == 0:
+            console.print(
+                "[bold blue]✨ No se encontraron nuevas tareas. Esperando el próximo ciclo...[/bold blue]"
+            )
+
+        # Pausa entre lotes (Aumentamos a 30s para no saturar API innecesariamente en idle)
+        console.print("[dim]Pausa de 30 segundos...[/dim]")
+        await asyncio.sleep(30)
 
 
 if __name__ == "__main__":

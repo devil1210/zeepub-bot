@@ -599,14 +599,13 @@ export const AIHub: React.FC = () => {
                                                         }
                                                     } else {
                                                         // Abrir modal de revisión para enriquecimiento
-                                                        setProposal(p.proposal);
+                                                        const propWithId = { ...p.proposal, id: p.id };
+                                                        setProposal(propWithId);
                                                         setApprovedChanges(p.proposal.changes || []);
                                                         setEditedSeries(p.proposal.proposed_series || '');
                                                         setEditedSpanish(p.proposal.proposed_spanish || '');
-                                                        // Guardar el ID de la propuesta en el state para que handleApplyChanges sepa marcarla como aprobada
+                                                        // Guardar el hash de la serie para el contexto del modal
                                                         setScanHash(p.series_hash);
-                                                        // We might need to store proposalId to mark it as approved
-                                                        (proposal as any).id = p.id;
                                                         setShowProposal(true);
                                                     }
                                                 }}

@@ -49,7 +49,8 @@ def check_staff(user_data: dict[str, Any]):
     if not rbac_service.is_staff(user_data):
         logger.warning(f"Staff Access Denied for user {uid} (Level: {user_data.get('level')})")
         raise HTTPException(
-            status_code=403, detail=f"Acceso denegado: Se requieren permisos de Staff (Tu nivel: {user_data.get('level')})"
+            status_code=403,
+            detail=f"Acceso denegado: Se requieren permisos de Staff (Tu nivel: {user_data.get('level')})",
         )
     logger.info(f"Staff access verified for user {uid}")
 
@@ -833,8 +834,6 @@ async def handle_feedback(data: dict[str, Any], user_data: dict[str, Any]):
     asyncio.create_task(notion_service.log_feedback(username, message, category))
 
     return {"success": True, "message": "Feedback recibido. ¡Gracias!"}
-
-
 
 
 async def handle_admin_get_tiers(data: dict[str, Any], user_data: dict[str, Any]):
@@ -2654,7 +2653,7 @@ async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data:
     """Ejecuta escaneo de series similares con IA."""
     check_staff(user_data)
     from services.library_service import LibraryService
-    
+
     try:
         suggestions = await LibraryService.find_ai_series_duplicates()
         return {"success": True, "suggestions": suggestions}
@@ -2666,7 +2665,7 @@ async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data:
 async def handle_admin_merge_series(data: dict[str, Any], user_data: dict[str, Any]):
     """Fusiona dos series bajo un mismo hash y nombre."""
     check_staff(user_data)
-    
+
     target_hash = data.get("target_hash")
     source_hash = data.get("source_hash")
     new_name = data.get("new_name")
@@ -2675,10 +2674,31 @@ async def handle_admin_merge_series(data: dict[str, Any], user_data: dict[str, A
         return {"success": False, "message": "Faltan hashes para la fusión"}
 
     from services.library_service import LibraryService
-    
+
     try:
         success = await LibraryService.merge_series(target_hash, source_hash, new_name)
         if success:
+            # Si existía una propuesta de IA pendiente para esta fusión, marcarla como aprobada
+            from utils.library_db import get_session
+            from models.library_models import MetadataProposal
+            from datetime import datetime
+
+            with get_session() as session:
+                proposal = (
+                    session.query(MetadataProposal)
+                    .filter(
+                        MetadataProposal.type == "merge",
+                        MetadataProposal.series_hash == target_hash,
+                        MetadataProposal.secondary_hash == source_hash,
+                        MetadataProposal.status == "pending",
+                    )
+                    .first()
+                )
+                if proposal:
+                    proposal.status = "approved"
+                    proposal.processed_at = datetime.utcnow()
+                    session.commit()
+
             return {"success": True, "message": "Series fusionadas correctamente"}
         else:
             return {"success": False, "message": "Error al fusionar series"}
@@ -3220,8 +3240,20 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 else:
                     # Just update the hash of the current series
                     if series:
+                        old_hash = series.series_hash
                         series.series_hash = new_hash
                         effective_hash = new_hash
+
+                        # IMPORTANTE: Debemos actualizar el hash en todos los libros locales
+                        # asociados a este hash para mantener la consistencia de identidad.
+                        from sqlalchemy import update
+
+                        session.execute(
+                            update(LocalBook)
+                            .where(LocalBook.series_hash == old_hash)
+                            .values(series_hash=new_hash)
+                        )
+                        logger.info(f"📍 Libros actualizados de hash {old_hash} a {new_hash}")
                     else:
                         # Should have been created above, but safety check
                         pass
@@ -3291,9 +3323,10 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
             for book in books:
                 book.series_metadata_id = series.id if series else None
-                # Preservamos series_hash y series original para que el hash de identidad (metadata) no cambie nunca
-                # book.series_hash = effective_hash  <- ELIMINADO en paso previo
-                # book.series = proposed_series      <- ELIMINADO en paso previo
+                # Si el hash cambió, ya lo actualizamos arriba vía SQL masivo por eficiencia,
+                # pero nos aseguramos de que el objeto en memoria esté sincronizado si se usa después.
+                book.series_hash = effective_hash
+                book.series = proposed_series
                 book.series_english = proposed_series  # Nueva columna visual (IA)
                 book.is_uncensored = proposal.get("is_uncensored_series", False)
                 book.series_spanish = proposed_spanish or series.series_spanish or proposed_series
@@ -3648,11 +3681,13 @@ async def handle_pub_get_channels(data: dict[str, Any], user_data: dict[str, Any
     logger.info(f"handle_pub_get_channels called by user {user_data.get('user_id')}")
     check_staff(user_data)
     from services.publisher.publisher_service import publisher_service
-    
+
     # Obtener canales y chats descubiertos
     result = await publisher_service.get_channels_with_discovery(active_only=False)
-    logger.info(f"Found {len(result.get('channels', []))} channels and {len(result.get('discovered', []))} discovered chats")
-    
+    logger.info(
+        f"Found {len(result.get('channels', []))} channels and {len(result.get('discovered', []))} discovered chats"
+    )
+
     return result
 
 
@@ -3683,10 +3718,11 @@ async def handle_pub_toggle_favorite(data: dict[str, Any], user_data: dict[str, 
     """Alterna el estado favorito de un canal."""
     check_admin(user_data)
     from services.publisher.publisher_service import publisher_service
+
     channel_id = data.get("id")
     if not channel_id:
         raise HTTPException(status_code=400, detail="Missing id")
-        
+
     success = await publisher_service.toggle_favorite(int(channel_id))
     return {"success": success}
 
@@ -3695,17 +3731,17 @@ async def handle_pub_promote_discovered(data: dict[str, Any], user_data: dict[st
     """Promueve un chat descubierto a canal oficial."""
     check_admin(user_data)
     from services.publisher.publisher_service import publisher_service
-    
+
     chat_id = data.get("chat_id")
     name = data.get("name")
-    
+
     if not chat_id or not name:
         raise HTTPException(status_code=400, detail="Missing params")
-        
+
     result = await publisher_service.promote_discovered_to_channel(str(chat_id), name)
     if not result:
         return {"success": False, "message": "Canal ya existe o error"}
-        
+
     return {"success": True}
 
 
