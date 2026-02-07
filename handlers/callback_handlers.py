@@ -8,7 +8,6 @@ from telegram.ext import CallbackQueryHandler, ContextTypes, MessageHandler, fil
 
 from config.config_settings import config
 from core.state_manager import state_manager
-
 from services.library_service import LibraryService
 from services.library_ui_service import (
     mostrar_autores_local,
@@ -97,60 +96,6 @@ async def handle_manual_destino(update: Update, context: ContextTypes.DEFAULT_TY
     await mostrar_menu_principal(update, context)
 
 
-async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    try:
-        await query.answer()
-    except Exception:
-        pass
-    uid = update.effective_user.id
-    st = state_manager.get_user_state(uid)
-    chat = update.effective_chat
-
-    if chat.type == "private":
-        st["esperando_busqueda"] = True
-        cms = context.application.plugin_manager.get_plugin("custom_messages")
-        base_search = "🔍 Escribe parte del título del EPUB:"
-        text_search = (
-            await cms.get_text("search_prompt_inline") if (cms and cms.enabled) else base_search
-        )
-        await query.edit_message_text(text_search)
-        return
-
-    # En grupos, verificar si el bot es administrador
-    try:
-        bot_member = await context.bot.get_chat_member(chat.id, context.bot.id)
-        is_admin = bot_member.status in ["administrator", "creator"]
-    except Exception:
-        is_admin = False
-
-    if is_admin:
-        # Bot es admin: puede recibir mensajes normales
-        st["esperando_busqueda"] = True
-        cms = context.application.plugin_manager.get_plugin("custom_messages")
-        base_search = "🔍 Escribe parte del título del EPUB:"
-        text_search = (
-            await cms.get_text("search_prompt_inline") if (cms and cms.enabled) else base_search
-        )
-        await query.edit_message_text(text_search)
-    else:
-        # Bot NO es admin: solo recibe comandos
-        cms = context.application.plugin_manager.get_plugin("custom_messages")
-
-        base_instr = (
-            "🔍 Para buscar, usa el comando:\n\n"
-            "<code>/search término de búsqueda</code>\n\n"
-            "Ejemplo: <code>/search harry potter</code>"
-        )
-        text_instr = base_instr
-        if cms and cms.enabled:
-            text_instr = await cms.get_text("search_instructions_legacy")
-
-        await query.edit_message_text(
-            text_instr,
-            parse_mode="HTML",
-        )
-
 
 async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Captura texto tras /search o tras inline 'Buscar EPUB'."""
@@ -179,20 +124,54 @@ async def buscar_epub(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer()
     except Exception:
         pass
-
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
+    chat = update.effective_chat
 
     st["esperando_busqueda"] = True
     st["current_view"] = "search"
 
-    cms = context.application.plugin_manager.get_plugin("custom_messages")
-    base_text = "🔍 ¿Qué libro buscas? Escribe el título o autor:"
-    text = base_text
-    if cms and cms.enabled:
-        text = await cms.get_text("search_prompt")
+    if chat.type == "private":
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_search = "🔍 ¿Qué libro buscas? Escribe el título o autor:"
+        text_search = (
+            await cms.get_text("search_prompt") if (cms and cms.enabled) else base_search
+        )
+        await query.edit_message_text(text_search)
+        return
 
-    await query.message.reply_text(text)
+    # En grupos, verificar si el bot es administrador
+    try:
+        bot_member = await context.bot.get_chat_member(chat.id, context.bot.id)
+        is_admin = bot_member.status in ["administrator", "creator"]
+    except Exception:
+        is_admin = False
+
+    if is_admin:
+        # Bot es admin: puede recibir mensajes normales
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_search = "🔍 ¿Qué libro buscas? Escribe el título o autor:"
+        text_search = (
+            await cms.get_text("search_prompt") if (cms and cms.enabled) else base_search
+        )
+        await query.edit_message_text(text_search)
+    else:
+        # Bot NO es admin: solo recibe comandos
+        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        base_instr = (
+            "🔍 Para buscar, usa el comando:\n\n"
+            "<code>/search término de búsqueda</code>\n\n"
+            "Ejemplo: <code>/search harry potter</code>"
+        )
+        text_instr = base_instr
+        if cms and cms.enabled:
+            text_instr = await cms.get_text("search_instructions_legacy")
+
+        await query.edit_message_text(
+            text_instr,
+            parse_mode="HTML",
+        )
+
 
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -225,12 +204,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Recomendaciones (v6.1.0)
-    from services.library_ui_service import (
-        mostrar_autores_local,
-        mostrar_generos,
-        mostrar_series,
-        mostrar_volumenes_local,
-    )
 
     if data == "rec|ver":
         # Deshabilitado temporalmente hasta tener implementacion local

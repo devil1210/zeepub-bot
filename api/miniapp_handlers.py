@@ -775,6 +775,28 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any]):
     except Exception as e:
         logger.error(f"Error fetching popular book: {e}")
 
+    return {
+        "revenue": round(total_revenue, 2),
+        "activeSessions": active_sessions,
+        "storageUsedGB": storage_gb,
+        "storageTotalGB": 1000,
+        "popularBook": popular_book,
+        "growthTrend": [
+            {
+                "date": "Semana 1",
+                "users": total_users - users_7d,
+                "downloads": dls_prev_24h,
+            },
+            {"date": "Semana 2", "users": total_users, "downloads": dls_24h},
+        ],
+        "totalUsers": total_users,
+        "users7d": users_7d,
+        "totalBooks": total_books,
+        "downloads24h": dls_24h,
+        "downloadsPrev24h": dls_prev_24h,
+        "uptime": uptime_text,
+    }
+
 
 async def handle_request_book(data: dict[str, Any], user_data: dict[str, Any]):
     """Permite al usuario solicitar un libro no disponible."""
@@ -812,43 +834,6 @@ async def handle_feedback(data: dict[str, Any], user_data: dict[str, Any]):
     return {"success": True, "message": "Feedback recibido. ¡Gracias!"}
 
 
-async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any]):
-    """Obtiene estadísticas generales del sistema para el panel de admin."""
-    # check_admin(user_data) # Descomentar si es necesario
-
-    # Placeholder values to fix syntax error
-    total_revenue = 0
-    active_sessions = 0
-    storage_gb = 0
-    popular_book = "N/A"
-    total_users = 0
-    users_7d = 0
-    dls_prev_24h = 0
-    dls_24h = 0
-    total_books = 0
-    uptime_text = "N/A"
-
-    return {
-        "revenue": round(total_revenue, 2),
-        "activeSessions": active_sessions,
-        "storageUsedGB": storage_gb,
-        "storageTotalGB": 1000,
-        "popularBook": popular_book,
-        "growthTrend": [
-            {
-                "date": "Semana 1",
-                "users": total_users - users_7d,
-                "downloads": dls_prev_24h,
-            },
-            {"date": "Semana 2", "users": total_users, "downloads": dls_24h},
-        ],
-        "totalUsers": total_users,
-        "users7d": users_7d,
-        "totalBooks": total_books,
-        "downloads24h": dls_24h,
-        "downloadsPrev24h": dls_prev_24h,
-        "uptime": uptime_text,
-    }
 
 
 async def handle_admin_get_tiers(data: dict[str, Any], user_data: dict[str, Any]):
