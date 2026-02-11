@@ -22,6 +22,7 @@ Este archivo es la **Única Fuente de Verdad** para el comportamiento del asiste
 7.  **Single Floating Nav**: Todas las páginas deben integrarse en `UniversalFloatingNav.tsx` vía `NavigationContext.tsx`. Prohibido crear navbars paralelas.
 8.  **Operación Local Estricta**: El bot opera exclusivamente con archivos locales. Se eliminan todas las dependencias y referencias a Kavita u OPDS externo para la gestión de la biblioteca.
 9.  **Auditoría de Producción**: Antes de despliegues mayores o cambios estructurales, invocar `@production-code-audit`.
+10. **Estructura de Skills**: Queda terminantemente PROHIBIDO anidar una carpeta `skills` dentro de `.agent/skills` (ej. `.agent/skills/skills/`). Las skills deben colgar directamente de `.agent/skills/nombre-skill/`. No se deben incluir todas las skills del repositorio global, solo aquellas explícitamente necesarias para el proyecto.
 
 ## 🚀 Capacidades Core Activas (v3.5.0)
 

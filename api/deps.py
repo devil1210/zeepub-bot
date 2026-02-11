@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Annotated
 
 from fastapi import Depends, Header, HTTPException, Query
 
@@ -12,10 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 async def get_telegram_user_id(
-    authorization: str | None = Header(None),
-    x_telegram_init_data: str | None = Header(None, alias="x-telegram-init-data"),
-    x_telegram_data: str | None = Header(None, alias="X-Telegram-Data"),
-    uid: int | None = Query(None),
+    authorization: Annotated[str | None, Header()] = None,
+    x_telegram_init_data: Annotated[str | None, Header(alias="x-telegram-init-data")] = None,
+    x_telegram_data: Annotated[str | None, Header(alias="X-Telegram-Data")] = None,
+    uid: Annotated[int | None, Query()] = None,
 ) -> int:
     """
     Dependency that extracts and validates the Telegram User ID from headers or query.
@@ -69,11 +69,11 @@ async def get_telegram_user_id(
 
 
 async def get_current_user_data(
-    authorization: str | None = Header(None),
-    x_telegram_init_data: str | None = Header(None, alias="x-telegram-init-data"),
-    x_telegram_data: str | None = Header(None, alias="X-Telegram-Data"),
-    x_simulated_level: str | None = Header(None, alias="x-simulated-level"),
-    user_id: int = Depends(get_telegram_user_id),
+    user_id: Annotated[int, Depends(get_telegram_user_id)],
+    authorization: Annotated[str | None, Header()] = None,
+    x_telegram_init_data: Annotated[str | None, Header(alias="x-telegram-init-data")] = None,
+    x_telegram_data: Annotated[str | None, Header(alias="X-Telegram-Data")] = None,
+    x_simulated_level: Annotated[str | None, Header(alias="x-simulated-level")] = None,
 ) -> dict[str, Any]:
     """
     Dependency that returns the full effective user data (Profile + Permissions).
@@ -124,7 +124,7 @@ async def get_current_user_data(
 
 
 async def get_current_user_permissions(
-    user_id: int = Depends(get_telegram_user_id),
+    user_id: Annotated[int, Depends(get_telegram_user_id)],
 ) -> dict[str, Any]:
     """
     Lighter dependency that ONLY returns access data (Tier + Permissions).
@@ -134,7 +134,7 @@ async def get_current_user_permissions(
 
 
 async def require_admin(
-    access_data: dict[str, Any] = Depends(get_current_user_permissions),
+    access_data: Annotated[dict[str, Any], Depends(get_current_user_permissions)],
 ):
     """
     Enforces staff or higher roles.
@@ -146,7 +146,7 @@ async def require_admin(
 
 
 async def require_mini_app_access(
-    access_data: dict[str, Any] = Depends(get_current_user_permissions),
+    access_data: Annotated[dict[str, Any], Depends(get_current_user_permissions)],
 ):
     """
     Enforces mini app access permission.

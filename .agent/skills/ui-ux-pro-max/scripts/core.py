@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 UI/UX Pro Max Core - BM25 search engine for UI/UX style guides
 """
 
 import csv
 import re
-from collections import defaultdict
-from math import log
 from pathlib import Path
+from math import log
+from collections import defaultdict
 
 # ============ CONFIGURATION ============
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -61,12 +62,7 @@ CSV_CONFIG = {
     },
     "chart": {
         "file": "charts.csv",
-        "search_cols": [
-            "Data Type",
-            "Keywords",
-            "Best Chart Type",
-            "Accessibility Notes",
-        ],
+        "search_cols": ["Data Type", "Keywords", "Best Chart Type", "Accessibility Notes"],
         "output_cols": [
             "Data Type",
             "Keywords",
@@ -80,12 +76,7 @@ CSV_CONFIG = {
     },
     "landing": {
         "file": "landing.csv",
-        "search_cols": [
-            "Pattern Name",
-            "Keywords",
-            "Conversion Optimization",
-            "Section Order",
-        ],
+        "search_cols": ["Pattern Name", "Keywords", "Conversion Optimization", "Section Order"],
         "output_cols": [
             "Pattern Name",
             "Keywords",
@@ -296,7 +287,7 @@ class BM25:
 # ============ SEARCH FUNCTIONS ============
 def _load_csv(filepath):
     """Load CSV and return list of dicts"""
-    with open(filepath, encoding="utf-8") as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
@@ -363,14 +354,7 @@ def detect_domain(query):
             "crypto",
             "dashboard",
         ],
-        "prompt": [
-            "prompt",
-            "css",
-            "implementation",
-            "variable",
-            "checklist",
-            "tailwind",
-        ],
+        "prompt": ["prompt", "css", "implementation", "variable", "checklist", "tailwind"],
         "style": [
             "style",
             "design",
@@ -478,11 +462,7 @@ def search_stack(query, stack, max_results=MAX_RESULTS):
         return {"error": f"Stack file not found: {filepath}", "stack": stack}
 
     results = _search_csv(
-        filepath,
-        _STACK_COLS["search_cols"],
-        _STACK_COLS["output_cols"],
-        query,
-        max_results,
+        filepath, _STACK_COLS["search_cols"], _STACK_COLS["output_cols"], query, max_results
     )
 
     return {

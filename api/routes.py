@@ -14,6 +14,7 @@ from fastapi.responses import StreamingResponse
 from api.deps import (
     require_mini_app_access,
 )
+from typing import Annotated
 from config.config_settings import config
 from services.epub_service import extract_internal_title, parse_opf_from_epub
 from utils.helpers import formatear_mensaje_portada
@@ -151,7 +152,7 @@ async def public_download(
 @router.post("/facebook/prepare")
 async def prepare_facebook_post(
     request: Request,
-    user_data: dict[str, Any] = Depends(require_mini_app_access),
+    user_data: Annotated[dict[str, Any], Depends(require_mini_app_access)],
 ):
     """
     Prepara el texto y link para un post de Facebook.
@@ -249,7 +250,7 @@ async def prepare_facebook_post(
 @router.post("/facebook/publish")
 async def publish_facebook_post(
     request: Request,
-    user_data: dict[str, Any] = Depends(require_mini_app_access),
+    user_data: Annotated[dict[str, Any], Depends(require_mini_app_access)],
 ):
     """
     Publica en el grupo de Facebook configurado.
@@ -310,7 +311,7 @@ async def publish_facebook_post(
 
 
 @router.get("/config")
-async def get_config(user_data: dict[str, Any] = Depends(require_mini_app_access)):
+async def get_config(user_data: Annotated[dict[str, Any], Depends(require_mini_app_access)]):
     """
     Retorna configuración inicial para la Mini App, incluyendo permisos de admin y publisher.
     """
@@ -386,7 +387,7 @@ async def get_app_strings(request: Request):
 @router.post("/download")
 async def download_book(
     request: Request,
-    user_data: dict[str, Any] = Depends(require_mini_app_access),
+    user_data: Annotated[dict[str, Any], Depends(require_mini_app_access)],
 ):
     """
     Handle EPUB download requests from Mini App.

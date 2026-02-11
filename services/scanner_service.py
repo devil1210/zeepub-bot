@@ -435,16 +435,19 @@ class ScannerService:
             # --- FINAL CLEANUP: Remove/Archive empty series ---
             try:
                 # FORCE REFRESH: Recalculate book_count for ALL non-archived series to fix stale data
-                logger.info("Sincronizando conteos de libros para todas las series...")
-                all_active_series = session.query(SeriesMetadata).all()
-                for i, s in enumerate(all_active_series):
-                    actual_count = (
-                        session.query(LocalBook).filter_by(series_hash=s.series_hash).count()
-                    )
-                    if s.book_count != actual_count:
-                        s.book_count = actual_count
-                    if i % 20 == 0:
-                        await asyncio.sleep(0)
+                logger.info(
+                    "Sincronizando conteos de libros para todas las series (Bulk Update)..."
+                )
+                # SQL Query para actualizar en lote los counts basándose en local_books
+                update_counts_query = text("""
+                    UPDATE series_metadata sm
+                    SET book_count = COALESCE((
+                        SELECT COUNT(*)
+                        FROM local_books lb
+                        WHERE lb.series_hash = sm.series_hash
+                    ), 0)
+                """)
+                session.execute(update_counts_query)
                 session.commit()
 
                 empty_series = (
@@ -1082,7 +1085,9 @@ class ScannerService:
                         if not os.path.exists(existing_with_same_hash.filepath):
                             # Migración (Rename/Move): El archivo cambió de sitio pero el contenido es el mismo.
                             logger.info(
-                                f"🔄 Migración detectada (Renombrado/Movido): {existing_with_same_hash.filepath} -> {filepath}"
+                                "🔄 Migración detectada (Renombrado/Movido): %s -> %s",
+                                existing_with_same_hash.filepath,
+                                filepath,
                             )
                             # Actualizamos el registro viejo con la nueva ubicación y la metadata
                             self._copy_metadata_to_existing(
@@ -1144,11 +1149,8 @@ class ScannerService:
             # --- VINCULACIÓN CON GRUPOS DE TRADUCCIÓN ---
             self._sync_translator_group(session, book)
 
-            # Actualizar conteo de libros en la serie
-            count_stmt = select(func.count(LocalBook.id)).where(
-                LocalBook.series_hash == series.series_hash
-            )
-            series.book_count = session.execute(count_stmt).scalar() or 0
+            # Actualizar conteo de libros en la serie (Se hará en lote al final del escaneo para mayor eficiencia)
+            # series.book_count = session.execute(count_stmt).scalar() or 0
 
             # Guardar Portada en 4 calidades (outside no_autoflush block)
             if extractor.cover_data:

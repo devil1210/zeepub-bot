@@ -402,8 +402,8 @@ async def handle_rate_book(data: dict[str, Any], user_data: dict[str, Any]):
 
     try:
         book_id = int(str(book_id_raw).replace("local_", ""))
-    except ValueError:
-        raise HTTPException(status_code=400, detail="ID de libro inválido para votación")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="ID de libro inválido para votación") from e
 
     return await RatingService.rate_book(user_id, book_id, rating)
 
@@ -417,8 +417,8 @@ async def handle_remove_rating(data: dict[str, Any], user_data: dict[str, Any]):
 
     try:
         book_id = int(str(book_id_raw).replace("local_", ""))
-    except ValueError:
-        raise HTTPException(status_code=400, detail="ID de libro inválido")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="ID de libro inválido") from e
 
     return await RatingService.remove_rating(user_id, book_id)
 
@@ -659,8 +659,8 @@ async def handle_rating_breakdown(data: dict[str, Any], user_data: dict[str, Any
 
     try:
         book_id = int(str(book_id_raw).replace("local_", ""))
-    except ValueError:
-        raise HTTPException(status_code=400, detail="ID de libro inválido")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="ID de libro inválido") from e
 
     return {"breakdown": await RatingService.get_rating_breakdown(book_id)}
 
@@ -2465,7 +2465,7 @@ async def handle_update_user_setting(data: dict[str, Any], user_data: dict[str, 
             return {"success": True, "message": "Settings updated"}
         except Exception as e:
             logger.error(f"Error bulk updating user settings for {user_id}: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from e
     else:
         # Single setting mode (legacy)
         key = data.get("key")
@@ -2679,9 +2679,10 @@ async def handle_admin_merge_series(data: dict[str, Any], user_data: dict[str, A
         success = await LibraryService.merge_series(target_hash, source_hash, new_name)
         if success:
             # Si existía una propuesta de IA pendiente para esta fusión, marcarla como aprobada
-            from utils.library_db import get_session
-            from models.library_models import MetadataProposal
             from datetime import datetime
+
+            from models.library_models import MetadataProposal
+            from utils.library_db import get_session
 
             with get_session() as session:
                 proposal = (
@@ -3535,8 +3536,8 @@ async def handle_ai_generate_summary(data: dict[str, Any], user_data: dict[str, 
 
     try:
         book_id = int(str(book_id_raw).replace("local_", ""))
-    except ValueError:
-        raise HTTPException(status_code=400, detail="ID de libro inválido")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="ID de libro inválido") from e
 
     async with pg_manager.get_session() as session:
         stmt = select(LocalBook).where(LocalBook.id == book_id)

@@ -1,36 +1,42 @@
 import os
 import shutil
-from typing import Any
+from typing import Any, Annotated
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from PIL import Image
 from sqlalchemy import select
 
 from api.deps import require_admin, require_mini_app_access
 from core.db_manager_pg import pg_manager
 from models.library_models import LibrarySource
+from repositories.download_repository import download_repo
 from services.library_service import LibraryService
 from services.scanner_service import ScannerService
+from services.backup_service import BackupService
+from services.library_export_service import LibraryExportService
+from services.library_maintenance_service import LibraryMaintenanceService
 from utils.library_db import COVERS_DIR, THUMBNAILS_DIR
 
 router = APIRouter(tags=["library"])
 
 
 @router.get("/api/library/sources")
-async def get_sources(user_data: dict = Depends(require_mini_app_access)):
+async def get_sources(user_data: Annotated[dict, Depends(require_mini_app_access)]):
     """Lista todas las fuentes de biblioteca configuradas."""
     return await LibraryService.get_catalog(source_id=None)
 
 
 @router.get("/api/library/search")
 async def search_local_books(
-    q: str = Query(..., min_length=1),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1),
+    q: Annotated[str, Query(min_length=1)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1)] = 10,
     source_id: int | None = None,
-    search_type: str = Query("all", pattern="^(all|title|author|illustrator|translator|genres)$"),
-    user_data: dict = Depends(require_mini_app_access),
+    search_type: Annotated[
+        str, Query(pattern="^(all|title|author|illustrator|translator|genres)$")
+    ] = "all",
+    user_data: Annotated[dict, Depends(require_mini_app_access)] = None,
 ):
     """Busca libros en la base de datos local con filtros opcionales."""
     return await LibraryService.search_books(
@@ -44,9 +50,9 @@ async def search_local_books(
 
 @router.post("/api/library/upload")
 async def upload_epubs(
-    files: list[UploadFile] = File(...),
-    source_id: int | None = Query(None),
-    user_data: dict = Depends(require_admin),
+    files: Annotated[list[UploadFile], File(...)],
+    source_id: Annotated[int | None, Query()] = None,
+    user_data: Annotated[dict, Depends(require_admin)] = None,
 ):
     """
     Sube múltiples archivos EPUB y los escanea inmediatamente.
@@ -78,7 +84,7 @@ async def upload_epubs(
             except Exception as e:
                 raise HTTPException(
                     status_code=500, detail=f"No se pudo crear directorio destino: {e}"
-                )
+                ) from e
 
         # 2. Instanciar Scanner
         # Pasamos config vacío ya que sync_path usa la sesión y source_id directo
@@ -113,15 +119,14 @@ async def upload_epubs(
 
 
 @router.get("/api/library/books/{book_id}")
-async def get_book_detail(book_id: str, user_data: dict = Depends(require_mini_app_access)):
+async def get_book_detail(
+    book_id: str, user_data: Annotated[dict, Depends(require_mini_app_access)]
+):
     """Retorna el detalle de un libro específico."""
     clean_id = int(book_id.replace("local_", ""))
     book = await LibraryService.get_book_by_id(clean_id)
     if not book:
         raise HTTPException(status_code=404, detail="Libro no encontrado")
-
-    # Check if user has downloaded this book
-    from repositories.download_repository import download_repo
 
     book["is_downloaded"] = await download_repo.has_user_downloaded(
         user_data["user_id"], book["title"], book.get("cleanTitle")
@@ -135,8 +140,8 @@ async def get_book_detail(book_id: str, user_data: dict = Depends(require_mini_a
 @router.patch("/api/library/books/{book_id}")
 async def update_book(
     book_id: str,
-    updates: dict[str, Any] = Body(...),
-    user_data: dict = Depends(require_admin),
+    updates: Annotated[dict[str, Any], Body(...)],
+    user_data: Annotated[dict, Depends(require_admin)],
 ):
     """Actualiza metadatos de un libro (Admin only)."""
     try:
@@ -145,14 +150,14 @@ async def update_book(
         if not success:
             raise HTTPException(status_code=404, detail="Libro no encontrado o error al actualizar")
         return {"success": True}
-    except ValueError:
-        raise HTTPException(status_code=400, detail="ID inválido")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="ID inválido") from e
 
 
 @router.get("/api/library/regroup/suggestions")
 async def get_regroup_suggestions(
-    threshold: float = Query(0.8, ge=0.0, le=1.0),
-    user_data: dict = Depends(require_admin),
+    threshold: Annotated[float, Query(ge=0.0, le=1.0)] = 0.8,
+    user_data: Annotated[dict, Depends(require_admin)] = None,
 ):
     """
     Lista grupos de libros sugeridos para unificar en series.
@@ -164,7 +169,8 @@ async def get_regroup_suggestions(
 
 @router.get("/api/library/orphans")
 async def get_orphaned_books(
-    limit: int = Query(100, ge=1, le=1000), user_data: dict = Depends(require_admin)
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    user_data: Annotated[dict, Depends(require_admin)] = None,
 ):
     """
     Lista libros que no tienen una serie asignada.
@@ -176,17 +182,19 @@ async def get_orphaned_books(
 
 @router.get("/api/library/catalog")
 async def get_catalog(
-    source_id: int | None = Query(None),
-    folder: str | None = Query(None),
-    series_hash: str | None = Query(None),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1),
-    use_random_covers: bool = Query(True),
-    sort_by: str = Query(
-        "alpha",
-        pattern="^(alpha|alpha_desc|date_added|date_added_desc|date_updated|date_updated_desc|downloads_desc|rating_desc)$",
-    ),
-    user_data: dict = Depends(require_mini_app_access),
+    source_id: Annotated[int | None, Query()] = None,
+    folder: Annotated[str | None, Query()] = None,
+    series_hash: Annotated[str | None, Query()] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1)] = 10,
+    use_random_covers: Annotated[bool, Query()] = True,
+    sort_by: Annotated[
+        str,
+        Query(
+            pattern="^(alpha|alpha_desc|date_added|date_added_desc|date_updated|date_updated_desc|downloads_desc|rating_desc)$",
+        ),
+    ] = "alpha",
+    user_data: Annotated[dict, Depends(require_mini_app_access)] = None,
 ):
     """Navega por la librería local simulando carpetas o agrupando por serie."""
     return await LibraryService.get_catalog(
@@ -201,17 +209,19 @@ async def get_catalog(
 
 
 # ===== BACKUP ENDPOINTS =====
-from services.backup_service import BackupService
 
 
 @router.post("/api/library/backup")
-async def create_backup(compress: bool = Query(True), user_data: dict = Depends(require_admin)):
+async def create_backup(
+    compress: Annotated[bool, Query()] = True,
+    user_data: Annotated[dict, Depends(require_admin)] = None,
+):
     path = await BackupService.generate_backup_file(compress=compress)
     return {"success": True, "backup_path": path}
 
 
 @router.get("/api/library/backups")
-async def list_backups(user_data: dict = Depends(require_admin)):
+async def list_backups(user_data: Annotated[dict, Depends(require_admin)]):
     return {
         "backups": BackupService.list_backups(),
         "stats": BackupService.get_backup_stats(),
@@ -220,28 +230,26 @@ async def list_backups(user_data: dict = Depends(require_admin)):
 
 @router.post("/api/library/restore")
 async def restore_backup(
-    backup_filename: str = Query(...), user_data: dict = Depends(require_admin)
+    backup_filename: Annotated[str, Query()],
+    user_data: Annotated[dict, Depends(require_admin)],
 ):
     # Restoration from PG SQL is complex via API, placeholder for now
     raise HTTPException(status_code=501, detail="Restauración SQL no disponible vía API todavía.")
 
 
 @router.delete("/api/library/backups/{backup_filename}")
-async def delete_backup(backup_filename: str, user_data: dict = Depends(require_admin)):
+async def delete_backup(backup_filename: str, user_data: Annotated[dict, Depends(require_admin)]):
     return {"success": BackupService.delete_backup(backup_filename)}
 
 
 # ===== EXPORT/IMPORT ENDPOINTS =====
-from fastapi.responses import JSONResponse
-
-from services.library_export_service import LibraryExportService
 
 
 @router.get("/api/library/export")
 async def export_library(
-    source_id: int | None = Query(None),
-    series: str | None = Query(None),
-    user_data: dict = Depends(require_admin),
+    source_id: Annotated[int | None, Query()] = None,
+    series: Annotated[str | None, Query()] = None,
+    user_data: Annotated[dict, Depends(require_admin)] = None,
 ):
     return JSONResponse(
         content=LibraryExportService.export_library(source_id=source_id, series=series)
@@ -250,7 +258,9 @@ async def export_library(
 
 @router.post("/api/library/import")
 async def import_library(
-    data: dict, merge: bool = Query(True), user_data: dict = Depends(require_admin)
+    data: dict,
+    merge: Annotated[bool, Query()] = True,
+    user_data: Annotated[dict, Depends(require_admin)] = None,
 ):
     return {
         "success": True,
@@ -259,21 +269,20 @@ async def import_library(
 
 
 # ===== MAINTENANCE ENDPOINTS =====
-from services.library_maintenance_service import LibraryMaintenanceService
 
 
 @router.post("/api/library/optimize")
-async def optimize_database(user_data: dict = Depends(require_admin)):
+async def optimize_database(user_data: Annotated[dict, Depends(require_admin)]):
     return LibraryMaintenanceService.optimize_database()
 
 
 @router.post("/api/library/cleanup")
-async def cleanup_orphaned_files(user_data: dict = Depends(require_admin)):
+async def cleanup_orphaned_files(user_data: Annotated[dict, Depends(require_admin)]):
     return LibraryMaintenanceService.cleanup_orphaned_covers()
 
 
 @router.get("/api/library/stats")
-async def get_library_statistics(user_data: dict = Depends(require_mini_app_access)):
+async def get_library_statistics(user_data: Annotated[dict, Depends(require_mini_app_access)]):
     return LibraryMaintenanceService.get_library_stats()
 
 

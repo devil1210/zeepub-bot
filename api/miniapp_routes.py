@@ -1,8 +1,8 @@
 import json
 import logging
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel
 
 from api.deps import (
@@ -97,7 +97,7 @@ class UploadHistoryResponse(BaseModel):
 @router.post("/api/bot")
 async def handle_bot_request(
     request: Request,
-    user_data: dict[str, Any] = Depends(require_mini_app_access),
+    user_data: Annotated[dict[str, Any], Depends(require_mini_app_access)],
 ):
     """
     Main endpoint for Mini App requests.
@@ -118,7 +118,7 @@ async def handle_bot_request(
         # Log a snippet of the raw body safely
         safe_body = str(raw_body)[:200] if "raw_body" in locals() else "unknown"
         logger.debug(f"Raw body snippet: {safe_body}")
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
+        raise HTTPException(status_code=400, detail="Invalid JSON body") from e
 
     action = body.get("action")
     if not action:
@@ -336,7 +336,7 @@ async def handle_bot_request(
         raise
     except Exception as e:
         logger.error(f"Error handling action {action}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # --- Nuevos Endpoints de Control de Acceso ---
@@ -345,7 +345,7 @@ async def handle_bot_request(
 @router.post("/api/user/access", response_model=AccessResponse)
 async def check_user_access(
     request: AccessCheckRequest,
-    user_data: dict[str, Any] = Depends(get_current_user_data),
+    user_data: Annotated[dict[str, Any], Depends(get_current_user_data)],
 ):
     from services.user_service import get_effective_user
 
@@ -475,7 +475,7 @@ async def check_user_access(
 
 @router.get("/api/admin/levels")
 @router.get("/api/admin/access-levels")
-async def get_levels(user_data: dict[str, Any] = Depends(require_admin)):
+async def get_levels(user_data: Annotated[dict[str, Any], Depends(require_admin)]):
     logger.info("Fetching all access levels")
     from repositories.user_repository import user_repo
 
@@ -488,7 +488,7 @@ async def get_levels(user_data: dict[str, Any] = Depends(require_admin)):
 @router.put("/api/admin/levels")
 @router.post("/api/admin/access-levels")
 async def update_levels(
-    request: UpdateLevelsRequest, user_data: dict[str, Any] = Depends(require_admin)
+    request: UpdateLevelsRequest, user_data: Annotated[dict[str, Any], Depends(require_admin)]
 ):
     from repositories.user_repository import user_repo
 
@@ -500,8 +500,8 @@ async def update_levels(
 
 @router.post("/api/library/upload")
 async def upload_epub_miniapp(
-    file: UploadFile = File(...),
-    user_data: dict[str, Any] = Depends(require_mini_app_access),
+    file: Annotated[UploadFile, File(...)],
+    user_data: Annotated[dict[str, Any], Depends(require_mini_app_access)],
 ):
     """Sube un archivo EPUB y retorna su metadata para validación."""
     curr_uid = user_data.get("user_id", 0)
@@ -571,13 +571,13 @@ async def upload_epub_miniapp(
         raise
     except Exception as e:
         logger.error(f"Error in miniapp upload: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/api/library/upload/confirm")
 async def confirm_epub_upload_miniapp(
     data: dict[str, Any],
-    user_data: dict[str, Any] = Depends(require_mini_app_access),
+    user_data: Annotated[dict[str, Any], Depends(require_mini_app_access)],
 ):
     """Confirma y finaliza la subida de un EPUB."""
     upload_id = data.get("upload_id")
@@ -637,13 +637,13 @@ async def confirm_epub_upload_miniapp(
 
     except Exception as e:
         logger.error(f"Error confirming upload: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/api/library/upload/bulk")
 async def upload_epub_bulk(
-    files: list[UploadFile] = File(...),
-    user_data: dict[str, Any] = Depends(require_mini_app_access),
+    files: Annotated[list[UploadFile], File(...)],
+    user_data: Annotated[dict[str, Any], Depends(require_mini_app_access)],
 ):
     """Sube múltiples EPUBs de una vez."""
     if not user_data.get("can_upload_epub") and user_data.get("level") != "admin":
@@ -714,7 +714,7 @@ async def upload_epub_bulk(
 @router.post("/api/library/upload/bulk/confirm")
 async def confirm_epub_upload_bulk_miniapp(
     data: dict[str, Any],
-    user_data: dict[str, Any] = Depends(require_mini_app_access),
+    user_data: Annotated[dict[str, Any], Depends(require_mini_app_access)],
 ):
     """Confirma y finaliza múltiples subidas de EPUB."""
     from api.miniapp_handlers import handle_admin_bulk_upload_confirm
@@ -724,9 +724,9 @@ async def confirm_epub_upload_bulk_miniapp(
 
 @router.get("/api/admin/upload-history", response_model=list[UploadHistoryResponse])
 async def get_upload_history(
-    limit: int = 100,
-    offset: int = 0,
-    user_data: dict[str, Any] = Depends(require_admin),
+    limit: Annotated[int, Query(ge=1, le=100)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
+    user_data: Annotated[dict[str, Any], Depends(require_admin)] = None,
 ):
     """
     Obtiene el historial de subidas desde UploadHistory.
@@ -771,4 +771,4 @@ async def get_bot_avatar(file_id: str):
     except Exception as e:
         logger.error(f"Avatar proxy error: {e}")
         # Return a fallback 404
-        raise HTTPException(status_code=404, detail="Avatar not found")
+        raise HTTPException(status_code=404, detail="Avatar not found") from e
