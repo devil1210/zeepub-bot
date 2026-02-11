@@ -21,7 +21,8 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { TemplateModal } from '../components/TemplateModal';
-import { PublicationTemplate } from '../services/publisherApi';
+import { ScheduleModal } from '../components/ScheduleModal';
+import { PublicationTemplate, PublicationQueueItem } from '../services/publisherApi';
 
 export const PublisherDashboard: React.FC = () => {
     const { settings } = useTheme();
@@ -42,6 +43,10 @@ export const PublisherDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'queue' | 'channels' | 'templates'>('queue');
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState<PublicationTemplate | null>(null);
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+    const [editingQueueItem, setEditingQueueItem] = useState<PublicationQueueItem | null>(null);
+    const [selectedBookHash, setSelectedBookHash] = useState('');
+    const [selectedBookTitle, setSelectedBookTitle] = useState('');
 
     const handleCreateTemplate = () => {
         setEditingTemplate(null);
@@ -51,6 +56,13 @@ export const PublisherDashboard: React.FC = () => {
     const handleEditTemplate = (template: PublicationTemplate) => {
         setEditingTemplate(template);
         setIsTemplateModalOpen(true);
+    };
+
+    const handleEditQueueItem = (item: PublicationQueueItem) => {
+        setEditingQueueItem(item);
+        setSelectedBookHash(item.book_hash);
+        setSelectedBookTitle('Editando Publicación');
+        setIsScheduleModalOpen(true);
     };
 
     if (loading) {
@@ -162,6 +174,13 @@ export const PublisherDashboard: React.FC = () => {
                                                     item.status === 'publishing' ? 'Enviando...' :
                                                         item.status === 'sent' ? 'Enviado' : 'Fallido'}
                                             </div>
+                                            <button
+                                                onClick={() => handleEditQueueItem(item)}
+                                                className="p-1.5 text-gray-400 hover:text-white transition-colors"
+                                                title="Editar"
+                                            >
+                                                <Edit3 className="w-4 h-4" />
+                                            </button>
                                             <button
                                                 onClick={() => deleteQueueItem(item.id)}
                                                 className="p-1.5 text-gray-500 hover:text-red-400 transition-colors"
@@ -340,6 +359,14 @@ export const PublisherDashboard: React.FC = () => {
                 onClose={() => setIsTemplateModalOpen(false)}
                 onSave={saveTemplate}
                 editingTemplate={editingTemplate}
+            />
+
+            <ScheduleModal
+                isOpen={isScheduleModalOpen}
+                onClose={() => setIsScheduleModalOpen(false)}
+                bookHash={selectedBookHash}
+                bookTitle={selectedBookTitle}
+                editingItem={editingQueueItem}
             />
         </div>
     );

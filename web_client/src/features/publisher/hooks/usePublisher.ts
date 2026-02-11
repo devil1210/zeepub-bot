@@ -47,6 +47,12 @@ export const usePublisher = () => {
         return res;
     };
 
+    const updateQueueItem = async (data: any) => {
+        const res = await publisherApi.updateQueueItem(data);
+        if (res.success) await fetchData();
+        return res;
+    };
+
     const deleteQueueItem = async (id: number) => {
         const res = await publisherApi.deleteQueueItem(id);
         if (res.success) await fetchData();
@@ -93,6 +99,7 @@ export const usePublisher = () => {
         error,
         refresh: fetchData,
         schedulePublication,
+        updateQueueItem,
         deleteQueueItem,
         saveChannel,
         toggleFavorite,

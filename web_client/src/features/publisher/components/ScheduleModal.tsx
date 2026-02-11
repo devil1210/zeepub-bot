@@ -1,66 +1,118 @@
-import React, { useState } from 'react';
-import { X, Send, Calendar, Clock, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Send, Calendar, Clock, CheckCircle, Hash } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { usePublisher } from '../hooks/usePublisher';
+import { publisherApi, PublicationQueueItem } from '../services/publisherApi';
 
 interface ScheduleModalProps {
     isOpen: boolean;
     onClose: () => void;
     bookHash: string;
     bookTitle: string;
+    editingItem?: PublicationQueueItem | null;
 }
 
 export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     isOpen,
     onClose,
-    bookHash,
-    bookTitle
+    bookHash: initialBookHash,
+    bookTitle,
+    editingItem
 }) => {
     const { settings } = useTheme();
-    const { channels, templates, schedulePublication } = usePublisher();
+    const { channels, templates, schedulePublication, updateQueueItem } = usePublisher();
 
-    const [selectedChannel, setSelectedChannel] = useState<number | ''>('');
-    const [selectedTemplate, setSelectedTemplate] = useState<number | ''>('');
+    const [bookHash, setBookHash] = useState(initialBookHash);
+    const [selectedChannel, setSelectedChannel] = useState<number | ''>(editingItem?.channel_id || '');
+    const [selectedTemplate, setSelectedTemplate] = useState<number | ''>(editingItem?.template_id || '');
     const [scheduledFor, setScheduledFor] = useState(() => {
+        if (editingItem) {
+            const date = new Date(editingItem.scheduled_for);
+            const tzOffset = date.getTimezoneOffset() * 60000;
+            return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+        }
         const now = new Date();
-        now.setMinutes(now.getMinutes() + 10); // Default to 10 mins from now
-
-        // Adjust to local timezone ISO string for datetime-local input
+        now.setMinutes(now.getMinutes() + 10);
         const tzOffset = now.getTimezoneOffset() * 60000;
-        const localISOTime = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
-        return localISOTime;
+        return new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
     });
+
+    useEffect(() => {
+        if (isOpen) {
+            setBookHash(editingItem?.book_hash || initialBookHash);
+            setSelectedChannel(editingItem?.channel_id || '');
+            setSelectedTemplate(editingItem?.template_id || '');
+            if (editingItem) {
+                const date = new Date(editingItem.scheduled_for);
+                const tzOffset = date.getTimezoneOffset() * 60000;
+                setScheduledFor(new Date(date.getTime() - tzOffset).toISOString().slice(0, 16));
+            } else {
+                const now = new Date();
+                now.setMinutes(now.getMinutes() + 10);
+                const tzOffset = now.getTimezoneOffset() * 60000;
+                setScheduledFor(new Date(now.getTime() - tzOffset).toISOString().slice(0, 16));
+            }
+            setIsImmediate(false);
+            setIsSuccess(false);
+        }
+    }, [isOpen, editingItem, initialBookHash]);
+
+    const [isImmediate, setIsImmediate] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
     if (!isOpen) return null;
 
     const handleSchedule = async () => {
-        if (!selectedChannel || !scheduledFor) return;
+        if (!selectedChannel) return;
+        if (!isImmediate && !scheduledFor) return;
 
         setIsSubmitting(true);
         try {
-            const res = await schedulePublication({
-                book_hash: bookHash,
-                channel_id: Number(selectedChannel),
-                scheduled_for: new Date(scheduledFor).toISOString(),
-                template_id: selectedTemplate === '' ? undefined : Number(selectedTemplate)
-            });
+            if (editingItem) {
+                const res = await updateQueueItem({
+                    id: editingItem.id,
+                    book_hash: bookHash,
+                    channel_id: Number(selectedChannel),
+                    scheduled_for: isImmediate ? new Date().toISOString() : new Date(scheduledFor).toISOString(),
+                    template_id: selectedTemplate === '' ? undefined : Number(selectedTemplate),
+                    immediate: isImmediate,
+                    status: 'pending' // Al editar, volvemos a ponerlo en pending por si estaba fallido
+                });
 
-            if (res.success) {
-                setIsSuccess(true);
-                setTimeout(() => {
-                    setIsSuccess(false);
-                    onClose();
-                }, 1500);
+                if (res.success) {
+                    setIsSuccess(true);
+                    setTimeout(() => {
+                        setIsSuccess(false);
+                        onClose();
+                    }, 1500);
+                }
+            } else {
+                const res = await schedulePublication({
+                    book_hash: bookHash,
+                    channel_id: Number(selectedChannel),
+                    scheduled_for: isImmediate ? new Date().toISOString() : new Date(scheduledFor).toISOString(),
+                    template_id: selectedTemplate === '' ? undefined : Number(selectedTemplate),
+                    immediate: isImmediate
+                });
+
+                if (res.success) {
+                    setIsSuccess(true);
+                    setTimeout(() => {
+                        setIsSuccess(false);
+                        onClose();
+                    }, 1500);
+                }
             }
         } catch (err) {
-            console.error("Error scheduling publication:", err);
-            alert("Error al programar: " + (err as Error).message);
+            console.error("Error processing publication:", err);
+            alert("Error al procesar: " + (err as Error).message);
         } finally {
             setIsSubmitting(false);
         }
     };
+
+
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 sm:px-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
@@ -96,6 +148,20 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                     </div>
                 ) : (
                     <div className="p-6 flex flex-col gap-6">
+                        {/* Book Hash (Editable) */}
+                        <div className="flex flex-col gap-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-primary/80 flex items-center gap-2">
+                                <Hash className="w-3 h-3" /> Hash del Libro
+                            </label>
+                            <input
+                                type="text"
+                                value={bookHash}
+                                onChange={(e) => setBookHash(e.target.value)}
+                                placeholder="Hash del libro..."
+                                className="w-full p-3 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors"
+                            />
+                        </div>
+
                         {/* Canal */}
                         <div className="flex flex-col gap-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-primary/80">Canal de Destino</label>
@@ -134,19 +200,29 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                             </select>
                         </div>
 
-                        {/* Fecha y Hora */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary/80">Fecha y Hora</label>
-                            <div className="relative">
-                                <input
-                                    type="datetime-local"
-                                    value={scheduledFor}
-                                    onChange={(e) => setScheduledFor(e.target.value)}
-                                    className="w-full p-3 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors"
-                                />
-                                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                        {/* Opción Inmediata */}
+                        <div className="flex items-center gap-2 p-3 glass-panel rounded-premium-sm border border-white/5 bg-white/2 cursor-pointer transition-all hover:bg-white/5" onClick={() => setIsImmediate(!isImmediate)}>
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isImmediate ? 'bg-primary border-primary' : 'border-white/20'}`}>
+                                {isImmediate && <CheckCircle className="w-3 h-3 text-white" />}
                             </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Publicar inmediatamente</span>
                         </div>
+
+                        {/* Fecha y Hora */}
+                        {!isImmediate && (
+                            <div className="flex flex-col gap-2 animate-in slide-in-from-top-2 duration-300">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-primary/80">Fecha y Hora</label>
+                                <div className="relative">
+                                    <input
+                                        type="datetime-local"
+                                        value={scheduledFor}
+                                        onChange={(e) => setScheduledFor(e.target.value)}
+                                        className="w-full p-3 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors"
+                                    />
+                                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                                </div>
+                            </div>
+                        )}
 
                         {/* Actions */}
                         <div className="flex gap-3 pt-2">
@@ -158,13 +234,17 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                             </button>
                             <button
                                 onClick={handleSchedule}
-                                disabled={isSubmitting || !selectedChannel || !scheduledFor}
-                                className="flex-[2] p-3 bg-primary text-white rounded-premium-sm text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50 disabled:grayscale transition-all flex items-center justify-center gap-2"
+                                disabled={isSubmitting || !selectedChannel || (!isImmediate && !scheduledFor)}
+                                className={`flex-[2] p-3 text-white rounded-premium-sm text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2 ${isImmediate
+                                    ? 'bg-green-600 shadow-green-600/20 hover:bg-green-500'
+                                    : 'bg-primary shadow-primary/20 hover:opacity-90'
+                                    } disabled:opacity-50 disabled:grayscale`}
                             >
                                 {isSubmitting ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                                {isSubmitting ? 'Programando...' : 'Programar Ahora'}
+                                {isSubmitting ? (isImmediate ? 'Publicando...' : 'Programando...') : (isImmediate ? 'Publicar Ahora' : 'Programar Ahora')}
                             </button>
                         </div>
+
                     </div>
                 )}
             </div>

@@ -137,11 +137,14 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             romaji_title: bookData.romaji_title || bookData.romaji,
             book_type: bookData.book_type || bookData.bookType,
             is_uncensored: bookData.is_uncensored === 1 || bookData.is_uncensored === true,
-            color_mode: bookData.color_mode
+            color_mode: bookData.color_mode,
+            book_hash: bookData.book_hash
           };
 
           const mappedSeries: Series = {
             id: bookData.seriesHash || 'unknown',
+            series_hash: bookData.series_hash || bookData.seriesHash || 'unknown',
+            book_hash: bookData.book_hash,
             title: bookData.series || bookData.title,
             author: bookData.author || 'Desconocido',
             coverUrl: {
@@ -568,7 +571,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       <ScheduleModal
         isOpen={isScheduleModalOpen}
         onClose={() => setIsScheduleModalOpen(false)}
-        bookHash={curVolume.seriesId || 'unknown'}
+        bookHash={curVolume.book_hash || 'unknown'}
         bookTitle={displayData.title}
       />
     </div>

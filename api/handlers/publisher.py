@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime
 from typing import Any
@@ -26,6 +27,8 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
                 "id": i.id,
                 "book_hash": i.book_hash,
                 "channel": i.channel.name if i.channel else "Unknown",
+                "channel_id": i.channel_id,
+                "template_id": i.template_id,
                 "platform": i.channel.platform if i.channel else "Unknown",
                 "scheduled_for": i.scheduled_for.isoformat(),
                 "status": i.status,
@@ -45,7 +48,8 @@ async def handle_pub_get_channels(data: dict[str, Any], user_data: dict[str, Any
     # Obtener canales y chats descubiertos
     result = await publisher_service.get_channels_with_discovery(active_only=False)
     logger.info(
-        f"Found {len(result.get('channels', []))} channels and {len(result.get('discovered', []))} discovered chats"
+        f"Found {len(result.get('channels', []))} channels "
+        f"and {len(result.get('discovered', []))} discovered chats"
     )
 
     return result
@@ -177,6 +181,12 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
         template_id=template_id,
         payload=payload,
     )
+
+    # Si se pide inmediato, procesar la cola ahora mismo
+    if data.get("immediate"):
+        logger.info(f"Opcion inmediata detectada para publicación de {book_hash}")
+        asyncio.create_task(publisher_service.process_queue())
+
     return {"success": True}
 
 

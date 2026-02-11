@@ -4,6 +4,8 @@ export interface PublicationQueueItem {
     id: number;
     book_hash: string;
     channel: string;
+    channel_id: number;
+    template_id?: number;
     platform: string;
     scheduled_for: string;
     status: 'pending' | 'publishing' | 'sent' | 'failed';
@@ -73,7 +75,19 @@ export const publisherApi = {
         scheduled_for: string;
         template_id?: number;
         payload?: any;
+        immediate?: boolean;
     }) => api.rpc('pub_schedule', data),
+
+
+    updateQueueItem: (data: {
+        id: number;
+        book_hash?: string;
+        channel_id?: number;
+        scheduled_for?: string;
+        template_id?: number;
+        status?: string;
+        immediate?: boolean;
+    }) => api.rpc('pub_update_queue_item', data),
 
     deleteQueueItem: (id: number) =>
         api.rpc('pub_delete_queue_item', { id }),

@@ -91,12 +91,14 @@ export interface Volume {
   file_size?: number;
   fileSize?: number;
   summary?: string;
+  book_hash?: string;
 }
 
 export interface Series {
   id: string;
   _id?: string; // API sometimes returns _id instead of id
   series_hash?: string;
+  book_hash?: string;
   title: string;
   author: string;
   coverUrl: string | CoverPaths;

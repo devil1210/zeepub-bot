@@ -214,6 +214,7 @@ async def handle_bot_request(
             handle_pub_save_template,
             handle_pub_schedule,
             handle_pub_toggle_favorite,
+            handle_pub_update_queue_item,
             handle_rate_book,
             handle_rating_breakdown,
             handle_recommendations,
@@ -309,6 +310,7 @@ async def handle_bot_request(
             "pub_save_template": handle_pub_save_template,
             "pub_delete_template": handle_pub_delete_template,
             "pub_schedule": handle_pub_schedule,
+            "pub_update_queue_item": handle_pub_update_queue_item,
             "pub_delete_queue_item": handle_pub_delete_queue_item,
         }
 
