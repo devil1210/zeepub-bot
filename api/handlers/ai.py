@@ -241,7 +241,6 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
             effective_hash = series_hash
 
-
             # Si el hash cambió, migrar todo
             if new_hash != series_hash:
                 logger.info(f"🔄 Migrando serie de {series_hash} a {new_hash} (Nombre cambiado)")

@@ -514,9 +514,6 @@ async def handle_admin_scan_status(data: dict[str, Any], user_data: dict[str, An
     }
 
 
-
-
-
 async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, Any]):
     """Reset complete library database (admin only, requires confirmation)."""
     check_staff(user_data)
@@ -1673,7 +1670,12 @@ async def handle_get_upload_history(data: dict[str, Any], user_data: dict[str, A
 
     try:
         async with pg_manager.get_session() as session:
-            stmt = select(UploadHistory).order_by(desc(UploadHistory.created_at)).limit(limit).offset(offset)
+            stmt = (
+                select(UploadHistory)
+                .order_by(desc(UploadHistory.created_at))
+                .limit(limit)
+                .offset(offset)
+            )
             results = (await session.execute(stmt)).scalars().all()
 
             history_list = []

@@ -200,6 +200,7 @@ async def handle_bot_request(
             handle_download,
             handle_feedback,
             handle_get_download_count,
+            handle_get_upload_history,
             handle_get_user_audit_history,
             handle_pub_delete_channel,
             handle_pub_delete_queue_item,
@@ -225,7 +226,6 @@ async def handle_bot_request(
             handle_update_user_setting,
             handle_user_downloads_history,
             handle_user_status,
-            handle_get_upload_history,
         )
 
         ACTION_HANDLERS = {

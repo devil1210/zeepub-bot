@@ -2,6 +2,7 @@
 Facade for api/handlers/ modules.
 Maintains backward compatibility by re-exporting handlers from the modular structure.
 """
+
 from api.handlers.admin import (
     handle_admin_ai_series_duplicate_scan,
     handle_admin_backup_library,
