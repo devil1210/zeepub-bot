@@ -297,7 +297,9 @@ def format_ascii_box(design_system: dict) -> str:
         for line in wrap_text(f"Best For: {style.get('best_for', '')}", "|     ", BOX_WIDTH):
             lines.append(line.ljust(BOX_WIDTH) + "|")
     if style.get("performance") or style.get("accessibility"):
-        perf_a11y = f"Performance: {style.get('performance', '')} | Accessibility: {style.get('accessibility', '')}"
+        perf = style.get("performance", "")
+        a11y = style.get("accessibility", "")
+        perf_a11y = f"Performance: {perf} | Accessibility: {a11y}"
         lines.append(f"|     {perf_a11y}".ljust(BOX_WIDTH) + "|")
     lines.append("|" + " " * BOX_WIDTH + "|")
 
@@ -404,9 +406,9 @@ def format_markdown(design_system: dict) -> str:
     if style.get("best_for"):
         lines.append(f"- **Best For:** {style.get('best_for', '')}")
     if style.get("performance") or style.get("accessibility"):
-        lines.append(
-            f"- **Performance:** {style.get('performance', '')} | **Accessibility:** {style.get('accessibility', '')}"
-        )
+        perf = style.get("performance", "")
+        a11y = style.get("accessibility", "")
+        lines.append(f"- **Performance:** {perf} | **Accessibility:** {a11y}")
     lines.append("")
 
     # Colors section
@@ -448,7 +450,8 @@ def format_markdown(design_system: dict) -> str:
     # Anti-patterns section
     if anti_patterns:
         lines.append("### Avoid (Anti-patterns)")
-        lines.append(f"- {anti_patterns.replace(' + ', '\n- ')}")
+        formatted_anti = anti_patterns.replace(" + ", "\n- ")
+        lines.append(f"- {formatted_anti}")
         lines.append("")
 
     # Pre-Delivery Checklist section
