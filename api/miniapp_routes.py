@@ -225,6 +225,7 @@ async def handle_bot_request(
             handle_update_user_setting,
             handle_user_downloads_history,
             handle_user_status,
+            handle_get_upload_history,
         )
 
         ACTION_HANDLERS = {
@@ -296,6 +297,7 @@ async def handle_bot_request(
             "admin_scan_status": handle_admin_scan_status,
             "admin_get_system_logs": handle_admin_get_system_logs,
             "admin_send_logs_telegram": handle_admin_send_logs_telegram,
+            "admin_get_upload_history": handle_get_upload_history,
             # Publication actions
             "pub_get_queue": handle_pub_get_queue,
             "pub_get_channels": handle_pub_get_channels,

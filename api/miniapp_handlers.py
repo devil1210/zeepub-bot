@@ -65,7 +65,11 @@ from api.handlers.books import (
     handle_remove_rating,
     handle_request_book,
 )
-from api.handlers.downloads import handle_download, handle_get_download_count
+from api.handlers.downloads import (
+    handle_download,
+    handle_get_download_count,
+    handle_user_downloads_history,
+)
 from api.handlers.helpers import check_admin, check_staff
 from api.handlers.publisher import (
     handle_pub_delete_channel,
@@ -92,7 +96,6 @@ from api.handlers.users import (
     handle_bot_info,
     handle_feedback,
     handle_status,
-    handle_user_downloads_history,
     handle_user_status,
 )
 

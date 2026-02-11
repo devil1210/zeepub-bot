@@ -1665,15 +1665,16 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
     return {"success": True, "results": results}
 
 
-async def handle_get_upload_history(limit: int = 100, offset: int = 0) -> list[dict[str, Any]]:
+async def handle_get_upload_history(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene el historial de subidas paginado."""
-    from utils.library_db import get_session
+    check_staff(user_data)
+    limit = data.get("limit", 100)
+    offset = data.get("offset", 0)
 
     try:
-        with get_session() as session:
-            query = session.query(UploadHistory).order_by(desc(UploadHistory.created_at))
-            query = query.limit(limit).offset(offset)
-            results = query.all()
+        async with pg_manager.get_session() as session:
+            stmt = select(UploadHistory).order_by(desc(UploadHistory.created_at)).limit(limit).offset(offset)
+            results = (await session.execute(stmt)).scalars().all()
 
             history_list = []
             for item in results:
@@ -1689,10 +1690,10 @@ async def handle_get_upload_history(limit: int = 100, offset: int = 0) -> list[d
                         "created_at": item.created_at.isoformat() if item.created_at else None,
                     }
                 )
-            return history_list
+            return {"history": history_list}
     except Exception as e:
         logger.error(f"Error fetching upload history: {e}")
-        return []
+        return {"history": []}
 
 
 async def handle_admin_enrich_metadata(data: dict[str, Any], user_data: dict[str, Any]):
