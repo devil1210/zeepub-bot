@@ -6,7 +6,7 @@ import os
 import re
 from datetime import datetime
 
-from sqlalchemy import func, select, text
+from sqlalchemy import text
 
 from models.library_models import (
     ArchivedBook,

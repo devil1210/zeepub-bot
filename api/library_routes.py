@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import Any, Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
@@ -11,11 +11,11 @@ from api.deps import require_admin, require_mini_app_access
 from core.db_manager_pg import pg_manager
 from models.library_models import LibrarySource
 from repositories.download_repository import download_repo
-from services.library_service import LibraryService
-from services.scanner_service import ScannerService
 from services.backup_service import BackupService
 from services.library_export_service import LibraryExportService
 from services.library_maintenance_service import LibraryMaintenanceService
+from services.library_service import LibraryService
+from services.scanner_service import ScannerService
 from utils.library_db import COVERS_DIR, THUMBNAILS_DIR
 
 router = APIRouter(tags=["library"])

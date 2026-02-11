@@ -3,7 +3,7 @@ import hmac
 import json
 import logging
 import os
-from typing import Any
+from typing import Annotated, Any
 from urllib.parse import unquote, urlparse
 
 import aiofiles
@@ -14,7 +14,6 @@ from fastapi.responses import StreamingResponse
 from api.deps import (
     require_mini_app_access,
 )
-from typing import Annotated
 from config.config_settings import config
 from services.epub_service import extract_internal_title, parse_opf_from_epub
 from utils.helpers import formatear_mensaje_portada

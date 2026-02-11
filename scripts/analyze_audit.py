@@ -1,7 +1,6 @@
 import json
-import os
 
-with open("audit_report.json", "r") as f:
+with open("audit_report.json") as f:
     data = json.load(f)
 
 e402_files = sorted(list(set([i["filename"] for i in data if i["code"] == "E402"])))

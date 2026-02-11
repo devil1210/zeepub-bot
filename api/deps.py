@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, Header, HTTPException, Query
 

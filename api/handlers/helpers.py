@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from fastapi import HTTPException
+
 from services.rbac_service import rbac_service
 
 logger = logging.getLogger(__name__)
