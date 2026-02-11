@@ -22,4 +22,14 @@ else
     PYTHON_EXE="python3"
 fi
 
-exec $PYTHON_EXE run_with_api.py
+# Detección de Infisical
+INFISICAL_CMD=""
+if command -v infisical >/dev/null 2>&1; then
+    echo "Infisical detected. Using secret injection..."
+    # Si tenemos un archivo .infisical.json, usamos el proyecto vinculado
+    if [ -f ".infisical.json" ]; then
+        INFISICAL_CMD="infisical run --env=dev -- "
+    fi
+fi
+
+exec $INFISICAL_CMD$PYTHON_EXE run_with_api.py

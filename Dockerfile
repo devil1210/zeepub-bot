@@ -14,7 +14,10 @@ WORKDIR /app
 # Copiar archivos de requirements y código
 # Copiar archivos de requirements y código
 COPY requirements.txt ./
-RUN apt-get update && apt-get install -y postgresql-client curl git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y postgresql-client curl git && \
+    curl -1sLf 'https://dl.cloudsmith.io/public/infisical/cli/setup.deb.sh' | bash && \
+    apt-get update && apt-get install -y infisical && \
+    rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install cloudflared

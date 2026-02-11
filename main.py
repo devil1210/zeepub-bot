@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import asyncio
 import logging
+import os
 
 from config.config_settings import config
 from core.bot import ZeePubBot
@@ -15,6 +16,10 @@ logging.basicConfig(
 logging.getLogger("httpcore").setLevel(logging.INFO)
 logging.getLogger("httpx").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Detectar Infisical
+if os.getenv("INFISICAL_PROJECT_ID") or os.getenv("INFISICAL_ENVIRONMENT"):
+    logger.info("🔐 Secrets loaded via Infisical Cloud")
 
 
 async def auto_scan_library():
@@ -79,7 +84,8 @@ async def fix_schema_if_needed():
             )
             await conn.execute(
                 text(
-                    "CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);"
+                    "CREATE INDEX IF NOT EXISTS idx_series_metadata_hash "
+                    "ON series_metadata(series_hash);"
                 )
             )
 
@@ -98,12 +104,14 @@ async def fix_schema_if_needed():
             # Índices en historiales
             await conn.execute(
                 text(
-                    "CREATE INDEX IF NOT EXISTS idx_upload_history_user_id ON upload_history(user_id);"
+                    "CREATE INDEX IF NOT EXISTS idx_upload_history_user_id "
+                    "ON upload_history(user_id);"
                 )
             )
             await conn.execute(
                 text(
-                    "CREATE INDEX IF NOT EXISTS idx_download_history_user_id ON download_history(user_id);"
+                    "CREATE INDEX IF NOT EXISTS idx_download_history_user_id "
+                    "ON download_history(user_id);"
                 )
             )
             await conn.execute(
@@ -113,7 +121,8 @@ async def fix_schema_if_needed():
             )
             await conn.execute(
                 text(
-                    "CREATE INDEX IF NOT EXISTS idx_user_downloads_user_id ON user_downloads(user_id);"
+                    "CREATE INDEX IF NOT EXISTS idx_user_downloads_user_id "
+                    "ON user_downloads(user_id);"
                 )
             )
 
@@ -123,7 +132,8 @@ async def fix_schema_if_needed():
             )
             await conn.execute(
                 text(
-                    "CREATE INDEX IF NOT EXISTS idx_user_levels_default_theme_id ON user_levels(default_theme_id);"
+                    "CREATE INDEX IF NOT EXISTS idx_user_levels_default_theme_id "
+                    "ON user_levels(default_theme_id);"
                 )
             )
 
@@ -136,7 +146,8 @@ async def fix_schema_if_needed():
             )
             await conn.execute(
                 text(
-                    "CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id ON local_books(series_metadata_id);"
+                    "CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id "
+                    "ON local_books(series_metadata_id);"
                 )
             )
 
@@ -155,7 +166,8 @@ async def fix_schema_if_needed():
             )
             await conn.execute(
                 text(
-                    "ALTER TABLE local_books ADD COLUMN IF NOT EXISTS is_uncensored INTEGER DEFAULT 0;"
+                    "ALTER TABLE local_books ADD COLUMN IF NOT EXISTS is_uncensored "
+                    "INTEGER DEFAULT 0;"
                 )
             )
             await conn.execute(
@@ -165,24 +177,28 @@ async def fix_schema_if_needed():
             # user_levels
             await conn.execute(
                 text(
-                    "ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS default_theme_id INTEGER DEFAULT NULL;"
+                    "ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS default_theme_id "
+                    "INTEGER DEFAULT NULL;"
                 )
             )
             await conn.execute(
                 text(
-                    "ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS allow_theme_templates BOOLEAN DEFAULT FALSE;"
+                    "ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS allow_theme_templates "
+                    "BOOLEAN DEFAULT FALSE;"
                 )
             )
             await conn.execute(
                 text(
-                    "ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS can_upload_epub BOOLEAN DEFAULT FALSE;"
+                    "ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS can_upload_epub "
+                    "BOOLEAN DEFAULT FALSE;"
                 )
             )
 
             # users
             await conn.execute(
                 text(
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS can_upload_epub BOOLEAN DEFAULT FALSE;"
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS can_upload_epub "
+                    "BOOLEAN DEFAULT FALSE;"
                 )
             )
             await conn.execute(
@@ -190,7 +206,8 @@ async def fix_schema_if_needed():
             )
             await conn.execute(
                 text(
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());"
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at "
+                    "TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now());"
                 )
             )
 
@@ -239,12 +256,14 @@ async def fix_schema_if_needed():
             )
             await conn.execute(
                 text(
-                    "CREATE INDEX IF NOT EXISTS idx_publication_queue_status ON publication_queue(status);"
+                    "CREATE INDEX IF NOT EXISTS idx_publication_queue_status "
+                    "ON publication_queue(status);"
                 )
             )
             await conn.execute(
                 text(
-                    "CREATE INDEX IF NOT EXISTS idx_publication_queue_scheduled ON publication_queue(scheduled_for);"
+                    "CREATE INDEX IF NOT EXISTS idx_publication_queue_scheduled "
+                    "ON publication_queue(scheduled_for);"
                 )
             )
 
@@ -266,7 +285,8 @@ async def initialize_application():
     sync_result = await theme_sync_service.initial_sync()
     if sync_result.get("status") == "success":
         logger.info(
-            f"Initial sync completed: {sync_result.get('added', 0)} themes added, {sync_result.get('updated', 0)} updated"
+            f"Initial sync completed: {sync_result.get('added', 0)} themes added, "
+            f"{sync_result.get('updated', 0)} updated"
         )
     else:
         logger.warning(f"Initial sync failed: {sync_result.get('error', 'Unknown error')}")

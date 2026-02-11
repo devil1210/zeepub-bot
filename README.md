@@ -72,11 +72,17 @@
 
 ## 🛠️ Requisitos e Instalación
 
-1. **Requisitos**: Docker, Docker Compose, un VPS con puerto 80/443 (o Cloudflare Tunnel).
-2. **Configuración**: Copia `.env.example` a `.env` y rellena `TELEGRAM_TOKEN`, `ADMIN_USERS` y `OPDS_SERVER_URL`.
+1. **Requisitos**: Docker, Docker Compose, Node.js (opcional para CLI), Infisical CLI.
+2. **Configuración de Secretos**: Los secretos se gestionan mediante **Infisical Cloud**.
+   - Instala el CLI: `npm install -g @infisical/cli`
+   - Configura el entorno: `./scripts/setup_infisical.sh`
 3. **Despliegue**:
    ```bash
+   # Alternativa 1: Docker (Recomendado)
    docker compose up -d --build
+
+   # Alternativa 2: Local / VPS (con Infisical)
+   infisical run -- python main.py
    ```
 
 ***
