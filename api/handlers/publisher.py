@@ -160,9 +160,12 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
     template_id = data.get("template_id")
     payload = data.get("payload")
 
-    # Parse ISO date
+    # Parse ISO date and convert to naive UTC (SQLAlchemy DateTime default)
     try:
-        scheduled_for = datetime.fromisoformat(scheduled_for_str.replace("Z", "+00:00"))
+        # First ensure we handle 'Z' or other offsets to get a consistent UTC time
+        # Then strip the timezone info to make it naive for the DB column
+        dt_aware = datetime.fromisoformat(scheduled_for_str.replace("Z", "+00:00"))
+        scheduled_for = dt_aware.replace(tzinfo=None)
     except Exception as e:
         logger.error(f"Error parsing date {scheduled_for_str}: {e}")
         raise HTTPException(status_code=400, detail="Formato de fecha inválido") from e
