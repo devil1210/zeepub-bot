@@ -1,5 +1,5 @@
 # Etapa 1: Construcción del Frontend
-FROM node:20-alpine as frontend-build
+FROM node:20-alpine AS frontend-build
 WORKDIR /app/frontend
 COPY web_client/package*.json ./
 RUN npm install
@@ -7,20 +7,15 @@ COPY web_client/ ./
 RUN npm run build
 
 # Etapa 2: Backend y Bot
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
 # Copiar archivos de requirements y código
-# Copiar archivos de requirements y código
 COPY requirements.txt ./
-RUN apt-get update && apt-get install -y postgresql-client curl git && \
+RUN apt-get update && apt-get install -y postgresql-client curl git gnupg && \
     curl -1sLf 'https://dl.cloudsmith.io/public/infisical/cli/setup.deb.sh' | bash && \
-    apt-get update && \
-    (apt-get install -y infisical || ( \
-    curl -L -o infisical.deb https://github.com/Infisical/infisical-software-development-kit/releases/latest/download/infisical_linux_amd64.deb && \
-    dpkg -i infisical.deb && rm infisical.deb \
-    )) && \
+    apt-get update && apt-get install -y infisical && \
     rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir -r requirements.txt
 
