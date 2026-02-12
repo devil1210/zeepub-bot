@@ -84,6 +84,7 @@ from api.handlers.publisher import (
     handle_pub_save_template,
     handle_pub_schedule,
     handle_pub_toggle_favorite,
+    handle_pub_update_queue_item,
 )
 from api.handlers.recommendations import handle_recommendations
 from api.handlers.search import handle_search
@@ -142,6 +143,7 @@ __all__ = [
     "handle_pub_save_template",
     "handle_pub_delete_template",
     "handle_pub_schedule",
+    "handle_pub_update_queue_item",
     "handle_admin_stats",
     "handle_admin_get_tiers",
     "handle_admin_save_tier",

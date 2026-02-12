@@ -190,6 +190,41 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
     return {"success": True}
 
 
+async def handle_pub_update_queue_item(data: dict[str, Any], user_data: dict[str, Any]):
+    check_staff(user_data)
+
+    item_id = data.get("id")
+    if not item_id:
+        raise HTTPException(status_code=400, detail="Falta id")
+
+    item = await pub_repo.get_by_id(item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Item no encontrado")
+
+    if "scheduled_for" in data:
+        try:
+            scheduled_for_str = data["scheduled_for"]
+            # Parse ISO date
+            dt_aware = datetime.fromisoformat(scheduled_for_str.replace("Z", "+00:00"))
+            item.scheduled_for = dt_aware.replace(tzinfo=None)
+        except Exception as e:
+            logger.error(f"Error parsing date: {e}")
+            pass
+
+    if "status" in data:
+        item.status = data["status"]
+
+    if "payload" in data:
+        item.payload = data["payload"]
+
+    if "template_id" in data:
+        item.template_id = data["template_id"]
+
+    await pub_repo.update(item)
+
+    return {"success": True}
+
+
 async def handle_pub_delete_queue_item(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
 
