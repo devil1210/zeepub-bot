@@ -35,28 +35,39 @@ async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]
     if not show_recs:
         return {"results": []}
 
-    local_recs = await RecommendationService.get_recommendations(user_id, limit=10)
+    # Respect limit from frontend (default to 4 for dashboard)
+    limit = int(data.get("limit", 4))
+    local_recs = await RecommendationService.get_recommendations(user_id, limit=limit)
 
-    # Format for frontend
+    # Format for frontend (ensure we don't double-prefix IDs if to_dict already did it)
     results = []
     for book_data in local_recs:
-        # book_data is a dictionary from RecommendationService
-        numeric_id = book_data.get("id")
-        results.append(
-            {
-                "id": f"local_{numeric_id}",
-                "cover": book_data.get("cover_url"),
-                "title": book_data.get("title"),
-                "author": book_data.get("author"),
-                "downloadUrl": f"local_{numeric_id}",
-                "is_folder": False,
-                "series": book_data.get("series"),
-                "seriesIndex": book_data.get("seriesIndex"),
-                "cleanTitle": book_data.get("clean_title")
-                or book_data.get("series")
-                or book_data.get("title"),
-                "rating_average": book_data.get("rating_average", 0),
-                "book_type": book_data.get("book_type"),
-            }
+        # If book_data is from to_dict(), it already has "id": "local_X", "cover", "cover_thumb", etc.
+        # We ensure cleanTitle and other expected fields are present
+        res_item = book_data.copy()
+
+        # Ensure ID format for frontend consistency
+        if not str(res_item.get("id", "")).startswith("local_"):
+            res_item["id"] = f"local_{res_item.get('id')}"
+
+        # Fix missing cover: use 'cover' from to_dict() instead of 'cover_url'
+        if not res_item.get("cover") and res_item.get("cover_url"):
+            res_item["cover"] = res_item.get("cover_url")
+        elif not res_item.get("cover"):
+            res_item["cover"] = (
+                res_item.get("cover_low")
+                or res_item.get("cover_medium")
+                or res_item.get("cover_high")
+            )
+
+        # Compatibility with RecommendationCard.tsx
+        res_item["cleanTitle"] = (
+            res_item.get("cleanTitle")
+            or res_item.get("series")
+            or res_item.get("english_title")
+            or res_item.get("title")
         )
+
+        results.append(res_item)
+
     return {"results": results}

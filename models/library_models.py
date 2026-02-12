@@ -70,6 +70,30 @@ class SeriesMetadata(Base):
 
     books = relationship("LocalBook", back_populates="series_info")
 
+    def to_dict(self):
+        return {
+            "id": f"series_{self.series_hash}",
+            "series_name": self.series_name,
+            "series_spanish": self.series_spanish,
+            "series_english": self.series_english,
+            "series_hash": self.series_hash,
+            "author": self.author,
+            "author_jap": self.author_jap,
+            "illustrator": self.illustrator,
+            "illustrator_jap": self.illustrator_jap,
+            "description": limpiar_html_basico(self.description) if self.description else "",
+            "tags": self.tags or [],
+            "demographics": self.demographics or [],
+            "cover_url": self.cover_url,
+            "book_count": self.book_count,
+            "book_type": self.book_type,
+            "publisher": self.publisher,
+            "rating_average": self.rating_average,
+            "rating_count": self.rating_count,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
 
 class UploadBook(Base):
     """

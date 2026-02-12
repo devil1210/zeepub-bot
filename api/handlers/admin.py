@@ -51,9 +51,9 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
             ).scalar() or 0
 
             # 2. Storage
-            res_size = await session.execute(text("SELECT SUM(file_size_mb) FROM local_books"))
-            size_mb = res_size.scalar() or 0
-            storage_gb = round(size_mb / 1024, 2)
+            res_size = await session.execute(text("SELECT SUM(file_size) FROM local_books"))
+            total_bytes = res_size.scalar() or 0
+            storage_gb = round(total_bytes / (1024**3), 2)
 
             # 3. Download Metrics
             dls_24h = (

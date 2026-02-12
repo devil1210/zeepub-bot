@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import time
-from typing import Any, Optional
+from typing import Any
 
 try:
     from google import genai
@@ -11,7 +11,6 @@ except ImportError:
     genai = None
 
 from config.config_settings import config
-from utils.library_db import get_session
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ class AIService:
     Soporta Google Gemini (SDK v0.3+).
     """
 
-    _client: Optional[Any] = None
+    _client: Any | None = None
     _exhausted_until: dict[str, float] = {}
 
     @classmethod
@@ -38,10 +37,10 @@ class AIService:
     async def _call_ai(
         cls,
         prompt: str,
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
         max_retries: int = 3,
         json_mode: bool = False,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Llamada a Gemini con reintentos."""
         client = cls._get_client()
         if not client:
