@@ -152,3 +152,62 @@ async def reset_stats():
     """
     logger.info("Daily stats reset executed.")
     pass
+
+
+async def get_stats_summary(period: str = "day") -> dict[str, Any]:
+    """
+    Get stats for a specific period: day, month, year, all.
+    """
+    async with pg_manager.get_session() as session:
+        try:
+            now = datetime.utcnow()
+            start_date = None
+
+            if period == "day":
+                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            elif period == "month":
+                start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            elif period == "year":
+                start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            # if period == "all", start_date remains None
+
+            # 1. Downloads
+            if start_date:
+                downloads_stmt = select(func.count(DownloadHistory.id)).where(
+                    DownloadHistory.downloaded_at >= start_date
+                )
+                users_stmt = select(func.count(func.distinct(DownloadHistory.user_id))).where(
+                    DownloadHistory.downloaded_at >= start_date
+                )
+            else:
+                downloads_stmt = select(func.count(DownloadHistory.id))
+                users_stmt = select(func.count(func.distinct(DownloadHistory.user_id)))
+
+            total_downloads = (await session.execute(downloads_stmt)).scalar() or 0
+            unique_users = (await session.execute(users_stmt)).scalar() or 0
+
+            # New users (registrations)
+            new_users = 0
+            if hasattr(User, "created_at"):
+                if start_date:
+                    new_stmt = select(func.count(User.telegram_id)).where(
+                        User.created_at >= start_date
+                    )
+                else:
+                    new_stmt = select(func.count(User.telegram_id))
+                new_users = (await session.execute(new_stmt)).scalar() or 0
+
+            return {
+                "total_downloads": total_downloads,
+                "unique_users": unique_users,
+                "new_users": new_users,
+                "success": True,
+            }
+        except Exception as e:
+            logger.error(f"Error getting stats summary ({period}): {e}")
+            return {
+                "total_downloads": 0,
+                "unique_users": 0,
+                "new_users": 0,
+                "success": False,
+            }

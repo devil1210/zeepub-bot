@@ -154,8 +154,13 @@ class StatsPlugin(BasePlugin):
         e_us = "👥"
         e_new = "🆕"
 
+        msg_thread_info = ""
+        if thread_id:
+            msg_thread_info = f"🆔 <b>Topic ID:</b> <code>{thread_id}</code>\n\n"
+
         base_summary = (
-            "📊 <b>Panel de Estadísticas</b>\n\n"
+            "📊 <b>Panel de Estadísticas</b>\n"
+            f"{msg_thread_info}"
             "<b>Hoy:</b>\n"
             f"{e_dl} Descargas: {stats_day['total_downloads']}\n"
             f"{e_us} Activos: {stats_day['unique_users']}\n"

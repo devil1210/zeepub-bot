@@ -43,7 +43,7 @@ async def set_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer(text)
 
         # Ir directamente a la Biblioteca Local (basada en BD local)
-        from services.library_ui_service import mostrar_menu_principal
+        # (mostrar_menu_principal is imported globally)
 
         await mostrar_menu_principal(update, context)
         return
@@ -73,7 +73,7 @@ async def ver_catalogo_normal(update: Update, context: ContextTypes.DEFAULT_TYPE
     st = state_manager.get_user_state(uid)
 
     st["titulo"] = "📚 Biblioteca Local"
-    from services.library_ui_service import mostrar_menu_principal
+    # await mostrar_menu_principal(update, context) (Global import)
 
     await mostrar_menu_principal(update, context)
 
@@ -91,7 +91,8 @@ async def handle_manual_destino(update: Update, context: ContextTypes.DEFAULT_TY
     st["titulo"] = "📚 Categorías"
 
     # Redirigir siempre a menú principal local
-    from services.library_ui_service import mostrar_menu_principal
+    # Redirigir siempre a menú principal local
+    # from services.library_ui_service import mostrar_menu_principal
 
     await mostrar_menu_principal(update, context)
 
@@ -206,8 +207,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Ver Catálogo Normal (Local)
     if data == "ver_catalogo_normal":
-        from services.library_ui_service import mostrar_menu_principal
-
         await mostrar_menu_principal(update, context)
         return
 
