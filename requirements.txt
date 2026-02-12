@@ -46,7 +46,7 @@ EbookLib==0.18
 
 # Supabase
 supabase==2.27.3
-google-generativeai==0.8.4
+google-genai==0.3.0
 
 # Pydantic (Latest stable for FastAPI 0.128+)
 pydantic==2.12.5

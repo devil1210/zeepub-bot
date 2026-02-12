@@ -16,7 +16,11 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN apt-get update && apt-get install -y postgresql-client curl git && \
     curl -1sLf 'https://dl.cloudsmith.io/public/infisical/cli/setup.deb.sh' | bash && \
-    apt-get update && apt-get install -y infisical && \
+    apt-get update && \
+    (apt-get install -y infisical || ( \
+    curl -L -o infisical.deb https://github.com/Infisical/infisical-software-development-kit/releases/latest/download/infisical_linux_amd64.deb && \
+    dpkg -i infisical.deb && rm infisical.deb \
+    )) && \
     rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir -r requirements.txt
 

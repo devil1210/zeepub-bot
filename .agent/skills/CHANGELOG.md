@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.1.0] - 2026-02-12 - "Official Microsoft & Gemini Skills"
+
+> **845+ skills: the largest single-PR expansion ever, powered by official vendor collections.**
+
+Integrates the full official Microsoft skills collection (129 skills) and Google Gemini API development skills, significantly expanding Azure SDK coverage across .NET, Python, TypeScript, Java, and Rust, plus M365 Agents, Semantic Kernel, and wiki plugin skills.
+
+### Added
+
+- **129 Microsoft Official Skills** from [microsoft/skills](https://github.com/microsoft/skills):
+  - Azure SDKs across .NET, Python, TypeScript, Java, and Rust
+  - M365 Agents, Semantic Kernel, and wiki plugin skills
+  - Flat structure using YAML `name` field as directory name
+  - Attribution files: `docs/LICENSE-MICROSOFT`, `docs/microsoft-skills-attribution.json`
+- **Gemini API Skills**: Official Gemini API development skill under `skills/gemini-api-dev/`
+- **New Scripts & Tooling**:
+  - `scripts/sync_microsoft_skills.py` (v4): Flat-structure sync with collision detection, stale cleanup, and attribution metadata
+  - `scripts/tests/inspect_microsoft_repo.py`: Remote repo inspection
+  - `scripts/tests/test_comprehensive_coverage.py`: Coverage verification
+- **New npm scripts**: `sync:microsoft` and `sync:all-official` in `package.json`
+
+### Fixed
+
+- **`scripts/generate_index.py`**: Enhanced frontmatter parsing for unquoted `@` symbols and commas
+- **`scripts/build-catalog.js`**: Deterministic `generatedAt` timestamp (prevents CI drift)
+
+### Registry
+
+- **Total Skills**: 845 (from 626). All generated files synced.
+
+### Contributors
+
+- [@ar27111994](https://github.com/ar27111994) - Microsoft & Gemini skills integration (PR #73)
+
+---
+
 ## [5.0.0] - 2026-02-10 - "Antigravity Workflows Foundation"
 
 > Workflows are now first-class: users can run guided, multi-skill playbooks instead of manually composing skills one by one.

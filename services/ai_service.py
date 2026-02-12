@@ -1,124 +1,80 @@
+import asyncio
 import json
 import logging
-from typing import Any
+import time
+from typing import Any, Optional
 
-import google.generativeai as genai
-from google.generativeai.types import HarmBlockThreshold, HarmCategory
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    genai = None
 
 from config.config_settings import config
+from utils.library_db import get_session
 
 logger = logging.getLogger(__name__)
 
 
 class AIService:
     """
-    Gestiona la interacción con Google Gemini para análisis inteligente de libros.
+    Servicio unificado de IA.
+    Soporta Google Gemini (SDK v0.3+).
     """
 
-    _models_cache = {}
-    _exhausted_until = {}  # Tracks when a model can be tried again
+    _client: Optional[Any] = None
+    _exhausted_until: dict[str, float] = {}
 
     @classmethod
-    def _get_model(cls, model_name: str = "gemini-3-flash-preview"):
-        """Inicializa un modelo Gemini específico con la configuración."""
-        if model_name in cls._models_cache:
-            return cls._models_cache[model_name]
-
+    def _get_client(cls):
+        """Devuelve el cliente de Google GenAI."""
         if not config.GEMINI_API_KEY:
-            logger.warning("GEMINI_API_KEY no configurada. Funciones de IA deshabilitadas.")
             return None
-
-        try:
-            genai.configure(api_key=config.GEMINI_API_KEY)
-
-            # Configuración de seguridad permisiva para análisis de textos literarios
-            safety_settings = {
-                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-            }
-
-            model = genai.GenerativeModel(
-                model_name=model_name,
-                safety_settings=safety_settings,
-                generation_config={"response_mime_type": "application/json"},
-            )
-            # Disable caching to prevent Event Loop issues in threaded context
-            # cls._models_cache[model_name] = model
-            return model
-        except Exception as e:
-            logger.error(f"Error inicializando Gemini ({model_name}): {e}")
-            return None
+        if cls._client is None and genai:
+            cls._client = genai.Client(api_key=config.GEMINI_API_KEY)
+        return cls._client
 
     @classmethod
-    async def _call_gemini_with_retry(cls, prompt: str, model=None, max_retries: int = 3):
-        """
-        Ejecuta una consulta a Gemini con reintentos y fallback automático entre modelos.
-        """
-        import asyncio
-        import time
+    async def _call_ai(
+        cls,
+        prompt: str,
+        system_instruction: Optional[str] = None,
+        max_retries: int = 3,
+        json_mode: bool = False,
+    ) -> Optional[str]:
+        """Llamada a Gemini con reintentos."""
+        client = cls._get_client()
+        if not client:
+            return None
 
-        import google.api_core.exceptions as google_exceptions
-
-        # Definir orden de preferencia
-        models_to_try = ["gemini-3-flash-preview", "gemini-2.0-flash"]
-
-        # Si se pasó un modelo específico (ej. para sinopsis sin JSON), solo intentamos ese
-        if model:
-            # Extraer el nombre del modelo del objeto model de genai si es posible
-            fixed_model_name = getattr(model, "model_name", None)
-            if fixed_model_name:
-                models_to_try = [fixed_model_name.replace("models/", "")]
-            else:
-                # Fallback genérico si no podemos obtener el nombre
-                try:
-                    return await model.generate_content_async(prompt)
-                except Exception as e:
-                    logger.error(f"Error en modelo custom: {e}")
-                    raise e
+        # Modelos: gemini-3-flash-preview (objetivo) y gemini-2.5-flash (estable)
+        models_to_try = ["gemini-3-flash-preview", "gemini-2.5-flash"]
+        now = time.time()
 
         for model_name in models_to_try:
-            # 1. Verificar si el modelo está en cooldown por cuota agotada
-            now = time.time()
             if model_name in cls._exhausted_until and now < cls._exhausted_until[model_name]:
-                # Si el modelo principal está agotado, saltamos al siguiente
-                if len(models_to_try) > 1:
-                    continue
-
-            active_model = cls._get_model(model_name)
-            if not active_model:
                 continue
 
-            delay = 2.0
             for attempt in range(max_retries):
                 try:
-                    return await active_model.generate_content_async(prompt)
-                except google_exceptions.ResourceExhausted as e:
-                    # 429 Quota Exceeded
-                    if attempt < max_retries - 1:
-                        logger.warning(
-                            f"⚠️ Cuota de {model_name} agotada momentáneamente. Reintentando en {delay}s..."
-                        )
-                        await asyncio.sleep(delay)
-                        delay *= 2
-                    else:
-                        # Marcamos este modelo como agotado por 10 minutos
-                        logger.warning(
-                            f"🚨 Cuota de {model_name} AGOTADA. Iniciando cooldown de 10 min."
-                        )
-                        cls._exhausted_until[model_name] = now + 600  # 10 minutos
+                    config_args = types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        response_mime_type="application/json" if json_mode else "text/plain",
+                    )
 
-                        # Si hay más modelos en la lista, el loop exterior pasará al siguiente
-                        if model_name != models_to_try[-1]:
-                            break
-                        else:
-                            # Era el último modelo disponible
-                            logger.error("❌ Todos los modelos agotaron su cuota definitivamente.")
-                            raise e
+                    response = client.models.generate_content(
+                        model=model_name, contents=prompt, config=config_args
+                    )
+                    return response.text
                 except Exception as e:
-                    logger.error(f"❌ Error inesperado en {model_name}: {e}")
-                    raise e
+                    error_str = str(e).upper()
+                    if "429" in error_str or "QUOTA" in error_str:
+                        logger.warning(f"⚠️ Cuota de {model_name} agotada. Reintentando...")
+                        if attempt == max_retries - 1:
+                            cls._exhausted_until[model_name] = now + 600
+                        await asyncio.sleep(2**attempt)
+                    else:
+                        logger.error(f"❌ Error en {model_name}: {e}")
         return None
 
     @staticmethod
@@ -194,19 +150,19 @@ class AIService:
         try:
             # Inject context if possible
             group_context = await AIService._get_group_context()
-            prompt = prompt.replace("{group_context}", group_context)
+            full_prompt = prompt.replace("{group_context}", group_context)
 
             # Ejecutar con reintentos y fallback automático
-            response = await AIService._call_gemini_with_retry(prompt)
-            if not response:
+            response_text = await AIService._call_ai(full_prompt, json_mode=True)
+            if not response_text:
                 return None
-            txt = AIService._extract_json_from_text(response.text)
+            txt = AIService._extract_json_from_text(response_text)
             data = json.loads(txt)
             if data.get("suggested_filename"):
                 data["suggested_filename"] = AIService.sanitize_filename(data["suggested_filename"])
             return data
         except Exception as e:
-            logger.error(f"Error en consulta a Gemini: {e}")
+            logger.error(f"Error en normalize_book_metadata: {e}")
             return None
 
     @staticmethod
@@ -230,13 +186,13 @@ class AIService:
         """
 
         try:
-            response = await AIService._call_gemini_with_retry(prompt)
-            if not response:
+            response_text = await AIService._call_ai(prompt, json_mode=True)
+            if not response_text:
                 return {
                     "proposed_english": current_name,
                     "proposed_spanish": current_name,
                 }
-            txt = AIService._extract_json_from_text(response.text)
+            txt = AIService._extract_json_from_text(response_text)
             return json.loads(txt)
         except Exception:
             return {"proposed_english": current_name, "proposed_spanish": current_name}
@@ -346,10 +302,10 @@ class AIService:
                 prompt.replace("{group_context}", group_context)
                 + f"\n\nCONTEXTO ADICIONAL DE APRENDIZAJE:\n{learning_context}"
             )
-            response = await AIService._call_gemini_with_retry(full_prompt)
-            if not response:
+            response_text = await AIService._call_ai(full_prompt, json_mode=True)
+            if not response_text:
                 return {"error": "AI failed or quota exceeded"}
-            txt = AIService._extract_json_from_text(response.text)
+            txt = AIService._extract_json_from_text(response_text)
             analysis = json.loads(txt)
 
             # Construir propuesta detallada
@@ -512,10 +468,10 @@ class AIService:
         """
 
         try:
-            response = await AIService._call_gemini_with_retry(prompt)
-            if not response:
+            response_text = await AIService._call_ai(prompt, json_mode=True)
+            if not response_text:
                 return None
-            txt = AIService._extract_json_from_text(response.text)
+            txt = AIService._extract_json_from_text(response_text)
             res = json.loads(txt)
             if res.get("is_same") and res.get("confidence", 0) > 0.85:
                 # Normalizar booleano si llegó como string
@@ -610,10 +566,10 @@ class AIService:
 
         try:
             # Use automatic fallback for synopsis too
-            response = await AIService._call_gemini_with_retry(prompt)
-            if not response:
+            response_text = await AIService._call_ai(prompt)
+            if not response_text:
                 return None
-            return response.text.strip()
+            return response_text.strip()
         except Exception as e:
             logger.error(f"Error generando sinopsis: {e}")
             return None

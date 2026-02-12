@@ -832,6 +832,15 @@ export const AIHub: React.FC = () => {
 
                                             {isEditingSeries ? (
                                                 <div className="space-y-4 animate-in fade-in duration-300">
+                                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
+                                                        <div className="p-3 rounded-lg bg-blue-500/10">
+                                                            <BrainCircuit className="w-6 h-6 text-blue-400" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm text-gray-400">Modelo Activo</p>
+                                                            <p className="font-medium text-white">Gemini 3 Flash Preview</p>
+                                                        </div>
+                                                    </div>
                                                     <div>
                                                         <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Nombre Inglés (Serie)</label>
                                                         <input

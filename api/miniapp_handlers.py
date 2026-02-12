@@ -142,7 +142,6 @@ __all__ = [
     "handle_pub_save_template",
     "handle_pub_delete_template",
     "handle_pub_schedule",
-    "handle_pub_update_queue_item",
     "handle_admin_stats",
     "handle_admin_get_tiers",
     "handle_admin_save_tier",
