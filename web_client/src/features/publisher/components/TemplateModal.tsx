@@ -14,6 +14,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose, o
     const [name, setName] = useState('');
     const [content, setContent] = useState('');
     const [platform, setPlatform] = useState('telegram');
+    const [coverQuality, setCoverQuality] = useState<'original' | 'high' | 'medium' | 'low'>('high');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
@@ -22,10 +23,12 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose, o
             setName(editingTemplate.name);
             setContent(editingTemplate.content);
             setPlatform(editingTemplate.platform);
+            setCoverQuality(editingTemplate.extra_config?.cover_quality || 'high');
         } else {
             setName('');
             setContent('');
             setPlatform('telegram');
+            setCoverQuality('high');
         }
     }, [editingTemplate, isOpen]);
 
@@ -40,7 +43,11 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose, o
                 id: editingTemplate?.id,
                 name,
                 content,
-                platform
+                platform,
+                extra_config: {
+                    ...(editingTemplate?.extra_config || {}),
+                    cover_quality: coverQuality
+                }
             });
 
             setIsSuccess(true);
@@ -111,6 +118,25 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose, o
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Calidad de Portada (Telegram)</label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {(['original', 'high', 'medium', 'low'] as const).map((q) => (
+                                    <button
+                                        key={q}
+                                        type="button"
+                                        onClick={() => setCoverQuality(q)}
+                                        className={`py-2 px-1 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${coverQuality === q
+                                            ? 'bg-primary/20 border-primary text-primary'
+                                            : 'bg-black/20 border-white/5 text-gray-500 hover:text-gray-300'
+                                            }`}
+                                    >
+                                        {q === 'original' ? 'Ultra HD' : q === 'high' ? 'Alta' : q === 'medium' ? 'Media' : 'Baja'}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 

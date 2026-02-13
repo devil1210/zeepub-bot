@@ -48,7 +48,7 @@ class TelegramPublisherProvider(PublisherProvider):
         """
         Implementation of book announcement for Telegram.
         """
-        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+        from telegram import InlineKeyboardMarkup
 
         from config.config_settings import config
         from services.telegram_service import send_doc_bytes, send_photo_bytes
@@ -66,8 +66,20 @@ class TelegramPublisherProvider(PublisherProvider):
         options = options or {}
         thread_id = options.get("message_thread_id")
 
-        # 1. Format and send Cover (con Caption de Portada)
-        caption = formatear_mensaje_portada(book_data)
+        # --- Lógica de Plantilla Multi-mensaje ---
+        custom_content = options.get("caption")
+        msg_parts = []
+        if custom_content:
+            # Separadores comunes: <hr>, ---next---, o ---
+            msg_parts = re.split(r"<hr\s*/?>|---next---|---", custom_content)
+            msg_parts = [p.strip() for p in msg_parts if p.strip()]
+
+        # 1. Mensaje de Portada (o Texto Principal)
+        caption = (
+            msg_parts[0]
+            if len(msg_parts) > 0
+            else (custom_content or formatear_mensaje_portada(book_data))
+        )
 
         # Selección de calidad de portada
         quality = options.get("cover_quality") or self.COVER_QUALITY
@@ -101,7 +113,7 @@ class TelegramPublisherProvider(PublisherProvider):
             message_thread_id=thread_id,
         )
 
-        # Fallback: si no hay portada, enviamos el texto de la información igualmente
+        # Fallback: si no hay portada o falló, enviamos el texto igualmente
         if not sent_photo:
             try:
                 await self._send_message(
@@ -113,30 +125,43 @@ class TelegramPublisherProvider(PublisherProvider):
             except Exception as e:
                 logger.error(f"Error sending novel info (text fallback): {e}")
 
-        # 2. Get and Send Synopsis (Mensaje separado)
-        sinopsis = (
-            book_data.get("description") or book_data.get("summary") or book_data.get("sinopsis")
-        )
+        # 2. Sinopsis / Mensaje Intermedio
+        sinopsis = ""
+        if len(msg_parts) > 1:
+            sinopsis = msg_parts[1]
+        else:
+            # Comportamiento por defecto
+            raw_sinopsis = (
+                book_data.get("description")
+                or book_data.get("summary")
+                or book_data.get("sinopsis")
+            )
+            if raw_sinopsis:
+                sinopsis_esc = escapar_html(raw_sinopsis)
+                slug = generar_slug_from_meta(book_data)
+                sinopsis = self.SYNOPSIS_TEMPLATE.format(sinopsis=sinopsis_esc, slug=slug or "")
+                if not slug:
+                    sinopsis = sinopsis.replace("\n#", "").strip()
 
         if sinopsis:
-            sinopsis_esc = escapar_html(sinopsis)
-            slug = generar_slug_from_meta(book_data)
-            text = self.SYNOPSIS_TEMPLATE.format(sinopsis=sinopsis_esc, slug=slug or "")
-            if not slug:
-                text = text.replace("\n#", "").strip()
-
             try:
                 await self._send_message(
                     chat_id=target_id,
-                    text=text,
+                    text=sinopsis,
                     parse_mode="HTML",
                     thread_id=thread_id,
                 )
             except Exception as e:
-                logger.error(f"Error sending synopsis: {e}")
+                logger.error(f"Error sending intermediate message: {e}")
 
-        # 3. Send File + Info (Documento con info en el caption)
-        info_text = self._format_info_text(book_data)
+        # 3. Archivo EPUB / Mensaje Final
+        info_text = ""
+        if len(msg_parts) > 2:
+            info_text = msg_parts[2]
+        else:
+            # Comportamiento por defecto
+            info_text = self._format_info_text(book_data)
+
         epub_data = (
             book_data.get("epub_bytes") or book_data.get("epub_buffer") or book_data.get("filepath")
         )
@@ -172,31 +197,23 @@ class TelegramPublisherProvider(PublisherProvider):
                     options["state"]["msg_botones_id"] = sent_doc.message_id
 
             except Exception as e:
-                logger.error(f"Error sending file in publication: {e}")
-        else:
-            # Fallback: Si NO hay archivo, entonces sí ponemos botones por defecto
-            # para que el usuario pueda ir a buscarlo al bot.
-            if not keyboard and options.get("with_buttons", True):
-                bot_info = await self.bot.get_me()
-                keyboard = [
-                    [
-                        InlineKeyboardButton("🤖 Ir al Bot", url=f"https://t.me/{bot_info.username}"),
-                    ]
-                ]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-
-            try:
-                msg_info = await self._send_message(
+                logger.error(f"Error sending EPUB: {e}")
+                # Fallback final a mensaje de texto si falla el envío del documento
+                await self._send_message(
                     chat_id=target_id,
                     text=info_text,
                     parse_mode="HTML",
                     thread_id=thread_id,
-                    reply_markup=reply_markup,
                 )
-                if "state" in options:
-                    options["state"]["msg_info_id"] = msg_info.message_id
-            except Exception as e:
-                logger.error(f"Error sending info message (fallback): {e}")
+        else:
+            # Si no hay archivo, enviamos el texto informativo solo
+            await self._send_message(
+                chat_id=target_id,
+                text=info_text,
+                parse_mode="HTML",
+                thread_id=thread_id,
+                reply_markup=reply_markup,
+            )
 
         return True
 
@@ -486,6 +503,9 @@ class PublisherService:
                 options = {}
                 if item.template:
                     options["caption"] = self._apply_template(item.template.content, book_data)
+                    # Añadir configuraciones extra (calidad de portada, etc.)
+                    if item.template.extra_config:
+                        options.update(item.template.extra_config)
 
                 # 4. Publicar
                 success = await self.announce(
@@ -510,16 +530,69 @@ class PublisherService:
             await self.repo.update(item)
 
     def _apply_template(self, template_str: str, data: dict) -> str:
-        """Aplica placeholders básicos a una plantilla."""
+        """Aplica placeholders con todos los campos disponibles de LocalBook."""
         try:
-            return template_str.format(
-                title=data.get("title", ""),
-                author=data.get("author", "Desconocido"),
-                series=data.get("series", ""),
-                volume=data.get("volume", ""),
-                description=data.get("description", ""),
-                tags=", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else "",
-            )
+            # Preparar mapeo de variables (snake_case y español para comodidad)
+            mapping = {
+                "title": data.get("title", ""),
+                "titulo": data.get("title", ""),
+                "author": data.get("author", "Desconocido"),
+                "autor": data.get("author", "Desconocido"),
+                "series": data.get("series", ""),
+                "serie": data.get("series", ""),
+                "volume": data.get("volume", ""),
+                "volumen": data.get("volume", ""),
+                "description": data.get("description", ""),
+                "sinopsis": data.get("description", ""),
+                "summary": data.get("summary", ""),
+                "resumen": data.get("summary", ""),
+                "tags": (
+                    ", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""
+                ),
+                "etiquetas": (
+                    ", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""
+                ),
+                "genres": ", ".join(data.get("tags", []))
+                if isinstance(data.get("tags"), list)
+                else "",
+                "language": data.get("language", "es"),
+                "idioma": data.get("language", "es"),
+                "publisher": data.get("publisher", ""),
+                "editorial": data.get("publisher", ""),
+                "translator": data.get("translator", ""),
+                "traductor": data.get("translator", ""),
+                "layout_by": data.get("layout_by", ""),
+                "maquetador": data.get("layout_by", ""),
+                "book_type": data.get("book_type", ""),
+                "tipo": data.get("book_type", ""),
+                "isbn": data.get("isbn", ""),
+                "asin": data.get("asin", ""),
+                "rating": data.get("rating_average", 0.0),
+                "votes": data.get("rating_count", 0),
+                "size": data.get("size", "0 MB"),
+                "tamaño": data.get("size", "0 MB"),
+                "version": data.get("epub_version", ""),
+                "slug": data.get("slug", ""),
+                "hash": data.get("book_hash", ""),
+                # Portadas (URLs)
+                "cover_original": data.get("cover_original", ""),
+                "cover_high": data.get("cover_high", ""),
+                "cover_medium": data.get("cover_medium", ""),
+                "cover_low": data.get("cover_low", ""),
+            }
+
+            # Reemplazar placeholders manual para evitar errores con llaves de HTML si las hay
+            # Usamos .format() pero con un fallback si falla por llaves extras
+            try:
+                # Filtrar solo las llaves que están en nuestro mapping para evitar KeyErrors
+                placeholders = re.findall(r"\{(\w+)\}", template_str)
+                safe_mapping = {p: mapping.get(p, f"{{{p}}}") for p in placeholders}
+                return template_str.format(**safe_mapping)
+            except Exception:
+                result = template_str
+                for key, val in mapping.items():
+                    result = result.replace(f"{{{key}}}", str(val))
+                return result
         except Exception as e:
             logger.warning(f"Error applying template: {e}")
             return template_str

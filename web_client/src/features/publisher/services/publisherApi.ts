@@ -29,6 +29,10 @@ export interface PublicationTemplate {
     name: string;
     content: string;
     platform: string;
+    extra_config?: {
+        cover_quality?: 'original' | 'high' | 'medium' | 'low';
+        [key: string]: any;
+    };
 }
 
 export interface DiscoveredChat {

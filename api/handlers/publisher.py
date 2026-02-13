@@ -121,20 +121,27 @@ async def handle_pub_get_templates(data: dict[str, Any], user_data: dict[str, An
     templates = await pub_repo.get_templates(platform=data.get("platform"))
     return {
         "templates": [
-            {"id": t.id, "name": t.name, "content": t.content, "platform": t.platform}
+            {
+                "id": t.id,
+                "name": t.name,
+                "content": t.content,
+                "platform": t.platform,
+                "extra_config": t.extra_config or {},
+            }
             for t in templates
         ]
     }
 
 
 async def handle_pub_save_template(data: dict[str, Any], user_data: dict[str, Any]):
-    check_admin(user_data)
+    check_staff(user_data)
 
     template_id = data.get("id")
     template_data = {
         "name": data["name"],
         "content": data["content"],
         "platform": data["platform"],
+        "extra_config": data.get("extra_config", {}),
     }
 
     if template_id:
@@ -146,7 +153,7 @@ async def handle_pub_save_template(data: dict[str, Any], user_data: dict[str, An
 
 
 async def handle_pub_delete_template(data: dict[str, Any], user_data: dict[str, Any]):
-    check_admin(user_data)
+    check_staff(user_data)
 
     template_id = data.get("id")
     if not template_id:

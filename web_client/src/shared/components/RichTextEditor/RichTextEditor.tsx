@@ -17,7 +17,16 @@ import {
     User,
     Book,
     Layers,
-    Tag
+    Tag,
+    Globe,
+    Building2,
+    Users,
+    FileText,
+    Monitor,
+    Star,
+    HardDrive,
+    Image,
+    MessageSquarePlus
 } from 'lucide-react';
 import './RichTextEditor.css';
 
@@ -61,14 +70,27 @@ const MenuBar = ({ editor }: { editor: any }) => {
         { icon: <ListOrdered className="w-4 h-4" />, action: () => editor.chain().focus().toggleOrderedList().run(), active: editor.isActive('orderedList'), title: 'Lista numerada' },
         { icon: <Undo className="w-4 h-4" />, action: () => editor.chain().focus().undo().run(), active: false, title: 'Deshacer' },
         { icon: <Redo className="w-4 h-4" />, action: () => editor.chain().focus().redo().run(), active: false, title: 'Rehacer' },
+        {
+            icon: <MessageSquarePlus className="w-4 h-4 text-primary" />,
+            action: () => editor.chain().focus().insertContent('<hr />').run(),
+            active: false,
+            title: 'Siguiente Mensaje (Divide la publicación)'
+        },
     ];
 
     const placeholders = [
-        { icon: <Type className="w-3.5 h-3.5" />, label: 'Título', value: 'title' },
-        { icon: <User className="w-3.5 h-3.5" />, label: 'Autor', value: 'author' },
-        { icon: <Book className="w-3.5 h-3.5" />, label: 'Serie', value: 'series' },
-        { icon: <Layers className="w-3.5 h-3.5" />, label: 'Volumen', value: 'volume' },
-        { icon: <Tag className="w-3.5 h-3.5" />, label: 'Etiquetas', value: 'tags' },
+        { icon: <Type className="w-3 h-3" />, label: 'Título', value: 'titulo' },
+        { icon: <User className="w-3 h-3" />, label: 'Autor', value: 'autor' },
+        { icon: <Book className="w-3 h-3" />, label: 'Serie', value: 'serie' },
+        { icon: <Layers className="w-3 h-3" />, label: 'Volumen', value: 'volumen' },
+        { icon: <FileText className="w-3 h-3" />, label: 'Sinopsis', value: 'sinopsis' },
+        { icon: <Monitor className="w-3 h-3" />, label: 'Tipo', value: 'tipo' },
+        { icon: <Users className="w-3 h-3" />, label: 'Grupo/Traductor', value: 'traductor' },
+        { icon: <Building2 className="w-3 h-3" />, label: 'Editorial', value: 'editorial' },
+        { icon: <Star className="w-3 h-3" />, label: 'Rating', value: 'rating' },
+        { icon: <HardDrive className="w-3 h-3" />, label: 'Tamaño', value: 'tamaño' },
+        { icon: <Image className="w-3 h-3" />, label: 'Portada HD', value: 'cover_high' },
+        { icon: <Image className="w-3 h-3" />, label: 'Portada SD', value: 'cover_low' },
     ];
 
     return (
