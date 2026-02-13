@@ -107,7 +107,7 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
         async with self.db_manager.get_session() as session:
             stmt = select(PublicationChannel)
             if active_only:
-                stmt = stmt.where(PublicationChannel.is_active == True)
+                stmt = stmt.where(PublicationChannel.is_active)
 
             # Ordenar: Favoritos primero, luego alfabético
             stmt = stmt.order_by(
@@ -148,12 +148,38 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
             return await session.get(PublicationTemplate, template_id)
 
     async def get_templates(self, platform: str | None = None) -> list[PublicationTemplate]:
+        from sqlalchemy import text
+        from sqlalchemy.exc import ProgrammingError
+
         async with self.db_manager.get_session() as session:
-            stmt = select(PublicationTemplate)
-            if platform:
-                stmt = stmt.where(PublicationTemplate.platform == platform)
-            result = await session.execute(stmt)
-            return list(result.scalars().all())
+            try:
+                stmt = select(PublicationTemplate)
+                if platform:
+                    stmt = stmt.where(PublicationTemplate.platform == platform)
+                result = await session.execute(stmt)
+                return list(result.scalars().all())
+            except ProgrammingError as e:
+                # Si la columna no existe, intentamos agregarla proactivamente
+                if "extra_config" in str(e).lower() and "does not exist" in str(e).lower():
+                    logger.warning("Column 'extra_config' missing in publication_templates. Patching...")
+                    try:
+                        # Usamos el motor directamente para el DDL
+                        async with self.db_manager.engine.begin() as conn:
+                            await conn.execute(
+                                text("ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;")
+                            )
+                        logger.info("Column 'extra_config' patched successfully.")
+
+                        # Reintentar la consulta original
+                        stmt = select(PublicationTemplate)
+                        if platform:
+                            stmt = stmt.where(PublicationTemplate.platform == platform)
+                        result = await session.execute(stmt)
+                        return list(result.scalars().all())
+                    except Exception as patch_err:
+                        logger.error(f"Failed to auto-patch publication_templates: {patch_err}")
+                        raise e from None
+                raise e from None
 
     async def create_template(self, template: PublicationTemplate) -> PublicationTemplate:
         async with self.db_manager.get_session() as session:
