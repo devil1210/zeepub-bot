@@ -37,7 +37,7 @@ class TelegramPublisherProvider(PublisherProvider):
         """
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-        from services.telegram_service import send_photo_bytes
+        from services.telegram_service import send_doc_bytes, send_photo_bytes
         from utils.helpers import (
             escapar_html,
             formatear_mensaje_portada,
@@ -52,11 +52,10 @@ class TelegramPublisherProvider(PublisherProvider):
         options = options or {}
         thread_id = options.get("message_thread_id")
 
-        # 1. Format and send Cover
+        # 1. Format and send Cover (con Caption de Portada)
         caption = formatear_mensaje_portada(book_data)
         cover_data = book_data.get("cover_bytes") or book_data.get("cover")
 
-        # El helper send_photo_bytes ya maneja el fallback de thread internamente
         await send_photo_bytes(
             self.bot,
             target_id,
@@ -66,13 +65,10 @@ class TelegramPublisherProvider(PublisherProvider):
             message_thread_id=thread_id,
         )
 
-        # 2. Get and Send Synopsis
+        # 2. Get and Send Synopsis (Mensaje separado)
         sinopsis = (
             book_data.get("description") or book_data.get("summary") or book_data.get("sinopsis")
         )
-
-        # No OPDS fallback needed in local-only mode
-        pass
 
         if sinopsis:
             sinopsis_esc = escapar_html(sinopsis)
@@ -92,44 +88,64 @@ class TelegramPublisherProvider(PublisherProvider):
             except Exception as e:
                 logger.error(f"Error sending synopsis: {e}")
 
-        # 3. Send Buttons/Interactive part
-        if options.get("with_buttons", True):
-            # Info text (Version, Date, Size)
-            info_text = self._format_info_text(book_data)
-            keyboard = options.get("custom_keyboard")
+        # 3. Send File + Info (Documento con info en el caption)
+        info_text = self._format_info_text(book_data)
+        epub_data = (
+            book_data.get("epub_bytes") or book_data.get("epub_buffer") or book_data.get("filepath")
+        )
 
-            if not keyboard:
-                keyboard = [
-                    [
-                        InlineKeyboardButton("📥 Descargar", callback_data="descargar_confirm"),
-                        InlineKeyboardButton("↩️ Volver", callback_data="volver_ultima"),
-                    ]
+        keyboard = options.get("custom_keyboard")
+        if not keyboard and options.get("with_buttons", True):
+            keyboard = [
+                [
+                    InlineKeyboardButton("📥 Descargar", callback_data="descargar_confirm"),
+                    InlineKeyboardButton("↩️ Volver", callback_data="volver_ultima"),
                 ]
+            ]
+        reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
+
+        if epub_data:
+            from urllib.parse import unquote, urlparse
+
+            fname = book_data.get("filename")
+            if not fname and book_data.get("url"):
+                fname = unquote(urlparse(book_data["url"]).path.split("/")[-1])
+            if not fname:
+                fname = "archivo.epub"
 
             try:
-                # Send Info Message
+                sent_doc = await send_doc_bytes(
+                    self.bot,
+                    target_id,
+                    info_text,
+                    epub_data,
+                    filename=fname,
+                    parse_mode="HTML",
+                    message_thread_id=thread_id,
+                    reply_markup=reply_markup,
+                )
+
+                if "state" in options and sent_doc:
+                    options["state"]["msg_info_id"] = sent_doc.message_id
+                    # Para compatibilidad con el resto del bot que espera msg_botones_id
+                    options["state"]["msg_botones_id"] = sent_doc.message_id
+
+            except Exception as e:
+                logger.error(f"Error sending file in publication: {e}")
+        else:
+            # Fallback if no file is available: send info as text + buttons
+            try:
                 msg_info = await self._send_message(
                     chat_id=target_id,
                     text=info_text,
                     parse_mode="HTML",
                     thread_id=thread_id,
+                    reply_markup=reply_markup,
                 )
-
-                # Send Buttons Message
-                msg_buttons = await self._send_message(
-                    chat_id=target_id,
-                    text="¿Deseas descargar este libro?",
-                    reply_markup=InlineKeyboardMarkup(keyboard),
-                    thread_id=thread_id,
-                )
-
-                # Return IDs if needed for state management
                 if "state" in options:
                     options["state"]["msg_info_id"] = msg_info.message_id
-                    options["state"]["msg_botones_id"] = msg_buttons.message_id
-
             except Exception as e:
-                logger.error(f"Error sending action buttons: {e}")
+                logger.error(f"Error sending info message (fallback): {e}")
 
         return True
 

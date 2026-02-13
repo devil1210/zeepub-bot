@@ -37,6 +37,7 @@ async def send_photo_bytes(
     filename="cover.jpg",
     parse_mode=None,
     message_thread_id=None,
+    reply_markup=None,
 ):
     """Envía imagen desde bytes o ruta de archivo."""
     if not data_or_path:
@@ -54,6 +55,7 @@ async def send_photo_bytes(
                     caption=caption,
                     parse_mode=parse_mode,
                     message_thread_id=message_thread_id,
+                    reply_markup=reply_markup,
                 )
             except BadRequest as e:
                 if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -65,6 +67,7 @@ async def send_photo_bytes(
                         caption=caption,
                         parse_mode=parse_mode,
                         message_thread_id=None,
+                        reply_markup=reply_markup,
                     )
                 raise e
 
@@ -90,6 +93,7 @@ async def send_photo_bytes(
                             caption=caption,
                             parse_mode=parse_mode,
                             message_thread_id=message_thread_id,
+                            reply_markup=reply_markup,
                         )
                     except BadRequest as e:
                         if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -100,6 +104,7 @@ async def send_photo_bytes(
                                 caption=caption,
                                 parse_mode=parse_mode,
                                 message_thread_id=None,
+                                reply_markup=reply_markup,
                             )
                         raise e
             except Exception:
@@ -113,6 +118,7 @@ async def send_photo_bytes(
                             caption=caption,
                             parse_mode=parse_mode,
                             message_thread_id=message_thread_id,
+                            reply_markup=reply_markup,
                         )
                     except BadRequest as e:
                         if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -123,6 +129,7 @@ async def send_photo_bytes(
                                 caption=caption,
                                 parse_mode=parse_mode,
                                 message_thread_id=None,
+                                reply_markup=reply_markup,
                             )
                         raise e
     except Exception as e:
@@ -138,6 +145,7 @@ async def send_doc_bytes(
     filename="file.epub",
     parse_mode=None,
     message_thread_id=None,
+    reply_markup=None,
 ):
     """Envía documento EPUB desde bytes o ruta de archivo."""
     if not data_or_path:
@@ -155,6 +163,7 @@ async def send_doc_bytes(
                     caption=caption,
                     parse_mode=parse_mode,
                     message_thread_id=message_thread_id,
+                    reply_markup=reply_markup,
                 )
             except BadRequest as e:
                 if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -165,6 +174,7 @@ async def send_doc_bytes(
                         caption=caption,
                         parse_mode=parse_mode,
                         message_thread_id=None,
+                        reply_markup=reply_markup,
                     )
                 raise e
         elif isinstance(data_or_path, str) and await asyncio.to_thread(
@@ -194,6 +204,7 @@ async def send_doc_bytes(
                             caption=caption,
                             parse_mode=parse_mode,
                             message_thread_id=message_thread_id,
+                            reply_markup=reply_markup,
                         )
                     except BadRequest as e:
                         if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -204,6 +215,7 @@ async def send_doc_bytes(
                                 caption=caption,
                                 parse_mode=parse_mode,
                                 message_thread_id=None,
+                                reply_markup=reply_markup,
                             )
                         raise e
                 except Exception:
@@ -219,6 +231,7 @@ async def send_doc_bytes(
                         caption=caption,
                         parse_mode=parse_mode,
                         message_thread_id=message_thread_id,
+                        reply_markup=reply_markup,
                     )
                 except BadRequest as e:
                     if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -229,6 +242,7 @@ async def send_doc_bytes(
                             caption=caption,
                             parse_mode=parse_mode,
                             message_thread_id=None,
+                            reply_markup=reply_markup,
                         )
                     raise e
     except Exception as e:
