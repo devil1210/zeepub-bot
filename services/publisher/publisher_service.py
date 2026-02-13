@@ -33,6 +33,9 @@ class TelegramPublisherProvider(PublisherProvider):
         "#{slug}"
     )
 
+    # Calidad de portada por defecto: 'original', 'high', 'medium', 'low'
+    COVER_QUALITY = "low"
+
     def __init__(self, bot=None):
         self.bot = bot
 
@@ -64,7 +67,29 @@ class TelegramPublisherProvider(PublisherProvider):
 
         # 1. Format and send Cover (con Caption de Portada)
         caption = formatear_mensaje_portada(book_data)
-        cover_data = book_data.get("cover_bytes") or book_data.get("cover")
+
+        # Selección de calidad de portada
+        quality = options.get("cover_quality") or self.COVER_QUALITY
+        cover_key = f"cover_{quality}"
+        cover_path_or_url = book_data.get(cover_key) or book_data.get("cover")
+
+        # Prioridad: Bytes directos > URL/Path
+        cover_data = book_data.get("cover_bytes")
+        if not cover_data and cover_path_or_url:
+            if isinstance(cover_path_or_url, str) and (
+                cover_path_or_url.startswith("http://") or cover_path_or_url.startswith("https://")
+            ):
+                from utils.http_client import fetch_bytes
+
+                # Fetch bytes from URL
+                auth = None
+                if config.OPDS_AUTH:
+                    import aiohttp
+
+                    auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
+                cover_data = await fetch_bytes(cover_path_or_url, timeout=15, auth=auth)
+            else:
+                cover_data = cover_path_or_url
 
         sent_photo = await send_photo_bytes(
             self.bot,
