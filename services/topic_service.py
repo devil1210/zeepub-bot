@@ -36,7 +36,7 @@ class TopicService:
         if not user_data:
             return {}
 
-        settings = user_data.get("settings", {})
+        settings = user_data.settings or {}
         topics = settings.get("topics", {})
 
         if topics:
@@ -68,7 +68,7 @@ class TopicService:
         user_data = await user_repo.get_by_id(user_id)
         if not user_data:
             return None
-        return user_data.get("settings", {}).get("topics", {}).get(slug)
+        return (user_data.settings or {}).get("topics", {}).get(slug)
 
 
 topic_service = TopicService()

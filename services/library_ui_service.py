@@ -6,6 +6,7 @@ from telegram.ext import ContextTypes
 
 from core.state_manager import state_manager
 from services.library_service import LibraryService
+from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +61,18 @@ async def mostrar_generos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     st["titulo"] = "🏷️ Géneros"
 
     text = "<b>🏷️ Selecciona un Género:</b>"
-    await update.callback_query.edit_message_text(
-        text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
-    )
+    if update.callback_query:
+        await update.callback_query.edit_message_text(
+            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML",
+            message_thread_id=get_thread_id(update),
+        )
 
 
 async def mostrar_series(
@@ -129,9 +139,18 @@ async def mostrar_series(
     st["titulo"] = title
 
     text = f"<b>{title}</b>\nResultados: {data['total']} series."
-    await update.callback_query.edit_message_text(
-        text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
-    )
+    if update.callback_query:
+        await update.callback_query.edit_message_text(
+            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML",
+            message_thread_id=get_thread_id(update),
+        )
 
 
 async def mostrar_volumenes_local(
@@ -170,9 +189,18 @@ async def mostrar_volumenes_local(
     st["current_series_hash"] = series_hash
 
     text = f"<b>📖 {series_name}</b>\n\nSelecciona un volumen para descargar:"
-    await update.callback_query.edit_message_text(
-        text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
-    )
+    if update.callback_query:
+        await update.callback_query.edit_message_text(
+            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML",
+            message_thread_id=get_thread_id(update),
+        )
 
 
 async def mostrar_autores_local(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -195,9 +223,18 @@ async def mostrar_autores_local(update: Update, context: ContextTypes.DEFAULT_TY
     st["titulo"] = "✍️ Autores"
 
     text = "<b>✍️ Selecciona un Autor:</b>"
-    await update.callback_query.edit_message_text(
-        text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
-    )
+    if update.callback_query:
+        await update.callback_query.edit_message_text(
+            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML",
+            message_thread_id=get_thread_id(update),
+        )
 
 
 async def mostrar_resultados_locales(
@@ -239,8 +276,6 @@ async def mostrar_resultados_locales(
         )
     else:
         # Si viene de handle_search_text (mensaje nuevo)
-        from utils.helpers import get_thread_id
-
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,

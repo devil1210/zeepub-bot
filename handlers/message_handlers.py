@@ -132,7 +132,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_text = "✅ Contraseña correcta. Elige destino:"
             text_success = (
-                cms.get_text("evil_password_success") if (cms and cms.enabled) else base_text
+                await cms.get_text("evil_password_success") if (cms and cms.enabled) else base_text
             )
 
             # Editar el prompt original si se guardó
@@ -165,7 +165,9 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_fail = "❌ Contraseña incorrecta."
-            text_fail = cms.get_text("evil_password_fail") if (cms and cms.enabled) else base_fail
+            text_fail = (
+                await cms.get_text("evil_password_fail") if (cms and cms.enabled) else base_fail
+            )
 
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -228,15 +230,6 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if st.get("esperando_busqueda"):
         logger.debug(f"Usuario {uid} buscando: {text}")
         st["esperando_busqueda"] = False
-
-        # API 9.3: Routing to Búsquedas topic in private forums
-        effective_thread_id = thread_id
-        if chat_type == "private":
-            from services.topic_service import topic_service
-
-            t_id = await topic_service.get_topic_id(uid, "busquedas")
-            if t_id:
-                effective_thread_id = t_id
 
         # Búsqueda local
         from services.library_ui_service import mostrar_resultados_locales
