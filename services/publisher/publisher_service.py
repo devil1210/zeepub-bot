@@ -50,6 +50,7 @@ class TelegramPublisherProvider(PublisherProvider):
         """
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
+        from config.config_settings import config
         from services.telegram_service import send_doc_bytes, send_photo_bytes
         from utils.helpers import (
             escapar_html,
