@@ -94,14 +94,9 @@ class TelegramPublisherProvider(PublisherProvider):
             book_data.get("epub_bytes") or book_data.get("epub_buffer") or book_data.get("filepath")
         )
 
+        # Si es una publicación con archivo, no solemos querer botones de "Descargar"
+        # ya que el archivo está ahí mismo. Solo usamos botones si se pasan customizados.
         keyboard = options.get("custom_keyboard")
-        if not keyboard and options.get("with_buttons", True):
-            keyboard = [
-                [
-                    InlineKeyboardButton("📥 Descargar", callback_data="descargar_confirm"),
-                    InlineKeyboardButton("↩️ Volver", callback_data="volver_ultima"),
-                ]
-            ]
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
 
         if epub_data:
@@ -127,13 +122,22 @@ class TelegramPublisherProvider(PublisherProvider):
 
                 if "state" in options and sent_doc:
                     options["state"]["msg_info_id"] = sent_doc.message_id
-                    # Para compatibilidad con el resto del bot que espera msg_botones_id
                     options["state"]["msg_botones_id"] = sent_doc.message_id
 
             except Exception as e:
                 logger.error(f"Error sending file in publication: {e}")
         else:
-            # Fallback if no file is available: send info as text + buttons
+            # Fallback: Si NO hay archivo, entonces sí ponemos botones por defecto
+            # para que el usuario pueda ir a buscarlo al bot.
+            if not keyboard and options.get("with_buttons", True):
+                bot_info = await self.bot.get_me()
+                keyboard = [
+                    [
+                        InlineKeyboardButton("🤖 Ir al Bot", url=f"https://t.me/{bot_info.username}"),
+                    ]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+
             try:
                 msg_info = await self._send_message(
                     chat_id=target_id,
