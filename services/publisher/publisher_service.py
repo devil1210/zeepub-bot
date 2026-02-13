@@ -23,6 +23,16 @@ class PublisherProvider(ABC):
 
 
 class TelegramPublisherProvider(PublisherProvider):
+    # Plantillas por defecto para facilitar edición/copia
+    SYNOPSIS_TEMPLATE = "<b>Sinopsis:</b>\n<blockquote>{sinopsis}</blockquote>\n#{slug}"
+    INFO_TEMPLATE = (
+        "📂 <b>{titulo}</b>\n"
+        "ℹ️ Versión Epub: {version}\n"
+        "📅 Actualizado: {fecha}\n"
+        "📦 Tamaño: {size_mb:.2f} MB{rating_txt}\n"
+        "#{slug}"
+    )
+
     def __init__(self, bot=None):
         self.bot = bot
 
@@ -56,7 +66,7 @@ class TelegramPublisherProvider(PublisherProvider):
         caption = formatear_mensaje_portada(book_data)
         cover_data = book_data.get("cover_bytes") or book_data.get("cover")
 
-        await send_photo_bytes(
+        sent_photo = await send_photo_bytes(
             self.bot,
             target_id,
             caption,
@@ -64,6 +74,18 @@ class TelegramPublisherProvider(PublisherProvider):
             parse_mode="HTML",
             message_thread_id=thread_id,
         )
+
+        # Fallback: si no hay portada, enviamos el texto de la información igualmente
+        if not sent_photo:
+            try:
+                await self._send_message(
+                    chat_id=target_id,
+                    text=caption,
+                    parse_mode="HTML",
+                    thread_id=thread_id,
+                )
+            except Exception as e:
+                logger.error(f"Error sending novel info (text fallback): {e}")
 
         # 2. Get and Send Synopsis (Mensaje separado)
         sinopsis = (
@@ -73,11 +95,10 @@ class TelegramPublisherProvider(PublisherProvider):
         if sinopsis:
             sinopsis_esc = escapar_html(sinopsis)
             slug = generar_slug_from_meta(book_data)
-            text = (
-                f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{slug}"
-                if slug
-                else f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>"
-            )
+            text = self.SYNOPSIS_TEMPLATE.format(sinopsis=sinopsis_esc, slug=slug or "")
+            if not slug:
+                text = text.replace("\n#", "").strip()
+
             try:
                 await self._send_message(
                     chat_id=target_id,
@@ -196,16 +217,18 @@ class TelegramPublisherProvider(PublisherProvider):
         if avg and avg > 0:
             rating_txt = f"\n⭐ {avg:.1f} ({count} votos)"
 
-        info_text = (
-            f"📂 <b>{titulo}</b>\n"
-            f"ℹ️ Versión Epub: {version}\n"
-            f"📅 Actualizado: {fecha}\n"
-            f"📦 Tamaño: {size_mb:.2f} MB{rating_txt}"
+        slug = generar_slug_from_meta(meta)
+        info_text = self.INFO_TEMPLATE.format(
+            titulo=titulo,
+            version=version,
+            fecha=fecha,
+            size_mb=size_mb,
+            rating_txt=rating_txt,
+            slug=slug or "",
         )
 
-        slug = generar_slug_from_meta(meta)
-        if slug:
-            info_text += f"\n#{slug}"
+        if not slug:
+            info_text = info_text.replace("\n#", "").strip()
 
         return info_text
 
