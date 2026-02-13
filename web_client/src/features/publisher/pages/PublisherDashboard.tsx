@@ -22,7 +22,8 @@ import {
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { TemplateModal } from '../components/TemplateModal';
 import { ScheduleModal } from '../components/ScheduleModal';
-import { PublicationTemplate, PublicationQueueItem } from '../services/publisherApi';
+import { ChannelModal } from '../components/ChannelModal';
+import { PublicationTemplate, PublicationQueueItem, PublicationChannel } from '../services/publisherApi';
 
 export const PublisherDashboard: React.FC = () => {
     const { settings } = useTheme();
@@ -37,6 +38,8 @@ export const PublisherDashboard: React.FC = () => {
         deleteQueueItem,
         toggleFavorite,
         promoteDiscovered,
+        saveChannel,
+        deleteChannel,
         saveTemplate,
         deleteTemplate
     } = usePublisher();
@@ -47,6 +50,8 @@ export const PublisherDashboard: React.FC = () => {
     const [editingQueueItem, setEditingQueueItem] = useState<PublicationQueueItem | null>(null);
     const [selectedBookHash, setSelectedBookHash] = useState('');
     const [selectedBookTitle, setSelectedBookTitle] = useState('');
+    const [isChannelModalOpen, setIsChannelModalOpen] = useState(false);
+    const [editingChannel, setEditingChannel] = useState<PublicationChannel | null>(null);
 
     const handleCreateTemplate = () => {
         setEditingTemplate(null);
@@ -63,6 +68,16 @@ export const PublisherDashboard: React.FC = () => {
         setSelectedBookHash(item.book_hash);
         setSelectedBookTitle('Editando Publicación');
         setIsScheduleModalOpen(true);
+    };
+
+    const handleCreateChannel = () => {
+        setEditingChannel(null);
+        setIsChannelModalOpen(true);
+    };
+
+    const handleEditChannel = (channel: PublicationChannel) => {
+        setEditingChannel(channel);
+        setIsChannelModalOpen(true);
     };
 
     if (loading) {
@@ -213,7 +228,10 @@ export const PublisherDashboard: React.FC = () => {
                         <div className="flex flex-col gap-3">
                             <div className="flex justify-between items-center px-1">
                                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Canales Vinculados</h2>
-                                <button className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20">
+                                <button
+                                    onClick={handleCreateChannel}
+                                    className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                                >
                                     <Plus className="w-3.5 h-3.5" /> Nuevo
                                 </button>
                             </div>
@@ -249,8 +267,18 @@ export const PublisherDashboard: React.FC = () => {
                                             >
                                                 <Star className={`w-4 h-4 ${channel.is_favorite ? 'fill-yellow-400' : ''}`} />
                                             </button>
-                                            <button className="p-2 text-gray-400 hover:text-white transition-colors"><Edit3 className="w-4 h-4" /></button>
-                                            <button className="p-2 text-gray-400 hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                            <button
+                                                onClick={() => handleEditChannel(channel)}
+                                                className="p-2 text-gray-400 hover:text-white transition-colors"
+                                            >
+                                                <Edit3 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => deleteChannel(channel.id)}
+                                                className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
                                 ))
@@ -367,6 +395,13 @@ export const PublisherDashboard: React.FC = () => {
                 bookHash={selectedBookHash}
                 bookTitle={selectedBookTitle}
                 editingItem={editingQueueItem}
+            />
+
+            <ChannelModal
+                isOpen={isChannelModalOpen}
+                onClose={() => setIsChannelModalOpen(false)}
+                onSave={saveChannel}
+                editingChannel={editingChannel}
             />
         </div>
     );

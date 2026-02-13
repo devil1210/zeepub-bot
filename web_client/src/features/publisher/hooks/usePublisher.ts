@@ -102,6 +102,12 @@ export const usePublisher = () => {
         updateQueueItem,
         deleteQueueItem,
         saveChannel,
+        deleteChannel: async (id: number) => {
+            if (!window.confirm('¿Estás seguro de eliminar este canal?')) return;
+            const res = await publisherApi.deleteChannel(id);
+            if (res.success) await fetchData();
+            return res;
+        },
         toggleFavorite,
         promoteDiscovered,
         saveTemplate,
