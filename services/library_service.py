@@ -617,6 +617,7 @@ class LibraryService:
         """
         Escanea la biblioteca en busca de series con nombres similares (English/Spanish)
         pero con hashes distintos, indicando posibles duplicados.
+        Utiliza procesamiento paralelo para evitar timeouts HTTP.
         """
         async with pg_manager.get_session() as session:
             try:
@@ -628,13 +629,13 @@ class LibraryService:
                 series_list = res.scalars().all()
 
                 from difflib import SequenceMatcher
-
+                import asyncio
                 from services.ai_service import AIService
 
                 suggestions = []
+                # Pares de candidatos (s1, s2)
+                candidates = []
                 processed_pairs = set()
-                ai_calls_made = 0
-                max_ai_calls = 50  # Prevent infinite quota drain
 
                 # Agrupar por autor para optimizar
                 author_map: dict[str, list[SeriesMetadata]] = {}
@@ -644,30 +645,22 @@ class LibraryService:
                         author_map[auth] = []
                     author_map[auth].append(s)
 
-                logger.info(f"🔍 Iniciando escaneo de duplicados por IA entre {len(series_list)} series.")
+                logger.info(
+                    f"🔍 Identificando candidatos de duplicados entre {len(series_list)} series."
+                )
 
                 for auth, group in author_map.items():
                     if len(group) < 2:
                         continue
-                    
-                    if ai_calls_made >= max_ai_calls:
-                        logger.warning("Reached MAX AI calls (50). Stopping scan.")
-                        break
 
                     for i, s1 in enumerate(group):
-                        if ai_calls_made >= max_ai_calls:
-                            break
-                            
                         for s2 in group[i + 1 :]:
-                            if ai_calls_made >= max_ai_calls:
-                                break
-                                
                             pair_id = tuple(sorted([s1.series_hash, s2.series_hash]))
                             if pair_id in processed_pairs:
                                 continue
                             processed_pairs.add(pair_id)
 
-                            # 2. Heurística inicial
+                            # Heurística inicial (SequenceMatcher)
                             n1_en = (s1.series_english or s1.series_name or "").lower()
                             n1_es = (s1.series_spanish or "").lower()
                             n2_en = (s2.series_english or s2.series_name or "").lower()
@@ -688,39 +681,77 @@ class LibraryService:
                             max_sim = max(similarities)
 
                             if max_sim > 0.7:
-                                logger.info(f"🤖 IA analizando posible duplicado ({max_sim:.2f}): '{s1.series_name}' vs '{s2.series_name}'")
-                                ai_calls_made += 1
+                                candidates.append((s1, s2, max_sim))
+
+                if not candidates:
+                    return []
+
+                # Ordenar candidatos por similitud para procesar los más probables primero
+                candidates.sort(key=lambda x: x[2], reverse=True)
+
+                # 2. Procesar candidatos con IA en paralelo (con límite de concurrencia)
+                # Limitamos a 8 llamadas simultáneas para no saturar cuota/memoria
+                semaphore = asyncio.Semaphore(8)
+                max_ai_calls = 100
+                candidates_to_process = candidates[:max_ai_calls]
+
+                logger.info(
+                    f"🤖 Procesando {len(candidates_to_process)} candidatos con IA en paralelo (Threshold: 0.7, Max Calls: {max_ai_calls})..."
+                )
+
+                async def check_pair(s1, s2, sim):
+                    async with semaphore:
+                        try:
+                            # Timeout individual de 30s para evitar bloqueos
+                            async with asyncio.timeout(30):
+                                logger.debug(
+                                    f"IA analizando: '{s1.series_name}' vs '{s2.series_name}' (sim: {sim:.2f})"
+                                )
                                 ai_result = await AIService.analyze_potential_merge(
                                     s1.to_dict(), s2.to_dict()
                                 )
+                            if ai_result and ai_result.get("is_same"):
+                                logger.info(
+                                    f"✅ IA confirmó duplicado: '{s1.series_name}' == '{s2.series_name}' (Conf: {ai_result.get('confidence')})"
+                                )
+                                return {
+                                    "series_a": {
+                                        "hash": s1.series_hash,
+                                        "name": s1.series_name,
+                                        "english": s1.series_english,
+                                        "spanish": s1.series_spanish,
+                                        "author": s1.author,
+                                        "count": s1.book_count,
+                                    },
+                                    "series_b": {
+                                        "hash": s2.series_hash,
+                                        "name": s2.series_name,
+                                        "english": s2.series_english,
+                                        "spanish": s2.series_spanish,
+                                        "author": s2.author,
+                                        "count": s2.book_count,
+                                    },
+                                    "reason": ai_result.get("reason"),
+                                    "confidence": ai_result.get("confidence"),
+                                    "suggested_name": ai_result.get("suggested_main_name"),
+                                }
+                        except asyncio.TimeoutError:
+                            logger.warning(
+                                f"⏰ Timeout IA para: '{s1.series_name}' vs '{s2.series_name}'"
+                            )
+                        except Exception as inner_e:
+                            logger.error(
+                                f"Error checking pair {s1.series_name}/{s2.series_name}: {inner_e}"
+                            )
+                        return None
 
-                                if ai_result and ai_result.get("is_same"):
-                                    logger.info(f"✅ IA confirmó duplicado: '{s1.series_name}' == '{s2.series_name}'")
-                                    suggestions.append(
-                                        {
-                                            "series_a": {
-                                                "hash": s1.series_hash,
-                                                "name": s1.series_name,
-                                                "english": s1.series_english,
-                                                "spanish": s1.series_spanish,
-                                                "author": s1.author,
-                                                "count": s1.book_count,
-                                            },
-                                            "series_b": {
-                                                "hash": s2.series_hash,
-                                                "name": s2.series_name,
-                                                "english": s2.series_english,
-                                                "spanish": s2.series_spanish,
-                                                "author": s2.author,
-                                                "count": s2.book_count,
-                                            },
-                                            "reason": ai_result.get("reason"),
-                                            "confidence": ai_result.get("confidence"),
-                                            "suggested_name": ai_result.get("suggested_main_name"),
-                                        }
-                                    )
+                tasks = [check_pair(c[0], c[1], c[2]) for c in candidates_to_process]
+                results = await asyncio.gather(*tasks)
 
-                logger.info(f"🏁 Escaneo finalizado. Encontradas {len(suggestions)} sugerencias. AI calls: {ai_calls_made}")
+                # Filtrar resultados válidos
+                suggestions = [r for r in results if r is not None]
+
+                logger.info(f"🏁 Escaneo finalizado. Encontradas {len(suggestions)} sugerencias.")
                 return suggestions
 
             except Exception as e:

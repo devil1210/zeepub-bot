@@ -472,7 +472,12 @@ class AIService:
                 return None
             txt = AIService._extract_json_from_text(response_text)
             res = json.loads(txt)
-            if res and isinstance(res, dict) and res.get("is_same") and res.get("confidence", 0) > 0.85:
+            if (
+                res
+                and isinstance(res, dict)
+                and res.get("is_same")
+                and res.get("confidence", 0) > 0.8
+            ):
                 # Normalizar booleano si llegó como string
                 if isinstance(res["is_same"], str):
                     res["is_same"] = res["is_same"].lower() == "true"
