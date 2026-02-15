@@ -48,6 +48,7 @@ class User(Base):
     can_upload_epub = Column(Boolean, default=False)
     allow_theme_templates = Column(Boolean, default=False)
     roles = Column(JSON, default=list)
+    bypass_limits = Column(Boolean, default=False)
 
     # Métricas
     total_downloads = Column(Integer, default=0)
@@ -114,6 +115,7 @@ class User(Base):
             "allow_theme_templates": self.allow_theme_templates,
             "beta_tester": self.beta_tester,
             "roles": self.roles or [],
+            "bypass_limits": self.bypass_limits,
         }
 
 

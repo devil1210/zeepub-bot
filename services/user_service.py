@@ -830,23 +830,51 @@ async def sync_user_from_env(telegram_id: int, tg_user=None) -> dict | None:
 
 async def sync_user_profile_photo(telegram_id: int, bot) -> str | None:
     """
-    Obtiene la foto de perfil del usuario desde Telegram y la guarda localmente.
-    Retorna la URL relativa para acceder a la imagen.
+    Obtiene la foto de perfil y la información de identidad del usuario desde Telegram.
+    Sincroniza username, nombre y guarda la foto localmente.
     """
     try:
+        # 0. Sincronizar información básica de identidad
+        tg_username = None
+        tg_full_name = None
+        try:
+            chat = await bot.get_chat(telegram_id)
+            tg_username = chat.username
+            tg_full_name = chat.full_name
+            logger.info(
+                f"Sincronizando identidad para {telegram_id}: @{tg_username} ({tg_full_name})"
+            )
+        except Exception as e:
+            logger.warning(f"No se pudo obtener información de chat para {telegram_id}: {e}")
+
         # 1. Obtener fotos de perfil del usuario
         photos = await bot.get_user_profile_photos(telegram_id, limit=1)
-        if not photos or not photos.photos:
-            logger.info(f"Usuario {telegram_id} no tiene fotos de perfil públicas.")
-            return None
 
-        # 2. Obtener la versión más pequeña/mediana (index 0 de la primera foto)
-        # photos.photos[0] es la lista de tamaños de la foto más reciente
-        # Tomamos index 0 o 1 para que no sea gigante
-        photo_size = photos.photos[0][-1]  # La última suele ser la mejor calidad
+        # Obtenemos info actual para no perder datos
+        info = await get_user_info(telegram_id)
+        level_id = info.get("level_id", 6) if info else 6
+        level_name = info.get("level", "free") if info else "free"
+        current_photo = info.get("photo_url") if info else None
+
+        if not photos or not photos.photos:
+            logger.info(
+                f"Usuario {telegram_id} no tiene fotos de perfil públicas. Actualizando solo identidad."
+            )
+            await user_repo.upsert(
+                telegram_id=telegram_id,
+                level=level_name,
+                level_id=level_id,
+                username=tg_username or info.get("username") if info else None,
+                name=tg_full_name or info.get("name") if info else None,
+                nickname=tg_full_name or info.get("nickname") if info else None,
+            )
+            await user_cache.invalidate(f"user_effective:{telegram_id}")
+            return current_photo
+
+        # 2. Procesar foto si existe
+        photo_size = photos.photos[0][-1]
         file = await bot.get_file(photo_size.file_id)
 
-        # 3. Preparar ruta local
         filename = f"user_{telegram_id}.jpg"
         thumb_filename = f"user_{telegram_id}_thumb.jpg"
         local_path = os.path.join(PROFILES_DIR, filename)
@@ -884,6 +912,9 @@ async def sync_user_profile_photo(telegram_id: int, bot) -> str | None:
             level=level_name,
             level_id=level_id,
             photo_url=relative_url,
+            username=tg_username or info.get("username") if info else None,
+            name=tg_full_name or info.get("name") if info else None,
+            nickname=tg_full_name or info.get("nickname") if info else None,
         )
 
         await user_cache.invalidate(f"user_effective:{telegram_id}")

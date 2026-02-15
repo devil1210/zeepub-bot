@@ -113,17 +113,32 @@ async def downloads_left(uid: int, tg_user: Any | None = None) -> int | str:
     from services.user_service import get_effective_user
 
     user_data = await get_effective_user(uid, tg_user=tg_user)
-    role = user_data.get("role", "free")
 
-    if role in ("admin", "staff", "premium"):
+    # Priority 1: Check for explicit bypass_limits permission
+    permissions = user_data.get("permissions", [])
+    if "bypass_limits" in permissions:
         return "ilimitadas"
 
-    if role == "vip":
-        max_dl = config.VIP_DOWNLOADS_PER_DAY
-    elif role == "white":
-        max_dl = config.WHITELIST_DOWNLOADS_PER_DAY
-    else:
-        max_dl = config.MAX_DOWNLOADS_PER_DAY
+    role = user_data.get("role", "free")
+    level_info = user_data.get("level_info", {})
+
+    # Priority 2: Use daily limit from DB level info
+    max_dl = level_info.get("dailyDownloads")
+
+    if max_dl is None:
+        # Fallback to config for legacy reasons
+        if role == "vip":
+            max_dl = config.VIP_DOWNLOADS_PER_DAY
+        elif role == "white":
+            max_dl = config.WHITELIST_DOWNLOADS_PER_DAY
+        elif role in ("premium", "staff"):
+            max_dl = 50  # Default for higher tiers if not in DB
+        else:
+            max_dl = config.MAX_DOWNLOADS_PER_DAY
+
+    # Priority 3: Final check for uninitialized or negative limits
+    if max_dl == -1:
+        return "ilimitadas"
 
     remaining = max_dl - used
     return remaining if remaining > 0 else 0

@@ -633,6 +633,8 @@ class LibraryService:
 
                 suggestions = []
                 processed_pairs = set()
+                ai_calls_made = 0
+                max_ai_calls = 50  # Prevent infinite quota drain
 
                 # Agrupar por autor para optimizar
                 author_map: dict[str, list[SeriesMetadata]] = {}
@@ -642,12 +644,24 @@ class LibraryService:
                         author_map[auth] = []
                     author_map[auth].append(s)
 
-                for _auth, group in author_map.items():
+                logger.info(f"🔍 Iniciando escaneo de duplicados por IA entre {len(series_list)} series.")
+
+                for auth, group in author_map.items():
                     if len(group) < 2:
                         continue
+                    
+                    if ai_calls_made >= max_ai_calls:
+                        logger.warning("Reached MAX AI calls (50). Stopping scan.")
+                        break
 
                     for i, s1 in enumerate(group):
+                        if ai_calls_made >= max_ai_calls:
+                            break
+                            
                         for s2 in group[i + 1 :]:
+                            if ai_calls_made >= max_ai_calls:
+                                break
+                                
                             pair_id = tuple(sorted([s1.series_hash, s2.series_hash]))
                             if pair_id in processed_pairs:
                                 continue
@@ -674,11 +688,14 @@ class LibraryService:
                             max_sim = max(similarities)
 
                             if max_sim > 0.7:
+                                logger.info(f"🤖 IA analizando posible duplicado ({max_sim:.2f}): '{s1.series_name}' vs '{s2.series_name}'")
+                                ai_calls_made += 1
                                 ai_result = await AIService.analyze_potential_merge(
                                     s1.to_dict(), s2.to_dict()
                                 )
 
                                 if ai_result and ai_result.get("is_same"):
+                                    logger.info(f"✅ IA confirmó duplicado: '{s1.series_name}' == '{s2.series_name}'")
                                     suggestions.append(
                                         {
                                             "series_a": {
@@ -703,6 +720,7 @@ class LibraryService:
                                         }
                                     )
 
+                logger.info(f"🏁 Escaneo finalizado. Encontradas {len(suggestions)} sugerencias. AI calls: {ai_calls_made}")
                 return suggestions
 
             except Exception as e:

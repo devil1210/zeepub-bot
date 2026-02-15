@@ -19,6 +19,7 @@ class Permission(Enum):
     MANAGE_SYSTEM = "manage_system"
     VIEW_LOGS = "view_logs"
     BETA_ACCESS = "beta_access"
+    BYPASS_LIMITS = "bypass_limits"
 
 
 class RBACService:
@@ -92,6 +93,8 @@ class RBACService:
             permissions.discard(Permission.REQUEST_BOOKS.value)
         if user_data.get("beta_tester"):
             permissions.add(Permission.BETA_ACCESS.value)
+        if user_data.get("bypass_limits"):
+            permissions.add(Permission.BYPASS_LIMITS.value)
 
         await self.perm_cache.set(cache_key, list(permissions))
         return permissions

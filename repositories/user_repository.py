@@ -86,8 +86,8 @@ class UserRepository(BaseRepository[User]):
 
         return {
             "id": str(user.telegram_id),
-            "username": user.username or "unknown",
-            "name": user.name or user.nickname,
+            "username": user.username or f"User_{user.telegram_id}",
+            "name": user.nickname or user.name or f"User_{user.telegram_id}",
             "role": user.role or "user",
             "photo_url": user.photo_url,
             "level": {
@@ -107,6 +107,7 @@ class UserRepository(BaseRepository[User]):
             "roles": user.roles or [],
             "insignias": user.insignias or [],
             "allow_theme_templates": user.allow_theme_templates,
+            "bypass_limits": user.bypass_limits,
             "settings": settings,
             "total_downloads": user.total_downloads or 0,
             "level_id": user.level_id or 6,
@@ -696,6 +697,7 @@ class UserRepository(BaseRepository[User]):
         allow_theme_templates: bool | None = None,
         beta_tester: bool | None = None,
         roles: list | None = None,
+        bypass_limits: bool | None = None,
         **kwargs,
     ) -> User:
         """
@@ -744,6 +746,8 @@ class UserRepository(BaseRepository[User]):
                 user.beta_tester = beta_tester
             if roles is not None:
                 user.roles = roles
+            if bypass_limits is not None:
+                user.bypass_limits = bypass_limits
 
             await session.commit()
             await session.refresh(user)

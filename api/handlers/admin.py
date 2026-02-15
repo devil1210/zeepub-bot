@@ -1093,8 +1093,21 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
             except Exception:
                 pass
 
-        level_id = data.get("levelId", existing.get("level_id", 6))
+        # Determine level_id and role
         role = data.get("role", existing.get("role", "free"))
+
+        level_id = data.get("levelId")
+        if not level_id:
+            # Fallback for old frontend versions
+            level_to_id = {"admin": 1, "staff": 2, "premium": 3, "vip": 4, "white": 5}
+            level_id = level_to_id.get(str(data.get("level", "")).lower(), 6)
+        else:
+            level_id = int(level_id)  # Ensure it's an integer if provided
+
+        # Enforcement: bypassLimits only for Premium+ (ID <= 3)
+        if data.get("bypassLimits") and level_id > 3:
+            logger.warning(f"Blocking bypassLimits for user {user_id} - level too low ({level_id})")
+            data["bypassLimits"] = False
 
         if data.get("isAdmin"):
             role = "admin"
@@ -1123,6 +1136,7 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
             "canUploadEpub": "can_upload_epub",
             "settings": "settings",
             "allowThemeTemplates": "allow_theme_templates",
+            "bypassLimits": "bypass_limits",
         }
 
         for frontend_key, db_key in fields_to_track.items():
@@ -1153,6 +1167,7 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
             insignias=new_insignias,
             created_by=int(user_data.get("telegram_id", 0)),
             has_library_access=data.get("hasLibraryAccess"),
+            bypass_limits=data.get("bypassLimits"),
             can_request_books=data.get("canRequestBooks"),
             can_upload_epub=data.get("canUploadEpub"),
             level_id=level_id,
@@ -1203,8 +1218,8 @@ async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dic
             "success": True,
             "user": {
                 "id": str(user_id),
-                "username": raw_user.get("username") or "",
-                "name": raw_user.get("name") or raw_user.get("nickname") or "Usuario",
+                "username": raw_user.get("username") or f"User_{user_id}",
+                "name": raw_user.get("nickname") or raw_user.get("name") or f"User_{user_id}",
                 "nickname": raw_user.get("nickname") or "",
                 "level": raw_user.get("level", "free"),
                 "roles": raw_user.get("roles") or [],
@@ -1228,6 +1243,7 @@ async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dic
                 ),
                 "insignias": raw_user.get("insignias") or [],
                 "settings": raw_user.get("settings") or {},
+                "bypassLimits": raw_user.get("bypass_limits", False),
                 "photo_url": access_info.get("photo_url") or raw_user.get("photo_url"),
             },
         }
