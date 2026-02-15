@@ -205,6 +205,14 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
 
     async def delete_template(self, template_id: int) -> bool:
         async with self.db_manager.get_session() as session:
+            # Desvincular de la cola antes de eliminar
+            stmt_update = (
+                update(PublicationQueue)
+                .where(PublicationQueue.template_id == template_id)
+                .values(template_id=None)
+            )
+            await session.execute(stmt_update)
+
             stmt = delete(PublicationTemplate).where(PublicationTemplate.id == template_id)
             result = await session.execute(stmt)
             await session.commit()

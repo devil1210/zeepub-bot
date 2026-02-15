@@ -119,6 +119,33 @@ async def handle_pub_get_templates(data: dict[str, Any], user_data: dict[str, An
     check_staff(user_data)
 
     templates = await pub_repo.get_templates(platform=data.get("platform"))
+
+    # Seed default templates if none exist for Telegram
+    has_telegram = any(t.platform == "telegram" for t in templates)
+    target_platform = data.get("platform")
+
+    if (not target_platform or target_platform == "telegram") and not has_telegram:
+        from services.publisher.publisher_service import TelegramPublisherProvider
+
+        defaults = [
+            PublicationTemplate(
+                name="Default Telegram Synopsis",
+                content=TelegramPublisherProvider.SYNOPSIS_TEMPLATE,
+                platform="telegram",
+                extra_config={"type": "synopsis"},
+            ),
+            PublicationTemplate(
+                name="Default Telegram Info",
+                content=TelegramPublisherProvider.INFO_TEMPLATE,
+                platform="telegram",
+                extra_config={"type": "info"},
+            ),
+        ]
+
+        for t in defaults:
+            created = await pub_repo.create_template(t)
+            templates.append(created)
+
     return {
         "templates": [
             {
