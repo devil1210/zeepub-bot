@@ -250,8 +250,12 @@ export const api = {
 
     // AI Hub
     getAiStats: () => rpc('ai_stats'),
-    getAiLists: (type: 'pending' | 'reviewed', limit: number = 100, offset: number = 0) =>
+    getAiProposals: () => rpc('ai_get_proposals'),
+    getAiScanStatus: () => rpc('admin_get_ai_scan_status'),
+    getAiLists: (type: 'pending' | 'reviewed' | 'queue' | 'learning', limit: number = 100, offset: number = 0) =>
         rpc('ai_get_lists', { type, limit, offset }),
+
+
 
     scanSeriesAi: (seriesHash: string, dryRun: boolean = false) =>
         rpc('ai_scan_series', { series_hash: seriesHash, dry_run: dryRun }),
@@ -270,9 +274,8 @@ export const api = {
     toggleAiBackgroundScan: (enabled: boolean) =>
         rpc('ai_toggle_background_scan', { enabled }),
 
-    getAiProposals: () => rpc('ai_get_proposals'),
-
     rejectAiProposal: (proposalId: number) => rpc('ai_reject_proposal', { proposal_id: proposalId }),
+
 
     applyAiMerge: (proposalId: number) => rpc('ai_apply_merge', { proposal_id: proposalId }),
 

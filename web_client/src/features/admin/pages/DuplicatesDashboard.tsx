@@ -30,6 +30,7 @@ interface DuplicateEntry {
 }
 
 interface AISeriesSuggestion {
+    id?: number; // Database ID if coming from MetadataProposal
     series_a: {
         hash: string;
         name: string;
@@ -84,16 +85,45 @@ export const DuplicatesDashboard: React.FC = () => {
         }
     };
 
+    const refreshAiProposals = async () => {
+        try {
+            const res = await (api as any).getAiProposals();
+            if (res.success) {
+                const merges = (res.proposals || [])
+                    .filter((p: any) => p.type === 'merge')
+                    .map((p: any) => ({
+                        id: p.id,
+                        series_a: p.proposal.series_a,
+                        series_b: p.proposal.series_b,
+                        reason: p.proposal.reason,
+                        confidence: p.proposal.confidence,
+                        suggested_name: p.proposal.suggested_main_name
+                    }));
+                setAiSuggestions(merges);
+            }
+
+            const status = await (api as any).getAiScanStatus();
+            if (status.success) {
+                setScanningAi(status.is_scanning);
+            }
+        } catch (error) {
+            console.error('Error refreshing AI proposals:', error);
+        }
+    };
+
     const fetchAiSeriesDuplicates = async () => {
         setScanningAi(true);
         try {
             const res = await (api as any).adminAiSeriesDuplicateScan();
-            if (res.success) {
-                setAiSuggestions(res.suggestions || []);
+            if (!res.success) {
+                alert(res.message || 'Error al iniciar escaneo');
+                setScanningAi(false);
+            } else {
+                // Iniciar polling
+                await refreshAiProposals();
             }
         } catch (error) {
             console.error('Error fetching AI series duplicates:', error);
-        } finally {
             setScanningAi(false);
         }
     };
@@ -161,16 +191,21 @@ export const DuplicatesDashboard: React.FC = () => {
 
         setMerging(true);
         try {
-            const res = await (api as any).adminMergeSeries(
-                selectedAiPair.series_a.hash,
-                selectedAiPair.series_b.hash,
-                newName || selectedAiPair.suggested_name
-            );
+            let res;
+            if (selectedAiPair.id) {
+                // Si viene de la DB (MetadataProposal), usamos la API de AI para aplicar merge
+                res = await (api as any).applyAiMerge(selectedAiPair.id);
+            } else {
+                // Fallback para escaneos directos (si los hubiera)
+                res = await (api as any).adminMergeSeries(
+                    selectedAiPair.series_a.hash,
+                    selectedAiPair.series_b.hash,
+                    newName || selectedAiPair.suggested_name
+                );
+            }
+
             if (res.success) {
-                setAiSuggestions(prev => prev.filter(p =>
-                    p.series_a.hash !== selectedAiPair.series_a.hash ||
-                    p.series_b.hash !== selectedAiPair.series_b.hash
-                ));
+                setAiSuggestions(prev => prev.filter(p => p.id !== selectedAiPair.id));
                 setSelectedAiPair(null);
                 alert('Series fusionadas con éxito');
             } else {
@@ -187,10 +222,23 @@ export const DuplicatesDashboard: React.FC = () => {
     useEffect(() => {
         if (activeTab === 'books') {
             fetchDuplicates();
-        } else if (activeTab === 'ai-series' && aiSuggestions.length === 0) {
-            fetchAiSeriesDuplicates();
+        } else if (activeTab === 'ai-series') {
+            refreshAiProposals();
         }
     }, [activeTab]);
+
+    // Polling effect for AI scanning
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (activeTab === 'ai-series' && scanningAi) {
+            interval = setInterval(() => {
+                refreshAiProposals();
+            }, 5000);
+        }
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [activeTab, scanningAi]);
 
     const filtered = duplicates.filter(d =>
         d.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -217,8 +265,8 @@ export const DuplicatesDashboard: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('books')}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'books'
-                                ? 'bg-amber-500 text-white shadow-lg'
-                                : 'text-gray-500 hover:text-white hover:bg-white/5'
+                            ? 'bg-amber-500 text-white shadow-lg'
+                            : 'text-gray-500 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         <HardDrive className="w-3.5 h-3.5" />
@@ -227,8 +275,8 @@ export const DuplicatesDashboard: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('ai-series')}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'ai-series'
-                                ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                                : 'text-gray-500 hover:text-white hover:bg-white/5'
+                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                            : 'text-gray-500 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         <Sparkles className="w-3.5 h-3.5" />

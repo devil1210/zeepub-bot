@@ -4,7 +4,8 @@ from typing import Any
 from sqlalchemy import String, and_, cast, exists, func, or_, select, text
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, SeriesMetadata, UserDownload
+from models.library_models import LocalBook, MetadataProposal, SeriesMetadata, UserDownload
+from datetime import datetime
 from repositories.book_repository import book_repo
 from repositories.series_repository import series_repo
 from schemas.library_schemas import BookDTO, CoverUrlDTO, SeriesDTO
@@ -13,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class LibraryService:
+    _is_ai_scanning = False
+
     @staticmethod
     async def search_books(
         query: str,
@@ -750,6 +753,46 @@ class LibraryService:
 
                 # Filtrar resultados válidos
                 suggestions = [r for r in results if r is not None]
+
+                # 3. Persistir propuestas en la base de datos
+                if suggestions:
+                    for sug in suggestions:
+                        hash_a = sug["series_a"]["hash"]
+                        hash_b = sug["series_b"]["hash"]
+
+                        # Crear objeto de propuesta compatible con handle_ai_apply_merge
+                        proposal_data = {
+                            "series_a": sug["series_a"],
+                            "series_b": sug["series_b"],
+                            "reason": sug["reason"],
+                            "confidence": sug["confidence"],
+                            "suggested_main_name": sug["suggested_name"],
+                            "suggested_spanish_name": sug["suggested_name"], # Fallback
+                        }
+
+                        # Verificar si ya existe una propuesta pendiente para este par
+                        exists_stmt = select(MetadataProposal).where(
+                            and_(
+                                MetadataProposal.series_hash == hash_a,
+                                MetadataProposal.secondary_hash == hash_b,
+                                MetadataProposal.status == "pending",
+                                MetadataProposal.type == "merge"
+                            )
+                        )
+                        existing_res = await session.execute(exists_stmt)
+                        if not existing_res.scalar():
+                            new_prop = MetadataProposal(
+                                series_hash=hash_a,
+                                secondary_hash=hash_b,
+                                proposal_data=proposal_data,
+                                type="merge",
+                                status="pending",
+                                created_at=datetime.utcnow()
+                            )
+                            session.add(new_prop)
+                    
+                    await session.commit()
+                    logger.info(f"✅ Se guardaron {len(suggestions)} propuestas de fusión en la base de datos.")
 
                 logger.info(f"🏁 Escaneo finalizado. Encontradas {len(suggestions)} sugerencias.")
                 return suggestions

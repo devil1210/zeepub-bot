@@ -1516,15 +1516,56 @@ async def handle_admin_clear_duplicates(data: dict[str, Any], user_data: dict[st
 async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
     from services.library_service import LibraryService
+    import threading
+    import asyncio
+
+    def run_ai_scan_in_thread():
+        # Crear un nuevo loop para el hilo secundario
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            LibraryService._is_ai_scanning = True
+            logger.info("🤖 Iniciando escaneo de duplicados por IA en segundo plano...")
+            loop.run_until_complete(LibraryService.find_ai_series_duplicates())
+            logger.info("🏁 Escaneo de duplicados por IA finalizado con éxito.")
+        except Exception as e:
+            logger.error(f"❌ Error en escaneo de duplicados por IA (Background): {e}", exc_info=True)
+        finally:
+            LibraryService._is_ai_scanning = False
+            loop.close()
 
     try:
-        suggestions = await LibraryService.find_ai_series_duplicates()
-        return {"success": True, "suggestions": suggestions}
+        if LibraryService._is_ai_scanning:
+            return {
+                "success": False,
+                "message": "⚠️ Ya hay un escaneo de duplicados por IA en curso.",
+            }
+
+        t = threading.Thread(target=run_ai_scan_in_thread)
+        t.start()
+
+        return {
+            "success": True,
+            "message": "Escaneo de duplicados por IA iniciado en segundo plano. Las propuestas aparecerán en la lista progresivamente.",
+        }
     except Exception as e:
+        logger.error(f"Error starting background AI scan: {e}")
         return {"success": False, "message": str(e)}
 
 
+
+async def handle_admin_get_ai_scan_status(data: dict[str, Any], user_data: dict[str, Any]):
+    check_staff(user_data)
+    from services.library_service import LibraryService
+
+    return {
+        "success": True,
+        "is_scanning": LibraryService._is_ai_scanning,
+    }
+
+
 async def handle_admin_merge_series(data: dict[str, Any], user_data: dict[str, Any]):
+
     check_staff(user_data)
     target_hash = data.get("target_hash")
     source_hash = data.get("source_hash")
