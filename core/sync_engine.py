@@ -80,6 +80,7 @@ class SyncEngine:
                         "ui_nav_opacity": lvl.get("ui_nav_opacity", 80),
                         "ui_glass_blur": lvl.get("ui_glass_blur", 12),
                         "ui_cover_width": lvl.get("ui_cover_width", 120),
+                        "distribution": lvl.get("distribution", {}),
                         "ui_accent_opacity": lvl.get("ui_accent_opacity", 20),
                         "panel_transparency": lvl.get("panel_transparency", 60),
                         "background_color": lvl.get("background_color", "#0f172a"),
@@ -188,7 +189,7 @@ class SyncEngine:
 
             async with pg_manager.get_session() as session:
                 for s in res.data:
-                    s_data = {k: v for k, v in s.items()}
+                    s_data = dict(s.items())
                     stmt = (
                         pg_insert(UserUISettings)
                         .values(**s_data)

@@ -1,10 +1,12 @@
 import asyncio
 import os
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import text
+
 from dotenv import load_dotenv
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 load_dotenv()
+
 
 async def run_migration():
     # Convertir URL a asyncpg si es necesario
@@ -12,19 +14,20 @@ async def run_migration():
     if not db_url:
         print("Error: DATABASE_URL not found")
         return
-        
+
     if db_url.startswith("postgresql://"):
         db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    
+
     # Manejar el host 'db' si estamos fuera de docker
     # Si falla la conexión a 'db', intentamos 'localhost'
     try:
         engine = create_async_engine(db_url)
         async with engine.begin() as conn:
             print(f"Connecting to {db_url}...")
-            
+
             # Crear tablas si no existen (mismo bloque que envié a Supabase)
-            await conn.execute(text("""
+            await conn.execute(
+                text("""
             CREATE TABLE IF NOT EXISTS publication_channels (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(100) NOT NULL,
@@ -73,11 +76,16 @@ async def run_migration():
             CREATE INDEX IF NOT EXISTS idx_pub_queue_book_hash ON publication_queue(book_hash);
             CREATE INDEX IF NOT EXISTS idx_pub_queue_scheduled_for ON publication_queue(scheduled_for);
             CREATE INDEX IF NOT EXISTS idx_pub_queue_status ON publication_queue(status);
-            """))
-            
+            """)
+            )
+
             # Intentar el ALTER TABLE por si acaso
             try:
-                await conn.execute(text("ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;"))
+                await conn.execute(
+                    text(
+                        "ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;"
+                    )
+                )
                 print("Column extra_config added/verified.")
             except Exception as e:
                 print(f"Alter table notice (might already exist): {e}")
@@ -89,10 +97,15 @@ async def run_migration():
             localhost_url = db_url.replace("@db:", "@localhost:")
             engine = create_async_engine(localhost_url)
             async with engine.begin() as conn:
-                await conn.execute(text("ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;"))
+                await conn.execute(
+                    text(
+                        "ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;"
+                    )
+                )
                 print("Migration completed on localhost.")
         else:
             print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(run_migration())

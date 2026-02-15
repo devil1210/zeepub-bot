@@ -104,8 +104,9 @@ class UserRepository(BaseRepository[User]):
             "level_name": user.level_info.name if user.level_info else "free",
             "expires_at": user.expires_at,
             "nickname": user.nickname,
-            "roles": [],
+            "roles": user.roles or [],
             "insignias": user.insignias or [],
+            "allow_theme_templates": user.allow_theme_templates,
             "settings": settings,
             "total_downloads": user.total_downloads or 0,
             "level_id": user.level_id or 6,
@@ -116,7 +117,9 @@ class UserRepository(BaseRepository[User]):
             "email": user.email,
         }
 
-    async def get_by_id(self, telegram_id: int) -> User | None:
+    async def get_by_id(
+        self, telegram_id: int, as_dict: bool = False
+    ) -> User | dict[str, Any] | None:
         """Obtiene un usuario por su ID de Telegram (PK)."""
         async with pg_manager.get_session() as session:
             stmt = (
@@ -125,7 +128,10 @@ class UserRepository(BaseRepository[User]):
                 .where(User.telegram_id == telegram_id)
             )
             result = await session.execute(stmt)
-            return result.scalar_one_or_none()
+            user = result.scalar_one_or_none()
+            if user and as_dict:
+                return self._to_dict(user)
+            return user
 
     async def get_by_email(self, email: str) -> User | None:
         """Busca un usuario por su correo electrónico."""
@@ -159,20 +165,20 @@ class UserRepository(BaseRepository[User]):
 
                 return [
                     {
-                        "id": str(l.id),
-                        "name": l.name,
-                        "priority": l.priority,
-                        "color": l.color,
-                        "price": l.price,
-                        "dailyDownloads": l.daily_downloads,
-                        "canDownload": l.can_download,
-                        "canRead": l.can_read,
-                        "hasAccess": l.has_mini_app_access,
-                        "allowThemeTemplates": l.allow_theme_templates,
-                        "earlyAccess": l.early_access,
-                        "customThemes": l.custom_themes,
+                        "id": str(lvl.id),
+                        "name": lvl.name,
+                        "priority": lvl.priority,
+                        "color": lvl.color,
+                        "price": lvl.price,
+                        "dailyDownloads": lvl.daily_downloads,
+                        "canDownload": lvl.can_download,
+                        "canRead": lvl.can_read,
+                        "hasAccess": lvl.has_mini_app_access,
+                        "allowThemeTemplates": lvl.allow_theme_templates,
+                        "earlyAccess": lvl.early_access,
+                        "customThemes": lvl.custom_themes,
                     }
-                    for l in levels
+                    for lvl in levels
                 ]
         except Exception as e:
             logger.error(f"Error fetching user levels: {e}")
@@ -286,7 +292,7 @@ class UserRepository(BaseRepository[User]):
                 logger.info("Seeding default user levels into Postgres...")
 
                 defaults = self.get_default_levels()
-                for l in defaults:
+                for lvl in defaults:
                     # Convert frontend-style keys to DB-style columns
                     await session.execute(
                         text("""
@@ -303,22 +309,22 @@ class UserRepository(BaseRepository[User]):
                         )
                     """),
                         {
-                            "id": int(l["id"]),
-                            "name": l["name"],
-                            "priority": l["priority"],
-                            "color": l["color"],
-                            "price": l["price"],
-                            "dailyDownloads": l["dailyDownloads"],
-                            "canDownload": l["canDownload"],
-                            "canRead": l["canRead"],
-                            "hasAccess": l["hasAccess"],
-                            "has_library_access": l.get("has_library_access", True),
-                            "can_request_books": l.get("can_request_books", True),
-                            "canUploadEpub": l["canUploadEpub"],
-                            "earlyAccess": l["earlyAccess"],
-                            "customThemes": l["customThemes"],
-                            "allowThemeTemplates": l["allowThemeTemplates"],
-                            "show_recommendations": l.get("show_recommendations", True),
+                            "id": int(lvl["id"]),
+                            "name": lvl["name"],
+                            "priority": lvl["priority"],
+                            "color": lvl["color"],
+                            "price": lvl["price"],
+                            "dailyDownloads": lvl["dailyDownloads"],
+                            "canDownload": lvl["canDownload"],
+                            "canRead": lvl["canRead"],
+                            "hasAccess": lvl["hasAccess"],
+                            "has_library_access": lvl.get("has_library_access", True),
+                            "can_request_books": lvl.get("can_request_books", True),
+                            "canUploadEpub": lvl["canUploadEpub"],
+                            "earlyAccess": lvl["earlyAccess"],
+                            "customThemes": lvl["customThemes"],
+                            "allowThemeTemplates": lvl["allowThemeTemplates"],
+                            "show_recommendations": lvl.get("show_recommendations", True),
                         },
                     )
 
@@ -422,6 +428,9 @@ class UserRepository(BaseRepository[User]):
                     "forceSettings": "force_settings",
                     "borderRadius": "border_radius",
                     "borderWidth": "border_width",
+                    "canUploadEpub": "can_upload_epub",
+                    "hasLibraryAccess": "has_library_access",
+                    "canRequestBooks": "can_request_books",
                 }
 
                 for key, col in mapping.items():
@@ -455,21 +464,21 @@ class UserRepository(BaseRepository[User]):
             async with pg_manager.get_session() as session:
                 stmt = select(UserLevel).where(UserLevel.id == level_id)
                 result = await session.execute(stmt)
-                l = result.scalar_one_or_none()
+                lvl = result.scalar_one_or_none()
 
-                if l:
+                if lvl:
                     return {
-                        "id": l.id,
-                        "name": l.name,
-                        "priority": l.priority,
-                        "color": l.color,
-                        "price": l.price,
-                        "dailyDownloads": l.daily_downloads,
-                        "canDownload": l.can_download,
-                        "canRead": l.can_read,
-                        "hasAccess": l.has_mini_app_access,
-                        "customThemes": l.custom_themes,
-                        "allowThemeTemplates": l.allow_theme_templates,
+                        "id": lvl.id,
+                        "name": lvl.name,
+                        "priority": lvl.priority,
+                        "color": lvl.color,
+                        "price": lvl.price,
+                        "dailyDownloads": lvl.daily_downloads,
+                        "canDownload": lvl.can_download,
+                        "canRead": lvl.can_read,
+                        "hasAccess": lvl.has_mini_app_access,
+                        "customThemes": lvl.custom_themes,
+                        "allowThemeTemplates": lvl.allow_theme_templates,
                     }
                 return None
         except Exception as e:
@@ -681,6 +690,13 @@ class UserRepository(BaseRepository[User]):
         photo_url: str | None = None,
         settings: dict | None = None,
         sync_to_supabase: bool = False,
+        has_library_access: bool | None = None,
+        can_request_books: bool | None = None,
+        can_upload_epub: bool | None = None,
+        allow_theme_templates: bool | None = None,
+        beta_tester: bool | None = None,
+        roles: list | None = None,
+        **kwargs,
     ) -> User:
         """
         Inserta o actualiza un usuario en PostgreSQL y opcionalmente sincroniza con Supabase.
@@ -716,6 +732,18 @@ class UserRepository(BaseRepository[User]):
                 user.photo_url = photo_url
             if settings is not None:
                 user.settings = settings
+            if has_library_access is not None:
+                user.has_library_access = has_library_access
+            if can_request_books is not None:
+                user.can_request_books = can_request_books
+            if can_upload_epub is not None:
+                user.can_upload_epub = can_upload_epub
+            if allow_theme_templates is not None:
+                user.allow_theme_templates = allow_theme_templates
+            if beta_tester is not None:
+                user.beta_tester = beta_tester
+            if roles is not None:
+                user.roles = roles
 
             await session.commit()
             await session.refresh(user)
@@ -837,8 +865,9 @@ class UserRepository(BaseRepository[User]):
                         "isBetaTester": (user.beta_tester or is_admin) is not False,
                         "name": user.name or user.nickname or f"User_{user.telegram_id}",
                         "username": user.username or "",
-                        "roles": [],
+                        "roles": user.roles or [],
                         "insignias": user.insignias or [],
+                        "allowThemeTemplates": user.allow_theme_templates is True,
                         "hasLibraryAccess": user.has_library_access is not False,
                         "canRequestBooks": user.can_request_books is not False,
                         "canUploadEpub": user.can_upload_epub is True,

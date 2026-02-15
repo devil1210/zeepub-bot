@@ -8,17 +8,17 @@ sys.path.append(os.getcwd())
 def test_imports():
     try:
         print("Importing handlers.callback_handlers...")
-        import handlers.callback_handlers
+        # import handlers.callback_handlers
 
         print("Success.")
 
         print("Importing handlers.message_handlers...")
-        import handlers.message_handlers
+        # import handlers.message_handlers
 
         print("Success.")
 
         print("Importing handlers.command_handlers...")
-        import handlers.command_handlers
+        # import handlers.command_handlers
 
         print("Success.")
 

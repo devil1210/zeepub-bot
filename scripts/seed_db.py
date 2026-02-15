@@ -132,7 +132,7 @@ async def seed_levels():
             ),
         ]
 
-        for l in levels:
+        for lvl in levels:
             await session.execute(
                 text("""
                 INSERT INTO user_levels (
@@ -148,22 +148,22 @@ async def seed_levels():
                 )
             """),
                 {
-                    "id": l[0],
-                    "name": l[1],
-                    "priority": l[2],
-                    "color": l[3],
-                    "price": l[4],
-                    "daily_downloads": l[5],
-                    "can_download": l[6],
-                    "can_read": l[7],
-                    "has_mini_app_access": l[8],
-                    "has_library_access": l[9],
-                    "can_request_books": l[10],
-                    "can_upload_epub": l[11],
-                    "early_access": l[12],
-                    "custom_themes": l[13],
-                    "allow_theme_templates": l[14],
-                    "show_recommendations": l[15],
+                    "id": lvl[0],
+                    "name": lvl[1],
+                    "priority": lvl[2],
+                    "color": lvl[3],
+                    "price": lvl[4],
+                    "daily_downloads": lvl[5],
+                    "can_download": lvl[6],
+                    "can_read": lvl[7],
+                    "has_mini_app_access": lvl[8],
+                    "has_library_access": lvl[9],
+                    "can_request_books": lvl[10],
+                    "can_upload_epub": lvl[11],
+                    "early_access": lvl[12],
+                    "custom_themes": lvl[13],
+                    "allow_theme_templates": lvl[14],
+                    "show_recommendations": lvl[15],
                 },
             )
 

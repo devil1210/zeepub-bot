@@ -17,7 +17,7 @@ async def chat_discovery_handler(update: Update, context: ContextTypes.DEFAULT_T
     # Caso 1: Actualización de estado del bot en un chat (Added/Removed/Promoted)
     if update.my_chat_member:
         chat = update.my_chat_member.chat
-        new_status = update.my_chat_member.new_chat_member.status
+        _new_status = update.my_chat_member.new_chat_member.status
 
         # Si el bot fue expulsado, quizás deberíamos marcarlo,
         # pero por ahora save_discovered_chat solo hace upsert de info.

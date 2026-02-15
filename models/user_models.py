@@ -46,6 +46,8 @@ class User(Base):
     has_library_access = Column(Boolean, default=True)
     can_request_books = Column(Boolean, default=True)
     can_upload_epub = Column(Boolean, default=False)
+    allow_theme_templates = Column(Boolean, default=False)
+    roles = Column(JSON, default=list)
 
     # Métricas
     total_downloads = Column(Integer, default=0)
@@ -109,6 +111,9 @@ class User(Base):
             "has_library_access": self.has_library_access,
             "can_request_books": self.can_request_books,
             "can_upload_epub": self.can_upload_epub,
+            "allow_theme_templates": self.allow_theme_templates,
+            "beta_tester": self.beta_tester,
+            "roles": self.roles or [],
         }
 
 

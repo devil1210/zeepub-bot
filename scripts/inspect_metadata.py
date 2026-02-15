@@ -46,7 +46,7 @@ async def inspect():
             # Count how many have 0 or None
             zeros_res = await session.execute(
                 select(LocalBook).where(
-                    (LocalBook.word_count == 0) | (LocalBook.word_count == None)
+                    (LocalBook.word_count == 0) | (LocalBook.word_count.is_(None))
                 )
             )
             zeros_count = len(zeros_res.scalars().all())

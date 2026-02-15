@@ -80,7 +80,7 @@ async def short_download(url_hash: str):
         return await public_download(url=url, title=title)
     except Exception as e:
         logger.error(f"Error decoding short URL: {e}")
-        raise HTTPException(status_code=404, detail="Invalid short URL")
+        raise HTTPException(status_code=404, detail="Invalid short URL") from e
 
 
 @router.get("/public/dl")
@@ -145,7 +145,7 @@ async def public_download(
 
     except Exception as e:
         logger.error(f"Error in public download proxy: {e}")
-        raise HTTPException(status_code=500, detail="Download failed")
+        raise HTTPException(status_code=500, detail="Download failed") from e
 
 
 @router.post("/facebook/prepare")
@@ -243,7 +243,7 @@ async def prepare_facebook_post(
 
     except Exception as e:
         logger.error(f"Error preparing FB post: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/facebook/publish")
@@ -306,7 +306,7 @@ async def publish_facebook_post(
 
     except Exception as e:
         logger.error(f"Error publishing to FB: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/config")
@@ -439,7 +439,7 @@ async def download_book(
 
     except Exception as e:
         logger.error(f"Error in download endpoint: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/zitadel-action")
@@ -478,8 +478,8 @@ async def zitadel_enrich_token(request: Request):
         # Parsear el JSON que envía ZITADEL
         try:
             data = json.loads(body_bytes)
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=400, detail="Invalid JSON body")
+        except json.JSONDecodeError as e:
+            raise HTTPException(status_code=400, detail="Invalid JSON body") from e
 
         logger.debug(f"Payload received: {data}")
 
@@ -553,4 +553,4 @@ async def zitadel_enrich_token(request: Request):
         raise
     except Exception as e:
         logger.error(f"❌ Error processing ZITADEL action: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Error processing action")
+        raise HTTPException(status_code=500, detail="Error processing action") from e

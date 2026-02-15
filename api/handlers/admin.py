@@ -1081,10 +1081,10 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
         from services.user_audit_service import UserAuditService
         from services.user_service import invalidate_user_cache
 
-        existing = await user_repo.get_by_id(int(user_id))
+        existing = await user_repo.get_by_id(int(user_id), as_dict=True)
         if not existing:
             await user_repo.create_minimal_user(int(user_id))
-            existing = await user_repo.get_by_id(int(user_id))
+            existing = await user_repo.get_by_id(int(user_id), as_dict=True)
 
         expires_at = None
         if data.get("expiresAt"):
@@ -1158,12 +1158,10 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
             level_id=level_id,
             settings=data.get("settings"),
             allow_theme_templates=data.get("allowThemeTemplates"),
+            beta_tester=data.get("betaTester"),
         )
 
-        if config.ENABLE_SUPABASE and "betaTester" in data:
-            supabase_manager.get_client().table("users").update(
-                {"beta_tester": data["betaTester"]}
-            ).eq("telegram_id", int(user_id)).execute()
+        # beta_tester is now handled in upsert
 
         if changes:
             try:
@@ -1196,7 +1194,7 @@ async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dic
         from repositories.user_repository import user_repo
 
         access_info = await user_repo.get_access_info(int(user_id))
-        raw_user = await user_repo.get_by_id(int(user_id))
+        raw_user = await user_repo.get_by_id(int(user_id), as_dict=True)
 
         if not access_info or not raw_user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")

@@ -34,7 +34,7 @@ async def fix_technical_metadata():
             # 1. Get all books without word count
             result = await session.execute(
                 select(LocalBook).where(
-                    (LocalBook.word_count == 0) | (LocalBook.word_count == None)
+                    (LocalBook.word_count == 0) | (LocalBook.word_count.is_(None))
                 )
             )
             books = result.scalars().all()

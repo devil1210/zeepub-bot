@@ -82,7 +82,7 @@ async def diagnose_themes():
             # Sugerir acción
             if themes_ending_2:
                 logger.info(f"\n✅ ACTION: Found {len(themes_ending_2)} themes to rename")
-                for theme_id, name in themes_ending_2:
+                for _theme_id, name in themes_ending_2:
                     base_name = name.replace(" 2", "").strip()
                     logger.info(f"  - '{name}' → '{base_name} Pro' (suggested)")
             else:

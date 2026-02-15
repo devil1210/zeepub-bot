@@ -557,7 +557,7 @@ class EPUBUploader:
                     session.query(LocalBook)
                     .filter(
                         LocalBook.series_hash == metadata["series_hash"],
-                        LocalBook.series_spanish != None,
+                        LocalBook.series_spanish.isnot(None),
                         LocalBook.series_spanish != "",
                     )
                     .first()
@@ -1029,11 +1029,9 @@ class EPUBUploader:
                 diffs.append(f"🔹 **{label}**: `{old_val or 'N/A'}` ➡️ `{new_val or 'N/A'}`")
 
         # Tags (Géneros) - Comparar listas
-        new_tags = set(
-            t.strip().lower() for t in (new_data.get("tags") or "").split(",") if t.strip()
-        )
+        new_tags = {t.strip().lower() for t in (new_data.get("tags") or "").split(",") if t.strip()}
         old_tags = (
-            set(t.strip().lower() for t in (old_data.get("tags") or "").split(",") if t.strip())
+            {t.strip().lower() for t in (old_data.get("tags") or "").split(",") if t.strip()}
             if isinstance(old_data.get("tags"), str)
             else set()
         )
@@ -1134,10 +1132,6 @@ class EPUBUploader:
             else:
                 logger.error(f"❌ Error indexando el libro después de moverlo: {scan_result}")
                 return True  # Retornamos True porque el archivo ya se movió con éxito
-
-        except Exception as e:
-            logger.error(f"Error adding to library: {e}")
-            return False
 
         except Exception as e:
             logger.error(f"Error adding to library: {e}")

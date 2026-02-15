@@ -127,8 +127,8 @@ class RecommendationService:
             # Priorizar libros con miniatura y buen rating
             query = query.order_by(
                 desc(
-                    case((LocalBook.cover_low != None, 1), else_=0)
-                ),  # Fix: is not None evaluates to True in python, use != None expression
+                    case((LocalBook.cover_low.isnot(None), 1), else_=0)
+                ),  # Fix: is not None evaluates to True in python, use .isnot(None) expression
                 desc(LocalBook.rating_average),
                 desc(LocalBook.rating_count),
             ).limit(limit * 3)

@@ -42,4 +42,5 @@ class BasePlugin(ABC):
         return None
 
     async def on_download_complete(self, user_id: int, epub_url: str, success: bool) -> None:
-        pass
+        """Optional hook called when a download is completed."""
+        return None

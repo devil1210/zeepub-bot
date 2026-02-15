@@ -642,7 +642,7 @@ class LibraryService:
                         author_map[auth] = []
                     author_map[auth].append(s)
 
-                for auth, group in author_map.items():
+                for _auth, group in author_map.items():
                     if len(group) < 2:
                         continue
 

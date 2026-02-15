@@ -158,7 +158,7 @@ async def find_merges(limit: int = 5):
         checked_pairs = set()
 
         for i, s1 in enumerate(all_series):
-            for j, s2 in enumerate(all_series[i + 1 :], start=i + 1):
+            for _j, s2 in enumerate(all_series[i + 1 :], start=i + 1):
                 # Evitar revisar lo mismo
                 pair_id = tuple(sorted([s1.series_hash, s2.series_hash]))
                 if pair_id in checked_pairs:

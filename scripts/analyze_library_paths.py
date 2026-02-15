@@ -113,7 +113,7 @@ async def analyze_library_paths():
 
             logger.info(f"\n📋 EJEMPLOS DEL PATRÓN '{most_common_pattern}':")
             count = 0
-            for file_path, title, author in books:
+            for file_path, _title, author in books:
                 if count >= 5:
                     break
 

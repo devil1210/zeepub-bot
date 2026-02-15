@@ -70,12 +70,8 @@ class LibraryExportService:
                 export_data["stats"] = {
                     "total_books": len(books_data),
                     "total_sources": len(sources_data),
-                    "unique_series": len(
-                        set(b.get("series") for b in books_data if b.get("series"))
-                    ),
-                    "unique_authors": len(
-                        set(b.get("author") for b in books_data if b.get("author"))
-                    ),
+                    "unique_series": len({b.get("series") for b in books_data if b.get("series")}),
+                    "unique_authors": len({b.get("author") for b in books_data if b.get("author")}),
                 }
 
             return export_data

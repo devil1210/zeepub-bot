@@ -49,7 +49,7 @@ class StatsService:
                 return {
                     "users": {
                         "total": user_count,
-                        "distribution": {name: count for name, count in level_dist},
+                        "distribution": dict(level_dist),
                     },
                     "library": {
                         "total_books": book_count,
@@ -131,7 +131,7 @@ async def get_daily_stats() -> dict[str, Any]:
             return {
                 "total_downloads": total_downloads,
                 "unique_users": unique_users,
-                "by_role": {name: count for name, count in role_breakdown},
+                "by_role": dict(role_breakdown),
                 "success": True,
             }
         except Exception as e:

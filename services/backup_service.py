@@ -99,7 +99,7 @@ class BackupService:
         except asyncio.TimeoutError:
             proc.kill()
             await proc.wait()
-            raise Exception("pg_dump timed out")
+            raise Exception("pg_dump timed out") from None
 
         if proc.returncode != 0:
             err_msg = stderr.decode(errors="ignore")

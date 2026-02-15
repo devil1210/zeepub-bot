@@ -161,12 +161,16 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
             except ProgrammingError as e:
                 # Si la columna no existe, intentamos agregarla proactivamente
                 if "extra_config" in str(e).lower() and "does not exist" in str(e).lower():
-                    logger.warning("Column 'extra_config' missing in publication_templates. Patching...")
+                    logger.warning(
+                        "Column 'extra_config' missing in publication_templates. Patching..."
+                    )
                     try:
                         # Usamos el motor directamente para el DDL
                         async with self.db_manager.engine.begin() as conn:
                             await conn.execute(
-                                text("ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;")
+                                text(
+                                    "ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;"
+                                )
                             )
                         logger.info("Column 'extra_config' patched successfully.")
 
