@@ -336,8 +336,17 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                                 )}
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-black text-white truncate text-base tracking-tight group-hover:text-primary transition-colors">@{user.username || 'unknown'}</p>
+                                                <div className="flex flex-col">
+                                                    <p className="font-black text-white truncate text-base tracking-tight group-hover:text-primary transition-colors leading-tight">
+                                                        {user.name && user.name !== 'unknown' ? user.name : (user.username && user.username !== 'unknown' ? `@${user.username}` : `Usuario ${user.id.slice(-4)}`)}
+                                                    </p>
+                                                    {user.username && user.username !== 'unknown' && user.name && user.name !== user.username && (
+                                                        <p className="text-[10px] text-gray-500 font-bold tracking-tight mt-0.5">
+                                                            @{user.username}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-1">
                                                     <button
                                                         onClick={(e) => handleSyncUserPhoto(e, user.id)}
                                                         disabled={scanningUser === user.id}

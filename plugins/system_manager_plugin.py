@@ -102,14 +102,17 @@ class SystemManagerPlugin(BasePlugin):
                 with open("version_hash.txt") as f:
                     local_hash = f.read().strip()[:7]
             else:
-                local_hash = (
-                    subprocess.check_output(
-                        ["git", "rev-parse", "--short", "HEAD"],
-                        stderr=subprocess.STDOUT,
-                    )
-                    .decode()
-                    .strip()
+                # Local
+                process = await asyncio.create_subprocess_exec(
+                    "git",
+                    "rev-parse",
+                    "--short",
+                    "HEAD",
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
                 )
+                stdout, _ = await process.communicate()
+                local_hash = stdout.decode().strip() if stdout else "Desconocido"
         except Exception:
             local_hash = "Desconocido"
 

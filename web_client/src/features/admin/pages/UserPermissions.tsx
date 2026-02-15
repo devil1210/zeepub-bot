@@ -497,7 +497,9 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-8 text-[11px] font-black text-gray-500 uppercase tracking-widest">
                       <span className="flex items-center gap-2 group/info">
                         <AtSign className="w-4 h-4 text-primary group-hover/info:scale-110 transition-transform" />
-                        <span className="group-hover/info:text-gray-300 transition-colors">@{permissions.username || 'usuario'}</span>
+                        <span className="group-hover/info:text-gray-300 transition-colors">
+                          {permissions.username && permissions.username.toLowerCase() !== 'unknown' ? `@${permissions.username}` : `Sin alias público`}
+                        </span>
                       </span>
                       <span className="flex items-center gap-2 font-mono tabular-nums opacity-60 hover:opacity-100 transition-opacity">
                         <Fingerprint className="w-4 h-4" />
