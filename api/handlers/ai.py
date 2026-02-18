@@ -618,8 +618,11 @@ async def handle_ai_reset_series(data: dict[str, Any], user_data: dict[str, Any]
 
 async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve estadísticas del módulo IA."""
+    import asyncio
+
     check_staff(user_data)
     try:
+        # Gather async DB stats
         async with pg_manager.get_session() as session:
             # 1. Total series processed by AI (have series_spanish or proposal)
             processed_series = (
@@ -639,7 +642,7 @@ async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
             total_feedback = (
                 await session.execute(select(func.count(AILearningFeedback.id)))
             ).scalar() or 0
-            
+
             accepted_feedback = (
                 await session.execute(
                     select(func.count(AILearningFeedback.id)).where(
@@ -663,45 +666,48 @@ async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
             # 5. Total books (for dashboard)
             total_books = (await session.execute(select(func.count(LocalBook.id)))).scalar() or 0
 
-            # 6. System Status
-            ai_active = bool(config.GEMINI_API_KEY)
-            ai_key_masked = (
-                f"{config.GEMINI_API_KEY[:4]}...{config.GEMINI_API_KEY[-4:]}"
-                if config.GEMINI_API_KEY and len(config.GEMINI_API_KEY) > 8
-                else "NOT_SET"
-            )
+            # Serialize recent activity while session is still open
+            recent_list = [
+                {
+                    "series": f.series_name_original,
+                    "action": f.status,
+                    "date": f.created_at.isoformat(),
+                }
+                for f in recent_activity
+            ]
 
-            # Fetch background scan setting
-            bg_scan = get_setting("ai_background_maintenance", "false")
-            background_scan_enabled = str(bg_scan).lower() == "true"
+        # 6. System Status (outside async session to avoid psycopg2/asyncpg conflicts)
+        ai_active = bool(config.GEMINI_API_KEY)
+        ai_key_masked = (
+            f"{config.GEMINI_API_KEY[:4]}...{config.GEMINI_API_KEY[-4:]}"
+            if config.GEMINI_API_KEY and len(config.GEMINI_API_KEY) > 8
+            else "NOT_SET"
+        )
 
-            return {
-                "success": True,
-                "result": {
-                    "total_processed": processed_series,
-                    "processed_series": processed_series,
-                    "pending_optimization": pending,
-                    "pending_proposals": pending,
-                    "time_saved_hours": round(processed_series * 0.15, 1),
-                    "total_books": total_books,
-                    "accuracy": accuracy,
-                    "total_feedback": total_feedback,
-                    "ai_active": ai_active,
-                    "ai_key_masked": ai_key_masked,
-                    "background_scan_enabled": background_scan_enabled,
-                    "recent_activity": [
-                        {
-                            "series": f.series_name_original,
-                            "action": f.status,
-                            "date": f.created_at.isoformat(),
-                        }
-                        for f in recent_activity
-                    ],
-                },
-            }
+        # Fetch background scan setting via thread (sync psycopg2 call)
+        bg_scan = await asyncio.to_thread(get_setting, "ai_background_maintenance", "false")
+        background_scan_enabled = str(bg_scan).lower() == "true"
+
+        return {
+            "success": True,
+            "result": {
+                "total_processed": processed_series,
+                "processed_series": processed_series,
+                "pending_optimization": pending,
+                "pending_proposals": pending,
+                "time_saved_hours": round(processed_series * 0.15, 1),
+                "total_books": total_books,
+                "accuracy": accuracy,
+                "total_feedback": total_feedback,
+                "ai_active": ai_active,
+                "ai_key_masked": ai_key_masked,
+                "background_scan_enabled": background_scan_enabled,
+                "recent_activity": recent_list,
+            },
+        }
 
     except Exception as e:
-        logger.error(f"Error fetching AI stats: {e}")
+        logger.error(f"Error fetching AI stats: {e}", exc_info=True)
         return {"success": False, "message": str(e)}
 
 
@@ -723,12 +729,14 @@ async def handle_ai_toggle_background_scan(data: dict[str, Any], user_data: dict
 
 async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene listas de control (ignorados, whitelist, learning)."""
+    import asyncio
+
     check_staff(user_data)
     list_type = data.get("type", "queue")  # 'queue' or 'learning'
     limit = data.get("limit", 20)
     offset = data.get("offset", 0)
 
-    try:
+    def _sync_query():
         with get_session() as session:
             if list_type == "queue":
                 # Pending proposals
@@ -746,10 +754,10 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
                         {
                             "id": p.id,
                             "series_hash": p.series_hash,
-                            "current_series": p.proposal_data.get("current_series", "Unknown"),
-                            "proposed_series": p.proposal_data.get("proposed_series"),
-                            "reason": p.proposal_data.get("reason"),
-                            "created_at": p.created_at.isoformat(),
+                            "current_series": p.proposal_data.get("current_series", "Unknown") if p.proposal_data else "Unknown",
+                            "proposed_series": p.proposal_data.get("proposed_series") if p.proposal_data else None,
+                            "reason": p.proposal_data.get("reason") if p.proposal_data else None,
+                            "created_at": p.created_at.isoformat() if p.created_at else None,
                         }
                         for p in items
                     ],
@@ -757,7 +765,7 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
                 }
 
             elif list_type == "learning":
-                # Historical feedback
+                # Historical feedback — field names must match frontend 'reviewed' tab expectations
                 query = session.query(AILearningFeedback).order_by(
                     desc(AILearningFeedback.created_at)
                 )
@@ -769,12 +777,14 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
                     "items": [
                         {
                             "id": f.id,
-                            "series": f.series_name_original,
-                            "proposed": f.series_name_proposed,
-                            "final": f.series_name_final,
+                            "series_hash": getattr(f, "series_hash", None) or f"feedback_{f.id}",
+                            "original_name": f.series_name_original,
+                            "proposed_name": f.series_name_proposed,
+                            "final_name": f.series_name_final,
                             "status": f.status,
                             "ai_reason": f.ai_reason,
-                            "created_at": f.created_at.isoformat(),
+                            "reviewed_at": f.created_at.isoformat() if f.created_at else None,
+                            "books_count": getattr(f, "books_count", 0) or 0,
                         }
                         for f in items
                     ],
@@ -783,6 +793,8 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
             else:
                 return {"success": False, "message": "Invalid list type"}
 
+    try:
+        return await asyncio.to_thread(_sync_query)
     except Exception as e:
-        logger.error(f"Error fetching AI lists: {e}")
+        logger.error(f"Error fetching AI lists: {e}", exc_info=True)
         return {"success": False, "message": str(e)}

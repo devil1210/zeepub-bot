@@ -17,7 +17,7 @@ export const BookCard = memo<BookCardProps>(({ book, onDownload, compact = false
 
   return (
     <div className="group relative glass-panel rounded-premium-sm overflow-hidden border border-white/5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full bg-slate-900/50">
-      <div className={`relative overflow-hidden ${compact ? 'aspect-[3/4]' : 'aspect-[2/3]'} shrink-0`}>
+      <div className={`relative overflow-hidden ${compact ? 'aspect-[3/4]' : 'aspect-[2/3]'} shrink-0 bg-black/80`}>
         <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5">
           <span className="bg-black/60 shadow-lg backdrop-blur-md text-white text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-widest border border-white/10">
             {book.book_type || book.format}
@@ -31,7 +31,7 @@ export const BookCard = memo<BookCardProps>(({ book, onDownload, compact = false
 
         <ProgressiveImage
           alt={book.title}
-          className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100"
+          className="object-contain w-full h-full group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100"
           src={coverSrc}
           containerClassName="w-full h-full"
         />

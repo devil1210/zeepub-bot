@@ -115,7 +115,9 @@ export const AIHub: React.FC = () => {
     const loadLists = async (type: 'pending' | 'reviewed') => {
         try {
             setLoadingLists(true);
-            const res = await api.getAiLists(type, 50, 0);
+            // Map frontend tab names to backend list types
+            const backendType = type === 'pending' ? 'queue' : 'learning';
+            const res = await api.getAiLists(backendType as any, 50, 0);
             if (res.items) {
                 if (type === 'pending') setPendingList(res.items);
                 else setReviewedList(res.items);

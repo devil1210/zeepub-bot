@@ -22,7 +22,7 @@ export const LibraryCard = memo<LibraryCardProps>(({ book, onClick }) => {
             className={`group relative flex flex-col rounded-[2.5rem] transition-all duration-500 glass-panel hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 overflow-hidden cursor-pointer bg-slate-900/50 ${book.isNew ? 'border-primary/30 ring-1 ring-primary/20' : 'border-white/5'}`}
         >
             {/* Image Container */}
-            <div className="relative aspect-[2/3] w-full shrink-0 overflow-hidden">
+            <div className="relative aspect-[2/3] w-full shrink-0 overflow-hidden bg-black/80">
                 <div className="absolute top-3 right-3 z-20 flex flex-col gap-2 items-end">
                     {book.isNew && (
                         <div className="bg-primary text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-xl animate-pulse">
@@ -39,7 +39,7 @@ export const LibraryCard = memo<LibraryCardProps>(({ book, onClick }) => {
                 <ProgressiveImage
                     src={book.cover}
                     alt={book.title}
-                    className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110 grayscale-[30%] group-hover:grayscale-0"
+                    className="w-full h-full object-contain transition-all duration-1000 group-hover:scale-110 grayscale-[30%] group-hover:grayscale-0"
                     containerClassName="w-full h-full"
                 />
 

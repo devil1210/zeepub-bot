@@ -17,10 +17,10 @@ export const SearchCardGrid: React.FC<SearchCardGridProps> = React.memo(({ serie
             className="group relative bg-[#0f1115] rounded-[2.5rem] overflow-hidden border border-white/5 hover:border-primary/40 shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"
         >
             {/* Image Container */}
-            <div className="relative aspect-[2/3] overflow-hidden bg-white/5">
+            <div className="relative aspect-[2/3] overflow-hidden bg-black/80">
                 <ProgressiveImage
                     alt={series.title}
-                    className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-1000 opacity-90 group-hover:opacity-100"
+                    className="object-contain w-full h-full group-hover:scale-110 transition-transform duration-1000 opacity-90 group-hover:opacity-100"
                     src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality)}
                 />
 

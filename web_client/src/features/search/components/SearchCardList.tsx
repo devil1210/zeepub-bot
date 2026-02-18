@@ -20,7 +20,7 @@ export const SearchCardList: React.FC<SearchCardListProps> = React.memo(({ serie
             <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] shadow-2xl rounded-premium-sm overflow-hidden bg-white/5 border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
                 <ProgressiveImage
                     alt={series.title}
-                    className="w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
+                    className="w-full h-full object-contain transition-all duration-1000 group-hover:scale-110"
                     src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality)}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
