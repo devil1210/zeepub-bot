@@ -112,7 +112,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
   }, [totalPages, onBack, registerCallbacks, setContextType, setVisible]);
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-100">
+    <div className="flex-1 flex flex-col min-h-0 relative font-sans text-gray-100 overflow-y-auto custom-scrollbar animate-fade-in-up">
 
       <SeriesHero
         series={realSeries}

@@ -433,7 +433,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       />
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto pb-44 md:pb-20">
+      <div className="flex-1 overflow-y-auto pb-44 md:pb-20 custom-scrollbar animate-fade-in-up">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">

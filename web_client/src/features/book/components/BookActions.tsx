@@ -35,21 +35,16 @@ export const BookActions: React.FC<BookActionsProps> = ({
 
             <button
                 onClick={onDownload}
-                className={`w-full py-4 sm:py-5 rounded-[2rem] text-sm font-black uppercase tracking-[0.25em] flex items-center justify-center gap-3 sm:gap-4 transition-all duration-500 shadow-2xl active:scale-95 group overflow-hidden relative ${hasDownloaded
-                    ? 'bg-emerald-500 text-white shadow-emerald-500/30'
-                    : 'glass-panel border-white/10 text-white shadow-primary/30 hover:bg-white/10'
+                className={`relative w-full py-4 sm:py-5 rounded-[2rem] text-sm font-black uppercase tracking-[0.25em] flex items-center justify-center gap-3 sm:gap-4 transition-all duration-500 active:scale-95 group overflow-hidden ${hasDownloaded
+                    ? 'bg-emerald-500 text-white shadow-emerald-500/30 shadow-lg'
+                    : 'bg-primary/90 text-white shadow-premium hover:shadow-glow hover:bg-primary border border-white/10'
                     }`}
-                style={!hasDownloaded ? {
-                    background: 'rgba(var(--primary-rgb), 0.8)',
-                    backdropFilter: 'blur(20px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(20px) saturate(180%)'
-                } : {}}
             >
                 {!hasDownloaded && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
                 )}
                 {hasDownloaded ? <Check className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={3} /> : <ArrowDownToLine className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={3} />}
-                {hasDownloaded ? 'En Biblioteca' : 'Descargar'}
+                <span className="relative z-10">{hasDownloaded ? 'En Biblioteca' : 'Descargar'}</span>
             </button>
 
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
