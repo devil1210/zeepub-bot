@@ -28,4 +28,4 @@ def check_staff(user_data: dict[str, Any]):
             status_code=403,
             detail=f"Acceso denegado: Se requieren permisos de Staff (Tu nivel: {user_data.get('level')})",
         )
-    logger.info(f"Staff access verified for user {uid}")
+    logger.debug(f"Staff access verified for user {uid}")

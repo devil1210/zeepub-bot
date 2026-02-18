@@ -63,7 +63,7 @@ def check_migrations():
     Añade columnas nuevas a tablas existentes en PostgreSQL.
     Solo si las tablas ya existen.
     """
-    _log.info(f"Running migrations for {engine.dialect.name}...")
+    _log.debug(f"Running migrations for {engine.dialect.name}...")
     try:
         with engine.connect() as conn:
 
@@ -228,7 +228,7 @@ def check_migrations():
                 add_column_if_missing("ai_learning_feedback", "proposed_spanish", "VARCHAR")
                 add_column_if_missing("ai_learning_feedback", "final_spanish", "VARCHAR")
 
-            _log.info(f"Migrations for {engine.dialect.name} completed.")
+            _log.debug(f"Migrations for {engine.dialect.name} completed.")
 
     except Exception as e:
         _log.error(f"Postgres migration error: {e}")
@@ -238,7 +238,7 @@ def init_library_db():
     """
     Inicializa la base de datos creando las tablas si no existen.
     """
-    _log.info(f"Probando conexión a base de datos de librería: {engine.url}")
+    _log.debug(f"Probando conexión a base de datos de librería: {engine.url}")
 
     try:
         # Importar modelos para asegurar que se registren en metadata
@@ -253,7 +253,7 @@ def init_library_db():
         # Crear tablas
         Base.metadata.create_all(engine)
 
-        _log.info("Tablas de base de datos de librería aseguradas.")
+        _log.debug("Tablas de base de datos de librería aseguradas.")
 
         check_migrations()
 
@@ -262,20 +262,26 @@ def init_library_db():
         raise
 
 
+import threading
+
+_lib_db_lock = threading.Lock()
 _lib_db_initialized = False
 
 
 def get_session():
     """
     Retorna una nueva sesión de base de datos.
-    Asegura que la DB esté inicializada al menos una vez por proceso.
+    Asegura que la DB esté inicializada al menos una vez por proceso (Thread-safe).
     """
     global _lib_db_initialized
     if not _lib_db_initialized:
-        try:
-            init_library_db()
-            _lib_db_initialized = True
-        except Exception as e:
-            _log.error(f"Fallo en inicialización tardía de DB: {e}")
+        with _lib_db_lock:
+            # Re-check inside lock (Double-Checked Locking pattern)
+            if not _lib_db_initialized:
+                try:
+                    init_library_db()
+                    _lib_db_initialized = True
+                except Exception as e:
+                    _log.error(f"Fallo en inicialización tardía de DB: {e}")
 
     return Session()
