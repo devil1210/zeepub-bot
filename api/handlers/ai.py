@@ -669,7 +669,7 @@ async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
             # Serialize recent activity while session is still open
             recent_list = [
                 {
-                    "series": f.series_name_original,
+                    "series": f.original_name,
                     "action": f.status,
                     "date": f.created_at.isoformat(),
                 }
