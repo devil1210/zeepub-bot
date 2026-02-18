@@ -777,14 +777,14 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
                     "items": [
                         {
                             "id": f.id,
-                            "series_hash": getattr(f, "series_hash", None) or f"feedback_{f.id}",
-                            "original_name": f.series_name_original,
-                            "proposed_name": f.series_name_proposed,
-                            "final_name": f.series_name_final,
+                            "series_hash": f.series_hash or f"feedback_{f.id}",
+                            "original_name": f.original_name,
+                            "proposed_name": f.proposed_name,
+                            "final_name": f.final_name,
                             "status": f.status,
                             "ai_reason": f.ai_reason,
                             "reviewed_at": f.created_at.isoformat() if f.created_at else None,
-                            "books_count": getattr(f, "books_count", 0) or 0,
+                            "books_count": 0,  # AILearningFeedback no tiene books_count
                         }
                         for f in items
                     ],
