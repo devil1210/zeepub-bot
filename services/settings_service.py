@@ -14,7 +14,13 @@ from config.config_settings import config
 logger = logging.getLogger(__name__)
 
 
+_engine = None
+
 def _get_sa_engine():
+    global _engine
+    if _engine is not None:
+        return _engine
+        
     if not config.DATABASE_URL:
         raise RuntimeError("DATABASE_URL not configured. PostgreSQL is mandatory.")
 
@@ -28,7 +34,8 @@ def _get_sa_engine():
         if "+psycopg2" not in db_url:
             db_url = db_url.replace("postgresql://", "postgresql+psycopg2://")
 
-    return sa.create_engine(db_url, future=True, pool_pre_ping=True)
+    _engine = sa.create_engine(db_url, future=True, pool_pre_ping=True)
+    return _engine
 
 
 def init_settings_db():

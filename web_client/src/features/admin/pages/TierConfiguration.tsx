@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     ArrowLeft,
     Save,
@@ -161,11 +161,13 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
 
     // Load tier config whenever selectedTierName changes
     useEffect(() => {
+        let isMounted = true;
         const loadTierConfig = async () => {
             try {
                 setLoading(true);
+                setError(null);
                 const res = await api.getTierConfig(selectedTierName);
-                if (res.success && res.tier) {
+                if (isMounted && res.success && res.tier) {
                     const newConfig = {
                         name: res.tier.name || selectedTierName,
                         icon: res.tier.icon || 'verified',
@@ -199,12 +201,14 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                     setOriginalConfig(newConfig);
                 }
             } catch (err: any) {
+                if (isMounted) setError('Error al cargar la configuración del nivel');
                 console.error('Error loading tier config:', err);
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
         loadTierConfig();
+        return () => { isMounted = false; };
     }, [selectedTierName]);
 
     // Notify parent of saving state changes
@@ -213,11 +217,14 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
     }, [saving, onSavingChange]);
 
     // Notify parent of undo/apply availability
+    const hasChanges = useMemo(() => {
+        return JSON.stringify(config) !== JSON.stringify(originalConfig);
+    }, [config, originalConfig]);
+
     useEffect(() => {
-        const hasChanges = JSON.stringify(config) !== JSON.stringify(originalConfig);
         onCanUndoChange?.(hasChanges);
         onCanApplyChange?.(hasChanges);
-    }, [config, originalConfig, onCanUndoChange, onCanApplyChange]);
+    }, [hasChanges, onCanUndoChange, onCanApplyChange]);
 
     // Expose undo/save functions to parent via refs
     useEffect(() => {
@@ -291,22 +298,22 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                 {/* Header with Selector & Save */}
                 <div className="flex flex-col gap-10">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex flex-col">
-                            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-2 px-1">Editar Nivel</h2>
-                            <div className="flex items-center gap-3 bg-white/5 p-2 rounded-premium-lg border border-white/5 overflow-x-auto no-scrollbar shadow-inner max-w-full">
+                        <div className="flex flex-col flex-1">
+                            <h2 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.4em] mb-3 px-1">Seleccionar Rango</h2>
+                            <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-7 gap-2 bg-white/5 p-1.5 rounded-premium-sm border border-white/5 shadow-inner">
                                 {allLevels.map(lvl => (
                                     <button
                                         key={lvl.id}
                                         onClick={() => setSelectedTierName(lvl.name)}
                                         className={`
-                                            flex items-center gap-3 px-6 py-4 rounded-premium text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap
+                                            flex items-center justify-center gap-2 px-3 py-3 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all duration-200
                                             ${selectedTierName === lvl.name
-                                                ? 'bg-primary text-white shadow-2xl shadow-primary/40 scale-100 ring-[6px] ring-primary/10'
-                                                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5 scale-95 opacity-60'}
+                                                ? 'bg-primary text-white shadow-lg shadow-primary/20 scale-100'
+                                                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5 scale-[0.98] opacity-70'}
                                         `}
                                     >
                                         <div
-                                            className="w-2.5 h-2.5 rounded-full shadow-[0_0_12px_currentColor]"
+                                            className="w-1.5 h-1.5 rounded-full shadow-[0_0_8px_currentColor]"
                                             style={{ backgroundColor: lvl.color, color: lvl.color }}
                                         />
                                         {lvl.name}
