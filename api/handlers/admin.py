@@ -1174,6 +1174,7 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
             settings=data.get("settings"),
             allow_theme_templates=data.get("allowThemeTemplates"),
             beta_tester=data.get("betaTester"),
+            sync_to_supabase=True,
         )
 
         # beta_tester is now handled in upsert

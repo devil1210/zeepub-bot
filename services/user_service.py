@@ -867,6 +867,7 @@ async def sync_user_profile_photo(telegram_id: int, bot) -> str | None:
                 username=tg_username or info.get("username") if info else None,
                 name=tg_full_name or info.get("name") if info else None,
                 nickname=tg_full_name or info.get("nickname") if info else None,
+                sync_to_supabase=True,
             )
             await user_cache.invalidate(f"user_effective:{telegram_id}")
             return current_photo
@@ -915,6 +916,7 @@ async def sync_user_profile_photo(telegram_id: int, bot) -> str | None:
             username=tg_username or info.get("username") if info else None,
             name=tg_full_name or info.get("name") if info else None,
             nickname=tg_full_name or info.get("nickname") if info else None,
+            sync_to_supabase=True,
         )
 
         await user_cache.invalidate(f"user_effective:{telegram_id}")

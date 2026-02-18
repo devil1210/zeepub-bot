@@ -89,14 +89,22 @@ class UserRepository(BaseRepository[User]):
         if raw_username and raw_username.lower() in ("unknown", "none", ""):
             raw_username = None
 
-        raw_name = user.nickname or user.name
+        raw_name = user.name
         if raw_name and raw_name.lower() in ("unknown", "none", ""):
             raw_name = None
+
+        raw_nickname = user.nickname
+        if raw_nickname and raw_nickname.lower() in ("unknown", "none", ""):
+            raw_nickname = None
+
+        display_name = raw_nickname or raw_name or raw_username or f"User_{user.telegram_id}"
 
         return {
             "id": str(user.telegram_id),
             "username": raw_username or f"User_{user.telegram_id}",
             "name": raw_name or raw_username or f"User_{user.telegram_id}",
+            "nickname": raw_nickname,
+            "display_name": display_name,
             "role": user.role or "user",
             "photo_url": user.photo_url,
             "level": {

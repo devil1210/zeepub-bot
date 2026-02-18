@@ -32,6 +32,8 @@ interface AdminUser {
     id: string;
     username: string;
     name?: string;
+    nickname?: string;
+    display_name?: string;
     role: string;
     photo_url?: string;
     level: {
@@ -316,7 +318,7 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                                 {user.photo_url ? (
                                                     <img
                                                         src={user.photo_url}
-                                                        alt={user.username}
+                                                        alt={user.display_name || user.username}
                                                         className="w-full h-full object-cover"
                                                         onError={(e) => {
                                                             // Fallback if image fails to load
@@ -338,11 +340,11 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex flex-col">
                                                     <p className="font-black text-white truncate text-base tracking-tight group-hover:text-primary transition-colors leading-tight">
-                                                        {user.name && user.name !== 'unknown' ? user.name : (user.username && user.username !== 'unknown' ? `@${user.username}` : `Usuario ${user.id.slice(-4)}`)}
+                                                        {user.display_name || user.name || `@${user.username}` || `Usuario ${user.id.slice(-4)}`}
                                                     </p>
-                                                    {user.username && user.username !== 'unknown' && user.name && user.name !== user.username && (
+                                                    {user.username && user.username !== 'unknown' && (
                                                         <p className="text-[10px] text-gray-500 font-bold tracking-tight mt-0.5">
-                                                            @{user.username}
+                                                            @{user.username} {user.name && user.name !== user.display_name && user.name !== 'unknown' && `• ${user.name}`}
                                                         </p>
                                                     )}
                                                 </div>
