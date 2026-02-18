@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
   ChevronRight,
@@ -281,12 +281,34 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
     onSavingChange?.(saving);
   }, [saving, onSavingChange]);
 
+  // Memoize changes to avoid expensive stringify on every render
+  const hasChanges = useMemo(() => {
+    if (!initialPermissions) return false;
+    // Targeted comparison instead of full stringify
+    return (
+      permissions.levelId !== initialPermissions.levelId ||
+      permissions.canReport !== initialPermissions.canReport ||
+      permissions.bypassLimits !== initialPermissions.bypassLimits ||
+      permissions.betaTester !== initialPermissions.betaTester ||
+      permissions.hasLibraryAccess !== initialPermissions.hasLibraryAccess ||
+      permissions.canRequestBooks !== initialPermissions.canRequestBooks ||
+      permissions.canUploadEpub !== initialPermissions.canUploadEpub ||
+      permissions.allowThemeTemplates !== initialPermissions.allowThemeTemplates ||
+      permissions.isAdmin !== initialPermissions.isAdmin ||
+      permissions.nickname !== initialPermissions.nickname ||
+      permissions.role !== initialPermissions.role ||
+      permissions.name !== initialPermissions.name ||
+      permissions.username !== initialPermissions.username ||
+      JSON.stringify(permissions.insignias) !== JSON.stringify(initialPermissions.insignias) ||
+      JSON.stringify(permissions.settings) !== JSON.stringify(initialPermissions.settings)
+    );
+  }, [permissions, initialPermissions]);
+
   // Notify parent of canUndo/canApply changes
   useEffect(() => {
-    const hasChanges = initialPermissions && JSON.stringify(permissions) !== JSON.stringify(initialPermissions);
-    onCanUndoChange?.(!!hasChanges);
-    onCanApplyChange?.(!!hasChanges);
-  }, [permissions, initialPermissions, onCanUndoChange, onCanApplyChange]);
+    onCanUndoChange?.(hasChanges);
+    onCanApplyChange?.(hasChanges);
+  }, [hasChanges, onCanUndoChange, onCanApplyChange]);
 
   // Expose undo and save functions to parent
   useEffect(() => {
@@ -543,7 +565,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                       <MessageSquare className="w-4 h-4" />
                       Chat
                     </button>
-                    {(saving || (initialPermissions && JSON.stringify(permissions) !== JSON.stringify(initialPermissions))) && (
+                    {hasChanges && (
                       <button
                         onClick={handleSave}
                         disabled={saving}
@@ -562,7 +584,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
             <div className="hidden md:flex items-center justify-end gap-3 mb-6">
               <button
                 onClick={handleUndo}
-                disabled={!initialPermissions || JSON.stringify(permissions) === JSON.stringify(initialPermissions)}
+                disabled={!hasChanges}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-premium-sm border border-white/10 text-sm font-bold hover:bg-white/5 transition-all disabled:opacity-30 disabled:cursor-not-allowed text-gray-300"
               >
                 <Undo2 className="w-4 h-4" />
@@ -570,7 +592,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || !initialPermissions || JSON.stringify(permissions) === JSON.stringify(initialPermissions)}
+                disabled={saving || !hasChanges}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-premium-sm bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
               >
                 {saving ? (
@@ -840,9 +862,9 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                       defaultValue=""
                     >
                       <option value="" disabled>Aplicar tema guardado...</option>
-                      {allThemes.map(t => (
+                      {useMemo(() => allThemes.map(t => (
                         <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
+                      )), [allThemes])}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                   </div>
