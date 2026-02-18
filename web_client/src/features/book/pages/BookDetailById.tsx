@@ -33,14 +33,6 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
                 label: 'Inicio',
                 icon: Home,
                 onClick: () => onNavigate && onNavigate('dashboard')
-            },
-            {
-                id: 'download',
-                label: downloading ? 'Enviando...' : 'Descargar',
-                icon: downloading ? Loader2 : Download,
-                onClick: handleDownload,
-                highlight: !downloading,
-                disabled: downloading
             }
         ];
 

@@ -202,25 +202,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       }
     ];
 
-    if (hasDownloaded) {
-      buttons.push({
-        id: 'rate',
-        label: 'Valorar',
-        icon: Star,
-        onClick: () => {
-          webApp?.HapticFeedback?.impactOccurred('medium');
-          setIsRatingModalOpen(true);
-        }
-      });
-    }
-
-    buttons.push({
-      id: 'download',
-      label: hasDownloaded ? 'Listo' : 'Descargar',
-      icon: hasDownloaded ? Check : Download,
-      onClick: handleDownload,
-      highlight: !hasDownloaded
-    });
+    // We removed the floating/sticky Download and Rate buttons
+    // to rely on the on-page "Liquid" UI controls which are now visible on mobile.
+    // This addresses the user's feedback about the "stuck" button.
 
     setCustomActions({
       buttons
