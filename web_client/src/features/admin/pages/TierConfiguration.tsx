@@ -125,17 +125,11 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
 
     const [originalConfig, setOriginalConfig] = useState<TierConfig | null>(null);
 
-    const [themes, setThemes] = useState<any[]>([]);
-
-    // Initial load: Fetch all levels and themes
+    // Initial load: Fetch all levels only (themes moved to Interface page)
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchLevels = async () => {
             try {
-                const [levelsRes, themesRes] = await Promise.all([
-                    api.getAdminTiers(),
-                    api.getAvailableThemes()
-                ]);
-
+                const levelsRes = await api.getAdminTiers();
                 if (levelsRes.levels && Array.isArray(levelsRes.levels)) {
                     setAllLevels([
                         { id: 'global', name: 'Global', color: '#ffffff' },
@@ -148,15 +142,11 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                 } else {
                     setAllLevels([{ id: 'global', name: 'Global', color: '#ffffff' }]);
                 }
-
-                if (themesRes.success && Array.isArray(themesRes.themes)) {
-                    setThemes(themesRes.themes);
-                }
             } catch (err) {
-                console.error('Error fetching data:', err);
+                console.error('Error fetching levels:', err);
             }
         };
-        fetchData();
+        fetchLevels();
     }, []);
 
     // Load tier config whenever selectedTierName changes
@@ -260,7 +250,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
         }
     };
 
-    const Toggle: React.FC<{ checked: boolean; onChange: (val: boolean) => void }> = ({ checked, onChange }) => (
+    const Toggle: React.FC<{ checked: boolean; onChange: (val: boolean) => void }> = React.memo(({ checked, onChange }) => (
         <button
             type="button"
             onClick={() => onChange(!checked)}
@@ -272,7 +262,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                     }`}
             />
         </button>
-    );
+    ));
 
     if (loading && !allLevels.length) {
         return (
@@ -287,7 +277,7 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
 
     return (
         <>
-            <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-8 animate-in fade-in duration-300 px-1 pb-32">
+            <div className="max-w-[1200px] mx-auto w-full flex flex-col gap-8 animate-in fade-in duration-300 px-1 pb-24">
                 {/* Error Alert */}
                 {error && (
                     <div className="p-4 rounded-premium-sm bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
@@ -339,18 +329,6 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                         </div>
                     </div>
 
-                    <button
-                        onClick={handleSave}
-                        disabled={saving || (JSON.stringify(config) === JSON.stringify(originalConfig))}
-                        className="w-full h-[84px] rounded-premium-lg font-black text-sm uppercase tracking-[0.4em] flex items-center justify-center gap-5 transition-all
-                        bg-white/5 text-gray-400 border-2 border-white/5 hover:bg-primary hover:text-white hover:border-primary shadow-2xl active:scale-[0.98] disabled:opacity-20 disabled:grayscale disabled:scale-100 group overflow-hidden relative"
-                    >
-                        <div className="flex items-center gap-4 relative z-10">
-                            {saving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6 group-hover:scale-110 transition-transform" />}
-                            GUARDAR CAMBIOS
-                        </div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-white/5 to-primary/0 -translate-x-full group-hover:animate-shimmer" />
-                    </button>
                 </div>
 
                 {/* Config Grid */}
@@ -569,6 +547,38 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
                                 className="px-6 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-premium-sm shadow-lg shadow-primary/20 hover:scale-105 transition-all whitespace-nowrap"
                             >
                                 Ir a Interfaz
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Floating Save Bar - Premium glassmorphism */}
+            <div className={`fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out ${hasChanges ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+                }`}>
+                <div className="backdrop-blur-xl bg-black/70 border-t border-white/10 shadow-[0_-4px_30px_rgba(0,0,0,0.5)]">
+                    <div className="max-w-[1200px] mx-auto px-4 py-3 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest hidden sm:block">Cambios sin guardar</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleUndo}
+                                className="px-4 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/10 border border-white/5 transition-all active:scale-95"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    Deshacer
+                                </span>
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="px-6 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest bg-primary text-white shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:brightness-110 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                                Guardar
                             </button>
                         </div>
                     </div>
