@@ -12,7 +12,7 @@ from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from models.library_models import AILearningFeedback, LocalBook, MetadataProposal, SeriesMetadata
 from services.ai_service import AIService
-from services.settings_service import set_setting
+from services.settings_service import get_setting, set_setting
 from utils.helpers import generate_series_hash
 from utils.library_db import get_session
 
@@ -620,56 +620,85 @@ async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve estadísticas del módulo IA."""
     check_staff(user_data)
     try:
-        with get_session() as session:
-            # 1. Total series processed by AI (have series_spanish or proposal)
-            processed_series = (
-                session.query(func.count(SeriesMetadata.id))
-                .filter(SeriesMetadata.series_spanish.isnot(None))
-                .scalar()
+    async with pg_manager.get_session() as session:
+        # 1. Total series processed by AI (have series_spanish or proposal)
+        processed_series = (
+            await session.execute(
+                select(func.count(SeriesMetadata.id)).where(SeriesMetadata.series_spanish.isnot(None))
             )
+        ).scalar() or 0
 
-            # 2. Total pending proposals
-            pending = (
-                session.query(func.count(MetadataProposal.id)).filter_by(status="pending").scalar()
+        # 2. Total pending proposals
+        pending = (
+            await session.execute(
+                select(func.count(MetadataProposal.id)).where(MetadataProposal.status == "pending")
             )
+        ).scalar() or 0
 
-            # 3. Learning accuracy (from AILearningFeedback)
-            total_feedback = session.query(func.count(AILearningFeedback.id)).scalar()
-            accepted_feedback = (
-                session.query(func.count(AILearningFeedback.id))
-                .filter(AILearningFeedback.status.in_(["accepted", "no_changes"]))
-                .scalar()
+        # 3. Learning accuracy (from AILearningFeedback)
+        total_feedback = (
+            await session.execute(select(func.count(AILearningFeedback.id)))
+        ).scalar() or 0
+        
+        accepted_feedback = (
+            await session.execute(
+                select(func.count(AILearningFeedback.id)).where(
+                    AILearningFeedback.status.in_(["accepted", "no_changes"])
+                )
             )
+        ).scalar() or 0
 
-            accuracy = 0
-            if total_feedback and total_feedback > 0:
-                accuracy = round((accepted_feedback / total_feedback) * 100, 1)
+        accuracy = 0
+        if total_feedback and total_feedback > 0:
+            accuracy = round((accepted_feedback / total_feedback) * 100, 1)
 
-            # 4. Recent activity (last 5 processed)
-            recent_activity = (
-                session.query(AILearningFeedback)
-                .order_by(desc(AILearningFeedback.created_at))
-                .limit(5)
-                .all()
-            )
+        # 4. Recent activity (last 5 processed)
+        recent_res = await session.execute(
+            select(AILearningFeedback)
+            .order_by(desc(AILearningFeedback.created_at))
+            .limit(5)
+        )
+        recent_activity = recent_res.scalars().all()
 
-            return {
-                "success": True,
-                "stats": {
-                    "processed_series": processed_series,
-                    "pending_proposals": pending,
-                    "accuracy": accuracy,
-                    "total_feedback": total_feedback,
-                    "recent_activity": [
-                        {
-                            "series": f.series_name_original,
-                            "action": f.status,
-                            "date": f.created_at.isoformat(),
-                        }
-                        for f in recent_activity
-                    ],
-                },
-            }
+        # 5. Total books (for dashboard)
+        total_books = (await session.execute(select(func.count(LocalBook.id)))).scalar() or 0
+
+        # 6. System Status
+        ai_active = bool(config.GEMINI_API_KEY)
+        ai_key_masked = (
+            f"{config.GEMINI_API_KEY[:4]}...{config.GEMINI_API_KEY[-4:]}"
+            if config.GEMINI_API_KEY and len(config.GEMINI_API_KEY) > 8
+            else "NOT_SET"
+        )
+
+        # Fetch background scan setting
+        bg_scan = get_setting("ai_background_maintenance", "false")
+        background_scan_enabled = str(bg_scan).lower() == "true"
+
+        return {
+            "success": True,
+            "result": {
+                "total_processed": processed_series,
+                "processed_series": processed_series,
+                "pending_optimization": pending,
+                "pending_proposals": pending,
+                "time_saved_hours": round(processed_series * 0.15, 1),
+                "total_books": total_books,
+                "accuracy": accuracy,
+                "total_feedback": total_feedback,
+                "ai_active": ai_active,
+                "ai_key_masked": ai_key_masked,
+                "background_scan_enabled": background_scan_enabled,
+                "recent_activity": [
+                    {
+                        "series": f.series_name_original,
+                        "action": f.status,
+                        "date": f.created_at.isoformat(),
+                    }
+                    for f in recent_activity
+                ],
+            },
+        }
 
     except Exception as e:
         logger.error(f"Error fetching AI stats: {e}")
