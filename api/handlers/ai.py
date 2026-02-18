@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException
-from sqlalchemy import desc, func, select, update
+from sqlalchemy import desc, exists, func, select, update
 
 from api.handlers.helpers import check_staff
 from config.config_settings import config
@@ -624,17 +624,19 @@ async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
     try:
         # Gather async DB stats
         async with pg_manager.get_session() as session:
-            # 1. Total series processed by AI (have series_spanish or proposal)
+            # 1. Total processed (High quality metadata exists)
             processed_series = (
-                await session.execute(
-                    select(func.count(SeriesMetadata.id)).where(SeriesMetadata.series_spanish.isnot(None))
-                )
+                await session.execute(select(func.count(SeriesMetadata.id)))
             ).scalar() or 0
 
-            # 2. Total pending proposals
+            # 2. Pending optimization (Series in library that DON'T have a SeriesMetadata entry)
+            # Find unique series_hash in LocalBook that are not in SeriesMetadata
+            # This is State 1 (Library -> AI Task)
             pending = (
                 await session.execute(
-                    select(func.count(MetadataProposal.id)).where(MetadataProposal.status == "pending")
+                    select(func.count(func.distinct(LocalBook.series_hash))).where(
+                        ~exists().where(SeriesMetadata.series_hash == LocalBook.series_hash)
+                    )
                 )
             ).scalar() or 0
 
@@ -657,9 +659,7 @@ async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
 
             # 4. Recent activity (last 5 processed)
             recent_res = await session.execute(
-                select(AILearningFeedback)
-                .order_by(desc(AILearningFeedback.created_at))
-                .limit(5)
+                select(AILearningFeedback).order_by(desc(AILearningFeedback.created_at)).limit(5)
             )
             recent_activity = recent_res.scalars().all()
 
@@ -739,11 +739,17 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
     def _sync_query():
         with get_session() as session:
             if list_type == "queue":
-                # Pending proposals
+                # Series that need optimization (Books exist, but no SeriesMetadata yet)
+                # We group by series_hash and select a representative name
                 query = (
-                    session.query(MetadataProposal)
-                    .filter_by(status="pending")
-                    .order_by(desc(MetadataProposal.created_at))
+                    session.query(
+                        LocalBook.series_hash,
+                        func.min(LocalBook.series).label("series_name"),
+                        func.count(LocalBook.id).label("books_count"),
+                    )
+                    .filter(~exists().where(SeriesMetadata.series_hash == LocalBook.series_hash))
+                    .group_by(LocalBook.series_hash)
+                    .order_by(func.count(LocalBook.id).desc())
                 )
                 total = query.count()
                 items = query.limit(limit).offset(offset).all()
@@ -752,14 +758,11 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
                     "success": True,
                     "items": [
                         {
-                            "id": p.id,
-                            "series_hash": p.series_hash,
-                            "current_series": p.proposal_data.get("current_series", "Unknown") if p.proposal_data else "Unknown",
-                            "proposed_series": p.proposal_data.get("proposed_series") if p.proposal_data else None,
-                            "reason": p.proposal_data.get("reason") if p.proposal_data else None,
-                            "created_at": p.created_at.isoformat() if p.created_at else None,
+                            "series_hash": i.series_hash,
+                            "name": i.series_name or "Serie sin nombre",
+                            "books_count": i.books_count,
                         }
-                        for p in items
+                        for i in items
                     ],
                     "total": total,
                 }
