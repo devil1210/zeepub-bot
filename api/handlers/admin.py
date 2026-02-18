@@ -233,14 +233,18 @@ async def handle_admin_scan_user(data: dict[str, Any], user_data: dict[str, Any]
 
     from services.user_service import sync_user_profile_photo
 
-    photo_url = await sync_user_profile_photo(int(target_id), bot)
-
-    if photo_url:
-        return {"success": True, "photo_url": photo_url}
+    result = await sync_user_profile_photo(int(target_id), bot)
+    if result:
+        return {
+            "success": True,
+            "photo_url": result.get("photo_url"),
+            "username": result.get("username"),
+            "name": result.get("name"),
+        }
     else:
         return {
             "success": False,
-            "message": "No se pudo sincronizar la foto de perfil (el usuario puede no tener una o tenerla privada).",
+            "message": "No se pudo sincronizar la foto o identidad de perfil.",
         }
 
 

@@ -18,6 +18,7 @@ import {
   BookOpen,
   Upload,
   Palette,
+  RefreshCw,
   Download,
   Activity,
   Shield
@@ -87,6 +88,35 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncIdentity = async () => {
+    if (!displayId) return;
+    try {
+      setSyncing(true);
+      setError(null);
+      const res = await api.adminScanUser(displayId);
+      if (res.success) {
+        setPermissions(prev => ({
+          ...prev,
+          username: res.username || prev.username,
+          name: res.name || prev.name,
+          photoUrl: res.photo_url || prev.photoUrl
+        }));
+        // Si el username cambió, actualizamos el título del modal/página
+        if (res.username) setDisplayName(res.username);
+
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        setError(res.message || 'Error al sincronizar con Telegram');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error de conexión al sincronizar');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // Use passed userData immediately for display
   const [displayName, setDisplayName] = useState(userData?.username || 'Usuario');
@@ -722,7 +752,17 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
 
                 {/* Username (Telegram) */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 px-1">Username (Telegram)</label>
+                  <div className="flex items-center justify-between mb-1 px-1">
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider">Username (Telegram)</label>
+                    <button
+                      onClick={handleSyncIdentity}
+                      disabled={syncing}
+                      className="p-1 text-primary hover:text-white transition-colors disabled:opacity-50"
+                      title="Sincronizar con Telegram"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
                   <input
                     type="text"
                     value={permissions.username}

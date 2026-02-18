@@ -870,7 +870,11 @@ async def sync_user_profile_photo(telegram_id: int, bot) -> str | None:
                 sync_to_supabase=True,
             )
             await user_cache.invalidate(f"user_effective:{telegram_id}")
-            return current_photo
+            return {
+                "photo_url": current_photo,
+                "username": tg_username or (info.get("username") if info else None),
+                "name": tg_full_name or (info.get("name") if info else None),
+            }
 
         # 2. Procesar foto si existe
         photo_size = photos.photos[0][-1]
@@ -913,14 +917,20 @@ async def sync_user_profile_photo(telegram_id: int, bot) -> str | None:
             level=level_name,
             level_id=level_id,
             photo_url=relative_url,
-            username=tg_username or info.get("username") if info else None,
-            name=tg_full_name or info.get("name") if info else None,
-            nickname=tg_full_name or info.get("nickname") if info else None,
+            username=tg_username or (info.get("username") if info else None),
+            name=tg_full_name or (info.get("name") if info else None),
+            nickname=tg_full_name or (info.get("nickname") if info else None),
             sync_to_supabase=True,
         )
 
+        result = {
+            "photo_url": relative_url,
+            "username": tg_username or (info.get("username") if info else None),
+            "name": tg_full_name or (info.get("name") if info else None),
+        }
+
         await user_cache.invalidate(f"user_effective:{telegram_id}")
-        return relative_url
+        return result
 
     except Exception as e:
         logger.error(f"Error sincronizando foto de perfil de {telegram_id}: {e}")
