@@ -30,6 +30,7 @@ export const AIHub: React.FC = () => {
     const navigate = useNavigate();
     const { setContextType, registerCallbacks, setVisible, setCustomActions } = useNavigation();
     const [stats, setStats] = useState<any>(null);
+    const [statsError, setStatsError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [scanHash, setScanHash] = useState('');
     const [scanResult, setScanResult] = useState<any>(null);
@@ -65,16 +66,23 @@ export const AIHub: React.FC = () => {
     const loadStats = async () => {
         try {
             setLoading(true);
+            setStatsError(null);
             const res = await api.getAiStats();
             if (res.result) {
                 setStats(res.result);
+            } else if (res.success === false) {
+                // Backend returned an error — set fallback state so UI renders
+                setStatsError(res.message || 'Error al cargar estadísticas de IA');
+                setStats({ ai_active: false, ai_key_masked: 'ERROR', background_scan_enabled: false });
             }
             // Load initial lists
             loadProposals();
             loadLists('pending');
             loadLists('reviewed');
-        } catch (e) {
+        } catch (e: any) {
             console.error("Failed to load stats", e);
+            setStatsError(e?.message || 'Error de conexión');
+            setStats({ ai_active: false, ai_key_masked: 'ERROR', background_scan_enabled: false });
         } finally {
             setLoading(false);
         }
@@ -281,7 +289,12 @@ export const AIHub: React.FC = () => {
                     <h1 className="text-4xl font-black text-white tracking-tight">AI Hub</h1>
                     <p className="text-gray-400 font-medium">Centro de Control de Inteligencia Artificial</p>
                 </div>
-                {aiActive ? (
+                {stats === null ? (
+                    <div className="ml-auto flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-gray-500 text-xs font-black uppercase tracking-widest animate-pulse">
+                        <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+                        Cargando...
+                    </div>
+                ) : aiActive ? (
                     <div className="ml-auto flex items-center gap-2 px-4 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-xs font-black uppercase tracking-widest">
                         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                         Online
@@ -289,10 +302,27 @@ export const AIHub: React.FC = () => {
                 ) : (
                     <div className="ml-auto flex items-center gap-2 px-4 py-1.5 bg-red-500/10 border border-red-500/20 rounded-full text-red-400 text-xs font-black uppercase tracking-widest">
                         <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                        Offline (Sin API Key)
+                        {statsError ? 'Error Backend' : 'Sin API Key'}
                     </div>
                 )}
             </div>
+
+            {/* Error Banner */}
+            {statsError && (
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    <div>
+                        <p className="text-red-400 font-black text-sm uppercase tracking-wider">Error al conectar con el módulo IA</p>
+                        <p className="text-red-400/70 text-xs font-mono mt-1">{statsError}</p>
+                        <button
+                            onClick={loadStats}
+                            className="mt-2 text-xs text-red-400 hover:text-red-300 font-black uppercase tracking-wider underline"
+                        >
+                            Reintentar
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Navigation Tabs */}
             <div className="flex items-center gap-2 bg-white/5 p-2 rounded-[2rem] border border-white/5 w-fit mb-12 overflow-x-auto max-w-full no-scrollbar shadow-inner">

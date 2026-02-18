@@ -47,7 +47,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     return (
         <div
             ref={containerRef}
-            className={`relative overflow-hidden ${containerClassName}`}
+            className={`relative overflow-hidden ${containerClassName || 'w-full h-full'}`}
             style={{ backgroundColor: placeholderColor }}
         >
             {/* Loading Skeleton / Pulse */}
