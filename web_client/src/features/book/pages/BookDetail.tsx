@@ -541,11 +541,51 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               </div>
 
               {/* Details and Specs Grids */}
-              <BookSpecs
-                details={detailItems as any}
-                specs={specItems as any}
-                onSearch={handleSearch}
-              />
+              {/* Specs Collapsible Glass Card */}
+              <div className="glass-panel border border-white/10 rounded-premium-sm overflow-hidden transition-all duration-500 hover:border-white/20 hover:shadow-2xl group/specs">
+                <details className="group/details">
+                  <summary className="flex items-center justify-between p-6 cursor-pointer list-none select-none">
+                    <div className="flex items-center gap-3 text-primary">
+                      <div className="p-2 bg-primary/10 rounded-lg group-hover/specs:bg-primary group-hover/specs:text-white transition-colors">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <h3 className="text-sm font-black uppercase tracking-widest text-white">Ficha Técnica</h3>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover/specs:bg-white/10 transition-colors">
+                      <span className="text-white text-xl font-bold transition-transform duration-300 group-open/details:rotate-180">↓</span>
+                    </div>
+                  </summary>
+
+                  <div className="px-6 pb-8 animate-in slide-in-from-top-4 fade-in duration-300">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
+                      {/* Left Column */}
+                      <div className="space-y-4">
+                        {detailItems.map((item, idx) => (
+                          <div key={idx} className="flex flex-col gap-1 border-b border-white/5 pb-2 last:border-0">
+                            <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">{item.label}</span>
+                            <span className={`text-sm font-medium ${item.highlight ? 'text-white' : 'text-gray-300'} ${item.clickable ? 'hover:text-primary cursor-pointer transition-colors' : ''} ${item.font === 'mono' ? 'font-mono' : ''}`}
+                              onClick={() => item.clickable && item.value && onSearch && onSearch(String(item.value), item.type)}>
+                              {item.value || 'N/A'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Right Column */}
+                      <div className="space-y-4">
+                        {specItems.map((item, idx) => (
+                          <div key={idx} className="flex flex-col gap-1 border-b border-white/5 pb-2 last:border-0">
+                            <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">{item.label}</span>
+                            <span className={`text-sm font-medium ${item.highlight ? 'text-white' : 'text-gray-300'} ${item.clickable ? 'hover:text-primary cursor-pointer transition-colors' : ''} ${item.font === 'mono' ? 'font-mono' : ''}`}
+                              onClick={() => item.clickable && item.value && onSearch && onSearch(String(item.value), item.type)}>
+                              {item.value || 'N/A'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </details>
+              </div>
 
             </div>
           </div>
