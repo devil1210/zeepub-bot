@@ -1,11 +1,11 @@
 import logging
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import String, and_, cast, exists, func, or_, select, text
 
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, MetadataProposal, SeriesMetadata, UserDownload
-from datetime import datetime
 from repositories.book_repository import book_repo
 from repositories.series_repository import series_repo
 from schemas.library_schemas import BookDTO, CoverUrlDTO, SeriesDTO
@@ -631,8 +631,9 @@ class LibraryService:
                 res = await session.execute(stmt)
                 series_list = res.scalars().all()
 
-                from difflib import SequenceMatcher
                 import asyncio
+                from difflib import SequenceMatcher
+
                 from services.ai_service import AIService
 
                 suggestions = []
@@ -767,7 +768,7 @@ class LibraryService:
                             "reason": sug["reason"],
                             "confidence": sug["confidence"],
                             "suggested_main_name": sug["suggested_name"],
-                            "suggested_spanish_name": sug["suggested_name"], # Fallback
+                            "suggested_spanish_name": sug["suggested_name"],  # Fallback
                         }
 
                         # Verificar si ya existe una propuesta pendiente para este par
@@ -776,7 +777,7 @@ class LibraryService:
                                 MetadataProposal.series_hash == hash_a,
                                 MetadataProposal.secondary_hash == hash_b,
                                 MetadataProposal.status == "pending",
-                                MetadataProposal.type == "merge"
+                                MetadataProposal.type == "merge",
                             )
                         )
                         existing_res = await session.execute(exists_stmt)
@@ -787,12 +788,14 @@ class LibraryService:
                                 proposal_data=proposal_data,
                                 type="merge",
                                 status="pending",
-                                created_at=datetime.utcnow()
+                                created_at=datetime.utcnow(),
                             )
                             session.add(new_prop)
-                    
+
                     await session.commit()
-                    logger.info(f"✅ Se guardaron {len(suggestions)} propuestas de fusión en la base de datos.")
+                    logger.info(
+                        f"✅ Se guardaron {len(suggestions)} propuestas de fusión en la base de datos."
+                    )
 
                 logger.info(f"🏁 Escaneo finalizado. Encontradas {len(suggestions)} sugerencias.")
                 return suggestions

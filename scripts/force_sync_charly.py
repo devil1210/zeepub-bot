@@ -1,6 +1,6 @@
-import os
 import asyncio
 import logging
+import os
 
 # Override for local execution if needed
 db_url = os.getenv("DATABASE_URL", "")
@@ -11,8 +11,9 @@ if "@db:" in db_url:
 elif not db_url:
     os.environ["DATABASE_URL"] = "postgresql+asyncpg://zeepub:zeepub@localhost:5432/zeepub"
 
-from core.db_manager_pg import pg_manager
 from sqlalchemy import text
+
+from core.db_manager_pg import pg_manager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -86,11 +86,11 @@ class UserRepository(BaseRepository[User]):
 
         # Limpiar datos para el frontend
         raw_username = user.username
-        if raw_username and raw_username.lower() in ('unknown', 'none', ''):
+        if raw_username and raw_username.lower() in ("unknown", "none", ""):
             raw_username = None
 
         raw_name = user.nickname or user.name
-        if raw_name and raw_name.lower() in ('unknown', 'none', ''):
+        if raw_name and raw_name.lower() in ("unknown", "none", ""):
             raw_name = None
 
         return {
@@ -876,8 +876,13 @@ class UserRepository(BaseRepository[User]):
                         "isAdmin": is_admin,
                         "isRealAdmin": is_admin,
                         "isBetaTester": (user.beta_tester or is_admin) is not False,
-                        "name": (user.nickname or user.name) if (user.nickname or user.name) and (user.nickname or user.name).lower() not in ('unknown', 'none', '') else f"User_{user.telegram_id}",
-                        "username": user.username if user.username and user.username.lower() not in ('unknown', 'none', '') else f"User_{user.telegram_id}",
+                        "name": (user.nickname or user.name)
+                        if (user.nickname or user.name)
+                        and (user.nickname or user.name).lower() not in ("unknown", "none", "")
+                        else f"User_{user.telegram_id}",
+                        "username": user.username
+                        if user.username and user.username.lower() not in ("unknown", "none", "")
+                        else f"User_{user.telegram_id}",
                         "roles": user.roles or [],
                         "insignias": user.insignias or [],
                         "allowThemeTemplates": user.allow_theme_templates is True,

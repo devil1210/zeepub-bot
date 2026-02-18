@@ -448,8 +448,7 @@ def format_markdown(design_system: dict) -> str:
     # Anti-patterns section
     if anti_patterns:
         lines.append("### Avoid (Anti-patterns)")
-        formatted_anti = anti_patterns.replace(" + ", "\n- ")
-        lines.append(f"- {formatted_anti}")
+        lines.append(f"- {anti_patterns.replace(' + ', '\n- ')}")
         lines.append("")
 
     # Pre-Delivery Checklist section

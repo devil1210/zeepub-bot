@@ -83,7 +83,7 @@ class MobileAuditor:
         try:
             with open(filepath, encoding="utf-8", errors="replace") as f:
                 content = f.read()
-        except Exception:
+        except:
             return
 
         self.files_checked += 1
@@ -469,12 +469,12 @@ class MobileAuditor:
         # 9.1 iOS Type Scale Check
         if is_react_native:
             # Check for iOS text styles that match HIG
-            _has_large_title = bool(
+            has_large_title = bool(
                 re.search(r'fontSize:\s*34|largeTitle|font-weight:\s*["\']?bold', content)
             )
-            _has_title_1 = bool(re.search(r"fontSize:\s*28", content))
-            _has_headline = bool(re.search(r"fontSize:\s*17.*semibold|headline", content))
-            _has_body = bool(re.search(r"fontSize:\s*17.*regular|body", content))
+            has_title_1 = bool(re.search(r"fontSize:\s*28", content))
+            has_headline = bool(re.search(r"fontSize:\s*17.*semibold|headline", content))
+            has_body = bool(re.search(r"fontSize:\s*17.*regular|body", content))
 
             # Check if following iOS scale roughly
             font_sizes = re.findall(r"fontSize:\s*([\d.]+)", content)
@@ -495,8 +495,8 @@ class MobileAuditor:
             # Check for Material 3 text styles
             has_display = bool(re.search(r"fontSize:\s*[456][0-9]|display", content))
             has_headline_material = bool(re.search(r"fontSize:\s*[23][0-9]|headline", content))
-            _has_title_material = bool(re.search(r"fontSize:\s*2[12][0-9].*medium|title", content))
-            _has_body_material = bool(re.search(r"fontSize:\s*1[456].*regular|body", content))
+            has_title_material = bool(re.search(r"fontSize:\s*2[12][0-9].*medium|title", content))
+            has_body_material = bool(re.search(r"fontSize:\s*1[456].*regular|body", content))
             has_label = bool(re.search(r"fontSize:\s*1[1234].*medium|label", content))
 
             # Check if using sp (scale-independent pixels)
@@ -511,7 +511,7 @@ class MobileAuditor:
         # Check if font sizes follow modular scale
         font_sizes = re.findall(r"fontSize:\s*(\d+(?:\.\d+)?)", content)
         if len(font_sizes) > 3:
-            sorted_sizes = sorted({float(s) for s in font_sizes})
+            sorted_sizes = sorted(set([float(s) for s in font_sizes]))
             ratios = []
             for i in range(1, len(sorted_sizes)):
                 if sorted_sizes[i - 1] > 0:
@@ -548,7 +548,7 @@ class MobileAuditor:
                 val = weight_map.get(w.lower(), w)
                 try:
                     numeric_weights.append(int(val))
-                except Exception:
+                except:
                     pass
 
             # Check if overusing bold (mobile should be regular-dominant)
@@ -589,7 +589,7 @@ class MobileAuditor:
                     saturation = (max_val - min_val) / max_val
                     if saturation > 0.8:  # Highly saturated
                         saturated_count += 1
-            except Exception:
+            except:
                 pass
 
         if saturated_count > 10:
@@ -599,7 +599,7 @@ class MobileAuditor:
 
         # 10.3 Outdoor Visibility Check
         # Low contrast combinations fail in outdoor sunlight
-        _light_colors = re.findall(r"#[0-9A-Fa-f]{6}|rgba?\([^)]+\)", content)
+        light_colors = re.findall(r"#[0-9A-Fa-f]{6}|rgba?\([^)]+\)", content)
         # Check for potential low contrast (light gray on white, dark gray on black)
         potential_low_contrast = bool(
             re.search(
@@ -640,7 +640,7 @@ class MobileAuditor:
             # Check for semantic color usage
             has_label = bool(re.search(r'color:\s*["\']?label|\.label', content))
             has_secondaryLabel = bool(re.search(r"secondaryLabel|\.secondaryLabel", content))
-            _has_systemBackground = bool(re.search(r"systemBackground|\.systemBackground", content))
+            has_systemBackground = bool(re.search(r"systemBackground|\.systemBackground", content))
 
             has_hardcoded_gray = bool(re.search(r"#[78]0{4}", content))
             if has_hardcoded_gray and not (has_label or has_secondaryLabel):
@@ -789,7 +789,7 @@ class MobileAuditor:
         # 14.1 Performance Profiling Check
         has_performance = bool(re.search(r"Performance|systrace|profile|Flipper", content))
         has_console_log = len(re.findall(r"console\.(log|warn|error|debug|info)", content))
-        _has_debugger = bool(re.search(r"debugger|__DEV__|React\.DevTools", content))
+        has_debugger = bool(re.search(r"debugger|__DEV__|React\.DevTools", content))
 
         if has_console_log > 10:
             self.warnings.append(
@@ -821,16 +821,7 @@ class MobileAuditor:
                 d
                 for d in dirs
                 if d
-                not in {
-                    "node_modules",
-                    ".git",
-                    "dist",
-                    "build",
-                    ".next",
-                    "ios",
-                    "android",
-                    ".idea",
-                }
+                not in {"node_modules", ".git", "dist", "build", ".next", "ios", "android", ".idea"}
             ]
             for file in files:
                 if Path(file).suffix in extensions:

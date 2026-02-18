@@ -1515,9 +1515,10 @@ async def handle_admin_clear_duplicates(data: dict[str, Any], user_data: dict[st
 
 async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
-    from services.library_service import LibraryService
-    import threading
     import asyncio
+    import threading
+
+    from services.library_service import LibraryService
 
     def run_ai_scan_in_thread():
         # Crear un nuevo loop para el hilo secundario
@@ -1529,7 +1530,9 @@ async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data:
             loop.run_until_complete(LibraryService.find_ai_series_duplicates())
             logger.info("🏁 Escaneo de duplicados por IA finalizado con éxito.")
         except Exception as e:
-            logger.error(f"❌ Error en escaneo de duplicados por IA (Background): {e}", exc_info=True)
+            logger.error(
+                f"❌ Error en escaneo de duplicados por IA (Background): {e}", exc_info=True
+            )
         finally:
             LibraryService._is_ai_scanning = False
             loop.close()
@@ -1553,7 +1556,6 @@ async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data:
         return {"success": False, "message": str(e)}
 
 
-
 async def handle_admin_get_ai_scan_status(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
     from services.library_service import LibraryService
@@ -1565,7 +1567,6 @@ async def handle_admin_get_ai_scan_status(data: dict[str, Any], user_data: dict[
 
 
 async def handle_admin_merge_series(data: dict[str, Any], user_data: dict[str, Any]):
-
     check_staff(user_data)
     target_hash = data.get("target_hash")
     source_hash = data.get("source_hash")
