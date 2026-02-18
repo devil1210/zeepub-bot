@@ -3,6 +3,7 @@ import { useTheme } from './ThemeContext';
 import { setSimulatedLevelHeader } from '@shared/services/api';
 import { supabase } from '@shared/services/supabase';
 import { preloadCriticalResources } from '@telegram/utils/telegramOptimizations';
+import { syncTelegramTheme } from '@telegram/utils/themeSync';
 
 
 interface TelegramUser {
@@ -242,6 +243,14 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setWebApp(tg);
       setIsTelegram(true);
 
+      // --- INITIAL THEME SYNC ---
+      // We sync immediately to prevent flash of wrong theme
+      syncTelegramTheme(tg);
+
+      // Listen for theme changes (e.g. user toggles dark mode in Telegram)
+      const onThemeChanged = () => syncTelegramTheme(tg);
+      tg.onEvent('themeChanged', onThemeChanged);
+
       // Telegram Mini App Optimizations
       try {
         // Expand to full viewport height (critical for mobile)
@@ -250,8 +259,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         // Enable closing confirmation to prevent accidental exits
         tg.enableClosingConfirmation();
 
-        // Set header color to match theme
-        tg.setHeaderColor('#0f172a');
+        // Set header color to match theme (Handled by syncTelegramTheme now, but backup here)
+        // tg.setHeaderColor('#0f172a'); // Removed in favor of dynamic sync
 
         // Enable vertical swipes (better mobile UX)
         if (tg.isVerticalSwipesEnabled !== undefined) {
@@ -293,6 +302,11 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       refreshStatus();
       refreshBotInfo();
+
+      // Cleanup
+      return () => {
+        tg.offEvent('themeChanged', onThemeChanged);
+      };
     } else {
       setReady(true);
     }

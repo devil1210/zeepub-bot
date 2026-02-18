@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, BookOpen, Calendar, Clock, Library, RefreshCw, Star } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calendar, Clock, Library, RefreshCw, Star, Sparkles } from 'lucide-react';
 import { Series } from '@shared/types';
 import { getCoverUrl } from '@shared/utils/imageUtils';
 
@@ -150,6 +150,21 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
                         </button>
 
                         <div className="relative mb-6">
+                            <div className="flex items-center gap-2 mb-3">
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        // TODO: Implement AI Summary modal or logic
+                                        // For now, it's a visual indicator of the new feature
+                                        onOpenSynopsis();
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 text-violet-300 border border-violet-500/30 text-[10px] font-black uppercase tracking-wider hover:bg-violet-500/30 transition-all shadow-lg shadow-violet-500/10 backdrop-blur-md"
+                                >
+                                    <Sparkles className="w-3 h-3 text-fuchsia-400" />
+                                    Resumen IA
+                                </button>
+                            </div>
+
                             <div className="text-gray-200 text-xs sm:text-sm line-clamp-3 max-w-2xl leading-relaxed font-medium">
                                 {formatDescription(series.description || "Sin descripción disponible.")}
                             </div>

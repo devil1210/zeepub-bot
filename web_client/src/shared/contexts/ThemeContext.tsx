@@ -10,6 +10,7 @@ interface ThemeSettings {
   searchBarOpacity: number;
   headerOpacity: number;
   glassBlur: number;
+  glassSaturation: number;
   theme: 'dark' | 'light' | 'amoled';
   fontSize: number;
   coverWidth: number;
@@ -39,7 +40,8 @@ const defaultSettings: ThemeSettings = {
   accentOpacity: 0.2,
   searchBarOpacity: 0.8,
   headerOpacity: 0.9,
-  glassBlur: 12, /* Enterprise Standard v3.5.0 */
+  glassBlur: 20, /* Telegram 2026 "Liquid Glass" Standard */
+  glassSaturation: 180, /* Vibrancy for Liquid Effect */
   theme: 'dark',
   fontSize: 14,
   coverWidth: 120,
@@ -209,7 +211,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.style.setProperty('--accent-opacity', (settings.accentOpacity ?? 0.2).toString());
     root.style.setProperty('--searchbar-opacity', (settings.searchBarOpacity ?? 0.8).toString());
     root.style.setProperty('--header-opacity', (settings.headerOpacity ?? 0.9).toString());
-    root.style.setProperty('--glass-blur', `${settings.glassBlur ?? 12}px`);
+    root.style.setProperty('--glass-blur', `${settings.glassBlur ?? 20}px`);
+    root.style.setProperty('--glass-saturation', `${settings.glassSaturation ?? 180}%`);
     root.style.setProperty('--cover-width', `${settings.coverWidth ?? 120}px`);
     root.style.setProperty('--banner-content-offset', `${settings.bannerContentOffset ?? 0}px`);
     root.style.setProperty('--card-glow-intensity', (settings.cardGlowIntensity ?? 0.5).toString());

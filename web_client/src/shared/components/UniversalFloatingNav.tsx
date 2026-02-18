@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { useNavigation } from '@shared/contexts/NavigationContext';
 import { useTelegram } from '@shared/contexts/TelegramContext';
@@ -47,6 +47,76 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
     } = useNavigation();
 
     const { contextType, isMenuOpen, currentPage, totalPages, activeSort, isVisible } = state;
+    const isTelegram = !!webApp;
+
+    // --- TELEGRAM NATIVE INTEGRATION ---
+
+    // 1. Native Back Button & Header Color
+    useEffect(() => {
+        if (!webApp) return;
+
+        // Sync header color with our glass theme or Telegram theme
+        // We use the bg-color computed by ThemeContext which might be synced or custom
+        const rootStyle = getComputedStyle(document.documentElement);
+        const bgColor = rootStyle.getPropertyValue('--bg-color').trim();
+        if (bgColor) {
+            webApp.setHeaderColor(settings.theme === 'amoled' ? '#000000' : bgColor);
+            webApp.setBackgroundColor(settings.theme === 'amoled' ? '#000000' : bgColor);
+        }
+
+        // Logic for Back Button
+        if (contextType !== 'main') {
+            webApp.BackButton.show();
+            const onBack = () => {
+                webApp.HapticFeedback.impactOccurred('light');
+                handleBack();
+                // If we are at root of a non-main context (like entering 'admin' directly), 
+                // handleBack might need to know where to go.
+                // But usually handleBack in context simply pops history or goes home.
+            };
+            webApp.BackButton.onClick(onBack);
+            return () => {
+                webApp.BackButton.offClick(onBack);
+            };
+        } else {
+            webApp.BackButton.hide();
+        }
+    }, [webApp, contextType, handleBack, settings.theme]);
+
+    // 2. Native Main Button for Primary Actions
+    useEffect(() => {
+        if (!webApp) return;
+
+        // Find a primary action button (highlighted) in current state
+        const primaryBtn = state.actionButtons?.find(b => b.highlight);
+
+        if (primaryBtn) {
+            const btnColor = settings.primaryColor || webApp.themeParams.button_color || '#2481cc';
+            const btnTextColor = webApp.themeParams.button_text_color || '#ffffff';
+
+            webApp.MainButton.setParams({
+                text: primaryBtn.label.toUpperCase(),
+                color: btnColor,
+                text_color: btnTextColor,
+                is_active: true,
+                is_visible: true
+            });
+
+            const onMainClick = () => {
+                webApp.HapticFeedback.impactOccurred('heavy'); // Stronger feedback for key actions
+                primaryBtn.onClick();
+            };
+            webApp.MainButton.onClick(onMainClick);
+
+            return () => {
+                webApp.MainButton.offClick(onMainClick);
+                webApp.MainButton.hide();
+            };
+        } else {
+            webApp.MainButton.hide();
+        }
+    }, [webApp, state.actionButtons, settings.primaryColor]);
+
 
     if (!isVisible || contextType === 'none') return null;
 
@@ -136,14 +206,19 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                                     icon={ChevronRight}
                                     label="Siguiente"
                                 />
-                                <NavDivider />
                             </>
                         )}
-                        <NavButton
-                            onClick={handleBack}
-                            icon={Reply}
-                            label="Volver"
-                        />
+                        {/* Hide "Volver" on Telegram as we use Native BackButton */}
+                        {!isTelegram && (
+                            <>
+                                <NavDivider />
+                                <NavButton
+                                    onClick={handleBack}
+                                    icon={Reply}
+                                    label="Volver"
+                                />
+                            </>
+                        )}
                     </>
                 );
 
@@ -151,12 +226,16 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             case 'ai':
                 return (
                     <>
-                        <NavButton
-                            onClick={handleBack}
-                            icon={ChevronLeft}
-                            label={state.backAction ? "Atrás" : "Salir"}
-                        />
-                        <NavDivider />
+                        {!isTelegram && (
+                            <>
+                                <NavButton
+                                    onClick={handleBack}
+                                    icon={ChevronLeft}
+                                    label={state.backAction ? "Atrás" : "Salir"}
+                                />
+                                <NavDivider />
+                            </>
+                        )}
                         <button
                             onClick={() => setMenuOpen(!isMenuOpen)}
                             className={`flex-[2] flex items-center justify-center gap-2 px-4 py-2 rounded-premium-sm transition-all ${isMenuOpen ? 'text-primary' : 'text-gray-300'} hover:bg-white/5 cursor-pointer`}
@@ -176,25 +255,31 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             case 'book':
                 return (
                     <>
-                        <NavButton
-                            onClick={handleBack}
-                            icon={Reply}
-                            label="Volver"
-                        />
-                        <NavDivider />
+                        {!isTelegram && (
+                            <>
+                                <NavButton
+                                    onClick={handleBack}
+                                    icon={Reply}
+                                    label="Volver"
+                                />
+                                <NavDivider />
+                            </>
+                        )}
                         {state.actionButtons ? (
-                            state.actionButtons.map((btn, idx) => (
-                                <React.Fragment key={btn.id}>
-                                    <NavButton
-                                        onClick={btn.onClick}
-                                        disabled={btn.disabled}
-                                        icon={btn.icon}
-                                        label={btn.label}
-                                        highlightOnActive={btn.highlight}
-                                    />
-                                    {idx < (state.actionButtons?.length || 0) - 1 && <NavDivider />}
-                                </React.Fragment>
-                            ))
+                            state.actionButtons
+                                .filter(btn => !isTelegram || !btn.highlight) // Filter out primary if on Telegram (moved to MainButton)
+                                .map((btn, idx, arr) => (
+                                    <React.Fragment key={btn.id}>
+                                        <NavButton
+                                            onClick={btn.onClick}
+                                            disabled={btn.disabled}
+                                            icon={btn.icon}
+                                            label={btn.label}
+                                            highlightOnActive={btn.highlight}
+                                        />
+                                        {idx < arr.length - 1 && <NavDivider />}
+                                    </React.Fragment>
+                                ))
                         ) : (
                             <NavButton
                                 onClick={handleHome}
@@ -208,24 +293,33 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             case 'settings':
                 return (
                     <>
-                        <NavButton
-                            onClick={handleBack}
-                            icon={ChevronLeft}
-                            label="Volver"
-                        />
-                        <NavDivider />
+                        {!isTelegram && (
+                            <>
+                                <NavButton
+                                    onClick={handleBack}
+                                    icon={ChevronLeft}
+                                    label="Volver"
+                                />
+                                <NavDivider />
+                            </>
+                        )}
                         <NavButton
                             onClick={() => state.actionButtons?.find(b => b.id === 'restore')?.onClick()}
                             icon={RotateCcw}
                             label="Restaurar"
                         />
-                        <NavDivider />
-                        <NavButton
-                            onClick={() => state.actionButtons?.find(b => b.id === 'save')?.onClick()}
-                            icon={Save}
-                            label="Guardar"
-                            highlightOnActive
-                        />
+                        {/* "Guardar" moved to MainButton on Telegram */}
+                        {!isTelegram && (
+                            <>
+                                <NavDivider />
+                                <NavButton
+                                    onClick={() => state.actionButtons?.find(b => b.id === 'save')?.onClick()}
+                                    icon={Save}
+                                    label="Guardar"
+                                    highlightOnActive
+                                />
+                            </>
+                        )}
                     </>
                 );
 
