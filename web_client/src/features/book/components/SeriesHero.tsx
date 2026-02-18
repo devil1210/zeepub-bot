@@ -88,7 +88,7 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
                 style={{ paddingTop: '2rem' }}
             >
                 <div className="max-w-[1800px] mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
-                    <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 shadow-2xl rounded-lg overflow-hidden">
+                    <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 shadow-premium border border-white/10 rounded-lg overflow-hidden transition-transform duration-500 hover:scale-105">
                         <img alt={`${series.title} Cover`} className="w-full h-full object-cover" src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality)} />
                     </div>
 

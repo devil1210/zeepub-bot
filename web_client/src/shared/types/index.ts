@@ -24,6 +24,7 @@ export interface Book {
   tags: string[];
   series?: string;
   cleanTitle?: string;
+  is_uncensored?: boolean;
 }
 
 export interface Volume {

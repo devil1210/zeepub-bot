@@ -17,56 +17,49 @@ export const BookCard = memo<BookCardProps>(({ book, onDownload, compact = false
 
   return (
     <div className="group relative glass-panel rounded-premium-sm overflow-hidden border border-white/5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full">
-      <div className="absolute top-3 right-3 z-10">
-        <span className="bg-black/70 dark:bg-black/70 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider border border-white/10 shadow-sm">
-          {book.book_type || book.format}
-        </span>
-      </div>
+      <div className={`relative overflow-hidden bg-slate-900 ${compact ? 'aspect-[3/4]' : 'aspect-[2/3]'}`}>
+        <div className="absolute top-3 left-3 z-20 flex flex-col gap-1.5">
+          <span className="bg-black/60 shadow-lg backdrop-blur-md text-white text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-widest border border-white/10">
+            {book.book_type || book.format}
+          </span>
+          {book.is_uncensored && (
+            <span className="bg-red-600/90 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest shadow-lg border border-white/10 w-min">
+              S/C
+            </span>
+          )}
+        </div>
 
-      <div className={`relative overflow-hidden bg-slate-200 dark:bg-gray-800 ${compact ? 'aspect-[3/4]' : 'aspect-[2/3]'}`}>
         <ProgressiveImage
           alt={book.title}
-          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+          className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100"
           src={coverSrc}
           containerClassName="w-full h-full"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-60 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500 pointer-events-none"></div>
+
+        {/* Glow Effect */}
+        <div className="absolute -inset-full bg-primary/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+
         {!compact && (
-          <div className="absolute bottom-4 left-4 right-4">
-            <h3 className="text-white font-bold text-lg leading-tight line-clamp-2 drop-shadow-md">{book.cleanTitle || book.title}</h3>
-            <p className="text-gray-200 dark:text-gray-300 text-sm font-medium mt-1 truncate">{book.author}</p>
+          <div className="absolute bottom-4 left-4 right-4 z-10 translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-1 text-yellow-500">
+                <Star className="w-3 h-3 fill-current" />
+                <span className="text-[10px] font-black tracking-wider text-white">{book.rating > 0 ? book.rating.toFixed(1) : 'NEW'}</span>
+              </div>
+              <div className="w-px h-3 bg-white/20"></div>
+              <span className="text-[10px] font-mono text-gray-400">{book.size}</span>
+            </div>
+            <h3 className="text-white font-black text-lg leading-tight line-clamp-2 drop-shadow-xl mb-1 group-hover:text-primary transition-colors">{book.cleanTitle || book.title}</h3>
+            <p className="text-gray-400 text-xs font-bold uppercase tracking-wider line-clamp-1">{book.author}</p>
           </div>
         )}
       </div>
 
-      <div className="p-4 flex flex-col flex-1">
-        {compact && (
-          <div className="mb-3">
-            <h3 className="text-gray-900 dark:text-white font-bold text-base leading-tight line-clamp-1">{book.cleanTitle || book.title}</h3>
-            <p className="text-gray-500 dark:text-gray-400 text-xs mt-1 truncate">{book.author}</p>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex items-center gap-1.5 text-yellow-500 text-xs bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
-            <Star className="w-3 h-3 fill-current" />
-            <span className="font-bold">{book.rating > 0 ? book.rating.toFixed(1) : '—'}</span>
-          </div>
-          <span className="text-[10px] text-gray-500 font-mono px-2 py-0.5 bg-white/5 rounded">{book.size}</span>
-        </div>
-
-        <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between">
-          <span className="text-[10px] text-gray-500 uppercase tracking-wider">
-            {compact ? book.format : 'Available'}
-          </span>
-          <button
-            onClick={() => onDownload(book)}
-            className="p-2 rounded-lg bg-white/5 text-gray-300 hover:bg-primary hover:text-white transition-colors"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <div className="p-0 hidden"></div>
+      {/* We are moving towards a cover-only card design for maximum impact, 
+          but keeping the code structure if we want to revert to text-below later. 
+          For now, overlay is cleaner. */}
     </div>
   );
 });
