@@ -176,6 +176,8 @@
     body {
       background-color: var(--bg-color);
       overscroll-behavior-y: none;
+      -webkit-overflow-scrolling: touch;
+      /* Critical for iOS fluid scroll */
       transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -373,24 +375,48 @@
       background-image: inherit;
     }
 
-    /* === MOBILE PERFORMANCE OPTIMIZATIONS === */
+    /* === MOBILE PERFORMANCE OPTIMIZATIONS (Low Power / No HW Acceleration Trend) === */
     @media (max-width: 768px) {
 
       .glass-panel,
       .glass-card {
-        /* Lighter blur on mobile — prevents GPU artifacts */
-        backdrop-filter: blur(min(var(--glass-blur), 8px));
-        -webkit-backdrop-filter: blur(min(var(--glass-blur), 8px));
-        /* Lighter shadow */
-        box-shadow: 0 2px 8px -1px rgba(0, 0, 0, 0.15);
-        /* Faster transitions */
-        transition: background-color 0.15s ease, border-color 0.15s ease;
+        /* DISABLE GPU HEAVY EFFECTS */
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+
+        /* Fallback: Higher opacity background for legibility without blur */
+        background-color: var(--card-color) !important;
+        /* Ensure solid enough contrast */
+        background: linear-gradient(rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.98)) !important;
+
+        /* Remove expensive shadows */
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+
+        /* Remove border gradients if they cause painting overhead */
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+      }
+
+      .amoled .glass-panel,
+      .amoled .glass-card {
+        background: #000000 !important;
+        border-color: #222 !important;
       }
 
       .glass-backdrop::before {
-        filter: blur(16px);
-        opacity: 0.1;
-        transform: scale(1.05);
+        /* Disable large blur radius */
+        filter: none !important;
+        opacity: 0.05;
+        background-image: none !important;
+        /* Save memory */
+      }
+
+      /* Disable complex animations on mobile */
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0s !important;
+        animation-fill-mode: forwards !important;
+        /* Exception: keep simple transitions if needed, but remove if really slow */
       }
     }
 
