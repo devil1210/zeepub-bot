@@ -43,7 +43,10 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const selectedUserId = searchParams.get('userId');
   const tierName = searchParams.get('tierName');
   const tierColor = searchParams.get('tierColor');
-  const configuringTier = tierName ? { name: tierName, color: tierColor || '' } : null;
+  const configuringTier = useMemo(() =>
+    tierName ? { name: tierName, color: tierColor || '' } : null,
+    [tierName, tierColor]
+  );
 
   // Local UI state
   const [saving, setSaving] = useState(false);
@@ -53,6 +56,10 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const undoRef = React.useRef<(() => void) | null>(null);
   const saveRef = React.useRef<(() => void) | null>(null);
   const [levels, setLevels] = useState<{ id: string, name: string, color: string }[]>([]);
+
+  // Stable callbacks for child refs — prevents re-render cascades
+  const stableSetUndoRef = React.useCallback((fn: () => void) => { undoRef.current = fn; }, []);
+  const stableSetSaveRef = React.useCallback((fn: () => void) => { saveRef.current = fn; }, []);
 
   useEffect(() => {
     const fetchLevels = async () => {
@@ -173,8 +180,8 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
             onSavingChange={setSaving}
             onCanUndoChange={setCanUndo}
             onCanSaveChange={setCanSave}
-            setUndoRef={(fn) => { undoRef.current = fn; }}
-            setSaveRef={(fn) => { saveRef.current = fn; }}
+            setUndoRef={stableSetUndoRef}
+            setSaveRef={stableSetSaveRef}
           />
         );
       case 'interface':
@@ -183,8 +190,8 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
             onSavingChange={setSaving}
             onCanUndoChange={setCanUndo}
             onCanSaveChange={setCanSave}
-            setUndoRef={(fn) => { undoRef.current = fn; }}
-            setSaveRef={(fn) => { saveRef.current = fn; }}
+            setUndoRef={stableSetUndoRef}
+            setSaveRef={stableSetSaveRef}
           />
         );
       case 'duplicates': return <DuplicatesDashboard />;

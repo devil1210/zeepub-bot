@@ -204,7 +204,8 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
     // Notify parent of saving state changes
     useEffect(() => {
         onSavingChange?.(saving);
-    }, [saving, onSavingChange]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [saving]);
 
     // Notify parent of undo/apply availability
     const hasChanges = useMemo(() => {
@@ -214,16 +215,19 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
     useEffect(() => {
         onCanUndoChange?.(hasChanges);
         onCanApplyChange?.(hasChanges);
-    }, [hasChanges, onCanUndoChange, onCanApplyChange]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasChanges]);
 
-    // Expose undo/save functions to parent via refs
+    // Expose undo/save functions to parent via refs (run once on mount)
     useEffect(() => {
         onUndoRef?.(handleUndo);
-    }, [onUndoRef]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         onSaveRef?.(handleSave);
-    }, [onSaveRef]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleSave = async () => {
         try {

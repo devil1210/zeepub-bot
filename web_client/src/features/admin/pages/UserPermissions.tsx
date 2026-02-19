@@ -185,15 +185,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
           ]);
         }
 
-        // Fetch all available themes
-        try {
-          const themesRes = await api.getAvailableThemes();
-          if (themesRes.success && Array.isArray(themesRes.themes)) {
-            setAllThemes(themesRes.themes);
-          }
-        } catch (e) {
-          console.error('Error loading themes:', e);
-        }
+        // Themes are loaded lazily when the user opens the theme selector
 
         // Fetch user permissions if userId is available
         const userIdToFetch = userId || userData?.id;
@@ -838,6 +830,14 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="relative">
                     <select
+                      onFocus={async () => {
+                        if (allThemes.length === 0) {
+                          try {
+                            const res = await api.getAvailableThemes();
+                            if (res.success && Array.isArray(res.themes)) setAllThemes(res.themes);
+                          } catch (e) { console.error('Error loading themes:', e); }
+                        }
+                      }}
                       onChange={(e) => {
                         const theme = allThemes.find(t => String(t.id) === e.target.value);
                         if (theme) {
