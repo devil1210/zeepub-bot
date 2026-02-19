@@ -375,48 +375,71 @@
       background-image: inherit;
     }
 
-    /* === MOBILE PERFORMANCE OPTIMIZATIONS (Low Power / No HW Acceleration Trend) === */
+    /* === EXTREME MOBILE PERFORMANCE (Target: 60/120fps Stable) === */
     @media (max-width: 768px) {
+
+      /* Global Reset for Performance */
+      * {
+        box-shadow: none !important;
+        /* Shadows are expensive to rasterize */
+        text-shadow: none !important;
+        filter: none !important;
+        /* No blur, no brightness filters */
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        transition: opacity 0.1s linear, transform 0.1s linear !important;
+        /* Only simple transitions */
+        animation: none !important;
+        /* Kill all keyframe animations */
+      }
+
+      /* Force Hardware Acceleration OFF for flows, but ON for scroll */
+      .glass-panel,
+      .glass-card,
+      div {
+        /* Remove transparent gradients that cause overdraw */
+        background-image: none !important;
+        border-image: none !important;
+      }
 
       .glass-panel,
       .glass-card {
-        /* DISABLE GPU HEAVY EFFECTS */
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
+        /* Flat, solid, fast rendering */
+        background-color: #1e293b !important;
+        /* Fallback Slate-800 */
+        background: #1e293b !important;
 
-        /* Fallback: Higher opacity background for legibility without blur */
-        background-color: var(--card-color) !important;
-        /* Ensure solid enough contrast */
-        background: linear-gradient(rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.98)) !important;
+        /* Simple thin border, no gradient border */
+        border: 1px solid #334155 !important;
+        /* Slate-700 */
 
-        /* Remove expensive shadows */
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+        /* Optional: Hint browser to optimize layout */
+        contain: content;
+      }
 
-        /* Remove border gradients if they cause painting overhead */
-        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+      /* Dark/Amoled Handling */
+      .dark .glass-panel,
+      .dark .glass-card {
+        background-color: #111827 !important;
+        /* Gray-900 */
+        border-color: #1f2937 !important;
       }
 
       .amoled .glass-panel,
       .amoled .glass-card {
-        background: #000000 !important;
-        border-color: #222 !important;
+        background-color: #000000 !important;
+        border-color: #1a1a1a !important;
       }
 
+      /* Disable the large background blob entirely */
+      .glass-backdrop,
       .glass-backdrop::before {
-        /* Disable large blur radius */
-        filter: none !important;
-        opacity: 0.05;
-        background-image: none !important;
-        /* Save memory */
+        display: none !important;
       }
 
-      /* Disable complex animations on mobile */
-      *,
-      *::before,
-      *::after {
-        animation-duration: 0s !important;
-        animation-fill-mode: forwards !important;
-        /* Exception: keep simple transitions if needed, but remove if really slow */
+      /* Ensure text is standard rendering for speed */
+      body {
+        text-rendering: optimizeSpeed;
       }
     }
 
