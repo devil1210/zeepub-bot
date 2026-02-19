@@ -13,7 +13,7 @@ import { Series } from '@shared/types';
 import { SearchScopeModal } from '../components/SearchScopeModal';
 import { api } from '@shared/services/api';
 import { preloadImages } from '@shared/utils/imagePreloader';
-import { WindowVirtualizer } from 'virtua';
+import { Virtualizer } from 'virtua';
 import { useResponsiveColumns } from '@shared/hooks/useResponsiveColumns';
 
 // Modular Components
@@ -50,6 +50,11 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   } = useNavigation();
 
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
+  const mainScrollRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    mainScrollRef.current = document.querySelector('main');
+  }, []);
   const [activeSort, setActiveSort] = useState(navState.activeSort || 'a-z');
   const [selectedScope, setSelectedScope] = useState(navState.selectedScope || 'TODOS');
   const viewMode = navState.viewMode;
@@ -309,9 +314,14 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
       }
     };
 
-    mainContainer.addEventListener('scroll', handleScroll);
+    mainContainer.addEventListener('scroll', handleScroll, { passive: true });
     return () => mainContainer.removeEventListener('scroll', handleScroll);
   }, [settings.listMode, loading, loadingMore, currentPage, totalPages]);
+
+  // View Transition Styles for native feel
+  const viewTransitionStyles = {
+    viewTransitionName: 'search-results'
+  };
 
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-300 relative" ref={scrollContainerRef}>
@@ -321,44 +331,49 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         selectedScope={selectedScope}
         onSelectScope={setSelectedScope}
       />
-
-      <div className="flex-1 px-4 pb-32 md:pb-6">
-        <div className="max-w-[1800px] mx-auto space-y-3">
+      <div className="flex-1 px-4 pb-32 md:pb-6 overflow-x-hidden">
+        <div className="max-w-[1800px] mx-auto">
           {series.length > 0 && (
-            <div className="w-full">
-              {rows.map((row, rowIndex) => (
-                <div
-                  key={rowIndex}
-                  className={viewMode === 'list' ? 'space-y-3 mb-3' : 'grid gap-6 mb-6'}
-                  style={viewMode === 'grid' ? {
-                    gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`
-                  } : undefined}
+            <div className="w-full" style={viewTransitionStyles}>
+              {viewMode === 'list' ? (
+                <Virtualizer
+                  scrollRef={mainScrollRef as React.RefObject<HTMLElement>}
+                  bufferSize={500}
                 >
-                  {row.map((item) => (
-                    viewMode === 'list' ? (
-                      <SearchCardList
-                        key={item.id}
-                        series={item}
-                        settings={settings}
-                        onClick={() => handleSelectSeries(item)}
-                      />
-                    ) : (
-                      <SearchCardGrid
-                        key={item.id}
-                        series={item}
-                        settings={settings}
-                        onClick={() => handleSelectSeries(item)}
-                      />
-                    )
+                  {series.map((item) => (
+                    <SearchCardList
+                      key={item.id}
+                      series={item}
+                      settings={settings}
+                      onClick={() => handleSelectSeries(item)}
+                    />
                   ))}
-                  {/* Filler for grid alignment */}
-                  {viewMode === 'grid' && row.length < columns && (
-                    Array.from({ length: columns - row.length }).map((_, i) => (
-                      <div key={`filler-${i}`} />
-                    ))
-                  )}
-                </div>
-              ))}
+                </Virtualizer>
+              ) : (
+                <Virtualizer
+                  scrollRef={mainScrollRef as React.RefObject<HTMLElement>}
+                  bufferSize={1000}
+                >
+                  {rows.map((row, rowIndex) => (
+                    <div
+                      key={rowIndex}
+                      className="grid gap-6 mb-6"
+                      style={{
+                        gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`
+                      }}
+                    >
+                      {row.map((item) => (
+                        <SearchCardGrid
+                          key={item.id}
+                          series={item}
+                          settings={settings}
+                          onClick={() => handleSelectSeries(item)}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </Virtualizer>
+              )}
             </div>
           )}
 

@@ -360,7 +360,7 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
     };
 
     return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-3 w-[90%] max-w-xl md:w-auto md:min-w-[600px] px-0 animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-3 w-[90%] max-w-xl md:w-auto md:min-w-[600px] px-0 animate-in slide-in-from-bottom-4 duration-300 floating-nav-container">
             {/* Contextual Menus */}
             {isMenuOpen && (contextType === 'search' || contextType === 'series') && (
                 <div
