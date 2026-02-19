@@ -24,6 +24,7 @@ interface ThemeSettings {
   borderRadius: number;
   borderWidth: number;
   listMode: 'infinite' | 'paginated';
+  performanceMode: boolean;
 }
 
 interface ThemeContextType {
@@ -55,6 +56,7 @@ const defaultSettings: ThemeSettings = {
   borderRadius: 24,
   borderWidth: 1,
   listMode: 'paginated',
+  performanceMode: false,
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -278,6 +280,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       } else {
         root.classList.remove('amoled');
       }
+    }
+
+    // Handle Performance Mode Class
+    if (settings.performanceMode) {
+      root.classList.add('performance-mode');
+    } else {
+      root.classList.remove('performance-mode');
     }
 
   }, [settings]);

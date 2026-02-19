@@ -16,11 +16,12 @@ logger = logging.getLogger(__name__)
 
 _engine = None
 
+
 def _get_sa_engine():
     global _engine
     if _engine is not None:
         return _engine
-        
+
     if not config.DATABASE_URL:
         raise RuntimeError("DATABASE_URL not configured. PostgreSQL is mandatory.")
 

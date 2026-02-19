@@ -58,31 +58,57 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ settings, update
                     </div>
                 </div>
 
-                {/* Cover Quality Preference */}
-                <div className="pt-8 border-t border-white/5">
-                    <label className="block text-[10px] font-black text-gray-500 mb-6 uppercase tracking-[0.2em] px-1">Motor de Portadas (Calidad de Renderizado)</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        {[
-                            { id: 'pequeña', label: 'Eco', desc: 'Ahorro' },
-                            { id: 'mediana', label: 'Estandar', desc: 'Media' },
-                            { id: 'grande', label: 'Premium', desc: 'Res.' },
-                            { id: 'original', label: 'Ultra', desc: 'Max.' }
-                        ].map((q) => (
-                            <label key={q.id} className="cursor-pointer group/radio">
-                                <input
-                                    type="radio"
-                                    name="coverQuality"
-                                    className="hidden peer"
-                                    checked={settings.coverQuality === q.id}
-                                    onChange={() => updateSettings({ coverQuality: q.id as any })}
-                                />
-                                <div className="p-4 rounded-premium-sm border border-white/5 bg-white/[0.03] flex flex-col items-center justify-center text-center peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.2)] transition-all hover:bg-white/[0.06]">
-                                    <span className="text-[11px] font-black text-white uppercase tracking-widest transition-colors peer-checked:text-primary">{q.label}</span>
-                                    <span className="text-[8px] text-gray-500 font-black uppercase tracking-widest mt-1 opacity-50">{q.desc}</span>
-                                </div>
-                            </label>
-                        ))}
-                    </div>
+            </div>
+
+            {/* Performance Mode Toggle */}
+            <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div className="space-y-1">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1 block mb-2">
+                        MODO DE ALTO RENDIMIENTO (AHORRO BATERÍA)
+                    </label>
+                    <p className="text-xs text-gray-400 max-w-lg leading-relaxed font-medium">
+                        Desactiva efectos de cristal, sombras y animaciones complejas. Ideal para dispositivos antiguos o para maximizar la batería.
+                    </p>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer group select-none">
+                    <input
+                        type="checkbox"
+                        className="sr-only peer"
+                        checked={settings.performanceMode || false}
+                        onChange={(e) => updateSettings({ performanceMode: e.target.checked })}
+                    />
+                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary transition-colors"></div>
+                    <span className="ml-3 text-[10px] font-black text-gray-500 uppercase tracking-widest peer-checked:text-primary transition-colors">
+                        {settings.performanceMode ? 'ACTIVO' : 'NO'}
+                    </span>
+                </label>
+            </div>
+
+            {/* Cover Quality Preference */}
+            <div className="pt-8 border-t border-white/5">
+                <label className="block text-[10px] font-black text-gray-500 mb-6 uppercase tracking-[0.2em] px-1">Motor de Portadas (Calidad de Renderizado)</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {[
+                        { id: 'pequeña', label: 'Eco', desc: 'Ahorro' },
+                        { id: 'mediana', label: 'Estandar', desc: 'Media' },
+                        { id: 'grande', label: 'Premium', desc: 'Res.' },
+                        { id: 'original', label: 'Ultra', desc: 'Max.' }
+                    ].map((q) => (
+                        <label key={q.id} className="cursor-pointer group/radio">
+                            <input
+                                type="radio"
+                                name="coverQuality"
+                                className="hidden peer"
+                                checked={settings.coverQuality === q.id}
+                                onChange={() => updateSettings({ coverQuality: q.id as any })}
+                            />
+                            <div className="p-4 rounded-premium-sm border border-white/5 bg-white/[0.03] flex flex-col items-center justify-center text-center peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.2)] transition-all hover:bg-white/[0.06]">
+                                <span className="text-[11px] font-black text-white uppercase tracking-widest transition-colors peer-checked:text-primary">{q.label}</span>
+                                <span className="text-[8px] text-gray-500 font-black uppercase tracking-widest mt-1 opacity-50">{q.desc}</span>
+                            </div>
+                        </label>
+                    ))}
                 </div>
             </div>
         </div>
