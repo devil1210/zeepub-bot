@@ -40,8 +40,8 @@ const defaultSettings: ThemeSettings = {
   accentOpacity: 0.2,
   searchBarOpacity: 0.8,
   headerOpacity: 0.9,
-  glassBlur: 20, /* Telegram 2026 "Liquid Glass" Standard */
-  glassSaturation: 180, /* Vibrancy for Liquid Effect */
+  glassBlur: 12, /* Balanced glass effect — 12px is optimal for mobile GPU */
+  glassSaturation: 150, /* Vibrant but not excessive */
   theme: 'dark',
   fontSize: 14,
   coverWidth: 120,

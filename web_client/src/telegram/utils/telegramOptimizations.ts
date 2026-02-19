@@ -7,12 +7,13 @@
 export const preloadCriticalResources = () => {
     if (typeof window === 'undefined') return;
 
-    // Preload API endpoint (warm up connection)
-    const apiUrl = window.location.origin + '/api/rpc';
+    // Warm up API connection with a lightweight HEAD request (no body, no payload)
+    // This establishes TCP/TLS handshake without triggering API logic
+    const apiUrl = window.location.origin + '/api/library/stats';
     fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'ping' })
+        method: 'HEAD',
+        // Keep-alive ensures the connection stays warm for subsequent requests
+        headers: { 'Connection': 'keep-alive' }
     }).catch(() => {
         // Silent fail - just warming up connection
     });

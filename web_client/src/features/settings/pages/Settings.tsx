@@ -110,17 +110,19 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
     }
   }, [isRealAdmin]);
 
+  const themesLoadedRef = React.useRef(false);
   useEffect(() => {
-    if (allowThemeTemplates || isAdmin) {
-      import('@shared/services/api').then(({ api }) => {
-        api.getAvailableThemes().then((res: any) => {
-          if (res.success) {
-            setAvailableThemes(res.themes);
-          }
-        }).catch(console.error);
-      });
-    }
-  }, [allowThemeTemplates, isAdmin]);
+    // Only load themes when actually needed and only once
+    if (!allowThemeTemplates || themesLoadedRef.current) return;
+    themesLoadedRef.current = true;
+    import('@shared/services/api').then(({ api }) => {
+      api.getAvailableThemes().then((res: any) => {
+        if (res.success) {
+          setAvailableThemes(res.themes);
+        }
+      }).catch(console.error);
+    });
+  }, [allowThemeTemplates]);
 
   const isVisible = (key: string) => {
     if (isAdmin) return true;

@@ -77,20 +77,16 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
         }
     }, [config, livePreview]);
 
+    const [themesLoaded, setThemesLoaded] = useState(false);
+
     const loadData = async () => {
         try {
             setLoading(true);
-            const [tiersRes, themesRes] = await Promise.all([
-                api.getAdminTiers(),
-                api.getAvailableThemes()
-            ]);
+            // Only load tiers on mount — themes are loaded lazily on demand
+            const tiersRes = await api.getAdminTiers();
 
             if (tiersRes.success) {
                 setTiers(tiersRes.tiers || tiersRes.levels || []);
-            }
-
-            if (themesRes.success) {
-                setAvailableThemes(themesRes.themes);
             }
 
             // Load global by default
@@ -100,6 +96,20 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
         } finally {
             setLoading(false);
         }
+    };
+
+    // Lazy theme loader — called when user opens the templates dropdown
+    const loadThemesIfNeeded = async () => {
+        if (themesLoaded) return;
+        try {
+            const themesRes = await api.getAvailableThemes();
+            if (themesRes.success) {
+                setAvailableThemes(themesRes.themes);
+            }
+        } catch (err) {
+            console.error("Error loading themes:", err);
+        }
+        setThemesLoaded(true);
     };
 
     const loadLevelConfig = async (levelId: string) => {
@@ -272,6 +282,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                         <div className="flex items-center gap-3 bg-primary/5 p-1.5 rounded-premium-sm border border-primary/10">
                             <label className="text-[9px] font-black text-primary/60 uppercase tracking-[0.2em] pl-3 hidden sm:block">PLANTILLAS:</label>
                             <select
+                                onFocus={loadThemesIfNeeded}
                                 onChange={(e) => {
                                     const theme = availableThemes.find(t => String(t.id) === e.target.value);
                                     if (theme) handleApplyTheme(theme);
