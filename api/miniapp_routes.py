@@ -144,7 +144,7 @@ async def handle_bot_request(
         logger.info(f"Miniapp action: {action} User: {user_id} Level: {user_level}")
 
     try:
-        from api.handlers.admin import (
+        from api.miniapp_handlers import (
             handle_admin_ai_series_duplicate_scan,
             handle_admin_backup_library,
             handle_admin_cleanup_library,
@@ -184,10 +184,6 @@ async def handle_bot_request(
             handle_admin_sync_themes,
             handle_admin_sync_users_cloud,
             handle_admin_update_system,
-            handle_get_upload_history,
-            handle_get_user_audit_history,
-        )
-        from api.handlers.ai import (
             handle_ai_apply_changes,
             handle_ai_apply_merge,
             handle_ai_generate_summary,
@@ -198,24 +194,19 @@ async def handle_bot_request(
             handle_ai_scan_series,
             handle_ai_stats,
             handle_ai_toggle_background_scan,
-        )
-        from api.handlers.books import (
             handle_book_detail,
-            handle_rate_book,
-            handle_rating_breakdown,
-            handle_remove_rating,
-            handle_request_book,
-        )
-        from api.handlers.downloads import (
+            handle_bot_info,
+            handle_create_stars_invoice,
             handle_download,
+            handle_feedback,
             handle_get_download_count,
-            handle_user_downloads_history,
-        )
-        from api.handlers.publisher import (
+            handle_get_upload_history,
+            handle_get_user_audit_history,
             handle_pub_delete_channel,
             handle_pub_delete_queue_item,
             handle_pub_delete_template,
             handle_pub_get_channels,
+            # Publication handlers
             handle_pub_get_queue,
             handle_pub_get_templates,
             handle_pub_promote_discovered,
@@ -224,15 +215,17 @@ async def handle_bot_request(
             handle_pub_schedule,
             handle_pub_toggle_favorite,
             handle_pub_update_queue_item,
-        )
-        from api.handlers.recommendations import handle_recommendations
-        from api.handlers.search import handle_search
-        from api.handlers.settings import handle_save_badge_config, handle_ui_settings, handle_update_user_setting
-        from api.handlers.stars import handle_create_stars_invoice
-        from api.handlers.users import (
-            handle_bot_info,
-            handle_feedback,
+            handle_rate_book,
+            handle_rating_breakdown,
+            handle_recommendations,
+            handle_remove_rating,
+            handle_request_book,
+            handle_save_badge_config,
+            handle_search,
             handle_status,
+            handle_ui_settings,
+            handle_update_user_setting,
+            handle_user_downloads_history,
             handle_user_status,
         )
 
