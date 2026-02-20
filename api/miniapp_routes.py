@@ -184,6 +184,8 @@ async def handle_bot_request(
             handle_admin_sync_themes,
             handle_admin_sync_users_cloud,
             handle_admin_update_system,
+            handle_get_upload_history,
+            handle_get_user_audit_history,
         )
         from api.handlers.ai import (
             handle_ai_apply_changes,
@@ -202,11 +204,11 @@ async def handle_bot_request(
             handle_rate_book,
             handle_rating_breakdown,
             handle_remove_rating,
+            handle_request_book,
         )
         from api.handlers.downloads import (
             handle_download,
             handle_get_download_count,
-            handle_get_upload_history,
             handle_user_downloads_history,
         )
         from api.handlers.publisher import (
@@ -230,8 +232,6 @@ async def handle_bot_request(
         from api.handlers.users import (
             handle_bot_info,
             handle_feedback,
-            handle_get_user_audit_history,
-            handle_request_book,
             handle_status,
             handle_user_status,
         )
