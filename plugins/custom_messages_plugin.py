@@ -1571,14 +1571,7 @@ class CustomMessagesPlugin(BasePlugin):
             app.add_handler(CommandHandler("saludo", self.saludo))
             app.add_handler(CommandHandler("set_welcome", self.set_welcome))
 
-            app.add_handler(CommandHandler("templates", self.templates))
-            app.add_handler(CommandHandler("template", self.templates))  # Alias requested by user
-            app.add_handler(CommandHandler("template_vars", self.vars))  # Legacy alias
-            app.add_handler(CommandHandler("vars", self.vars))
-            app.add_handler(CommandHandler("set_var", self.set_var))
-            app.add_handler(CommandHandler("del_var", self.del_var))
-
-            app.add_handler(CallbackQueryHandler(self.templates_callback, pattern=r"^templates\|"))
+            # Los comandos /templates y /template se migraron a TemplatesPlugin
 
             # ChatMemberHandler for welcome message
             # MY_CHAT_MEMBER is triggered when bot is added/promoted/removed

@@ -495,7 +495,7 @@ class LibraryService:
             try:
                 # tags es JSONB en Postgres
                 stmt = select(func.distinct(func.jsonb_array_elements_text(cast(LocalBook.tags, func.jsonb)))).order_by(
-                    1
+                    text("1")
                 )
                 res = await session.execute(stmt)
                 return [r[0] for r in res.all() if r[0]]

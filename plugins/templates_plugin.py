@@ -13,7 +13,7 @@ from telegram.ext import (
 
 from config.config_settings import config
 from plugins.base_plugin import BasePlugin
-from repositories.publisher_repository import PublisherRepository
+from repositories.publication_repository import PublicationRepository
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class TemplatesPlugin(BasePlugin):
 
     def __init__(self):
         self.app: Application | None = None
-        self.pub_repo = PublisherRepository()
+        self.pub_repo = PublicationRepository()
         self.user_states = {}  # Para guardar temporalmente datos de la creación
 
     async def initialize(self, bot_instance: Application) -> bool:
