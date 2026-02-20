@@ -8,10 +8,10 @@ description: Valida sintaxis, calidad de código (Linter/Formatter) y cumplimien
    `python -m py_compile **/*.py`
 
 2. Ejecutar Linter (Ruff) para encontrar problemas potenciales:
-   `ruff check .`
+   `ruff check . --exclude .agent`
 
 3. Aplicar formato de código automático:
-   `ruff format .`
+   `ruff format . --exclude .agent`
 
 4. Notificar cumplimiento de estándares:
    `echo "[SUCCESS] Auditoría de calidad completada. El código es apto para producción."`

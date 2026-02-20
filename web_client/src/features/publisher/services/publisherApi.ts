@@ -78,6 +78,7 @@ export const publisherApi = {
         channel_id: number;
         scheduled_for: string;
         template_id?: number;
+        template_ids?: number[];
         payload?: any;
         immediate?: boolean;
     }) => api.rpc('pub_schedule', data),

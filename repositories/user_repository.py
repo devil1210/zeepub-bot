@@ -780,6 +780,42 @@ class UserRepository(BaseRepository[User]):
     # In a real scenario, all 1300+ lines of user_repository.py would need to be reviewed.
     # Below I provide a structure that adheres to the request.
 
+    async def update_telegram_profile(self, telegram_id: int, name: str | None, username: str | None) -> None:
+        """Actualiza el nombre y username de Telegram de un usuario sin afectar otros datos."""
+        try:
+            async with pg_manager.get_session() as session:
+                from sqlalchemy import select
+
+                stmt = select(User).where(User.telegram_id == telegram_id)
+                user = (await session.execute(stmt)).scalar_one_or_none()
+                if user:
+                    changed = False
+                    if name is not None and user.name != name:
+                        user.name = name
+                        changed = True
+
+                    norm_db_user = user.username or ""
+                    norm_tg_user = username or ""
+                    if norm_db_user != norm_tg_user:
+                        user.username = username
+                        changed = True
+
+                    if changed:
+                        await session.commit()
+                        if self.supabase.is_active:
+                            try:
+                                data = user.to_dict()
+                                self.supabase.get_client().table(self.table_name).upsert(data).execute()
+                            except Exception as e:
+                                logger.warning(f"Error sync user profile {telegram_id} to Supabase: {e}")
+                        else:
+                            from core.optimized_sync_engine import optimized_sync_engine
+
+                            await optimized_sync_engine.mark_user_changed(telegram_id)
+                        await cache_manager.delete_user(telegram_id)
+        except Exception as e:
+            logger.error(f"Error updating user profile for {telegram_id}: {e}")
+
     async def increment_download_count(self, telegram_id: int) -> int:
         """Incrementa el contador total de descargas de un usuario en PostgreSQL."""
         try:

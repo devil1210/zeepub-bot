@@ -195,7 +195,11 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
     channel_id = data["channel_id"]
     scheduled_for_str = data["scheduled_for"]
     template_id = data.get("template_id")
+    template_ids = data.get("template_ids", [])
     payload = data.get("payload")
+
+    if template_id and template_id not in template_ids:
+        template_ids = [template_id] + template_ids
 
     # Parse ISO date and convert to naive UTC (SQLAlchemy DateTime default)
     try:
@@ -207,13 +211,26 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
         logger.error(f"Error parsing date {scheduled_for_str}: {e}")
         raise HTTPException(status_code=400, detail="Formato de fecha inválido") from e
 
-    await publisher_service.schedule_publication(
-        book_hash=book_hash,
-        channel_id=channel_id,
-        scheduled_for=scheduled_for,
-        template_id=template_id,
-        payload=payload,
-    )
+    if not template_ids:
+        await publisher_service.schedule_publication(
+            book_hash=book_hash,
+            channel_id=channel_id,
+            scheduled_for=scheduled_for,
+            template_id=template_id,
+            payload=payload,
+        )
+    else:
+        import datetime as dt
+
+        for i, tid in enumerate(template_ids):
+            staggered_time = scheduled_for + dt.timedelta(seconds=2 * i)
+            await publisher_service.schedule_publication(
+                book_hash=book_hash,
+                channel_id=channel_id,
+                scheduled_for=staggered_time,
+                template_id=tid,
+                payload=payload,
+            )
 
     # Si se pide inmediato, procesar la cola ahora mismo
     if data.get("immediate"):

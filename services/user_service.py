@@ -357,6 +357,29 @@ async def get_effective_user(
     if not info and uid not in config.ADMIN_USERS:
         logger.info(f"Auto-registering user {uid} (Lector level)")
         await user_repo.create_minimal_user(uid, name=name_from_tg, username=username_from_tg)
+    elif info and uid not in config.ADMIN_USERS:
+        # Check if name or username changed
+        db_name = info.get("name")
+        db_username = info.get("username")
+
+        needs_update = False
+        if name_from_tg and db_name != name_from_tg:
+            needs_update = True
+
+        norm_db_user = db_username or ""
+        norm_tg_user = username_from_tg or ""
+        if norm_db_user != norm_tg_user:
+            needs_update = True
+
+        if needs_update and simulated_level_id is None:
+            import asyncio
+
+            asyncio.create_task(user_repo.update_telegram_profile(uid, name=name_from_tg, username=username_from_tg))
+            # Optimizacion: actualizar localmente para que el frontend ya lo reciba
+            info["name"] = name_from_tg
+            info["username"] = username_from_tg
+            result["name"] = name_from_tg
+            result["username"] = username_from_tg
 
     # 4. Access Info (Levels & Permissions)
     access_info = await user_repo.get_access_info(uid)

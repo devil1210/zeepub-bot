@@ -13,6 +13,4 @@ async def handle_search(data: dict[str, Any], user_data: dict[str, Any]):
     search_type = data.get("type", "todos")
     sort = data.get("sort", "a-z")
 
-    return await LibraryService.search_series(
-        query or "", page=page, search_type=search_type, sort_by=sort
-    )
+    return await LibraryService.search_series(query or "", page=page, search_type=search_type, sort_by=sort)

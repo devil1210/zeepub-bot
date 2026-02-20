@@ -514,62 +514,64 @@ class PublisherService:
     def _apply_template(self, template_str: str, data: dict) -> str:
         """Aplica placeholders con todos los campos disponibles de LocalBook."""
         try:
-            # Preparar mapeo de variables (snake_case y español para comodidad)
-            mapping = {
-                "title": data.get("title", ""),
-                "titulo": data.get("title", ""),
-                "author": data.get("author", "Desconocido"),
-                "autor": data.get("author", "Desconocido"),
-                "series": data.get("series", ""),
-                "serie": data.get("series", ""),
-                "volume": data.get("volume", ""),
-                "volumen": data.get("volume", ""),
-                "description": data.get("description", ""),
-                "sinopsis": data.get("description", ""),
-                "summary": data.get("summary", ""),
-                "resumen": data.get("summary", ""),
-                "tags": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
-                "etiquetas": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
-                "genres": ", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else "",
-                "language": data.get("language", "es"),
-                "idioma": data.get("language", "es"),
-                "publisher": data.get("publisher", ""),
-                "editorial": data.get("publisher", ""),
-                "translator": data.get("translator", ""),
-                "traductor": data.get("translator", ""),
-                "layout_by": data.get("layout_by", ""),
-                "maquetador": data.get("layout_by", ""),
-                "book_type": data.get("book_type", ""),
-                "tipo": data.get("book_type", ""),
-                "isbn": data.get("isbn", ""),
-                "asin": data.get("asin", ""),
-                "rating": data.get("rating_average", 0.0),
-                "votes": data.get("rating_count", 0),
-                "size": data.get("size", "0 MB"),
-                "tamaño": data.get("size", "0 MB"),
-                "version": data.get("epub_version", ""),
-                "slug": data.get("slug", ""),
-                "hash": data.get("book_hash", ""),
-                # Portadas (URLs)
-                "cover_original": data.get("cover_original", ""),
-                "cover_high": data.get("cover_high", ""),
-                "cover_medium": data.get("cover_medium", ""),
-                "cover_low": data.get("cover_low", ""),
-            }
+            # Preparar mapeo dinámico base de todos los datos
+            mapping = {k: v for k, v in data.items()}
+
+            # Agregar mapeo manual en español y alias de compatibilidad
+            mapping.update(
+                {
+                    "titulo": data.get("title", ""),
+                    "autor": data.get("author", "Desconocido"),
+                    "serie": data.get("series", ""),
+                    "volumen": data.get("volume", ""),
+                    "sinopsis": data.get("description", ""),
+                    "resumen": data.get("summary", ""),
+                    "etiquetas": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
+                    "idioma": data.get("language", "es"),
+                    "editorial": data.get("publisher", ""),
+                    "traductor": data.get("translator", ""),
+                    "maquetador": data.get("layout_by", ""),
+                    "tipo": data.get("book_type", ""),
+                    "tamaño": data.get("size", "0 MB"),
+                    "rating": data.get("rating_average", 0.0),
+                    "votes": data.get("rating_count", 0),
+                    "hash": data.get("book_hash", ""),
+                    "version": data.get("epub_version", ""),
+                    "tags": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
+                    "genres": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
+                }
+            )
+
+            # Normalizar None a strings vacíos para evitar que se impriman como "None"
+            for k, v in mapping.items():
+                if v is None:
+                    mapping[k] = ""
+                else:
+                    mapping[k] = str(v)
 
             # Reemplazar placeholders manual para evitar errores con llaves de HTML si las hay
-            # Usamos .format() pero con un fallback si falla por llaves extras
+            # Usamos .format() pero con un fallback recursivo/manual si falla
             try:
-                # Filtrar solo las llaves que están en nuestro mapping para evitar KeyErrors
+                # Filtrar solo las llaves que están en nuestro mapping. Si no existe, devolvemos vacío para no romper.
+                import re
+
                 placeholders = re.findall(r"\{(\w+)\}", template_str)
-                safe_mapping = {p: mapping.get(p, f"{{{p}}}") for p in placeholders}
+                safe_mapping = {p: mapping.get(p, "") for p in placeholders}
                 return template_str.format(**safe_mapping)
             except Exception:
                 result = template_str
+                # Replace explicitly
                 for key, val in mapping.items():
-                    result = result.replace(f"{{{key}}}", str(val))
+                    result = result.replace(f"{{{key}}}", val)
+                # Remueve las llaves sobrantes que no matchearon
+                import re
+
+                result = re.sub(r"\{(\w+)\}", "", result)
                 return result
         except Exception as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
             logger.warning(f"Error applying template: {e}")
             return template_str
 

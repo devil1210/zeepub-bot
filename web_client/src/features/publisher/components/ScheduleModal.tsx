@@ -24,7 +24,9 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
     const [bookHash, setBookHash] = useState(initialBookHash);
     const [selectedChannel, setSelectedChannel] = useState<number | ''>(editingItem?.channel_id || '');
-    const [selectedTemplate, setSelectedTemplate] = useState<number | ''>(editingItem?.template_id || '');
+    const [selectedTemplates, setSelectedTemplates] = useState<number[]>(
+        editingItem?.template_id ? [editingItem.template_id] : []
+    );
     const [scheduledFor, setScheduledFor] = useState(() => {
         if (editingItem) {
             const date = new Date(editingItem.scheduled_for);
@@ -41,7 +43,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
         if (isOpen) {
             setBookHash(editingItem?.book_hash || initialBookHash);
             setSelectedChannel(editingItem?.channel_id || '');
-            setSelectedTemplate(editingItem?.template_id || '');
+            setSelectedTemplates(editingItem?.template_id ? [editingItem.template_id] : []);
             if (editingItem) {
                 const date = new Date(editingItem.scheduled_for);
                 const tzOffset = date.getTimezoneOffset() * 60000;
@@ -75,7 +77,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                     book_hash: bookHash,
                     channel_id: Number(selectedChannel),
                     scheduled_for: isImmediate ? new Date().toISOString() : new Date(scheduledFor).toISOString(),
-                    template_id: selectedTemplate === '' ? undefined : Number(selectedTemplate),
+                    template_id: selectedTemplates.length > 0 ? selectedTemplates[0] : undefined,
                     immediate: isImmediate,
                     status: 'pending' // Al editar, volvemos a ponerlo en pending por si estaba fallido
                 });
@@ -92,7 +94,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                     book_hash: bookHash,
                     channel_id: Number(selectedChannel),
                     scheduled_for: isImmediate ? new Date().toISOString() : new Date(scheduledFor).toISOString(),
-                    template_id: selectedTemplate === '' ? undefined : Number(selectedTemplate),
+                    template_ids: selectedTemplates.length > 0 ? selectedTemplates : undefined,
                     immediate: isImmediate
                 });
 
@@ -185,19 +187,48 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                             </div>
                         </div>
 
-                        {/* Plantilla */}
+                        {/* Plantilla (Multi-select) */}
                         <div className="flex flex-col gap-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary/80">Plantilla de Texto</label>
-                            <select
-                                value={selectedTemplate}
-                                onChange={(e) => setSelectedTemplate(e.target.value ? Number(e.target.value) : '')}
-                                className="w-full p-3 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors"
-                            >
-                                <option value="" className="bg-gray-900">Sin plantilla (Usar predeterminado)</option>
-                                {templates.map(t => (
-                                    <option key={t.id} value={t.id} className="bg-gray-900">{t.name}</option>
-                                ))}
-                            </select>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-primary/80 flex items-center justify-between">
+                                <span>Plantilla(s) de Texto</span>
+                                {!editingItem && <span className="text-[8px] text-gray-500">Secuencial</span>}
+                            </label>
+                            <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto w-full p-2 glass-panel rounded-premium-sm border border-white/10 bg-black/20 custom-scrollbar">
+                                <div
+                                    className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-all ${selectedTemplates.length === 0 ? 'bg-primary/20 text-primary border border-primary/30' : 'text-white/60 hover:bg-white/5 border border-transparent'}`}
+                                    onClick={() => setSelectedTemplates([])}
+                                >
+                                    <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all ${selectedTemplates.length === 0 ? 'bg-primary border-primary' : 'border-white/20'}`}>
+                                        {selectedTemplates.length === 0 && <div className="w-1.5 h-1.5 bg-black rounded-full" />}
+                                    </div>
+                                    <span className="text-xs font-semibold">Sin plantilla (Predeterminado)</span>
+                                </div>
+                                {templates.map(t => {
+                                    const isSelected = selectedTemplates.includes(t.id);
+                                    return (
+                                        <div
+                                            key={t.id}
+                                            className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-primary/20 text-primary border border-primary/30' : 'text-white/60 hover:bg-white/5 border border-transparent'}`}
+                                            onClick={() => {
+                                                if (editingItem) {
+                                                    setSelectedTemplates([t.id]);
+                                                } else {
+                                                    if (isSelected) {
+                                                        setSelectedTemplates(selectedTemplates.filter(id => id !== t.id));
+                                                    } else {
+                                                        setSelectedTemplates([...selectedTemplates, t.id]);
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            <div className={`w-3.5 h-3.5 rounded border transition-all ${isSelected ? 'bg-primary border-primary flex items-center justify-center' : 'border-white/20'}`}>
+                                                {isSelected && <CheckCircle className="w-2.5 h-2.5 text-black" />}
+                                            </div>
+                                            <span className="text-xs">{t.name} {isSelected && !editingItem && <span className="ml-1 text-[10px] px-1.5 py-0.5 bg-primary/30 rounded-full text-primary-light">#{selectedTemplates.indexOf(t.id) + 1}</span>}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
                         </div>
 
                         {/* Opción Inmediata */}
