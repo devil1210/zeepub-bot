@@ -50,13 +50,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   } = useNavigation();
 
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
-  const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
-  const scrollRefObj = useMemo(() => ({ current: scrollEl }), [scrollEl]);
+  const mainScrollRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    // Attempt to find the main scroll container
-    const el = document.querySelector('main');
-    if (el) setScrollEl(el);
+    mainScrollRef.current = document.querySelector('main');
   }, []);
   const [activeSort, setActiveSort] = useState(navState.activeSort || 'a-z');
   const [selectedScope, setSelectedScope] = useState(navState.selectedScope || 'TODOS');
@@ -143,9 +140,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         abortControllerRef.current.signal
       );
 
-      if (res && res.success && res.result && Array.isArray(res.result.results)) {
-        const resultsData = res.result;
-        const mapped: Series[] = resultsData.results.map((item: any) => {
+      if (res && Array.isArray(res.results)) {
+        const mapped: Series[] = res.results.map((item: any) => {
           const seriesId = item.series_hash ? `series_${item.series_hash}` : (item.id || item.link);
           return {
             id: seriesId,
@@ -188,8 +184,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         } else {
           setSeries(mapped);
         }
-        setTotalPages(resultsData.totalPages || 1);
-        setTotalResults(resultsData.totalResults || mapped.length);
+        setTotalPages(res.totalPages || 1);
+        setTotalResults(res.totalResults || mapped.length);
 
         const currentCovers = mapped
           .map(s => {
@@ -203,10 +199,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           scrollToTop();
         }
 
-        if (page < (resultsData.totalPages || 1)) {
+        if (page < (res.totalPages || 1)) {
           api.searchBooks(query, page + 1, searchScope, activeSort).then(nextRes => {
-            if (nextRes && nextRes.success && nextRes.result && nextRes.result.results) {
-              const nextCovers = nextRes.result.results
+            if (nextRes && nextRes.results) {
+              const nextCovers = nextRes.results
                 .map((item: any) => {
                   const url = item.cover_thumb || item.cover || '';
                   return typeof url === 'string' ? url : url?.cover || '';
@@ -341,28 +337,27 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
             <div className="w-full" style={viewTransitionStyles}>
               {viewMode === 'list' ? (
                 <Virtualizer
-                  scrollRef={scrollRefObj as React.RefObject<HTMLElement>}
+                  scrollRef={mainScrollRef as React.RefObject<HTMLElement>}
                   bufferSize={500}
                 >
                   {series.map((item) => (
-                    <div key={item.id} className="mb-4">
-                      <SearchCardList
-                        series={item}
-                        settings={settings}
-                        onClick={() => handleSelectSeries(item)}
-                      />
-                    </div>
+                    <SearchCardList
+                      key={item.id}
+                      series={item}
+                      settings={settings}
+                      onClick={() => handleSelectSeries(item)}
+                    />
                   ))}
                 </Virtualizer>
               ) : (
                 <Virtualizer
-                  scrollRef={scrollRefObj as React.RefObject<HTMLElement>}
+                  scrollRef={mainScrollRef as React.RefObject<HTMLElement>}
                   bufferSize={1000}
                 >
                   {rows.map((row, rowIndex) => (
                     <div
                       key={rowIndex}
-                      className="grid gap-6 mb-6 px-1"
+                      className="grid gap-6 mb-6"
                       style={{
                         gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`
                       }}
