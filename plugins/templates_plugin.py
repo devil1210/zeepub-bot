@@ -50,7 +50,7 @@ class TemplatesPlugin(BasePlugin):
 
         # ConversationHandler para gestionar templates
         conv_handler = ConversationHandler(
-            entry_points=[CommandHandler("templates", self.start_templates)],
+            entry_points=[CommandHandler("pub_templates", self.start_templates)],
             states={
                 MENU: [CallbackQueryHandler(self.handle_menu_selection, pattern="^tpl_")],
                 CREATE_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.receive_name)],
@@ -119,7 +119,7 @@ class TemplatesPlugin(BasePlugin):
         elif data == "tpl_list":
             templates = await self.pub_repo.get_templates()
             if not templates:
-                await query.edit_message_text("📋 No hay plantillas creadas. Usa /templates para volver al menú.")
+                await query.edit_message_text("📋 No hay plantillas creadas. Usa /pub_templates para volver al menú.")
                 return ConversationHandler.END
 
             text = "📋 **Lista de Plantillas**\n\n"
@@ -185,7 +185,7 @@ class TemplatesPlugin(BasePlugin):
         user_id = update.effective_user.id
 
         if user_id not in self.user_states:
-            await update.message.reply_text("Hubo un error de estado. Usa /templates de nuevo.")
+            await update.message.reply_text("Hubo un error de estado. Usa /pub_templates de nuevo.")
             return ConversationHandler.END
 
         name = self.user_states[user_id].get("name", "Sin Nombre")
