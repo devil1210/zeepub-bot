@@ -96,9 +96,7 @@ try:
                     WHERE id = :id
                 """)
 
-                conn.execute(
-                    update_query, {"id": series_id, "english": new_english, "spanish": new_spanish}
-                )
+                conn.execute(update_query, {"id": series_id, "english": new_english, "spanish": new_spanish})
                 conn.commit()
 
                 print("\n   ✅ Serie restaurada:")

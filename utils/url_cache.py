@@ -67,9 +67,7 @@ def init_db():
         logger.error(f"Failed to initialize URL cache DB: {e}")
 
 
-def create_short_url(
-    url: str, book_title: str = None, series_name: str = None, volume_number: str = None
-) -> str:
+def create_short_url(url: str, book_title: str = None, series_name: str = None, volume_number: str = None) -> str:
     """
     Crea un hash corto para una URL y lo guarda en Postgres.
     """
@@ -241,25 +239,19 @@ def get_stats() -> dict:
             total = conn.execute(sa.select(sa.func.count()).select_from(url_mappings)).scalar() or 0
             valid = (
                 conn.execute(
-                    sa.select(sa.func.count())
-                    .select_from(url_mappings)
-                    .where(url_mappings.c.is_valid is True)
+                    sa.select(sa.func.count()).select_from(url_mappings).where(url_mappings.c.is_valid is True)
                 ).scalar()
                 or 0
             )
             broken = (
                 conn.execute(
-                    sa.select(sa.func.count())
-                    .select_from(url_mappings)
-                    .where(url_mappings.c.is_valid is False)
+                    sa.select(sa.func.count()).select_from(url_mappings).where(url_mappings.c.is_valid is False)
                 ).scalar()
                 or 0
             )
             at_risk = (
                 conn.execute(
-                    sa.select(sa.func.count())
-                    .select_from(url_mappings)
-                    .where(url_mappings.c.failed_checks >= 2)
+                    sa.select(sa.func.count()).select_from(url_mappings).where(url_mappings.c.failed_checks >= 2)
                 ).scalar()
                 or 0
             )

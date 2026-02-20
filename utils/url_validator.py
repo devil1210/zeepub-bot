@@ -13,9 +13,7 @@ async def _validator_loop(interval: int = 3600, batch_size: int = 50):
     try:
         while True:
             try:
-                candidates = get_candidates_for_validation(
-                    limit=batch_size, older_than_seconds=interval
-                )
+                candidates = get_candidates_for_validation(limit=batch_size, older_than_seconds=interval)
                 logger.debug("Validator found %d candidates", len(candidates))
                 coros = []
                 for url_hash, url in candidates:

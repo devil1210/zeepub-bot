@@ -25,9 +25,7 @@ async def run_migration():
             """)
             res = await session.execute(check_sql)
             if not res.fetchone():
-                await session.execute(
-                    text("ALTER TABLE users ADD COLUMN bypass_limits BOOLEAN DEFAULT FALSE;")
-                )
+                await session.execute(text("ALTER TABLE users ADD COLUMN bypass_limits BOOLEAN DEFAULT FALSE;"))
                 logger.info("Column bypass_limits added successfully.")
             else:
                 logger.info("Column bypass_limits already exists.")

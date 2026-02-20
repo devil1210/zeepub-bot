@@ -71,9 +71,7 @@ async def send_photo_bytes(
                     )
                 raise e
 
-        elif isinstance(data_or_path, str) and await asyncio.to_thread(
-            os.path.exists, data_or_path
-        ):
+        elif isinstance(data_or_path, str) and await asyncio.to_thread(os.path.exists, data_or_path):
             # Read image file asynchronously into memory (covers are small)
             try:
                 import aiofiles
@@ -177,9 +175,7 @@ async def send_doc_bytes(
                         reply_markup=reply_markup,
                     )
                 raise e
-        elif isinstance(data_or_path, str) and await asyncio.to_thread(
-            os.path.exists, data_or_path
-        ):
+        elif isinstance(data_or_path, str) and await asyncio.to_thread(os.path.exists, data_or_path):
             # Decide whether to load to memory or stream from disk
             try:
                 size = await asyncio.to_thread(os.path.getsize, data_or_path)
@@ -303,18 +299,12 @@ async def publicar_libro(
         if epub_url:
             import aiohttp
 
-            auth = (
-                aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
-                if config.OPDS_AUTH
-                else None
-            )
+            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
             epub_downloaded = await fetch_bytes(epub_url, timeout=120, auth=auth)
 
             if epub_downloaded:
                 # Use orchestrator for enrichment
-                meta = await metadata_orchestrator.get_enriched_metadata(
-                    book_id=epub_url, epub_bytes=epub_downloaded
-                )
+                meta = await metadata_orchestrator.get_enriched_metadata(book_id=epub_url, epub_bytes=epub_downloaded)
 
                 # Maintain state for subsequent download click
                 user_state["epub_buffer"] = epub_downloaded
@@ -352,9 +342,7 @@ async def publicar_libro(
         user_state["titulo_pendiente"] = titulo
 
 
-async def descargar_epub_pendiente(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int, job_queue=None
-):
+async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int, job_queue=None):
     """
     Función llamada cuando el usuario presiona "Descargar" en el menú intermedio.
     """
@@ -582,9 +570,7 @@ async def enviar_libro_directo(
     try:
         # 1. Verificar límite
         if not await can_download(user_id):
-            await bot.send_message(
-                chat_id=user_id, text="🚫 Has alcanzado tu límite de descargas por hoy."
-            )
+            await bot.send_message(chat_id=user_id, text="🚫 Has alcanzado tu límite de descargas por hoy.")
             return False
 
         # 2. Mensaje de preparación (siempre al usuario que interactúa)
@@ -623,9 +609,7 @@ async def enviar_libro_directo(
             epub_bytes = await fetch_bytes(download_url, timeout=120, auth=auth)
 
         if not epub_bytes:
-            error_msg = (
-                "❌ Error al obtener el archivo. No se encontró en el disco o la descarga falló."
-            )
+            error_msg = "❌ Error al obtener el archivo. No se encontró en el disco o la descarga falló."
             logger.error(f"EPUB acquisition failed for: {download_url}")
             await bot.send_message(
                 chat_id=user_id,
@@ -660,16 +644,8 @@ async def enviar_libro_directo(
         cover_bytes = extract_cover_from_epub(epub_bytes)
         import aiohttp
 
-        auth = (
-            aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
-            if config.OPDS_AUTH
-            else None
-        )
-        portada_data = (
-            cover_bytes
-            if cover_bytes
-            else (await fetch_bytes(cover_url, auth=auth) if cover_url else None)
-        )
+        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
+        portada_data = cover_bytes if cover_bytes else (await fetch_bytes(cover_url, auth=auth) if cover_url else None)
 
         # --- LOGICA FACEBOOK ---
         if format_type in ["fb_preview", "fb_direct"]:
@@ -698,9 +674,7 @@ async def enviar_libro_directo(
             # 3. Info del archivo (Actualizado, Tamaño)
             if isinstance(epub_bytes, bytes | bytearray):
                 size_mb = len(epub_bytes) / (1024 * 1024)
-            elif isinstance(epub_bytes, str) and await asyncio.to_thread(
-                os.path.exists, epub_bytes
-            ):
+            elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
                 size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
             else:
                 size_mb = 0.0
@@ -788,8 +762,7 @@ async def enviar_libro_directo(
                 if not fb_cover_url or not fb_cover_url.startswith("http"):
                     await bot.send_message(
                         chat_id=user_id,
-                        text="⚠️ No se pudo obtener una URL pública para la portada. "
-                        "Facebook requiere una URL pública.",
+                        text="⚠️ No se pudo obtener una URL pública para la portada. Facebook requiere una URL pública.",
                     )
                     return False
 
@@ -846,9 +819,7 @@ async def enviar_libro_directo(
             # Calcular tamaño
             if isinstance(epub_bytes, bytes | bytearray):
                 size_mb = len(epub_bytes) / (1024 * 1024)
-            elif isinstance(epub_bytes, str) and await asyncio.to_thread(
-                os.path.exists, epub_bytes
-            ):
+            elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
                 size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
             else:
                 size_mb = 0.0
@@ -887,9 +858,7 @@ async def enviar_libro_directo(
             if sent_doc and auto_delete_seconds > 0:
                 if job_queue:
                     job_queue.run_once(
-                        lambda ctx: ctx.bot.delete_message(
-                            chat_id=destino, message_id=sent_doc.message_id
-                        ),
+                        lambda ctx: ctx.bot.delete_message(chat_id=destino, message_id=sent_doc.message_id),
                         when=auto_delete_seconds,
                     )
                 else:
@@ -922,9 +891,7 @@ async def enviar_libro_directo(
 
             try:
                 await increment_download_count(user_id)
-                logger.info(
-                    f"[enviar_libro_directo] Contador total incrementado para user {user_id}"
-                )
+                logger.info(f"[enviar_libro_directo] Contador total incrementado para user {user_id}")
             except Exception as e:
                 logger.error(f"[enviar_libro_directo] Error incrementando contador total: {e}")
 
@@ -1011,9 +978,7 @@ async def enviar_libro_directo(
                     title=titulo_vol,
                 )
 
-                logger.info(
-                    f"[enviar_libro_directo] Historial guardado para user {user_id}: {titulo_vol}"
-                )
+                logger.info(f"[enviar_libro_directo] Historial guardado para user {user_id}: {titulo_vol}")
             except Exception as e:
                 logger.error(
                     f"[enviar_libro_directo] Error saving download history for user {user_id}: {e}",
@@ -1231,22 +1196,14 @@ async def _publish_choice_facebook(update, context: ContextTypes.DEFAULT_TYPE, u
     if not cover_bytes and portada_url:
         import aiohttp
 
-        auth = (
-            aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
-            if config.OPDS_AUTH
-            else None
-        )
+        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
         cover_bytes = await fetch_bytes(portada_url, auth=auth)
 
     # If we still don't have metadata or buffer, try to fetch EPUB to build meta/cover
     if (not cover_bytes or not meta) and epub_url:
         import aiohttp
 
-        auth = (
-            aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
-            if config.OPDS_AUTH
-            else None
-        )
+        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
         epub_downloaded = await fetch_bytes(epub_url, timeout=60, auth=auth)
         if epub_downloaded:
             st["epub_buffer"] = epub_downloaded
@@ -1336,9 +1293,7 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
 
     auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
     portada_data = (
-        cover_bytes
-        if cover_bytes
-        else (await fetch_bytes(portada_url, timeout=15, auth=auth) if portada_url else None)
+        cover_bytes if cover_bytes else (await fetch_bytes(portada_url, timeout=15, auth=auth) if portada_url else None)
     )
 
     await send_photo_bytes(
@@ -1390,9 +1345,7 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
         slug = generar_slug_from_meta(meta)
         fallback = f"Sinopsis: (no disponible)\n#{slug}" if slug else "Sinopsis: (no disponible)"
         try:
-            await bot.send_message(
-                chat_id=destino, text=fallback, message_thread_id=thread_id_origen
-            )
+            await bot.send_message(chat_id=destino, text=fallback, message_thread_id=thread_id_origen)
         except BadRequest as e:
             if "Message thread not found" in str(e) and thread_id_origen is not None:
                 await bot.send_message(chat_id=destino, text=fallback, message_thread_id=None)
@@ -1413,10 +1366,7 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
         titulo_vol = meta.get("titulo_volumen") or st.get("titulo_pendiente", "Desconocido")
 
         info_text = (
-            f"📂 <b>{titulo_vol}</b>\n"
-            f"ℹ️ Versión Epub: {version}\n"
-            f"📅 Actualizado: {fecha}\n"
-            f"📦 Tamaño: {size_mb:.2f} MB"
+            f"📂 <b>{titulo_vol}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {size_mb:.2f} MB"
         )
         try:
             msg_info = await bot.send_message(

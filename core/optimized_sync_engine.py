@@ -131,12 +131,7 @@ class OptimizedSyncEngine:
     async def _detect_level_changes(self):
         """Detecta cambios en niveles de usuario."""
         try:
-            result = (
-                supabase_manager.get_client()
-                .table("user_levels")
-                .select("id, updated_at")
-                .execute()
-            )
+            result = supabase_manager.get_client().table("user_levels").select("id, updated_at").execute()
 
             if result and result.data:
                 # Comparar con versión local
@@ -168,9 +163,7 @@ class OptimizedSyncEngine:
             if time_since_last < timedelta(seconds=self.sync_intervals[table_name]):
                 return
 
-        logger.info(
-            f"Syncing {table_name} - {len(self.pending_changes[table_name])} changes or interval expired"
-        )
+        logger.info(f"Syncing {table_name} - {len(self.pending_changes[table_name])} changes or interval expired")
 
         # Guardar para reporte
         self.last_sync_times[table_name] = datetime.utcnow()
@@ -204,17 +197,9 @@ class OptimizedSyncEngine:
                 result = query.order("updated_at", desc=True).limit(200).execute()
             except Exception as query_e:
                 if "column" in str(query_e) and "updated_at" in str(query_e):
-                    logger.warning(
-                        "Supabase schema missing 'updated_at'. Falling back to full fetch."
-                    )
+                    logger.warning("Supabase schema missing 'updated_at'. Falling back to full fetch.")
                     # Intento 2: Fallback sin filtros de tiempo (menos eficiente pero robusto)
-                    result = (
-                        supabase_manager.get_client()
-                        .table("users")
-                        .select("*")
-                        .limit(500)
-                        .execute()
-                    )
+                    result = supabase_manager.get_client().table("users").select("*").limit(500).execute()
                 else:
                     raise query_e
 
@@ -259,9 +244,7 @@ class OptimizedSyncEngine:
                         "insignias": json.dumps(user_data.get("insignias", [])),
                         "settings": json.dumps(user_data.get("settings", {})),
                         "expires_at": self._parse_datetime(user_data.get("expires_at")),
-                        "created_at": self._parse_datetime(
-                            user_data.get("added_at") or user_data.get("created_at")
-                        ),
+                        "created_at": self._parse_datetime(user_data.get("added_at") or user_data.get("created_at")),
                         "updated_at": datetime.utcnow(),
                     }
 

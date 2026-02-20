@@ -88,9 +88,7 @@ class BotInitializer:
                         message_thread_id=thread_id,
                     )
                 except Exception as e:
-                    logger.warning(
-                        f"Error enviando notificación HTML de update, reintentando texto plano: {e}"
-                    )
+                    logger.warning(f"Error enviando notificación HTML de update, reintentando texto plano: {e}")
                     await bot.send_message(
                         chat_id=chat_id,
                         text=(

@@ -28,9 +28,7 @@ class SuggestionsPlugin(BasePlugin):
             from telegram.ext import CallbackQueryHandler
 
             bot_instance.add_handler(CommandHandler("sugerencia", self.sugerencia_command))
-            bot_instance.add_handler(
-                CallbackQueryHandler(self.suggestion_callback, pattern="^suggestion\\|")
-            )
+            bot_instance.add_handler(CallbackQueryHandler(self.suggestion_callback, pattern="^suggestion\\|"))
             logger.info("Plugin Sugerencias: Handler /sugerencia registrado.")
             return True
         except Exception as e:
@@ -121,9 +119,7 @@ class SuggestionsPlugin(BasePlugin):
                     parse_mode="HTML",
                 )
             except Exception as e:
-                await query.edit_message_text(
-                    text=query.message.text + f"\n\n❌ Error: {e}", parse_mode="HTML"
-                )
+                await query.edit_message_text(text=query.message.text + f"\n\n❌ Error: {e}", parse_mode="HTML")
 
         elif action == "reject":
             base_text = "❌ Sugerencia Rechazada\n\nGracias por tu interés, pero tu sugerencia no será implementada en este momento."
@@ -138,9 +134,7 @@ class SuggestionsPlugin(BasePlugin):
                     parse_mode="HTML",
                 )
             except Exception as e:
-                await query.edit_message_text(
-                    text=query.message.text + f"\n\n❌ Error: {e}", parse_mode="HTML"
-                )
+                await query.edit_message_text(text=query.message.text + f"\n\n❌ Error: {e}", parse_mode="HTML")
 
         elif action == "custom":
             # Activate custom response mode

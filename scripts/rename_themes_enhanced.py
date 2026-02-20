@@ -116,15 +116,11 @@ async def check_and_rename_themes():
                     import time
 
                     new_name = f"{base_name} ({int(time.time())})"
-                    logger.warning(
-                        f"All name variants taken for '{old_name}', using timestamp: '{new_name}'"
-                    )
+                    logger.warning(f"All name variants taken for '{old_name}', using timestamp: '{new_name}'")
 
                 # Realizar el renombrado
                 await conn.execute(
-                    text(
-                        "UPDATE app_themes SET name = :new_name, updated_at = CURRENT_TIMESTAMP WHERE id = :theme_id"
-                    ),
+                    text("UPDATE app_themes SET name = :new_name, updated_at = CURRENT_TIMESTAMP WHERE id = :theme_id"),
                     {"new_name": new_name, "theme_id": theme_id},
                 )
 

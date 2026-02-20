@@ -43,21 +43,11 @@ class SchemaOrchestrator:
                 logger.info("Base tables creation/verification completed.")
 
                 # Auto-Migration for UserLevel (Add missing columns to existing table)
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "color", "VARCHAR(20) DEFAULT '#607D8B'"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "ui_font_size", "INTEGER DEFAULT 14"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "ui_glass_blur", "INTEGER DEFAULT 12"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "ui_cover_width", "INTEGER DEFAULT 120"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "ui_accent_opacity", "INTEGER DEFAULT 20"
-                )
+                await SchemaOrchestrator._check_and_add_column("user_levels", "color", "VARCHAR(20) DEFAULT '#607D8B'")
+                await SchemaOrchestrator._check_and_add_column("user_levels", "ui_font_size", "INTEGER DEFAULT 14")
+                await SchemaOrchestrator._check_and_add_column("user_levels", "ui_glass_blur", "INTEGER DEFAULT 12")
+                await SchemaOrchestrator._check_and_add_column("user_levels", "ui_cover_width", "INTEGER DEFAULT 120")
+                await SchemaOrchestrator._check_and_add_column("user_levels", "ui_accent_opacity", "INTEGER DEFAULT 20")
                 await SchemaOrchestrator._check_and_add_column(
                     "user_levels", "panel_transparency", "INTEGER DEFAULT 60"
                 )
@@ -70,44 +60,26 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column(
                     "user_levels", "banner_content_offset", "INTEGER DEFAULT 0"
                 )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "force_settings", "BOOLEAN DEFAULT FALSE"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "price", "INTEGER DEFAULT 0"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "can_read", "BOOLEAN DEFAULT TRUE"
-                )
+                await SchemaOrchestrator._check_and_add_column("user_levels", "force_settings", "BOOLEAN DEFAULT FALSE")
+                await SchemaOrchestrator._check_and_add_column("user_levels", "price", "INTEGER DEFAULT 0")
+                await SchemaOrchestrator._check_and_add_column("user_levels", "can_read", "BOOLEAN DEFAULT TRUE")
                 await SchemaOrchestrator._check_and_add_column(
                     "user_levels", "has_library_access", "BOOLEAN DEFAULT TRUE"
                 )
                 await SchemaOrchestrator._check_and_add_column(
                     "user_levels", "can_request_books", "BOOLEAN DEFAULT TRUE"
                 )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "early_access", "BOOLEAN DEFAULT FALSE"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "custom_themes", "BOOLEAN DEFAULT FALSE"
-                )
+                await SchemaOrchestrator._check_and_add_column("user_levels", "early_access", "BOOLEAN DEFAULT FALSE")
+                await SchemaOrchestrator._check_and_add_column("user_levels", "custom_themes", "BOOLEAN DEFAULT FALSE")
                 await SchemaOrchestrator._check_and_add_column(
                     "user_levels", "show_recommendations", "BOOLEAN DEFAULT TRUE"
                 )
 
                 # Auto-Migration for UserUISettings
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_ui_settings", "font_size", "INTEGER"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_ui_settings", "nav_opacity", "INTEGER"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_ui_settings", "accent_opacity", "INTEGER"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_ui_settings", "show_recommendations", "BOOLEAN"
-                )
+                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "font_size", "INTEGER")
+                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "nav_opacity", "INTEGER")
+                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "accent_opacity", "INTEGER")
+                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "show_recommendations", "BOOLEAN")
                 await SchemaOrchestrator._check_and_add_column(
                     "user_ui_settings", "title_language", "VARCHAR(20) DEFAULT 'romaji'"
                 )
@@ -120,20 +92,14 @@ class SchemaOrchestrator:
                 )
 
                 # Auto-Migration for Users (Ensure created_at and email exists)
-                await SchemaOrchestrator._check_and_add_column(
-                    "users", "email", "VARCHAR(255) UNIQUE"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "users", "can_upload_epub", "BOOLEAN DEFAULT FALSE"
-                )
+                await SchemaOrchestrator._check_and_add_column("users", "email", "VARCHAR(255) UNIQUE")
+                await SchemaOrchestrator._check_and_add_column("users", "can_upload_epub", "BOOLEAN DEFAULT FALSE")
                 await SchemaOrchestrator._check_and_add_column(
                     "users",
                     "updated_at",
                     "TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())",
                 )
-                await SchemaOrchestrator._check_and_add_column(
-                    "users", "created_at", "TIMESTAMP DEFAULT NOW()"
-                )
+                await SchemaOrchestrator._check_and_add_column("users", "created_at", "TIMESTAMP DEFAULT NOW()")
 
                 # IMPORTANT: Wait a bit for Postgres to stabilize metadata
                 await asyncio.sleep(1)
@@ -160,9 +126,7 @@ class SchemaOrchestrator:
                     )
                     exists = (await session.execute(table_check)).scalar()
                     if not exists:
-                        logger.warning(
-                            f"Attempt {attempt + 1}: user_levels table not visible. Retrying..."
-                        )
+                        logger.warning(f"Attempt {attempt + 1}: user_levels table not visible. Retrying...")
                         await asyncio.sleep(2)
                         continue
 
@@ -310,9 +274,7 @@ class SchemaOrchestrator:
                 table_exists = (await session.execute(table_check)).scalar()
 
                 if not table_exists:
-                    logger.debug(
-                        f"Table '{table_name}' does not exist yet. Skipping column check for '{column_name}'."
-                    )
+                    logger.debug(f"Table '{table_name}' does not exist yet. Skipping column check for '{column_name}'.")
                     return
 
                 # 2. Check if column exists
@@ -321,12 +283,8 @@ class SchemaOrchestrator:
                 )
                 result = await session.execute(check_sql)
                 if not result.scalar():
-                    logger.warning(
-                        f"Column '{column_name}' missing in '{table_name}'. Adding it..."
-                    )
-                    await session.execute(
-                        text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}")
-                    )
+                    logger.warning(f"Column '{column_name}' missing in '{table_name}'. Adding it...")
+                    await session.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"))
                     await session.commit()
             except Exception as e:
                 logger.error(f"Error checking column {column_name} in {table_name}: {e}")

@@ -694,23 +694,17 @@ class HelpPlugin(BasePlugin):
             base_closing = "👋 Gracias por usar el bot."
             text_closing = base_closing
             if cms and cms.enabled:
-                text_closing = await cms.get_text(
-                    "bot_closing", Nombre=update.effective_user.mention_html()
-                )
+                text_closing = await cms.get_text("bot_closing", Nombre=update.effective_user.mention_html())
 
             await query.edit_message_text(text_closing)
             return
 
         if action == "home":
             cms = context.application.plugin_manager.get_plugin("custom_messages")
-            base_text = (
-                "🤖 <b>Ayuda de ZeePub Bot</b>\n\nSelecciona una categoría para ver los comandos:"
-            )
+            base_text = "🤖 <b>Ayuda de ZeePub Bot</b>\n\nSelecciona una categoría para ver los comandos:"
             text = base_text
             if cms and cms.enabled:
-                text = await cms.get_text(
-                    "help_main_header", Nombre=update.effective_user.mention_html()
-                )
+                text = await cms.get_text("help_main_header", Nombre=update.effective_user.mention_html())
 
             keyboard = self._build_category_keyboard(is_admin, is_publisher)
             await query.edit_message_text(text=text, reply_markup=keyboard, parse_mode="HTML")
@@ -730,9 +724,7 @@ class HelpPlugin(BasePlugin):
             text = f"📂 <b>Categoría: {cat_name}</b>\n\nSelecciona un comando para ver detalles:"
 
             if cms and cms.enabled:
-                text = await cms.get_text(
-                    "help_cat_header", user=update.effective_user, Categoria=cat_name
-                )
+                text = await cms.get_text("help_cat_header", user=update.effective_user, Categoria=cat_name)
 
             keyboard = self._build_commands_keyboard(cat_key)
             await query.edit_message_text(text=text, reply_markup=keyboard, parse_mode="HTML")
@@ -749,9 +741,7 @@ class HelpPlugin(BasePlugin):
             # Logic check: is the command in a visible category?
             # (Strictly speaking we could skip this check if we trust the menu flow,
             # but good for safety if someone crafts a payload)
-            if (
-                cmd_data["cat"] not in visible_cats and cmd_data["cat"] != "home"
-            ):  # Home always visible
+            if cmd_data["cat"] not in visible_cats and cmd_data["cat"] != "home":  # Home always visible
                 await query.answer("⛔ No tienes permiso.", show_alert=True)
                 return
 
@@ -761,9 +751,7 @@ class HelpPlugin(BasePlugin):
             if cms and cms.enabled:
                 # Use update.effective_user or context.bot.get_chat(uid) if getting user object
                 # We have 'update' here so:
-                template_text = await cms.get_text(
-                    f"help_cmd_{cmd_key}", user=update.effective_user
-                )
+                template_text = await cms.get_text(f"help_cmd_{cmd_key}", user=update.effective_user)
 
             # Fallback if no template or plugin disabled (should match default registry content)
             if template_text:
@@ -871,9 +859,7 @@ class HelpPlugin(BasePlugin):
                         desc = fallback_desc
                         if cms and cms.enabled:
                             # Use get_text with slug cmd_menu_desc_{command}
-                            desc = await cms.get_text(
-                                f"cmd_menu_desc_{c_name}", default_text=fallback_desc
-                            )
+                            desc = await cms.get_text(f"cmd_menu_desc_{c_name}", default_text=fallback_desc)
 
                         public_cmds.append(BotCommand(c_name, desc))
                 except Exception as ex:
@@ -906,9 +892,7 @@ class HelpPlugin(BasePlugin):
                 fallback_desc = COMMANDS_REGISTRY[cmd_name]["desc"]
                 desc = fallback_desc
                 if cms and cms.enabled:
-                    desc = await cms.get_text(
-                        f"cmd_menu_desc_{cmd_name}", default_text=fallback_desc
-                    )
+                    desc = await cms.get_text(f"cmd_menu_desc_{cmd_name}", default_text=fallback_desc)
 
                 all_cmds.append(BotCommand(cmd_name, desc))
 
@@ -921,13 +905,9 @@ class HelpPlugin(BasePlugin):
                     # Rate limiting to avoid connection resets/flood
                     await asyncio.sleep(1.0)
                 except Exception as e:
-                    logger.debug(
-                        f"No se pudieron setear comandos completos para admin {admin_id}: {e}"
-                    )
+                    logger.debug(f"No se pudieron setear comandos completos para admin {admin_id}: {e}")
 
-            logger.info(
-                f"Menú de comandos extendido registrado para {count_admins} administradores en privado."
-            )
+            logger.info(f"Menú de comandos extendido registrado para {count_admins} administradores en privado.")
         except Exception as e:
             logger.error(f"Error actualizando menú de comandos en Telegram: {e}", exc_info=True)
 

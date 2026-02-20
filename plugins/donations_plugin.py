@@ -59,9 +59,7 @@ class DonationsPlugin(BasePlugin):
     def _init_custom_msg_db(self):
         db_url = config.DATABASE_URL
         if not db_url:
-            logger.warning(
-                "DATABASE_URL no configurada. DonationsPlugin no puede conectar a CustomMessages DB."
-            )
+            logger.warning("DATABASE_URL no configurada. DonationsPlugin no puede conectar a CustomMessages DB.")
             return
 
         try:
@@ -216,9 +214,7 @@ class DonationsPlugin(BasePlugin):
 
         if not context.args or len(context.args) != 2:
             await update.message.reply_text(
-                "❌ Uso: /set_price <nivel> <monto>\n"
-                "Niveles: white, vip, premium, meses\n"
-                "Ejemplo: /set_price vip 15"
+                "❌ Uso: /set_price <nivel> <monto>\nNiveles: white, vip, premium, meses\nEjemplo: /set_price vip 15"
             )
             return
 

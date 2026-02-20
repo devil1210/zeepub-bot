@@ -80,9 +80,7 @@ class LinksManagerPlugin(BasePlugin):
             if recent_links:
                 try:
                     tasks = [validate_and_update_url(item[0], item[1]) for item in recent_links]
-                    await asyncio.wait_for(
-                        asyncio.gather(*tasks, return_exceptions=True), timeout=10.0
-                    )
+                    await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=10.0)
                 except asyncio.TimeoutError:
                     logger.warning("Timeout validating links in status_links")
 
@@ -104,11 +102,7 @@ class LinksManagerPlugin(BasePlugin):
             if broken:
                 report += "\n⚠️ <b>Links Rotos (máximo 5):</b>\n"
                 for hash_val, title, failed, _last_checked, created_at in broken:
-                    title_short = (
-                        (title[:40] + "...")
-                        if title and len(title) > 40
-                        else (title or "Sin título")
-                    )
+                    title_short = (title[:40] + "...") if title and len(title) > 40 else (title or "Sin título")
 
                     created_date = created_at or "Desconocida"
 
@@ -117,7 +111,9 @@ class LinksManagerPlugin(BasePlugin):
                     report += f"    Creado: {created_date}\n"
                     report += f"    Fallos: {failed}/3\n"
 
-            report += "\n📄 <i>Nota: Se validaron los últimos 5 links. Para revisar todos usa el validador automático.</i>"
+            report += (
+                "\n📄 <i>Nota: Se validaron los últimos 5 links. Para revisar todos usa el validador automático.</i>"
+            )
 
             await context.bot.edit_message_text(
                 chat_id=update.effective_chat.id,
@@ -152,9 +148,7 @@ class LinksManagerPlugin(BasePlugin):
                 limit = int(context.args[0])
                 limit = min(max(limit, 1), 50)  # Entre 1 y 50
             except ValueError:
-                await update.message.reply_text(
-                    "❌ El límite debe ser un número. Uso: /link_list [número]"
-                )
+                await update.message.reply_text("❌ El límite debe ser un número. Uso: /link_list [número]")
                 return
 
         try:
@@ -173,9 +167,7 @@ class LinksManagerPlugin(BasePlugin):
 
             for i, (hash_val, _url, book_title, created_at) in enumerate(recent_links, 1):
                 title_display = (
-                    (book_title[:45] + "...")
-                    if book_title and len(book_title) > 45
-                    else (book_title or "Sin título")
+                    (book_title[:45] + "...") if book_title and len(book_title) > 45 else (book_title or "Sin título")
                 )
 
                 # Construir link acortado
@@ -217,9 +209,7 @@ class LinksManagerPlugin(BasePlugin):
 
         # Verificar argumentos
         if not context.args or len(context.args) != 1:
-            await update.message.reply_text(
-                "❌ Uso incorrecto.\nUso: /purge_link <hash>\nEjemplo: /purge_link abcdefg"
-            )
+            await update.message.reply_text("❌ Uso incorrecto.\nUso: /purge_link <hash>\nEjemplo: /purge_link abcdefg")
             return
 
         hash_to_purge = context.args[0]

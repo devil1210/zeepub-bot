@@ -68,9 +68,7 @@ class RBACService:
         # 2. Role Overrides
         level = user_data.get("level", "free")
         is_real_admin = (
-            user_data.get("is_real_admin", False)
-            or (uid in config.ADMIN_USERS if uid else False)
-            or (uid == 133994080)
+            user_data.get("is_real_admin", False) or (uid in config.ADMIN_USERS if uid else False) or (uid == 133994080)
         )
 
         if is_real_admin or level == "admin":

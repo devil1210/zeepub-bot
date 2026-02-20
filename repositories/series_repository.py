@@ -22,9 +22,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
     async def get_by_id(self, series_id: int) -> SeriesMetadata | None:
         async with pg_manager.get_session() as session:
             stmt = (
-                select(SeriesMetadata)
-                .options(selectinload(SeriesMetadata.books))
-                .where(SeriesMetadata.id == series_id)
+                select(SeriesMetadata).options(selectinload(SeriesMetadata.books)).where(SeriesMetadata.id == series_id)
             )
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
@@ -43,9 +41,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
-    async def list_series(
-        self, page: int = 1, items_per_page: int = 20, sort_by: str = "name"
-    ) -> dict[str, Any]:
+    async def list_series(self, page: int = 1, items_per_page: int = 20, sort_by: str = "name") -> dict[str, Any]:
         """Lista series paginadas."""
         async with pg_manager.get_session() as session:
             try:
@@ -221,9 +217,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
         """Actualiza el contador de libros de una serie basado en los libros reales en DB."""
         async with pg_manager.get_session() as session:
             # Contar libros reales
-            count_stmt = select(func.count(LocalBook.id)).where(
-                LocalBook.series_hash == series_hash
-            )
+            count_stmt = select(func.count(LocalBook.id)).where(LocalBook.series_hash == series_hash)
             real_count = (await session.execute(count_stmt)).scalar() or 0
 
             # Actualizar metadata

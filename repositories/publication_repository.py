@@ -31,9 +31,7 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
         async with self.db_manager.get_session() as session:
             stmt = (
                 select(PublicationQueue)
-                .options(
-                    selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template)
-                )
+                .options(selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template))
                 .where(PublicationQueue.id == queue_id)
             )
             result = await session.execute(stmt)
@@ -67,23 +65,15 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
         async with self.db_manager.get_session() as session:
             stmt = (
                 select(PublicationQueue)
-                .options(
-                    selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template)
-                )
-                .where(
-                    and_(
-                        PublicationQueue.status == "pending", PublicationQueue.scheduled_for <= now
-                    )
-                )
+                .options(selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template))
+                .where(and_(PublicationQueue.status == "pending", PublicationQueue.scheduled_for <= now))
                 .order_by(PublicationQueue.scheduled_for.asc())
                 .limit(limit)
             )
             result = await session.execute(stmt)
             return list(result.scalars().all())
 
-    async def get_full_queue(
-        self, status: str | None = None, limit: int = 100
-    ) -> list[PublicationQueue]:
+    async def get_full_queue(self, status: str | None = None, limit: int = 100) -> list[PublicationQueue]:
         """Obtiene el historial/estado de la cola."""
         async with self.db_manager.get_session() as session:
             stmt = select(PublicationQueue).options(
@@ -110,9 +100,7 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
                 stmt = stmt.where(PublicationChannel.is_active)
 
             # Ordenar: Favoritos primero, luego alfabético
-            stmt = stmt.order_by(
-                PublicationChannel.is_favorite.desc(), PublicationChannel.name.asc()
-            )
+            stmt = stmt.order_by(PublicationChannel.is_favorite.desc(), PublicationChannel.name.asc())
 
             result = await session.execute(stmt)
             return list(result.scalars().all())
@@ -126,9 +114,7 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
 
     async def update_channel(self, channel_id: int, data: dict) -> bool:
         async with self.db_manager.get_session() as session:
-            stmt = (
-                update(PublicationChannel).where(PublicationChannel.id == channel_id).values(**data)
-            )
+            stmt = update(PublicationChannel).where(PublicationChannel.id == channel_id).values(**data)
             result = await session.execute(stmt)
             await session.commit()
             return result.rowcount > 0
@@ -161,16 +147,12 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
             except ProgrammingError as e:
                 # Si la columna no existe, intentamos agregarla proactivamente
                 if "extra_config" in str(e).lower() and "does not exist" in str(e).lower():
-                    logger.warning(
-                        "Column 'extra_config' missing in publication_templates. Patching..."
-                    )
+                    logger.warning("Column 'extra_config' missing in publication_templates. Patching...")
                     try:
                         # Usamos el motor directamente para el DDL
                         async with self.db_manager.engine.begin() as conn:
                             await conn.execute(
-                                text(
-                                    "ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;"
-                                )
+                                text("ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;")
                             )
                         logger.info("Column 'extra_config' patched successfully.")
 
@@ -194,11 +176,7 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
 
     async def update_template(self, template_id: int, data: dict) -> bool:
         async with self.db_manager.get_session() as session:
-            stmt = (
-                update(PublicationTemplate)
-                .where(PublicationTemplate.id == template_id)
-                .values(**data)
-            )
+            stmt = update(PublicationTemplate).where(PublicationTemplate.id == template_id).values(**data)
             result = await session.execute(stmt)
             await session.commit()
             return result.rowcount > 0
@@ -207,9 +185,7 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
         async with self.db_manager.get_session() as session:
             # Desvincular de la cola antes de eliminar
             stmt_update = (
-                update(PublicationQueue)
-                .where(PublicationQueue.template_id == template_id)
-                .values(template_id=None)
+                update(PublicationQueue).where(PublicationQueue.template_id == template_id).values(template_id=None)
             )
             await session.execute(stmt_update)
 

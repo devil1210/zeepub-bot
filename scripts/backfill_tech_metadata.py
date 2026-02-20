@@ -33,9 +33,7 @@ async def fix_technical_metadata():
         async with pg_manager.get_session() as session:
             # 1. Get all books without word count
             result = await session.execute(
-                select(LocalBook).where(
-                    (LocalBook.word_count == 0) | (LocalBook.word_count.is_(None))
-                )
+                select(LocalBook).where((LocalBook.word_count == 0) | (LocalBook.word_count.is_(None)))
             )
             books = result.scalars().all()
 
@@ -48,9 +46,7 @@ async def fix_technical_metadata():
                     continue
 
                 try:
-                    logger.info(
-                        f"[{i + 1}/{len(books)}] Extracting: {os.path.basename(book.filepath)}"
-                    )
+                    logger.info(f"[{i + 1}/{len(books)}] Extracting: {os.path.basename(book.filepath)}")
                     extractor = EpubMetadataExtractor(book.filepath)
                     meta = extractor.extract()
 

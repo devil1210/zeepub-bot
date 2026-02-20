@@ -35,9 +35,7 @@ async def run_migration():
 
             # 2. Agregar la columna extra_config (JSONB para PostgreSQL)
             try:
-                await conn.execute(
-                    text("ALTER TABLE publication_templates ADD COLUMN extra_config JSONB;")
-                )
+                await conn.execute(text("ALTER TABLE publication_templates ADD COLUMN extra_config JSONB;"))
                 print("Columna 'extra_config' agregada exitosamente.")
             except Exception as e:
                 if "already exists" in str(e).lower():

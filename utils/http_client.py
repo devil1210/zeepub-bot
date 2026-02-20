@@ -52,9 +52,7 @@ async def fetch_bytes(
             # If timeout is an int, we treat it as sock_read/sock_connect timeout.
             request_timeout = timeout
             if isinstance(timeout, int):
-                request_timeout = aiohttp.ClientTimeout(
-                    total=None, sock_connect=timeout, sock_read=timeout
-                )
+                request_timeout = aiohttp.ClientTimeout(total=None, sock_connect=timeout, sock_read=timeout)
 
             async with sess.get(url, timeout=request_timeout, auth=auth) as resp:
                 # Log response status and headers for debugging
@@ -126,9 +124,7 @@ async def fetch_bytes(
                 return data
 
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            logger.warning(
-                f"Error fetch_bytes (intento {attempt + 1}/{max_retries}) para {url}: {e}"
-            )
+            logger.warning(f"Error fetch_bytes (intento {attempt + 1}/{max_retries}) para {url}: {e}")
 
             # If this is not the last attempt, wait before retrying
             if attempt < max_retries - 1:

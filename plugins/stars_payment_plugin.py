@@ -31,9 +31,7 @@ class StarsPaymentPlugin(BasePlugin):
 
         # Registrar handlers de pago
         bot_instance.add_handler(PreCheckoutQueryHandler(self.pre_checkout_handler))
-        bot_instance.add_handler(
-            MessageHandler(filters.SUCCESSFUL_PAYMENT, self.successful_payment_handler)
-        )
+        bot_instance.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, self.successful_payment_handler))
 
         logger.info("StarsPaymentPlugin inicializado y handlers registrados.")
         return True
@@ -73,9 +71,7 @@ class StarsPaymentPlugin(BasePlugin):
 
         # Enviar mensaje de éxito usando el sistema de plantillas
         if self.cms:
-            text = await self.cms.get_text(
-                "star_payment_success", user=user, Nivel=new_role.capitalize()
-            )
+            text = await self.cms.get_text("star_payment_success", user=user, Nivel=new_role.capitalize())
         else:
             text = f"🌟 ¡Gracias {user.first_name}! Ahora eres nivel {new_role.capitalize()}."
 
@@ -83,9 +79,7 @@ class StarsPaymentPlugin(BasePlugin):
 
         logger.info(f"Usuario {user.id} mejorado a {new_role} vía Stars.")
 
-    async def create_stars_invoice_link(
-        self, title: str, description: str, payload: str, amount: int
-    ) -> str:
+    async def create_stars_invoice_link(self, title: str, description: str, payload: str, amount: int) -> str:
         """Genera un enlace de factura para Telegram Stars."""
         # "XTR" es el código de moneda para Telegram Stars
         prices = [LabeledPrice("Estrellas", amount)]

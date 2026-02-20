@@ -22,6 +22,8 @@ export const useCloudStorage = <T,>(key: string, defaultValue: T) => {
     // Load from CloudStorage on mount
     useEffect(() => {
         let isMounted = true;
+        let timeoutId: NodeJS.Timeout;
+
         if (!isCloudStorageAvailable()) {
             // Fallback: try to load from localStorage
             try {
@@ -36,9 +38,25 @@ export const useCloudStorage = <T,>(key: string, defaultValue: T) => {
             return;
         }
 
+        // Failsafe timeout in case CloudStorage hangs
+        timeoutId = setTimeout(() => {
+            if (!isMounted) return;
+            console.warn(`CloudStorage loading timed out for ${key}. Falling back to localStorage.`);
+            try {
+                const saved = localStorage.getItem(key);
+                if (saved) {
+                    setValue(JSON.parse(saved) as T);
+                }
+            } catch (e) {
+                console.error(`Error loading from localStorage fallback for ${key}:`, e);
+            }
+            setIsLoading(false);
+        }, 1500);
+
         // Use Telegram CloudStorage
         window.Telegram.WebApp.CloudStorage.getItem(key, (error, result) => {
             if (!isMounted) return;
+            clearTimeout(timeoutId);
 
             if (error) {
                 console.error(`CloudStorage getItem error for ${key}:`, error);
@@ -65,7 +83,10 @@ export const useCloudStorage = <T,>(key: string, defaultValue: T) => {
             setIsLoading(false);
         });
 
-        return () => { isMounted = false; };
+        return () => {
+            isMounted = false;
+            clearTimeout(timeoutId);
+        };
     }, [key]);
 
     // Save to CloudStorage

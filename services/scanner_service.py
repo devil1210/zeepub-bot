@@ -123,9 +123,7 @@ class ScannerService:
                     session.add(source)
                     session.commit()
 
-                source_results, found_files = await self._scan_directory(
-                    source, session, force_scan, soft_scan
-                )
+                source_results, found_files = await self._scan_directory(source, session, force_scan, soft_scan)
 
                 # Collect new books for global notification
                 if "added_books_details" in source_results:
@@ -147,11 +145,7 @@ class ScannerService:
                 else:
                     try:
                         # Get all DB filepaths for this source
-                        db_books = (
-                            session.query(LocalBook.filepath)
-                            .filter(LocalBook.source_id == source.id)
-                            .all()
-                        )
+                        db_books = session.query(LocalBook.filepath).filter(LocalBook.source_id == source.id).all()
                         db_paths = {b[0] for b in db_books}
 
                         missing_paths = db_paths - found_files
@@ -168,11 +162,7 @@ class ScannerService:
                                 chunk = missing_list[i : i + chunk_size]
 
                                 # 1. Obtener objetos completos para archivar
-                                books_to_archive = (
-                                    session.query(LocalBook)
-                                    .filter(LocalBook.filepath.in_(chunk))
-                                    .all()
-                                )
+                                books_to_archive = session.query(LocalBook).filter(LocalBook.filepath.in_(chunk)).all()
 
                                 for b in books_to_archive:
                                     if b.series_hash:
@@ -200,26 +190,22 @@ class ScannerService:
 
                                 book_ids = [b.id for b in books_to_archive]
                                 if book_ids:
-                                    session.query(DownloadHistory).filter(
-                                        DownloadHistory.book_id.in_(book_ids)
-                                    ).update(
+                                    session.query(DownloadHistory).filter(DownloadHistory.book_id.in_(book_ids)).update(
                                         {DownloadHistory.book_id: None}, synchronize_session=False
                                     )
 
-                                    session.query(UserDownload).filter(
-                                        UserDownload.book_id.in_(book_ids)
-                                    ).update(
+                                    session.query(UserDownload).filter(UserDownload.book_id.in_(book_ids)).update(
                                         {UserDownload.book_id: None}, synchronize_session=False
                                     )
 
-                                    session.query(UserRating).filter(
-                                        UserRating.book_id.in_(book_ids)
-                                    ).update({UserRating.book_id: None}, synchronize_session=False)
+                                    session.query(UserRating).filter(UserRating.book_id.in_(book_ids)).update(
+                                        {UserRating.book_id: None}, synchronize_session=False
+                                    )
 
                                 # 2. Eliminar de la tabla principal
-                                session.query(LocalBook).filter(
-                                    LocalBook.filepath.in_(chunk)
-                                ).delete(synchronize_session=False)
+                                session.query(LocalBook).filter(LocalBook.filepath.in_(chunk)).delete(
+                                    synchronize_session=False
+                                )
                                 session.commit()  # Commit chunks to keep memory clean
 
                                 # Ceder control
@@ -228,16 +214,10 @@ class ScannerService:
                             # 3. Verificar series huérfanas
                             for s_hash in affected_series_hashes:
                                 # Contar si quedan libros en LocalBook para esta serie
-                                count = (
-                                    session.query(LocalBook).filter_by(series_hash=s_hash).count()
-                                )
+                                count = session.query(LocalBook).filter_by(series_hash=s_hash).count()
                                 if count == 0:
                                     # Archivar serie
-                                    series = (
-                                        session.query(SeriesMetadata)
-                                        .filter_by(series_hash=s_hash)
-                                        .first()
-                                    )
+                                    series = session.query(SeriesMetadata).filter_by(series_hash=s_hash).first()
                                     if series:
                                         logger.info(
                                             f"Archivando serie completa por falta de volúmenes: {series.series_name}"
@@ -276,15 +256,11 @@ class ScannerService:
             if results["sources_scanned"] > 0:
                 scanned_source_ids = [
                     s.id
-                    for s in session.query(LibrarySource)
-                    .filter(LibrarySource.path.in_(local_libs_map.values()))
-                    .all()
+                    for s in session.query(LibrarySource).filter(LibrarySource.path.in_(local_libs_map.values())).all()
                 ]
                 if scanned_source_ids:
                     # Get orphans instead of just counting
-                    orphans_q = session.query(LocalBook).filter(
-                        LocalBook.source_id.notin_(scanned_source_ids)
-                    )
+                    orphans_q = session.query(LocalBook).filter(LocalBook.source_id.notin_(scanned_source_ids))
                     orphans_list = orphans_q.all()
 
                     if orphans_list:
@@ -299,11 +275,7 @@ class ScannerService:
                                 affected_hashes.add(orphan.series_hash)
 
                             # Verify if already in duplicates to avoid spam
-                            exists = (
-                                session.query(DuplicateBook)
-                                .filter_by(duplicate_filepath=orphan.filepath)
-                                .first()
-                            )
+                            exists = session.query(DuplicateBook).filter_by(duplicate_filepath=orphan.filepath).first()
                             if not exists:
                                 dup = DuplicateBook(
                                     book_hash=orphan.book_hash,
@@ -370,9 +342,7 @@ class ScannerService:
                             candidates.append(row[0])
 
                     processed_count = 0
-                    logger.info(
-                        f"AI Gardener: Procesando {len(candidates)} candidatos (Limit: {SCAN_LIMIT})..."
-                    )
+                    logger.info(f"AI Gardener: Procesando {len(candidates)} candidatos (Limit: {SCAN_LIMIT})...")
 
                     for s_hash in candidates:
                         if processed_count >= SCAN_LIMIT:
@@ -380,30 +350,20 @@ class ScannerService:
 
                         # Solo si no tiene propuesta pendiente Y no ha sido revisada recientemente (feedback)
                         exists_pending = (
-                            session.query(MetadataProposal)
-                            .filter_by(series_hash=s_hash, status="pending")
-                            .first()
+                            session.query(MetadataProposal).filter_by(series_hash=s_hash, status="pending").first()
                         )
 
                         # Check if already reviewed in learning feedback (Double check for touched ones)
                         reviewed = session.execute(
-                            text(
-                                "SELECT 1 FROM ai_learning_feedback WHERE series_hash = :h LIMIT 1"
-                            ),
+                            text("SELECT 1 FROM ai_learning_feedback WHERE series_hash = :h LIMIT 1"),
                             {"h": s_hash},
                         ).first()
 
                         if not exists_pending and not reviewed:
-                            current_s = (
-                                session.query(SeriesMetadata).filter_by(series_hash=s_hash).first()
-                            )
-                            current_name = (
-                                current_s.series_name if current_s else "Serie Desconocida"
-                            )
+                            current_s = session.query(SeriesMetadata).filter_by(series_hash=s_hash).first()
+                            current_name = current_s.series_name if current_s else "Serie Desconocida"
 
-                            series_books = (
-                                session.query(LocalBook).filter_by(series_hash=s_hash).all()
-                            )
+                            series_books = session.query(LocalBook).filter_by(series_hash=s_hash).all()
                             # Relaxed constraint for backlog items, but keep sanity
                             if series_books:
                                 try:
@@ -416,9 +376,7 @@ class ScannerService:
                                     )
                                     processed_count += 1
                                 except Exception as ae:
-                                    logger.warning(
-                                        f"Error generando propuesta IA para {s_hash}: {ae}"
-                                    )
+                                    logger.warning(f"Error generando propuesta IA para {s_hash}: {ae}")
                                     proposal = None
 
                                 if proposal:
@@ -435,9 +393,7 @@ class ScannerService:
             # --- FINAL CLEANUP: Remove/Archive empty series ---
             try:
                 # FORCE REFRESH: Recalculate book_count for ALL non-archived series to fix stale data
-                logger.info(
-                    "Sincronizando conteos de libros para todas las series (Bulk Update)..."
-                )
+                logger.info("Sincronizando conteos de libros para todas las series (Bulk Update)...")
                 # SQL Query para actualizar en lote los counts basándose en local_books
                 update_counts_query = text("""
                     UPDATE series_metadata sm
@@ -450,9 +406,7 @@ class ScannerService:
                 session.execute(update_counts_query)
                 session.commit()
 
-                empty_series = (
-                    session.query(SeriesMetadata).filter(SeriesMetadata.book_count == 0).all()
-                )
+                empty_series = session.query(SeriesMetadata).filter(SeriesMetadata.book_count == 0).all()
                 if empty_series:
                     logger.info(f"Limpieza final: Archivando {len(empty_series)} series vacías...")
                     for s in empty_series:
@@ -543,9 +497,7 @@ class ScannerService:
                 # Es un archivo individual
                 if abs_path.lower().endswith(".epub"):
                     results["total_scanned"] = 1
-                    res, s_hash = await self._process_book_with_hash(
-                        abs_path, source, session, force_scan
-                    )
+                    res, s_hash = await self._process_book_with_hash(abs_path, source, session, force_scan)
                     if res == "added":
                         results["added"] = 1
                     elif res == "updated":
@@ -615,9 +567,7 @@ class ScannerService:
                     directories_to_scan.add(dir_path)
                     source_map[dir_path] = b.source_id
 
-            logger.info(
-                f"Sincronizando serie {series_hash}. Directorios a escanear: {len(directories_to_scan)}"
-            )
+            logger.info(f"Sincronizando serie {series_hash}. Directorios a escanear: {len(directories_to_scan)}")
 
             # 3. Escanear cada directorio encontrado
             for dir_path in directories_to_scan:
@@ -693,18 +643,14 @@ class ScannerService:
                                 # Opcional: Si el archivo es nuevo no registrado, igual procesarlo.
                                 # Pero por ahora, el usuario pide estrictamente "cambiados en el último día".
                                 # Para mayor seguridad, si no está en la DB, lo procesamos.
-                                exists_in_db = (
-                                    session.query(LocalBook).filter_by(filepath=full_path).first()
-                                )
+                                exists_in_db = session.query(LocalBook).filter_by(filepath=full_path).first()
                                 if exists_in_db:
                                     continue
                         except Exception:
                             pass
 
                     # El tercer valor retornado por _process_book será el series_hash si se procesó
-                    book_res, s_hash = await self._process_book_with_hash(
-                        full_path, source, session, force_scan
-                    )
+                    book_res, s_hash = await self._process_book_with_hash(full_path, source, session, force_scan)
                     if s_hash:
                         touched_hashes.add(s_hash)
 
@@ -789,9 +735,7 @@ class ScannerService:
             if book.author and series.author != book.author:
                 series.author = book.author
 
-            if book.description and (
-                not series.description or len(book.description) > len(series.description)
-            ):
+            if book.description and (not series.description or len(book.description) > len(series.description)):
                 series.description = book.description
 
             # UNIÓN DE TAGS: La serie tiene todos los géneros que tengan sus volúmenes
@@ -858,9 +802,7 @@ class ScannerService:
                 local_cover_path = os.path.join(DB_DIR, "covers", relative_path)
                 if not os.path.exists(local_cover_path):
                     missing_covers = True
-                    logger.warning(
-                        f"Portada no encontrada en disco para {filename}: {local_cover_path}"
-                    )
+                    logger.warning(f"Portada no encontrada en disco para {filename}: {local_cover_path}")
 
             if book and (not book.word_count or book.word_count == 0):
                 logger.info(f"Forzando extracción de metadata para {filename} (metadata faltante)")
@@ -880,8 +822,7 @@ class ScannerService:
                 and book.author
                 and book.volume is not None
                 # FORCE UPDATE IF SERIES HASH LOGIC CHANGED (Migration Fix)
-                and book.series_hash
-                == hash_service.generate_series_hash(book.series, book.author, book.book_type)
+                and book.series_hash == hash_service.generate_series_hash(book.series, book.author, book.book_type)
             ):
                 return "skipped"
 
@@ -969,14 +910,8 @@ class ScannerService:
             # Romaji extraction
             romaji = meta.get("romaji_title")
             if not romaji and book.title:
-                title_without_vol = re.sub(
-                    r"\s*-\s*Volumen\s+\d+.*$", "", book.title, flags=re.IGNORECASE
-                ).strip()
-                romaji = (
-                    title_without_vol.split(" - ")[0].strip()
-                    if " - " in title_without_vol
-                    else title_without_vol
-                )
+                title_without_vol = re.sub(r"\s*-\s*Volumen\s+\d+.*$", "", book.title, flags=re.IGNORECASE).strip()
+                romaji = title_without_vol.split(" - ")[0].strip() if " - " in title_without_vol else title_without_vol
             book.romaji_title = romaji
 
             # Enriched identifiers and dates
@@ -1012,9 +947,7 @@ class ScannerService:
             extracted_book_data = book  # 'book' ya tiene la metadata seteada arriba
 
             with session.no_autoflush:
-                existing_same_file = (
-                    session.query(LocalBook).filter(LocalBook.filepath == filepath).first()
-                )
+                existing_same_file = session.query(LocalBook).filter(LocalBook.filepath == filepath).first()
 
                 if existing_same_file:
                     # Caso 1: El archivo ya existe en la DB (por filepath).
@@ -1035,11 +968,7 @@ class ScannerService:
                             )
                             # Registrar en tabla de duplicados para que aparezca en el Dashboard
                             try:
-                                dup_exists = (
-                                    session.query(DuplicateBook)
-                                    .filter_by(duplicate_filepath=filepath)
-                                    .first()
-                                )
+                                dup_exists = session.query(DuplicateBook).filter_by(duplicate_filepath=filepath).first()
                                 if not dup_exists:
                                     dup = DuplicateBook(
                                         book_hash=target_book_hash,
@@ -1074,9 +1003,7 @@ class ScannerService:
                     # Caso 2: Nuevo archivo en disco (no encontrado por filepath).
                     # Verificar si existe otro registro con el mismo contenido/hash.
                     existing_with_same_hash = (
-                        session.query(LocalBook)
-                        .filter(LocalBook.book_hash == target_book_hash)
-                        .first()
+                        session.query(LocalBook).filter(LocalBook.book_hash == target_book_hash).first()
                     )
 
                     if existing_with_same_hash:
@@ -1090,9 +1017,7 @@ class ScannerService:
                                 filepath,
                             )
                             # Actualizamos el registro viejo con la nueva ubicación y la metadata
-                            self._copy_metadata_to_existing(
-                                extracted_book_data, existing_with_same_hash
-                            )
+                            self._copy_metadata_to_existing(extracted_book_data, existing_with_same_hash)
 
                             book = existing_with_same_hash
                             book.filepath = filepath
@@ -1112,11 +1037,7 @@ class ScannerService:
                             # Duplicado REAL: Dos archivos distintos con el mismo contenido.
                             logger.warning(f"📕 Duplicado detectado: {book.title}")
                             try:
-                                dup_exists = (
-                                    session.query(DuplicateBook)
-                                    .filter_by(duplicate_filepath=filepath)
-                                    .first()
-                                )
+                                dup_exists = session.query(DuplicateBook).filter_by(duplicate_filepath=filepath).first()
                                 if not dup_exists:
                                     dup = DuplicateBook(
                                         book_hash=target_book_hash,
@@ -1239,9 +1160,7 @@ class ScannerService:
                     time.sleep(delay_seconds)
                 else:
                     # Si falla o no encuentra, no paramos pero notificamos
-                    logger.debug(
-                        f"[{i + 1}/{len(books)}] No se encontró info extra para: {book.title}"
-                    )
+                    logger.debug(f"[{i + 1}/{len(books)}] No se encontró info extra para: {book.title}")
 
             logger.info("Enriquecimiento masivo completado.")
             return True
@@ -1356,9 +1275,7 @@ class ScannerService:
             # Archivar serie si ya no tiene libros
             from models.library_models import ArchivedSeries
 
-            logger.info(
-                f"Archivando serie vacía en sincronización de metadata: {series.series_name}"
-            )
+            logger.info(f"Archivando serie vacía en sincronización de metadata: {series.series_name}")
             archived_s = ArchivedSeries(
                 series_name=series.series_name,
                 series_spanish=series.series_spanish,
@@ -1456,9 +1373,7 @@ class ScannerService:
             from sqlalchemy import func
 
             existing = (
-                session.query(TranslatorsGroup)
-                .filter(func.lower(TranslatorsGroup.name) == translator.lower())
-                .first()
+                session.query(TranslatorsGroup).filter(func.lower(TranslatorsGroup.name) == translator.lower()).first()
             )
             if existing:
                 # Si no tiene siglas o las actuales son más largas que las detectadas, actualizar
@@ -1526,15 +1441,9 @@ class ScannerService:
                 from models.download_models import DownloadHistory
                 from models.library_models import UserDownload, UserRating
 
-                session.query(DownloadHistory).filter_by(book_id=book.id).update(
-                    {DownloadHistory.book_id: None}
-                )
-                session.query(UserDownload).filter_by(book_id=book.id).update(
-                    {UserDownload.book_id: None}
-                )
-                session.query(UserRating).filter_by(book_id=book.id).update(
-                    {UserRating.book_id: None}
-                )
+                session.query(DownloadHistory).filter_by(book_id=book.id).update({DownloadHistory.book_id: None})
+                session.query(UserDownload).filter_by(book_id=book.id).update({UserDownload.book_id: None})
+                session.query(UserRating).filter_by(book_id=book.id).update({UserRating.book_id: None})
 
                 session.delete(book)
                 deleted_books += 1

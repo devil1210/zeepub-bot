@@ -75,9 +75,7 @@ class UserAuditService:
 
             if own_session:
                 session.commit()
-                logger.info(
-                    f"[Audit] {action} - User: {username} ({user_id}) by {changed_by_username}"
-                )
+                logger.info(f"[Audit] {action} - User: {username} ({user_id}) by {changed_by_username}")
 
             return log_entry
 
@@ -119,9 +117,7 @@ class UserAuditService:
             session.close()
 
     @staticmethod
-    def get_recent_changes(
-        limit: int = 100, offset: int = 0, changed_by_id: str | None = None
-    ) -> list[dict[str, Any]]:
+    def get_recent_changes(limit: int = 100, offset: int = 0, changed_by_id: str | None = None) -> list[dict[str, Any]]:
         """
         Obtiene los cambios recientes en el sistema.
 

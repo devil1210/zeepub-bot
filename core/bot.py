@@ -58,13 +58,7 @@ class ZeePubBot:
             pool_timeout=30.0,
         )
 
-        self.app = (
-            ApplicationBuilder()
-            .application_class(ZeePubApplication)
-            .token(token)
-            .request(trequest)
-            .build()
-        )
+        self.app = ApplicationBuilder().application_class(ZeePubApplication).token(token).request(trequest).build()
 
         self.plugin_manager = PluginManager()
 
@@ -92,13 +86,9 @@ class ZeePubBot:
         # JSON Upload Handler
         from handlers.message_handlers import handle_donation_proof, handle_json_upload
 
-        self.app.add_handler(
-            MessageHandler(filters.Document.MimeType("application/json"), handle_json_upload)
-        )
+        self.app.add_handler(MessageHandler(filters.Document.MimeType("application/json"), handle_json_upload))
         # Donation Proof Handler (Photo or Document)
-        self.app.add_handler(
-            MessageHandler(filters.PHOTO | filters.Document.ALL, handle_donation_proof)
-        )
+        self.app.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, handle_donation_proof))
 
         try:
             from handlers.epub_upload_handler import setup_upload_handlers
@@ -187,9 +177,7 @@ class ZeePubBot:
                     break
                 except RuntimeError as e:
                     if "not properly initialized" in str(e):
-                        logger.warning(
-                            "Bot marcado como initialized pero ExtBot no está listo. Reintentando..."
-                        )
+                        logger.warning("Bot marcado como initialized pero ExtBot no está listo. Reintentando...")
                         # Force a new initialization attempt
                         await asyncio.sleep(retry_delay)
                         continue
@@ -214,14 +202,10 @@ class ZeePubBot:
 
                 if attempt < max_retries - 1:
                     wait = retry_delay * (attempt + 1)
-                    logger.warning(
-                        f"Fallo en initialize (intento {attempt + 1}): {e}. Reintentando en {wait}s..."
-                    )
+                    logger.warning(f"Fallo en initialize (intento {attempt + 1}): {e}. Reintentando en {wait}s...")
                     await asyncio.sleep(wait)
                 else:
-                    logger.error(
-                        f"Error crítico: No se pudo inicializar el bot tras {max_retries} intentos: {e}"
-                    )
+                    logger.error(f"Error crítico: No se pudo inicializar el bot tras {max_retries} intentos: {e}")
                     self._initialized = False
                     return
 

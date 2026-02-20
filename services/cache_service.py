@@ -230,9 +230,7 @@ class CacheManager:
 
         return None
 
-    async def set_user_settings(
-        self, telegram_id: int, settings: dict[str, Any], ttl: int = 600
-    ) -> None:
+    async def set_user_settings(self, telegram_id: int, settings: dict[str, Any], ttl: int = 600) -> None:
         """Guarda configuración de usuario."""
         await self.settings_cache.set(f"settings:{telegram_id}", settings, ttl)
         self.memory_cache.set(f"settings:{telegram_id}", settings, ttl)
@@ -255,9 +253,7 @@ class CacheManager:
 
         return None
 
-    async def set_user_level(
-        self, level_id: int, level_data: dict[str, Any], ttl: int = 1800
-    ) -> None:
+    async def set_user_level(self, level_id: int, level_data: dict[str, Any], ttl: int = 1800) -> None:
         """Guarda nivel de usuario."""
         await self.level_cache.set(f"level:{level_id}", level_data, ttl)
         self.memory_cache.set(f"level:{level_id}", level_data, ttl)

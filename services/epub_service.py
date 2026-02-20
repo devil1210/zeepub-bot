@@ -40,9 +40,7 @@ def extract_internal_title(data_or_path: bytes | str) -> str | None:
             r'<span[^>]*class="grande"[^>]*epub:type="title"[^>]*>(.*?)</span>',
             re.IGNORECASE | re.DOTALL,
         )
-        pattern_loose = re.compile(
-            r'<span[^>]*epub:type="title"[^>]*>(.*?)</span>', re.IGNORECASE | re.DOTALL
-        )
+        pattern_loose = re.compile(r'<span[^>]*epub:type="title"[^>]*>(.*?)</span>', re.IGNORECASE | re.DOTALL)
 
         for name in candidates:
             try:
@@ -218,9 +216,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                     if el.text:
                         raw_date = el.text.strip()
                         out["fecha_modificacion"] = parse_date(raw_date)
-                        logger.debug(
-                            f"Modified date found: {raw_date} -> {out['fecha_modificacion']}"
-                        )
+                        logger.debug(f"Modified date found: {raw_date} -> {out['fecha_modificacion']}")
                         break
 
         # Fecha publicación: dc:date
@@ -241,9 +237,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                         logger.debug(f"Publication date found: {raw_date} -> {parsed}")
                     elif event == "publication":
                         out["fecha_publicacion"] = parsed
-                        logger.debug(
-                            f"Publication date (event=publication) found: {raw_date} -> {parsed}"
-                        )
+                        logger.debug(f"Publication date (event=publication) found: {raw_date} -> {parsed}")
                         break
 
         # Título volumen: primer <dc:title> o <title>
@@ -258,9 +252,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         # Primera pasada: Recolectar Series ID si existen
         for el in root.iter():
             if local_name(el).lower() == "meta":
-                prop = el.attrib.get("property", "") or el.attrib.get(
-                    "{http://www.idpf.org/2007/opf}property", ""
-                )
+                prop = el.attrib.get("property", "") or el.attrib.get("{http://www.idpf.org/2007/opf}property", "")
                 if prop == "belongs-to-collection" and el.text:
                     out["titulo_serie"] = el.text.strip()
                     if el.attrib.get("id"):
@@ -403,9 +395,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                     for k, v in el.attrib.items():
                         attr_val = v.lower()
                         attr_name = local_name_attr(k).lower()
-                        if ("scheme" in attr_name and "isbn" in attr_val) or (
-                            "id" in attr_name and "isbn" in attr_val
-                        ):
+                        if ("scheme" in attr_name and "isbn" in attr_val) or ("id" in attr_name and "isbn" in attr_val):
                             is_isbn = True
                             break
 
@@ -431,10 +421,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         # Fallback: Buscar ISBN en dc:source o dc:relation si aun no tenemos
         if not out["isbn"]:
             for el in root.iter():
-                if (
-                    local_name(el).lower() in ("source", "dc:source", "relation", "dc:relation")
-                    and el.text
-                ):
+                if local_name(el).lower() in ("source", "dc:source", "relation", "dc:relation") and el.text:
                     txt = el.text.strip()
                     lower_txt = txt.lower()
                     if "isbn" in lower_txt:
@@ -458,13 +445,9 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         roles: dict[str, str] = {}
         for el in root.iter():
             if local_name(el).lower() == "meta":
-                prop = el.attrib.get("property", "") or el.attrib.get(
-                    "{http://www.idpf.org/2007/opf}property", ""
-                )
+                prop = el.attrib.get("property", "") or el.attrib.get("{http://www.idpf.org/2007/opf}property", "")
                 if prop.lower() == "role":
-                    ref = el.attrib.get("refines", "") or el.attrib.get(
-                        "{http://www.idpf.org/2007/opf}refines", ""
-                    )
+                    ref = el.attrib.get("refines", "") or el.attrib.get("{http://www.idpf.org/2007/opf}refines", "")
                     if ref and el.text:
                         roles[ref.lstrip("#")] = el.text.strip().lower()
 
@@ -541,9 +524,7 @@ def extract_cover_from_epub(data_or_path: bytes | str) -> bytes | None:
             tree = ET.fromstring(container)
             opf_path = next(
                 rf.attrib["full-path"]
-                for rf in tree.findall(
-                    ".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile"
-                )
+                for rf in tree.findall(".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile")
                 if rf.attrib.get("full-path", "").lower().endswith(".opf")
             )
         except StopIteration:
@@ -687,9 +668,7 @@ async def enrich_metadata_from_epub(
         html_publisher_url = extract_publisher_url_from_html(epub_bytes)
         if html_publisher_url:
             meta["publisher_url"] = html_publisher_url
-            logger.debug(
-                f"enrich_metadata_from_epub: publisher_url updated from HTML: {html_publisher_url}"
-            )
+            logger.debug(f"enrich_metadata_from_epub: publisher_url updated from HTML: {html_publisher_url}")
     except Exception as e:
         logger.debug(f"enrich_metadata_from_epub: HTML publisher URL extraction failed: {e}")
 

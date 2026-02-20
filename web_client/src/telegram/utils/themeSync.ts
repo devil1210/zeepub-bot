@@ -3,15 +3,25 @@
  * This ensures the app looks native within Telegram
  */
 
+const expandHex = (hex: string): string => {
+    let cleanHex = hex.replace("#", "");
+    if (cleanHex.length === 3) {
+        cleanHex = cleanHex.split("").map(char => char + char).join("");
+    }
+    return `#${cleanHex}`;
+};
+
 const hexToRgb = (hex: string): string => {
-    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    const fullHex = expandHex(hex);
+    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
     return result
         ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
         : '0, 0, 0';
 };
 
 const adjustBrightness = (hex: string, percent: number): string => {
-    const num = parseInt(hex.replace("#", ""), 16),
+    const fullHex = expandHex(hex);
+    const num = parseInt(fullHex.replace("#", ""), 16),
         amt = Math.round(2.55 * percent),
         R = (num >> 16) + amt,
         B = ((num >> 8) & 0x00ff) + amt,

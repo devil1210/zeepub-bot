@@ -1528,17 +1528,13 @@ class CustomMessagesPlugin(BasePlugin):
         self.enabled = os.getenv("ENABLE_CUSTOM_MESSAGES", "True").lower() == "true"
 
         if not self.enabled:
-            logger.info(
-                "Plugin CustomMessages desactivado por configuración (ENABLE_CUSTOM_MESSAGES=False)."
-            )
+            logger.info("Plugin CustomMessages desactivado por configuración (ENABLE_CUSTOM_MESSAGES=False).")
             return False
 
         # Initialize DB
         db_url = config.DATABASE_URL
         if not db_url:
-            logger.error(
-                "DATABASE_URL no está configurada. Postgres es mandatorio para CustomMessages."
-            )
+            logger.error("DATABASE_URL no está configurada. Postgres es mandatorio para CustomMessages.")
             return False
 
         try:
@@ -1549,11 +1545,7 @@ class CustomMessagesPlugin(BasePlugin):
             with self.engine.connect() as conn:
                 try:
                     # In Postgres, we use ALTER TABLE IF NOT EXISTS or handle Exception
-                    conn.execute(
-                        text(
-                            "ALTER TABLE stored_messages ADD COLUMN IF NOT EXISTS text_content TEXT"
-                        )
-                    )
+                    conn.execute(text("ALTER TABLE stored_messages ADD COLUMN IF NOT EXISTS text_content TEXT"))
                     conn.commit()
                 except Exception as ex:
                     logger.warning(f"Migration check failed (might be already up to date): {ex}")
@@ -1590,9 +1582,7 @@ class CustomMessagesPlugin(BasePlugin):
 
             # ChatMemberHandler for welcome message
             # MY_CHAT_MEMBER is triggered when bot is added/promoted/removed
-            app.add_handler(
-                ChatMemberHandler(self.welcome_handler, ChatMemberHandler.MY_CHAT_MEMBER)
-            )
+            app.add_handler(ChatMemberHandler(self.welcome_handler, ChatMemberHandler.MY_CHAT_MEMBER))
 
             logger.info("Plugin CustomMessages: Handlers registrados.")
             return True
@@ -1744,9 +1734,7 @@ class CustomMessagesPlugin(BasePlugin):
         reset_time_str = None
         if max_dl is not None:
             now = datetime.now()
-            next_midnight = (now + timedelta(days=1)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
+            next_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
             time_left = next_midnight - now
             hours, remainder = divmod(int(time_left.total_seconds()), 3600)
             minutes, _ = divmod(remainder, 60)
@@ -1848,9 +1836,7 @@ class CustomMessagesPlugin(BasePlugin):
         # 2. Inject User Variables (Context)
         if user:
             vars_to_use["Nombre"] = (
-                user.mention_html()
-                if hasattr(user, "mention_html")
-                else (user.first_name or "Usuario")
+                user.mention_html() if hasattr(user, "mention_html") else (user.first_name or "Usuario")
             )
             vars_to_use["Alias"] = user.username
             vars_to_use["ID"] = str(user.id)
@@ -1938,9 +1924,7 @@ class CustomMessagesPlugin(BasePlugin):
 
         try:
             # Capturar texto o caption para guardarlo
-            content_text = (
-                original_msg.text_html or original_msg.caption_html or "Mensaje Multimedia"
-            )
+            content_text = original_msg.text_html or original_msg.caption_html or "Mensaje Multimedia"
 
             self._save_message(
                 slug,
@@ -1949,9 +1933,7 @@ class CustomMessagesPlugin(BasePlugin):
                 description=content_text,  # Pasamos el texto como descripción/contenido
             )
 
-            await update.message.reply_text(
-                f"✅ Mensaje guardado como <code>{slug}</code>.", parse_mode="HTML"
-            )
+            await update.message.reply_text(f"✅ Mensaje guardado como <code>{slug}</code>.", parse_mode="HTML")
         except Exception as e:
             logger.error(f"Error guardando mensaje: {e}")
             await update.message.reply_text("❌ Error al guardar en base de datos.")
@@ -2025,11 +2007,7 @@ class CustomMessagesPlugin(BasePlugin):
                 logger.warning(f"Preview test vars failed: {e}")
 
         if source == "default" or (msg and msg.text_content):
-            prefix = (
-                "⚠️ <b>Por defecto:</b>\n"
-                if source == "default"
-                else f"📂 <b>Personalizado ({slug}):</b>\n"
-            )
+            prefix = "⚠️ <b>Por defecto:</b>\n" if source == "default" else f"📂 <b>Personalizado ({slug}):</b>\n"
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=f"{prefix}\n{html.escape(text_content)}",
@@ -2048,9 +2026,7 @@ class CustomMessagesPlugin(BasePlugin):
             except Exception as e:
                 await update.message.reply_text(f"❌ Error al previsualizar multimedia: {e}")
 
-    async def _show_message_list(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE, page: int
-    ):
+    async def _show_message_list(self, update: Update, context: ContextTypes.DEFAULT_TYPE, page: int):
         """Internal helper to show a paginated list of slugs."""
         msgs_db = self._list_messages()
         db_slugs = {m.slug for m in msgs_db}
@@ -2105,8 +2081,7 @@ class CustomMessagesPlugin(BasePlugin):
 
         if not msg and not entry:
             await update.message.reply_text(
-                f"❌ Template '{slug}' no encontrado.\n\n"
-                "Usa <code>/list_msge</code> para ver templates disponibles.",
+                f"❌ Template '{slug}' no encontrado.\n\nUsa <code>/list_msge</code> para ver templates disponibles.",
                 parse_mode=ParseMode.HTML,
             )
             return
@@ -2161,9 +2136,7 @@ class CustomMessagesPlugin(BasePlugin):
                 # This command is raw. Maybe just send the text?
                 # Or try to render with empty vars?
                 text_to_send = await self.get_text(slug)
-                await context.bot.send_message(
-                    chat_id=target_chat_id, text=text_to_send, parse_mode=ParseMode.HTML
-                )
+                await context.bot.send_message(chat_id=target_chat_id, text=text_to_send, parse_mode=ParseMode.HTML)
 
             await update.message.reply_text(f"✅ Enviado a {target_chat_id}")
         except Exception as e:
@@ -2266,9 +2239,7 @@ class CustomMessagesPlugin(BasePlugin):
                     message_thread_id=message_thread_id,
                 )
                 tid_info = f" (Topic: {message_thread_id})" if message_thread_id else ""
-                await update.message.reply_text(
-                    f"✅ Mensaje de texto enviado a {target_chat_id}{tid_info}"
-                )
+                await update.message.reply_text(f"✅ Mensaje de texto enviado a {target_chat_id}{tid_info}")
             except Exception as e:
                 await update.message.reply_text(f"❌ Error al enviar texto: {e}")
 
@@ -2395,34 +2366,22 @@ class CustomMessagesPlugin(BasePlugin):
             # Main Menu: Categories
             for cat in cat_order:
                 # Callback: templates|cat|<cat_name>|1
-                buttons.append(
-                    [InlineKeyboardButton(f"📂 {cat}", callback_data=f"templates|cat|{cat}|1")]
-                )
+                buttons.append([InlineKeyboardButton(f"📂 {cat}", callback_data=f"templates|cat|{cat}|1")])
             buttons.append([InlineKeyboardButton("❌ Cerrar", callback_data="templates|close")])
         else:
             # Pagination Buttons
             nav_row = []
             if page > 1:
-                nav_row.append(
-                    InlineKeyboardButton(
-                        "⬅️ Ant", callback_data=f"templates|cat|{current_cat}|{page - 1}"
-                    )
-                )
+                nav_row.append(InlineKeyboardButton("⬅️ Ant", callback_data=f"templates|cat|{current_cat}|{page - 1}"))
 
             if has_more:
-                nav_row.append(
-                    InlineKeyboardButton(
-                        "Sig ➡️", callback_data=f"templates|cat|{current_cat}|{page + 1}"
-                    )
-                )
+                nav_row.append(InlineKeyboardButton("Sig ➡️", callback_data=f"templates|cat|{current_cat}|{page + 1}"))
 
             if nav_row:
                 buttons.append(nav_row)
 
             # Back Button
-            buttons.append(
-                [InlineKeyboardButton("🔙 Volver a Categorías", callback_data="templates|home")]
-            )
+            buttons.append([InlineKeyboardButton("🔙 Volver a Categorías", callback_data="templates|home")])
 
         return InlineKeyboardMarkup(buttons)
 
@@ -2489,9 +2448,7 @@ class CustomMessagesPlugin(BasePlugin):
                 entry += f"   💲 Vars: <code>{vars_str}</code>\n\n"
                 text += entry
 
-            keyboard = self._build_templates_keyboard(
-                current_cat=cat_name, page=page, has_more=has_more
-            )
+            keyboard = self._build_templates_keyboard(current_cat=cat_name, page=page, has_more=has_more)
             await query.edit_message_text(text, reply_markup=keyboard, parse_mode="HTML")
             return
 
@@ -2501,8 +2458,7 @@ class CustomMessagesPlugin(BasePlugin):
 
         if len(context.args) < 2:
             await update.message.reply_text(
-                "❌ Uso: /set_var <Variable> <Valor>\n"
-                "Ejemplo: /set_var CanalOficial https://t.me/mi_canal"
+                "❌ Uso: /set_var <Variable> <Valor>\nEjemplo: /set_var CanalOficial https://t.me/mi_canal"
             )
             return
 
@@ -2527,9 +2483,7 @@ class CustomMessagesPlugin(BasePlugin):
 
         key = context.args[0].replace("[", "").replace("]", "")
         self._del_global_var(key)
-        await update.message.reply_text(
-            f"🗑 Variable global <code>[{key}]</code> eliminada.", parse_mode="HTML"
-        )
+        await update.message.reply_text(f"🗑 Variable global <code>[{key}]</code> eliminada.", parse_mode="HTML")
 
     async def vars(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Lista las variables globales disponibles organizadas por categorías."""

@@ -33,9 +33,7 @@ async def search_local_books(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1)] = 10,
     source_id: int | None = None,
-    search_type: Annotated[
-        str, Query(pattern="^(all|title|author|illustrator|translator|genres)$")
-    ] = "all",
+    search_type: Annotated[str, Query(pattern="^(all|title|author|illustrator|translator|genres)$")] = "all",
     user_data: Annotated[dict, Depends(require_mini_app_access)] = None,
 ):
     """Busca libros en la base de datos local con filtros opcionales."""
@@ -82,9 +80,7 @@ async def upload_epubs(
             try:
                 os.makedirs(target_dir, exist_ok=True)
             except Exception as e:
-                raise HTTPException(
-                    status_code=500, detail=f"No se pudo crear directorio destino: {e}"
-                ) from e
+                raise HTTPException(status_code=500, detail=f"No se pudo crear directorio destino: {e}") from e
 
         # 2. Instanciar Scanner
         # Pasamos config vacío ya que sync_path usa la sesión y source_id directo
@@ -119,9 +115,7 @@ async def upload_epubs(
 
 
 @router.get("/api/library/books/{book_id}")
-async def get_book_detail(
-    book_id: str, user_data: Annotated[dict, Depends(require_mini_app_access)]
-):
+async def get_book_detail(book_id: str, user_data: Annotated[dict, Depends(require_mini_app_access)]):
     """Retorna el detalle de un libro específico."""
     clean_id = int(book_id.replace("local_", ""))
     book = await LibraryService.get_book_by_id(clean_id)
@@ -131,9 +125,7 @@ async def get_book_detail(
     book["is_downloaded"] = await download_repo.has_user_downloaded(
         user_data["user_id"], book["title"], book.get("cleanTitle")
     )
-    book["download_count"] = await download_repo.get_total_download_count(
-        book["title"], book.get("cleanTitle")
-    )
+    book["download_count"] = await download_repo.get_total_download_count(book["title"], book.get("cleanTitle"))
     return book
 
 
@@ -251,9 +243,7 @@ async def export_library(
     series: Annotated[str | None, Query()] = None,
     user_data: Annotated[dict, Depends(require_admin)] = None,
 ):
-    return JSONResponse(
-        content=LibraryExportService.export_library(source_id=source_id, series=series)
-    )
+    return JSONResponse(content=LibraryExportService.export_library(source_id=source_id, series=series))
 
 
 @router.post("/api/library/import")

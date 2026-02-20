@@ -89,9 +89,7 @@ class MaintenancePlugin(BasePlugin):
                     message_thread_id=thread_id,
                 )
             os.remove(filename)
-            await context.bot.delete_message(
-                chat_id=update.effective_chat.id, message_id=msg.message_id
-            )
+            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=msg.message_id)
         except Exception as e:
             logger.error(f"Error en backup_db: {e}")
             await msg.edit_text(f"❌ Error: {str(e)}")
@@ -150,9 +148,7 @@ class MaintenancePlugin(BasePlugin):
 
         try:
             async with pg_manager.get_session() as session:
-                res = await session.execute(
-                    text("SELECT * FROM url_mappings ORDER BY created_at DESC")
-                )
+                res = await session.execute(text("SELECT * FROM url_mappings ORDER BY created_at DESC"))
                 rows = res.fetchall()
                 cols = res.keys()
 
@@ -176,9 +172,7 @@ class MaintenancePlugin(BasePlugin):
         try:
             async with pg_manager.get_session() as session:
                 res = await session.execute(
-                    text(
-                        "SELECT title, author, series, volume FROM local_books ORDER BY indexed_at DESC LIMIT 10"
-                    )
+                    text("SELECT title, author, series, volume FROM local_books ORDER BY indexed_at DESC LIMIT 10")
                 )
                 rows = res.fetchall()
 

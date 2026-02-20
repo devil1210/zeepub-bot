@@ -48,8 +48,7 @@ async def handle_pub_get_channels(data: dict[str, Any], user_data: dict[str, Any
     # Obtener canales y chats descubiertos
     result = await publisher_service.get_channels_with_discovery(active_only=False)
     logger.info(
-        f"Found {len(result.get('channels', []))} channels "
-        f"and {len(result.get('discovered', []))} discovered chats"
+        f"Found {len(result.get('channels', []))} channels and {len(result.get('discovered', []))} discovered chats"
     )
 
     return result

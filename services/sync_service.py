@@ -134,17 +134,13 @@ class SyncService:
                             "book_type": s.book_type,
                             "publisher": s.publisher,
                             "author_jap": s.author_jap,
-                            "rating_average": float(s.rating_average)
-                            if s.rating_average is not None
-                            else 0.0,
+                            "rating_average": float(s.rating_average) if s.rating_average is not None else 0.0,
                             "rating_count": s.rating_count,
                             "book_count": s.book_count,
                         }
                     )
                 try:
-                    client.table("series_metadata").upsert(
-                        data, on_conflict="series_hash"
-                    ).execute()
+                    client.table("series_metadata").upsert(data, on_conflict="series_hash").execute()
                     stats["series"] += len(data)
                 except Exception as ex:
                     logger.error(f"Error syncing series batch {i}: {ex}")
@@ -294,9 +290,7 @@ class SyncService:
                         "cover_high": b.cover_high,
                         "cover_original": b.cover_original,
                         # Metrics
-                        "rating_average": float(b.rating_average)
-                        if b.rating_average is not None
-                        else 0.0,
+                        "rating_average": float(b.rating_average) if b.rating_average is not None else 0.0,
                         "rating_count": b.rating_count,
                         "file_size": b.file_size,
                         # Metadata

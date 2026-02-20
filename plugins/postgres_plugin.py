@@ -30,9 +30,7 @@ class PostgresPlugin(BasePlugin):
             logger.info("Plugin PostgreSQL: Base de datos configurada y activa.")
             return True
         else:
-            logger.error(
-                "Plugin PostgreSQL: ERROR. DATABASE_URL no configurada. Postgres es obligatorio."
-            )
+            logger.error("Plugin PostgreSQL: ERROR. DATABASE_URL no configurada. Postgres es obligatorio.")
             return False
 
     async def cleanup(self) -> None:

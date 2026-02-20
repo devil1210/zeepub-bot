@@ -55,9 +55,7 @@ def reset_database():
     if os.path.exists(COVERS_DIR):
         try:
             # Contar archivos antes de eliminar
-            cover_count = len(
-                [f for f in os.listdir(COVERS_DIR) if os.path.isfile(os.path.join(COVERS_DIR, f))]
-            )
+            cover_count = len([f for f in os.listdir(COVERS_DIR) if os.path.isfile(os.path.join(COVERS_DIR, f))])
 
             shutil.rmtree(COVERS_DIR)
             items_deleted.append(f"✅ {cover_count} portadas eliminadas")

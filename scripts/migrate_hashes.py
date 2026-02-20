@@ -58,9 +58,7 @@ async def migrate_download_history():
     logger.info("Migrando DownloadHistory hashes (v2) en Postgres...")
     async with pg_manager.get_session() as session:
         result = await session.execute(
-            text(
-                "SELECT id, title, author, series, volume, clean_title, translator FROM download_history"
-            )
+            text("SELECT id, title, author, series, volume, clean_title, translator FROM download_history")
         )
         rows = result.fetchall()
         logger.info(f"Procesando {len(rows)} registros de descarga.")

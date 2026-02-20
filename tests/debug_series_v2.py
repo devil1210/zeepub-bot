@@ -24,9 +24,7 @@ try:
         s_id, s_name, s_hash, b_count = s
 
         # 2. Buscar libros asociados
-        books_query = text(
-            "SELECT id, filepath, filename, book_hash FROM local_books WHERE series_hash = :h"
-        )
+        books_query = text("SELECT id, filepath, filename, book_hash FROM local_books WHERE series_hash = :h")
         books = session.execute(books_query, {"h": s_hash}).fetchall()
 
         results.append(

@@ -47,9 +47,7 @@ async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
         if target == "channel":
             target_chat_id = target_id_override or get_setting("mini_app_channel_id", "@ZeePubs")
         elif target == "group":
-            target_chat_id = target_id_override or get_setting(
-                "mini_app_group_id", "@ZeePubBotTest"
-            )
+            target_chat_id = target_id_override or get_setting("mini_app_group_id", "@ZeePubBotTest")
             message_thread_id = thread_id_override
 
     # 2. Get/Resolve Metadata
@@ -114,7 +112,5 @@ async def handle_get_download_count(data: dict[str, Any], user_data: dict[str, A
 
     from repositories.metrics_repository import metrics_repo
 
-    count = (
-        await metrics_repo.get_total_downloads(book_hash_for_query) if book_hash_for_query else 0
-    )
+    count = await metrics_repo.get_total_downloads(book_hash_for_query) if book_hash_for_query else 0
     return {"count": count}

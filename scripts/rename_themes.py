@@ -81,9 +81,7 @@ async def rename_themes():
                     existing_new = result.fetchone()
 
                     if existing_new:
-                        logger.warning(
-                            f"Cannot rename '{old_name}' to '{new_name}' - '{new_name}' already exists"
-                        )
+                        logger.warning(f"Cannot rename '{old_name}' to '{new_name}' - '{new_name}' already exists")
                         continue
 
                     # Actualizar el nombre

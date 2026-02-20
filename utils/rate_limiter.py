@@ -34,9 +34,7 @@ class RateLimitManager:
     async def _cleanup_old_requests(self, rate_limit: RateLimit):
         now = time.time()
         # Keep only requests within the window
-        rate_limit.requests = [
-            t for t in rate_limit.requests if now - t < rate_limit.window_seconds
-        ]
+        rate_limit.requests = [t for t in rate_limit.requests if now - t < rate_limit.window_seconds]
 
     async def add_limit(
         self,

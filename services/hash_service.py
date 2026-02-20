@@ -97,9 +97,7 @@ class HashService:
         return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
     @classmethod
-    def generate_series_hash(
-        cls, series: str, author: str | None = None, book_type: str | None = None
-    ) -> str:
+    def generate_series_hash(cls, series: str, author: str | None = None, book_type: str | None = None) -> str:
         """
         Genera un hash estable para la serie basado en: series + author + book_type.
         """

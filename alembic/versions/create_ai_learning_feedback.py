@@ -25,9 +25,7 @@ def upgrade():
         sa.Column("original_name", sa.Text(), nullable=False),
         sa.Column("proposed_name", sa.Text(), nullable=False),
         sa.Column("final_name", sa.Text(), nullable=True),
-        sa.Column(
-            "status", sa.String(length=20), nullable=False
-        ),  # 'accepted', 'rejected', 'edited', 'manual'
+        sa.Column("status", sa.String(length=20), nullable=False),  # 'accepted', 'rejected', 'edited', 'manual'
         sa.Column("ai_reason", sa.Text(), nullable=True),
         sa.Column("user_reason", sa.Text(), nullable=True),
         sa.Column(

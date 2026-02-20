@@ -69,9 +69,7 @@ def check_migrations():
 
             def table_exists(name):
                 res = conn.execute(
-                    text(
-                        f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '{name}');"
-                    )
+                    text(f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '{name}');")
                 )
                 return res.scalar()
 
@@ -125,9 +123,7 @@ def check_migrations():
                 add_column_if_missing("series_metadata", "rating_count", "INTEGER DEFAULT 0")
 
                 conn.execute(
-                    text(
-                        "CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);"
-                    )
+                    text("CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);")
                 )
                 conn.commit()
             except Exception as e:
@@ -155,9 +151,7 @@ def check_migrations():
 
             # 2. user_levels
             if table_exists("user_levels"):
-                add_column_if_missing(
-                    "user_levels", "allow_theme_templates", "BOOLEAN DEFAULT FALSE"
-                )
+                add_column_if_missing("user_levels", "allow_theme_templates", "BOOLEAN DEFAULT FALSE")
                 add_column_if_missing("user_levels", "can_upload_epub", "BOOLEAN DEFAULT FALSE")
                 add_column_if_missing("user_levels", "default_theme_id", "INTEGER")
                 add_column_if_missing("user_levels", "show_recommendations", "BOOLEAN DEFAULT TRUE")
@@ -195,20 +189,14 @@ def check_migrations():
             # 6. user_ratings book_hash
             if table_exists("user_ratings"):
                 add_column_if_missing("user_ratings", "book_hash", "VARCHAR(64)")
-                conn.execute(
-                    text(
-                        "CREATE INDEX IF NOT EXISTS idx_user_ratings_book_hash ON user_ratings(book_hash);"
-                    )
-                )
+                conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_ratings_book_hash ON user_ratings(book_hash);"))
                 conn.commit()
 
             # 7. user_downloads book_hash
             if table_exists("user_downloads"):
                 add_column_if_missing("user_downloads", "book_hash", "VARCHAR(64)")
                 conn.execute(
-                    text(
-                        "CREATE INDEX IF NOT EXISTS idx_user_downloads_book_hash ON user_downloads(book_hash);"
-                    )
+                    text("CREATE INDEX IF NOT EXISTS idx_user_downloads_book_hash ON user_downloads(book_hash);")
                 )
                 conn.commit()
 

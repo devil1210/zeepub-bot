@@ -161,9 +161,7 @@ async def get_effective_user(
         # Propagate name and username from tg_user if present
         name_from_tg = nickname_from_tg
         username_from_tg = (
-            getattr(tg_user, "username", None)
-            if not isinstance(tg_user, dict)
-            else tg_user.get("username")
+            getattr(tg_user, "username", None) if not isinstance(tg_user, dict) else tg_user.get("username")
         )
 
     # 0. Load Global UI Defaults
@@ -282,12 +280,8 @@ async def get_effective_user(
                 "nickname": info.get("nickname")
                 if (info and info.get("nickname"))
                 else (nickname_from_tg or f"Admin_{uid}"),
-                "name": info.get("name")
-                if (info and info.get("name"))
-                else (nickname_from_tg or f"Admin_{uid}"),
-                "username": info.get("username")
-                if (info and info.get("username"))
-                else (username_from_tg or ""),
+                "name": info.get("name") if (info and info.get("name")) else (nickname_from_tg or f"Admin_{uid}"),
+                "username": info.get("username") if (info and info.get("username")) else (username_from_tg or ""),
                 "roles": info.get("roles") if (info and info.get("roles")) else ["Administrador"],
                 "has_mini_app_access": True,
                 "is_real_admin": True,
@@ -355,9 +349,7 @@ async def get_effective_user(
                     "has_library_access": info.get("has_library_access", True),
                     "can_upload_epub": info.get("can_upload_epub", False),
                     "settings": normalize_ui(final_settings),
-                    "personal_settings_raw": info.get(
-                        "settings", {}
-                    ),  # Store for simulation comparison
+                    "personal_settings_raw": info.get("settings", {}),  # Store for simulation comparison
                 }
             )
 
@@ -444,9 +436,7 @@ async def get_effective_user(
             exported_list = []
             if exported_raw:
                 try:
-                    exported_list = (
-                        json.loads(exported_raw) if isinstance(exported_raw, str) else exported_raw
-                    )
+                    exported_list = json.loads(exported_raw) if isinstance(exported_raw, str) else exported_raw
                 except Exception:
                     exported_list = []
 
@@ -573,15 +563,11 @@ async def get_effective_user(
                 "backgroundColor": sim_level.get("backgroundColor"),
                 "cardColor": sim_level.get("cardColor"),
                 "cardGlowIntensity": sim_level.get("cardGlowIntensity"),
-                "panelTransparency": sim_level.get("glassOpacity") * 100
-                if sim_level.get("glassOpacity")
-                else 60,
+                "panelTransparency": sim_level.get("glassOpacity") * 100 if sim_level.get("glassOpacity") else 60,
                 "bannerContentOffset": sim_level.get("bannerContentOffset", 0),
             }
             # Remove None values
-            level_settings_overlay = {
-                k: v for k, v in level_settings_overlay.items() if v is not None
-            }
+            level_settings_overlay = {k: v for k, v in level_settings_overlay.items() if v is not None}
 
             # Reset settings to Global UI base before applying level overrides
             final_sim_ui = global_ui.copy()
@@ -803,14 +789,10 @@ async def sync_user_from_env(telegram_id: int, tg_user=None) -> dict | None:
     needs_update = False
     if current_level != target_level:
         needs_update = True
-        logger.info(
-            f"Auto-syncing user {telegram_id} from ENV (Level): {current_level} -> {target_level}"
-        )
+        logger.info(f"Auto-syncing user {telegram_id} from ENV (Level): {current_level} -> {target_level}")
     elif target_role and current_role != target_role:
         needs_update = True
-        logger.info(
-            f"Updating functional role for user {telegram_id}: {current_role} -> {target_role}"
-        )
+        logger.info(f"Updating functional role for user {telegram_id}: {current_role} -> {target_role}")
 
     if needs_update:
         # Actualizar en DB
@@ -841,9 +823,7 @@ async def sync_user_profile_photo(telegram_id: int, bot) -> str | None:
             chat = await bot.get_chat(telegram_id)
             tg_username = chat.username
             tg_full_name = chat.full_name
-            logger.info(
-                f"Sincronizando identidad para {telegram_id}: @{tg_username} ({tg_full_name})"
-            )
+            logger.info(f"Sincronizando identidad para {telegram_id}: @{tg_username} ({tg_full_name})")
         except Exception as e:
             logger.warning(f"No se pudo obtener información de chat para {telegram_id}: {e}")
 
@@ -857,9 +837,7 @@ async def sync_user_profile_photo(telegram_id: int, bot) -> str | None:
         current_photo = info.get("photo_url") if info else None
 
         if not photos or not photos.photos:
-            logger.info(
-                f"Usuario {telegram_id} no tiene fotos de perfil públicas. Actualizando solo identidad."
-            )
+            logger.info(f"Usuario {telegram_id} no tiene fotos de perfil públicas. Actualizando solo identidad.")
             await user_repo.upsert(
                 telegram_id=telegram_id,
                 level=level_name,

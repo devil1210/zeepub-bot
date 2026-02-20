@@ -53,11 +53,7 @@ async def set_destino(update: Update, context: ContextTypes.DEFAULT_TYPE):
         st["esperando_destino_manual"] = True
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_manual = "✏️ Escribe @usuario o chat_id para publicar:"
-        text_manual = (
-            await cms.get_text("manual_destination_prompt")
-            if (cms and cms.enabled)
-            else base_manual
-        )
+        text_manual = await cms.get_text("manual_destination_prompt") if (cms and cms.enabled) else base_manual
         await query.edit_message_text(text_manual)
         return
 
@@ -235,9 +231,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         origin = parts[1]
         filter_v = parts[2]
         page = int(parts[3])
-        await mostrar_series(
-            update, context, origin_type=origin, filter_val=filter_v or None, page=page
-        )
+        await mostrar_series(update, context, origin_type=origin, filter_val=filter_v or None, page=page)
         return
 
     # Selección de colección (Series Local)
@@ -310,9 +304,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         menu_prep = None
         if actual_destino == chat_origen:
             try:
-                await context.bot.delete_message(
-                    chat_id=chat_origen, message_id=query.message.message_id
-                )
+                await context.bot.delete_message(chat_id=chat_origen, message_id=query.message.message_id)
             except Exception:
                 logger.debug("No se pudo borrar menú")
             try:
@@ -450,11 +442,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 cms = context.application.plugin_manager.get_plugin("custom_messages")
                 base_cancel = "⛔ Publicación cancelada."
-                text_cancel = (
-                    await cms.get_text("publish_cancelled")
-                    if (cms and cms.enabled)
-                    else base_cancel
-                )
+                text_cancel = await cms.get_text("publish_cancelled") if (cms and cms.enabled) else base_cancel
                 await query.edit_message_text(text_cancel)
             except Exception:
                 pass
@@ -482,21 +470,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             st.pop("publish_target_temp", None)
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_cleared = "⚪ Preferencia temporal de publicación descartada."
-            text = (
-                await cms.get_text("publish_preference_cleared")
-                if (cms and cms.enabled)
-                else base_cleared
-            )
+            text = await cms.get_text("publish_preference_cleared") if (cms and cms.enabled) else base_cleared
         else:
             # Set one-time publish target that will be popped at next selection
             st["publish_target_temp"] = choice
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_set = f"✅ Publicación temporal establecida para el próximo libro: {choice}."
-            text = (
-                await cms.get_text("publish_preference_set", Destino=choice)
-                if (cms and cms.enabled)
-                else base_set
-            )
+            text = await cms.get_text("publish_preference_set", Destino=choice) if (cms and cms.enabled) else base_set
 
         # For non-admin publishers, proceed to show the normal collections
         # menu now (but don't ask for Evil destination). If the user picked
@@ -751,21 +731,15 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             logger.warning(f"Could not get bot username for URL button: {e}")
 
                     # URL simple sin parámetros (no muestra /start en el chat)
-                    url_button = (
-                        f"https://t.me/{bot_username}" if bot_username else "https://t.me/ZeePubBot"
-                    )
+                    url_button = f"https://t.me/{bot_username}" if bot_username else "https://t.me/ZeePubBot"
 
-                    keyboard = [
-                        [InlineKeyboardButton("📩 Enviar comprobante aquí", url=url_button)]
-                    ]
+                    keyboard = [[InlineKeyboardButton("📩 Enviar comprobante aquí", url=url_button)]]
 
                     # Obtener mensaje desde template
                     base_redirect = f"👋 Hola {update.effective_user.mention_html()},\n\nPara proteger tu privacidad, por favor envíame el comprobante a mi chat privado pulsando el botón de abajo."
                     text_redirect = base_redirect
                     if cms and cms.enabled:
-                        text_redirect = await cms.get_text(
-                            "donation_redirect_prompt", user=update.effective_user
-                        )
+                        text_redirect = await cms.get_text("donation_redirect_prompt", user=update.effective_user)
 
                     base_text = "✅ Solicitud registrada."
                     text_answer = base_text
@@ -818,9 +792,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                         # Programar timeout para el mensaje privado proactivo
                         if context.job_queue:
-                            job_name_p = (
-                                f"donation_timeout_{user_to_update}_{prompt_private.message_id}"
-                            )
+                            job_name_p = f"donation_timeout_{user_to_update}_{prompt_private.message_id}"
                             st["donation_timeout_job_name"] = job_name_p
                             context.job_queue.run_once(
                                 donation_timeout_job,
@@ -976,18 +948,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             text_request = base_request
             if cms and cms.enabled:
-                text_request = await cms.get_text(
-                    "donation_proof_request", user=update.effective_user
-                )
+                text_request = await cms.get_text("donation_proof_request", user=update.effective_user)
 
             try:
-                await context.bot.send_message(
-                    chat_id=target_uid, text=text_request, parse_mode="HTML"
-                )
+                await context.bot.send_message(chat_id=target_uid, text=text_request, parse_mode="HTML")
             except Exception as e:
-                logger.warning(
-                    f"No se pudo enviar mensaje al privado (usuario no ha iniciado bot?): {e}"
-                )
+                logger.warning(f"No se pudo enviar mensaje al privado (usuario no ha iniciado bot?): {e}")
 
             if bot_username:
                 # Sanitizar username

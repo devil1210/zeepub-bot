@@ -29,6 +29,4 @@ async def test_saludo_parsing(monkeypatch):
     context.args = ["-100123", "Hola", "Mundo"]
 
     await plugin.saludo(update, context)
-    context.bot.send_message.assert_called_with(
-        chat_id="-100123", text="Hola Mundo", message_thread_id=None
-    )
+    context.bot.send_message.assert_called_with(chat_id="-100123", text="Hola Mundo", message_thread_id=None)

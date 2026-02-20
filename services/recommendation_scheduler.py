@@ -62,11 +62,7 @@ async def send_recommendation_to_user(context: ContextTypes.DEFAULT_TYPE, uid: i
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
         for book in recs:
-            caption = (
-                f"📚 <b>{book['title']}</b>\n"
-                f"👤 {book['author']}\n"
-                f"⭐ {book.get('rating_average', 0):.1f}"
-            )
+            caption = f"📚 <b>{book['title']}</b>\n👤 {book['author']}\n⭐ {book.get('rating_average', 0):.1f}"
             local_id = book.get("id")
             kb = []
             if local_id:

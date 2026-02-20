@@ -82,9 +82,7 @@ async def run_migration():
             # Intentar el ALTER TABLE por si acaso
             try:
                 await conn.execute(
-                    text(
-                        "ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;"
-                    )
+                    text("ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;")
                 )
                 print("Column extra_config added/verified.")
             except Exception as e:
@@ -98,9 +96,7 @@ async def run_migration():
             engine = create_async_engine(localhost_url)
             async with engine.begin() as conn:
                 await conn.execute(
-                    text(
-                        "ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;"
-                    )
+                    text("ALTER TABLE publication_templates ADD COLUMN IF NOT EXISTS extra_config JSONB;")
                 )
                 print("Migration completed on localhost.")
         else:

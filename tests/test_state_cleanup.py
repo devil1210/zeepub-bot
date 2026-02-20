@@ -23,9 +23,7 @@ def mock_dependencies():
         "config.config_settings": MagicMock(),
         "services.user_service": MagicMock(),
     }
-    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(
-        return_value={"role": "free"}
-    )
+    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
     modules_to_patch["utils"].__path__ = []
     modules_to_patch["utils.decorators"] = MagicMock()
 

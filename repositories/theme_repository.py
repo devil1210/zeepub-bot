@@ -98,8 +98,7 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
             "card_glow_intensity": data.get("card_glow_intensity") or data.get("cardGlowIntensity"),
             "font_size": data.get("font_size") or data.get("fontSize"),
             "cover_width": data.get("cover_width") or data.get("coverWidth"),
-            "banner_content_offset": data.get("banner_content_offset")
-            or data.get("bannerContentOffset"),
+            "banner_content_offset": data.get("banner_content_offset") or data.get("bannerContentOffset"),
             "updated_at": datetime.utcnow(),
         }
 

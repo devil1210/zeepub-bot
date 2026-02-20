@@ -87,9 +87,7 @@ class LibraryService:
                     book_filters.append(LocalBook.translator.ilike(pattern))
 
                 if search_type in ("todos", "all", "illustrator", "ilustrador"):
-                    series_filters.append(
-                        SeriesMetadata.illustrator.ilike(pattern)
-                    )  # Check series level
+                    series_filters.append(SeriesMetadata.illustrator.ilike(pattern))  # Check series level
                     book_filters.append(LocalBook.illustrator.ilike(pattern))  # Check book level
 
                 if search_type in ("todos", "all", "isbn"):
@@ -196,15 +194,9 @@ class LibraryService:
                         cover=s.cover_url,
                         coverUrl=CoverUrlDTO(
                             cover_low=s.cover_url,
-                            cover_medium=s.cover_url.replace("_low.jpg", "_medium.jpg")
-                            if s.cover_url
-                            else None,
-                            cover_high=s.cover_url.replace("_low.jpg", "_high.jpg")
-                            if s.cover_url
-                            else None,
-                            cover_original=s.cover_url.replace("_low.jpg", "_original.jpg")
-                            if s.cover_url
-                            else None,
+                            cover_medium=s.cover_url.replace("_low.jpg", "_medium.jpg") if s.cover_url else None,
+                            cover_high=s.cover_url.replace("_low.jpg", "_high.jpg") if s.cover_url else None,
+                            cover_original=s.cover_url.replace("_low.jpg", "_original.jpg") if s.cover_url else None,
                             cover=s.cover_url,
                         ),
                         numBooks=s.book_count,
@@ -230,9 +222,7 @@ class LibraryService:
                 return {"results": [], "totalItems": 0}
 
     @staticmethod
-    async def get_series_volumes(
-        series_hash: str, limit: int | None = None, offset: int = 0
-    ) -> list[dict[str, Any]]:
+    async def get_series_volumes(series_hash: str, limit: int | None = None, offset: int = 0) -> list[dict[str, Any]]:
         """Retorna los volúmenes de una serie agrupada (Async). Validado con Pydantic."""
         async with pg_manager.get_session() as session:
             try:
@@ -261,9 +251,7 @@ class LibraryService:
                     if not b_dict.get("series"):
                         b_dict["series"] = b_dict.get("title")
 
-                    dto = BookDTO(
-                        **b_dict, download_count=dl_count, coverUrl=b.cover_medium or b.cover_low
-                    )
+                    dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=b.cover_medium or b.cover_low)
                     results.append(dto.model_dump())
 
                 return results
@@ -376,11 +364,7 @@ class LibraryService:
                             continue
 
                         # Mismo autor es un requisito fuerte
-                        if (
-                            book_a.author
-                            and book_b.author
-                            and book_a.author.lower() != book_b.author.lower()
-                        ):
+                        if book_a.author and book_b.author and book_a.author.lower() != book_b.author.lower():
                             continue
 
                         # Similitud de título
@@ -401,11 +385,7 @@ class LibraryService:
                             0,
                             len(current_group[1].title),
                         )
-                        suggested_name = (
-                            current_group[0]
-                            .title[match.a : match.a + match.size]
-                            .strip(" -:volume")
-                        )
+                        suggested_name = current_group[0].title[match.a : match.a + match.size].strip(" -:volume")
 
                         groups.append(
                             {
@@ -457,9 +437,7 @@ class LibraryService:
                 if series_hash:
                     # List volumes of a specific series
                     stmt = (
-                        select(LocalBook)
-                        .where(LocalBook.series_hash == series_hash)
-                        .order_by(LocalBook.volume.asc())
+                        select(LocalBook).where(LocalBook.series_hash == series_hash).order_by(LocalBook.volume.asc())
                     )
                     res = await session.execute(stmt)
                     books = res.scalars().all()
@@ -516,9 +494,9 @@ class LibraryService:
         async with pg_manager.get_session() as session:
             try:
                 # tags es JSONB en Postgres
-                stmt = select(
-                    func.distinct(func.jsonb_array_elements_text(cast(LocalBook.tags, func.jsonb)))
-                ).order_by(1)
+                stmt = select(func.distinct(func.jsonb_array_elements_text(cast(LocalBook.tags, func.jsonb)))).order_by(
+                    1
+                )
                 res = await session.execute(stmt)
                 return [r[0] for r in res.all() if r[0]]
             except Exception as e:
@@ -546,18 +524,12 @@ class LibraryService:
         """Obtiene series filtradas por un tag específico."""
         async with pg_manager.get_session() as session:
             try:
-                stmt = select(SeriesMetadata).where(
-                    cast(SeriesMetadata.tags, String).ilike(f"%{tag}%")
-                )
+                stmt = select(SeriesMetadata).where(cast(SeriesMetadata.tags, String).ilike(f"%{tag}%"))
 
                 count_stmt = select(func.count()).select_from(stmt.subquery())
                 total = (await session.execute(count_stmt)).scalar() or 0
 
-                stmt = (
-                    stmt.order_by(SeriesMetadata.series_name.asc())
-                    .offset((page - 1) * page_size)
-                    .limit(page_size)
-                )
+                stmt = stmt.order_by(SeriesMetadata.series_name.asc()).offset((page - 1) * page_size).limit(page_size)
                 res = await session.execute(stmt)
                 series = res.scalars().all()
 
@@ -579,9 +551,7 @@ class LibraryService:
                 return {"items": [], "total": 0}
 
     @staticmethod
-    async def get_series_by_author(
-        author: str, page: int = 1, page_size: int = 20
-    ) -> dict[str, Any]:
+    async def get_series_by_author(author: str, page: int = 1, page_size: int = 20) -> dict[str, Any]:
         """Obtiene series filtradas por autor."""
         async with pg_manager.get_session() as session:
             try:
@@ -590,11 +560,7 @@ class LibraryService:
                 count_stmt = select(func.count()).select_from(stmt.subquery())
                 total = (await session.execute(count_stmt)).scalar() or 0
 
-                stmt = (
-                    stmt.order_by(SeriesMetadata.series_name.asc())
-                    .offset((page - 1) * page_size)
-                    .limit(page_size)
-                )
+                stmt = stmt.order_by(SeriesMetadata.series_name.asc()).offset((page - 1) * page_size).limit(page_size)
                 res = await session.execute(stmt)
                 series = res.scalars().all()
 
@@ -625,9 +591,7 @@ class LibraryService:
         async with pg_manager.get_session() as session:
             try:
                 # 1. Obtener todas las series
-                stmt = select(SeriesMetadata).order_by(
-                    SeriesMetadata.author, SeriesMetadata.series_name
-                )
+                stmt = select(SeriesMetadata).order_by(SeriesMetadata.author, SeriesMetadata.series_name)
                 res = await session.execute(stmt)
                 series_list = res.scalars().all()
 
@@ -649,9 +613,7 @@ class LibraryService:
                         author_map[auth] = []
                     author_map[auth].append(s)
 
-                logger.info(
-                    f"🔍 Identificando candidatos de duplicados entre {len(series_list)} series."
-                )
+                logger.info(f"🔍 Identificando candidatos de duplicados entre {len(series_list)} series.")
 
                 for auth, group in author_map.items():
                     if len(group) < 2:
@@ -672,15 +634,9 @@ class LibraryService:
 
                             similarities = [
                                 SequenceMatcher(None, n1_en, n2_en).ratio(),
-                                SequenceMatcher(None, n1_es, n2_es).ratio()
-                                if n1_es and n2_es
-                                else 0,
-                                SequenceMatcher(None, n1_en, n2_es).ratio()
-                                if n1_en and n2_es
-                                else 0,
-                                SequenceMatcher(None, n1_es, n2_en).ratio()
-                                if n1_es and n2_en
-                                else 0,
+                                SequenceMatcher(None, n1_es, n2_es).ratio() if n1_es and n2_es else 0,
+                                SequenceMatcher(None, n1_en, n2_es).ratio() if n1_en and n2_es else 0,
+                                SequenceMatcher(None, n1_es, n2_en).ratio() if n1_es and n2_en else 0,
                             ]
                             max_sim = max(similarities)
 
@@ -711,9 +667,7 @@ class LibraryService:
                                 logger.debug(
                                     f"IA analizando: '{s1.series_name}' vs '{s2.series_name}' (sim: {sim:.2f})"
                                 )
-                                ai_result = await AIService.analyze_potential_merge(
-                                    s1.to_dict(), s2.to_dict()
-                                )
+                                ai_result = await AIService.analyze_potential_merge(s1.to_dict(), s2.to_dict())
                             if ai_result and ai_result.get("is_same"):
                                 logger.info(
                                     f"✅ IA confirmó duplicado: '{s1.series_name}' == '{s2.series_name}' (Conf: {ai_result.get('confidence')})"
@@ -740,13 +694,9 @@ class LibraryService:
                                     "suggested_name": ai_result.get("suggested_main_name"),
                                 }
                         except asyncio.TimeoutError:
-                            logger.warning(
-                                f"⏰ Timeout IA para: '{s1.series_name}' vs '{s2.series_name}'"
-                            )
+                            logger.warning(f"⏰ Timeout IA para: '{s1.series_name}' vs '{s2.series_name}'")
                         except Exception as inner_e:
-                            logger.error(
-                                f"Error checking pair {s1.series_name}/{s2.series_name}: {inner_e}"
-                            )
+                            logger.error(f"Error checking pair {s1.series_name}/{s2.series_name}: {inner_e}")
                         return None
 
                 tasks = [check_pair(c[0], c[1], c[2]) for c in candidates_to_process]
@@ -793,17 +743,13 @@ class LibraryService:
                             session.add(new_prop)
 
                     await session.commit()
-                    logger.info(
-                        f"✅ Se guardaron {len(suggestions)} propuestas de fusión en la base de datos."
-                    )
+                    logger.info(f"✅ Se guardaron {len(suggestions)} propuestas de fusión en la base de datos.")
 
                 logger.info(f"🏁 Escaneo finalizado. Encontradas {len(suggestions)} sugerencias.")
                 return suggestions
 
             except Exception as e:
-                logger.error(
-                    f"[LibraryService.find_ai_series_duplicates] Error: {e}", exc_info=True
-                )
+                logger.error(f"[LibraryService.find_ai_series_duplicates] Error: {e}", exc_info=True)
                 return []
 
     @staticmethod
@@ -815,9 +761,7 @@ class LibraryService:
                 stmt_books = text(
                     "UPDATE local_books SET series_hash = :t, series = COALESCE(:n, series) WHERE series_hash = :s"
                 )
-                await session.execute(
-                    stmt_books, {"t": target_hash, "s": source_hash, "n": new_name}
-                )
+                await session.execute(stmt_books, {"t": target_hash, "s": source_hash, "n": new_name})
 
                 # 2. Borrar metadata vieja de source
                 stmt_del = text("DELETE FROM series_metadata WHERE series_hash = :s")
@@ -825,9 +769,7 @@ class LibraryService:
 
                 # 3. Actualizar nombre de target
                 if new_name:
-                    stmt_upd = text(
-                        "UPDATE series_metadata SET series_name = :n WHERE series_hash = :h"
-                    )
+                    stmt_upd = text("UPDATE series_metadata SET series_name = :n WHERE series_hash = :h")
                     await session.execute(stmt_upd, {"n": new_name, "h": target_hash})
 
                 await session.commit()

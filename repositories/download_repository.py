@@ -41,9 +41,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
     async def delete(self, id: Any) -> bool:
         try:
             async with pg_manager.get_session() as session:
-                await session.execute(
-                    text("DELETE FROM download_history WHERE id = :id"), {"id": id}
-                )
+                await session.execute(text("DELETE FROM download_history WHERE id = :id"), {"id": id})
                 await session.commit()
                 return True
         except Exception as e:
@@ -156,11 +154,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                         item["downloaded_at"] = item["downloaded_at"].isoformat()
 
                     # Add compatibility cover field
-                    item["cover"] = (
-                        item.get("cover_medium")
-                        or item.get("cover_low")
-                        or item.get("cover_original")
-                    )
+                    item["cover"] = item.get("cover_medium") or item.get("cover_low") or item.get("cover_original")
                     results.append(item)
                 return results
         except Exception as e:
@@ -199,12 +193,8 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
 
             async with pg_manager.get_session() as session:
                 if book_hash:
-                    query = text(
-                        "SELECT 1 FROM download_history WHERE user_id = :uid AND book_hash = :hash LIMIT 1"
-                    )
-                    if (
-                        await session.execute(query, {"uid": user_id, "hash": book_hash})
-                    ).fetchone():
+                    query = text("SELECT 1 FROM download_history WHERE user_id = :uid AND book_hash = :hash LIMIT 1")
+                    if (await session.execute(query, {"uid": user_id, "hash": book_hash})).fetchone():
                         return True
 
                 query = text("""
@@ -212,9 +202,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                     WHERE user_id = :uid AND (title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t)
                     LIMIT 1
                 """)
-                if (
-                    await session.execute(query, {"uid": user_id, "t": title, "ct": search_clean})
-                ).fetchone():
+                if (await session.execute(query, {"uid": user_id, "t": title, "ct": search_clean})).fetchone():
                     return True
             return False
         except Exception as e:
@@ -239,9 +227,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                 query = text(
                     "SELECT COUNT(*) FROM download_history WHERE title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t"
                 )
-                return (
-                    await session.execute(query, {"t": title, "ct": search_clean})
-                ).scalar() or 0
+                return (await session.execute(query, {"t": title, "ct": search_clean})).scalar() or 0
         except Exception as e:
             logger.error(f"Postgres get_total_download_count error: {e}")
             return 0

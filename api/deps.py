@@ -152,9 +152,7 @@ async def require_mini_app_access(
     Enforces mini app access permission.
     """
     # Admins/Staff always have access, others check granular permission
-    if not access_data.get("isStaff") and Permission.ACCESS_MINI_APP.value not in access_data.get(
-        "permissions", []
-    ):
+    if not access_data.get("isStaff") and Permission.ACCESS_MINI_APP.value not in access_data.get("permissions", []):
         raise HTTPException(
             status_code=403,
             detail="⛔ El acceso a la Mini App está restringido actualmente.",

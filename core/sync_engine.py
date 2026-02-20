@@ -122,9 +122,7 @@ class SyncEngine:
                     # Omit internal IDs if necessary, but here we sync IDs too
                     t_data = {k: v for k, v in t.items() if k not in ["created_at", "updated_at"]}
                     stmt = (
-                        pg_insert(AppTheme)
-                        .values(**t_data)
-                        .on_conflict_do_update(index_elements=["id"], set_=t_data)
+                        pg_insert(AppTheme).values(**t_data).on_conflict_do_update(index_elements=["id"], set_=t_data)
                     )
                     await session.execute(stmt)
                 await session.commit()
@@ -164,9 +162,9 @@ class SyncEngine:
                         "total_downloads": u.get("total_downloads", 0),
                         "insignias": u.get("insignias", []),
                         "settings": u.get("settings", {}),
-                        "expires_at": datetime.fromisoformat(
-                            u["expires_at"].replace("Z", "+00:00")
-                        ).replace(tzinfo=None)
+                        "expires_at": datetime.fromisoformat(u["expires_at"].replace("Z", "+00:00")).replace(
+                            tzinfo=None
+                        )
                         if u.get("expires_at")
                         else None,
                     }

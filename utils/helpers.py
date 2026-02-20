@@ -169,9 +169,7 @@ def extract_spanish_series_from_filename(filename: str) -> str:
     return name
 
 
-def process_book_identity_comprehensive(
-    epub_path: str, original_filename: str | None = None
-) -> dict:
+def process_book_identity_comprehensive(epub_path: str, original_filename: str | None = None) -> dict:
     """
     Lógica UNIFICADA para extraer componentes de identidad de un EPUB.
     Usada tanto por el Scanner como por el Uploader para garantizar paridad de hashes.
@@ -252,12 +250,8 @@ def process_book_identity_comprehensive(
         fname_lower = filename_to_check.lower()
 
         # 1. Color Mode detection
-        if (
-            meta.get("color_mode", "bw") == "bw"
-        ):  # Default in extractor is "bw", check if filename says otherwise
-            if any(
-                x in fname_lower for x in ["[color]", "(color)", "[full color]", "color version"]
-            ):
+        if meta.get("color_mode", "bw") == "bw":  # Default in extractor is "bw", check if filename says otherwise
+            if any(x in fname_lower for x in ["[color]", "(color)", "[full color]", "color version"]):
                 meta["color_mode"] = "color"
 
         # If explicitly marked as B&W in filename, ensure it stays B&W (redundant but safe)
@@ -327,9 +321,7 @@ def generate_book_hash(
     )
 
 
-def generate_series_hash(
-    series: str, author: str | None = None, book_type: str | None = None
-) -> str:
+def generate_series_hash(series: str, author: str | None = None, book_type: str | None = None) -> str:
     """
     Genera un hash estable para la serie basado en: series + author + book_type.
     """
@@ -483,7 +475,9 @@ def parse_metadata_from_title(title_str: str) -> dict:
         romaji = parts[-2]
         series = " - ".join(parts[:-2])
     if not romaji:
-        specific_romaji_pattern = r"\s+[\-\–\—\−]\s+([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s+[\-\–\—\−]\s+"
+        specific_romaji_pattern = (
+            r"\s+[\-\–\—\−]\s+([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s+[\-\–\—\−]\s+"
+        )
         sr_match = re.search(specific_romaji_pattern, clean, re.IGNORECASE)
         if sr_match:
             romaji = sr_match.group(1).strip()

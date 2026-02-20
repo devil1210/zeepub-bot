@@ -62,9 +62,7 @@ async def diagnose_themes():
             for theme_id, name in themes_ending_2:
                 logger.info(f"  - ID: {theme_id}, Name: '{name}'")
 
-            logger.info(
-                f"\n🔍 THEMES CONTAINING '2' (but not ending) ({len(themes_containing_2)}):"
-            )
+            logger.info(f"\n🔍 THEMES CONTAINING '2' (but not ending) ({len(themes_containing_2)}):")
             for theme_id, name in themes_containing_2:
                 logger.info(f"  - ID: {theme_id}, Name: '{name}'")
 

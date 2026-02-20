@@ -23,9 +23,7 @@ class BackupService:
         Returns the path to the generated file.
         """
         if not config.DATABASE_URL:
-            raise Exception(
-                "DATABASE_URL no está configurada. PostgreSQL es obligatorio para backups."
-            )
+            raise Exception("DATABASE_URL no está configurada. PostgreSQL es obligatorio para backups.")
 
         BACKUP_DIR.mkdir(parents=True, exist_ok=True)
 

@@ -90,9 +90,7 @@ async def test_get_feed_renaming_logic():
 
         mock_find_zeepubs.return_value = "http://direct-zeepubs-es"
 
-        result = await get_feed(
-            url="http://root", user_data={"role": "free", "has_mini_app_access": True}
-        )
+        result = await get_feed(url="http://root", user_data={"role": "free", "has_mini_app_access": True})
 
         # Verify renaming
         assert result["entries"][0]["title"] == "Mi Catálogo"
@@ -112,9 +110,7 @@ async def test_get_feed_no_renaming_for_admin():
         ]
         mock_get_feed.return_value = MockFeed(entries)
 
-        result = await get_feed(
-            url="http://root", user_data={"role": "admin", "has_mini_app_access": True}
-        )
+        result = await get_feed(url="http://root", user_data={"role": "admin", "has_mini_app_access": True})
 
         # Verify Unified renaming (now everyone sees Mi Catálogo)
         assert result["entries"][0]["title"] == "Mi Catálogo"

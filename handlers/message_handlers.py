@@ -42,9 +42,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cms = context.application.plugin_manager.get_plugin("custom_messages")
 
             exp_str = expires_at.strftime("%Y-%m-%d %H:%B") if expires_at else None
-            default_msg_template = (
-                "⛔ Estás <b>baneado</b> del bot.{{if Fecha}} Hasta: <b>[Fecha]</b>{{endif}}"
-            )
+            default_msg_template = "⛔ Estás <b>baneado</b> del bot.{{if Fecha}} Hasta: <b>[Fecha]</b>{{endif}}"
 
             if cms and cms.enabled:
                 msg = await cms.get_text(
@@ -79,24 +77,16 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         base_text = f"💬 Respuesta a tu Sugerencia\n\n{custom_response}"
         response_text = base_text
         if cms and cms.enabled:
-            response_text = await cms.get_text(
-                "suggestion_custom_response", Respuesta=custom_response
-            )
+            response_text = await cms.get_text("suggestion_custom_response", Respuesta=custom_response)
 
         try:
-            await context.bot.send_message(
-                chat_id=target_user_id, text=response_text, parse_mode="HTML"
-            )
+            await context.bot.send_message(chat_id=target_user_id, text=response_text, parse_mode="HTML")
 
             # Update original message
             if original_msg_id and original_chat_id and original_text:
                 try:
                     # Truncate if too long
-                    response_preview = (
-                        custom_response[:100] + "..."
-                        if len(custom_response) > 100
-                        else custom_response
-                    )
+                    response_preview = custom_response[:100] + "..." if len(custom_response) > 100 else custom_response
                     await context.bot.edit_message_text(
                         chat_id=original_chat_id,
                         message_id=original_msg_id,
@@ -131,9 +121,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Template System
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_text = "✅ Contraseña correcta. Elige destino:"
-            text_success = (
-                await cms.get_text("evil_password_success") if (cms and cms.enabled) else base_text
-            )
+            text_success = await cms.get_text("evil_password_success") if (cms and cms.enabled) else base_text
 
             # Editar el prompt original si se guardó
             msg_id = st.get("msg_esperando_pwd")
@@ -165,9 +153,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_fail = "❌ Contraseña incorrecta."
-            text_fail = (
-                await cms.get_text("evil_password_fail") if (cms and cms.enabled) else base_fail
-            )
+            text_fail = await cms.get_text("evil_password_fail") if (cms and cms.enabled) else base_fail
 
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -192,8 +178,7 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if success:
                 await update.message.reply_html(
-                    f"✅ <b>Correo guardado:</b> <code>{text.lower()}</code>\n\n"
-                    "Generando tu enlace de acceso..."
+                    f"✅ <b>Correo guardado:</b> <code>{text.lower()}</code>\n\nGenerando tu enlace de acceso..."
                 )
                 # Disparar lógica de acceso_web
                 from handlers.command_handlers import CommandHandlers
@@ -204,13 +189,9 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # Check if it was because of duplicate email
                 existing = await repo.get_by_email(text)
                 if existing:
-                    await update.message.reply_html(
-                        "❌ Este correo ya está vinculado a otra cuenta de Telegram."
-                    )
+                    await update.message.reply_html("❌ Este correo ya está vinculado a otra cuenta de Telegram.")
                 else:
-                    await update.message.reply_html(
-                        "❌ Error al guardar el correo. Por favor reintenta."
-                    )
+                    await update.message.reply_html("❌ Error al guardar el correo. Por favor reintenta.")
         else:
             await update.message.reply_html(
                 "❌ El formato del correo no es válido. Por favor, escribe un email correcto:"
@@ -243,15 +224,9 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if chat_type == "private":
         cms = context.application.plugin_manager.get_plugin("custom_messages")
         base_fallback = "Usa /start para comenzar o selecciona una opción del menú."
-        text_fallback = (
-            await cms.get_text("private_default_fallback")
-            if (cms and cms.enabled)
-            else base_fallback
-        )
+        text_fallback = await cms.get_text("private_default_fallback") if (cms and cms.enabled) else base_fallback
 
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id, text=text_fallback, parse_mode="HTML"
-        )
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text_fallback, parse_mode="HTML")
 
 
 async def handle_json_upload(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -73,15 +73,11 @@ class EpubMetadataExtractor:
                     creators = {}  # id -> text
                     creators_jap = {}  # id -> jap_text
                     for node in metadata_node.findall("dc:creator", self.NAMESPACE):
-                        creators[
-                            node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")
-                        ] = node.text
+                        creators[node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")] = node.text
 
                     contributors = {}  # id -> text
                     for node in metadata_node.findall("dc:contributor", self.NAMESPACE):
-                        contributors[
-                            node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")
-                        ] = node.text
+                        contributors[node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")] = node.text
 
                     # Roles y Scripts Alternativos
                     meta_tags = metadata_node.findall("opf:meta", self.NAMESPACE)
@@ -102,9 +98,7 @@ class EpubMetadataExtractor:
                                 creators_jap[cid] = meta.text
 
                     # Asignar personas
-                    self.metadata["author"] = self._get_dc_value(
-                        metadata_node, "creator"
-                    )  # Fallback
+                    self.metadata["author"] = self._get_dc_value(metadata_node, "creator")  # Fallback
                     self.metadata["author_jap"] = None
                     self.metadata["illustrator"] = None
                     self.metadata["illustrator_jap"] = None
@@ -185,9 +179,7 @@ class EpubMetadataExtractor:
 
                         # CALIBRE INDEX (Base priority)
                         elif name == "calibre:series_index":
-                            if not self.metadata.get(
-                                "volume"
-                            ):  # Keep if already set by group-position
+                            if not self.metadata.get("volume"):  # Keep if already set by group-position
                                 try:
                                     self.metadata["volume"] = float(meta.get("content"))
                                 except Exception:
@@ -230,16 +222,11 @@ class EpubMetadataExtractor:
                         self.metadata["is_uncensored"] = 1
 
                     if (
-                        any(
-                            x in all_tags_text
-                            for x in ["ilustraciones a color", "color", "full color"]
-                        )
+                        any(x in all_tags_text for x in ["ilustraciones a color", "color", "full color"])
                         or "color" in edition_text
                     ):
                         self.metadata["color_mode"] = "color"
-                    elif any(
-                        x in all_tags_text for x in ["blanco y negro", "b&w", "grayscale", "b/n"]
-                    ):
+                    elif any(x in all_tags_text for x in ["blanco y negro", "b&w", "grayscale", "b/n"]):
                         self.metadata["color_mode"] = "bw"
 
                     # Option 3: Detection via custom meta properties (Zeepub extensions)
@@ -305,10 +292,7 @@ class EpubMetadataExtractor:
                 idref = itemref.get("idref")
                 href = item_map.get(idref)
 
-                if href and any(
-                    href.lower().endswith(ext)
-                    for ext in [".xhtml", ".html", ".htm", ".xml", ".txt"]
-                ):
+                if href and any(href.lower().endswith(ext) for ext in [".xhtml", ".html", ".htm", ".xml", ".txt"]):
                     try:
                         raw_path = os.path.join(base_dir, href)
                         full_href = os.path.normpath(raw_path).replace("\\", "/")

@@ -29,9 +29,7 @@ async def fix_postgres_schema():
     # Logic for local development (outside docker)
     potential_urls = [target_url]
     if "@db:" in target_url:
-        logger.info(
-            "Detected '@db' host in URL, likely running outside Docker. Adding localhost as fallback..."
-        )
+        logger.info("Detected '@db' host in URL, likely running outside Docker. Adding localhost as fallback...")
         local_url = target_url.replace("@db:", "@localhost:", 1)
         potential_urls.append(local_url)
 
@@ -89,35 +87,21 @@ async def fix_postgres_schema():
             # 1. Índices en Tablas de Historial (Punto 3 del plan)
             logger.info("Añadiendo índices a tablas de historial...")
             await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_upload_history_user_id ON upload_history(user_id);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_upload_history_user_id ON upload_history(user_id);")
             )
             await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_download_history_user_id ON download_history(user_id);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_download_history_user_id ON download_history(user_id);")
             )
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_ratings_user_id ON user_ratings(user_id);"))
             await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_user_ratings_user_id ON user_ratings(user_id);"
-                )
-            )
-            await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_user_downloads_user_id ON user_downloads(user_id);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_user_downloads_user_id ON user_downloads(user_id);")
             )
 
             # 2. Claves Foráneas con Índice (Punto 1 del plan anterior)
             logger.info("Añadiendo índices a claves foráneas críticas...")
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);"))
             await conn.execute(
-                text("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);")
-            )
-            await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_user_levels_default_theme_id ON user_levels(default_theme_id);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_user_levels_default_theme_id ON user_levels(default_theme_id);")
             )
 
             # 3. Optimización de Series (Punto 2 del plan - Integer vs String)

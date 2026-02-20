@@ -83,10 +83,7 @@ async def fix_schema_if_needed():
             """)
             )
             await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_series_metadata_hash "
-                    "ON series_metadata(series_hash);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);")
             )
 
             # Tabla de administradores (Local)
@@ -103,38 +100,20 @@ async def fix_schema_if_needed():
             # --- OPTIMIZACIONES DE RENDIMIENTO 2025 ---
             # Índices en historiales
             await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_upload_history_user_id "
-                    "ON upload_history(user_id);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_upload_history_user_id ON upload_history(user_id);")
             )
             await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_download_history_user_id "
-                    "ON download_history(user_id);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_download_history_user_id ON download_history(user_id);")
             )
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_user_ratings_user_id ON user_ratings(user_id);"))
             await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_user_ratings_user_id ON user_ratings(user_id);"
-                )
-            )
-            await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_user_downloads_user_id "
-                    "ON user_downloads(user_id);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_user_downloads_user_id ON user_downloads(user_id);")
             )
 
             # Índices en claves foráneas
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);"))
             await conn.execute(
-                text("CREATE INDEX IF NOT EXISTS idx_users_level_id ON users(level_id);")
-            )
-            await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_user_levels_default_theme_id "
-                    "ON user_levels(default_theme_id);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_user_levels_default_theme_id ON user_levels(default_theme_id);")
             )
 
             # Relación de series optimizada (Integer) - Debe ir después de crear series_metadata
@@ -146,64 +125,36 @@ async def fix_schema_if_needed():
             )
             await conn.execute(
                 text(
-                    "CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id "
-                    "ON local_books(series_metadata_id);"
+                    "CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id ON local_books(series_metadata_id);"
                 )
             )
 
             # --- COLUMNAS DE METADATA EXTENDIDA (MIGRACIÓN 2025) ---
             # local_books
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS illustrator_jap VARCHAR(255);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(512);"))
             await conn.execute(
-                text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);")
+                text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS is_uncensored INTEGER DEFAULT 0;")
             )
-            await conn.execute(
-                text(
-                    "ALTER TABLE local_books ADD COLUMN IF NOT EXISTS illustrator_jap VARCHAR(255);"
-                )
-            )
-            await conn.execute(
-                text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(512);")
-            )
-            await conn.execute(
-                text(
-                    "ALTER TABLE local_books ADD COLUMN IF NOT EXISTS is_uncensored "
-                    "INTEGER DEFAULT 0;"
-                )
-            )
-            await conn.execute(
-                text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);")
-            )
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);"))
 
             # user_levels
             await conn.execute(
-                text(
-                    "ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS default_theme_id "
-                    "INTEGER DEFAULT NULL;"
-                )
+                text("ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS default_theme_id INTEGER DEFAULT NULL;")
             )
             await conn.execute(
-                text(
-                    "ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS allow_theme_templates "
-                    "BOOLEAN DEFAULT FALSE;"
-                )
+                text("ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS allow_theme_templates BOOLEAN DEFAULT FALSE;")
             )
             await conn.execute(
-                text(
-                    "ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS can_upload_epub "
-                    "BOOLEAN DEFAULT FALSE;"
-                )
+                text("ALTER TABLE user_levels ADD COLUMN IF NOT EXISTS can_upload_epub BOOLEAN DEFAULT FALSE;")
             )
 
             # users
             await conn.execute(
-                text(
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS can_upload_epub "
-                    "BOOLEAN DEFAULT FALSE;"
-                )
+                text("ALTER TABLE users ADD COLUMN IF NOT EXISTS can_upload_epub BOOLEAN DEFAULT FALSE;")
             )
-            await conn.execute(
-                text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;")
-            )
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;"))
             await conn.execute(
                 text(
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at "
@@ -255,16 +206,10 @@ async def fix_schema_if_needed():
             """)
             )
             await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_publication_queue_status "
-                    "ON publication_queue(status);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_publication_queue_status ON publication_queue(status);")
             )
             await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_publication_queue_scheduled "
-                    "ON publication_queue(scheduled_for);"
-                )
+                text("CREATE INDEX IF NOT EXISTS idx_publication_queue_scheduled ON publication_queue(scheduled_for);")
             )
 
         await engine.dispose()

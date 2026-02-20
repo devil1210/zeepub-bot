@@ -50,9 +50,7 @@ class ExamplePlugin(BasePlugin):
         )
         keyboard = [[InlineKeyboardButton("🔄 Demo", callback_data="plugin_demo")]]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text(
-            stats_text, reply_markup=reply_markup, parse_mode="Markdown"
-        )
+        await update.message.reply_text(stats_text, reply_markup=reply_markup, parse_mode="Markdown")
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         help_text = (
@@ -74,9 +72,7 @@ class ExamplePlugin(BasePlugin):
             parse_mode="Markdown",
         )
 
-    async def on_download_request(
-        self, user_id: int, epub_url: str, metadata: dict[str, Any]
-    ) -> dict[str, Any] | None:
+    async def on_download_request(self, user_id: int, epub_url: str, metadata: dict[str, Any]) -> dict[str, Any] | None:
         self.download_count += 1
         logging.info(f"Plugin {self.name}: Descarga #{self.download_count} por usuario {user_id}")
         return {"plugin_download_id": self.download_count, "tracked_by": self.name}

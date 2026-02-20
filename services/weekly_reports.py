@@ -32,9 +32,7 @@ async def generate_weekly_report():
         if broken:
             report += "⚠️ <b>Links Rotos (máximo 10):</b>\n"
             for hash_val, title, failed, _last_checked in broken:
-                title_short = (
-                    (title[:35] + "...") if title and len(title) > 35 else (title or "Sin título")
-                )
+                title_short = (title[:35] + "...") if title and len(title) > 35 else (title or "Sin título")
                 report += f"  • {title_short}\n"
                 report += f"    Hash: <code>{hash_val}</code> (Fallos: {failed}/3)\n"
             report += "\n💡 Usa /purge_link <code>&lt;hash&gt;</code> para eliminar links rotos.\n"
@@ -96,9 +94,7 @@ async def weekly_report_scheduler(bot):
                 next_run += timedelta(days=7)
 
             wait_seconds = (next_run - now).total_seconds()
-            logger.info(
-                f"Próximo reporte semanal programado para: {next_run.strftime('%Y-%m-%d %H:%M')}"
-            )
+            logger.info(f"Próximo reporte semanal programado para: {next_run.strftime('%Y-%m-%d %H:%M')}")
 
             # Esperar hasta la próxima ejecución
             await asyncio.sleep(wait_seconds)

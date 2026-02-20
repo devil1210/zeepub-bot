@@ -54,11 +54,7 @@ async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]
         if not res_item.get("cover") and res_item.get("cover_url"):
             res_item["cover"] = res_item.get("cover_url")
         elif not res_item.get("cover"):
-            res_item["cover"] = (
-                res_item.get("cover_low")
-                or res_item.get("cover_medium")
-                or res_item.get("cover_high")
-            )
+            res_item["cover"] = res_item.get("cover_low") or res_item.get("cover_medium") or res_item.get("cover_high")
 
         # Compatibility with RecommendationCard.tsx
         res_item["cleanTitle"] = (

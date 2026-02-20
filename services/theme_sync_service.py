@@ -134,19 +134,16 @@ class ThemeSyncService:
             "description": theme_data.get("description"),
             "theme_type": theme_data.get("theme_type") or theme_data.get("theme") or "dark",
             "primary_color": theme_data.get("primary_color") or theme_data.get("primaryColor"),
-            "background_color": theme_data.get("background_color")
-            or theme_data.get("backgroundColor"),
+            "background_color": theme_data.get("background_color") or theme_data.get("backgroundColor"),
             "card_color": theme_data.get("card_color") or theme_data.get("cardColor"),
             "glass_opacity": theme_data.get("glass_opacity") or theme_data.get("glassOpacity"),
             "nav_opacity": theme_data.get("nav_opacity") or theme_data.get("navOpacity"),
             "accent_opacity": theme_data.get("accent_opacity") or theme_data.get("accentOpacity"),
             "glass_blur": theme_data.get("glass_blur") or theme_data.get("glassBlur"),
-            "card_glow_intensity": theme_data.get("card_glow_intensity")
-            or theme_data.get("cardGlowIntensity"),
+            "card_glow_intensity": theme_data.get("card_glow_intensity") or theme_data.get("cardGlowIntensity"),
             "font_size": theme_data.get("font_size") or theme_data.get("fontSize"),
             "cover_width": theme_data.get("cover_width") or theme_data.get("coverWidth"),
-            "banner_content_offset": theme_data.get("banner_content_offset")
-            or theme_data.get("bannerContentOffset"),
+            "banner_content_offset": theme_data.get("banner_content_offset") or theme_data.get("bannerContentOffset"),
         }
 
         # Handle updated_at safely for local DB
@@ -177,9 +174,7 @@ class ThemeSyncService:
             # PostgreSQL specific: Reset sequence to max(id)
             # Usamos COALESCE para manejar el caso de tabla vacía
             await session.execute(
-                text(
-                    "SELECT setval('app_themes_id_seq', (SELECT COALESCE(MAX(id), 1) FROM app_themes))"
-                )
+                text("SELECT setval('app_themes_id_seq', (SELECT COALESCE(MAX(id), 1) FROM app_themes))")
             )
             await session.commit()
             logger.info("app_themes_id_seq synchronized with max(id)")
@@ -210,9 +205,7 @@ class ThemeSyncService:
 
         # 1. Limpiar duplicados locales si existen
         if duplicates:
-            logger.warning(
-                f"Se encontraron {len(duplicates)} temas duplicados localmente. Eliminando..."
-            )
+            logger.warning(f"Se encontraron {len(duplicates)} temas duplicados localmente. Eliminando...")
             for dup in duplicates:
                 await session.delete(dup)
             await session.flush()
@@ -270,12 +263,7 @@ class ThemeSyncService:
             if local_theme["name"] not in supabase_names:
                 # Agregar a Supabase
                 try:
-                    result = (
-                        supabase_manager.get_client()
-                        .table("app_themes")
-                        .insert(theme_payload)
-                        .execute()
-                    )
+                    result = supabase_manager.get_client().table("app_themes").insert(theme_payload).execute()
                     if result:
                         added_count += 1
                         logger.info(f"Added theme to Supabase: {local_theme['name']}")

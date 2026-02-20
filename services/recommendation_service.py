@@ -30,9 +30,7 @@ class RecommendationService:
 
                 # 2. Obtener valoraciones positivas (>= 4 estrellas)
                 # UserRating has book_hash
-                rate_stmt = select(UserRating.book_hash).where(
-                    UserRating.user_id == user_id, UserRating.rating >= 4
-                )
+                rate_stmt = select(UserRating.book_hash).where(UserRating.user_id == user_id, UserRating.rating >= 4)
                 rate_res = await session.execute(rate_stmt)
                 liked_hashes = {row[0] for row in rate_res.fetchall() if row[0]}
 
@@ -77,18 +75,16 @@ class RecommendationService:
                     # tags is JSONB in Postgres usually, or if it's text we use like
                     # LocalBook.tags is JSON (Column(JSON))
                     # In Postgres, we can use JSONB containment or just cast to string for simplicity if it varies
-                    tag_filters = [
-                        cast(LocalBook.tags, String).ilike(f"%{tag}%") for tag in target_tags
-                    ]
+                    tag_filters = [cast(LocalBook.tags, String).ilike(f"%{tag}%") for tag in target_tags]
                     filters.append(or_(*tag_filters))
 
                 if filters:
                     cand_stmt = cand_stmt.where(or_(*filters))
 
                 # Ordenar por rating y luego variedad
-                cand_stmt = cand_stmt.order_by(
-                    desc(LocalBook.rating_average), desc(LocalBook.rating_count)
-                ).limit(limit * 6)
+                cand_stmt = cand_stmt.order_by(desc(LocalBook.rating_average), desc(LocalBook.rating_count)).limit(
+                    limit * 6
+                )
 
                 cand_res = await session.execute(cand_stmt)
                 candidates = cand_res.scalars().all()
@@ -109,9 +105,7 @@ class RecommendationService:
 
         except Exception as e:
             logger.error(f"Error generating recommendations: {e}", exc_info=True)
-            return await RecommendationService._get_popular_recommendations(
-                user_id, None, limit, set()
-            )
+            return await RecommendationService._get_popular_recommendations(user_id, None, limit, set())
 
     @staticmethod
     async def _get_popular_recommendations(

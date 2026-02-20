@@ -18,9 +18,7 @@ from models.library_models import LocalBook
 
 async def find_resan_id():
     async with pg_manager.get_session() as session:
-        res = await session.execute(
-            select(LocalBook).where(LocalBook.title.ilike("%Byōsoku Go Senchimētoru%"))
-        )
+        res = await session.execute(select(LocalBook).where(LocalBook.title.ilike("%Byōsoku Go Senchimētoru%")))
         b = res.scalar_one_or_none()
         if b:
             print(f"ID for {b.title}: {b.id}")

@@ -147,9 +147,7 @@ class LibraryExportService:
             # Importar libros
             for book_data in data.get("books", []):
                 # Buscar por filepath (identificador único)
-                existing = (
-                    session.query(LocalBook).filter_by(filepath=book_data["filepath"]).first()
-                )
+                existing = session.query(LocalBook).filter_by(filepath=book_data["filepath"]).first()
 
                 if existing:
                     if merge:

@@ -35,9 +35,7 @@ def _get_engine():
     if not _HAS_SQLALCHEMY:
         raise RuntimeError("SQLAlchemy not installed")
     if not config.DATABASE_URL:
-        raise RuntimeError(
-            "DATABASE_URL not configured. PostgreSQL is mandatory for history service."
-        )
+        raise RuntimeError("DATABASE_URL not configured. PostgreSQL is mandatory for history service.")
 
     url = config.DATABASE_URL
     # Ensure correct driver for sync engine
@@ -342,17 +340,13 @@ def process_history_json(file_path: str) -> dict[str, int]:
                 # If no author found, but we have a slug and it's not a synopsis,
                 # assume it's a book and use "Desconocido"
                 author = "Desconocido"
-                logger.info(
-                    f"Message {msg_id} (slug: {slug}) has no author, defaulting to 'Desconocido'"
-                )
+                logger.info(f"Message {msg_id} (slug: {slug}) has no author, defaulting to 'Desconocido'")
 
             try:
                 # Use a transaction for each item so failures don't break the loop
                 with conn.begin():
                     # Check if already exists
-                    sel = sa.select(table.c.id).where(
-                        sa.and_(table.c.message_id == msg_id, table.c.slug == slug)
-                    )
+                    sel = sa.select(table.c.id).where(sa.and_(table.c.message_id == msg_id, table.c.slug == slug))
                     existing = conn.execute(sel).first()
 
                     if not existing:
@@ -380,9 +374,7 @@ def process_history_json(file_path: str) -> dict[str, int]:
                 logger.error(f"Error importing msg {msg_id} (slug: {slug}): {e}", exc_info=True)
         stats["errors"] += 1
 
-    logger.info(
-        f"Import complete: {stats['imported']}/{stats['total']} books imported, {stats['errors']} errors"
-    )
+    logger.info(f"Import complete: {stats['imported']}/{stats['total']} books imported, {stats['errors']} errors")
     return stats
 
 

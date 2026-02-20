@@ -36,9 +36,7 @@ class BasePlugin(ABC):
     def get_message_handlers(self) -> list[Callable]:
         return []
 
-    async def on_download_request(
-        self, user_id: int, epub_url: str, metadata: dict[str, Any]
-    ) -> dict[str, Any] | None:
+    async def on_download_request(self, user_id: int, epub_url: str, metadata: dict[str, Any]) -> dict[str, Any] | None:
         return None
 
     async def on_download_complete(self, user_id: int, epub_url: str, success: bool) -> None:

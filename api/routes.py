@@ -217,9 +217,7 @@ async def prepare_facebook_post(
                     meta["internal_title"] = internal_title
 
                 # Extraer filename title
-                filename_title = unquote(urlparse(download_url).path.split("/")[-1]).replace(
-                    ".epub", ""
-                )
+                filename_title = unquote(urlparse(download_url).path.split("/")[-1]).replace(".epub", "")
                 meta["filename_title"] = filename_title
 
                 # Debug logging
@@ -264,20 +262,13 @@ async def publish_facebook_post(
 
     if not is_valid:
         # Strip HTML for API error detail
-        clean_msg = (
-            error_msg.replace("<b>", "")
-            .replace("</b>", "")
-            .replace("<code>", "")
-            .replace("</code>", "")
-        )
+        clean_msg = error_msg.replace("<b>", "").replace("</b>", "").replace("<code>", "").replace("</code>", "")
         raise HTTPException(status_code=400, detail=clean_msg)
 
     try:
         data = await request.json()
         caption = data.get("caption")
-        cover_url = data.get(
-            "cover_url"
-        )  # URL de la portada (debe ser pública para que FB la vea, o subimos bytes)
+        cover_url = data.get("cover_url")  # URL de la portada (debe ser pública para que FB la vea, o subimos bytes)
 
         # Nota: Para subir foto a FB, se puede pasar URL si es pública.
         # Si nuestra URL de portada es local/proxy, FB podría no verla si no es pública real.
@@ -291,9 +282,7 @@ async def publish_facebook_post(
         url = f"https://graph.facebook.com/{config.FACEBOOK_GROUP_ID}/photos"
         params = {
             "url": cover_url,
-            "caption": caption.replace("<b>", "").replace(
-                "</b>", ""
-            ),  # FB no soporta HTML tags básicos así
+            "caption": caption.replace("<b>", "").replace("</b>", ""),  # FB no soporta HTML tags básicos así
             "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
         }
 

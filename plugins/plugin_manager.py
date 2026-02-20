@@ -62,9 +62,7 @@ class PluginManager:
                 self.plugins[plugin_instance.name] = plugin_instance
                 logging.info(f"Plugin cargado: {plugin_instance.name} v{plugin_instance.version}")
             else:
-                logging.debug(
-                    f"Plugin {plugin_instance.name} no se inicializó (deshabilitado o error)."
-                )
+                logging.debug(f"Plugin {plugin_instance.name} no se inicializó (deshabilitado o error).")
 
         except Exception as e:
             logging.error(f"Error cargando plugin {plugin_path.name}: {e}", exc_info=True)

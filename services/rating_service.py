@@ -49,9 +49,9 @@ class RatingService:
                 await session.flush()  # Ensure rating is applied for subsequent stats
 
                 # 3. Recalculate Book Average
-                stats_stmt = select(
-                    func.avg(UserRating.rating), func.count(UserRating.rating)
-                ).where(UserRating.book_id == book_id)
+                stats_stmt = select(func.avg(UserRating.rating), func.count(UserRating.rating)).where(
+                    UserRating.book_id == book_id
+                )
 
                 stats_res = await session.execute(stats_stmt)
                 stats = stats_res.fetchone()
@@ -85,16 +85,14 @@ class RatingService:
         async with pg_manager.get_session() as session:
             try:
                 # 1. Delete rating
-                stmt = delete(UserRating).where(
-                    UserRating.user_id == user_id, UserRating.book_id == book_id
-                )
+                stmt = delete(UserRating).where(UserRating.user_id == user_id, UserRating.book_id == book_id)
                 await session.execute(stmt)
                 await session.flush()
 
                 # 2. Recalculate Book Average
-                stats_stmt = select(
-                    func.avg(UserRating.rating), func.count(UserRating.rating)
-                ).where(UserRating.book_id == book_id)
+                stats_stmt = select(func.avg(UserRating.rating), func.count(UserRating.rating)).where(
+                    UserRating.book_id == book_id
+                )
 
                 stats_res = await session.execute(stats_stmt)
                 stats = stats_res.fetchone()
@@ -129,9 +127,7 @@ class RatingService:
         """Retorna el voto previo del usuario si existe (Async)."""
         async with pg_manager.get_session() as session:
             try:
-                stmt = select(UserRating.rating).where(
-                    UserRating.user_id == user_id, UserRating.book_id == book_id
-                )
+                stmt = select(UserRating.rating).where(UserRating.user_id == user_id, UserRating.book_id == book_id)
                 res = await session.execute(stmt)
                 return res.scalar_one_or_none()
             except Exception as e:

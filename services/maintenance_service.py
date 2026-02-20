@@ -61,9 +61,7 @@ async def trigger_watchtower_update():
                 continue
             except httpx.ReadTimeout:
                 # El ReadTimeout suele indicar éxito si el sistema empieza a reiniciarse antes de responder
-                logger.info(
-                    f"ReadTimeout en {url}. Altas probabilidades de que la actualización esté iniciando."
-                )
+                logger.info(f"ReadTimeout en {url}. Altas probabilidades de que la actualización esté iniciando.")
                 return (
                     True,
                     "✅ Orden enviada. Si el sistema se reinicia, la actualización fue exitosa.",

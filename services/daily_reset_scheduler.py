@@ -16,14 +16,10 @@ async def daily_reset_loop(bot=None):
         try:
             now = datetime.now()
             # Calcular próxima medianoche
-            next_midnight = (now + timedelta(days=1)).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
+            next_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
 
             wait_seconds = (next_midnight - now).total_seconds()
-            logger.info(
-                f"Próximo reset de descargas en {wait_seconds:.0f} segundos ({next_midnight})"
-            )
+            logger.info(f"Próximo reset de descargas en {wait_seconds:.0f} segundos ({next_midnight})")
 
             # Esperar hasta medianoche
             await asyncio.sleep(wait_seconds)
@@ -54,9 +50,7 @@ async def daily_reset_loop(bot=None):
 
                     for admin_id in config.ADMIN_USERS:
                         try:
-                            await bot.send_message(
-                                chat_id=admin_id, text=report_text, parse_mode="HTML"
-                            )
+                            await bot.send_message(chat_id=admin_id, text=report_text, parse_mode="HTML")
                         except Exception as e:
                             logger.error(f"Error enviando reporte a admin {admin_id}: {e}")
 

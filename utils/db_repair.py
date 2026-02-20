@@ -41,9 +41,7 @@ async def repair_database():
                 res = await session.execute(check_sql)
                 if not res.scalar():
                     logger.info(f"Adding column {col_name} to user_levels...")
-                    await session.execute(
-                        text(f"ALTER TABLE user_levels ADD COLUMN {col_name} {col_type}")
-                    )
+                    await session.execute(text(f"ALTER TABLE user_levels ADD COLUMN {col_name} {col_type}"))
             except Exception as e:
                 logger.error(f"Error adding column {col_name}: {e}")
 

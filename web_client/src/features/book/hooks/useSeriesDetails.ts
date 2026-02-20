@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Series, Volume } from '@shared/types';
 import { api } from '@shared/services/api';
 import { getCoverUrl } from '@shared/utils/imageUtils';
@@ -141,9 +141,14 @@ export const useSeriesDetails = (initialSeries: Series, settings: any, webApp: a
         };
     }, [initialSeries.id]);
 
+    const sortedVolumes = React.useMemo(() => {
+        const numV = (v: Volume) => typeof v.volumeNumber === 'string' ? parseFloat(v.volumeNumber) : (v.volumeNumber || 0);
+        return [...volumes].sort((a, b) => (numV(a) - numV(b)));
+    }, [volumes]);
+
     return {
         realSeries,
-        volumes,
+        volumes: sortedVolumes,
         loading,
         isSyncing,
         handleSyncSeries

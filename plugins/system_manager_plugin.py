@@ -85,9 +85,7 @@ class SystemManagerPlugin(BasePlugin):
 
                 for admin_id in config.ADMIN_USERS:
                     try:
-                        await context.bot.send_message(
-                            chat_id=admin_id, text=msg, parse_mode="HTML"
-                        )
+                        await context.bot.send_message(chat_id=admin_id, text=msg, parse_mode="HTML")
                     except Exception as e:
                         logger.warning(f"Could not notify admin {admin_id} about update: {e}")
         except Exception as e:
@@ -224,9 +222,7 @@ class SystemManagerPlugin(BasePlugin):
             # Update message to show confirmation (legacy behavior: no buttons)
             # Retry logic for network stability
             try:
-                await query.edit_message_text(
-                    f"✅ Nivel de log cambiado a <b>{level_str}</b>", parse_mode="HTML"
-                )
+                await query.edit_message_text(f"✅ Nivel de log cambiado a <b>{level_str}</b>", parse_mode="HTML")
             except Exception as e:
                 logger.warning(f"Error editing message (attempt 1): {e}. Retrying...")
                 await asyncio.sleep(0.5)
@@ -236,9 +232,7 @@ class SystemManagerPlugin(BasePlugin):
                         parse_mode="HTML",
                     )
                 except Exception as e2:
-                    logger.warning(
-                        f"Error editing message (attempt 2): {e2}. Fallback to delete+send."
-                    )
+                    logger.warning(f"Error editing message (attempt 2): {e2}. Fallback to delete+send.")
                     try:
                         await query.message.delete()
                     except Exception:

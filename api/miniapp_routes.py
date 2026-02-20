@@ -132,9 +132,9 @@ async def handle_bot_request(
     if action != "status":
         from services.rbac_service import Permission, rbac_service
 
-        if not rbac_service.is_staff(
-            user_effective
-        ) and Permission.ACCESS_MINI_APP.value not in user_effective.get("permissions", []):
+        if not rbac_service.is_staff(user_effective) and Permission.ACCESS_MINI_APP.value not in user_effective.get(
+            "permissions", []
+        ):
             raise HTTPException(
                 status_code=403,
                 detail="Tu nivel de usuario no tiene acceso a la Mini App",
@@ -144,7 +144,7 @@ async def handle_bot_request(
         logger.info(f"Miniapp action: {action} User: {user_id} Level: {user_level}")
 
     try:
-        from api.miniapp_handlers import (
+        from api.handlers.admin import (
             handle_admin_ai_series_duplicate_scan,
             handle_admin_backup_library,
             handle_admin_cleanup_library,
@@ -184,6 +184,8 @@ async def handle_bot_request(
             handle_admin_sync_themes,
             handle_admin_sync_users_cloud,
             handle_admin_update_system,
+        )
+        from api.handlers.ai import (
             handle_ai_apply_changes,
             handle_ai_apply_merge,
             handle_ai_generate_summary,
@@ -194,19 +196,24 @@ async def handle_bot_request(
             handle_ai_scan_series,
             handle_ai_stats,
             handle_ai_toggle_background_scan,
+        )
+        from api.handlers.books import (
             handle_book_detail,
-            handle_bot_info,
-            handle_create_stars_invoice,
+            handle_rate_book,
+            handle_rating_breakdown,
+            handle_remove_rating,
+        )
+        from api.handlers.downloads import (
             handle_download,
-            handle_feedback,
             handle_get_download_count,
             handle_get_upload_history,
-            handle_get_user_audit_history,
+            handle_user_downloads_history,
+        )
+        from api.handlers.publisher import (
             handle_pub_delete_channel,
             handle_pub_delete_queue_item,
             handle_pub_delete_template,
             handle_pub_get_channels,
-            # Publication handlers
             handle_pub_get_queue,
             handle_pub_get_templates,
             handle_pub_promote_discovered,
@@ -215,17 +222,17 @@ async def handle_bot_request(
             handle_pub_schedule,
             handle_pub_toggle_favorite,
             handle_pub_update_queue_item,
-            handle_rate_book,
-            handle_rating_breakdown,
-            handle_recommendations,
-            handle_remove_rating,
+        )
+        from api.handlers.recommendations import handle_recommendations
+        from api.handlers.search import handle_search
+        from api.handlers.settings import handle_save_badge_config, handle_ui_settings, handle_update_user_setting
+        from api.handlers.stars import handle_create_stars_invoice
+        from api.handlers.users import (
+            handle_bot_info,
+            handle_feedback,
+            handle_get_user_audit_history,
             handle_request_book,
-            handle_save_badge_config,
-            handle_search,
             handle_status,
-            handle_ui_settings,
-            handle_update_user_setting,
-            handle_user_downloads_history,
             handle_user_status,
         )
 
@@ -370,9 +377,7 @@ async def check_user_access(
     is_staff = rbac_service.is_staff(eff)
 
     # Force access for all admins/staff
-    has_access = eff.get("has_mini_app_access") or Permission.ACCESS_MINI_APP.value in eff.get(
-        "permissions", []
-    )
+    has_access = eff.get("has_mini_app_access") or Permission.ACCESS_MINI_APP.value in eff.get("permissions", [])
     if is_staff:
         has_access = True
 
@@ -433,9 +438,7 @@ async def check_user_access(
 
     # Final value: personal setting OR level default
     final_show_recommendations = (
-        personal_show_recs
-        if personal_show_recs is not None
-        else access_info.get("showRecommendations", True)
+        personal_show_recs if personal_show_recs is not None else access_info.get("showRecommendations", True)
     )
 
     response_payload = AccessResponse(
@@ -491,9 +494,7 @@ async def get_levels(user_data: Annotated[dict[str, Any], Depends(require_admin)
 
 @router.put("/api/admin/levels")
 @router.post("/api/admin/access-levels")
-async def update_levels(
-    request: UpdateLevelsRequest, user_data: Annotated[dict[str, Any], Depends(require_admin)]
-):
+async def update_levels(request: UpdateLevelsRequest, user_data: Annotated[dict[str, Any], Depends(require_admin)]):
     from repositories.user_repository import user_repo
 
     for level in request.levels:
@@ -596,9 +597,7 @@ async def confirm_epub_upload_miniapp(
 
     # Verificar que el usuario sea el mismo o admin
     is_admin = (
-        user_data.get("level") in ["admin", "staff"]
-        or user_data.get("is_real_admin")
-        or user_data.get("is_admin_db")
+        user_data.get("level") in ["admin", "staff"] or user_data.get("is_real_admin") or user_data.get("is_admin_db")
     )
     if upload_info["user_id"] != user_data["user_id"] and not is_admin:
         raise HTTPException(status_code=403, detail="No tienes permisos")
@@ -669,17 +668,12 @@ async def upload_epub_bulk(
             continue
 
         try:
-            temp_file = (
-                temp_dir
-                / f"bulk_{user_data['user_id']}_{datetime.now().timestamp()}_{file.filename}"
-            )
+            temp_file = temp_dir / f"bulk_{user_data['user_id']}_{datetime.now().timestamp()}_{file.filename}"
             with open(temp_file, "wb") as f:
                 while chunk := await file.read(1024 * 1024):  # 1MB chunks
                     f.write(chunk)
 
-            metadata = await epub_uploader.analyze_epub(
-                temp_file, file.filename, user_data["user_id"]
-            )
+            metadata = await epub_uploader.analyze_epub(temp_file, file.filename, user_data["user_id"])
             if not metadata:
                 if temp_file.exists():
                     temp_file.unlink()

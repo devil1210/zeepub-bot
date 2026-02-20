@@ -31,9 +31,7 @@ def fix_schema():
 
             if not result:
                 logger.info("Adding missing column 'proposed_spanish'...")
-                session.execute(
-                    text("ALTER TABLE ai_learning_feedback ADD COLUMN proposed_spanish VARCHAR")
-                )
+                session.execute(text("ALTER TABLE ai_learning_feedback ADD COLUMN proposed_spanish VARCHAR"))
                 session.commit()
             else:
                 logger.info("Column 'proposed_spanish' already exists.")
@@ -48,9 +46,7 @@ def fix_schema():
 
             if not result_final:
                 logger.info("Adding missing column 'final_spanish'...")
-                session.execute(
-                    text("ALTER TABLE ai_learning_feedback ADD COLUMN final_spanish VARCHAR")
-                )
+                session.execute(text("ALTER TABLE ai_learning_feedback ADD COLUMN final_spanish VARCHAR"))
                 session.commit()
             else:
                 logger.info("Column 'final_spanish' already exists.")

@@ -82,9 +82,7 @@ async def force_update_levels():
             )
 
         await session.commit()
-        logger.info(
-            "✅ Todos los niveles han sido actualizados con los nuevos valores de descarga."
-        )
+        logger.info("✅ Todos los niveles han sido actualizados con los nuevos valores de descarga.")
 
 
 if __name__ == "__main__":

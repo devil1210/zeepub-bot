@@ -61,9 +61,7 @@ def validate_sqlalchemy_model(file_path: Path) -> list:
         fk_fields = re.findall(r'ForeignKey\([\'"](\w+)\.id[\'"]', content)
         for fk in fk_fields:
             if "index=True" not in content:
-                issues.append(
-                    f"Consider adding index=True to foreign key for '{fk}' in {file_path.name}"
-                )
+                issues.append(f"Consider adding index=True to foreign key for '{fk}' in {file_path.name}")
 
     except Exception as e:
         issues.append(f"Error reading {file_path.name}: {str(e)}")
@@ -89,9 +87,7 @@ def main():
         if schema_type == "sqlalchemy":
             issues = validate_sqlalchemy_model(file_path)
             if issues:
-                all_issues.append(
-                    {"file": str(file_path.relative_to(project_path)), "issues": issues}
-                )
+                all_issues.append({"file": str(file_path.relative_to(project_path)), "issues": issues})
 
     if not all_issues:
         print("\nNo significant schema issues found in models!")
@@ -102,9 +98,7 @@ def main():
             for issue in item["issues"]:
                 print(f"  - {issue}")
 
-    print(
-        "\n[VALIDATOR] Recommended: Check for missing created_at/updated_at columns in new tables."
-    )
+    print("\n[VALIDATOR] Recommended: Check for missing created_at/updated_at columns in new tables.")
     print("=" * 60 + "\n")
 
 

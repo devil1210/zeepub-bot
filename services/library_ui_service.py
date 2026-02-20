@@ -36,9 +36,7 @@ async def mostrar_menu_principal(update: Update, context: ContextTypes.DEFAULT_T
             text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
         )
     else:
-        await update.message.reply_text(
-            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
-        )
+        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
 
 
 async def mostrar_generos(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -101,9 +99,7 @@ async def mostrar_series(
         st["prev_view_local"] = "authors"
     else:  # newest or all_series
         sort = "newest" if origin_type == "newest" else "a-z"
-        res = await LibraryService.search_series(
-            "", page=page, items_per_page=page_size, sort_by=sort
-        )
+        res = await LibraryService.search_series("", page=page, items_per_page=page_size, sort_by=sort)
         data = {"items": res["results"], "total": res["totalItems"]}
         title = "⭐ Novedades" if origin_type == "newest" else "📖 Todas las Series"
         st["prev_view_local"] = "main"
@@ -119,15 +115,11 @@ async def mostrar_series(
     nav_row = []
     if page > 1:
         nav_row.append(
-            InlineKeyboardButton(
-                "⬅️ Ant.", callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page - 1}"
-            )
+            InlineKeyboardButton("⬅️ Ant.", callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page - 1}")
         )
     if page * page_size < data["total"]:
         nav_row.append(
-            InlineKeyboardButton(
-                "Sig. ➡️", callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page + 1}"
-            )
+            InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page + 1}")
         )
 
     if nav_row:
@@ -153,9 +145,7 @@ async def mostrar_series(
         )
 
 
-async def mostrar_volumenes_local(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, series_hash: str
-):
+async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_TYPE, series_hash: str):
     """Muestra volúmenes de una serie local."""
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
@@ -237,9 +227,7 @@ async def mostrar_autores_local(update: Update, context: ContextTypes.DEFAULT_TY
         )
 
 
-async def mostrar_resultados_locales(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, query: str, results: list
-):
+async def mostrar_resultados_locales(update: Update, context: ContextTypes.DEFAULT_TYPE, query: str, results: list):
     """Muestra los resultados de una búsqueda local."""
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)

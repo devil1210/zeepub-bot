@@ -120,12 +120,8 @@ async def import_data():
                     font_size=item.get("font_size"),
                     cover_width=item.get("cover_width"),
                     banner_content_offset=item.get("banner_content_offset"),
-                    created_at=parser.parse(item.get("created_at"))
-                    if item.get("created_at")
-                    else None,
-                    updated_at=parser.parse(item.get("updated_at"))
-                    if item.get("updated_at")
-                    else None,
+                    created_at=parser.parse(item.get("created_at")) if item.get("created_at") else None,
+                    updated_at=parser.parse(item.get("updated_at")) if item.get("updated_at") else None,
                 )
                 await session.merge(theme)
             print(f"✅ Synced {len(themes_data)} themes.")
@@ -137,9 +133,7 @@ async def import_data():
 
         # 3. Import Users (Optional - Just Admin)
         print("\n📥 Importing Admin Users...")
-        admin_ids = [
-            int(uid.strip()) for uid in os.getenv("ADMIN_USERS", "").split(",") if uid.strip()
-        ]
+        admin_ids = [int(uid.strip()) for uid in os.getenv("ADMIN_USERS", "").split(",") if uid.strip()]
         if admin_ids:
             res = supabase.table("users").select("*").in_("telegram_id", admin_ids).execute()
             users_data = res.data

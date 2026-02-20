@@ -74,11 +74,7 @@ class StatsPlugin(BasePlugin):
             if not users_list:
                 cms = context.application.plugin_manager.get_plugin("custom_messages")
                 base_no = f"ℹ️ No se encontraron usuarios con el nivel <b>{target_level}</b> en base de datos."
-                text_no = (
-                    await cms.get_text("stats_no_users", Rol=target_level)
-                    if (cms and cms.enabled)
-                    else base_no
-                )
+                text_no = await cms.get_text("stats_no_users", Rol=target_level) if (cms and cms.enabled) else base_no
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
                     text=text_no,
@@ -88,9 +84,7 @@ class StatsPlugin(BasePlugin):
                 return
 
             cms = context.application.plugin_manager.get_plugin("custom_messages")
-            base_header = (
-                f"📋 <b>Usuarios con nivel: {target_level.capitalize()}</b> ({len(users_list)})\n\n"
-            )
+            base_header = f"📋 <b>Usuarios con nivel: {target_level.capitalize()}</b> ({len(users_list)})\n\n"
             msg = (
                 await cms.get_text(
                     "stats_list_header",

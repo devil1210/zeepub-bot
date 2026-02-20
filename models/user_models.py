@@ -36,9 +36,7 @@ class User(Base):
     email = Column(String(255), nullable=True, unique=True)
 
     # Nivel/Permisos
-    level_id = Column(
-        Integer, ForeignKey("user_levels.id"), default=6, index=True
-    )  # 6 = Free por defecto
+    level_id = Column(Integer, ForeignKey("user_levels.id"), default=6, index=True)  # 6 = Free por defecto
     role = Column(String(50), default="user")  # admin, mod, user
 
     # Flags y Estado

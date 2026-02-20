@@ -25,14 +25,10 @@ async def get_series_for_proposal(limit: int = 20):
     """
     async with pg_manager.get_session() as session:
         # Subquery para pendientes
-        pending_subquery = select(MetadataProposal.series_hash).where(
-            MetadataProposal.status == "pending"
-        )
+        pending_subquery = select(MetadataProposal.series_hash).where(MetadataProposal.status == "pending")
 
         # SQL crudo para el feedback de aprendizaje (más fácil para NOT IN por ahora)
-        feedback_hashes_result = await session.execute(
-            text("SELECT series_hash FROM ai_learning_feedback")
-        )
+        feedback_hashes_result = await session.execute(text("SELECT series_hash FROM ai_learning_feedback"))
         feedback_hashes = [r[0] for r in feedback_hashes_result.fetchall()]
 
         # Series candidatas:
@@ -61,9 +57,7 @@ async def get_series_for_proposal(limit: int = 20):
         series_data = []
         for h in hashes:
             # Obtener libros de la serie
-            stmt_books = (
-                select(LocalBook).where(LocalBook.series_hash == h).order_by(LocalBook.volume.asc())
-            )
+            stmt_books = select(LocalBook).where(LocalBook.series_hash == h).order_by(LocalBook.volume.asc())
             books = (await session.execute(stmt_books)).scalars().all()
 
             if books:
@@ -90,15 +84,11 @@ async def process_proposals(series_list: list[dict]):
         current_name = entry["current_name"]
         books_dicts = entry["books"]
 
-        console.print(
-            f"\n[cyan]Generando propuesta para:[/cyan] '{current_name}' (Hash: {series_hash[:8]}...)"
-        )
+        console.print(f"\n[cyan]Generando propuesta para:[/cyan] '{current_name}' (Hash: {series_hash[:8]}...)")
 
         try:
             # Consultar IA (Usa el mismo método que la MiniApp para coherencia)
-            proposal = await AIService.analyze_series_for_updates(
-                series_hash, current_name, books_dicts
-            )
+            proposal = await AIService.analyze_series_for_updates(series_hash, current_name, books_dicts)
 
             if not proposal or proposal.get("proposed_series") == "sin propuesta":
                 console.print("  [yellow]IA no encontró cambios necesarios. Saltando.[/yellow]")
@@ -113,14 +103,10 @@ async def process_proposals(series_list: list[dict]):
                 )
                 exists = (await session.execute(stmt_exists)).scalar_one_or_none()
                 if exists:
-                    console.print(
-                        "  [yellow]Ya existe una propuesta pendiente para esta serie.[/yellow]"
-                    )
+                    console.print("  [yellow]Ya existe una propuesta pendiente para esta serie.[/yellow]")
                     continue
 
-                new_proposal = MetadataProposal(
-                    series_hash=series_hash, proposal_data=proposal, status="pending"
-                )
+                new_proposal = MetadataProposal(series_hash=series_hash, proposal_data=proposal, status="pending")
                 session.add(new_proposal)
                 await session.commit()
 
@@ -166,13 +152,9 @@ async def find_merges(limit: int = 5):
                 checked_pairs.add(pair_id)
 
                 # Regla rápida: Nombres parecidos
-                ratio = difflib.SequenceMatcher(
-                    None, s1.series_name.lower(), s2.series_name.lower()
-                ).ratio()
+                ratio = difflib.SequenceMatcher(None, s1.series_name.lower(), s2.series_name.lower()).ratio()
 
-                if (
-                    ratio > 0.85 and ratio < 1.0
-                ):  # Similares pero no idénticos (el hash es distinto)
+                if ratio > 0.85 and ratio < 1.0:  # Similares pero no idénticos (el hash es distinto)
                     # Verificar si ya existe propuesta
                     existing = (
                         await session.execute(
@@ -231,12 +213,8 @@ async def find_merges(limit: int = 5):
 
 
 async def main():
-    console.print(
-        "[bold green]🌱 Iniciando Jardinero IA de Biblioteca (Modo Propuestas)...[/bold green]"
-    )
-    console.print(
-        "[dim]En este modo, la IA solo sugiere cambios pero NO los aplica hasta tu aprobación.[/dim]"
-    )
+    console.print("[bold green]🌱 Iniciando Jardinero IA de Biblioteca (Modo Propuestas)...[/bold green]")
+    console.print("[dim]En este modo, la IA solo sugiere cambios pero NO los aplica hasta tu aprobación.[/dim]")
 
     # Check API Key
     from config.config_settings import config
@@ -263,14 +241,10 @@ async def main():
         console.print("[yellow]Buscando posibles fusiones de series duplicadas...[/yellow]")
         merge_count = await find_merges(limit=5)
         if merge_count > 0:
-            console.print(
-                f"[bold magenta]Se detectaron {merge_count} posibles fusiones.[/bold magenta]"
-            )
+            console.print(f"[bold magenta]Se detectaron {merge_count} posibles fusiones.[/bold magenta]")
 
         if batch_count == 0 and merge_count == 0:
-            console.print(
-                "[bold blue]✨ No se encontraron nuevas tareas. Esperando el próximo ciclo...[/bold blue]"
-            )
+            console.print("[bold blue]✨ No se encontraron nuevas tareas. Esperando el próximo ciclo...[/bold blue]")
 
         # Pausa entre lotes (Aumentamos a 30s para no saturar API innecesariamente en idle)
         console.print("[dim]Pausa de 30 segundos...[/dim]")

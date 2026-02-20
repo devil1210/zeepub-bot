@@ -60,10 +60,7 @@ class EPUBUploader:
 
         # Verificar si el mensaje replied tiene un documento EPUB
         replied_message = update.message.reply_to_message
-        if not (
-            replied_message.document
-            and replied_message.document.file_name.lower().endswith(".epub")
-        ):
+        if not (replied_message.document and replied_message.document.file_name.lower().endswith(".epub")):
             await update.message.reply_text(
                 "❌ **Archivo no válido**\n\n"
                 "El mensaje al que respondes debe contener un archivo EPUB (.epub).\n\n"
@@ -75,9 +72,7 @@ class EPUBUploader:
         # Procesar el archivo EPUB directamente
         await self.process_epub_from_reply(update, context, replied_message.document)
 
-    async def process_epub_from_reply(
-        self, update: Update, context: ContextTypes.DEFAULT_TYPE, file
-    ):
+    async def process_epub_from_reply(self, update: Update, context: ContextTypes.DEFAULT_TYPE, file):
         """Procesa el EPUB desde un mensaje reply."""
         user_id = update.effective_user.id
 
@@ -122,9 +117,7 @@ class EPUBUploader:
 
         except Exception as e:
             logger.error(f"Error processing EPUB: {e}")
-            await update.message.reply_text(
-                f"❌ Error procesando el EPUB: {str(e)}", parse_mode=ParseMode.MARKDOWN
-            )
+            await update.message.reply_text(f"❌ Error procesando el EPUB: {str(e)}", parse_mode=ParseMode.MARKDOWN)
 
     async def download_epub(self, file, context: ContextTypes.DEFAULT_TYPE) -> Path:
         """Descarga el archivo EPUB."""
@@ -136,9 +129,7 @@ class EPUBUploader:
 
         return temp_file
 
-    async def analyze_epub(
-        self, epub_path: Path, original_filename: str, user_id: int
-    ) -> dict[str, Any] | None:
+    async def analyze_epub(self, epub_path: Path, original_filename: str, user_id: int) -> dict[str, Any] | None:
         """Analiza el EPUB usando el servicio existente del bot."""
         try:
             logger.info(f"Analyzing EPUB with existing service: {epub_path}")
@@ -210,8 +201,7 @@ class EPUBUploader:
                 "title": enriched_metadata.get("titulo_volumen")
                 or enriched_metadata.get("titulo_serie")
                 or "Sin título",
-                "author": enriched_metadata.get("autor")
-                or enriched_metadata.get("autores", ["Autor desconocido"])[0]
+                "author": enriched_metadata.get("autor") or enriched_metadata.get("autores", ["Autor desconocido"])[0]
                 if enriched_metadata.get("autores")
                 else "Autor desconocido",
                 "description": enriched_metadata.get("sinopsis", ""),
@@ -221,8 +211,7 @@ class EPUBUploader:
                 "publish_date": enriched_metadata.get("fecha_publicacion", ""),
                 "tags": ", ".join(enriched_metadata.get("generos", [])),
                 "series": enriched_metadata.get("titulo_serie", ""),
-                "volume": enriched_metadata.get("volume_index")
-                or enriched_metadata.get("titulo_volumen", ""),
+                "volume": enriched_metadata.get("volume_index") or enriched_metadata.get("titulo_volumen", ""),
                 "illustrator": enriched_metadata.get("ilustrador", ""),
                 "translator": enriched_metadata.get("traductor", ""),
                 "category": enriched_metadata.get("categoria", ""),
@@ -256,9 +245,7 @@ class EPUBUploader:
 
             ai_data = None
             if bg_ai_enabled:
-                ai_data = await AIService.normalize_book_metadata(
-                    original_filename, {**metadata, **extra_context}
-                )
+                ai_data = await AIService.normalize_book_metadata(original_filename, {**metadata, **extra_context})
             else:
                 logger.info("🤖 AI Background Analysis skipped (disabled by user setting)")
 
@@ -333,9 +320,7 @@ class EPUBUploader:
 
             # Si no hubo IA, usamos el fallback de regex standard
             if not ai_data:
-                identity_standard = process_book_identity_comprehensive(
-                    str(epub_path), original_filename
-                )
+                identity_standard = process_book_identity_comprehensive(str(epub_path), original_filename)
                 # Fusionar: Preferir standard si IA no existe, pero si IA existe ya tenemos los datos en `metadata`
                 if identity_standard:
                     identity = identity_standard
@@ -390,9 +375,7 @@ class EPUBUploader:
                     # Metadata procesada
                     title=metadata["title"],
                     series=metadata["series"],
-                    series_spanish=metadata.get(
-                        "series_spanish"
-                    ),  # Usar el de la IA/Metadata directamente
+                    series_spanish=metadata.get("series_spanish"),  # Usar el de la IA/Metadata directamente
                     volume=self._parse_volume(metadata["volume"]),
                     author=metadata["author"],
                     book_type=metadata.get("book_type") or metadata.get("category"),
@@ -410,16 +393,12 @@ class EPUBUploader:
                 session.commit()
 
                 # Comparar con libros existentes usando misma lógica que scanner
-                existing_book = (
-                    session.query(LocalBook).filter(LocalBook.book_hash == book_hash).first()
-                )
+                existing_book = session.query(LocalBook).filter(LocalBook.book_hash == book_hash).first()
 
                 if existing_book:
                     upload_book.identity_match = "True"
                     metadata["identity_match"] = True
-                    logger.info(
-                        f"📕 Duplicado detectado: {metadata['title']} (hash: {book_hash[:16]}...)"
-                    )
+                    logger.info(f"📕 Duplicado detectado: {metadata['title']} (hash: {book_hash[:16]}...)")
                 else:
                     upload_book.identity_match = "False"
                     metadata["identity_match"] = False
@@ -507,9 +486,7 @@ class EPUBUploader:
 
         return f"{series_folder_name}/{filename}"
 
-    def _generate_pattern_filename(
-        self, target_dir: Path, metadata: dict[str, Any], original_filename: str
-    ) -> str:
+    def _generate_pattern_filename(self, target_dir: Path, metadata: dict[str, Any], original_filename: str) -> str:
         import os
         import re
 
@@ -749,16 +726,12 @@ class EPUBUploader:
 
         if identity_match:
             # Caso 1: El libro ya existe (ID idéntico)
-            preview_text += (
-                "\n\n⚠️ **DUPLICADO DETECTADO**\nEsta misma edición ya existe en la biblioteca."
-            )
+            preview_text += "\n\n⚠️ **DUPLICADO DETECTADO**\nEsta misma edición ya existe en la biblioteca."
             if path_match and identity_match["id"] == path_match["id"]:
                 preview_text += f"\n📍 **Ubicación coincidente:** `{identity_match['path']}`"
             else:
                 preview_text += f"\n📍 **Se encuentra actualmente en:** `{identity_match['path']}`"
-                preview_text += (
-                    f"\n📁 **Nueva ubicación sugerida:** `{metadata.get('suggested_path')}`"
-                )
+                preview_text += f"\n📁 **Nueva ubicación sugerida:** `{metadata.get('suggested_path')}`"
 
             diffs = self.compare_metadata(metadata, metadata.get("existing_data"))
             if diffs:
@@ -775,9 +748,7 @@ class EPUBUploader:
                 preview_text += f"\n👤 **Libro que estorba:** `{path_match['path']}`"
                 diffs = self.compare_metadata(metadata, metadata.get("existing_data"))
                 if diffs:
-                    preview_text += (
-                        f"\n\n🔍 **Diferencias con el archivo a sobrescribir:**\n{diffs}"
-                    )
+                    preview_text += f"\n\n🔍 **Diferencias con el archivo a sobrescribir:**\n{diffs}"
 
             approve_label = "⚠️ Sobrescribir Archivo"
             callback_prefix = "overwrite_epub"
@@ -799,9 +770,7 @@ class EPUBUploader:
 
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await update.message.reply_text(
-            preview_text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN
-        )
+        await update.message.reply_text(preview_text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN)
 
     async def handle_approval_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Maneja los callbacks de aprobación/rechazo."""
@@ -812,9 +781,7 @@ class EPUBUploader:
 
         # Verificar si es admin
         if not await self.is_admin(user_id):
-            await query.edit_message_text(
-                "❌ No tienes permisos para esta acción.", parse_mode=ParseMode.MARKDOWN
-            )
+            await query.edit_message_text("❌ No tienes permisos para esta acción.", parse_mode=ParseMode.MARKDOWN)
             return
 
         callback_data = query.data
@@ -823,9 +790,7 @@ class EPUBUploader:
         upload_id = "_".join(parts[2:])  # Tomar desde el tercer elemento en adelante
 
         if upload_id not in pending_uploads:
-            await query.edit_message_text(
-                "❌ Upload no encontrado o expirado.", parse_mode=ParseMode.MARKDOWN
-            )
+            await query.edit_message_text("❌ Upload no encontrado o expirado.", parse_mode=ParseMode.MARKDOWN)
             return
 
         upload_info = pending_uploads[upload_id]
@@ -836,9 +801,7 @@ class EPUBUploader:
             or callback_data.startswith("overwrite_epub")
         ):
             # Si es overwrite de archivo pero no de hash, pedir confirmación extra si no se ha pedido
-            if callback_data.startswith("overwrite_epub") and not upload_info.get(
-                "overwrite_confirmed"
-            ):
+            if callback_data.startswith("overwrite_epub") and not upload_info.get("overwrite_confirmed"):
                 upload_info["overwrite_confirmed"] = True
                 keyboard = [
                     [
@@ -846,9 +809,7 @@ class EPUBUploader:
                             "✅ Sí, sobrescribir archivo",
                             callback_data=f"approve_epub_{upload_id}",
                         ),
-                        InlineKeyboardButton(
-                            "🔙 Cancelar", callback_data=f"reject_epub_{upload_id}"
-                        ),
+                        InlineKeyboardButton("🔙 Cancelar", callback_data=f"reject_epub_{upload_id}"),
                     ]
                 ]
                 await query.edit_message_text(
@@ -913,9 +874,7 @@ class EPUBUploader:
 
             if success:
                 result_text = (
-                    "✅ **Libro reemplazado con éxito**"
-                    if is_replacement
-                    else "✅ **EPUB agregado exitosamente**"
+                    "✅ **Libro reemplazado con éxito**" if is_replacement else "✅ **EPUB agregado exitosamente**"
                 )
                 await query.edit_message_text(
                     f"{result_text}\n\n"
@@ -951,9 +910,7 @@ class EPUBUploader:
 
         except Exception as e:
             logger.error(f"Error approving upload: {e}")
-            await query.edit_message_text(
-                f"❌ Error procesando upload: {str(e)}", parse_mode=ParseMode.MARKDOWN
-            )
+            await query.edit_message_text(f"❌ Error procesando upload: {str(e)}", parse_mode=ParseMode.MARKDOWN)
             self._log_history(
                 user_id=upload_info["user_id"],
                 filename=upload_info["original_filename"],
@@ -1049,14 +1006,10 @@ class EPUBUploader:
 
         return "\n".join(diffs)
 
-    async def add_to_library(
-        self, epub_path: Path, suggested_path: str, metadata: dict[str, Any]
-    ) -> bool:
+    async def add_to_library(self, epub_path: Path, suggested_path: str, metadata: dict[str, Any]) -> bool:
         """Agrega el EPUB a la librería y lo escanea inmediatamente."""
         try:
-            logger.info(
-                f"Starting add_to_library: epub_path={epub_path}, suggested_path={suggested_path}"
-            )
+            logger.info(f"Starting add_to_library: epub_path={epub_path}, suggested_path={suggested_path}")
 
             # Directorio base de la librería
             library_base = Path("/library")
@@ -1162,9 +1115,7 @@ class EPUBUploader:
         except Exception:
             return False
 
-    def _log_history(
-        self, user_id, filename, book_hash, status, final_path=None, error_message=None
-    ):
+    def _log_history(self, user_id, filename, book_hash, status, final_path=None, error_message=None):
         """Helper para guardar log en UploadHistory."""
         try:
             from models.library_models import UploadHistory

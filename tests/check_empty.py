@@ -7,14 +7,10 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 try:
-    empty = session.execute(
-        text("SELECT count(*) FROM series_metadata WHERE book_count = 0")
-    ).scalar()
+    empty = session.execute(text("SELECT count(*) FROM series_metadata WHERE book_count = 0")).scalar()
     print(f"Empty series still in DB: {empty}")
 
-    names = session.execute(
-        text("SELECT series_name FROM series_metadata WHERE book_count = 0")
-    ).fetchall()
+    names = session.execute(text("SELECT series_name FROM series_metadata WHERE book_count = 0")).fetchall()
     for n in names:
         print(f" - {n[0]}")
 

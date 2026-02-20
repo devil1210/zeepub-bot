@@ -22,9 +22,7 @@ def mock_dependencies():
         "utils.helpers": MagicMock(),
         "config": MagicMock(),
     }
-    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(
-        return_value={"role": "free"}
-    )
+    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
 
     with patch.dict(sys.modules, modules_to_patch):
         # We need to ensure handlers.message_handlers is reloaded if already imported

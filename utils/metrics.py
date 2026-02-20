@@ -37,9 +37,7 @@ class MetricsManager:
                 "user_type",
             ],  # status: success, failed. user_type: admin, vip, user
         )
-        self.commands_total = Counter(
-            "zeepub_commands_total", "Total de comandos ejecutados", ["command"]
-        )
+        self.commands_total = Counter("zeepub_commands_total", "Total de comandos ejecutados", ["command"])
         self.errors_total = Counter("zeepub_errors_total", "Total de errores manejados", ["type"])
 
         # Histogramas

@@ -115,9 +115,9 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
         # Supabase
         if self.supabase.is_active:
             try:
-                self.supabase.get_client().table("users").update(
-                    {"level_id": level_id, "level": level_key}
-                ).eq("telegram_id", telegram_id).execute()
+                self.supabase.get_client().table("users").update({"level_id": level_id, "level": level_key}).eq(
+                    "telegram_id", telegram_id
+                ).execute()
             except Exception:
                 pass
 

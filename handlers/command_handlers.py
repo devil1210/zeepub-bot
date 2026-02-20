@@ -153,9 +153,7 @@ class CommandHandlers:
             ]
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_txt = "🔧 Eres publisher — ¿dónde quieres publicar la próxima vez que selecciones un libro?"
-            text_pub = (
-                await cms.get_text("publisher_target_prompt") if (cms and cms.enabled) else base_txt
-            )
+            text_pub = await cms.get_text("publisher_target_prompt") if (cms and cms.enabled) else base_txt
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=text_pub,
@@ -192,9 +190,7 @@ class CommandHandlers:
 
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_txt = "🔧 Modo Evil: ¿Dónde quieres publicar?"
-            text_evil = (
-                await cms.get_text("evil_mode_prompt") if (cms and cms.enabled) else base_txt
-            )
+            text_evil = await cms.get_text("evil_mode_prompt") if (cms and cms.enabled) else base_txt
 
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
@@ -272,7 +268,9 @@ class CommandHandlers:
                 left_text = "✅ Descargas ilimitadas"
         else:
             remaining = max_dl - used
-            left_text = f"⚡️ Te quedan {remaining if remaining > 0 else 0} descargas por día (de {max_dl}) [Usadas: {used}]"
+            left_text = (
+                f"⚡️ Te quedan {remaining if remaining > 0 else 0} descargas por día (de {max_dl}) [Usadas: {used}]"
+            )
 
         # Calcular tiempo para próximo reset
 
@@ -412,9 +410,7 @@ class CommandHandlers:
             safe_name = name.replace("<", "&lt;").replace(">", "&gt;")
             safe_desc = info["description"].replace("<", "&lt;").replace(">", "&gt;")
             text += f"• <b>{safe_name}</b> v{info['version']} — <i>{safe_desc}</i>\n"
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id, text=text, parse_mode="HTML"
-        )
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode="HTML")
 
     async def evil(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /evil: inicia modo privado solicitando contraseña."""
@@ -494,9 +490,7 @@ class CommandHandlers:
             st["esperando_busqueda"] = True
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_search = "🔍 ¿Qué libro buscas? Escribe el título o autor:"
-            text_search = (
-                await cms.get_text("search_prompt") if (cms and cms.enabled) else base_search
-            )
+            text_search = await cms.get_text("search_prompt") if (cms and cms.enabled) else base_search
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=text_search,

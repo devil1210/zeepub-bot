@@ -15,9 +15,7 @@ class ThemeSyncLog(Base):
 
     id = Column(Integer, primary_key=True)
     sync_type = Column(String(20), nullable=False)  # 'initial', 'daily', 'manual'
-    direction = Column(
-        String(20), nullable=False
-    )  # 'supabase_to_local', 'local_to_supabase', 'bidirectional'
+    direction = Column(String(20), nullable=False)  # 'supabase_to_local', 'local_to_supabase', 'bidirectional'
     status = Column(String(20), nullable=False)  # 'success', 'error', 'partial'
 
     # Estadísticas

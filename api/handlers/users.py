@@ -138,9 +138,7 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
             ),
             "can_download": bool(level_info.get("canDownload", True) is not False),
             "can_read": bool(level_info.get("canRead", True) is not False),
-            "can_upload_epub": bool(
-                user_data.get("can_upload_epub", False) or level_info.get("canUploadEpub", False)
-            ),
+            "can_upload_epub": bool(user_data.get("can_upload_epub", False) or level_info.get("canUploadEpub", False)),
             "is_real_admin": user_data.get("is_real_admin", False),
             "downloads": {
                 "used": int(used or 0),
@@ -195,9 +193,7 @@ async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]
                 "is_folder": False,
                 "series": book_data.get("series"),
                 "seriesIndex": book_data.get("seriesIndex"),
-                "cleanTitle": book_data.get("clean_title")
-                or book_data.get("series")
-                or book_data.get("title"),
+                "cleanTitle": book_data.get("clean_title") or book_data.get("series") or book_data.get("title"),
                 "rating_average": book_data.get("rating_average", 0),
                 "book_type": book_data.get("book_type"),
             }

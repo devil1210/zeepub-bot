@@ -69,11 +69,7 @@ async def analyze_library_paths():
                         parts[1]
 
                         # Verificar si el folder parece ser un autor
-                        if (
-                            author
-                            and folder.lower() in author.lower()
-                            or author.lower() in folder.lower()
-                        ):
+                        if author and folder.lower() in author.lower() or author.lower() in folder.lower():
                             structure_analysis["with_author_folder"] += 1
                             pattern = f"Author/{title}"
                         elif folder.lower() in ["library", "books", "epub", "libros"]:
@@ -123,9 +119,7 @@ async def analyze_library_paths():
                         parts = file_path.split("/")
                         if len(parts) >= 2:
                             folder = parts[0]
-                            if author and (
-                                folder.lower() in author.lower() or author.lower() in folder.lower()
-                            ):
+                            if author and (folder.lower() in author.lower() or author.lower() in folder.lower()):
                                 logger.info(f"   📁 {file_path}")
                                 count += 1
                 elif most_common_pattern == "Category/Title":

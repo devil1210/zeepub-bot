@@ -34,9 +34,7 @@ def migrate():
                 language=book.language,
             )
 
-            new_series_hash = generate_series_hash(
-                series=book.series, author=book.author, book_type=book.book_type
-            )
+            new_series_hash = generate_series_hash(series=book.series, author=book.author, book_type=book.book_type)
 
             if old_hash != new_book_hash:
                 book.book_hash = new_book_hash

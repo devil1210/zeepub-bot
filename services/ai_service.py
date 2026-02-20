@@ -61,9 +61,7 @@ class AIService:
                         response_mime_type="application/json" if json_mode else "text/plain",
                     )
 
-                    response = client.models.generate_content(
-                        model=model_name, contents=prompt, config=config_args
-                    )
+                    response = client.models.generate_content(model=model_name, contents=prompt, config=config_args)
                     return response.text
                 except Exception as e:
                     error_str = str(e).upper()
@@ -77,9 +75,7 @@ class AIService:
         return None
 
     @staticmethod
-    async def normalize_book_metadata(
-        filename: str, raw_meta: dict[str, Any]
-    ) -> dict[str, Any] | None:
+    async def normalize_book_metadata(filename: str, raw_meta: dict[str, Any]) -> dict[str, Any] | None:
         """
         Analiza un libro y devuelve metadatos normalizados, priorizando la extracción de volumen desde metadatos internos.
         """
@@ -276,22 +272,14 @@ class AIService:
 
                 # Get similar historical corrections
                 res_learning = session.execute(
-                    text(
-                        "SELECT proposed_name, final_name FROM ai_learning_feedback WHERE status='edited' LIMIT 5"
-                    )
+                    text("SELECT proposed_name, final_name FROM ai_learning_feedback WHERE status='edited' LIMIT 5")
                 )
-                corrections = [
-                    f"IA propuso '{r[0]}' pero el usuario corrigió a '{r[1]}'" for r in res_learning
-                ]
+                corrections = [f"IA propuso '{r[0]}' pero el usuario corrigió a '{r[1]}'" for r in res_learning]
 
                 if valid_siglas:
-                    learning_context += (
-                        f"\nSIGLAS VÁLIDAS CONOCIDAS (Úsalas si encajan): {', '.join(valid_siglas)}"
-                    )
+                    learning_context += f"\nSIGLAS VÁLIDAS CONOCIDAS (Úsalas si encajan): {', '.join(valid_siglas)}"
                 if corrections:
-                    learning_context += "\nAPRENDIZAJE DE CORRECCIONES PASADAS:\n" + "\n".join(
-                        corrections
-                    )
+                    learning_context += "\nAPRENDIZAJE DE CORRECCIONES PASADAS:\n" + "\n".join(corrections)
         except Exception as e:
             logger.warning(f"Failed to load learning context: {e}")
 
@@ -352,9 +340,9 @@ class AIService:
                 # Determinar prefijos por rasgos (Color/SC)
                 tags = book.get("tags") or []
                 is_color = any("Color" in str(t) for t in tags)
-                is_sc = any(
-                    "Sin Censura" in str(t) or "Uncensored" in str(t) for t in tags
-                ) or book.get("is_uncensored")
+                is_sc = any("Sin Censura" in str(t) or "Uncensored" in str(t) for t in tags) or book.get(
+                    "is_uncensored"
+                )
 
                 prefix = ""
                 if is_color and is_sc:
@@ -373,9 +361,7 @@ class AIService:
                     proposal["changes"].append(
                         {
                             "book_id": book.get("id"),
-                            "current_filename": book.get("filename")
-                            or book.get("filepath")
-                            or book.get("title"),
+                            "current_filename": book.get("filename") or book.get("filepath") or book.get("title"),
                             "proposed_filename": new_filename,
                             "volume": current_vol,
                             "siglas": book_siglas,
@@ -421,9 +407,7 @@ class AIService:
 
             with get_session() as session:
                 res = session.execute(
-                    text(
-                        "SELECT name, siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 200"
-                    )
+                    text("SELECT name, siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 200")
                 )
                 mappings = [f"'{r[0]}' -> sigla: '{r[1]}'" for r in res]
                 if mappings:
@@ -472,12 +456,7 @@ class AIService:
                 return None
             txt = AIService._extract_json_from_text(response_text)
             res = json.loads(txt)
-            if (
-                res
-                and isinstance(res, dict)
-                and res.get("is_same")
-                and res.get("confidence", 0) > 0.8
-            ):
+            if res and isinstance(res, dict) and res.get("is_same") and res.get("confidence", 0) > 0.8:
                 # Normalizar booleano si llegó como string
                 if isinstance(res["is_same"], str):
                     res["is_same"] = res["is_same"].lower() == "true"

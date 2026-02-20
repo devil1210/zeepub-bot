@@ -75,11 +75,7 @@ class TelegramPublisherProvider(PublisherProvider):
             msg_parts = [p.strip() for p in msg_parts if p.strip()]
 
         # 1. Mensaje de Portada (o Texto Principal)
-        caption = (
-            msg_parts[0]
-            if len(msg_parts) > 0
-            else (custom_content or formatear_mensaje_portada(book_data))
-        )
+        caption = msg_parts[0] if len(msg_parts) > 0 else (custom_content or formatear_mensaje_portada(book_data))
 
         # Selección de calidad de portada
         quality = options.get("cover_quality") or self.COVER_QUALITY
@@ -131,11 +127,7 @@ class TelegramPublisherProvider(PublisherProvider):
             sinopsis = msg_parts[1]
         else:
             # Comportamiento por defecto
-            raw_sinopsis = (
-                book_data.get("description")
-                or book_data.get("summary")
-                or book_data.get("sinopsis")
-            )
+            raw_sinopsis = book_data.get("description") or book_data.get("summary") or book_data.get("sinopsis")
             if raw_sinopsis:
                 sinopsis_esc = escapar_html(raw_sinopsis)
                 slug = generar_slug_from_meta(book_data)
@@ -162,9 +154,7 @@ class TelegramPublisherProvider(PublisherProvider):
             # Comportamiento por defecto
             info_text = self._format_info_text(book_data)
 
-        epub_data = (
-            book_data.get("epub_bytes") or book_data.get("epub_buffer") or book_data.get("filepath")
-        )
+        epub_data = book_data.get("epub_bytes") or book_data.get("epub_buffer") or book_data.get("filepath")
 
         # Si es una publicación con archivo, no solemos querer botones de "Descargar"
         # ya que el archivo está ahí mismo. Solo usamos botones si se pasan customizados.
@@ -217,9 +207,7 @@ class TelegramPublisherProvider(PublisherProvider):
 
         return True
 
-    async def _send_message(
-        self, chat_id, text, parse_mode=None, reply_markup=None, thread_id=None
-    ):
+    async def _send_message(self, chat_id, text, parse_mode=None, reply_markup=None, thread_id=None):
         """Helper to send messages with thread fallback."""
         from telegram.error import BadRequest
 
@@ -233,9 +221,7 @@ class TelegramPublisherProvider(PublisherProvider):
             )
         except BadRequest as e:
             if "thread not found" in str(e).lower() and thread_id:
-                logger.warning(
-                    f"Thread {thread_id} not found in {chat_id}, falling back to main chat."
-                )
+                logger.warning(f"Thread {thread_id} not found in {chat_id}, falling back to main chat.")
                 return await self.bot.send_message(
                     chat_id=chat_id,
                     text=text,
@@ -314,9 +300,7 @@ class FacebookPublisherProvider(PublisherProvider):
             title_block = formatear_titulo_fb(book_data)
 
             # b. Generate Direct Download Link (Secure short URL)
-            raw_url = (
-                book_data.get("filepath") or book_data.get("download_url") or book_data.get("url")
-            )
+            raw_url = book_data.get("filepath") or book_data.get("download_url") or book_data.get("url")
             public_link = None
             if raw_url:
                 try:
@@ -398,9 +382,7 @@ class FacebookPublisherProvider(PublisherProvider):
                         logger.error(f"FB URL Post Error: {resp.text}")
                         # If URL failed, try binary if available
                         if cover_binary:
-                            return await self._upload_photo_binary(
-                                client, config, cover_binary, caption
-                            )
+                            return await self._upload_photo_binary(client, config, cover_binary, caption)
                         return False
                     return True
 
@@ -546,15 +528,9 @@ class PublisherService:
                 "sinopsis": data.get("description", ""),
                 "summary": data.get("summary", ""),
                 "resumen": data.get("summary", ""),
-                "tags": (
-                    ", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""
-                ),
-                "etiquetas": (
-                    ", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""
-                ),
-                "genres": ", ".join(data.get("tags", []))
-                if isinstance(data.get("tags"), list)
-                else "",
+                "tags": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
+                "etiquetas": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
+                "genres": ", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else "",
                 "language": data.get("language", "es"),
                 "idioma": data.get("language", "es"),
                 "publisher": data.get("publisher", ""),

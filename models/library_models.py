@@ -41,9 +41,7 @@ class SeriesMetadata(Base):
     id = Column(Integer, primary_key=True)
     series_name = Column(String(255), nullable=False)
     series_spanish = Column(String(255))
-    series_english = Column(
-        String(255)
-    )  # Nueva columna para visualización coherente (Modificable por IA)
+    series_english = Column(String(255))  # Nueva columna para visualización coherente (Modificable por IA)
     spanish_title = Column(String(255))  # Para paridad con LocalBook
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
@@ -104,9 +102,7 @@ class UploadBook(Base):
     __tablename__ = "upload_books"
 
     id = Column(Integer, primary_key=True)
-    telegram_id = Column(
-        BigInteger, ForeignKey("users.telegram_id"), nullable=False
-    )  # Usuario que subió el archivo
+    telegram_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False)  # Usuario que subió el archivo
     original_filename = Column(String(512), nullable=False)
     temp_filepath = Column(String(1024), nullable=False)  # Ruta temporal del archivo
 
@@ -171,9 +167,7 @@ class LibrarySource(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)  # Ej: "Novelas Ligeras"
-    path = Column(
-        String(500), nullable=False, unique=True
-    )  # Ej: "/home/zeepubs/drive/02-Publicaciones"
+    path = Column(String(500), nullable=False, unique=True)  # Ej: "/home/zeepubs/drive/02-Publicaciones"
     last_scanned = Column(DateTime, default=None)
 
     books = relationship("LocalBook", back_populates="source", cascade="all, delete-orphan")
@@ -261,9 +255,7 @@ class LocalBook(Base):
     # Identificadores estables basados en metadatos
     series_metadata_id = Column(Integer, ForeignKey("series_metadata.id"), index=True)
     series_hash = Column(String(64), index=True)  # Mantener por compatibilidad y búsqueda rápida
-    book_hash = Column(
-        String(64), index=True, unique=True
-    )  # Identificador único del libro (antes content_hash)
+    book_hash = Column(String(64), index=True, unique=True)  # Identificador único del libro (antes content_hash)
 
     source = relationship("LibrarySource", back_populates="books")
     series_info = relationship("SeriesMetadata", back_populates="books")
@@ -289,16 +281,12 @@ class LocalBook(Base):
             "tags": self.tags,
             "demographics": self.demographics,
             "description": limpiar_html_basico(self.description),
-            "description_clean": limpiar_html_basico(
-                self.description
-            ),  # Alias for backward compatibility
+            "description_clean": limpiar_html_basico(self.description),  # Alias for backward compatibility
             "summary": self.summary or limpiar_html_basico(self.description),
             "fileSize": self.file_size,
             "file_size": self.file_size,
             "size": (
-                f"{round(self.file_size / (1024 * 1024), 2)} MB"
-                if self.file_size and self.file_size > 0
-                else "0 MB"
+                f"{round(self.file_size / (1024 * 1024), 2)} MB" if self.file_size and self.file_size > 0 else "0 MB"
             ),
             "modifiedAt": (self.file_modified_at.isoformat() if self.file_modified_at else None),
             "modified_at": (self.file_modified_at.isoformat() if self.file_modified_at else None),
@@ -371,9 +359,7 @@ class UserRating(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
-    book_id = Column(
-        Integer, ForeignKey("local_books.id"), nullable=True
-    )  # Opcional si el libro existe
+    book_id = Column(Integer, ForeignKey("local_books.id"), nullable=True)  # Opcional si el libro existe
     book_hash = Column(String(64), index=True, nullable=False)
     rating = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

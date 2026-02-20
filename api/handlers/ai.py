@@ -146,18 +146,12 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
                 }
 
             # Verificar si ya existe una pendiente
-            existing = (
-                session.query(MetadataProposal)
-                .filter_by(series_hash=series_hash, status="pending")
-                .first()
-            )
+            existing = session.query(MetadataProposal).filter_by(series_hash=series_hash, status="pending").first()
             if existing:
                 existing.proposal_data = proposal
                 existing.created_at = datetime.utcnow()
             else:
-                new_prop = MetadataProposal(
-                    series_hash=series_hash, proposal_data=proposal, status="pending"
-                )
+                new_prop = MetadataProposal(series_hash=series_hash, proposal_data=proposal, status="pending")
                 session.add(new_prop)
 
             session.commit()
@@ -198,9 +192,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             series_hash_raw = proposal.get("series_hash")
             if series_hash_raw:
                 db_proposal = (
-                    session.query(MetadataProposal)
-                    .filter_by(series_hash=series_hash_raw, status="pending")
-                    .first()
+                    session.query(MetadataProposal).filter_by(series_hash=series_hash_raw, status="pending").first()
                 )
 
         series_hash = proposal.get("series_hash")
@@ -226,9 +218,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 proposed_spanish = proposal.get("proposed_spanish")
 
             # Debug logging
-            logger.info(
-                f"📝 Applying AI changes - Series: {proposed_series}, Spanish: {proposed_spanish}"
-            )
+            logger.info(f"📝 Applying AI changes - Series: {proposed_series}, Spanish: {proposed_spanish}")
 
             # --- HASH MIGRATION LOGIC ---
             # Si el nombre de la serie cambia, el hash DEBE cambiar para mantener la integridad.
@@ -246,9 +236,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 logger.info(f"🔄 Migrando serie de {series_hash} a {new_hash} (Nombre cambiado)")
 
                 # Check collision (Merge Scenario)
-                existing_target_series = (
-                    session.query(SeriesMetadata).filter_by(series_hash=new_hash).first()
-                )
+                existing_target_series = session.query(SeriesMetadata).filter_by(series_hash=new_hash).first()
 
                 if existing_target_series:
                     logger.info(f"Target series {new_hash} exists. Merging into it.")
@@ -275,9 +263,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                         # IMPORTANTE: Debemos actualizar el hash en todos los libros locales
                         # asociados a este hash para mantener la consistencia de identidad.
                         session.execute(
-                            update(LocalBook)
-                            .where(LocalBook.series_hash == old_hash)
-                            .values(series_hash=new_hash)
+                            update(LocalBook).where(LocalBook.series_hash == old_hash).values(series_hash=new_hash)
                         )
                         logger.info(f"📍 Libros actualizados de hash {old_hash} a {new_hash}")
                     else:
@@ -335,9 +321,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                         "book_count": series.book_count,
                         "rating_average": series.rating_average,
                     }
-                    client.table("series_metadata").upsert(
-                        s_data, on_conflict="series_hash"
-                    ).execute()
+                    client.table("series_metadata").upsert(s_data, on_conflict="series_hash").execute()
                 except Exception as cloud_e:
                     logger.warning(f"Failed to sync series to cloud: {cloud_e}")
 
@@ -396,16 +380,12 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                     # Check for DB collision first
                     collision = session.query(LocalBook).filter_by(filepath=new_path).first()
                     if collision and collision.id != book.id:
-                        errors.append(
-                            f"No se puede renombrar: El destino ya existe en la BD (ID: {collision.id})"
-                        )
+                        errors.append(f"No se puede renombrar: El destino ya existe en la BD (ID: {collision.id})")
                         continue
 
                     if os.path.exists(new_path) and not os.path.samefile(old_path, new_path):
                         # File system collision check (just in case DB is out of sync)
-                        errors.append(
-                            "No se puede renombrar: El archivo destino ya existe en disco"
-                        )
+                        errors.append("No se puede renombrar: El archivo destino ya existe en disco")
                         continue
 
                     try:
@@ -430,9 +410,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         status = "accepted"
         if proposal.get("is_perfect_match"):
             status = "accepted"  # IA was right that nothing was needed
-        elif proposed_series != proposal.get("proposed_series") or proposed_spanish != proposal.get(
-            "proposed_spanish"
-        ):
+        elif proposed_series != proposal.get("proposed_series") or proposed_spanish != proposal.get("proposed_spanish"):
             status = "edited"
 
         await AIService.log_feedback(
@@ -481,9 +459,7 @@ async def handle_ai_apply_merge(data: dict[str, Any], user_data: dict[str, Any])
         proposal = db_proposal.proposal_data
 
         # 1. Mover todos los libros de B a A
-        res = session.execute(
-            update(LocalBook).where(LocalBook.series_hash == hash_b).values(series_hash=hash_a)
-        )
+        res = session.execute(update(LocalBook).where(LocalBook.series_hash == hash_b).values(series_hash=hash_a))
         moved_count = res.rowcount
 
         # 2. Actualizar metadata de la serie A si el usuario aprobó un nombre específico
@@ -595,11 +571,7 @@ async def handle_ai_reset_series(data: dict[str, Any], user_data: dict[str, Any]
 
     with get_session() as session:
         # 1. Resetear libros
-        session.execute(
-            update(LocalBook)
-            .where(LocalBook.series_hash == series_hash)
-            .values(series_spanish=None)
-        )
+        session.execute(update(LocalBook).where(LocalBook.series_hash == series_hash).values(series_spanish=None))
 
         # 2. Resetear Serie
         series = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
@@ -625,9 +597,7 @@ async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
         # Gather async DB stats
         async with pg_manager.get_session() as session:
             # 1. Total processed (High quality metadata exists)
-            processed_series = (
-                await session.execute(select(func.count(SeriesMetadata.id)))
-            ).scalar() or 0
+            processed_series = (await session.execute(select(func.count(SeriesMetadata.id)))).scalar() or 0
 
             # 2. Pending optimization (Series in library that DON'T have a SeriesMetadata entry)
             # Find unique series_hash in LocalBook that are not in SeriesMetadata
@@ -641,9 +611,7 @@ async def handle_ai_stats(data: dict[str, Any], user_data: dict[str, Any]):
             ).scalar() or 0
 
             # 3. Learning accuracy (from AILearningFeedback)
-            total_feedback = (
-                await session.execute(select(func.count(AILearningFeedback.id)))
-            ).scalar() or 0
+            total_feedback = (await session.execute(select(func.count(AILearningFeedback.id)))).scalar() or 0
 
             accepted_feedback = (
                 await session.execute(
@@ -769,9 +737,7 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
 
             elif list_type == "learning":
                 # Historical feedback — field names must match frontend 'reviewed' tab expectations
-                query = session.query(AILearningFeedback).order_by(
-                    desc(AILearningFeedback.created_at)
-                )
+                query = session.query(AILearningFeedback).order_by(desc(AILearningFeedback.created_at))
                 total = query.count()
                 items = query.limit(limit).offset(offset).all()
 

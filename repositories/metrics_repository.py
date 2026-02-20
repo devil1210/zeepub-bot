@@ -58,9 +58,7 @@ class MetricsRepository:
             return False
         try:
             async with pg_manager.get_session() as session:
-                query = text(
-                    "SELECT 1 FROM user_downloads WHERE user_id = :user_id AND book_hash = :book_hash LIMIT 1"
-                )
+                query = text("SELECT 1 FROM user_downloads WHERE user_id = :user_id AND book_hash = :book_hash LIMIT 1")
                 result = await session.execute(query, {"user_id": user_id, "book_hash": book_hash})
                 return result.fetchone() is not None
         except Exception as e:
@@ -141,9 +139,7 @@ class MetricsRepository:
             return {"average": 0.0, "count": 0}
         try:
             async with pg_manager.get_session() as session:
-                query = text(
-                    "SELECT AVG(rating), COUNT(*) FROM user_ratings WHERE book_hash = :book_hash"
-                )
+                query = text("SELECT AVG(rating), COUNT(*) FROM user_ratings WHERE book_hash = :book_hash")
                 result = await session.execute(query, {"book_hash": book_hash})
                 row = result.fetchone()
                 return {

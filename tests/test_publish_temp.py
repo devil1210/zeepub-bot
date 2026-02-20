@@ -25,9 +25,7 @@ def mock_dependencies():
     }
     # Ensure they are AsyncMocks if awaited
     modules_to_patch["utils.download_limiter"].downloads_left = AsyncMock(return_value="ilimitadas")
-    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(
-        return_value={"role": "free"}
-    )
+    modules_to_patch["services.user_service"].get_effective_user = AsyncMock(return_value={"role": "free"})
     modules_to_patch["services.opds_service"].mostrar_colecciones = AsyncMock()
     modules_to_patch["services.telegram_service"].publicar_libro = AsyncMock()
 

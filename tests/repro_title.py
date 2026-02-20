@@ -4,9 +4,7 @@ import re
 def extract_title_logic(content):
     # 1. Try epub:type="fulltitle"
     # Capture the tag name to match the closing tag
-    fulltitle_pattern = re.compile(
-        r'<(\w+)[^>]*epub:type="fulltitle"[^>]*>(.*?)</\1>', re.IGNORECASE | re.DOTALL
-    )
+    fulltitle_pattern = re.compile(r'<(\w+)[^>]*epub:type="fulltitle"[^>]*>(.*?)</\1>', re.IGNORECASE | re.DOTALL)
     match = fulltitle_pattern.search(content)
 
     if match:

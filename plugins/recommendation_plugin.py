@@ -27,9 +27,7 @@ class RecommendationPlugin(BasePlugin):
 
     async def initialize(self, bot_instance) -> bool:
         self.bot_instance = bot_instance
-        self.plugin_manager = (
-            bot_instance.plugin_manager
-        )  # Plugin manager is attached to app/bot in bot.py
+        self.plugin_manager = bot_instance.plugin_manager  # Plugin manager is attached to app/bot in bot.py
 
         # Register handlers directly to the application
         # Note: bot_instance is actually the 'application' object in bot.py logic
@@ -65,9 +63,7 @@ class RecommendationPlugin(BasePlugin):
             )
             return
 
-        await update.message.reply_text(
-            "💡 <b>Tengo estas sugerencias para ti:</b>", parse_mode="HTML"
-        )
+        await update.message.reply_text("💡 <b>Tengo estas sugerencias para ti:</b>", parse_mode="HTML")
 
         # Enviar fichas simplificadas
         for book in recs:
@@ -133,9 +129,7 @@ class RecommendationPlugin(BasePlugin):
             ]
         ]
 
-        await update.message.reply_text(
-            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
-        )
+        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
 
     async def handle_settings_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         query = update.callback_query

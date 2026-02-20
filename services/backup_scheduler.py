@@ -74,9 +74,7 @@ async def daily_backup_scheduler(bot):
                 next_run += timedelta(days=1)
 
             wait_seconds = (next_run - now).total_seconds()
-            logger.info(
-                f"Próxima exportación diaria programada para: {next_run.strftime('%Y-%m-%d %H:%M')}"
-            )
+            logger.info(f"Próxima exportación diaria programada para: {next_run.strftime('%Y-%m-%d %H:%M')}")
 
             await asyncio.sleep(wait_seconds)
 

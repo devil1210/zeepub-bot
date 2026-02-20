@@ -9,9 +9,7 @@ from urllib.parse import parse_qsl
 from fastapi import Header, HTTPException
 
 
-def validate_telegram_data(
-    init_data: str, token: str, expire_seconds: int = 86400
-) -> dict[str, Any] | None:
+def validate_telegram_data(init_data: str, token: str, expire_seconds: int = 86400) -> dict[str, Any] | None:
     """
     Valida los datos de inicialización de Telegram Mini App.
 

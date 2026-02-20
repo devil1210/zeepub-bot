@@ -49,11 +49,7 @@ class NotionService:
                 "Título": {"title": [{"text": {"content": book_title}}]},
                 "Tipo": {"select": {"name": "Descarga"}},
                 "Serie": {"rich_text": [{"text": {"content": series_name}}]},
-                "Volumen": {
-                    "number": float(volume)
-                    if volume and volume.replace(".", "", 1).isdigit()
-                    else 1
-                },
+                "Volumen": {"number": float(volume) if volume and volume.replace(".", "", 1).isdigit() else 1},
                 "Autor": {"rich_text": [{"text": {"content": author}}]},
                 "Usuario": {"rich_text": [{"text": {"content": user_name}}]},
                 "Fecha": {"date": {"start": datetime.utcnow().isoformat()}},
@@ -104,9 +100,7 @@ class NotionService:
             logger.info(f"✅ Feedback logged to Notion: {category} from {user_name}")
         return success
 
-    async def log_book_request(
-        self, user_name: str, book_name: str, author: str = "", notes: str = ""
-    ):
+    async def log_book_request(self, user_name: str, book_name: str, author: str = "", notes: str = ""):
         """Logs a specific book request."""
         details = f"Autor: {author}\nNotas: {notes}" if notes else f"Autor: {author}"
         payload = {
@@ -115,9 +109,7 @@ class NotionService:
             "properties": {
                 "Título": {"title": [{"text": {"content": f"Solicitud: {book_name}"}}]},
                 "Tipo": {"select": {"name": "Solicitud"}},
-                "Serie": {
-                    "rich_text": [{"text": {"content": book_name}}]
-                },  # Use Serie col for requested book name too
+                "Serie": {"rich_text": [{"text": {"content": book_name}}]},  # Use Serie col for requested book name too
                 "Comentarios": {"rich_text": [{"text": {"content": details}}]},
                 "Usuario": {"rich_text": [{"text": {"content": user_name}}]},
                 "Fecha": {"date": {"start": datetime.utcnow().isoformat()}},

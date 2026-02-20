@@ -121,10 +121,7 @@ async def add_cache_headers(request: Request, call_next):
     path = request.url.path
 
     # Aggressive caching for static assets (1 year)
-    if any(
-        path.startswith(prefix)
-        for prefix in ["/assets/", "/_next/", "/api/library/covers/", "/api/profiles/"]
-    ):
+    if any(path.startswith(prefix) for prefix in ["/assets/", "/_next/", "/api/library/covers/", "/api/profiles/"]):
         response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     # Short cache for HTML (1 hour, must revalidate)
     elif path.endswith(".html") or path == "/" or "." not in path.split("/")[-1]:

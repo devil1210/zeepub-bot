@@ -97,9 +97,7 @@ def restore_sin_propuesta_series():
                     WHERE id = :id
                 """)
 
-                session.execute(
-                    update_query, {"id": series_id, "english": new_english, "spanish": new_spanish}
-                )
+                session.execute(update_query, {"id": series_id, "english": new_english, "spanish": new_spanish})
                 session.commit()
 
                 logger.info("   ✅ Serie restaurada:")

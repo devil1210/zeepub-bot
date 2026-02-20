@@ -64,9 +64,7 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
                 )
                 if (series.cover_url if series else rep.get("cover_low"))
                 else None,
-                "cover_high": (series.cover_url if series else rep.get("cover_low")).replace(
-                    "_low.jpg", "_high.jpg"
-                )
+                "cover_high": (series.cover_url if series else rep.get("cover_low")).replace("_low.jpg", "_high.jpg")
                 if (series.cover_url if series else rep.get("cover_low"))
                 else None,
                 "cover_original": (series.cover_url if series else rep.get("cover_low")).replace(
@@ -106,9 +104,7 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
             if s_hash:
                 v_limit = data.get("limit", 100)
                 v_offset = data.get("offset", 0)
-                volumes = await LibraryService.get_series_volumes(
-                    s_hash, limit=v_limit, offset=v_offset
-                )
+                volumes = await LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
                 local_book["volumes"] = volumes
                 local_book["series_hash"] = s_hash
             else:

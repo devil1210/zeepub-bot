@@ -42,9 +42,7 @@ class LibraryMaintenanceService:
             "success": success,
             "error": error,
             "duration_seconds": round(duration, 2),
-            "message": "VACUUM ANALYZE completado en PostgreSQL"
-            if success
-            else "Falló el mantenimiento",
+            "message": "VACUUM ANALYZE completado en PostgreSQL" if success else "Falló el mantenimiento",
         }
 
     @staticmethod
@@ -112,9 +110,7 @@ class LibraryMaintenanceService:
             unique_authors = session.query(func.count(func.distinct(LocalBook.author))).scalar()
 
             book_types = (
-                session.query(LocalBook.book_type, func.count(LocalBook.id))
-                .group_by(LocalBook.book_type)
-                .all()
+                session.query(LocalBook.book_type, func.count(LocalBook.id)).group_by(LocalBook.book_type).all()
             )
 
             total_file_size = session.query(func.sum(LocalBook.file_size)).scalar() or 0
@@ -145,9 +141,7 @@ class LibraryMaintenanceService:
                 "total_file_size_bytes": total_file_size,
                 "total_file_size_gb": round(total_file_size / (1024**3), 2),
                 "books_with_covers": books_with_covers,
-                "cover_percentage": (
-                    round((books_with_covers / total_books * 100), 1) if total_books > 0 else 0
-                ),
+                "cover_percentage": (round((books_with_covers / total_books * 100), 1) if total_books > 0 else 0),
                 "covers_dir_size_bytes": covers_size,
                 "covers_dir_size_mb": round(covers_size / (1024 * 1024), 2),
             }

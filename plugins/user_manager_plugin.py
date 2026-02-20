@@ -203,9 +203,7 @@ class UserManagerPlugin(BasePlugin):
             return
 
         if not context.args or len(context.args) != 1:
-            await update.message.reply_text(
-                "❌ Uso: /remove_user <id>", message_thread_id=thread_id
-            )
+            await update.message.reply_text("❌ Uso: /remove_user <id>", message_thread_id=thread_id)
             return
 
         target_id_str = context.args[0]
@@ -271,9 +269,7 @@ class UserManagerPlugin(BasePlugin):
         # If only one word and it is a delete keyword
         if len(context.args) == args_start_idx + 1 and first_word in delete_keywords:
             new_label = None
-            success_msg = (
-                f"✅ Rol/label eliminado para <code>{target_id}</code> (vuelve a default)."
-            )
+            success_msg = f"✅ Rol/label eliminado para <code>{target_id}</code> (vuelve a default)."
         else:
             new_label = " ".join(context.args[args_start_idx:])
             success_msg = f"✅ Rol/label actualizado para <code>{target_id}</code> ({target_name}): <b>{new_label}</b>"
@@ -319,9 +315,7 @@ class UserManagerPlugin(BasePlugin):
                 return
         else:
             if len(context.args) < 1:
-                await msg.reply_text(
-                    "❌ Al responder, indica el apodo.", message_thread_id=thread_id
-                )
+                await msg.reply_text("❌ Al responder, indica el apodo.", message_thread_id=thread_id)
                 return
 
         # Check for deletion keywords
@@ -403,9 +397,7 @@ class UserManagerPlugin(BasePlugin):
         try:
             target_uid = int(context.args[0])
         except ValueError:
-            await update.message.reply_text(
-                "❌ El ID debe ser un número válido.", message_thread_id=thread_id
-            )
+            await update.message.reply_text("❌ El ID debe ser un número válido.", message_thread_id=thread_id)
             return
 
         user_state = state_manager.get_user_state(target_uid)

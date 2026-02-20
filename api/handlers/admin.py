@@ -39,14 +39,10 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
         async with pg_manager.get_session() as session:
             # 1. Basic Counts
             total_users = (await session.execute(text("SELECT COUNT(*) FROM users"))).scalar() or 0
-            total_books = (
-                await session.execute(text("SELECT COUNT(*) FROM local_books"))
-            ).scalar() or 0
+            total_books = (await session.execute(text("SELECT COUNT(*) FROM local_books"))).scalar() or 0
             users_7d = (
                 await session.execute(
-                    text(
-                        "SELECT COUNT(*) FROM users WHERE created_at >= (CURRENT_TIMESTAMP - INTERVAL '7 days')"
-                    )
+                    text("SELECT COUNT(*) FROM users WHERE created_at >= (CURRENT_TIMESTAMP - INTERVAL '7 days')")
                 )
             ).scalar() or 0
 
@@ -138,9 +134,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
                     "downloads": p_dls,
                     "author": "N/A",
                 }
-                stmt_lb = select(LocalBook).where(
-                    or_(LocalBook.book_hash == p_book_hash, LocalBook.title == p_title)
-                )
+                stmt_lb = select(LocalBook).where(or_(LocalBook.book_hash == p_book_hash, LocalBook.title == p_title))
                 lb_res = await session.execute(stmt_lb)
                 lb = lb_res.scalar_one_or_none()
                 if lb:
@@ -374,9 +368,7 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
                         )
 
             # 3. Pull from Supabase to ensure Local is up to date (Bidirectional)
-            logger.info(
-                "ADMIN: Triggering immediate PULL from Supabase to Local to sync missing data"
-            )
+            logger.info("ADMIN: Triggering immediate PULL from Supabase to Local to sync missing data")
             from core.optimized_sync_engine import optimized_sync_engine
 
             await optimized_sync_engine.force_sync_all()
@@ -455,9 +447,7 @@ async def handle_admin_cleanup_library(data: dict[str, Any], user_data: dict[str
 
     try:
         with get_session() as session:
-            stats = ScannerService.cleanup_library_orphans(
-                session, user_id=user_data.get("user_id")
-            )
+            stats = ScannerService.cleanup_library_orphans(session, user_id=user_data.get("user_id"))
             return {
                 "success": True,
                 "message": f"Limpieza completada: Se eliminaron {stats['deleted_books']} libros y {stats['deleted_series']} series inexistentes.",
@@ -481,9 +471,7 @@ async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, An
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            logger.info(
-                f"Background series scan thread started (Hash: {s_hash}, Force: {force_val})"
-            )
+            logger.info(f"Background series scan thread started (Hash: {s_hash}, Force: {force_val})")
             loop.run_until_complete(scanner_obj.sync_series(s_hash, force_scan=force_val))
             logger.info(f"Background series scan thread for {s_hash} completed successfully.")
         except Exception as e:
@@ -554,13 +542,7 @@ async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, 
 
         if os.path.exists(COVERS_DIR):
             try:
-                cover_count = len(
-                    [
-                        f
-                        for f in os.listdir(COVERS_DIR)
-                        if os.path.isfile(os.path.join(COVERS_DIR, f))
-                    ]
-                )
+                cover_count = len([f for f in os.listdir(COVERS_DIR) if os.path.isfile(os.path.join(COVERS_DIR, f))])
                 shutil.rmtree(COVERS_DIR)
                 items_deleted.append(f"{cover_count} portadas eliminadas")
             except Exception as e:
@@ -600,9 +582,7 @@ async def handle_admin_restart_docker(data: dict[str, Any], user_data: dict[str,
 
         async def do_restart():
             try:
-                await asyncio.to_thread(
-                    subprocess.run, ["docker", "restart", container_name], timeout=30
-                )
+                await asyncio.to_thread(subprocess.run, ["docker", "restart", container_name], timeout=30)
             except Exception as e:
                 logger.error(f"Error in background docker restart: {e}")
 
@@ -704,9 +684,7 @@ async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[st
     tier_name = data.get("name")
     level_id = data.get("level_id") or data.get("id")
 
-    is_global = (
-        level_id == "global" or tier_name == "Global" or (tier_name and "Global" in str(tier_name))
-    )
+    is_global = level_id == "global" or tier_name == "Global" or (tier_name and "Global" in str(tier_name))
 
     if is_global:
         ui_settings = {}
@@ -735,11 +713,7 @@ async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[st
         for frontend_key, setting_key in field_mapping.items():
             if frontend_key in data:
                 val = data[frontend_key]
-                if (
-                    frontend_key == "glassOpacity"
-                    or frontend_key == "navOpacity"
-                    or frontend_key == "accentOpacity"
-                ):
+                if frontend_key == "glassOpacity" or frontend_key == "navOpacity" or frontend_key == "accentOpacity":
                     if isinstance(val, int | float) and val > 1:
                         val = val / 100.0
                 ui_settings[setting_key] = val
@@ -902,9 +876,7 @@ async def handle_admin_rename_themes(data: dict[str, Any], user_data: dict[str, 
                         themes_to_rename.append(theme)
                         logger.info(f"Found theme ending with '2': ID {theme[0]}, Name: '{name}'")
                     else:
-                        logger.info(
-                            f"Theme containing '2' (not ending): ID {theme[0]}, Name: '{name}'"
-                        )
+                        logger.info(f"Theme containing '2' (not ending): ID {theme[0]}, Name: '{name}'")
 
             if not themes_to_rename:
                 logger.info("No themes found ending with '2'")
@@ -966,9 +938,7 @@ async def handle_admin_rename_themes(data: dict[str, Any], user_data: dict[str, 
 
                 # Realizar renombrado
                 await session.execute(
-                    text(
-                        "UPDATE app_themes SET name = :new_name, updated_at = CURRENT_TIMESTAMP WHERE id = :theme_id"
-                    ),
+                    text("UPDATE app_themes SET name = :new_name, updated_at = CURRENT_TIMESTAMP WHERE id = :theme_id"),
                     {"new_name": new_name, "theme_id": theme_id},
                 )
 
@@ -1239,9 +1209,7 @@ async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dic
                 "betaTester": raw_user.get("beta_tester", access_info["isBetaTester"]),
                 "hasLibraryAccess": raw_user.get("has_library_access", True),
                 "canRequestBooks": raw_user.get("can_request_books", True),
-                "canUploadEpub": raw_user.get(
-                    "can_upload_epub", access_info["level"].get("canUploadEpub", False)
-                ),
+                "canUploadEpub": raw_user.get("can_upload_epub", access_info["level"].get("canUploadEpub", False)),
                 "allowThemeTemplates": raw_user.get(
                     "allow_theme_templates",
                     access_info["level"].get("allowThemeTemplates", False),
@@ -1406,9 +1374,7 @@ async def handle_admin_delete_duplicate_item(data: dict[str, Any], user_data: di
         if not dup_record:
             return {"success": False, "message": "Registro no encontrado"}
 
-        path_to_delete = (
-            dup_record.original_filepath if target == "original" else dup_record.duplicate_filepath
-        )
+        path_to_delete = dup_record.original_filepath if target == "original" else dup_record.duplicate_filepath
 
         if path_to_delete and os.path.exists(path_to_delete):
             os.remove(path_to_delete)
@@ -1535,9 +1501,7 @@ async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data:
             loop.run_until_complete(LibraryService.find_ai_series_duplicates())
             logger.info("🏁 Escaneo de duplicados por IA finalizado con éxito.")
         except Exception as e:
-            logger.error(
-                f"❌ Error en escaneo de duplicados por IA (Background): {e}", exc_info=True
-            )
+            logger.error(f"❌ Error en escaneo de duplicados por IA (Background): {e}", exc_info=True)
         finally:
             LibraryService._is_ai_scanning = False
             loop.close()
@@ -1590,9 +1554,7 @@ async def handle_admin_get_system_logs(data: dict[str, Any], user_data: dict[str
     check_staff(user_data)
     from utils.log_manager import log_buffer_handler
 
-    logs = log_buffer_handler.get_logs(
-        level=data.get("level", "INFO"), last_hours=data.get("hours")
-    )
+    logs = log_buffer_handler.get_logs(level=data.get("level", "INFO"), last_hours=data.get("hours"))
     return {"success": True, "logs": logs}
 
 
@@ -1614,12 +1576,7 @@ async def handle_admin_send_logs_telegram(data: dict[str, Any], user_data: dict[
             return {"success": False, "message": "No hay logs disponibles para enviar."}
 
         # Format logs
-        log_text = "\n".join(
-            [
-                f"[{log_entry['time']}] {log_entry['level']}: {log_entry['msg']}"
-                for log_entry in logs
-            ]
-        )
+        log_text = "\n".join([f"[{log_entry['time']}] {log_entry['level']}: {log_entry['msg']}" for log_entry in logs])
 
         # Create file
         file_obj = io.BytesIO(log_text.encode("utf-8"))
@@ -1731,12 +1688,7 @@ async def handle_get_upload_history(data: dict[str, Any], user_data: dict[str, A
 
     try:
         async with pg_manager.get_session() as session:
-            stmt = (
-                select(UploadHistory)
-                .order_by(desc(UploadHistory.created_at))
-                .limit(limit)
-                .offset(offset)
-            )
+            stmt = select(UploadHistory).order_by(desc(UploadHistory.created_at)).limit(limit).offset(offset)
             results = (await session.execute(stmt)).scalars().all()
 
             history_list = []

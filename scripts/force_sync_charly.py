@@ -5,9 +5,7 @@ import os
 # Override for local execution if needed
 db_url = os.getenv("DATABASE_URL", "")
 if "@db:" in db_url:
-    os.environ["DATABASE_URL"] = db_url.replace("@db:", "@localhost:").replace(
-        "postgresql://", "postgresql+asyncpg://"
-    )
+    os.environ["DATABASE_URL"] = db_url.replace("@db:", "@localhost:").replace("postgresql://", "postgresql+asyncpg://")
 elif not db_url:
     os.environ["DATABASE_URL"] = "postgresql+asyncpg://zeepub:zeepub@localhost:5432/zeepub"
 
@@ -50,9 +48,7 @@ async def force_sync_user():
             await session.commit()
 
             if result.rowcount > 0:
-                logger.info(
-                    f"¡Éxito! Usuario {target_id} actualizado a: {new_name} (@{new_username})"
-                )
+                logger.info(f"¡Éxito! Usuario {target_id} actualizado a: {new_name} (@{new_username})")
             else:
                 logger.error(f"Usuario {target_id} no encontrado en la base de datos.")
 

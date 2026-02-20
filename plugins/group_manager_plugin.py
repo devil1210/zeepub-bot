@@ -105,9 +105,7 @@ class GroupManagerPlugin(BasePlugin):
         # Determine DB URL (Shared Postgres)
         db_url = config.DATABASE_URL
         if not db_url:
-            logger.error(
-                "DATABASE_URL no está configurada. Postgres es mandatorio para GroupManager."
-            )
+            logger.error("DATABASE_URL no está configurada. Postgres es mandatorio para GroupManager.")
             return
 
         self.engine = self._get_sync_engine(db_url)
@@ -160,9 +158,7 @@ class GroupManagerPlugin(BasePlugin):
 
             group.is_authorized = True
             session.commit()
-            await update.message.reply_text(
-                f"✅ Grupo {chat_id} autorizado. El bot ahora está activo allí."
-            )
+            await update.message.reply_text(f"✅ Grupo {chat_id} autorizado. El bot ahora está activo allí.")
         except Exception as e:
             logger.error(f"Error authorizing group: {e}")
             await update.message.reply_text("❌ Error al autorizar el grupo.")
@@ -188,9 +184,7 @@ class GroupManagerPlugin(BasePlugin):
             if group:
                 group.is_authorized = False
                 session.commit()
-            await update.message.reply_text(
-                f"⛔ Grupo {chat_id} revocado. El bot dejará de actuar allí."
-            )
+            await update.message.reply_text(f"⛔ Grupo {chat_id} revocado. El bot dejará de actuar allí.")
         except Exception as e:
             logger.error(f"Error revoking group: {e}")
         finally:
@@ -210,9 +204,7 @@ class GroupManagerPlugin(BasePlugin):
 
         # Verify slug exists
         if not self._slug_exists(slug):
-            await update.message.reply_text(
-                f"❌ El mensaje '{slug}' no existe en la base de datos de mensajes."
-            )
+            await update.message.reply_text(f"❌ El mensaje '{slug}' no existe en la base de datos de mensajes.")
             return
 
         session = self.Session()
@@ -229,9 +221,7 @@ class GroupManagerPlugin(BasePlugin):
 
             group.welcome_msg_slug = slug
             session.commit()
-            await update.message.reply_text(
-                f"✅ Mensaje de bienvenida establecido a: {slug}{msg_extra}"
-            )
+            await update.message.reply_text(f"✅ Mensaje de bienvenida establecido a: {slug}{msg_extra}")
         except Exception as e:
             logger.error(f"Error setting welcome: {e}")
             await update.message.reply_text("❌ Error guardando configuración.")
@@ -350,9 +340,7 @@ class GroupManagerPlugin(BasePlugin):
                 )
 
                 try:
-                    await context.bot.send_message(
-                        chat_id=chat_id, text=intro_message, parse_mode="HTML"
-                    )
+                    await context.bot.send_message(chat_id=chat_id, text=intro_message, parse_mode="HTML")
                 except Exception as e:
                     logger.error(f"Error sending default introduction to {chat_id}: {e}")
 
@@ -393,9 +381,7 @@ class GroupManagerPlugin(BasePlugin):
     def _extract_status_change(self, chat_member_update: ChatMemberUpdated):
         """Helper to Determine if user joined or left."""
         status_change = chat_member_update.difference().get("status")
-        old_is_member, new_is_member = chat_member_update.difference().get(
-            "is_member", (None, None)
-        )
+        old_is_member, new_is_member = chat_member_update.difference().get("is_member", (None, None))
 
         if status_change is None:
             return None

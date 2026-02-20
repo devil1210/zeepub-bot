@@ -17,9 +17,7 @@ with get_session() as session:
                 "series_name": s.series_name,
                 "series_hash": s.series_hash,
                 "book_count": s.book_count,
-                "books_in_db": [
-                    {"id": b.id, "filepath": b.filepath, "filename": b.filename} for b in books
-                ],
+                "books_in_db": [{"id": b.id, "filepath": b.filepath, "filename": b.filename} for b in books],
             }
         )
     print(json.dumps(results, indent=2))

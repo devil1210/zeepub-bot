@@ -28,21 +28,15 @@ class BotConfig:
 
     # Administradores (no tienen descargas ilimitadas aquí)
     ADMIN_USERS: set[int] = field(
-        default_factory=lambda: {
-            int(x.strip()) for x in os.getenv("ADMIN_USERS", "").split(",") if x.strip().isdigit()
-        }
+        default_factory=lambda: {int(x.strip()) for x in os.getenv("ADMIN_USERS", "").split(",") if x.strip().isdigit()}
     )
 
     # Listas de usuarios con distintos niveles
     WHITELIST: set[int] = field(
-        default_factory=lambda: {
-            int(x.strip()) for x in os.getenv("WHITELIST", "").split(",") if x.strip().isdigit()
-        }
+        default_factory=lambda: {int(x.strip()) for x in os.getenv("WHITELIST", "").split(",") if x.strip().isdigit()}
     )
     VIP_LIST: set[int] = field(
-        default_factory=lambda: {
-            int(x.strip()) for x in os.getenv("VIP_LIST", "").split(",") if x.strip().isdigit()
-        }
+        default_factory=lambda: {int(x.strip()) for x in os.getenv("VIP_LIST", "").split(",") if x.strip().isdigit()}
     )
     PREMIUM_LIST: set[int] = field(
         default_factory=lambda: {
@@ -53,9 +47,7 @@ class BotConfig:
     # Facebook Publishers
     FACEBOOK_PUBLISHERS: set[int] = field(
         default_factory=lambda: {
-            int(x.strip())
-            for x in os.getenv("FACEBOOK_PUBLISHERS", "").split(",")
-            if x.strip().isdigit()
+            int(x.strip()) for x in os.getenv("FACEBOOK_PUBLISHERS", "").split(",") if x.strip().isdigit()
         }
     )
 

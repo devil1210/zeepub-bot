@@ -24,11 +24,7 @@ class BookRepository(BaseRepository[LocalBook]):
     async def get_by_id(self, book_id: int) -> LocalBook | None:
         """Obtiene un libro por ID con su información de serie cargada."""
         async with pg_manager.get_session() as session:
-            stmt = (
-                select(LocalBook)
-                .options(selectinload(LocalBook.series_info))
-                .where(LocalBook.id == book_id)
-            )
+            stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.id == book_id)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
@@ -178,11 +174,7 @@ class BookRepository(BaseRepository[LocalBook]):
     async def get_books_by_series_hash(self, series_hash: str) -> list[LocalBook]:
         """Obtiene todos los libros pertenecientes a una serie."""
         async with pg_manager.get_session() as session:
-            stmt = (
-                select(LocalBook)
-                .where(LocalBook.series_hash == series_hash)
-                .order_by(LocalBook.volume.asc())
-            )
+            stmt = select(LocalBook).where(LocalBook.series_hash == series_hash).order_by(LocalBook.volume.asc())
             result = await session.execute(stmt)
             return list(result.scalars().all())
 

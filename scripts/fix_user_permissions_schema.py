@@ -20,9 +20,7 @@ async def run_migration():
             # 1. Agregar allow_theme_templates
             try:
                 await conn.execute(
-                    text(
-                        "ALTER TABLE users ADD COLUMN IF NOT EXISTS allow_theme_templates BOOLEAN DEFAULT FALSE;"
-                    )
+                    text("ALTER TABLE users ADD COLUMN IF NOT EXISTS allow_theme_templates BOOLEAN DEFAULT FALSE;")
                 )
                 logger.info("Columna 'allow_theme_templates' agregada o ya existía.")
             except Exception as e:
@@ -30,11 +28,7 @@ async def run_migration():
 
             # 2. Agregar roles
             try:
-                await conn.execute(
-                    text(
-                        "ALTER TABLE users ADD COLUMN IF NOT EXISTS roles JSONB DEFAULT '[]'::jsonb;"
-                    )
-                )
+                await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS roles JSONB DEFAULT '[]'::jsonb;"))
                 logger.info("Columna 'roles' agregada o ya existía.")
             except Exception as e:
                 logger.warning(f"Aviso al agregar roles: {e}")

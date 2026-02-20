@@ -34,9 +34,7 @@ class StatsService:
                 total_downloads = await download_repo.get_global_total_downloads()
 
                 # 4. Rating Stats
-                rating_count = (
-                    await session.execute(select(func.count(UserRating.id)))
-                ).scalar() or 0
+                rating_count = (await session.execute(select(func.count(UserRating.id)))).scalar() or 0
 
                 # 5. User Distribution by Level
                 level_dist_stmt = (
@@ -103,9 +101,7 @@ async def get_daily_stats() -> dict[str, Any]:
             # 1. Total downloads today
             total_downloads = (
                 await session.execute(
-                    select(func.count(DownloadHistory.id)).where(
-                        DownloadHistory.downloaded_at >= today_start
-                    )
+                    select(func.count(DownloadHistory.id)).where(DownloadHistory.downloaded_at >= today_start)
                 )
             ).scalar() or 0
 
@@ -190,9 +186,7 @@ async def get_stats_summary(period: str = "day") -> dict[str, Any]:
             new_users = 0
             if hasattr(User, "created_at"):
                 if start_date:
-                    new_stmt = select(func.count(User.telegram_id)).where(
-                        User.created_at >= start_date
-                    )
+                    new_stmt = select(func.count(User.telegram_id)).where(User.created_at >= start_date)
                 else:
                     new_stmt = select(func.count(User.telegram_id))
                 new_users = (await session.execute(new_stmt)).scalar() or 0

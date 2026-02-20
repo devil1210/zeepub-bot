@@ -48,16 +48,10 @@ class SupabaseManager:
                     res = query.insert(kwargs.get("data")).execute()
                 elif query_type == "update":
                     res = (
-                        query.update(kwargs.get("data"))
-                        .eq(kwargs.get("match_col"), kwargs.get("match_val"))
-                        .execute()
+                        query.update(kwargs.get("data")).eq(kwargs.get("match_col"), kwargs.get("match_val")).execute()
                     )
                 elif query_type == "delete":
-                    res = (
-                        query.delete()
-                        .eq(kwargs.get("match_col"), kwargs.get("match_val"))
-                        .execute()
-                    )
+                    res = query.delete().eq(kwargs.get("match_col"), kwargs.get("match_val")).execute()
                 else:
                     logger.error(f"Unsupported query type: {query_type}")
                     return None

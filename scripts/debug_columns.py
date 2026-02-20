@@ -20,9 +20,7 @@ async def check():
     try:
         async with engine.begin() as conn:
             result = await conn.execute(
-                text(
-                    "SELECT column_name FROM information_schema.columns WHERE table_name = 'series_metadata'"
-                )
+                text("SELECT column_name FROM information_schema.columns WHERE table_name = 'series_metadata'")
             )
             columns = [row[0] for row in result.fetchall()]
             print(f"Columns in series_metadata: {columns}")

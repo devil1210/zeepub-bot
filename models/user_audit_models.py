@@ -29,9 +29,7 @@ class UserAuditLog(Base):
     admin = relationship("User", foreign_keys=[changed_by_id])
 
     # Tipo de cambio
-    action = Column(
-        String(50), nullable=False
-    )  # 'update_level', 'update_permissions', 'update_profile', etc.
+    action = Column(String(50), nullable=False)  # 'update_level', 'update_permissions', 'update_profile', etc.
 
     # Detalles del cambio
     field_changed = Column(String(100))  # Campo específico modificado

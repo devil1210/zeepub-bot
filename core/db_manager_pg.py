@@ -61,15 +61,11 @@ class PostgresManager:
 
             self.engine = create_async_engine(db_url, **engine_args)
 
-            self.session_maker = async_sessionmaker(
-                self.engine, expire_on_commit=False, class_=AsyncSession
-            )
+            self.session_maker = async_sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
 
             # Verify connection
             async with self.engine.begin() as conn:
-                await conn.run_sync(
-                    lambda _: logger.info("Postgres connection established successfully.")
-                )
+                await conn.run_sync(lambda _: logger.info("Postgres connection established successfully."))
 
             self._initialized = True
         except Exception as e:

@@ -135,9 +135,7 @@ class UserRepository(BaseRepository[User]):
             "email": user.email,
         }
 
-    async def get_by_id(
-        self, telegram_id: int, as_dict: bool = False
-    ) -> User | dict[str, Any] | None:
+    async def get_by_id(self, telegram_id: int, as_dict: bool = False) -> User | dict[str, Any] | None:
         """Obtiene un usuario por su ID de Telegram (PK)."""
         async with pg_manager.get_session() as session:
             stmt = (
@@ -561,15 +559,11 @@ class UserRepository(BaseRepository[User]):
             logger.error(f"Error updating user settings: {e}")
             return False
 
-    async def list_users(
-        self, limit: int = 50, offset: int = 0, search: str = None
-    ) -> list[dict[str, Any]]:
+    async def list_users(self, limit: int = 50, offset: int = 0, search: str = None) -> list[dict[str, Any]]:
         """Listar usuarios para el panel de administración con paginación y búsqueda."""
         try:
             async with pg_manager.get_session() as session:
-                query = select(User).options(
-                    selectinload(User.level_info), selectinload(User.ui_settings)
-                )
+                query = select(User).options(selectinload(User.level_info), selectinload(User.ui_settings))
 
                 if search:
                     term = f"%{search}%"
@@ -619,9 +613,9 @@ class UserRepository(BaseRepository[User]):
                     # Sincronizar con Supabase
                     if self.supabase.is_active:
                         try:
-                            self.supabase.get_client().table("users").update(
-                                {"email": email.lower()}
-                            ).eq("telegram_id", telegram_id).execute()
+                            self.supabase.get_client().table("users").update({"email": email.lower()}).eq(
+                                "telegram_id", telegram_id
+                            ).execute()
                         except Exception as s_err:
                             logger.warning(f"Supabase email sync failed: {s_err}")
 
@@ -643,9 +637,7 @@ class UserRepository(BaseRepository[User]):
             logger.error(f"Error getting all users for recommendations: {e}")
             return []
 
-    async def create_minimal_user(
-        self, telegram_id: int, name: str | None = None, username: str | None = None
-    ):
+    async def create_minimal_user(self, telegram_id: int, name: str | None = None, username: str | None = None):
         """Creates a basic user record if not exists."""
         return await self.upsert(
             telegram_id=telegram_id,
@@ -683,9 +675,7 @@ class UserRepository(BaseRepository[User]):
 
             # Supabase Fallback
             if self.supabase.is_active:
-                self.supabase.get_client().table("users").delete().eq(
-                    "telegram_id", telegram_id
-                ).execute()
+                self.supabase.get_client().table("users").delete().eq("telegram_id", telegram_id).execute()
 
             await cache_manager.delete_user(telegram_id)
             return True
@@ -874,9 +864,7 @@ class UserRepository(BaseRepository[User]):
                     }
 
                     is_admin = (
-                        (user.role == "admin")
-                        or (user.level_id == 1)
-                        or (user.telegram_id in config.ADMIN_USERS)
+                        (user.role == "admin") or (user.level_id == 1) or (user.telegram_id in config.ADMIN_USERS)
                     )
                     return {
                         "level": level_dict,

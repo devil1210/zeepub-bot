@@ -102,15 +102,9 @@ def diagnose_epub(epub_path):
                     author_elem = root.find(".//dc:creator", namespaces)
                     lang_elem = root.find(".//dc:language", namespaces)
 
-                    print(
-                        f"   📖 Título: {title_elem.text if title_elem is not None else 'No encontrado'}"
-                    )
-                    print(
-                        f"   ✍️ Autor: {author_elem.text if author_elem is not None else 'No encontrado'}"
-                    )
-                    print(
-                        f"   🌐 Idioma: {lang_elem.text if lang_elem is not None else 'No encontrado'}"
-                    )
+                    print(f"   📖 Título: {title_elem.text if title_elem is not None else 'No encontrado'}")
+                    print(f"   ✍️ Autor: {author_elem.text if author_elem is not None else 'No encontrado'}")
+                    print(f"   🌐 Idioma: {lang_elem.text if lang_elem is not None else 'No encontrado'}")
 
                     # Contar metadatos
                     metadata_items = root.findall(".//dc:*", namespaces)
