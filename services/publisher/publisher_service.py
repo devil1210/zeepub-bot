@@ -67,6 +67,13 @@ class TelegramPublisherProvider(PublisherProvider):
         thread_id = options.get("message_thread_id")
 
         # --- Lógica de Plantilla Multi-mensaje ---
+        def sanitize_tg_html(t: str) -> str:
+            if not t: return ""
+            import re
+            t = re.sub(r"<(/?p|/?div|/?h\d)>", "\n", t, flags=re.IGNORECASE)
+            t = re.sub(r"<br\s*/?>", "\n", t, flags=re.IGNORECASE)
+            return re.sub(r"\n{3,}", "\n\n", t).strip()
+
         custom_content = options.get("caption")
         msg_parts = []
         if custom_content:
@@ -76,6 +83,7 @@ class TelegramPublisherProvider(PublisherProvider):
 
         # 1. Mensaje de Portada (o Texto Principal)
         caption = msg_parts[0] if len(msg_parts) > 0 else (custom_content or formatear_mensaje_portada(book_data))
+        caption = sanitize_tg_html(caption)
 
         # Selección de calidad de portada
         quality = options.get("cover_quality") or self.COVER_QUALITY
@@ -134,6 +142,9 @@ class TelegramPublisherProvider(PublisherProvider):
                 sinopsis = self.SYNOPSIS_TEMPLATE.format(sinopsis=sinopsis_esc, slug=slug or "")
                 if not slug:
                     sinopsis = sinopsis.replace("\n#", "").strip()
+
+        if sanitize_tg_html:
+            sinopsis = sanitize_tg_html(sinopsis)
 
         if sinopsis:
             try:

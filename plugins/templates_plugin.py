@@ -79,7 +79,7 @@ class TemplatesPlugin(BasePlugin):
     async def start_templates(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         user_id = update.effective_user.id
         if not self._is_staff(user_id):
-            await update.message.reply_text("⛔ No tienes permisos para usar este comando.")
+            await update.effective_message.reply_text("⛔ No tienes permisos para usar este comando.")
             return ConversationHandler.END
 
         await self._show_main_menu(update, context)
@@ -102,7 +102,7 @@ class TemplatesPlugin(BasePlugin):
         if is_callback and update.callback_query:
             await update.callback_query.edit_message_text(text, reply_markup=reply_markup, parse_mode="Markdown")
         else:
-            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
+            await update.effective_message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
 
     async def handle_menu_selection(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         query = update.callback_query
@@ -160,7 +160,7 @@ class TemplatesPlugin(BasePlugin):
             [InlineKeyboardButton("Telegram", callback_data="plt_telegram")],
             [InlineKeyboardButton("Discord", callback_data="plt_discord")],
         ]
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "Selecciona la plataforma para esta plantilla:", reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return CREATE_PLATFORM
@@ -185,7 +185,7 @@ class TemplatesPlugin(BasePlugin):
         user_id = update.effective_user.id
 
         if user_id not in self.user_states:
-            await update.message.reply_text("Hubo un error de estado. Usa /pub_templates de nuevo.")
+            await update.effective_message.reply_text("Hubo un error de estado. Usa /pub_templates de nuevo.")
             return ConversationHandler.END
 
         name = self.user_states[user_id].get("name", "Sin Nombre")
@@ -198,7 +198,7 @@ class TemplatesPlugin(BasePlugin):
 
         del self.user_states[user_id]
 
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             f"✅ **Plantilla '{name}' creada con éxito!**\n\nYa puedes seleccionarla en la interfaz web.",
             parse_mode="Markdown",
         )
@@ -223,7 +223,7 @@ class TemplatesPlugin(BasePlugin):
             await update.callback_query.answer()
             await update.callback_query.edit_message_text("Operación cancelada.")
         else:
-            await update.message.reply_text("Operación cancelada.")
+            await update.effective_message.reply_text("Operación cancelada.")
 
         if update.effective_user.id in self.user_states:
             del self.user_states[update.effective_user.id]
