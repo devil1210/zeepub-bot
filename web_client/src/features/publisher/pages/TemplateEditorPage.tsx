@@ -61,8 +61,8 @@ export const TemplateEditorPage: React.FC = () => {
         searchTimeout.current = window.setTimeout(async () => {
             setIsSearching(true);
             try {
-                // Mapear desde nuestra API real
-                const res = await api.searchBooks(searchQuery, 1);
+                // Llamado a searchVolumes (que configuraremos en el backend router)
+                const res = await api.searchVolumes(searchQuery, 1, 10);
                 setSearchResults(res.data?.books || []);
                 setShowResults(true);
             } catch (err) {

@@ -120,6 +120,9 @@ export const api = {
     searchBooks: (query: string, page: number = 1, type: string = 'all', sort: string = 'a-z', signal?: AbortSignal) =>
         rpc('search', { query, page, type, sort }, signal),
 
+    searchVolumes: (query: string, page: number = 1, limit: number = 10, signal?: AbortSignal) =>
+        rpc('search_volumes', { query, page, limit }, signal),
+
     getRecommendations: (limit: number = 10, signal?: AbortSignal) =>
         rpc('recommendations', { limit }, signal),
 

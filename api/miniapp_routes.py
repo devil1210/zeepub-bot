@@ -222,6 +222,7 @@ async def handle_bot_request(
             handle_request_book,
             handle_save_badge_config,
             handle_search,
+            handle_search_volumes,
             handle_status,
             handle_ui_settings,
             handle_update_user_setting,
@@ -231,6 +232,7 @@ async def handle_bot_request(
 
         ACTION_HANDLERS = {
             "search": handle_search,
+            "search_volumes": handle_search_volumes,
             "book-detail": handle_book_detail,
             "user_status": handle_user_status,
             "user_downloads_history": handle_user_downloads_history,

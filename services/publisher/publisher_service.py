@@ -524,8 +524,8 @@ class PublisherService:
 
     def _apply_template(self, template_str: str, data: dict) -> str:
         """Aplica condicionales [?var]...[/?] y placeholders {var} con campos de LocalBook."""
-        import re
         import logging
+        import re
         logger = logging.getLogger(__name__)
 
         try:

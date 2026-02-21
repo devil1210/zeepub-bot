@@ -87,7 +87,7 @@ from api.handlers.publisher import (
     handle_pub_update_queue_item,
 )
 from api.handlers.recommendations import handle_recommendations
-from api.handlers.search import handle_search
+from api.handlers.search import handle_search, handle_search_volumes
 from api.handlers.settings import (
     handle_save_badge_config,
     handle_ui_settings,
@@ -105,6 +105,7 @@ __all__ = [
     "check_admin",
     "check_staff",
     "handle_search",
+    "handle_search_volumes",
     "handle_book_detail",
     "handle_user_status",
     "handle_status",

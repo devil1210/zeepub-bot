@@ -13,13 +13,22 @@ interface TelegramMessagePreviewProps {
 // Datos falsos para mostrar en la previsualización
 const DUMMY_DATA: Record<string, string> = {
     '{titulo}': 'Demon Slayer: Kimetsu no Yaiba',
+    '{romaji_title}': 'Kimetsu no Yaiba',
+    '{english_title}': 'Demon Slayer',
+    '{spanish_title}': 'Guardianes de la Noche',
+    '{jap_title}': '鬼滅の刃',
     '{autor}': 'Koyoharu Gotouge',
+    '{illustrator}': 'Koyoharu Gotouge',
     '{serie}': 'Demon Slayer [NL]',
+    '{series_spanish}': 'Guardianes de la Noche [NL]',
+    '{series_english}': 'Demon Slayer [NL]',
     '{volumen}': 'Volumen 01',
     '{sinopsis}': 'Tanjiro Kamado es un chico inteligente y de buen corazón que vive con su familia y gana dinero vendiendo carbón. Todo cambia cuando su familia es atacada y asesinada por un demonio (oni).',
     '{tipo}': 'Novela Ligera',
     '{traductor}': 'Demon Fansub',
+    '{layout_by}': 'Demon Fansub',
     '{editorial}': 'Shueisha',
+    '{isbn}': '978-4-08-880723-2',
     '{rating}': '⭐ 4.9',
     '{tamaño}': '5.2 MB',
     '{cover_high}': '📷 <i>[Adjunto: Portada HD]</i>',
@@ -31,6 +40,7 @@ const DUMMY_DATA: Record<string, string> = {
     '{language}': 'es'
 };
 
+
 export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ content, templateName, sampleBook }) => {
 
     // Parsear el contenido para generar las burbujas simuladas
@@ -41,13 +51,22 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
         const mapping = { ...DUMMY_DATA };
         if (sampleBook) {
             mapping['{titulo}'] = sampleBook.title || mapping['{titulo}'];
+            mapping['{romaji_title}'] = sampleBook.romaji_title || mapping['{romaji_title}'];
+            mapping['{english_title}'] = sampleBook.english_title || mapping['{english_title}'];
+            mapping['{spanish_title}'] = sampleBook.spanish_title || mapping['{spanish_title}'];
+            mapping['{jap_title}'] = sampleBook.jap_title || mapping['{jap_title}'];
             mapping['{autor}'] = sampleBook.author || mapping['{autor}'];
+            mapping['{illustrator}'] = sampleBook.illustrator || mapping['{illustrator}'];
+            mapping['{serie}'] = sampleBook.series || mapping['{serie}'];
+            mapping['{series_spanish}'] = sampleBook.series_spanish || mapping['{series_spanish}'];
+            mapping['{series_english}'] = sampleBook.series_english || mapping['{series_english}'];
             mapping['{volumen}'] = sampleBook.volumeNumber ? `Vol. ${sampleBook.volumeNumber}` : mapping['{volumen}'];
             mapping['{tamaño}'] = sampleBook.size || mapping['{tamaño}'];
             mapping['{is_uncensored}'] = sampleBook.is_uncensored ? 'Sí' : 'No';
             mapping['{traductor}'] = sampleBook.translator || 'Desconocido';
+            mapping['{layout_by}'] = sampleBook.layout_by || 'Desconocido';
             mapping['{tipo}'] = sampleBook.bookType || mapping['{tipo}'];
-            mapping['{serie}'] = sampleBook.series || mapping['{serie}'];
+            mapping['{isbn}'] = sampleBook.isbn || mapping['{isbn}'];
         }
 
         // 1. Evaluar condicionales: [?variable]...[/?]

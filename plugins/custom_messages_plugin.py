@@ -19,7 +19,6 @@ from sqlalchemy.sql import text  # Importar text explícitamente
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.ext import (
-    CallbackQueryHandler,
     ChatMemberHandler,
     CommandHandler,
     ContextTypes,

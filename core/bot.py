@@ -274,7 +274,6 @@ class ZeePubBot:
 
         # Registrar handler de texto de fallback DESPUÉS de los plugins
         # para no interceptar los mensajes de texto de los ConversationHandlers
-        from handlers.message_handlers import recibir_texto
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_texto))
 
     async def start_async(self):

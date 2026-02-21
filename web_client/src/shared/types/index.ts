@@ -25,6 +25,15 @@ export interface Book {
   series?: string;
   cleanTitle?: string;
   is_uncensored?: boolean;
+  romaji_title?: string;
+  english_title?: string;
+  spanish_title?: string;
+  jap_title?: string;
+  illustrator?: string;
+  series_spanish?: string;
+  series_english?: string;
+  layout_by?: string;
+  isbn?: string;
 }
 
 export interface Volume {
