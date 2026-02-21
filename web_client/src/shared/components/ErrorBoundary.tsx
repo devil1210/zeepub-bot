@@ -24,6 +24,13 @@ export class ErrorBoundary extends Component<Props, State> {
 
     public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error("Uncaught error:", error, errorInfo);
+
+        // Auto-reload to clear Vite chunk cache if an old asset is requested
+        if (error.message?.includes('Failed to fetch dynamically imported module')) {
+            window.location.reload();
+            return;
+        }
+
         this.setState({ error, errorInfo });
     }
 
