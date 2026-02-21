@@ -80,8 +80,7 @@ class ZeePubBot:
 
         self.app.add_handler(CallbackQueryHandler(button_handler), group=1)
 
-        # Mensajes de texto
-        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_texto))
+        # Mensajes de texto movidos a initialize() para evitar conflictos con plugins
 
         # JSON Upload Handler
         from handlers.message_handlers import handle_donation_proof, handle_json_upload
@@ -272,6 +271,11 @@ class ZeePubBot:
         # OptimizedSyncEngine is now used instead (triggered or long-interval).
         # from core.sync_engine import sync_engine
         # await sync_engine.start()
+
+        # Registrar handler de texto de fallback DESPUÉS de los plugins
+        # para no interceptar los mensajes de texto de los ConversationHandlers
+        from handlers.message_handlers import recibir_texto
+        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_texto))
 
     async def start_async(self):
         """Inicia el bot y el polling de forma asíncrona (para uso con API)."""
