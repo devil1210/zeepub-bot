@@ -10,6 +10,8 @@ interface TelegramMessagePreviewProps {
     sampleBook?: Book | null;
 }
 
+import { getCoverUrl } from '@shared/utils/imageUtils';
+
 // Datos falsos para mostrar en la previsualización
 const DUMMY_DATA: Record<string, string> = {
     '{titulo}': 'Demon Slayer: Kimetsu no Yaiba',
@@ -31,8 +33,9 @@ const DUMMY_DATA: Record<string, string> = {
     '{isbn}': '978-4-08-880723-2',
     '{rating}': '⭐ 4.9',
     '{tamaño}': '5.2 MB',
-    '{cover_high}': '📷 <i>[Adjunto: Portada HD]</i>',
-    '{cover_low}': '📷 <i>[Adjunto: Portada SD]</i>',
+    '{cover_high}': '',
+    '{cover_low}': '',
+    '{cover_original}': '',
     '{published_at}': '2016-02-15',
     '{edition}': 'Digital',
     '{is_uncensored}': 'Sí',
@@ -42,7 +45,7 @@ const DUMMY_DATA: Record<string, string> = {
 };
 
 
-export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ content, templateName, sampleBook }) => {
+export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ content, templateName, coverQuality, sampleBook }) => {
 
     // Parsear el contenido para generar las burbujas simuladas
     const messages = useMemo(() => {
@@ -124,26 +127,53 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
                     </div>
                 )}
 
-                {messages.map((msg, idx) => (
-                    <div key={idx} className="flex flex-col items-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <div className="relative max-w-[85%] bg-[#182533] text-white rounded-2xl rounded-tl-none px-3 py-2 text-[15px] leading-relaxed shadow-sm">
-                            {/* Tail SVG */}
-                            <svg className="absolute w-[11px] h-[20px] -left-[11px] top-0 text-[#182533] fill-current" viewBox="0 0 11 20">
-                                <path d="M11 20C11 20 11 0 11 0C11 0 5 0 2 0C-0.9 0 -0.1 3 1.5 4.5C3.1 6 11 20 11 20Z"></path>
-                            </svg>
+                {messages.map((msg, idx) => {
+                    // Validar la URL de la imagen (de prueba o del libro)
+                    let coverUrl = 'https://m.media-amazon.com/images/I/81Y1u+L4kRL._SL1500_.jpg'; // Fallback
+                    if (sampleBook) {
+                        coverUrl = getCoverUrl(('cover' in sampleBook ? (sampleBook as any).cover : sampleBook.coverUrl) as string, ('cover_thumb' in sampleBook ? (sampleBook as any).cover_thumb : sampleBook.coverThumbUrl) as string, coverQuality as any || 'mediana');
+                    }
 
-                            <div
-                                className="html-preview-content space-y-2 [&>p]:m-0 [&>a]:text-[#53a6e4] [&>a]:underline-offset-2 [&>strong]:font-bold [&>em]:italic"
-                                dangerouslySetInnerHTML={{ __html: msg }}
-                            />
+                    return (
+                        <div key={idx} className="flex flex-col items-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <div className="relative max-w-[85%] bg-[#182533] text-white rounded-2xl rounded-tl-none text-[15px] leading-relaxed shadow-sm flex flex-col overflow-hidden">
+                                {/* Tail SVG */}
+                                <svg className="absolute w-[11px] h-[20px] -left-[11px] top-0 text-[#182533] fill-current" viewBox="0 0 11 20">
+                                    <path d="M11 20C11 20 11 0 11 0C11 0 5 0 2 0C-0.9 0 -0.1 3 1.5 4.5C3.1 6 11 20 11 20Z"></path>
+                                </svg>
 
-                            <div className="flex justify-end items-center gap-1 mt-1 -mb-1 float-right clear-both ml-3">
-                                <span className="text-[11px] text-[#768c9e]">12:00</span>
-                                <CheckCheck className="w-3.5 h-3.5 text-[#53a6e4]" />
+                                {/* Imagen de Portada (Telegram Caption Style) */}
+                                <div className="w-full relative">
+                                    <img src={coverUrl} alt="Cover Preview" className="w-full h-auto object-cover max-h-[350px] bg-[#101924]" />
+                                </div>
+
+                                <div className="px-3 pt-2 pb-2">
+                                    <div
+                                        className="html-preview-content space-y-2 [&>p]:m-0 [&>a]:text-[#53a6e4] [&>a]:underline-offset-2 [&>strong]:font-bold [&>em]:italic break-words"
+                                        dangerouslySetInnerHTML={{ __html: msg }}
+                                    />
+
+                                    <div className="flex justify-end items-center gap-1 mt-1 -mb-1 float-right clear-both ml-3">
+                                        <span className="text-[11px] text-[#768c9e]">12:00</span>
+                                        <CheckCheck className="w-3.5 h-3.5 text-[#53a6e4]" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Botones inline simulados */}
+                            <div className="mt-1 flex flex-col max-w-[85%] space-y-1 w-full pl-[2px]">
+                                <div className="flex gap-1 w-full">
+                                    <button className="flex-1 bg-[#182533] text-[#53a6e4] hover:bg-[#202e3f] transition-colors py-2 px-3 rounded-xl text-sm font-semibold text-center border border-transparent">
+                                        📖 Leer Online
+                                    </button>
+                                    <button className="flex-1 bg-[#182533] text-[#53a6e4] hover:bg-[#202e3f] transition-colors py-2 px-3 rounded-xl text-sm font-semibold text-center border border-transparent">
+                                        🔽 Descargar
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    )
+                })}
 
             </div>
 

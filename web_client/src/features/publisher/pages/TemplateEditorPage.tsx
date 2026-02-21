@@ -79,7 +79,7 @@ export const TemplateEditorPage: React.FC = () => {
             try {
                 // Llamado a searchVolumes (que configuraremos en el backend router)
                 const res = await api.searchVolumes(searchQuery, 1, 10);
-                setSearchResults(res.result?.items || res.result?.results || []);
+                setSearchResults(res.items || res.results || res.result?.items || res.result?.results || []);
                 setShowResults(true);
             } catch (err) {
                 console.error('Error searching books:', err);
@@ -274,7 +274,9 @@ export const TemplateEditorPage: React.FC = () => {
                                             <button
                                                 key={book.id}
                                                 className="w-full p-3 rounded-premium-sm bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex items-center gap-4 transition-all"
-                                                onClick={() => {
+                                                onMouseDown={(e) => {
+                                                    // Usamos onMouseDown en lugar de onClick porque ocurre ANTES que onBlur del input
+                                                    e.preventDefault();
                                                     setSelectedBook(book);
                                                     setSearchQuery(book.title);
                                                     setShowResults(false);
