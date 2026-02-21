@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNavigation } from '@shared/contexts/NavigationContext';
 import { usePublisher } from '../hooks/usePublisher';
 import {
@@ -20,7 +21,6 @@ import {
     Star
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
-import { TemplateModal } from '../components/TemplateModal';
 import { ScheduleModal } from '../components/ScheduleModal';
 import { ChannelModal } from '../components/ChannelModal';
 import { PublicationTemplate, PublicationQueueItem, PublicationChannel } from '../services/publisherApi';
@@ -44,23 +44,24 @@ export const PublisherDashboard: React.FC = () => {
         deleteTemplate
     } = usePublisher();
     const [activeTab, setActiveTab] = useState<'queue' | 'channels' | 'templates'>('queue');
-    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
-    const [editingTemplate, setEditingTemplate] = useState<PublicationTemplate | null>(null);
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [editingQueueItem, setEditingQueueItem] = useState<PublicationQueueItem | null>(null);
     const [selectedBookHash, setSelectedBookHash] = useState('');
     const [selectedBookTitle, setSelectedBookTitle] = useState('');
     const [isChannelModalOpen, setIsChannelModalOpen] = useState(false);
     const [editingChannel, setEditingChannel] = useState<PublicationChannel | null>(null);
+    const navigate = useNavigate();
 
     const handleCreateTemplate = () => {
-        setEditingTemplate(null);
-        setIsTemplateModalOpen(true);
+        React.startTransition(() => {
+            navigate('/admin/templates/new');
+        });
     };
 
     const handleEditTemplate = (template: PublicationTemplate) => {
-        setEditingTemplate(template);
-        setIsTemplateModalOpen(true);
+        React.startTransition(() => {
+            navigate(`/admin/templates/${template.id}`);
+        });
     };
 
     const handleEditQueueItem = (item: PublicationQueueItem) => {
@@ -381,13 +382,6 @@ export const PublisherDashboard: React.FC = () => {
                     </div>
                 )}
             </div>
-
-            <TemplateModal
-                isOpen={isTemplateModalOpen}
-                onClose={() => setIsTemplateModalOpen(false)}
-                onSave={saveTemplate}
-                editingTemplate={editingTemplate}
-            />
 
             <ScheduleModal
                 isOpen={isScheduleModalOpen}

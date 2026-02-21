@@ -523,65 +523,78 @@ class PublisherService:
             await self.repo.update(item)
 
     def _apply_template(self, template_str: str, data: dict) -> str:
-        """Aplica placeholders con todos los campos disponibles de LocalBook."""
-        try:
-            # Preparar mapeo dinámico base de todos los datos
-            mapping = {k: v for k, v in data.items()}
+        """Aplica condicionales [?var]...[/?] y placeholders {var} con campos de LocalBook."""
+        import re
+        import logging
+        logger = logging.getLogger(__name__)
 
-            # Agregar mapeo manual en español y alias de compatibilidad
+        try:
+            mapping = {k: v for k, v in data.items()}
             mapping.update(
                 {
                     "titulo": data.get("title", ""),
-                    "autor": data.get("author", "Desconocido"),
+                    "autor": data.get("author", ""),
                     "serie": data.get("series", ""),
                     "volumen": data.get("volume", ""),
                     "sinopsis": data.get("description", ""),
                     "resumen": data.get("summary", ""),
                     "etiquetas": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
-                    "idioma": data.get("language", "es"),
+                    "idioma": data.get("language", ""),
                     "editorial": data.get("publisher", ""),
                     "traductor": data.get("translator", ""),
                     "maquetador": data.get("layout_by", ""),
                     "tipo": data.get("book_type", ""),
-                    "tamaño": data.get("size", "0 MB"),
-                    "rating": data.get("rating_average", 0.0),
-                    "votes": data.get("rating_count", 0),
+                    "tamaño": data.get("size", ""),
+                    "rating": data.get("rating_average", ""),
+                    "votes": data.get("rating_count", ""),
                     "hash": data.get("book_hash", ""),
                     "version": data.get("epub_version", ""),
                     "tags": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
                     "genres": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
+                    "published_at": data.get("published_at", ""),
+                    "edition": data.get("edition", ""),
+                    "color_mode": data.get("color_mode", ""),
+                    "is_uncensored": data.get("is_uncensored", ""),
                 }
             )
 
-            # Normalizar None a strings vacíos para evitar que se impriman como "None"
+            # Normalizar None a strings vacíos
             for k, v in mapping.items():
                 if v is None:
                     mapping[k] = ""
                 else:
                     mapping[k] = str(v)
 
-            # Reemplazar placeholders manual para evitar errores con llaves de HTML si las hay
-            # Usamos .format() pero con un fallback recursivo/manual si falla
-            try:
-                # Filtrar solo las llaves que están en nuestro mapping. Si no existe, devolvemos vacío para no romper.
-                import re
+            # 1. Evaluar condicionales: [?variable]...[/?]
+            def evaluate_conditional(match):
+                var_name = match.group(1).lower()
+                content = match.group(2)
+                value = mapping.get(var_name, "").strip()
+                # Considerar vacío si es Desconocido, 0.0, 0 MB o string vacío
+                if not value or value.lower() in ["desconocido", "0.0", "0", "0 mb", "false"]:
+                    return ""
+                return content
 
-                placeholders = re.findall(r"\{(\w+)\}", template_str)
-                safe_mapping = {p: mapping.get(p, "") for p in placeholders}
-                return template_str.format(**safe_mapping)
-            except Exception:
-                result = template_str
-                # Replace explicitly
-                for key, val in mapping.items():
-                    result = result.replace(f"{{{key}}}", val)
-                # Remueve las llaves sobrantes que no matchearon
-                import re
+            # Regex DOTALL para permitir saltos de línea dentro del condicional
+            result_str = re.sub(r"\[\?(\w+)\](.*?)\[/\?\]", evaluate_conditional, template_str, flags=re.IGNORECASE | re.DOTALL)
 
-                result = re.sub(r"\{(\w+)\}", "", result)
-                return result
+            # 2. Limpiar saltos de línea excesivos o <p></p> vacíos generados
+            # Se omite para no romper el HTML complejo, que el frontend/Telegram normalice.
+
+            # 3. Reemplazos directos {var}
+            placeholders = set(re.findall(r"\{(\w+)\}", result_str))
+            for p in placeholders:
+                val = mapping.get(p, "")
+                # Valores por defecto visuales solo para la renderización normal
+                if not val and p == "autor":
+                    val = "Desconocido"
+                elif not val and p == "tamaño":
+                    val = "0 MB"
+                result_str = result_str.replace(f"{{{p}}}", val)
+            
+            return result_str
         except Exception as e:
             import logging
-
             logger = logging.getLogger(__name__)
             logger.warning(f"Error applying template: {e}")
             return template_str

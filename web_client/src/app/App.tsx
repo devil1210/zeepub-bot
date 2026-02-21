@@ -18,6 +18,7 @@ const Downloads = React.lazy(() => import('@features/library/pages/Downloads').t
 const UploadEpub = React.lazy(() => import('@features/upload/pages/Upload').then(m => ({ default: m.UploadEpub })));
 const AIHub = React.lazy(() => import('@features/ai/pages/AIHub').then(m => ({ default: m.AIHub })));
 const BookDetailById = React.lazy(() => import('@features/book/pages/BookDetailById').then(m => ({ default: m.BookDetailById })));
+const TemplateEditorPage = React.lazy(() => import('@features/publisher/pages/TemplateEditorPage').then(m => ({ default: m.TemplateEditorPage })));
 
 import { Series, Volume } from '@shared/types';
 import { LoginGate } from '@components/LoginGate';
@@ -206,6 +207,12 @@ const AppContent: React.FC = () => {
             } />
             <Route path="/admin" element={
               isAdmin ? <PageWrapper Component={Admin} /> : <Navigate to="/" replace />
+            } />
+            <Route path="/admin/templates/new" element={
+              isAdmin ? <PageWrapper Component={TemplateEditorPage} /> : <Navigate to="/" replace />
+            } />
+            <Route path="/admin/templates/:id" element={
+              isAdmin ? <PageWrapper Component={TemplateEditorPage} /> : <Navigate to="/" replace />
             } />
 
             {/* Details Routes - All consolidated to use IDs from URL */}

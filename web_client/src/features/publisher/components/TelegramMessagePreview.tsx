@@ -1,10 +1,13 @@
 import React, { useMemo } from 'react';
 import { CheckCheck } from 'lucide-react';
 
+import { Book } from '@shared/types';
+
 interface TelegramMessagePreviewProps {
     content: string;
     templateName?: string;
     coverQuality?: string;
+    sampleBook?: Book | null;
 }
 
 // Datos falsos para mostrar en la previsualización
@@ -28,25 +31,51 @@ const DUMMY_DATA: Record<string, string> = {
     '{language}': 'es'
 };
 
-export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ content, templateName }) => {
+export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ content, templateName, sampleBook }) => {
 
     // Parsear el contenido para generar las burbujas simuladas
     const messages = useMemo(() => {
         if (!content) return [];
 
+        // Map DUMMY_DATA optionally extended with sampleBook properties
+        const mapping = { ...DUMMY_DATA };
+        if (sampleBook) {
+            mapping['{titulo}'] = sampleBook.title || mapping['{titulo}'];
+            mapping['{autor}'] = sampleBook.author || mapping['{autor}'];
+            mapping['{volumen}'] = sampleBook.volumeNumber ? `Vol. ${sampleBook.volumeNumber}` : mapping['{volumen}'];
+            mapping['{tamaño}'] = sampleBook.size || mapping['{tamaño}'];
+            mapping['{is_uncensored}'] = sampleBook.is_uncensored ? 'Sí' : 'No';
+            mapping['{traductor}'] = sampleBook.translator || 'Desconocido';
+            mapping['{tipo}'] = sampleBook.bookType || mapping['{tipo}'];
+            mapping['{serie}'] = sampleBook.series || mapping['{serie}'];
+        }
+
+        // 1. Evaluar condicionales: [?variable]...[/?]
+        const evaluateConditional = (match: string, varName: string, innerContent: string) => {
+            const key = `{${varName.toLowerCase()}}`;
+            const value = mapping[key] || "";
+            // Considerar vacío si es Desconocido, 0.0, 0 MB, False o string vacío
+            const lowerVal = value.toString().trim().toLowerCase();
+            if (!lowerVal || lowerVal === "desconocido" || lowerVal === "0.0" || lowerVal === "0" || lowerVal === "0 mb" || lowerVal === "false" || lowerVal === "no") {
+                return "";
+            }
+            return innerContent;
+        };
+
+        let resultStr = content.replace(/\[\?(\w+)\](.*?)\[\/?\]/gis, evaluateConditional);
+
         // Telegram parser: reemplazar variables
-        let parsedContent = content;
-        Object.entries(DUMMY_DATA).forEach(([key, value]) => {
+        Object.entries(mapping).forEach(([key, value]) => {
             // Regex case insensitive global para las variables
             const regex = new RegExp(key.replace('{', '\\{').replace('}', '\\}'), 'gi');
-            parsedContent = parsedContent.replace(regex, value);
+            resultStr = resultStr.replace(regex, value);
         });
 
         // Simular el comportamiento del backend: dividir por ---next--- o <hr>
-        const parts = parsedContent.split(/&lt;hr\s*\/?&gt;|<hr\s*\/?>|---next---|---/i);
+        const parts = resultStr.split(/&lt;hr\s*\/?&gt;|<hr\s*\/?>|---next---|---/i);
 
         return parts.map(p => p.trim()).filter(p => p.length > 0);
-    }, [content]);
+    }, [content, sampleBook]);
 
     return (
         <div className="flex flex-col h-full rounded-premium overflow-hidden border border-white/10 bg-[#0e1621] font-sans">
