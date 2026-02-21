@@ -555,6 +555,7 @@ class PublisherService:
                     "edition": data.get("edition", ""),
                     "color_mode": data.get("color_mode", ""),
                     "is_uncensored": data.get("is_uncensored", ""),
+                    "archivo": __import__("os").path.basename(str(data.get("filepath", ""))) if data.get("filepath") else "",
                 }
             )
 

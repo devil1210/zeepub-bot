@@ -37,7 +37,8 @@ const DUMMY_DATA: Record<string, string> = {
     '{edition}': 'Digital',
     '{is_uncensored}': 'Sí',
     '{color_mode}': 'Color',
-    '{language}': 'es'
+    '{language}': 'es',
+    '{archivo}': 'Demon_Slayer_v01.epub'
 };
 
 
@@ -67,6 +68,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             mapping['{layout_by}'] = sampleBook.layout_by || 'Desconocido';
             mapping['{tipo}'] = sampleBook.bookType || mapping['{tipo}'];
             mapping['{isbn}'] = sampleBook.isbn || mapping['{isbn}'];
+            mapping['{archivo}'] = sampleBook.title ? `${sampleBook.title.replace(/\s+/g, '_')}.epub` : mapping['{archivo}'];
         }
 
         // 1. Evaluar condicionales: [?variable]...[/?]

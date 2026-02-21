@@ -31,7 +31,8 @@ import {
     BookOpen,
     ShieldCheck,
     Palette,
-    Languages
+    Languages,
+    FileArchive,
 } from 'lucide-react';
 import './RichTextEditor.css';
 
@@ -110,6 +111,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
         { icon: <ShieldCheck className="w-3 h-3" />, label: 'Sin Censura', value: 'is_uncensored' },
         { icon: <Palette className="w-3 h-3" />, label: 'Color/B&N', value: 'color_mode' },
         { icon: <Languages className="w-3 h-3" />, label: 'Idioma', value: 'language' },
+        { icon: <FileArchive className="w-3 h-3" />, label: 'Archivo', value: 'archivo' }
     ];
 
     return (
