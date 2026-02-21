@@ -63,7 +63,7 @@ export const TemplateEditorPage: React.FC = () => {
             try {
                 // Llamado a searchVolumes (que configuraremos en el backend router)
                 const res = await api.searchVolumes(searchQuery, 1, 10);
-                setSearchResults(res.data?.items || res.data?.results || []);
+                setSearchResults(res.result?.items || res.result?.results || []);
                 setShowResults(true);
             } catch (err) {
                 console.error('Error searching books:', err);
