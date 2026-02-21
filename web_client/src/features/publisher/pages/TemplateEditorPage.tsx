@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-    ChevronLeft, Type, Save, Check, Loader2, Smartphone, Globe, Search as SearchIcon
+    ChevronLeft, Type, Save, Check, Loader2, Smartphone, Globe, Search as SearchIcon, ArrowRight
 } from 'lucide-react';
 import { usePublisher } from '../hooks/usePublisher';
 import { RichTextEditor } from '@shared/components/RichTextEditor/RichTextEditor';
@@ -9,6 +9,8 @@ import { TelegramMessagePreview } from '../components/TelegramMessagePreview';
 import { api } from '@shared/services/api';
 import { Book } from '@shared/types';
 import { useTelegram } from '@shared/contexts/TelegramContext';
+import { useTheme } from '@shared/contexts/ThemeContext';
+import { getCoverUrl } from '@shared/utils/imageUtils';
 
 export const TemplateEditorPage: React.FC = () => {
     const navigate = useNavigate();
@@ -17,10 +19,24 @@ export const TemplateEditorPage: React.FC = () => {
 
     const { templates, saveTemplate, refresh } = usePublisher();
     const { webApp } = useTelegram();
+    const { settings } = useTheme();
+
+    const DEFAULT_TELEGRAM_TEMPLATE = `Epub de: {series} ║ {seriesSpanish} ║ {title}
+[?volumeNumber]Volumen {volumeNumber}[/?]
+#{seriesHash}
+
+<b>Maquetado por:</b> #ZeePub 
+<b>Categoría:</b> {bookType}
+[?demography]<b>Demografía:</b> {demography}[/?]
+[?genres]<b>Géneros:</b> {genres}[/?]
+[?author]<b>Autor:</b> {author}[/?]
+[?illustrator]<b>Ilustrador:</b> {illustrator}[/?]
+[?publishedAt]<b>Publicado:</b> {publishedAt}[/?]
+[?translator]<b>Traducción:</b> {translator}[/?]`;
 
     // Form state
     const [name, setName] = useState('');
-    const [content, setContent] = useState('');
+    const [content, setContent] = useState(DEFAULT_TELEGRAM_TEMPLATE);
     const [platform, setPlatform] = useState('telegram');
     const [coverQuality, setCoverQuality] = useState<'original' | 'high' | 'medium' | 'low'>('high');
 
@@ -42,7 +58,7 @@ export const TemplateEditorPage: React.FC = () => {
             const template = templates.find(t => t.id === parseInt(id));
             if (template) {
                 setName(template.name);
-                setContent(template.content);
+                setContent(template.content || DEFAULT_TELEGRAM_TEMPLATE);
                 setPlatform(template.platform);
                 setCoverQuality(template.extra_config?.cover_quality || 'high');
             }
@@ -252,21 +268,43 @@ export const TemplateEditorPage: React.FC = () => {
 
                             {/* Search Results Dropdown */}
                             {showResults && searchResults.length > 0 && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1e] border border-white/10 rounded-premium shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
-                                    {searchResults.map((book) => (
-                                        <button
-                                            key={book.id}
-                                            className="w-full text-left px-4 py-3 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors flex flex-col"
-                                            onClick={() => {
-                                                setSelectedBook(book);
-                                                setSearchQuery(book.title);
-                                                setShowResults(false);
-                                            }}
-                                        >
-                                            <span className="text-sm font-bold text-white truncate">{book.title}</span>
-                                            <span className="text-xs text-gray-500 truncate">{book.author || 'Sin autor'} • Vol. {book.volumeNumber || '?'}</span>
-                                        </button>
-                                    ))}
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1e] border border-white/10 rounded-premium shadow-2xl overflow-hidden max-h-[300px] overflow-y-auto p-2 custom-scrollbar">
+                                    <div className="space-y-2">
+                                        {searchResults.map((book) => (
+                                            <button
+                                                key={book.id}
+                                                className="w-full p-3 rounded-premium-sm bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex items-center gap-4 transition-all"
+                                                onClick={() => {
+                                                    setSelectedBook(book);
+                                                    setSearchQuery(book.title);
+                                                    setShowResults(false);
+                                                }}
+                                            >
+                                                {('cover' in book ? (book as any).cover : book.coverUrl) ? (
+                                                    <img src={getCoverUrl(('cover' in book ? (book as any).cover : book.coverUrl) as string, ('cover_thumb' in book ? (book as any).cover_thumb : book.coverThumbUrl) as string, settings.coverQuality || 'pequeña')} className="w-10 h-14 object-cover rounded-md flex-shrink-0" alt="" />
+                                                ) : (
+                                                    <div className="w-10 h-14 bg-white/10 rounded-md flex items-center justify-center flex-shrink-0">
+                                                        <SearchIcon className="w-4 h-4 opacity-50 text-white" />
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0 text-left">
+                                                    <h4 className="font-bold text-white text-sm truncate">{book.title}</h4>
+                                                    <p className="text-xs text-gray-400 font-black uppercase tracking-widest truncate">{book.author || 'Sin autor'} • Vol. {book.volumeNumber || '?'}</p>
+                                                    <div className="flex flex-wrap gap-1.5 mt-2">
+                                                        {book.book_type && (
+                                                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-white/5 text-gray-400 border border-white/10 uppercase">{book.book_type}</span>
+                                                        )}
+                                                        {book.is_uncensored && (
+                                                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-red-500/10 text-red-500 border border-red-500/20 uppercase">S/C</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="ml-auto pl-2">
+                                                    <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                         </div>
