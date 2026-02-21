@@ -26,7 +26,12 @@ import {
     Star,
     HardDrive,
     Image,
-    MessageSquarePlus
+    MessageSquarePlus,
+    Calendar,
+    BookOpen,
+    ShieldCheck,
+    Palette,
+    Languages
 } from 'lucide-react';
 import './RichTextEditor.css';
 
@@ -72,7 +77,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
         { icon: <Redo className="w-4 h-4" />, action: () => editor.chain().focus().redo().run(), active: false, title: 'Rehacer' },
         {
             icon: <MessageSquarePlus className="w-4 h-4 text-primary" />,
-            action: () => editor.chain().focus().insertContent('<hr />').run(),
+            action: () => editor.chain().focus().insertContent('\n\n---next---\n\n').run(),
             active: false,
             title: 'Siguiente Mensaje (Divide la publicación)'
         },
@@ -91,6 +96,11 @@ const MenuBar = ({ editor }: { editor: any }) => {
         { icon: <HardDrive className="w-3 h-3" />, label: 'Tamaño', value: 'tamaño' },
         { icon: <Image className="w-3 h-3" />, label: 'Portada HD', value: 'cover_high' },
         { icon: <Image className="w-3 h-3" />, label: 'Portada SD', value: 'cover_low' },
+        { icon: <Calendar className="w-3 h-3" />, label: 'Fecha Publ.', value: 'published_at' },
+        { icon: <BookOpen className="w-3 h-3" />, label: 'Edición', value: 'edition' },
+        { icon: <ShieldCheck className="w-3 h-3" />, label: 'Sin Censura', value: 'is_uncensored' },
+        { icon: <Palette className="w-3 h-3" />, label: 'Color/B&N', value: 'color_mode' },
+        { icon: <Languages className="w-3 h-3" />, label: 'Idioma', value: 'language' },
     ];
 
     return (

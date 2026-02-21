@@ -1,0 +1,108 @@
+import React, { useMemo } from 'react';
+import { CheckCheck } from 'lucide-react';
+
+interface TelegramMessagePreviewProps {
+    content: string;
+    templateName?: string;
+    coverQuality?: string;
+}
+
+// Datos falsos para mostrar en la previsualización
+const DUMMY_DATA: Record<string, string> = {
+    '{titulo}': 'Demon Slayer: Kimetsu no Yaiba',
+    '{autor}': 'Koyoharu Gotouge',
+    '{serie}': 'Demon Slayer [NL]',
+    '{volumen}': 'Volumen 01',
+    '{sinopsis}': 'Tanjiro Kamado es un chico inteligente y de buen corazón que vive con su familia y gana dinero vendiendo carbón. Todo cambia cuando su familia es atacada y asesinada por un demonio (oni).',
+    '{tipo}': 'Novela Ligera',
+    '{traductor}': 'Demon Fansub',
+    '{editorial}': 'Shueisha',
+    '{rating}': '⭐ 4.9',
+    '{tamaño}': '5.2 MB',
+    '{cover_high}': '📷 <i>[Adjunto: Portada HD]</i>',
+    '{cover_low}': '📷 <i>[Adjunto: Portada SD]</i>',
+    '{published_at}': '2016-02-15',
+    '{edition}': 'Digital',
+    '{is_uncensored}': 'Sí',
+    '{color_mode}': 'Color',
+    '{language}': 'es'
+};
+
+export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ content, templateName }) => {
+
+    // Parsear el contenido para generar las burbujas simuladas
+    const messages = useMemo(() => {
+        if (!content) return [];
+
+        // Telegram parser: reemplazar variables
+        let parsedContent = content;
+        Object.entries(DUMMY_DATA).forEach(([key, value]) => {
+            // Regex case insensitive global para las variables
+            const regex = new RegExp(key.replace('{', '\\{').replace('}', '\\}'), 'gi');
+            parsedContent = parsedContent.replace(regex, value);
+        });
+
+        // Simular el comportamiento del backend: dividir por ---next--- o <hr>
+        const parts = parsedContent.split(/&lt;hr\s*\/?&gt;|<hr\s*\/?>|---next---|---/i);
+
+        return parts.map(p => p.trim()).filter(p => p.length > 0);
+    }, [content]);
+
+    return (
+        <div className="flex flex-col h-full rounded-premium overflow-hidden border border-white/10 bg-[#0e1621] font-sans">
+            {/* Cabecera simulada de Telegram */}
+            <div className="flex items-center gap-3 px-4 py-2 bg-[#17212b] border-b border-black/20 shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
+                    {templateName ? templateName.charAt(0).toUpperCase() : 'Z'}
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-white font-semibold text-sm">
+                        {templateName || 'Vista Previa'}
+                    </span>
+                    <span className="text-[#7f91a4] text-xs">bot</span>
+                </div>
+            </div>
+
+            {/* Panel de mensajes (scrollable) */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[url('https://telegram.org/file/464001088/2/5B5g3M1b0D8.127411/56c739199a5e4d2ebf')] bg-cover bg-center">
+
+                {messages.length === 0 && (
+                    <div className="flex justify-center mt-10">
+                        <span className="bg-[#182533]/80 text-[#7f91a4] text-xs px-3 py-1 rounded-full backdrop-blur-sm">
+                            El contenido aparecerá aquí...
+                        </span>
+                    </div>
+                )}
+
+                {messages.map((msg, idx) => (
+                    <div key={idx} className="flex flex-col items-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="relative max-w-[85%] bg-[#182533] text-white rounded-2xl rounded-tl-none px-3 py-2 text-[15px] leading-relaxed shadow-sm">
+                            {/* Tail SVG */}
+                            <svg className="absolute w-[11px] h-[20px] -left-[11px] top-0 text-[#182533] fill-current" viewBox="0 0 11 20">
+                                <path d="M11 20C11 20 11 0 11 0C11 0 5 0 2 0C-0.9 0 -0.1 3 1.5 4.5C3.1 6 11 20 11 20Z"></path>
+                            </svg>
+
+                            <div
+                                className="html-preview-content space-y-2 [&>p]:m-0 [&>a]:text-[#53a6e4] [&>a]:underline-offset-2 [&>strong]:font-bold [&>em]:italic"
+                                dangerouslySetInnerHTML={{ __html: msg }}
+                            />
+
+                            <div className="flex justify-end items-center gap-1 mt-1 -mb-1 float-right clear-both ml-3">
+                                <span className="text-[11px] text-[#768c9e]">12:00</span>
+                                <CheckCheck className="w-3.5 h-3.5 text-[#53a6e4]" />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+            </div>
+
+            {/* Input simulado */}
+            <div className="bg-[#17212b] p-3 flex shrink-0">
+                <div className="bg-[#242f3d] rounded-full w-full h-10 px-4 flex items-center text-[#7f91a4] text-sm">
+                    Mensaje...
+                </div>
+            </div>
+        </div>
+    );
+};

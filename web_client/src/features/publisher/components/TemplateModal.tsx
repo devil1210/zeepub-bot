@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Type, Loader2, Check, Save, Smartphone, Globe } from 'lucide-react';
 import { RichTextEditor } from '@shared/components/RichTextEditor/RichTextEditor';
 import { PublicationTemplate } from '../services/publisherApi';
+import { TelegramMessagePreview } from './TelegramMessagePreview';
 
 interface TemplateModalProps {
     isOpen: boolean;
@@ -65,7 +66,7 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose, o
         <div className="fixed inset-0 z-[60] overflow-y-auto" role="dialog" aria-modal="true">
             <div className="fixed inset-0 bg-black/70 backdrop-blur-md transition-opacity" onClick={onClose}></div>
             <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
-                <div className="relative transform overflow-hidden rounded-premium bg-[#1a1a1e] text-left shadow-2xl transition-all w-full max-w-2xl border border-white/10 animate-in fade-in zoom-in-95 duration-200">
+                <div className="relative transform overflow-hidden rounded-premium bg-[#1a1a1e] text-left shadow-2xl transition-all w-full max-w-6xl border border-white/10 animate-in fade-in zoom-in-95 duration-200">
                     {/* Header */}
                     <div className="relative px-6 py-5 border-b border-white/5 flex justify-between items-center bg-gradient-to-b from-white/5 to-transparent">
                         <div className="flex items-center gap-3">
@@ -88,65 +89,75 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ isOpen, onClose, o
                     </div>
 
                     {/* Body */}
-                    <div className="px-6 py-6 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Nombre de la Plantilla</label>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="Ej: Lanzamientos Diarios"
-                                    className="w-full bg-black/20 border border-white/10 rounded-premium-sm px-4 py-2.5 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                                />
+                    <div className="px-6 py-6 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Nombre de la Plantilla</label>
+                                    <input
+                                        type="text"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Ej: Lanzamientos Diarios"
+                                        className="w-full bg-black/20 border border-white/10 rounded-premium-sm px-4 py-2.5 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Plataforma</label>
+                                    <div className="flex gap-2">
+                                        {(['telegram', 'facebook'] as const).map((p) => (
+                                            <button
+                                                key={p}
+                                                type="button"
+                                                onClick={() => setPlatform(p)}
+                                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all border ${platform === p
+                                                    ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10'
+                                                    : 'bg-black/20 border-white/5 text-gray-500 hover:text-gray-300'
+                                                    }`}
+                                            >
+                                                {p === 'telegram' ? <Smartphone className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+                                                {p}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
+
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Plataforma</label>
-                                <div className="flex gap-2">
-                                    {(['telegram', 'facebook'] as const).map((p) => (
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Calidad de Portada (Telegram)</label>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {(['original', 'high', 'medium', 'low'] as const).map((q) => (
                                         <button
-                                            key={p}
+                                            key={q}
                                             type="button"
-                                            onClick={() => setPlatform(p)}
-                                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all border ${platform === p
-                                                ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10'
+                                            onClick={() => setCoverQuality(q)}
+                                            className={`py-2 px-1 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${coverQuality === q
+                                                ? 'bg-primary/20 border-primary text-primary'
                                                 : 'bg-black/20 border-white/5 text-gray-500 hover:text-gray-300'
                                                 }`}
                                         >
-                                            {p === 'telegram' ? <Smartphone className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
-                                            {p}
+                                            {q === 'original' ? 'Ultra HD' : q === 'high' ? 'Alta' : q === 'medium' ? 'Media' : 'Baja'}
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Calidad de Portada (Telegram)</label>
-                            <div className="grid grid-cols-4 gap-2">
-                                {(['original', 'high', 'medium', 'low'] as const).map((q) => (
-                                    <button
-                                        key={q}
-                                        type="button"
-                                        onClick={() => setCoverQuality(q)}
-                                        className={`py-2 px-1 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${coverQuality === q
-                                            ? 'bg-primary/20 border-primary text-primary'
-                                            : 'bg-black/20 border-white/5 text-gray-500 hover:text-gray-300'
-                                            }`}
-                                    >
-                                        {q === 'original' ? 'Ultra HD' : q === 'high' ? 'Alta' : q === 'medium' ? 'Media' : 'Baja'}
-                                    </button>
-                                ))}
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Contenido de la Publicación</label>
+                                <RichTextEditor
+                                    value={content}
+                                    onChange={setContent}
+                                    placeholder="Escribe el mensaje de la publicación... Usa las variables de abajo para datos dinámicos."
+                                />
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Contenido de la Publicación</label>
-                            <RichTextEditor
-                                value={content}
-                                onChange={setContent}
-                                placeholder="Escribe el mensaje de la publicación... Usa las variables de abajo para datos dinámicos."
-                            />
+                        {/* Columna Derecha: Vista Previa */}
+                        <div className="hidden lg:flex flex-col">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1 mb-2">Vista Previa de Telegram</label>
+                            <div className="flex-1 min-h-[450px] bg-black/20 rounded-premium border border-white/5 overflow-hidden shadow-inner">
+                                <TelegramMessagePreview content={content} templateName={name} coverQuality={coverQuality} />
+                            </div>
                         </div>
                     </div>
 
