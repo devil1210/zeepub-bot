@@ -25,7 +25,7 @@ import {
     Monitor,
     Star,
     HardDrive,
-    Image,
+    Image as ImageIcon,
     MessageSquarePlus,
     Calendar,
     BookOpen,
@@ -33,7 +33,14 @@ import {
     Palette,
     Languages,
     FileArchive,
+    Strikethrough,
+    Code,
+    Terminal,
+    Quote,
+    EyeOff,
+    SeparatorHorizontal,
 } from 'lucide-react';
+import { Spoiler } from './Spoiler';
 import './RichTextEditor.css';
 
 interface RichTextEditorProps {
@@ -71,9 +78,15 @@ const MenuBar = ({ editor }: { editor: any }) => {
         { icon: <Bold className="w-4 h-4" />, action: () => editor.chain().focus().toggleBold().run(), active: editor.isActive('bold'), title: 'Negrita' },
         { icon: <Italic className="w-4 h-4" />, action: () => editor.chain().focus().toggleItalic().run(), active: editor.isActive('italic'), title: 'Cursiva' },
         { icon: <UnderlineIcon className="w-4 h-4" />, action: () => editor.chain().focus().toggleUnderline().run(), active: editor.isActive('underline'), title: 'Subrayado' },
+        { icon: <Strikethrough className="w-4 h-4" />, action: () => editor.chain().focus().toggleStrike().run(), active: editor.isActive('strike'), title: 'Tachado' },
+        { icon: <EyeOff className="w-4 h-4" />, action: () => editor.chain().focus().toggleSpoiler().run(), active: editor.isActive('spoiler'), title: 'Spoiler' },
         { icon: <LinkIcon className="w-4 h-4" />, action: setLink, active: editor.isActive('link'), title: 'Insertar Link' },
+        { icon: <Code className="w-4 h-4" />, action: () => editor.chain().focus().toggleCode().run(), active: editor.isActive('code'), title: 'Código' },
+        { icon: <Terminal className="w-4 h-4" />, action: () => editor.chain().focus().toggleCodeBlock().run(), active: editor.isActive('codeBlock'), title: 'Bloque de código' },
+        { icon: <Quote className="w-4 h-4" />, action: () => editor.chain().focus().toggleBlockquote().run(), active: editor.isActive('blockquote'), title: 'Cita' },
         { icon: <List className="w-4 h-4" />, action: () => editor.chain().focus().toggleBulletList().run(), active: editor.isActive('bulletList'), title: 'Lista' },
         { icon: <ListOrdered className="w-4 h-4" />, action: () => editor.chain().focus().toggleOrderedList().run(), active: editor.isActive('orderedList'), title: 'Lista numerada' },
+        { icon: <SeparatorHorizontal className="w-4 h-4" />, action: () => editor.chain().focus().setHorizontalRule().run(), active: false, title: 'Separador' },
         { icon: <Undo className="w-4 h-4" />, action: () => editor.chain().focus().undo().run(), active: false, title: 'Deshacer' },
         { icon: <Redo className="w-4 h-4" />, action: () => editor.chain().focus().redo().run(), active: false, title: 'Rehacer' },
         {
@@ -104,8 +117,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
         { icon: <Tag className="w-3 h-3" />, label: 'ISBN/ID', value: 'isbn' },
         { icon: <Star className="w-3 h-3" />, label: 'Rating', value: 'rating' },
         { icon: <HardDrive className="w-3 h-3" />, label: 'Tamaño', value: 'tamaño' },
-        { icon: <Image className="w-3 h-3" />, label: 'Portada HD', value: 'cover_high' },
-        { icon: <Image className="w-3 h-3" />, label: 'Portada SD', value: 'cover_low' },
+        { icon: <ImageIcon className="w-3 h-3" />, label: 'Portada HD', value: 'cover_high' },
+        { icon: <ImageIcon className="w-3 h-3" />, label: 'Portada SD', value: 'cover_low' },
         { icon: <Calendar className="w-3 h-3" />, label: 'Fecha Publ.', value: 'published_at' },
         { icon: <BookOpen className="w-3 h-3" />, label: 'Edición', value: 'edition' },
         { icon: <ShieldCheck className="w-3 h-3" />, label: 'Sin Censura', value: 'is_uncensored' },
@@ -150,8 +163,20 @@ const MenuBar = ({ editor }: { editor: any }) => {
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange, placeholder }) => {
     const editor = useEditor({
         extensions: [
-            StarterKit,
+            StarterKit.configure({
+                codeBlock: {
+                    HTMLAttributes: {
+                        class: 'bg-black/40 rounded-lg p-3 font-mono text-sm border border-white/5 my-2',
+                    },
+                },
+                blockquote: {
+                    HTMLAttributes: {
+                        class: 'border-l-4 border-primary/50 pl-4 py-1 my-2 italic text-gray-400 bg-white/5 rounded-r-lg',
+                    },
+                },
+            }),
             Underline,
+            Spoiler,
             Link.configure({
                 openOnClick: false,
                 HTMLAttributes: {

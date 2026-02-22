@@ -26,11 +26,59 @@
 }
 
 .rich-text-editor-container .ProseMirror blockquote {
-    border-left: 3px solid rgba(255, 255, 255, 0.2);
-    padding-left: 1rem;
-    margin-left: 0;
+    border-left: 4px solid rgba(var(--color-primary), 0.5);
+    padding: 0.5rem 1rem;
+    margin: 1rem 0;
     font-style: italic;
     color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.rich-text-editor-container .ProseMirror code {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.3rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.9em;
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rich-text-editor-container .ProseMirror pre {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin: 1rem 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rich-text-editor-container .ProseMirror tg-spoiler,
+.rich-text-editor-container .ProseMirror .tg-spoiler {
+    background: rgba(255, 255, 255, 0.1);
+    color: transparent;
+    border-radius: 0.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rich-text-editor-container .ProseMirror tg-spoiler:hover,
+.rich-text-editor-container .ProseMirror .tg-spoiler:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.rich-text-editor-container .ProseMirror tg-spoiler.is-visible,
+.rich-text-editor-container .ProseMirror .tg-spoiler.is-visible {
+    background: transparent;
+    color: inherit;
+}
+
+.rich-text-editor-container .ProseMirror hr {
+    border: none;
+    border-top: 2px solid rgba(255, 255, 255, 0.1);
+    margin: 2rem 0;
 }
 
 .rich-text-editor-container .ProseMirror.ProseMirror-focused {
