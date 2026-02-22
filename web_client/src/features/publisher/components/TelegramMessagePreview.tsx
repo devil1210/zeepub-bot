@@ -41,7 +41,10 @@ const DUMMY_DATA: Record<string, string> = {
     '{is_uncensored}': 'Sí',
     '{color_mode}': 'Color',
     '{language}': 'es',
-    '{archivo}': 'Demon_Slayer_v01.epub'
+    '{archivo}': 'Demon_Slayer_v01.epub',
+    '{hash}': 'DS_KNY_01',
+    '{demography}': 'Shounen',
+    '{genres}': 'Acción, Fantasía, Demonios'
 };
 
 
@@ -72,6 +75,14 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             mapping['{tipo}'] = sampleBook.bookType || mapping['{tipo}'];
             mapping['{isbn}'] = sampleBook.isbn || mapping['{isbn}'];
             mapping['{archivo}'] = sampleBook.title ? `${sampleBook.title.replace(/\s+/g, '_')}.epub` : mapping['{archivo}'];
+            mapping['{hash}'] = (sampleBook as any).book_hash || mapping['{hash}'];
+
+            // Handle arrays like genres
+            const tags = (sampleBook as any).tags;
+            if (tags && Array.isArray(tags)) {
+                mapping['{genres}'] = tags.join(', ');
+                mapping['{demography}'] = tags.includes('Seinen') ? 'Seinen' : (tags.includes('Shounen') ? 'Shounen' : mapping['{demography}']);
+            }
         }
 
         // 1. Evaluar condicionales: [?variable]...[/?]

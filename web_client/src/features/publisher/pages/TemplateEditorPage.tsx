@@ -21,18 +21,18 @@ export const TemplateEditorPage: React.FC = () => {
     const { webApp } = useTelegram();
     const { settings } = useTheme();
 
-    const DEFAULT_TELEGRAM_TEMPLATE = `Epub de: {series} ║ {seriesSpanish} ║ {title}
-[?volumeNumber]Volumen {volumeNumber}[/?]
-#{seriesHash}
+    const DEFAULT_TELEGRAM_TEMPLATE = `Epub de: {serie} ║ {series_spanish} ║ {titulo}
+[?volumen]Volumen {volumen}[/?]
+#{hash}
 
 <b>Maquetado por:</b> #ZeePub 
-<b>Categoría:</b> {bookType}
+<b>Categoría:</b> {tipo}
 [?demography]<b>Demografía:</b> {demography}[/?]
 [?genres]<b>Géneros:</b> {genres}[/?]
-[?author]<b>Autor:</b> {author}[/?]
+[?autor]<b>Autor:</b> {autor}[/?]
 [?illustrator]<b>Ilustrador:</b> {illustrator}[/?]
-[?publishedAt]<b>Publicado:</b> {publishedAt}[/?]
-[?translator]<b>Traducción:</b> {translator}[/?]`;
+[?published_at]<b>Publicado:</b> {published_at}[/?]
+[?traductor]<b>Traducción:</b> {traductor}[/?]`;
 
     // Form state
     const [name, setName] = useState('');
@@ -77,12 +77,16 @@ export const TemplateEditorPage: React.FC = () => {
         searchTimeout.current = window.setTimeout(async () => {
             setIsSearching(true);
             try {
-                // Llamado a searchVolumes (que configuraremos en el backend router)
+                // Llamado a searchVolumes
                 const res = await api.searchVolumes(searchQuery, 1, 10);
-                setSearchResults(res.items || res.results || res.result?.items || res.result?.results || []);
+                console.log('[TemplateEditor] Search response:', res);
+                const items = res.items || res.results || res.result?.items || res.result?.results || [];
+                setSearchResults(items);
                 setShowResults(true);
             } catch (err) {
-                console.error('Error searching books:', err);
+                console.error('Error searching books in template editor:', err);
+                setSearchResults([]);
+                setShowResults(true); // Mostrar error/vacío
             } finally {
                 setIsSearching(false);
             }
@@ -253,9 +257,12 @@ export const TemplateEditorPage: React.FC = () => {
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
-                                    if (!e.target.value) setSelectedBook(null);
+                                    if (!e.target.value) {
+                                        setSelectedBook(null);
+                                        setShowResults(false);
+                                    }
                                 }}
-                                onFocus={() => { if (searchResults.length > 0) setShowResults(true); }}
+                                onFocus={() => { if (searchQuery.trim().length > 0) setShowResults(true); }}
                                 onBlur={() => setTimeout(() => setShowResults(false), 200)}
                                 placeholder="Buscar novela para probar datos..."
                                 className="w-full bg-black/40 border border-white/10 pl-10 pr-10 py-2.5 text-sm rounded-premium-sm text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
@@ -267,45 +274,57 @@ export const TemplateEditorPage: React.FC = () => {
                             )}
 
                             {/* Search Results Dropdown */}
-                            {showResults && searchResults.length > 0 && (
+                            {showResults && searchQuery.trim().length > 0 && (
                                 <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1e] border border-white/10 rounded-premium shadow-2xl overflow-hidden max-h-[300px] overflow-y-auto p-2 custom-scrollbar">
                                     <div className="space-y-2">
-                                        {searchResults.map((book) => (
-                                            <button
-                                                key={book.id}
-                                                className="w-full p-3 rounded-premium-sm bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex items-center gap-4 transition-all"
-                                                onMouseDown={(e) => {
-                                                    // Usamos onMouseDown en lugar de onClick porque ocurre ANTES que onBlur del input
-                                                    e.preventDefault();
-                                                    setSelectedBook(book);
-                                                    setSearchQuery(book.title);
-                                                    setShowResults(false);
-                                                }}
-                                            >
-                                                {('cover' in book ? (book as any).cover : book.coverUrl) ? (
-                                                    <img src={getCoverUrl(('cover' in book ? (book as any).cover : book.coverUrl) as string, ('cover_thumb' in book ? (book as any).cover_thumb : book.coverThumbUrl) as string, settings.coverQuality || 'pequeña')} className="w-10 h-14 object-cover rounded-md flex-shrink-0" alt="" />
-                                                ) : (
-                                                    <div className="w-10 h-14 bg-white/10 rounded-md flex items-center justify-center flex-shrink-0">
-                                                        <SearchIcon className="w-4 h-4 opacity-50 text-white" />
+                                        {isSearching ? (
+                                            <div className="p-4 flex flex-col items-center justify-center gap-2 text-gray-500">
+                                                <Loader2 className="w-5 h-5 animate-spin" />
+                                                <span className="text-xs">Buscando volúmenes...</span>
+                                            </div>
+                                        ) : searchResults.length > 0 ? (
+                                            searchResults.map((book) => (
+                                                <button
+                                                    key={book.id}
+                                                    className="w-full p-3 rounded-premium-sm bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex items-center gap-4 transition-all"
+                                                    onMouseDown={(e) => {
+                                                        // Usamos onMouseDown en lugar de onClick porque ocurre ANTES que onBlur del input
+                                                        e.preventDefault();
+                                                        setSelectedBook(book);
+                                                        setSearchQuery(book.title);
+                                                        setShowResults(false);
+                                                    }}
+                                                >
+                                                    {('cover' in book ? (book as any).cover : book.coverUrl) ? (
+                                                        <img src={getCoverUrl(('cover' in book ? (book as any).cover : book.coverUrl) as string, ('cover_thumb' in book ? (book as any).cover_thumb : book.coverThumbUrl) as string, settings.coverQuality || 'pequeña')} className="w-10 h-14 object-cover rounded-md flex-shrink-0" alt="" />
+                                                    ) : (
+                                                        <div className="w-10 h-14 bg-white/10 rounded-md flex items-center justify-center flex-shrink-0">
+                                                            <SearchIcon className="w-4 h-4 opacity-50 text-white" />
+                                                        </div>
+                                                    )}
+                                                    <div className="flex-1 min-w-0 text-left">
+                                                        <h4 className="font-bold text-white text-sm truncate">{book.title}</h4>
+                                                        <p className="text-xs text-gray-400 font-black uppercase tracking-widest truncate">{book.author || 'Sin autor'} • Vol. {book.volumeNumber || '?'}</p>
+                                                        <div className="flex flex-wrap gap-1.5 mt-2">
+                                                            {book.book_type && (
+                                                                <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-white/5 text-gray-400 border border-white/10 uppercase">{book.book_type}</span>
+                                                            )}
+                                                            {book.is_uncensored && (
+                                                                <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-red-500/10 text-red-500 border border-red-500/20 uppercase">S/C</span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                )}
-                                                <div className="flex-1 min-w-0 text-left">
-                                                    <h4 className="font-bold text-white text-sm truncate">{book.title}</h4>
-                                                    <p className="text-xs text-gray-400 font-black uppercase tracking-widest truncate">{book.author || 'Sin autor'} • Vol. {book.volumeNumber || '?'}</p>
-                                                    <div className="flex flex-wrap gap-1.5 mt-2">
-                                                        {book.book_type && (
-                                                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-white/5 text-gray-400 border border-white/10 uppercase">{book.book_type}</span>
-                                                        )}
-                                                        {book.is_uncensored && (
-                                                            <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-red-500/10 text-red-500 border border-red-500/20 uppercase">S/C</span>
-                                                        )}
+                                                    <div className="ml-auto pl-2">
+                                                        <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
                                                     </div>
-                                                </div>
-                                                <div className="ml-auto pl-2">
-                                                    <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
-                                                </div>
-                                            </button>
-                                        ))}
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="p-4 text-center text-gray-400 text-xs flex flex-col items-center gap-2">
+                                                <SearchIcon className="w-6 h-6 opacity-30" />
+                                                <span>No se encontró ningún volumen para probar.</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
