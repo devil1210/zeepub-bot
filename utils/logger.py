@@ -2,9 +2,10 @@ import logging
 import os
 import functools
 import time
-import sqlite3
 import json
 from datetime import datetime
+from utils.library_db import get_session
+from models.agent_models import AgentExecution
 
 # Configuración básica
 LOG_DIR = "logs"
@@ -12,24 +13,6 @@ if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
 
 LOG_FILE = os.path.join(LOG_DIR, "execution.log")
-DB_FILE = os.path.join(LOG_DIR, "antigravity.db")
-
-# Inicializar DB si no existe
-def init_db():
-    conn = sqlite3.connect(DB_FILE)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS executions
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  timestamp TEXT,
-                  func_name TEXT,
-                  status TEXT,
-                  duration REAL,
-                  error TEXT,
-                  metadata TEXT)''')
-    conn.commit()
-    conn.close()
-
-init_db()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -43,15 +26,21 @@ logging.basicConfig(
 logger = logging.getLogger("ZeePub-Agent")
 
 def log_to_db(func_name, status, duration, error=None, metadata=None):
+    """Registra la ejecución en PostgreSQL."""
     try:
-        conn = sqlite3.connect(DB_FILE)
-        c = conn.cursor()
-        c.execute("INSERT INTO executions (timestamp, func_name, status, duration, error, metadata) VALUES (?, ?, ?, ?, ?, ?)",
-                  (datetime.now().isoformat(), func_name, status, duration, str(error) if error else None, json.dumps(metadata) if metadata else None))
-        conn.commit()
-        conn.close()
+        session = get_session()
+        execution = AgentExecution(
+            func_name=func_name,
+            status=status,
+            duration=duration,
+            error=str(error) if error else None,
+            metadata_json=json.dumps(metadata) if metadata else None
+        )
+        session.add(execution)
+        session.commit()
+        session.close()
     except Exception as e:
-        logger.error(f"Error logging to DB: {e}")
+        logger.error(f"Error logging to PostgreSQL: {e}")
 
 def log_execution(func):
     """Decorador para registrar la ejecución de scripts/funciones en la Capa 3."""

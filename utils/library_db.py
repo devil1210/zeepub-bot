@@ -37,6 +37,13 @@ def create_library_engine():
     if "+asyncpg" in db_url:
         db_url = db_url.replace("+asyncpg", "", 1)
 
+    # Fallback 'db' to 'localhost' if running outside Docker (common for local agents)
+    # Testing host 'db' reaches vs 'localhost'
+    if "@db:" in db_url and os.name == 'nt':
+        # Simple hack for local agent on Windows reaching Docker Postgres
+        db_url = db_url.replace("@db:", "@localhost:", 1)
+        _log.debug("Converting 'db' to 'localhost' for Windows local execution.")
+
     # Optimized connection pool settings for production
     return create_engine(
         db_url,
@@ -235,6 +242,7 @@ def init_library_db():
         import models.library_models  # noqa
         import models.download_models  # noqa
         import models.publication_models  # noqa
+        import models.agent_models  # noqa
 
         # Asegurar que app_themes se cree si no existe (importado en user_models)
 
