@@ -30,7 +30,7 @@ export interface PublicationTemplate {
     content: string;
     platform: string;
     extra_config?: {
-        cover_quality?: 'original' | 'high' | 'medium' | 'low';
+        cover_quality?: 'original' | 'grande' | 'mediana' | 'pequeña' | 'high' | 'medium' | 'low';
         [key: string]: any;
     };
 }

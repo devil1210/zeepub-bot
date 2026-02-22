@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-    ChevronLeft, Type, Save, Check, Loader2, Smartphone, Globe, Search as SearchIcon, ArrowRight
+    ChevronLeft, Type, Save, Check, Loader2, Smartphone, Globe, Search as SearchIcon, ArrowRight, X
 } from 'lucide-react';
 import { usePublisher } from '../hooks/usePublisher';
 import { RichTextEditor } from '@shared/components/RichTextEditor/RichTextEditor';
@@ -38,7 +38,7 @@ export const TemplateEditorPage: React.FC = () => {
     const [name, setName] = useState('');
     const [content, setContent] = useState(DEFAULT_TELEGRAM_TEMPLATE);
     const [platform, setPlatform] = useState('telegram');
-    const [coverQuality, setCoverQuality] = useState<'original' | 'high' | 'medium' | 'low'>('high');
+    const [coverQuality, setCoverQuality] = useState<'original' | 'grande' | 'mediana' | 'pequeña'>('grande');
 
     // UI state
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +49,7 @@ export const TemplateEditorPage: React.FC = () => {
     const [searchResults, setSearchResults] = useState<Book[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [showResults, setShowResults] = useState(false);
 
     const searchTimeout = useRef<number | ReturnType<typeof setTimeout> | null>(null);
@@ -60,7 +61,12 @@ export const TemplateEditorPage: React.FC = () => {
                 setName(template.name);
                 setContent(template.content || DEFAULT_TELEGRAM_TEMPLATE);
                 setPlatform(template.platform);
-                setCoverQuality(template.extra_config?.cover_quality || 'high');
+                const savedQuality = template.extra_config?.cover_quality;
+                const mappedQuality = savedQuality === 'high' ? 'grande' :
+                    savedQuality === 'medium' ? 'mediana' :
+                        savedQuality === 'low' ? 'pequeña' :
+                            (savedQuality || 'grande');
+                setCoverQuality(mappedQuality as any);
             }
         }
     }, [id, isNew, templates]);
@@ -107,12 +113,34 @@ export const TemplateEditorPage: React.FC = () => {
         };
     }, [searchQuery]);
 
+    const handleSearchChange = (val: string) => {
+        setSearchQuery(val);
+        if (searchTimeout.current) clearTimeout(searchTimeout.current);
+
+        if (val.trim().length > 2) {
+            searchTimeout.current = setTimeout(() => {
+                performSearch(val);
+            }, 500);
+        } else {
+            setSearchResults([]);
+        }
+    };
+
     const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             if (searchTimeout.current) clearTimeout(searchTimeout.current);
             performSearch(searchQuery);
+        } else if (e.key === 'Escape') {
+            setIsSearchModalOpen(false);
         }
+    };
+
+    const handleSelectBook = (book: Book) => {
+        setSelectedBook(book);
+        setSearchQuery(book.title);
+        setIsSearchModalOpen(false);
+        webApp?.HapticFeedback?.impactOccurred('light');
     };
 
     const handleSave = async () => {
@@ -230,17 +258,17 @@ export const TemplateEditorPage: React.FC = () => {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Calidad de Portada (Telegram)</label>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    {(['original', 'high', 'medium', 'low'] as const).map((q) => (
+                                    {(['original', 'grande', 'mediana', 'pequeña'] as const).map((q) => (
                                         <button
                                             key={q}
                                             type="button"
                                             onClick={() => setCoverQuality(q)}
-                                            className={`py-2 px-1 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${coverQuality === q
+                                            className={`py-2 px-3 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${coverQuality === q
                                                 ? 'bg-primary/20 border-primary text-primary'
                                                 : 'bg-black/40 border-white/5 text-gray-500 hover:text-gray-300'
                                                 }`}
                                         >
-                                            {q === 'original' ? 'Ultra HD' : q === 'high' ? 'Alta' : q === 'medium' ? 'Media' : 'Baja'}
+                                            {q === 'original' ? 'Ultra HD' : q === 'grande' ? 'Alta' : q === 'mediana' ? 'Media' : 'Baja'}
                                         </button>
                                     ))}
                                 </div>
@@ -263,97 +291,137 @@ export const TemplateEditorPage: React.FC = () => {
 
                 {/* Preview Section */}
                 <div className="flex flex-col gap-4">
-                    {/* Live Book Selector */}
+                    {/* Live Book Selector Trigger */}
                     <div className="glass-panel rounded-premium p-4 border border-white/5 space-y-3 relative z-20">
                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Usar datos de libro para vista previa</label>
-                        <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center items-center pointer-events-none">
-                                <SearchIcon className="h-4 w-4 text-gray-500" />
+                        <button
+                            onClick={() => setIsSearchModalOpen(true)}
+                            className="w-full bg-black/40 border border-white/10 pl-10 pr-4 py-3 text-sm rounded-premium-sm text-left text-gray-400 hover:border-primary/50 transition-all flex items-center gap-3 relative overflow-hidden group"
+                        >
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <SearchIcon className="h-4 w-4 text-gray-500 group-hover:text-primary transition-colors" />
                             </div>
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value);
-                                    if (!e.target.value) {
-                                        setSelectedBook(null);
-                                        setShowResults(false);
-                                    }
-                                }}
-                                onKeyDown={handleSearchKeyDown}
-                                onFocus={() => { if (searchQuery.trim().length > 0) setShowResults(true); }}
-                                onBlur={() => setTimeout(() => setShowResults(false), 200)}
-                                placeholder="Buscar novela para probar datos..."
-                                className="w-full bg-black/40 border border-white/10 pl-10 pr-10 py-2.5 text-sm rounded-premium-sm text-white focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
-                            />
+                            {selectedBook ? (
+                                <span className="text-white font-medium truncate">{selectedBook.title}</span>
+                            ) : (
+                                <span>Buscar novela para probar datos...</span>
+                            )}
                             {isSearching && (
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                    <Loader2 className="h-4 w-4 text-gray-500 animate-spin" />
+                                <div className="ml-auto">
+                                    <Loader2 className="h-4 w-4 text-primary animate-spin" />
                                 </div>
                             )}
+                        </button>
+                    </div>
 
-                            {/* Search Results Dropdown */}
-                            {showResults && searchQuery.trim().length > 0 && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1e] border border-white/10 rounded-premium shadow-2xl overflow-hidden max-h-[300px] overflow-y-auto p-2 custom-scrollbar">
-                                    <div className="space-y-2">
-                                        {isSearching ? (
-                                            <div className="p-4 flex flex-col items-center justify-center gap-2 text-gray-500">
-                                                <Loader2 className="w-5 h-5 animate-spin" />
-                                                <span className="text-xs">Buscando volúmenes...</span>
-                                            </div>
-                                        ) : searchResults.length > 0 ? (
-                                            searchResults.map((book) => (
-                                                <button
-                                                    key={book.id}
-                                                    className="w-full p-3 rounded-premium-sm bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex items-center gap-4 transition-all"
-                                                    onMouseDown={(e) => {
-                                                        // Usamos onMouseDown en lugar de onClick porque ocurre ANTES que onBlur del input
-                                                        e.preventDefault();
-                                                        setSelectedBook(book);
-                                                        setSearchQuery(book.title);
-                                                        setShowResults(false);
-                                                    }}
-                                                >
-                                                    {('cover' in book ? (book as any).cover : book.coverUrl) ? (
-                                                        <img src={getCoverUrl(('cover' in book ? (book as any).cover : book.coverUrl) as string, ('cover_thumb' in book ? (book as any).cover_thumb : book.coverThumbUrl) as string, settings.coverQuality || 'pequeña')} className="w-10 h-14 object-cover rounded-md flex-shrink-0" alt="" />
-                                                    ) : (
-                                                        <div className="w-10 h-14 bg-white/10 rounded-md flex items-center justify-center flex-shrink-0">
-                                                            <SearchIcon className="w-4 h-4 opacity-50 text-white" />
-                                                        </div>
-                                                    )}
-                                                    <div className="flex-1 min-w-0 text-left">
-                                                        <h4 className="font-bold text-white text-sm truncate">{book.title}</h4>
-                                                        <p className="text-xs text-gray-400 font-black uppercase tracking-widest truncate">{book.author || 'Sin autor'} • Vol. {book.volumeNumber || '?'}</p>
-                                                        <div className="flex flex-wrap gap-1.5 mt-2">
-                                                            {book.book_type && (
-                                                                <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-white/5 text-gray-400 border border-white/10 uppercase">{book.book_type}</span>
-                                                            )}
-                                                            {book.is_uncensored && (
-                                                                <span className="px-2 py-0.5 rounded-md text-[8px] font-black bg-red-500/10 text-red-500 border border-red-500/20 uppercase">S/C</span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    <div className="ml-auto pl-2">
-                                                        <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-white transition-colors" />
-                                                    </div>
-                                                </button>
-                                            ))
-                                        ) : (
-                                            <div className="p-4 text-center text-gray-400 text-xs flex flex-col items-center gap-2">
-                                                <SearchIcon className="w-6 h-6 opacity-30" />
-                                                <span>No se encontró ningún volumen para probar.</span>
-                                            </div>
+                    {/* Search Modal */}
+                    {isSearchModalOpen && (
+                        <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:p-6 md:pt-20">
+                            {/* Backdrop */}
+                            <div
+                                className="absolute inset-0 bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
+                                onClick={() => setIsSearchModalOpen(false)}
+                            />
+
+                            {/* Modal Content */}
+                            <div className="relative w-full max-w-xl glass-panel rounded-premium-lg border border-white/10 shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-in zoom-in-95 fade-in duration-300">
+                                {/* Modal Header */}
+                                <div className="p-4 border-b border-white/5 flex items-center gap-3 bg-black/40">
+                                    <div className="relative flex-1">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <SearchIcon className="h-4 w-4 text-gray-500" />
+                                        </div>
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => handleSearchChange(e.target.value)}
+                                            onKeyDown={handleSearchKeyDown}
+                                            placeholder="Buscar novela o volumen..."
+                                            className="w-full bg-white/5 border border-white/10 pl-10 pr-10 py-3 text-sm rounded-premium-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() => handleSearchChange('')}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white transition-colors"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
                                         )}
                                     </div>
+                                    <button
+                                        onClick={() => setIsSearchModalOpen(false)}
+                                        className="p-2.5 bg-white/5 hover:bg-white/10 rounded-premium-sm text-gray-400 hover:text-white transition-all border border-white/5"
+                                        title="Cerrar"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
                                 </div>
-                            )}
-                        </div>
-                        {selectedBook && (
-                            <div className="text-[10px] text-primary/80 font-bold bg-primary/10 px-3 py-2 rounded-premium-sm border border-primary/20">
-                                Usando: {selectedBook.title}
+
+                                {/* Modal Results */}
+                                <div className="flex-1 overflow-y-auto p-2 custom-scrollbar min-h-[200px] bg-black/20">
+                                    {isSearching ? (
+                                        <div className="p-12 flex flex-col items-center justify-center gap-4 text-gray-500">
+                                            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                            <span className="text-xs font-black uppercase tracking-widest opacity-50">Buscando en la biblioteca...</span>
+                                        </div>
+                                    ) : searchResults.length > 0 ? (
+                                        <div className="grid grid-cols-1 gap-2 p-2">
+                                            {searchResults.map((book) => (
+                                                <button
+                                                    key={book.id}
+                                                    onClick={() => handleSelectBook(book)}
+                                                    className="w-full p-3 rounded-premium-sm bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer flex items-center gap-4 transition-all group"
+                                                >
+                                                    <div className="w-10 h-14 bg-black/50 rounded overflow-hidden flex-shrink-0 relative">
+                                                        <img
+                                                            src={getCoverUrl(book.coverUrl, book.coverThumbUrl, settings.coverQuality || 'pequeña')}
+                                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40x56?text=No+Cover';
+                                                            }}
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex flex-col items-start gap-1 overflow-hidden flex-1 text-left">
+                                                        <span className="text-white text-xs font-bold leading-tight line-clamp-1">{book.title}</span>
+                                                        <span className="text-gray-400 text-[10px] line-clamp-1 font-medium">{book.author || 'Autor desconocido'}</span>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            {book.series && <span className="text-primary text-[8px] font-black uppercase bg-primary/10 px-1.5 py-0.5 rounded-sm line-clamp-1">{book.series}</span>}
+                                                            {(book.volumeNumber !== undefined && book.volumeNumber !== null) && <span className="text-gray-500 text-[8px] border border-white/10 px-1.5 py-0.5 rounded-sm">Vol. {book.volumeNumber}</span>}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                                                        <ArrowRight className="w-4 h-4 text-primary" />
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : searchQuery ? (
+                                        <div className="p-12 text-center text-gray-500 flex flex-col items-center gap-3">
+                                            <SearchIcon className="w-8 h-8 opacity-20" />
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-bold text-white/50">No hay coincidencias</p>
+                                                <p className="text-[10px] uppercase tracking-wider opacity-40">Intenta con otros términos</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="p-12 text-center text-gray-500 flex flex-col items-center gap-3">
+                                            <SearchIcon className="w-8 h-8 opacity-20" />
+                                            <p className="text-[10px] uppercase tracking-wider opacity-40">Escribe algo para buscar...</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-4 bg-black/40 border-t border-white/5 flex justify-center">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-600">
+                                        Selecciona un libro para actualizar la previsualización
+                                    </p>
+                                </div>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1 mt-2">Vista Previa de Telegram</label>
                     <div className="flex-1 min-h-[500px] bg-black/20 rounded-premium border border-white/5 overflow-hidden shadow-inner sticky top-24">
