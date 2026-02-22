@@ -1,36 +1,53 @@
 # SESSION STATE - ZeePub-bot
 
-**Última actualización:** 2026-02-23 10:30 (GMT-3)  
-**Agente Actual:** Antigravity (Gemini 2.0 Flash)
+**Última actualización:** 2026-02-23 12:00 (GMT-3)  
+**Agente Actual:** Antigravity (GLM-5-Free)
 
 ## 📌 Resumen de la Sesión
-Sesión: **Sincronización de Plantillas Telegram (UX Premium) + Bugfix Sintaxis**.
+Sesión: **Observatorio + Correcciones del Publicador**
 
 ### ✅ Tareas Completadas
-1. **Unificación del Motor de Plantillas** (`utils/template_engine.py`):
-    - Motor centralizado que soporta `[?var]...[/?]` y `{var}`.
-    - Sincronizado 1:1 con la lógica de `TelegramMessagePreview.tsx` (JS).
-    - Soporte para pre-formateo de campos (`size_mb`, `rating_txt`, `genres`).
+1. **Observatorio integrado en Mini App**:
+   - Nuevo `api/handlers/observatory.py` con 4 endpoints
+   - Nuevo `ObservatoryPage.tsx` con estilo glassmorphism y recharts
+   - Integrado como pestaña "Observatorio" en Admin.tsx
 
-2. **Fix de Publicación Directa (Mini App)**:
-    - `services/telegram_service.py`: `enviar_libro_directo` ahora soporta `caption_template`.
-    - `services/delivery/delivery_service.py`: Ahora recupera las plantillas de la base de datos y las pasa al servicio de Telegram.
-    - `api/routes.py`: Endpoint `/download` refactorizado para usar `DeliveryService`.
+2. **Fix de dependencias Docker**:
+   - `requirements.txt`: `rich>=10.14.0,<14` (compatible con streamlit)
+   - Fix f-string backslash en `design_system.py`
 
-3. **Hotfix de Backend (Sintaxis)**:
-    - Se restauró el parámetro `explicit_file_buffer` en `enviar_libro_directo` (eliminado accidentalmente).
-    - Se añadió el `import re` faltante en `services/telegram_service.py`.
-    - Verificación de sintaxis (`py_compile`) exitosa en todos los archivos core.
+3. **Correcciones del Sistema de Publicación**:
+   - Variable `{slug}` agregada (generada desde título)
+   - Variable `{archivo}` agregada
+   - Variable `{titulo_serie}` agregada
+   - Fecha `{published_at}` formateada a DD/MM/YYYY
+   - Número de volumen limpio (sin .0)
+   - Condicionales sincronizados frontend/backend
 
-4. **Auditoría y Despliegue**:
-    - **PUSH REALIZADO**: Los arreglos de sintaxis han sido subidos.
+4. **Script para actualizar template**:
+   - `execution/update_template.py` listo para ejecutar en servidor
+
+### 📝 Template Correcto (usar --- como separador de mensajes):
+```
+{serie} ║ {series_spanish} ║ {titulo}
+[?volumen]Volumen {volumen}[/?]
+#{slug}
+...
+---
+<b>Sinopsis:</b>
+{sinopsis}
+---
+📂 {titulo}
+... (info + archivo adjunto automático)
+```
 
 ### 🚧 Próximos Pasos Recomendados
-- Verificar visualmente en el bot de Telegram de pruebas que el formato coincide 100% con el preview.
-- Considerar la migración de otros proveedores (Facebook) al motor de plantillas unificado si es necesario.
+1. Ejecutar `python execution/update_template.py` en el servidor
+2. Probar publicación end-to-end con el nuevo template
+3. Verificar que los 3 mensajes se envíen correctamente
 
 ---
 ## 📎 Links Útiles
 - [AGENTS.md](../AGENTS.md) - Reglas del proyecto.
 - [MASTER_PLAN.md](MASTER_PLAN.md) - Roadmap general.
-- `dashboard/app.py` - Dashboard de Streamlit alternativo (http://localhost:8501)
+- `execution/update_template.py` - Script para actualizar template en BD.
