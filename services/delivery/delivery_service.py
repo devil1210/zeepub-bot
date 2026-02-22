@@ -1,25 +1,17 @@
 import logging
-from abc import ABC, abstractmethod
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
-class DeliveryProvider(ABC):
-    @abstractmethod
+class DeliveryProvider:
     async def deliver_book(
         self,
         target_id: str | int,
         book_data: dict[str, Any],
         options: dict[str, Any] | None = None,
     ) -> bool:
-        """
-        Sends the book to the target.
-        target_id: Destination (User ID, Chat ID, Email, etc.)
-        book_data: Dictionary containing metadata and file location/bytes
-        options: Additional parameters (thread_id, captions, etc.)
-        """
-        pass
+        raise NotImplementedError
 
 
 class TelegramDeliveryProvider(DeliveryProvider):
@@ -32,6 +24,8 @@ class TelegramDeliveryProvider(DeliveryProvider):
         book_data: dict[str, Any],
         options: dict[str, Any] | None = None,
     ) -> bool:
+        from repositories.publication_repository import pub_repo
+        from services.publisher.publisher_service import TelegramPublisherProvider
         from services.telegram_service import enviar_libro_directo
 
         if not self.bot:
@@ -40,6 +34,32 @@ class TelegramDeliveryProvider(DeliveryProvider):
             self.bot = main_bot.app.bot
 
         options = options or {}
+
+        # --- Lógica de Plantillas para Entrega Directa ---
+        custom_caption = options.get("caption")
+        caption_template = None
+
+        if not custom_caption:
+            try:
+                # Obtener plantillas por defecto desde la base de datos
+                templates = await pub_repo.get_templates(platform="telegram")
+
+                cover_t = next((t for t in templates if (t.extra_config or {}).get("type") == "cover"), None)
+                synopsis_t = next((t for t in templates if (t.extra_config or {}).get("type") == "synopsis"), None)
+                info_t = next((t for t in templates if (t.extra_config or {}).get("type") == "info"), None)
+
+                # Fallback a los defaults definidos en el Provider
+                cover_content = cover_t.content if cover_t else TelegramPublisherProvider.COVER_TEMPLATE
+                syn_content = (
+                    synopsis_t.content if synopsis_t else TelegramPublisherProvider.SYNOPSIS_TEMPLATE
+                )
+                info_content = info_t.content if info_t else TelegramPublisherProvider.INFO_TEMPLATE
+
+                # Unir plantillas con separador <hr> para que enviar_libro_directo las aplique y divida
+                caption_template = f"{cover_content}\n<hr>\n{syn_content}\n<hr>\n{info_content}"
+                logger.info("Caption template construido para entrega directa.")
+            except Exception as e:
+                logger.warning(f"Error construyendo caption_template en deliver_book: {e}")
 
         # Mapping generic book_data to what enviar_libro_directo expects
         return await enviar_libro_directo(
@@ -53,29 +73,27 @@ class TelegramDeliveryProvider(DeliveryProvider):
             explicit_file_buffer=book_data.get("epub_buffer") or book_data.get("file_buffer"),
             job_queue=options.get("job_queue"),
             auto_delete_seconds=options.get("auto_delete_seconds", 0),
+            custom_caption=custom_caption,
+            caption_template=caption_template,
         )
 
 
 class DeliveryService:
-    def __init__(self, default_provider: DeliveryProvider = None):
-        self.providers = {"telegram": default_provider or TelegramDeliveryProvider()}
+    def __init__(self, bot=None):
+        self.providers = {
+            "telegram": TelegramDeliveryProvider(bot),
+        }
 
-    def register_provider(self, name: str, provider: DeliveryProvider):
-        self.providers[name] = provider
-
-    async def deliver(
+    async def deliver_book(
         self,
-        platform: str,
+        provider_type: str,
         target_id: str | int,
         book_data: dict[str, Any],
         options: dict[str, Any] | None = None,
     ) -> bool:
-        provider = self.providers.get(platform)
+        provider = self.providers.get(provider_type)
         if not provider:
-            logger.error(f"Delivery provider for platform {platform} not found.")
+            logger.error(f"Provider not found: {provider_type}")
             return False
 
         return await provider.deliver_book(target_id, book_data, options)
-
-
-delivery_service = DeliveryService()

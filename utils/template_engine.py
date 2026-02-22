@@ -1,0 +1,148 @@
+import re
+from typing import Any
+
+
+def extract_demography(tags: list) -> str:
+    """Extrae la demografía de una lista de tags."""
+    if not tags or not isinstance(tags, list):
+        return ""
+    demography_map = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo"]
+    for tag in tags:
+        if tag in demography_map:
+            return tag
+    return ""
+
+
+def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
+    """
+    Aplica condicionales [?var]...[/?] y placeholders {var} con campos de Libro.
+    Lógica compartida entre PublisherService y DeliveryService.
+    """
+    if not template_str:
+        return ""
+
+    try:
+        # 1. Preparar mapping de datos
+        mapping = {k: v for k, v in data.items()}
+
+        # Enriquecer con nombres comunes usados en plantillas
+        tags = data.get("tags") or []
+        if isinstance(tags, str):
+            tags = [t.strip() for t in tags.split(",") if t.strip()]
+
+        # Pre-formatear campos numéricos
+        size_mb_val = data.get("size_mb") or data.get("size") or 0.0
+        try:
+            size_mb_formatted = f"{float(size_mb_val):.2f} MB"
+        except (ValueError, TypeError):
+            size_mb_formatted = "0.00 MB"
+
+        rating_avg = data.get("rating_average") or 0.0
+        rating_count = data.get("rating_count") or 0
+        rating_txt = ""
+        if rating_avg and float(rating_avg) > 0:
+            rating_txt = f"\n⭐ {float(rating_avg):.1f} ({rating_count} votos)"
+
+        mapping.update(
+            {
+                "titulo": data.get("title") or data.get("titulo") or "",
+                "titulo_volumen": data.get("titulo_volumen") or data.get("title") or "",
+                "romaji_title": data.get("romaji_title") or "",
+                "english_title": data.get("english_title") or "",
+                "spanish_title": data.get("spanish_title") or "",
+                "jap_title": data.get("jap_title") or "",
+                "autor": data.get("author") or data.get("autor") or "",
+                "author_jap": data.get("author_jap") or "",
+                "illustrator": data.get("illustrator") or data.get("ilustrador") or "",
+                "illustrator_jap": data.get("illustrator_jap") or "",
+                "serie": data.get("series") or data.get("titulo_serie") or "",
+                "series_spanish": data.get("series_spanish") or "",
+                "series_english": data.get("series_english") or "",
+                "volumen": str(data.get("volume") or data.get("series_index") or ""),
+                "sinopsis": data.get("description") or data.get("sinopsis") or "",
+                "resumen": data.get("summary") or data.get("resumen") or "",
+                "etiquetas": ", ".join(tags) if tags else "",
+                "idioma": data.get("language") or data.get("idioma") or "",
+                "editorial": data.get("publisher") or data.get("editorial") or "",
+                "traductor": data.get("translator") or data.get("traductor") or "",
+                "maquetador": data.get("layout_by") or data.get("maquetador") or "",
+                "tipo": data.get("book_type") or data.get("categoria") or "",
+                "tamaño": size_mb_formatted,
+                "size_mb": size_mb_formatted,  # Para compatibilidad con templates :.2f (aunque no soportado, proveemos el string ya formateado)
+                "rating": str(rating_avg),
+                "rating_txt": rating_txt,
+                "votes": str(rating_count),
+                "hash": data.get("book_hash") or data.get("hash") or "",
+                "version": data.get("epub_version") or "",
+                "tags": ", ".join(tags) if tags else "",
+                "genres": ", ".join(tags) if tags else "",
+                "demography": data.get("demography") or extract_demography(tags),
+                "published_at": str(data.get("published_at") or ""),
+                "fecha": str(data.get("fecha_modificacion") or data.get("updated_at") or ""),
+                "edition": data.get("edition") or "",
+                "color_mode": data.get("color_mode") or "bw",
+                "is_uncensored": "Sí" if data.get("is_uncensored") else "No",
+                "isbn": data.get("isbn") or "",
+                "asin": data.get("asin") or "",
+            }
+        )
+
+        # Normalizar None a strings vacíos y asegurar string
+        for k, v in list(mapping.items()):
+            if v is None:
+                mapping[k] = ""
+            elif not isinstance(v, str):
+                mapping[k] = str(v)
+
+        # 2. Evaluar condicionales: [?variable]...[/?]
+        def evaluate_conditional(match):
+            var_name = match.group(1).lower()
+            content = match.group(2)
+            value = mapping.get(var_name, "").strip()
+
+            # Considerar vacío si es Desconocido, 0.0, 0 MB o string vacío
+            not_found_values = [
+                "",
+                "desconocido",
+                "desconocida",
+                "0.0",
+                "0",
+                "0.00 mb",
+                "0 mb",
+                "false",
+                "none",
+            ]
+            if not value or value.lower() in not_found_values:
+                return ""
+            return content
+
+        # Regex DOTALL para permitir saltos de línea dentro del condicional
+        result_str = re.sub(
+            r"\[\?(\w+)\](.*?)\[/\?\]",
+            evaluate_conditional,
+            template_str,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+
+        # 3. Reemplazos directos {var}
+        # Manejar {var:.2f} y similares eliminando el formato (ya que pre-formateamos)
+        result_str = re.sub(r"\{(\w+):.*?\}", r"{\1}", result_str)
+
+        placeholders = set(re.findall(r"\{(\w+)\}", result_str))
+        for p in placeholders:
+            val = mapping.get(p, "")
+            # Valores por defecto visuales solo para la renderización normal
+            if not val and p == "autor":
+                val = "Desconocido"
+            elif not val and (p == "tamaño" or p == "size_mb"):
+                val = "0.00 MB"
+            result_str = result_str.replace(f"{{{p}}}", val)
+
+        # Limpiar saltos de línea triples generados por condicionales vacíos
+        result_str = re.sub(r"\n{3,}", "\n\n", result_str).strip()
+
+        return result_str
+
+    except Exception:
+        # Fallback silencioso al string original
+        return template_str

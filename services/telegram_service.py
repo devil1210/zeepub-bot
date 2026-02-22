@@ -557,9 +557,10 @@ async def enviar_libro_directo(
     format_type: str = "standard",
     message_thread_id: int = None,
     metadata_override: dict[str, Any] | None = None,
-    explicit_file_buffer: bytes | str | None = None,
     job_queue=None,
     auto_delete_seconds: int = 0,
+    custom_caption: str | None = None,
+    caption_template: str | None = None,
 ):
     """
     Descarga y envía un libro directamente al usuario (para la Mini App).
@@ -788,11 +789,23 @@ async def enviar_libro_directo(
                     text="✅ Publicado exitosamente en el Grupo de Facebook.",
                 )
 
-        # --- LOGICA ESTANDAR ---
-        else:
+            # --- PROCESAR CAPTION Y PLANTILLAS ---
+            final_custom_caption = custom_caption
+            if caption_template:
+                from utils.template_engine import apply_publication_template
+
+                final_custom_caption = apply_publication_template(caption_template, meta)
+                logger.debug(f"Plantilla aplicada en enviar_libro_directo: {final_custom_caption[:50]}...")
+
+            msg_parts = []
+            if final_custom_caption:
+                # Separadores comunes: <hr>, ---next---, o ---
+                msg_parts = re.split(r"<hr\s*/?>|---next---|---", final_custom_caption)
+                msg_parts = [p.strip() for p in msg_parts if p.strip()]
+
             # 5. Enviar Portada (Standard)
             if portada_data:
-                mensaje_portada = formatear_mensaje_portada(meta)
+                mensaje_portada = msg_parts[0] if len(msg_parts) > 0 else (formatear_mensaje_portada(meta))
                 await send_photo_bytes(
                     bot,
                     destino,
@@ -804,13 +817,20 @@ async def enviar_libro_directo(
                 )
 
             # 6. Enviar Sinopsis
-            sinopsis = meta.get("sinopsis")
-            if sinopsis:
-                sinopsis_esc = escapar_html(sinopsis)
-                texto = f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
+            # Se envía solo si no hay custom_caption o si hay al menos 2 partes
+            sinopsis_to_send = None
+            if len(msg_parts) > 1:
+                sinopsis_to_send = msg_parts[1]
+            elif not custom_caption:
+                sinopsis = meta.get("sinopsis")
+                if sinopsis:
+                    sinopsis_esc = escapar_html(sinopsis)
+                    sinopsis_to_send = f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
+
+            if sinopsis_to_send:
                 await bot.send_message(
                     chat_id=destino,
-                    text=texto,
+                    text=sinopsis_to_send,
                     parse_mode="HTML",
                     message_thread_id=message_thread_id,
                 )
@@ -823,24 +843,28 @@ async def enviar_libro_directo(
                 size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
             else:
                 size_mb = 0.0
-            version = meta.get("epub_version", "2.0")
-            fecha = meta.get("fecha_modificacion", "Desconocida")
-            titulo_vol = meta.get("titulo_volumen") or meta.get("titulo") or title
 
-            caption = (
-                f"📂 <b>{titulo_vol}</b>\n"
-                f"ℹ️ Versión Epub: {version}\n"
-                f"📅 Actualizado: {fecha}\n"
-                f"📦 Tamaño: {size_mb:.2f} MB"
-            )
-
-            slug = generar_slug_from_meta(meta)
-            if slug:
-                caption += f"\n#{slug}"
+            # Caption final
+            final_caption = ""
+            if len(msg_parts) > 2:
+                final_caption = msg_parts[2]
+            elif not final_custom_caption:
+                version = meta.get("epub_version", "2.0")
+                fecha = meta.get("fecha_modificacion", "Desconocida")
+                titulo_vol = meta.get("titulo_volumen") or meta.get("titulo") or title
+                final_caption = (
+                    f"📂 <b>{titulo_vol}</b>\n"
+                    f"ℹ️ Versión Epub: {version}\n"
+                    f"📅 Actualizado: {fecha}\n"
+                    f"📦 Tamaño: {size_mb:.2f} MB"
+                )
+                slug = generar_slug_from_meta(meta)
+                if slug:
+                    final_caption += f"\n#{slug}"
 
             if auto_delete_seconds > 0:
                 mins = auto_delete_seconds // 60
-                caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
+                final_caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
 
             # Nombre de archivo desde URL
             fname = unquote(urlparse(download_url).path.split("/")[-1]) or "archivo.epub"
@@ -848,7 +872,7 @@ async def enviar_libro_directo(
             sent_doc = await send_doc_bytes(
                 bot,
                 destino,
-                caption,
+                final_caption,
                 epub_bytes,
                 filename=fname,
                 parse_mode="HTML",

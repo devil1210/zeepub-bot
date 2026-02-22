@@ -24,6 +24,17 @@ class PublisherProvider(ABC):
 
 class TelegramPublisherProvider(PublisherProvider):
     # Plantillas por defecto para facilitar edición/copia
+    COVER_TEMPLATE = (
+        "Epub de: {serie} ║ {titulo_serie} ║ {internal_title}\n"
+        "[?volumen]{volumen}[/?]\n"
+        "\n"
+        "<b>Maquetado por:</b> {maquetador}\n"
+        "<b>Categoría:</b> {tipo}\n"
+        "<b>Géneros:</b> {genres}\n"
+        "<b>Autor:</b> {autor}\n"
+        "[?illustrator]<b>Ilustrador:</b> {illustrator}\n[/?]"
+        "[?traductor]<b>Traducción:</b> {traductor}\n[/?]"
+    )
     SYNOPSIS_TEMPLATE = "<b>Sinopsis:</b>\n<blockquote>{sinopsis}</blockquote>\n#{slug}"
     INFO_TEMPLATE = (
         "📂 <b>{titulo}</b>\n"
@@ -539,100 +550,9 @@ class PublisherService:
 
     def _apply_template(self, template_str: str, data: dict) -> str:
         """Aplica condicionales [?var]...[/?] y placeholders {var} con campos de LocalBook."""
-        import logging
-        import re
+        from utils.template_engine import apply_publication_template
 
-        logger = logging.getLogger(__name__)
-
-        try:
-            mapping = {k: v for k, v in data.items()}
-            mapping.update(
-                {
-                    "titulo": data.get("title", ""),
-                    "titulo_volumen": data.get("titulo_volumen", data.get("title", "")),
-                    "romaji_title": data.get("romaji_title", ""),
-                    "english_title": data.get("english_title", ""),
-                    "spanish_title": data.get("spanish_title", ""),
-                    "jap_title": data.get("jap_title", ""),
-                    "autor": data.get("author", ""),
-                    "author_jap": data.get("author_jap", ""),
-                    "illustrator": data.get("illustrator", ""),
-                    "illustrator_jap": data.get("illustrator_jap", ""),
-                    "serie": data.get("series", ""),
-                    "series_spanish": data.get("series_spanish", ""),
-                    "series_english": data.get("series_english", ""),
-                    "volumen": data.get("volume", "") or data.get("volume_number", ""),
-                    "sinopsis": data.get("description", "") or data.get("sinopsis", ""),
-                    "resumen": data.get("summary", "") or data.get("resumen", ""),
-                    "etiquetas": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
-                    "idioma": data.get("language", ""),
-                    "editorial": data.get("publisher", ""),
-                    "traductor": data.get("translator", ""),
-                    "maquetador": data.get("layout_by", ""),
-                    "tipo": data.get("book_type", ""),
-                    "tamaño": data.get("size", "") or data.get("size_mb", ""),
-                    "rating": data.get("rating_average", ""),
-                    "votes": data.get("rating_count", ""),
-                    "hash": data.get("book_hash", ""),
-                    "version": data.get("epub_version", ""),
-                    "tags": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
-                    "genres": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
-                    "demography": data.get("demography", "") or self._extract_demography(data.get("tags", [])),
-                    "published_at": data.get("published_at", ""),
-                    "edition": data.get("edition", ""),
-                    "color_mode": data.get("color_mode", ""),
-                    "is_uncensored": "Sí" if data.get("is_uncensored") else "No",
-                    "archivo": __import__("os").path.basename(str(data.get("filepath", "")))
-                    if data.get("filepath")
-                    else "",
-                    "isbn": data.get("isbn", ""),
-                    "asin": data.get("asin", ""),
-                }
-            )
-
-            # Normalizar None a strings vacíos
-            for k, v in mapping.items():
-                if v is None:
-                    mapping[k] = ""
-                else:
-                    mapping[k] = str(v)
-
-            # 1. Evaluar condicionales: [?variable]...[/?]
-            def evaluate_conditional(match):
-                var_name = match.group(1).lower()
-                content = match.group(2)
-                value = mapping.get(var_name, "").strip()
-                # Considerar vacío si es Desconocido, 0.0, 0 MB o string vacío
-                if not value or value.lower() in ["desconocido", "0.0", "0", "0 mb", "false"]:
-                    return ""
-                return content
-
-            # Regex DOTALL para permitir saltos de línea dentro del condicional
-            result_str = re.sub(
-                r"\[\?(\w+)\](.*?)\[/\?\]", evaluate_conditional, template_str, flags=re.IGNORECASE | re.DOTALL
-            )
-
-            # 2. Limpiar saltos de línea excesivos o <p></p> vacíos generados
-            # Se omite para no romper el HTML complejo, que el frontend/Telegram normalice.
-
-            # 3. Reemplazos directos {var}
-            placeholders = set(re.findall(r"\{(\w+)\}", result_str))
-            for p in placeholders:
-                val = mapping.get(p, "")
-                # Valores por defecto visuales solo para la renderización normal
-                if not val and p == "autor":
-                    val = "Desconocido"
-                elif not val and p == "tamaño":
-                    val = "0 MB"
-                result_str = result_str.replace(f"{{{p}}}", val)
-
-            return result_str
-        except Exception as e:
-            import logging
-
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Error applying template: {e}")
-            return template_str
+        return apply_publication_template(template_str, data)
 
     async def get_channels_with_discovery(self, active_only: bool = True) -> dict:
         """

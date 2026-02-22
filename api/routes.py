@@ -396,29 +396,38 @@ async def download_book(
         logger.info(f"Download request from user {user_id}: {title} -> {target_chat_id}")
 
         from api.main import bot
-        from services.telegram_service import enviar_libro_directo
+        from services.delivery.delivery_service import DeliveryService
 
         # Determinar formato y destino real
-        format_type = "standard"
         real_target = target_chat_id
+        options = {
+            "target_chat_id": target_chat_id,
+            "auto_delete_seconds": 0,
+        }
 
         if target_chat_id == "me_fb_preview":
-            format_type = "fb_preview"
+            options["format_type"] = "fb_preview"
             real_target = user_id  # Enviar al usuario
         elif target_chat_id == "facebook_group":
-            format_type = "fb_direct"
-            real_target = None  # Se maneja internamente con config
+            options["format_type"] = "fb_direct"
+            real_target = user_id  # O el que corresponda
         elif target_chat_id == "me":
             real_target = user_id
 
-        success = await enviar_libro_directo(
-            bot.app.bot,
-            user_id=user_id,
-            title=title,
-            download_url=download_url,
-            cover_url=cover_url,
-            target_chat_id=real_target,
-            format_type=format_type,
+        # Preparar book_data para el provider
+        book_data = {
+            "title": title,
+            "url": download_url,
+            "cover_url": cover_url,
+        }
+
+        # Usar DeliveryService para que se apliquen las plantillas y demás lógica centralizada
+        delivery_service = DeliveryService(bot=bot.app.bot)
+        success = await delivery_service.deliver_book(
+            provider_type="telegram",
+            target_id=real_target or user_id,
+            book_data=book_data,
+            options=options
         )
 
         if success:

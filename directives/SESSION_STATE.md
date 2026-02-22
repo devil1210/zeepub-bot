@@ -1,48 +1,34 @@
 # SESSION STATE - ZeePub-bot
 
-**Última actualización:** 2026-02-22 19:15 (GMT-3)  
+**Última actualización:** 2026-02-23 10:20 (GMT-3)  
 **Agente Actual:** Antigravity (Gemini 2.0 Flash)
 
 ## 📌 Resumen de la Sesión
-Sesión: **Observatorio integrado en Mini App** + **Fix de dependencias Docker**.
+Sesión: **Sincronización de Plantillas Telegram (UX Premium)**.
 
 ### ✅ Tareas Completadas
-1. **Fix de dependencias Docker**:
-    - `requirements.txt`: Cambiado `rich==14.3.2` a `rich>=10.14.0,<14` para compatibilidad con streamlit
+1. **Unificación del Motor de Plantillas** (`utils/template_engine.py`):
+    - Motor centralizado que soporta `[?var]...[/?]` y `{var}`.
+    - Sincronizado 1:1 con la lógica de `TelegramMessagePreview.tsx` (JS).
+    - Soporte para pre-formateo de campos (`size_mb`, `rating_txt`, `genres`).
+    - Limpieza de saltos de línea excesivos y manejo robusto de valores "Desconocidos".
 
-2. **Observatorio en Mini App** (`web_client/src/features/admin/pages/ObservatoryPage.tsx`):
-    - Vista "Resumen": Métricas generales, actividad semanal, distribución de usuarios.
-    - Vista "Ejecuciones": Logs de `agent_executions` con filtros y estadísticas.
-    - Vista "Publicaciones": Estado de cola, canales configurados.
-    - Vista "Métricas": Biblioteca, ratings, top libros más descargados.
-    - Integrado en Admin.tsx como nueva pestaña "Observatorio".
+2. **Fix de Publicación Directa (Mini App)**:
+    - `services/telegram_service.py`: `enviar_libro_directo` ahora soporta `caption_template`.
+    - `services/delivery/delivery_service.py`: Ahora recupera las plantillas de la base de datos y las pasa al servicio de Telegram.
+    - `api/routes.py`: Endpoint `/download` refactorizado para usar `DeliveryService`.
+    - Resultado: Todas las descargas desde la Mini App ahora lucen con el formato Premium configurado en los templates de publicación.
 
-3. **Perfeccionamiento del Publisher & Telegram UX**:
-    - `RichTextEditor.tsx`: Soporte nativo para Spoilers, Códigos, Citas y Separadores. extensiones Tiptap personalizadas.
-    - `TelegramMessagePreview.tsx`: Indicadores visuales de `Foto + Caption`, `Archivo EPUB` y simulación realista de adjuntos en la burbuja de chat. Sincronizado masivamente con metadatos reales del backend (`autor_jap`, `titulo_volumen`, `etiquetas`, `asin`, etc.).
-    - placeholders masivos: Se añadieron {hash}, {version}, {demography}, {genres}, {tags}, {votes}, {resumen}, {titulo_volumen}, {author_jap}, {illustrator_jap} para máxima personalización.
-    - Sincronización de condicionales: El motor de preview ahora oculta campos vacíos o con valores por defecto ("Desconocido", "0 MB") igual que el backend.
+3. **Refactorización de PublisherService**:
+    - `services/publisher/publisher_service.py`: Migrado al nuevo `template_engine` y añadida plantilla de portada por defecto (`COVER_TEMPLATE`).
 
-4. **Backend API** (`api/handlers/observatory.py`):
-    - `handle_observatory_overview`: Resumen general del sistema.
-    - `handle_observatory_executions`: Logs de ejecuciones de agentes.
-    - `handle_observatory_publications`: Estado del sistema de publicaciones.
-    - `handle_observatory_metrics`: Métricas completas de biblioteca y descargas.
-
-5. **Commits Pendientes**:
-    - Cambios en `requirements.txt` (fix rich version)
-    - Nuevo `api/handlers/observatory.py`
-    - Nuevo `web_client/src/features/admin/pages/ObservatoryPage.tsx`
-    - Actualizaciones en `api/miniapp_handlers.py` y `api/miniapp_routes.py`
-    - Actualizaciones en `web_client/src/shared/services/api.ts`
-    - Actualizaciones en `web_client/src/features/admin/pages/Admin.tsx`
-    - Refinamiento de `web_client/src/features/publisher/components/TelegramMessagePreview.tsx` (Sync total de metadatos).
-    - **PUSH REALIZADO**: Los cambios han sido subidos a la rama `feat/integrate-web-client`.
+4. **Auditoría de Calidad**:
+    - Verificación de sintaxis exitosa en todos los archivos modificados.
 
 ### 🚧 Próximos Pasos Recomendados
-- Commitear todos los cambios pendientes
-- Probar el observatorio en la Mini App
-- Verificar que los gráficos con recharts funcionen correctamente
+- Realizar `/push` para asegurar los cambios.
+- Verificar visualmente en el bot de Telegram de pruebas que el formato coincide 100% con el preview.
+- Considerar la migración de otros proveedores (Facebook) al motor de plantillas unificado si es necesario.
 
 ---
 ## 📎 Links Útiles
