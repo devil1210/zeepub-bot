@@ -65,37 +65,55 @@ export const TemplateEditorPage: React.FC = () => {
         }
     }, [id, isNew, templates]);
 
-    // Handle book search for live preview
+    // Unified search logic
+    const performSearch = async (query: string) => {
+        if (!query.trim()) {
+            setSearchResults([]);
+            setShowResults(false);
+            return;
+        }
+
+        setIsSearching(true);
+        setShowResults(true);
+        try {
+            const res = await api.searchVolumes(query, 1, 10);
+            console.log('[TemplateEditor] Search response:', res);
+            const items = res.items || res.results || res.result?.items || res.result?.results || [];
+            setSearchResults(items);
+        } catch (err) {
+            console.error('Error searching books in template editor:', err);
+            setSearchResults([]);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    // Handle book search for live preview (debounced)
     useEffect(() => {
         if (searchTimeout.current) clearTimeout(searchTimeout.current);
 
         if (!searchQuery.trim()) {
             setSearchResults([]);
+            setShowResults(false);
             return;
         }
 
-        searchTimeout.current = window.setTimeout(async () => {
-            setIsSearching(true);
-            try {
-                // Llamado a searchVolumes
-                const res = await api.searchVolumes(searchQuery, 1, 10);
-                console.log('[TemplateEditor] Search response:', res);
-                const items = res.items || res.results || res.result?.items || res.result?.results || [];
-                setSearchResults(items);
-                setShowResults(true);
-            } catch (err) {
-                console.error('Error searching books in template editor:', err);
-                setSearchResults([]);
-                setShowResults(true); // Mostrar error/vacío
-            } finally {
-                setIsSearching(false);
-            }
+        searchTimeout.current = window.setTimeout(() => {
+            performSearch(searchQuery);
         }, 500);
 
         return () => {
             if (searchTimeout.current) clearTimeout(searchTimeout.current);
         };
     }, [searchQuery]);
+
+    const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (searchTimeout.current) clearTimeout(searchTimeout.current);
+            performSearch(searchQuery);
+        }
+    };
 
     const handleSave = async () => {
         if (!name || !content || isSubmitting) return;
@@ -262,6 +280,7 @@ export const TemplateEditorPage: React.FC = () => {
                                         setShowResults(false);
                                     }
                                 }}
+                                onKeyDown={handleSearchKeyDown}
                                 onFocus={() => { if (searchQuery.trim().length > 0) setShowResults(true); }}
                                 onBlur={() => setTimeout(() => setShowResults(false), 200)}
                                 placeholder="Buscar novela para probar datos..."
