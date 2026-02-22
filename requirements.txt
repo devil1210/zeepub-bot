@@ -19,7 +19,7 @@ typing-extensions==4.15.0
 
 # Utilidades
 nest-asyncio==1.6.0
-rich==14.3.2
+rich>=10.14.0,<14
 psutil==7.0.0
 python-dateutil==2.9.0.post0
 Pillow==11.1.0

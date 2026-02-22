@@ -1,37 +1,43 @@
 # SESSION STATE - ZeePub-bot
 
-**Última actualización:** 2026-02-22 18:00 (GMT-3)  
+**Última actualización:** 2026-02-22 21:30 (GMT-3)  
 **Agente Actual:** Antigravity (GLM-5-Free)
 
 ## 📌 Resumen de la Sesión
-Sesión completada: **Dashboard de Observabilidad** + **Correcciones del Sistema de Publicaciones**.
+Sesión: **Observatorio integrado en Mini App** + **Fix de dependencias Docker**.
 
 ### ✅ Tareas Completadas
-1. **Dashboard Streamlit** (`dashboard/app.py`) - Ejecutar con `streamlit run dashboard/app.py`
-   - Vista "Resumen": Métricas generales, actividad semanal, distribución de usuarios.
-   - Vista "Ejecuciones": Logs de `agent_executions` con filtros.
-   - Vista "Publicaciones": Estado de cola, canales, plantillas y chats descubiertos.
-   - Vista "Métricas": Biblioteca, descargas, tendencias y top libros.
+1. **Fix de dependencias Docker**:
+    - `requirements.txt`: Cambiado `rich==14.3.2` a `rich>=10.14.0,<14` para compatibilidad con streamlit
 
-2. **Sistema de Publicaciones Corregido**:
-   - `TelegramMessagePreview.tsx`: Regex condicionales `[?var]...[/\\?]`
-   - `TelegramMessagePreview.tsx`: Estilos CSS para `tg-spoiler`, `blockquote`, `code`
-   - `publisher_service.py`: `sanitize_tg_html()` ya NO convierte `<tg-spoiler>` (Telegram lo soporta nativo)
-   - `publisher_service.py`: Variables agregadas: `demography`, `genres`, `romaji_title`, etc.
-   - `RichTextEditor.tsx`: Variables agregadas al toolbar
+2. **Observatorio en Mini App** (`web_client/src/features/admin/pages/ObservatoryPage.tsx`):
+    - Vista "Resumen": Métricas generales, actividad semanal, distribución de usuarios.
+    - Vista "Ejecuciones": Logs de `agent_executions` con filtros y estadísticas.
+    - Vista "Publicaciones": Estado de cola, canales configurados.
+    - Vista "Métricas": Biblioteca, ratings, top libros más descargados.
+    - Integrado en Admin.tsx como nueva pestaña "Observatorio".
 
-3. **Commits Realizados**:
-   - `473d994a` - feat(logging): migrate agent execution logs from SQLite to PostgreSQL
-   - `bbbebdc5` - feat(publisher): fix template preview and add dashboard observability
-   - `05d7d003` - fix(publisher): correct sanitize_tg_html and spoiler handling
+3. **Backend API** (`api/handlers/observatory.py`):
+    - `handle_observatory_overview`: Resumen general del sistema.
+    - `handle_observatory_executions`: Logs de ejecuciones de agentes.
+    - `handle_observatory_publications`: Estado del sistema de publicaciones.
+    - `handle_observatory_metrics`: Métricas completas de biblioteca y descargas.
+
+4. **Commits Pendientes**:
+    - Cambios en `requirements.txt` (fix rich version)
+    - Nuevo `api/handlers/observatory.py`
+    - Nuevo `web_client/src/features/admin/pages/ObservatoryPage.tsx`
+    - Actualizaciones en `api/miniapp_handlers.py` y `api/miniapp_routes.py`
+    - Actualizaciones en `web_client/src/shared/services/api.ts`
+    - Actualizaciones en `web_client/src/features/admin/pages/Admin.tsx`
 
 ### 🚧 Próximos Pasos Recomendados
-- Probar flujo completo de publicación end-to-end en Telegram
-- Verificar que los mensajes múltiples (`---next---`) se envíen correctamente
-- Revisar si hay problemas con el envío de EPUBs adjuntos
+- Commitear todos los cambios pendientes
+- Probar el observatorio en la Mini App
+- Verificar que los gráficos con recharts funcionen correctamente
 
 ---
 ## 📎 Links Útiles
 - [AGENTS.md](../AGENTS.md) - Reglas del proyecto.
 - [MASTER_PLAN.md](MASTER_PLAN.md) - Roadmap general.
-- `dashboard/app.py` - Dashboard de Observabilidad (http://localhost:8501)
+- `dashboard/app.py` - Dashboard de Streamlit alternativo (http://localhost:8501)

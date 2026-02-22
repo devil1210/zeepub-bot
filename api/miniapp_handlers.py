@@ -94,6 +94,12 @@ from api.handlers.settings import (
     handle_update_user_setting,
 )
 from api.handlers.stars import handle_create_stars_invoice
+from api.handlers.observatory import (
+    handle_observatory_executions,
+    handle_observatory_metrics,
+    handle_observatory_overview,
+    handle_observatory_publications,
+)
 from api.handlers.users import (
     handle_bot_info,
     handle_feedback,
@@ -187,4 +193,8 @@ __all__ = [
     "handle_admin_send_logs_telegram",
     "handle_admin_bulk_upload_confirm",
     "handle_get_upload_history",
+    "handle_observatory_overview",
+    "handle_observatory_executions",
+    "handle_observatory_publications",
+    "handle_observatory_metrics",
 ]

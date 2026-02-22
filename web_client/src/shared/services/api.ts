@@ -251,6 +251,13 @@ export const api = {
     getSystemLogs: (level: string = 'INFO', hours?: number) => rpc('admin_get_system_logs', { level, hours }),
     sendLogsToTelegram: (level: string = 'DEBUG', hours?: number) => rpc('admin_send_logs_telegram', { level, hours }),
 
+    getSystemLogs: (level: string = 'INFO', hours?: number) => rpc('admin_get_system_logs', { level, hours }),
+
+    observatoryOverview: () => rpc('observatory_overview'),
+    observatoryExecutions: (hours: number = 24) => rpc('observatory_executions', { hours }),
+    observatoryPublications: () => rpc('observatory_publications'),
+    observatoryMetrics: () => rpc('observatory_metrics'),
+
     // AI Hub
     getAiStats: () => rpc('ai_stats'),
     getAiProposals: () => rpc('ai_get_proposals'),

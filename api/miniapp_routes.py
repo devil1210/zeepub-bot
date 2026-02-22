@@ -228,6 +228,10 @@ async def handle_bot_request(
             handle_update_user_setting,
             handle_user_downloads_history,
             handle_user_status,
+            handle_observatory_overview,
+            handle_observatory_executions,
+            handle_observatory_publications,
+            handle_observatory_metrics,
         )
 
         ACTION_HANDLERS = {
@@ -314,6 +318,10 @@ async def handle_bot_request(
             "pub_schedule": handle_pub_schedule,
             "pub_update_queue_item": handle_pub_update_queue_item,
             "pub_delete_queue_item": handle_pub_delete_queue_item,
+            "observatory_overview": handle_observatory_overview,
+            "observatory_executions": handle_observatory_executions,
+            "observatory_publications": handle_observatory_publications,
+            "observatory_metrics": handle_observatory_metrics,
         }
 
         if action == "admin_bulk_upload_confirm":
