@@ -84,6 +84,8 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "is_uncensored": "Sí" if data.get("is_uncensored") else "No",
                 "isbn": data.get("isbn") or "",
                 "asin": data.get("asin") or "",
+                "archivo": data.get("filename") or f"{(data.get('title') or 'archivo').replace(' ', '_')}.epub",
+                "titulo_serie": data.get("series") or data.get("titulo_serie") or "",
             }
         )
 
@@ -111,6 +113,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "0 mb",
                 "false",
                 "none",
+                "no",
             ]
             if not value or value.lower() in not_found_values:
                 return ""

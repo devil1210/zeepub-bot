@@ -137,7 +137,8 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             const key = `{${varName.toLowerCase()}}`;
             const value = mapping[key] || "";
             const lowerVal = value.toString().trim().toLowerCase();
-            if (!lowerVal || lowerVal === "desconocido" || lowerVal === "0.0" || lowerVal === "0" || lowerVal === "0 mb" || lowerVal === "false" || lowerVal === "no") {
+            const emptyValues = ["", "desconocido", "desconocida", "0.0", "0", "0.00 mb", "0 mb", "false", "none", "no"];
+            if (!lowerVal || emptyValues.includes(lowerVal)) {
                 return "";
             }
             return innerContent;
