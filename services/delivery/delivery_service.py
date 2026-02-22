@@ -50,9 +50,7 @@ class TelegramDeliveryProvider(DeliveryProvider):
 
                 # Fallback a los defaults definidos en el Provider
                 cover_content = cover_t.content if cover_t else TelegramPublisherProvider.COVER_TEMPLATE
-                syn_content = (
-                    synopsis_t.content if synopsis_t else TelegramPublisherProvider.SYNOPSIS_TEMPLATE
-                )
+                syn_content = synopsis_t.content if synopsis_t else TelegramPublisherProvider.SYNOPSIS_TEMPLATE
                 info_content = info_t.content if info_t else TelegramPublisherProvider.INFO_TEMPLATE
 
                 # Unir plantillas con separador <hr> para que enviar_libro_directo las aplique y divida
@@ -97,3 +95,7 @@ class DeliveryService:
             return False
 
         return await provider.deliver_book(target_id, book_data, options)
+
+
+# Singleton instance for easy import
+delivery_service = DeliveryService()
