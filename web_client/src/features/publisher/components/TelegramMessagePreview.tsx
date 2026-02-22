@@ -14,41 +14,43 @@ import { getCoverUrl } from '@shared/utils/imageUtils';
 
 const DUMMY_DATA: Record<string, string> = {
     '{titulo}': 'Demon Slayer: Kimetsu no Yaiba',
+    '{titulo_volumen}': 'Demon Slayer: Kimetsu no Yaiba - Volumen 01',
     '{romaji_title}': 'Kimetsu no Yaiba',
     '{english_title}': 'Demon Slayer',
     '{spanish_title}': 'Guardianes de la Noche',
     '{jap_title}': '鬼滅の刃',
     '{autor}': 'Koyoharu Gotouge',
+    '{author_jap}': '吾峠 呼世晴',
     '{illustrator}': 'Koyoharu Gotouge',
+    '{illustrator_jap}': '吾峠 呼世晴',
     '{serie}': 'Demon Slayer [NL]',
     '{series_spanish}': 'Guardianes de la Noche [NL]',
     '{series_english}': 'Demon Slayer [NL]',
     '{volumen}': 'Volumen 01',
     '{sinopsis}': 'Tanjiro Kamado es un chico inteligente y de buen corazón que vive con su familia y gana dinero vendiendo carbón. Todo cambia cuando su familia es atacada y asesinada por un demonio (oni).',
-    '{tipo}': 'Novela Ligera',
+    '{resumen}': 'Una historia épica sobre un joven que se convierte en cazador de demonios para vengar a su familia.',
+    '{etiquetas}': 'Acción, Fantasía, Demonios',
+    '{idioma}': 'es',
+    '{editorial}': 'Shueisha',
     '{traductor}': 'Demon Fansub',
     '{maquetador}': 'Demon Fansub',
     '{layout_by}': 'Demon Fansub',
-    '{editorial}': 'Shueisha',
-    '{isbn}': '978-4-08-880723-2',
+    '{tipo}': 'Novela Ligera',
+    '{tamaño}': '5.2 MB',
     '{rating}': '4.9',
     '{votes}': '128',
-    '{tamaño}': '5.2 MB',
-    '{cover_high}': '',
-    '{cover_low}': '',
-    '{cover_original}': '',
+    '{hash}': 'DS_KNY_01',
+    '{version}': '2.0',
+    '{tags}': 'Acción, Fantasía, Demonios',
+    '{genres}': 'Acción, Fantasía, Demonios',
+    '{demography}': 'Shounen',
     '{published_at}': '2016-02-15',
     '{edition}': 'Digital',
-    '{is_uncensored}': 'Sí',
     '{color_mode}': 'Color',
-    '{language}': 'es',
+    '{is_uncensored}': 'Sí',
     '{archivo}': 'Demon_Slayer_v01.epub',
-    '{hash}': 'DS_KNY_01',
-    '{demography}': 'Shounen',
-    '{genres}': 'Acción, Fantasía, Demonios',
-    '{tags}': 'Acción, Fantasía, Demonios',
-    '{version}': '2.0',
-    '{resumen}': 'Una historia épica sobre un joven que se convierte en cazador de demonios para vengar a su familia.',
+    '{isbn}': '978-4-08-880723-2',
+    '{asin}': 'B01AXHUEPU',
     '{description}': 'Tanjiro Kamado es un chico inteligente y de buen corazón que vive con su familia y gana dinero vendiendo carbón.'
 };
 
@@ -95,24 +97,39 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             mapping['{tamaño}'] = sampleBook.size || mapping['{tamaño}'];
             mapping['{is_uncensored}'] = sampleBook.is_uncensored ? 'Sí' : 'No';
             mapping['{traductor}'] = sampleBook.translator || 'Desconocido';
+            mapping['{maquetador}'] = sampleBook.layout_by || 'Desconocido';
             mapping['{layout_by}'] = sampleBook.layout_by || 'Desconocido';
             mapping['{tipo}'] = sampleBook.bookType || sampleBook.book_type || mapping['{tipo}'];
             mapping['{isbn}'] = sampleBook.isbn || mapping['{isbn}'];
             mapping['{archivo}'] = sampleBook.title ? `${sampleBook.title.replace(/\s+/g, '_')}.epub` : mapping['{archivo}'];
             mapping['{hash}'] = (sampleBook as any).book_hash || mapping['{hash}'];
             mapping['{rating}'] = sampleBook.rating ? String(sampleBook.rating) : mapping['{rating}'];
+            mapping['{votes}'] = (sampleBook as any).rating_count ? String((sampleBook as any).rating_count) : mapping['{votes}'];
             mapping['{description}'] = (sampleBook as any).description || (sampleBook as any).summary || mapping['{description}'];
-            mapping['{sinopsis}'] = (sampleBook as any).description || (sampleBook as any).summary || mapping['{sinopsis}'];
-            mapping['{resumen}'] = (sampleBook as any).summary || (sampleBook as any).description || mapping['{resumen}'];
+            mapping['{sinopsis}'] = (sampleBook as any).description || (sampleBook as any).summary || (sampleBook as any).sinopsis || mapping['{sinopsis}'];
+            mapping['{resumen}'] = (sampleBook as any).summary || (sampleBook as any).description || (sampleBook as any).resumen || mapping['{resumen}'];
+            mapping['{version}'] = (sampleBook as any).epub_version || mapping['{version}'];
+            mapping['{published_at}'] = (sampleBook as any).published_at || mapping['{published_at}'];
+            mapping['{edition}'] = (sampleBook as any).edition || mapping['{edition}'];
+            mapping['{color_mode}'] = (sampleBook as any).color_mode || mapping['{color_mode}'];
+            mapping['{idioma}'] = (sampleBook as any).language || mapping['{idioma}'];
+            mapping['{editorial}'] = (sampleBook as any).publisher || mapping['{editorial}'];
+            mapping['{asin}'] = (sampleBook as any).asin || mapping['{asin}'];
+            mapping['{titulo_volumen}'] = (sampleBook as any).title_volumen || sampleBook.title || mapping['{titulo_volumen}'];
+            mapping['{author_jap}'] = (sampleBook as any).author_jap || mapping['{author_jap}'];
+            mapping['{illustrator_jap}'] = (sampleBook as any).illustrator_jap || mapping['{illustrator_jap}'];
 
-            const tags = (sampleBook as any).tags || (sampleBook as any).genres;
+            const tags = (sampleBook as any).tags || (sampleBook as any).genres || (sampleBook as any).etiquetas;
             if (tags && Array.isArray(tags)) {
-                mapping['{genres}'] = tags.join(', ');
-                mapping['{tags}'] = tags.join(', ');
-                mapping['{demography}'] = tags.includes('Seinen') ? 'Seinen' :
-                    tags.includes('Shounen') ? 'Shounen' :
-                        tags.includes('Shoujo') ? 'Shoujo' :
-                            tags.includes('Josei') ? 'Josei' : mapping['{demography}'];
+                const tagsStr = tags.join(', ');
+                mapping['{genres}'] = tagsStr;
+                mapping['{tags}'] = tagsStr;
+                mapping['{etiquetas}'] = tagsStr;
+                mapping['{demography}'] = (sampleBook as any).demography ||
+                    (tags.includes('Seinen') ? 'Seinen' :
+                        tags.includes('Shounen') ? 'Shounen' :
+                            tags.includes('Shoujo') ? 'Shoujo' :
+                                tags.includes('Josei') ? 'Josei' : mapping['{demography}']);
             }
         }
 
