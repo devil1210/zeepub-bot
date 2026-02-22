@@ -96,6 +96,10 @@ class DeliveryService:
 
         return await provider.deliver_book(target_id, book_data, options)
 
+    # Alias for backward compatibility
+    async def deliver(self, *args, **kwargs):
+        return await self.deliver_book(*args, **kwargs)
+
 
 # Singleton instance for easy import
 delivery_service = DeliveryService()
