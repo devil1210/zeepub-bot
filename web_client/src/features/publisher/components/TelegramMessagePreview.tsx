@@ -19,6 +19,7 @@ const DUMMY_DATA: Record<string, string> = {
     '{english_title}': 'Demon Slayer',
     '{spanish_title}': 'Guardianes de la Noche',
     '{jap_title}': '鬼滅の刃',
+    '{slug}': 'demon_slayer_kimetsu_no_yaiba',
     '{autor}': 'Koyoharu Gotouge',
     '{author_jap}': '吾峠 呼世晴',
     '{illustrator}': 'Koyoharu Gotouge',
@@ -84,6 +85,9 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
 
         if (sampleBook) {
             mapping['{titulo}'] = sampleBook.title || mapping['{titulo}'];
+            mapping['{slug}'] = sampleBook.title 
+                ? sampleBook.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/[\s_]+/g, '_').substring(0, 50)
+                : mapping['{slug}'];
             mapping['{romaji_title}'] = sampleBook.romaji_title || mapping['{romaji_title}'];
             mapping['{english_title}'] = sampleBook.english_title || mapping['{english_title}'];
             mapping['{spanish_title}'] = sampleBook.spanish_title || mapping['{spanish_title}'];
@@ -93,7 +97,10 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             mapping['{serie}'] = sampleBook.series || mapping['{serie}'];
             mapping['{series_spanish}'] = sampleBook.series_spanish || mapping['{series_spanish}'];
             mapping['{series_english}'] = sampleBook.series_english || mapping['{series_english}'];
-            mapping['{volumen}'] = sampleBook.volumeNumber ? `Vol. ${sampleBook.volumeNumber}` : mapping['{volumen}'];
+            
+            const volNum = sampleBook.volumeNumber || (sampleBook as any).volume || (sampleBook as any).series_index;
+            mapping['{volumen}'] = volNum ? String(Math.floor(parseFloat(String(volNum)))) : mapping['{volumen}'];
+            
             mapping['{tamaño}'] = sampleBook.size || mapping['{tamaño}'];
             mapping['{is_uncensored}'] = sampleBook.is_uncensored ? 'Sí' : 'No';
             mapping['{traductor}'] = sampleBook.translator || 'Desconocido';
@@ -109,7 +116,19 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             mapping['{sinopsis}'] = (sampleBook as any).description || (sampleBook as any).summary || (sampleBook as any).sinopsis || mapping['{sinopsis}'];
             mapping['{resumen}'] = (sampleBook as any).summary || (sampleBook as any).description || (sampleBook as any).resumen || mapping['{resumen}'];
             mapping['{version}'] = (sampleBook as any).epub_version || mapping['{version}'];
-            mapping['{published_at}'] = (sampleBook as any).published_at || mapping['{published_at}'];
+            
+            const pubDate = (sampleBook as any).published_at || '';
+            if (pubDate && pubDate.includes('T')) {
+                try {
+                    const d = new Date(pubDate);
+                    mapping['{published_at}'] = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                } catch {
+                    mapping['{published_at}'] = pubDate.substring(0, 10);
+                }
+            } else {
+                mapping['{published_at}'] = pubDate || mapping['{published_at}'];
+            }
+            
             mapping['{edition}'] = (sampleBook as any).edition || mapping['{edition}'];
             mapping['{color_mode}'] = (sampleBook as any).color_mode || mapping['{color_mode}'];
             mapping['{idioma}'] = (sampleBook as any).language || mapping['{idioma}'];

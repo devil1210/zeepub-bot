@@ -1,5 +1,6 @@
 import re
 from typing import Any
+from datetime import datetime
 
 
 def extract_demography(tags: list) -> str:
@@ -11,6 +12,30 @@ def extract_demography(tags: list) -> str:
         if tag in demography_map:
             return tag
     return ""
+
+
+def generate_slug_from_title(title: str) -> str:
+    """Genera un slug amigable desde un título."""
+    if not title:
+        return ""
+    slug = title.lower()
+    slug = re.sub(r"[^\w\s-]", "", slug)
+    slug = re.sub(r"[\s_]+", "_", slug)
+    slug = re.sub(r"-+", "_", slug)
+    return slug.strip("_")[:50]
+
+
+def format_published_date(date_str: str) -> str:
+    """Formatea una fecha ISO a formato legible."""
+    if not date_str:
+        return ""
+    try:
+        if "T" in date_str:
+            dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            return dt.strftime("%d/%m/%Y")
+    except (ValueError, TypeError):
+        pass
+    return date_str[:10] if len(date_str) >= 10 else date_str
 
 
 def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
@@ -43,6 +68,19 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         if rating_avg and float(rating_avg) > 0:
             rating_txt = f"\n⭐ {float(rating_avg):.1f} ({rating_count} votos)"
 
+        title = data.get("title") or data.get("titulo") or ""
+        slug = generate_slug_from_title(title)
+
+        published_at_raw = str(data.get("published_at") or "")
+        published_at_formatted = format_published_date(published_at_raw)
+
+        volume_raw = data.get("volume") or data.get("series_index") or ""
+        volume_clean = (
+            str(int(float(volume_raw)))
+            if volume_raw and str(volume_raw).replace(".", "").replace("-", "").isdigit()
+            else str(volume_raw)
+        )
+
         mapping.update(
             {
                 "titulo": data.get("title") or data.get("titulo") or "",
@@ -51,6 +89,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "english_title": data.get("english_title") or "",
                 "spanish_title": data.get("spanish_title") or "",
                 "jap_title": data.get("jap_title") or "",
+                "slug": slug,
                 "autor": data.get("author") or data.get("autor") or "",
                 "author_jap": data.get("author_jap") or "",
                 "illustrator": data.get("illustrator") or data.get("ilustrador") or "",
@@ -58,7 +97,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "serie": data.get("series") or data.get("titulo_serie") or "",
                 "series_spanish": data.get("series_spanish") or "",
                 "series_english": data.get("series_english") or "",
-                "volumen": str(data.get("volume") or data.get("series_index") or ""),
+                "volumen": volume_clean,
                 "sinopsis": data.get("description") or data.get("sinopsis") or "",
                 "resumen": data.get("summary") or data.get("resumen") or "",
                 "etiquetas": ", ".join(tags) if tags else "",
@@ -68,7 +107,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "maquetador": data.get("layout_by") or data.get("maquetador") or "",
                 "tipo": data.get("book_type") or data.get("categoria") or "",
                 "tamaño": size_mb_formatted,
-                "size_mb": size_mb_formatted,  # Para compatibilidad con templates :.2f (aunque no soportado, proveemos el string ya formateado)
+                "size_mb": size_mb_formatted,
                 "rating": str(rating_avg),
                 "rating_txt": rating_txt,
                 "votes": str(rating_count),
@@ -77,7 +116,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "tags": ", ".join(tags) if tags else "",
                 "genres": ", ".join(tags) if tags else "",
                 "demography": data.get("demography") or extract_demography(tags),
-                "published_at": str(data.get("published_at") or ""),
+                "published_at": published_at_formatted,
                 "fecha": str(data.get("fecha_modificacion") or data.get("updated_at") or ""),
                 "edition": data.get("edition") or "",
                 "color_mode": data.get("color_mode") or "bw",
