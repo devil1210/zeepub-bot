@@ -1,38 +1,37 @@
 # SESSION STATE - ZeePub-bot
 
-**Última actualización:** 2026-02-22 17:15 (GMT-3)  
+**Última actualización:** 2026-02-22 18:00 (GMT-3)  
 **Agente Actual:** Antigravity (GLM-5-Free)
 
 ## 📌 Resumen de la Sesión
-En esta sesión se completó el **Dashboard de Observabilidad** y se corrigieron problemas del **Sistema de Publicaciones**.
+Sesión completada: **Dashboard de Observabilidad** + **Correcciones del Sistema de Publicaciones**.
 
 ### ✅ Tareas Completadas
-1. **Dashboard Streamlit Implementado** (`dashboard/app.py`):
+1. **Dashboard Streamlit** (`dashboard/app.py`) - Ejecutar con `streamlit run dashboard/app.py`
    - Vista "Resumen": Métricas generales, actividad semanal, distribución de usuarios.
    - Vista "Ejecuciones": Logs de `agent_executions` con filtros.
    - Vista "Publicaciones": Estado de cola, canales, plantillas y chats descubiertos.
    - Vista "Métricas": Biblioteca, descargas, tendencias y top libros.
-   - Gráficos interactivos con Plotly.
 
-2. **Logging Migrado a PostgreSQL**:
-   - Modelo `AgentExecution` creado en `models/agent_models.py`.
-   - `utils/logger.py` actualizado para usar PostgreSQL.
+2. **Sistema de Publicaciones Corregido**:
+   - `TelegramMessagePreview.tsx`: Regex condicionales `[?var]...[/\\?]`
+   - `TelegramMessagePreview.tsx`: Estilos CSS para `tg-spoiler`, `blockquote`, `code`
+   - `publisher_service.py`: `sanitize_tg_html()` ya NO convierte `<tg-spoiler>` (Telegram lo soporta nativo)
+   - `publisher_service.py`: Variables agregadas: `demography`, `genres`, `romaji_title`, etc.
+   - `RichTextEditor.tsx`: Variables agregadas al toolbar
 
-3. **Correcciones en Sistema de Publicaciones**:
-   - **TelegramMessagePreview.tsx**: Corregido regex de condicionales `[?var]...[/?]`.
-   - **TelegramMessagePreview.tsx**: Agregados estilos CSS para `tg-spoiler`, `blockquote`, `code`, etc.
-   - **TelegramMessagePreview.tsx**: Agregada función `convertHtmlToTelegramVisual()` para previsualización correcta.
-   - **publisher_service.py**: Mejorado `sanitize_tg_html()` para manejar `<tg-spoiler>`, `<hr>`, etc.
-   - **publisher_service.py**: Agregadas variables faltantes: `demography`, `genres`, `romaji_title`, `english_title`, etc.
-   - **RichTextEditor.tsx**: Agregadas variables: `resumen`, `votes`, `hash`, `version`, `demography`, `genres`, `tags`.
+3. **Commits Realizados**:
+   - `473d994a` - feat(logging): migrate agent execution logs from SQLite to PostgreSQL
+   - `bbbebdc5` - feat(publisher): fix template preview and add dashboard observability
+   - `05d7d003` - fix(publisher): correct sanitize_tg_html and spoiler handling
 
-### 🚧 Pendientes / Próximos Pasos
-- Probar el flujo completo de publicación end-to-end.
-- Verificar que los mensajes lleguen correctamente formateados a Telegram.
-- Revisar si hay problemas con el envío de múltiples mensajes (`---next---`).
+### 🚧 Próximos Pasos Recomendados
+- Probar flujo completo de publicación end-to-end en Telegram
+- Verificar que los mensajes múltiples (`---next---`) se envíen correctamente
+- Revisar si hay problemas con el envío de EPUBs adjuntos
 
 ---
 ## 📎 Links Útiles
 - [AGENTS.md](../AGENTS.md) - Reglas del proyecto.
 - [MASTER_PLAN.md](MASTER_PLAN.md) - Roadmap general.
-- `dashboard/app.py` - Dashboard de Observabilidad (ejecutar: `streamlit run dashboard/app.py`)
+- `dashboard/app.py` - Dashboard de Observabilidad (http://localhost:8501)
