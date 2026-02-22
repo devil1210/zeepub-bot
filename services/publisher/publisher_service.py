@@ -68,11 +68,20 @@ class TelegramPublisherProvider(PublisherProvider):
 
         # --- Lógica de Plantilla Multi-mensaje ---
         def sanitize_tg_html(t: str) -> str:
-            if not t: return ""
+            if not t:
+                return ""
             import re
+
+            t = re.sub(r"<tg-spoiler>", '<span class="tg-spoiler">', t, flags=re.IGNORECASE)
+            t = re.sub(r"</tg-spoiler>", "</span>", t, flags=re.IGNORECASE)
+
             t = re.sub(r"<(/?p|/?div|/?h\d)>", "\n", t, flags=re.IGNORECASE)
             t = re.sub(r"<br\s*/?>", "\n", t, flags=re.IGNORECASE)
-            return re.sub(r"\n{3,}", "\n\n", t).strip()
+
+            t = re.sub(r"<hr\s*/?>", "\n---MSG_SPLIT---\n", t, flags=re.IGNORECASE)
+
+            t = re.sub(r"\n{3,}", "\n\n", t).strip()
+            return t
 
         custom_content = options.get("caption")
         msg_parts = []
@@ -433,6 +442,17 @@ class PublisherService:
 
         self.repo = pub_repo or default_repo
 
+    @staticmethod
+    def _extract_demography(tags: list) -> str:
+        """Extrae la demografía de una lista de tags."""
+        if not tags or not isinstance(tags, list):
+            return ""
+        demography_map = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo"]
+        for tag in tags:
+            if tag in demography_map:
+                return tag
+        return ""
+
     async def announce(
         self,
         platform: str,
@@ -526,6 +546,7 @@ class PublisherService:
         """Aplica condicionales [?var]...[/?] y placeholders {var} con campos de LocalBook."""
         import logging
         import re
+
         logger = logging.getLogger(__name__)
 
         try:
@@ -533,29 +554,44 @@ class PublisherService:
             mapping.update(
                 {
                     "titulo": data.get("title", ""),
+                    "titulo_volumen": data.get("titulo_volumen", data.get("title", "")),
+                    "romaji_title": data.get("romaji_title", ""),
+                    "english_title": data.get("english_title", ""),
+                    "spanish_title": data.get("spanish_title", ""),
+                    "jap_title": data.get("jap_title", ""),
                     "autor": data.get("author", ""),
+                    "author_jap": data.get("author_jap", ""),
+                    "illustrator": data.get("illustrator", ""),
+                    "illustrator_jap": data.get("illustrator_jap", ""),
                     "serie": data.get("series", ""),
-                    "volumen": data.get("volume", ""),
-                    "sinopsis": data.get("description", ""),
-                    "resumen": data.get("summary", ""),
+                    "series_spanish": data.get("series_spanish", ""),
+                    "series_english": data.get("series_english", ""),
+                    "volumen": data.get("volume", "") or data.get("volume_number", ""),
+                    "sinopsis": data.get("description", "") or data.get("sinopsis", ""),
+                    "resumen": data.get("summary", "") or data.get("resumen", ""),
                     "etiquetas": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
                     "idioma": data.get("language", ""),
                     "editorial": data.get("publisher", ""),
                     "traductor": data.get("translator", ""),
                     "maquetador": data.get("layout_by", ""),
                     "tipo": data.get("book_type", ""),
-                    "tamaño": data.get("size", ""),
+                    "tamaño": data.get("size", "") or data.get("size_mb", ""),
                     "rating": data.get("rating_average", ""),
                     "votes": data.get("rating_count", ""),
                     "hash": data.get("book_hash", ""),
                     "version": data.get("epub_version", ""),
                     "tags": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
                     "genres": (", ".join(data.get("tags", [])) if isinstance(data.get("tags"), list) else ""),
+                    "demography": data.get("demography", "") or self._extract_demography(data.get("tags", [])),
                     "published_at": data.get("published_at", ""),
                     "edition": data.get("edition", ""),
                     "color_mode": data.get("color_mode", ""),
-                    "is_uncensored": data.get("is_uncensored", ""),
-                    "archivo": __import__("os").path.basename(str(data.get("filepath", ""))) if data.get("filepath") else "",
+                    "is_uncensored": "Sí" if data.get("is_uncensored") else "No",
+                    "archivo": __import__("os").path.basename(str(data.get("filepath", "")))
+                    if data.get("filepath")
+                    else "",
+                    "isbn": data.get("isbn", ""),
+                    "asin": data.get("asin", ""),
                 }
             )
 
@@ -577,7 +613,9 @@ class PublisherService:
                 return content
 
             # Regex DOTALL para permitir saltos de línea dentro del condicional
-            result_str = re.sub(r"\[\?(\w+)\](.*?)\[/\?\]", evaluate_conditional, template_str, flags=re.IGNORECASE | re.DOTALL)
+            result_str = re.sub(
+                r"\[\?(\w+)\](.*?)\[/\?\]", evaluate_conditional, template_str, flags=re.IGNORECASE | re.DOTALL
+            )
 
             # 2. Limpiar saltos de línea excesivos o <p></p> vacíos generados
             # Se omite para no romper el HTML complejo, que el frontend/Telegram normalice.
@@ -592,10 +630,11 @@ class PublisherService:
                 elif not val and p == "tamaño":
                     val = "0 MB"
                 result_str = result_str.replace(f"{{{p}}}", val)
-            
+
             return result_str
         except Exception as e:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.warning(f"Error applying template: {e}")
             return template_str
