@@ -1,7 +1,7 @@
 # SESSION STATE - ZeePub-bot
 
-**Última actualización:** 2026-02-22 21:30 (GMT-3)  
-**Agente Actual:** Antigravity (GLM-5-Free)
+**Última actualización:** 2026-02-22 18:59 (GMT-3)  
+**Agente Actual:** Antigravity (Gemini 2.0 Flash)
 
 ## 📌 Resumen de la Sesión
 Sesión: **Observatorio integrado en Mini App** + **Fix de dependencias Docker**.
@@ -17,13 +17,18 @@ Sesión: **Observatorio integrado en Mini App** + **Fix de dependencias Docker**
     - Vista "Métricas": Biblioteca, ratings, top libros más descargados.
     - Integrado en Admin.tsx como nueva pestaña "Observatorio".
 
-3. **Backend API** (`api/handlers/observatory.py`):
+3. **Perfeccionamiento del Publisher & Telegram UX**:
+    - `RichTextEditor.tsx`: Soporte nativo para Spoilers, Códigos, Citas y Separadores. extensiones Tiptap personalizadas.
+    - `TelegramMessagePreview.tsx`: Indicadores visuales de `Foto + Caption`, `Archivo EPUB` y simulación realista de adjuntos en la burbuja de chat.
+    - placeholders masivos: Se añadieron {hash}, {version}, {demography}, {genres}, {tags}, {votes}, {resumen} para máxima personalización.
+
+4. **Backend API** (`api/handlers/observatory.py`):
     - `handle_observatory_overview`: Resumen general del sistema.
     - `handle_observatory_executions`: Logs de ejecuciones de agentes.
     - `handle_observatory_publications`: Estado del sistema de publicaciones.
     - `handle_observatory_metrics`: Métricas completas de biblioteca y descargas.
 
-4. **Commits Pendientes**:
+5. **Commits Pendientes**:
     - Cambios en `requirements.txt` (fix rich version)
     - Nuevo `api/handlers/observatory.py`
     - Nuevo `web_client/src/features/admin/pages/ObservatoryPage.tsx`

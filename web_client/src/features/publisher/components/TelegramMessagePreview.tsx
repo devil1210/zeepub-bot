@@ -54,22 +54,22 @@ const DUMMY_DATA: Record<string, string> = {
 
 function convertHtmlToTelegramVisual(html: string): string {
     let result = html;
-    
+
     result = result.replace(/<tg-spoiler>([\s\S]*?)<\/tg-spoiler>/gi, '<span class="tg-spoiler-preview">$1</span>');
     result = result.replace(/<span class="tg-spoiler[^"]*">([\s\S]*?)<\/span>/gi, '<span class="tg-spoiler-preview">$1</span>');
-    
+
     result = result.replace(/<blockquote>([\s\S]*?)<\/blockquote>/gi, '<div class="tg-quote">$1</div>');
-    
+
     result = result.replace(/<pre>([\s\S]*?)<\/pre>/gi, '<div class="tg-code-block"><code>$1</code></div>');
-    
+
     result = result.replace(/<code>([\s\S]*?)<\/code>/gi, '<span class="tg-inline-code">$1</span>');
-    
+
     result = result.replace(/<p>([\s\S]*?)<\/p>/gi, '$1\n');
     result = result.replace(/<br\s*\/?>/gi, '\n');
     result = result.replace(/<div>([\s\S]*?)<\/div>/gi, '$1\n');
-    
+
     result = result.replace(/<hr\s*\/?>/gi, '\n---MSG_SPLIT---\n');
-    
+
     return result;
 }
 
@@ -79,7 +79,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
         if (!content) return [];
 
         const mapping = { ...DUMMY_DATA };
-        
+
         if (sampleBook) {
             mapping['{titulo}'] = sampleBook.title || mapping['{titulo}'];
             mapping['{romaji_title}'] = sampleBook.romaji_title || mapping['{romaji_title}'];
@@ -109,10 +109,10 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             if (tags && Array.isArray(tags)) {
                 mapping['{genres}'] = tags.join(', ');
                 mapping['{tags}'] = tags.join(', ');
-                mapping['{demography}'] = tags.includes('Seinen') ? 'Seinen' : 
-                                          tags.includes('Shounen') ? 'Shounen' : 
-                                          tags.includes('Shoujo') ? 'Shoujo' : 
-                                          tags.includes('Josei') ? 'Josei' : mapping['{demography}'];
+                mapping['{demography}'] = tags.includes('Seinen') ? 'Seinen' :
+                    tags.includes('Shounen') ? 'Shounen' :
+                        tags.includes('Shoujo') ? 'Shoujo' :
+                            tags.includes('Josei') ? 'Josei' : mapping['{demography}'];
             }
         }
 
@@ -224,24 +224,48 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
                     let coverUrl = 'https://m.media-amazon.com/images/I/81Y1u+L4kRL._SL1500_.jpg';
                     if (sampleBook) {
                         coverUrl = getCoverUrl(
-                            ('cover' in sampleBook ? (sampleBook as any).cover : sampleBook.coverUrl) as string, 
-                            ('cover_thumb' in sampleBook ? (sampleBook as any).cover_thumb : sampleBook.coverThumbUrl) as string, 
+                            ('cover' in sampleBook ? (sampleBook as any).cover : sampleBook.coverUrl) as string,
+                            ('cover_thumb' in sampleBook ? (sampleBook as any).cover_thumb : sampleBook.coverThumbUrl) as string,
                             coverQuality as any || 'mediana'
                         );
                     }
 
                     const showCover = idx === 0;
+                    // Detectar si el mensaje contiene el archivo (buscando el nombre del dummy o la variable)
+                    const hasFile = msg.includes('Demon_Slayer_v01.epub') || msg.includes('.epub') || msg.includes('.mobi') || msg.includes('.pdf');
 
                     return (
-                        <div key={idx} className="flex flex-col items-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div key={idx} className="flex flex-col items-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300 relative">
+                            {/* Indicadores de Tipo de Mensaje */}
+                            <div className="flex gap-2 mb-1 pl-1">
+                                {showCover && (
+                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/30">
+                                        🖼️ Foto + Caption
+                                    </span>
+                                )}
+                                {hasFile && (
+                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-[10px] font-bold uppercase tracking-wider border border-amber-500/30">
+                                        📎 Con Archivo EPUB
+                                    </span>
+                                )}
+                                {!showCover && !hasFile && (
+                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/10 text-white/40 text-[10px] font-bold uppercase tracking-wider border border-white/5">
+                                        📝 Mensaje de Texto
+                                    </span>
+                                )}
+                            </div>
+
                             <div className="relative max-w-[85%] bg-[#182533] text-white rounded-2xl rounded-tl-none text-[15px] leading-relaxed shadow-sm flex flex-col overflow-hidden">
                                 <svg className="absolute w-[11px] h-[20px] -left-[11px] top-0 text-[#182533] fill-current" viewBox="0 0 11 20">
                                     <path d="M11 20C11 20 11 0 11 0C11 0 5 0 2 0C-0.9 0 -0.1 3 1.5 4.5C3.1 6 11 20 11 20Z"></path>
                                 </svg>
 
                                 {showCover && (
-                                    <div className="w-full relative">
+                                    <div className="w-full relative group">
                                         <img src={coverUrl} alt="Cover Preview" className="w-full h-auto object-cover max-h-[350px] bg-[#101924]" />
+                                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <span className="bg-black/60 px-2 py-1 rounded text-xs">Vista de Portada</span>
+                                        </div>
                                     </div>
                                 )}
 
@@ -251,6 +275,23 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
                                         dangerouslySetInnerHTML={{ __html: msg }}
                                     />
 
+                                    {/* Simulación de archivo adjunto si el tag está presente */}
+                                    {hasFile && (
+                                        <div className="mt-3 mb-1 p-2 bg-[#242f3d] rounded-xl border border-white/5 flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center shrink-0 shadow-lg">
+                                                <span className="text-white font-bold text-[10px]">EPUB</span>
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-sm font-medium truncate text-blue-400">
+                                                    {sampleBook?.title || 'Demon_Slayer_v01'}.epub
+                                                </span>
+                                                <span className="text-[11px] text-[#768c9e]">
+                                                    {sampleBook?.size || '5.2 MB'} • Documento
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="flex justify-end items-center gap-1 mt-1 -mb-1 float-right clear-both ml-3">
                                         <span className="text-[11px] text-[#768c9e]">12:00</span>
                                         <CheckCheck className="w-3.5 h-3.5 text-[#53a6e4]" />
@@ -258,7 +299,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
                                 </div>
                             </div>
 
-                            {showCover && idx === 0 && (
+                            {showCover && (
                                 <div className="mt-1 flex flex-col max-w-[85%] space-y-1 w-full pl-[2px]">
                                     <div className="flex gap-1 w-full">
                                         <button className="flex-1 bg-[#182533] text-[#53a6e4] hover:bg-[#202e3f] transition-colors py-2 px-3 rounded-xl text-sm font-semibold text-center border border-transparent">
