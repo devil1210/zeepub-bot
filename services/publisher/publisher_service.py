@@ -72,9 +72,6 @@ class TelegramPublisherProvider(PublisherProvider):
                 return ""
             import re
 
-            t = re.sub(r"<tg-spoiler>", '<span class="tg-spoiler">', t, flags=re.IGNORECASE)
-            t = re.sub(r"</tg-spoiler>", "</span>", t, flags=re.IGNORECASE)
-
             t = re.sub(r"<(/?p|/?div|/?h\d)>", "\n", t, flags=re.IGNORECASE)
             t = re.sub(r"<br\s*/?>", "\n", t, flags=re.IGNORECASE)
 
@@ -141,7 +138,7 @@ class TelegramPublisherProvider(PublisherProvider):
         # 2. Sinopsis / Mensaje Intermedio
         sinopsis = ""
         if len(msg_parts) > 1:
-            sinopsis = msg_parts[1]
+            sinopsis = sanitize_tg_html(msg_parts[1])
         else:
             # Comportamiento por defecto
             raw_sinopsis = book_data.get("description") or book_data.get("summary") or book_data.get("sinopsis")
@@ -151,9 +148,7 @@ class TelegramPublisherProvider(PublisherProvider):
                 sinopsis = self.SYNOPSIS_TEMPLATE.format(sinopsis=sinopsis_esc, slug=slug or "")
                 if not slug:
                     sinopsis = sinopsis.replace("\n#", "").strip()
-
-        if sanitize_tg_html:
-            sinopsis = sanitize_tg_html(sinopsis)
+                sinopsis = sanitize_tg_html(sinopsis)
 
         if sinopsis:
             try:
