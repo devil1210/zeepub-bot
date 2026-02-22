@@ -2,6 +2,7 @@ import asyncio
 import io
 import logging
 import os
+import re
 from typing import Any
 from urllib.parse import unquote, urlparse
 
@@ -557,6 +558,7 @@ async def enviar_libro_directo(
     format_type: str = "standard",
     message_thread_id: int = None,
     metadata_override: dict[str, Any] | None = None,
+    explicit_file_buffer: bytes | str | None = None,
     job_queue=None,
     auto_delete_seconds: int = 0,
     custom_caption: str | None = None,
