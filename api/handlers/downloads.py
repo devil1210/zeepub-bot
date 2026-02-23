@@ -15,8 +15,10 @@ logger = logging.getLogger(__name__)
 async def handle_user_downloads_history(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve el historial reciente de descargas del usuario."""
     user_id = user_data.get("user_id")
+    if user_id is None:
+        return {"downloads": []}
     try:
-        downloads = await download_repo.get_user_downloads(user_id, limit=20)
+        downloads = await download_repo.get_user_downloads(int(user_id), limit=20)
         return {"downloads": downloads}
     except Exception as e:
         logger.error(f"Error fetching download history for user {user_id}: {e}")

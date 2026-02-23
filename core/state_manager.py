@@ -26,9 +26,7 @@ class StateManager:
                 "esperando_busqueda": False,
                 "esperando_password": False,
                 "ultima_pagina": None,
-                "opds_root": config.BASE_URL,
-                "opds_root_base": config.BASE_URL,
-                "series_id": None,
+                "series_hash": None,
                 "volume_id": None,
                 "msg_que_hacer": None,
             }

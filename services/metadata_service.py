@@ -1,4 +1,8 @@
 # services/metadata_service.py
+"""
+Servicio de metadatos - ahora delega a repositorios locales y metadata_orchestrator.
+Las funciones OPDS han sido eliminadas.
+"""
 
 import logging
 from typing import Any
@@ -6,26 +10,29 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-async def obtener_sinopsis_opds(series_id: str) -> str | None:
-    """Obtiene la sinopsis de una serie desde OPDS (DESACTIVADO)."""
+async def get_sinopsis_from_series(series_hash: str) -> str | None:
+    """Obtiene la sinopsis desde SeriesMetadata en la BD local."""
+    from repositories.series_repository import series_repo
+
+    try:
+        series = await series_repo.get_by_hash(series_hash)
+        if series:
+            desc = getattr(series, "description", None)
+            if desc:
+                return str(desc)
+    except Exception as e:
+        logger.debug(f"Error obteniendo sinopsis de BD: {e}")
     return None
 
 
-async def obtener_sinopsis_opds_volumen(series_id: str, volume_id: str) -> str | None:
-    """Obtiene la sinopsis específica de un volumen (DESACTIVADO)."""
-    return None
+async def get_series_metadata(series_hash: str) -> dict[str, Any]:
+    """Obtiene metadata completa de una serie desde la BD local."""
+    from repositories.series_repository import series_repo
 
-
-async def obtener_metadatos_opds(series_id: str, volume_id: str) -> dict[str, Any]:
-    """Extrae metadatos desde OPDS (DESACTIVADO)."""
-    return {
-        "titulo_serie": None,
-        "titulo_volumen": None,
-        "autor": None,
-        "ilustrador": None,
-        "generos": [],
-        "tags": [],
-        "categoria": None,
-        "demografia": None,
-        "fecha_publicacion": None,
-    }
+    try:
+        series = await series_repo.get_by_hash(series_hash)
+        if series:
+            return series.to_dict()
+    except Exception as e:
+        logger.debug(f"Error obteniendo metadata de serie: {e}")
+    return {}

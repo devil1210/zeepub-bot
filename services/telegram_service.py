@@ -14,11 +14,6 @@ from telegram.ext import ContextTypes
 # from core.session_manager import session_manager (Moved to local scope)
 from config.config_settings import config
 from services.epub_service import extract_cover_from_epub
-from services.metadata_service import (
-    obtener_metadatos_opds,
-    obtener_sinopsis_opds,
-    obtener_sinopsis_opds_volumen,
-)
 from utils.download_limiter import can_download, downloads_left, record_download
 from utils.helpers import (
     escapar_html,
@@ -254,7 +249,7 @@ async def publicar_libro(
     titulo: str,
     portada_url: str,
     epub_url: str,
-    menu_prep: tuple = None,
+    menu_prep: tuple | None = None,
 ):
     """Descarga EPUB para metadatos, muestra portada, sinopsis y botones."""
     from core.session_manager import session_manager
@@ -293,15 +288,11 @@ async def publicar_libro(
             return
 
         # 2. Metadata Gathering and Enrichment
-        # Start with OPDS metadata
-        meta = await obtener_metadatos_opds(series_id, volume_id)
+        meta = {}
 
         epub_downloaded = None
         if epub_url:
-            import aiohttp
-
-            auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
-            epub_downloaded = await fetch_bytes(epub_url, timeout=120, auth=auth)
+            epub_downloaded = await fetch_bytes(epub_url, timeout=120)
 
             if epub_downloaded:
                 # Use orchestrator for enrichment
@@ -439,7 +430,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
 
         try:
             delete_minutes_str = get_setting("auto_delete_time", "2")
-            delete_minutes = int(delete_minutes_str)
+            delete_minutes = int(delete_minutes_str or "2")
             if delete_minutes > 0:
                 delete_seconds = delete_minutes * 60
         except Exception:
@@ -552,11 +543,11 @@ async def enviar_libro_directo(
     bot,
     user_id: int,
     title: str,
-    download_url: str,
-    cover_url: str = None,
-    target_chat_id: int = None,
+    download_url: str | None,
+    cover_url: str | None = None,
+    target_chat_id: int | None = None,
     format_type: str = "standard",
-    message_thread_id: int = None,
+    message_thread_id: int | None = None,
     metadata_override: dict[str, Any] | None = None,
     explicit_file_buffer: bytes | str | None = None,
     job_queue=None,
@@ -603,13 +594,7 @@ async def enviar_libro_directo(
             epub_bytes = download_url  # send_doc_bytes acepta rutas
         elif download_url:
             logger.info(f"Descargando EPUB desde: {download_url}")
-            import aiohttp
-
-            auth = None
-            if config.OPDS_AUTH:
-                auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
-
-            epub_bytes = await fetch_bytes(download_url, timeout=120, auth=auth)
+            epub_bytes = await fetch_bytes(download_url, timeout=120)
 
         if not epub_bytes:
             error_msg = "❌ Error al obtener el archivo. No se encontró en el disco o la descarga falló."
@@ -645,10 +630,7 @@ async def enviar_libro_directo(
 
         # 5. Preparar Portada
         cover_bytes = extract_cover_from_epub(epub_bytes)
-        import aiohttp
-
-        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
-        portada_data = cover_bytes if cover_bytes else (await fetch_bytes(cover_url, auth=auth) if cover_url else None)
+        portada_data = cover_bytes if cover_bytes else (await fetch_bytes(cover_url) if cover_url else None)
 
         # --- LOGICA FACEBOOK ---
         if format_type in ["fb_preview", "fb_direct"]:
@@ -827,7 +809,9 @@ async def enviar_libro_directo(
                 sinopsis = meta.get("sinopsis")
                 if sinopsis:
                     sinopsis_esc = escapar_html(sinopsis)
-                    sinopsis_to_send = f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
+                    sinopsis_to_send = (
+                        f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
+                    )
 
             if sinopsis_to_send:
                 await bot.send_message(
@@ -1100,19 +1084,16 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     metadata_block = formatear_metadata_fb(meta)
 
     # 5. Sinopsis
-    sinopsis = meta.get("sinopsis")
-    # Intentar obtener sinopsis desde OPDS si no existe en meta
+    sinopsis = meta.get("sinopsis") or meta.get("description")
     if not sinopsis:
-        series_id = user_state.get("series_id")
-        volume_id = user_state.get("volume_id")
-        if volume_id and series_id:
+        series_hash = user_state.get("series_hash")
+        if series_hash:
             try:
-                sinopsis = await obtener_sinopsis_opds_volumen(series_id, volume_id)
-            except Exception:
-                sinopsis = None
-        if not sinopsis and series_id:
-            try:
-                sinopsis = await obtener_sinopsis_opds(series_id)
+                from repositories.series_repository import series_repo
+
+                series_meta = await series_repo.get_by_hash(series_hash)
+                if series_meta and series_meta.description:
+                    sinopsis = series_meta.description
             except Exception:
                 sinopsis = None
 
@@ -1220,17 +1201,11 @@ async def _publish_choice_facebook(update, context: ContextTypes.DEFAULT_TYPE, u
     # If cover not extracted from buffer, try the pending portada or meta portada
     portada_url = pending.get("portada") if pending else meta.get("portada")
     if not cover_bytes and portada_url:
-        import aiohttp
-
-        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
-        cover_bytes = await fetch_bytes(portada_url, auth=auth)
+        cover_bytes = await fetch_bytes(portada_url)
 
     # If we still don't have metadata or buffer, try to fetch EPUB to build meta/cover
     if (not cover_bytes or not meta) and epub_url:
-        import aiohttp
-
-        auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
-        epub_downloaded = await fetch_bytes(epub_url, timeout=60, auth=auth)
+        epub_downloaded = await fetch_bytes(epub_url, timeout=60)
         if epub_downloaded:
             st["epub_buffer"] = epub_downloaded
             epub_buffer = epub_downloaded
@@ -1315,12 +1290,7 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
         except Exception:
             cover_bytes = None
 
-    import aiohttp
-
-    auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1]) if config.OPDS_AUTH else None
-    portada_data = (
-        cover_bytes if cover_bytes else (await fetch_bytes(portada_url, timeout=15, auth=auth) if portada_url else None)
-    )
+    portada_data = cover_bytes if cover_bytes else (await fetch_bytes(portada_url, timeout=15) if portada_url else None)
 
     await send_photo_bytes(
         bot,
@@ -1335,17 +1305,18 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
         cleanup_tmp(portada_data)
 
     # Sinopsis
-    sinopsis = meta.get("sinopsis")
+    sinopsis = meta.get("sinopsis") or meta.get("description")
     if not sinopsis:
-        series_id = st.get("series_id")
-        volume_id = st.get("volume_id")
-        if series_id and volume_id:
-            sinopsis = await obtener_sinopsis_opds_volumen(series_id, volume_id)
-        if not sinopsis and series_id:
+        series_hash = st.get("series_hash")
+        if series_hash:
             try:
-                sinopsis = await obtener_sinopsis_opds(series_id)
+                from repositories.series_repository import series_repo
+
+                series_meta = await series_repo.get_by_hash(series_hash)
+                if series_meta and series_meta.description:
+                    sinopsis = series_meta.description
             except Exception as e:
-                logger.debug("Error fetching sinopsis in publish_choice_telegram: %s", e)
+                logger.debug("Error fetching sinopsis from DB: %s", e)
 
     if sinopsis:
         sinopsis_esc = escapar_html(sinopsis)

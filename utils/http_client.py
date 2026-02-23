@@ -26,10 +26,10 @@ def cleanup_tmp(path):
 
 async def fetch_bytes(
     url: str,
-    session: aiohttp.ClientSession = None,
+    session: aiohttp.ClientSession | None = None,
     timeout: int = 15,
     max_retries: int = 3,
-    auth: aiohttp.BasicAuth = None,
+    auth: aiohttp.BasicAuth | None = None,
 ) -> bytes | str | None:
     """
     Descarga el contenido de `url`. Si supera MAX_IN_MEMORY_BYTES escribe a fichero temporal.
