@@ -910,7 +910,7 @@ async def enviar_libro_directo(
         titulo_vol = meta.get("titulo_volumen") or meta.get("title") or meta.get("english_title") or title
         if len(msg_parts) > 2:
             final_caption = sanitize_tg_html(msg_parts[2])
-        elif not final_custom_caption:
+        elif not custom_caption and not caption_template:
             version = meta.get("epub_version") or meta.get("epubVersion") or "2.0"
             # Formatear fecha como DD-MM-YYYY
             fecha_raw = meta.get("fecha_modificacion") or meta.get("modified_at") or meta.get("updated_at")

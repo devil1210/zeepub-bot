@@ -129,9 +129,9 @@ def check_migrations():
                 add_column_if_missing("series_metadata", "slug", "VARCHAR(100)")
                 add_column_if_missing("series_metadata", "rating_average", "FLOAT DEFAULT 0.0")
 
-            # Check for publication_templates additions
-            add_column_if_missing("publication_templates", "is_default", "BOOLEAN DEFAULT FALSE")
-            add_column_if_missing("publication_templates", "extra_config", "JSONB")
+                # Check for publication_templates additions
+                add_column_if_missing("publication_templates", "is_default", "BOOLEAN DEFAULT FALSE")
+                add_column_if_missing("publication_templates", "extra_config", "JSONB")
                 add_column_if_missing("series_metadata", "rating_count", "INTEGER DEFAULT 0")
 
                 conn.execute(

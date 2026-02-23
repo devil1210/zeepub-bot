@@ -22,6 +22,7 @@ from services.hash_service import hash_service
 from services.notification_service import notification_service
 from utils.epub_extractor import EpubMetadataExtractor
 from utils.library_db import COVERS_DIR, get_session
+from utils.helpers import generar_slug_from_meta
 
 logger = logging.getLogger(__name__)
 
