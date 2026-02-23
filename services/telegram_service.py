@@ -663,7 +663,11 @@ async def enviar_libro_directo(
 
         # 5. Preparar Portada (desde ruta en LocalBook)
         cover_path = (
-            meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium") or meta.get("cover_original")
+            meta.get("cover")
+            or meta.get("cover_original")
+            or meta.get("cover_high")
+            or meta.get("cover_medium")
+            or meta.get("cover_low")
         )
         portada_data = await resolve_cover_data(cover_path)
         if portada_data:
@@ -1264,7 +1268,13 @@ async def _publish_choice_facebook(update, context: ContextTypes.DEFAULT_TYPE, u
 
     # Get cover from LocalBook path or URL
     cover_bytes = None
-    cover_path = meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium")
+    cover_path = (
+        meta.get("cover")
+        or meta.get("cover_original")
+        or meta.get("cover_high")
+        or meta.get("cover_medium")
+        or meta.get("cover_low")
+    )
     if cover_path:
         cover_bytes = await resolve_cover_data(cover_path)
 
@@ -1348,7 +1358,13 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
 
     # Get cover from LocalBook path or URL
     cover_bytes = None
-    cover_path = meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium")
+    cover_path = (
+        meta.get("cover")
+        or meta.get("cover_original")
+        or meta.get("cover_high")
+        or meta.get("cover_medium")
+        or meta.get("cover_low")
+    )
     if cover_path:
         cover_bytes = await resolve_cover_data(cover_path)
 

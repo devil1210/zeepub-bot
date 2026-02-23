@@ -45,7 +45,7 @@ class TelegramPublisherProvider(PublisherProvider):
     )
 
     # Calidad de portada por defecto: 'original', 'high', 'medium', 'low'
-    COVER_QUALITY = "low"
+    COVER_QUALITY = "high"
 
     def __init__(self, bot=None):
         self.bot = bot
@@ -105,7 +105,14 @@ class TelegramPublisherProvider(PublisherProvider):
         # Selección de calidad de portada
         quality = options.get("cover_quality") or self.COVER_QUALITY
         cover_key = f"cover_{quality}"
-        cover_path_or_url = book_data.get(cover_key) or book_data.get("cover")
+        cover_path_or_url = (
+            book_data.get(cover_key)
+            or book_data.get("cover_original")
+            or book_data.get("cover_high")
+            or book_data.get("cover_medium")
+            or book_data.get("cover_low")
+            or book_data.get("cover")
+        )
 
         # Prioridad: Bytes directos > URL/Path
         cover_data = book_data.get("cover_bytes")
