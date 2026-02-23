@@ -25,7 +25,7 @@ export const TemplateEditorPage: React.FC = () => {
 [?volumen]Volumen {volumen}[/?]
 #{hash}
 
-<b>Maquetado por:</b> #ZeePub 
+<b>Maquetado por:</b> #{layout_by}
 <b>Categoría:</b> {tipo}
 [?demography]<b>Demografía:</b> {demography}[/?]
 [?genres]<b>Géneros:</b> {genres}[/?]
@@ -57,10 +57,10 @@ export const TemplateEditorPage: React.FC = () => {
     const [showResults, setShowResults] = useState(false);
 
     const searchTimeout = useRef<number | ReturnType<typeof setTimeout> | null>(null);
-    const isInitialized = useRef(false);
+    const isInitialized = useRef<string | null>(null);
 
     useEffect(() => {
-        if (!isNew && templates.length > 0 && !isInitialized.current) {
+        if (!isNew && templates.length > 0 && isInitialized.current !== id) {
             const template = templates.find(t => t.id === parseInt(id));
             if (template) {
                 setName(template.name);
@@ -72,7 +72,7 @@ export const TemplateEditorPage: React.FC = () => {
                         savedQuality === 'low' ? 'pequeña' :
                             (savedQuality || 'grande');
                 setCoverQuality(mappedQuality as any);
-                isInitialized.current = true;
+                isInitialized.current = id;
             }
         }
     }, [id, isNew, templates]);
@@ -249,7 +249,8 @@ export const TemplateEditorPage: React.FC = () => {
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="Ej: Lanzamientos Diarios"
-                                    className="w-full bg-black/40 border border-white/10 rounded-premium-sm px-4 py-3 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all caret-white"
+                                    className="w-full bg-black/40 border border-white/10 rounded-premium-sm px-4 py-3 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                    style={{ caretColor: 'white' }}
                                 />
                             </div>
                             <div className="space-y-2">

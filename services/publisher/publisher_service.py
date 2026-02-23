@@ -1,8 +1,9 @@
+import asyncio
 import logging
 import os
 import re
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -25,18 +26,17 @@ class PublisherProvider(ABC):
 class TelegramPublisherProvider(PublisherProvider):
     # Plantillas por defecto para facilitar edición/copia
     COVER_TEMPLATE = (
-        "{serie} ║ {series_spanish} ║ {titulo}\n"
-        "[?volumen]Volumen {volumen}[/?]\n"
-        "#{slug}\n"
-        "\n"
-        "<b>Maquetado por:</b> #ZeePub\n"
-        "<b>Categoría:</b> {tipo}\n"
-        "[?demography]<b>Demografía:</b> {demography}[/?]\n"
-        "[?genres]<b>Géneros:</b> {genres}[/?]\n"
-        "<b>Autor:</b> {autor}\n"
-        "[?illustrator]<b>Ilustrador:</b> {illustrator}[/?]\n"
-        "[?published_at]<b>Publicado:</b> {published_at}[/?]\n"
-        "[?traductor]<b>Traducción:</b> {traductor}[/?]"
+        "{serie} ║ {series_spanish} ║ {titulo}"
+        "[?volumen]\nVolumen {volumen}[/?]"
+        "\n#{slug}\n"
+        "<b>\nMaquetado por:</b> #{layout_by}"
+        "<b>\nCategoría:</b> {tipo}"
+        "[?demography]\n<b>Demografía:</b> {demography}[/?]"
+        "[?genres]\n<b>Géneros:</b> {genres}[/?]"
+        "<b>Autor:</b> {autor}"
+        "[?illustrator]\n<b>Ilustrador:</b> {illustrator}[/?]"
+        "[?published_at]\n<b>Publicado:</b> {published_at}[/?]"
+        "[?traductor]\n<b>Traducción:</b> {traductor}[/?]"
     )
     SYNOPSIS_TEMPLATE = "<b>Sinopsis:</b>\n<blockquote>{sinopsis}</blockquote>\n#{slug}"
     INFO_TEMPLATE = (
@@ -44,7 +44,6 @@ class TelegramPublisherProvider(PublisherProvider):
         "ℹ️ Versión Epub: {version}\n"
         "📅 Actualizado: {fecha}\n"
         "📦 Tamaño: {tamaño}\n"
-        "[?rating_txt]{rating_txt}[/?]\n"
         "#{slug}"
     )
 
@@ -68,7 +67,6 @@ class TelegramPublisherProvider(PublisherProvider):
         from services.telegram_service import send_doc_bytes, send_photo_bytes
         from utils.helpers import (
             escapar_html,
-            formatear_mensaje_portada,
             generar_slug_from_meta,
         )
 
@@ -479,10 +477,11 @@ class FacebookPublisherProvider(PublisherProvider):
 
 class PublisherService:
     def __init__(self, default_provider: PublisherProvider = None, pub_repo=None):
-        self.providers = {
+        self.providers: dict[str, PublisherProvider] = {
             "telegram": default_provider or TelegramPublisherProvider(),
             "facebook": FacebookPublisherProvider(),
         }
+        self._processing = False  # Lock para evitar ejecuciones simultáneas de process_queue
         from repositories.publication_repository import pub_repo as default_repo
 
         self.repo = pub_repo or default_repo
@@ -563,10 +562,8 @@ class PublisherService:
         )
         result = await self.repo.create(item)
 
-        # Trigger inmediato si es para "ya"
-        if scheduled_for <= datetime.now():
-            import asyncio
-
+        # Trigger inmediato si es para "ya" (con margen de 1 seg)
+        if scheduled_for <= datetime.now() + timedelta(seconds=1):
             logger.info("⚡ Publicación inmediata detectada. Lanzando procesador de cola...")
             asyncio.create_task(self.process_queue())
 
@@ -574,57 +571,65 @@ class PublisherService:
 
     async def process_queue(self):
         """Procesa los ítems pendientes en la cola."""
-        pending = await self.repo.get_pending_queue()
-        if not pending:
+        if self._processing:
+            logger.debug("Procesamiento de cola ya en curso, saltando...")
             return
 
-        logger.info(f"Procesando {len(pending)} publicaciones programadas...")
+        self._processing = True
+        try:
+            pending = await self.repo.get_pending_queue()
+            if not pending:
+                return
 
-        for item in pending:
-            try:
-                # 1. Marcar como procesando
-                item.status = "publishing"
-                await self.repo.update(item)
+            logger.info(f"Procesando {len(pending)} publicaciones programadas...")
 
-                # 2. Obtener datos del libro si no están en payload
-                book_data = item.payload
-                if not book_data:
-                    from repositories.book_repository import book_repo
+            for item in pending:
+                try:
+                    # 1. Marcar como procesando
+                    item.status = "publishing"
+                    await self.repo.update(item)
 
-                    book = await book_repo.get_by_hash(item.book_hash)
-                    if not book:
-                        raise Exception(f"Book with hash {item.book_hash} not found")
-                    book_data = book.to_dict()
+                    # 2. Obtener datos del libro si no están en payload
+                    book_data = item.payload
+                    if not book_data:
+                        from repositories.book_repository import book_repo
 
-                # 3. Aplicar plantilla si existe
-                options = {}
-                if item.template:
-                    options["caption"] = self._apply_template(item.template.content, book_data)
-                    # Añadir configuraciones extra (calidad de portada, etc.)
-                    if item.template.extra_config:
-                        options.update(item.template.extra_config)
+                        book = await book_repo.get_by_hash(item.book_hash)
+                        if not book:
+                            raise Exception(f"Book with hash {item.book_hash} not found")
+                        book_data = book.to_dict()
 
-                # 4. Publicar
-                success = await self.announce(
-                    platform=item.channel.platform,
-                    target_id=item.channel.target_id,
-                    book_data=book_data,
-                    options=options,
-                )
+                    # 3. Aplicar plantilla si existe
+                    options = {}
+                    if item.template:
+                        options["caption"] = self._apply_template(item.template.content, book_data)
+                        # Añadir configuraciones extra (calidad de portada, etc.)
+                        if item.template.extra_config:
+                            options.update(item.template.extra_config)
 
-                if success:
-                    item.status = "sent"
-                    item.published_at = datetime.utcnow()
-                else:
+                    # 4. Publicar
+                    success = await self.announce(
+                        platform=item.channel.platform,
+                        target_id=item.channel.target_id,
+                        book_data=book_data,
+                        options=options,
+                    )
+
+                    if success:
+                        item.status = "sent"
+                        item.published_at = datetime.utcnow()
+                    else:
+                        item.status = "failed"
+                        item.error_message = "Provider announce_book returned False"
+
+                except Exception as e:
+                    logger.error(f"Error procesando ítem {item.id}: {e}")
                     item.status = "failed"
-                    item.error_message = "Provider announce_book returned False"
-
-            except Exception as e:
-                logger.error(f"Error publishing queued item {item.id}: {e}")
-                item.status = "failed"
-                item.error_message = str(e)
-
-            await self.repo.update(item)
+                    item.error_message = str(e)
+                finally:
+                    await self.repo.update(item)
+        finally:
+            self._processing = False
 
     def _apply_template(self, template_str: str, data: dict) -> str:
         """Aplica condicionales [?var]...[/?] y placeholders {var} con campos de LocalBook."""

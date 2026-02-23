@@ -1,6 +1,6 @@
 import re
-from typing import Any
 from datetime import datetime
+from typing import Any
 
 
 def extract_demography(tags: list) -> str:
@@ -126,6 +126,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "editorial": data.get("publisher") or data.get("editorial") or "",
                 "traductor": data.get("translator") or data.get("traductor") or "",
                 "maquetador": data.get("layout_by") or data.get("maquetador") or "",
+                "layout_by": data.get("layout_by") or data.get("maquetador") or "",
                 "tipo": data.get("book_type") or data.get("categoria") or "",
                 "tamaño": size_mb_formatted,
                 "size_mb": size_mb_formatted,
@@ -136,7 +137,8 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "version": data.get("epub_version") or "",
                 "tags": ", ".join(tags) if tags else "",
                 "genres": ", ".join(tags) if tags else "",
-                "demography": data.get("demography") or extract_demography(tags),
+                "demography": data.get("demography") or data.get("demographics") or extract_demography(tags),
+                "demographics": data.get("demographics") or data.get("demography") or extract_demography(tags),
                 "published_at": published_at_formatted,
                 "fecha": fecha_mod_formatted,
                 "fecha_modificacion": fecha_mod_formatted,
