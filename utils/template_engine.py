@@ -26,13 +26,13 @@ def generate_slug_from_title(title: str) -> str:
 
 
 def format_published_date(date_str: str) -> str:
-    """Formatea una fecha ISO a formato legible."""
+    """Formatea una fecha ISO a formato legible DD-MM-YYYY."""
     if not date_str:
         return ""
     try:
         if "T" in date_str:
             dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-            return dt.strftime("%d/%m/%Y")
+            return dt.strftime("%d-%m-%Y")
     except (ValueError, TypeError):
         pass
     return date_str[:10] if len(date_str) >= 10 else date_str

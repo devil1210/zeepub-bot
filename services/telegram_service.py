@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 async def resolve_cover_data(cover_path: str | None) -> bytes | str | None:
     """
     Resuelve la portada desde ruta o URL.
-    - Si es URL de API (/api/...), la descarga
+    - Si es URL de API (/api/...), la descarga desde el servidor local
     - Si es ruta local absoluta y existe, la usa directamente
     - Retorna bytes, ruta absoluta, o None
     """
@@ -39,10 +39,8 @@ async def resolve_cover_data(cover_path: str | None) -> bytes | str | None:
         try:
             # Construir URL completa si es relativa
             if cover_path.startswith("/api/"):
-                base = config.DL_DOMAIN or "http://localhost:8000"
-                if not base.startswith("http"):
-                    base = f"http://{base}"
-                cover_url_full = f"{base}{cover_path}"
+                # Usar localhost para peticiones internas (el servidor está en el mismo contenedor)
+                cover_url_full = f"http://localhost:8000{cover_path}"
             else:
                 cover_url_full = cover_path
             logger.info(f"Descargando portada desde URL: {cover_url_full}")
@@ -668,9 +666,17 @@ async def enviar_libro_directo(
             meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium") or meta.get("cover_original")
         )
         portada_data = await resolve_cover_data(cover_path)
+        if portada_data:
+            logger.info(f"Portada lista para enviar")
+        else:
+            logger.info(f"Sin portada disponible, continuando sin ella")
+
         if not portada_data and cover_url:
-            portada_data = await fetch_bytes(cover_url)
-            logger.info(f"Portada descargada desde URL externa: {cover_url}")
+            try:
+                portada_data = await fetch_bytes(cover_url)
+                logger.info(f"Portada descargada desde URL externa: {cover_url}")
+            except Exception as e:
+                logger.warning(f"No se pudo descargar portada desde URL externa: {e}")
 
         # --- LOGICA FACEBOOK ---
         if format_type in ["fb_preview", "fb_direct"]:
