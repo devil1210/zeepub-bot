@@ -24,6 +24,42 @@ from utils.http_client import cleanup_tmp, fetch_bytes
 logger = logging.getLogger(__name__)
 
 
+async def resolve_cover_data(cover_path: str | None) -> bytes | str | None:
+    """
+    Resuelve la portada desde ruta o URL.
+    - Si es URL de API (/api/...), la descarga
+    - Si es ruta local absoluta y existe, la usa directamente
+    - Retorna bytes, ruta absoluta, o None
+    """
+    if not cover_path:
+        return None
+
+    # Si es URL de la API o HTTP, descargarla
+    if cover_path.startswith("/api/") or cover_path.startswith("http"):
+        try:
+            # Construir URL completa si es relativa
+            if cover_path.startswith("/api/"):
+                base = config.DL_DOMAIN or "http://localhost:8000"
+                if not base.startswith("http"):
+                    base = f"http://{base}"
+                cover_url_full = f"{base}{cover_path}"
+            else:
+                cover_url_full = cover_path
+            logger.info(f"Descargando portada desde URL: {cover_url_full}")
+            return await fetch_bytes(cover_url_full)
+        except Exception as e:
+            logger.warning(f"Error descargando portada {cover_path}: {e}")
+            return None
+
+    # Si es ruta local absoluta
+    if os.path.isabs(cover_path) and os.path.exists(cover_path):
+        logger.info(f"Portada encontrada en ruta local: {cover_path}")
+        return cover_path
+
+    logger.warning(f"Portada no encontrada: {cover_path}")
+    return None
+
+
 async def send_photo_bytes(
     bot,
     chat_id,
@@ -631,16 +667,10 @@ async def enviar_libro_directo(
         cover_path = (
             meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium") or meta.get("cover_original")
         )
-        portada_data = None
-        if cover_path:
-            if os.path.exists(cover_path):
-                portada_data = cover_path
-                logger.info(f"Portada encontrada en: {cover_path}")
-            else:
-                logger.warning(f"Portada no encontrada en ruta: {cover_path}")
-        elif cover_url:
+        portada_data = await resolve_cover_data(cover_path)
+        if not portada_data and cover_url:
             portada_data = await fetch_bytes(cover_url)
-            logger.info(f"Portada descargada desde URL: {cover_url}")
+            logger.info(f"Portada descargada desde URL externa: {cover_url}")
 
         # --- LOGICA FACEBOOK ---
         if format_type in ["fb_preview", "fb_direct"]:
@@ -1214,11 +1244,11 @@ async def _publish_choice_facebook(update, context: ContextTypes.DEFAULT_TYPE, u
         epub_url = pending.get("href")
         st["epub_url"] = epub_url
 
-    # Get cover from LocalBook path
+    # Get cover from LocalBook path or URL
     cover_bytes = None
     cover_path = meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium")
-    if cover_path and os.path.exists(cover_path):
-        cover_bytes = cover_path  # send_photo_bytes acepta rutas
+    if cover_path:
+        cover_bytes = await resolve_cover_data(cover_path)
 
     # If cover not from path, try the pending portada or meta portada URL
     portada_url = pending.get("portada") if pending else meta.get("portada")
@@ -1298,11 +1328,11 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
     # Prepare caption for portada
     mensaje_portada = formatear_mensaje_portada(meta)
 
-    # Get cover from LocalBook path
+    # Get cover from LocalBook path or URL
     cover_bytes = None
     cover_path = meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium")
-    if cover_path and os.path.exists(cover_path):
-        cover_bytes = cover_path  # send_photo_bytes acepta rutas
+    if cover_path:
+        cover_bytes = await resolve_cover_data(cover_path)
 
     portada_data = cover_bytes if cover_bytes else (await fetch_bytes(portada_url, timeout=15) if portada_url else None)
 
