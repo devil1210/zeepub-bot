@@ -57,10 +57,16 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
 
         # Pre-formatear campos numéricos
         size_mb_val = data.get("size_mb") or data.get("size") or 0.0
-        if not size_mb_val:
+        if not size_mb_val or (isinstance(size_mb_val, str) and "mb" in size_mb_val.lower()):
             file_size = data.get("file_size") or data.get("fileSize") or 0
             if file_size:
                 size_mb_val = file_size / (1024 * 1024)
+            elif isinstance(size_mb_val, str):
+                # Intentar limpiar el string si viene con "MB"
+                try:
+                    size_mb_val = float(re.sub(r"[^\d.]", "", size_mb_val))
+                except (ValueError, TypeError):
+                    size_mb_val = 0.0
 
         try:
             size_mb_formatted = f"{float(size_mb_val):.2f} MB"
@@ -89,6 +95,15 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
             if volume_raw and str(volume_raw).replace(".", "").replace("-", "").isdigit()
             else str(volume_raw)
         )
+
+        # Sanitize demography and demographics (can be lists from JSONB)
+        demography_raw = data.get("demography") or data.get("demographics") or extract_demography(tags)
+        if isinstance(demography_raw, list):
+            demography_raw = ", ".join(demography_raw)
+        
+        demographics_raw = data.get("demographics") or data.get("demography") or extract_demography(tags)
+        if isinstance(demographics_raw, list):
+            demographics_raw = ", ".join(demographics_raw)
 
         # Sanitize sinopsis - remove HTML tags not supported by Telegram
         sinopsis_raw = data.get("description") or data.get("sinopsis") or ""
@@ -137,8 +152,8 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "version": data.get("epub_version") or "",
                 "tags": ", ".join(tags) if tags else "",
                 "genres": ", ".join(tags) if tags else "",
-                "demography": data.get("demography") or data.get("demographics") or extract_demography(tags),
-                "demographics": data.get("demographics") or data.get("demography") or extract_demography(tags),
+                "demography": demography_raw,
+                "demographics": demographics_raw,
                 "published_at": published_at_formatted,
                 "fecha": fecha_mod_formatted,
                 "fecha_modificacion": fecha_mod_formatted,
