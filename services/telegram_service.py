@@ -942,47 +942,48 @@ async def enviar_libro_directo(
             mins = auto_delete_seconds // 60
             final_caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
 
-            # Nombre de archivo - usar filename de LocalBook o extraer de ruta
-            fname = meta.get("filename") or "archivo.epub"
-            if download_url and not download_url.startswith("http"):
-                fname = os.path.basename(download_url)
+        # Nombre de archivo - usar filename de LocalBook o extraer de ruta
+        fname = meta.get("filename") or "archivo.epub"
+        if download_url and not download_url.startswith("http"):
+            fname = os.path.basename(download_url)
 
-            sent_doc = await send_doc_bytes(
-                bot,
-                destino,
-                final_caption,
-                epub_bytes,
-                filename=fname,
-                parse_mode="HTML",
-                message_thread_id=message_thread_id,
-            )
+        logger.info(f"Enviando archivo EPUB a {destino}: {fname}")
+        sent_doc = await send_doc_bytes(
+            bot,
+            destino,
+            final_caption,
+            epub_bytes,
+            filename=fname,
+            parse_mode="HTML",
+            message_thread_id=message_thread_id,
+        )
 
-            if sent_doc and auto_delete_seconds > 0:
-                if job_queue:
-                    job_queue.run_once(
-                        lambda ctx: ctx.bot.delete_message(chat_id=destino, message_id=sent_doc.message_id),
-                        when=auto_delete_seconds,
-                    )
-                else:
-                    logger.warning("Auto-delete skipped: No job_queue provided")
+        if sent_doc and auto_delete_seconds > 0:
+            if job_queue:
+                job_queue.run_once(
+                    lambda ctx: ctx.bot.delete_message(chat_id=destino, message_id=sent_doc.message_id),
+                    when=auto_delete_seconds,
+                )
+            else:
+                logger.warning("Auto-delete skipped: No job_queue provided")
 
-            # Registrar en historial
-            if sent_doc:
-                from services.history_service import log_published_book
+        # Registrar en historial
+        if sent_doc:
+            from services.history_service import log_published_book
 
-                file_info = {
-                    "file_size": sent_doc.document.file_size,
-                    "file_unique_id": sent_doc.document.file_unique_id,
-                }
-                try:
-                    log_published_book(
-                        meta=meta,
-                        message_id=sent_doc.message_id,
-                        channel_id=sent_doc.chat.id,
-                        file_info=file_info,
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to log book history in enviar_libro_directo: {e}")
+            file_info = {
+                "file_size": sent_doc.document.file_size,
+                "file_unique_id": sent_doc.document.file_unique_id,
+            }
+            try:
+                log_published_book(
+                    meta=meta,
+                    message_id=sent_doc.message_id,
+                    channel_id=sent_doc.chat.id,
+                    file_info=file_info,
+                )
+            except Exception as e:
+                logger.error(f"Failed to log book history in enviar_libro_directo: {e}")
 
             # 8. Registrar descarga y notificar
             await record_download(user_id)
