@@ -562,9 +562,8 @@ class PublisherService:
         )
         result = await self.repo.create(item)
 
-        # Trigger inmediato si es para "ya" (con margen de 1 hora para desfases de zona horaria)
-        # Esto asegura que si se programó para 'ahora' pero hay discrepancia UTC/Local, se dispare igual.
-        if scheduled_for <= datetime.now() + timedelta(hours=1):
+        # Trigger inmediato si es para "ya" (usando UTC para consistencia con DB)
+        if scheduled_for <= datetime.utcnow() + timedelta(hours=1):
             logger.info(f"⚡ Publicación inmediata detectada ({scheduled_for}). Lanzando procesador de cola...")
             asyncio.create_task(self.process_queue())
 

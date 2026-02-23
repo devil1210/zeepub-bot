@@ -16,7 +16,6 @@ from config.config_settings import config
 from utils.download_limiter import can_download, downloads_left, record_download
 from utils.helpers import (
     escapar_html,
-    formatear_mensaje_portada,
     generar_slug_from_meta,
 )
 from utils.http_client import cleanup_tmp, fetch_bytes
@@ -664,11 +663,11 @@ async def enviar_libro_directo(
 
         # 5. Preparar Portada (desde ruta en LocalBook)
         cover_path = (
-            meta.get("cover")
-            or meta.get("cover_original")
+            meta.get("cover_original")
             or meta.get("cover_high")
             or meta.get("cover_medium")
             or meta.get("cover_low")
+            or meta.get("cover")
         )
         portada_data = await resolve_cover_data(cover_path)
         if portada_data:
@@ -682,6 +681,16 @@ async def enviar_libro_directo(
                 logger.info(f"Portada descargada desde URL externa: {cover_url}")
             except Exception as e:
                 logger.warning(f"No se pudo descargar portada desde URL externa: {e}")
+
+        # --- CALCULAR TAMAÑO PARA PLANTILLAS ---
+        if "file_size" not in meta:
+            try:
+                if isinstance(epub_bytes, bytes | bytearray):
+                    meta["file_size"] = len(epub_bytes)
+                elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
+                    meta["file_size"] = await asyncio.to_thread(os.path.getsize, epub_bytes)
+            except Exception as e:
+                logger.warning(f"No se pudo calcular el tamaño del archivo para meta: {e}")
 
         # --- LOGICA FACEBOOK ---
         if format_type in ["fb_preview", "fb_direct"]:
@@ -823,18 +832,23 @@ async def enviar_libro_directo(
                 )
 
         # --- PROCESAR CAPTION Y PLANTILLAS ---
+        from utils.template_engine import apply_publication_template
+
+        # Si no se provee nada, usamos el estándar del sistema (unificado)
+        if not custom_caption and not caption_template:
+            from services.publisher.publisher_service import TelegramPublisherProvider
+            caption_template = f"{TelegramPublisherProvider.COVER_TEMPLATE}\n<hr>\n{TelegramPublisherProvider.SYNOPSIS_TEMPLATE}\n<hr>\n{TelegramPublisherProvider.INFO_TEMPLATE}"
+            logger.info("Usando plantilla predeterminada del sistema para entrega directa.")
+
+        source_text = caption_template or custom_caption
         msg_parts = []
-        if caption_template:
-            msg_parts = re.split(r"<hr\s*/?>|---next---|---", caption_template)
-            msg_parts = [p.strip() for p in msg_parts if (p and p.strip())]
-        elif custom_caption:
-            msg_parts = re.split(r"<hr\s*/?>|---next---|---", custom_caption)
+        if source_text:
+            msg_parts = re.split(r"<hr\s*/?>|---next---|---", source_text)
             msg_parts = [p.strip() for p in msg_parts if (p and p.strip())]
 
-        # Pre-procesar todas las partes con el motor de plantillas si hay metadata
-        from utils.template_engine import apply_publication_template
+        # Aplicar el motor de plantillas a cada parte
         msg_parts = [apply_publication_template(p, meta) for p in msg_parts]
-        logger.info(f"Mensaje dividido en {len(msg_parts)} partes")
+        logger.info(f"Mensaje procesado en {len(msg_parts)} partes")
 
         # Función para sanitizar HTML para Telegram
         def sanitize_tg_html(t: str) -> str:
@@ -845,99 +859,48 @@ async def enviar_libro_directo(
             t = re.sub(r"<hr\s*/?>", "\n---\n", t, flags=re.IGNORECASE)
             t = re.sub(r"\n{3,}", "\n\n", t).strip()
             return t
-
-        # 5. Enviar Portada (Standard)
-        if portada_data:
-            from utils.helpers import formatear_mensaje_portada
-            mensaje_portada = msg_parts[0] if len(msg_parts) > 0 else (formatear_mensaje_portada(meta))
-            mensaje_portada = sanitize_tg_html(mensaje_portada)
-            logger.info(f"Enviando portada a {destino}")
-            await send_photo_bytes(
-                bot,
-                destino,
-                mensaje_portada,
-                portada_data,
-                filename="cover.jpg",
-                parse_mode="HTML",
-                message_thread_id=message_thread_id,
-            )
-        else:
-            # Si no hay portada, enviar el primer mensaje como texto
-            if len(msg_parts) > 0:
-                msg_parts[0] = sanitize_tg_html(msg_parts[0])
+        # 5. Enviar Portada
+        if len(msg_parts) > 0:
+            mensaje_portada = sanitize_tg_html(msg_parts[0])
+            if portada_data:
+                logger.info(f"Enviando portada a {destino}")
+                await send_photo_bytes(
+                    bot,
+                    destino,
+                    mensaje_portada,
+                    portada_data,
+                    filename="cover.jpg",
+                    parse_mode="HTML",
+                    message_thread_id=message_thread_id,
+                )
+            else:
                 logger.info(f"Enviando mensaje de portada como texto a {destino}")
                 await bot.send_message(
                     chat_id=destino,
-                    text=msg_parts[0],
+                    text=mensaje_portada,
                     parse_mode="HTML",
                     message_thread_id=message_thread_id,
                 )
 
         # 6. Enviar Sinopsis
-        # Se envía solo si no hay custom_caption o si hay al menos 2 partes
-        sinopsis_to_send = None
         if len(msg_parts) > 1:
             sinopsis_to_send = sanitize_tg_html(msg_parts[1])
-        elif not custom_caption:
-            sinopsis = meta.get("sinopsis") or meta.get("description") or meta.get("summary")
-            if sinopsis:
-                sinopsis_esc = escapar_html(str(sinopsis))
-                sinopsis_to_send = (
-                    f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
+            if sinopsis_to_send:
+                logger.info(f"Enviando sinopsis a {destino}")
+                await bot.send_message(
+                    chat_id=destino,
+                    text=sinopsis_to_send,
+                    parse_mode="HTML",
+                    message_thread_id=message_thread_id,
                 )
 
-        if sinopsis_to_send:
-            await bot.send_message(
-                chat_id=destino,
-                text=sinopsis_to_send,
-                parse_mode="HTML",
-                message_thread_id=message_thread_id,
-            )
-
         # 7. Enviar Archivo EPUB
-        # Usar tamaño de LocalBook si está disponible, sino calcular
-        size_mb = 0.0
-        file_size = meta.get("file_size") or meta.get("fileSize")
-        if file_size:
-            size_mb = file_size / (1024 * 1024)
-        elif isinstance(epub_bytes, bytes | bytearray):
-            size_mb = len(epub_bytes) / (1024 * 1024)
-        elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
-            size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
-
-        # Caption final
         final_caption = ""
-        titulo_vol = meta.get("titulo_volumen") or meta.get("title") or meta.get("english_title") or title
         if len(msg_parts) > 2:
             final_caption = sanitize_tg_html(msg_parts[2])
-        elif not custom_caption and not caption_template:
-            version = meta.get("epub_version") or meta.get("epubVersion") or "2.0"
-            # Formatear fecha como DD-MM-YYYY
-            fecha_raw = meta.get("fecha_modificacion") or meta.get("modified_at") or meta.get("updated_at")
-            fecha = ""
-            if fecha_raw:
-                try:
-                    from datetime import datetime
-
-                    if "T" in str(fecha_raw):
-                        dt = datetime.fromisoformat(str(fecha_raw).replace("Z", "+00:00"))
-                        fecha = dt.strftime("%d-%m-%Y")
-                    else:
-                        fecha = str(fecha_raw)[:10]
-                except Exception:
-                    fecha = str(fecha_raw)[:10] if fecha_raw else "Desconocida"
-            else:
-                fecha = "Desconocida"
-
-            final_caption = (
-                f"📂 <b>{titulo_vol}</b>\n"
-                f"ℹ️ Versión Epub: {version}\n"
-                f"📅 Actualizado: {fecha}\n"
-                f"📦 Tamaño: {size_mb:.2f} MB"
-            )
-            slug = generar_slug_from_meta(meta)
-            if slug:
-                final_caption += f"\n#{slug}"
+        else:
+            # Fallback mínimo si solo hay 1 o 2 partes
+            final_caption = f"📂 <b>{title}</b>"
 
         if auto_delete_seconds > 0:
             mins = auto_delete_seconds // 60

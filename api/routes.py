@@ -16,7 +16,6 @@ from api.deps import (
 )
 from config.config_settings import config
 from services.epub_service import extract_internal_title, parse_opf_from_epub
-from utils.helpers import formatear_mensaje_portada
 from utils.http_client import fetch_bytes
 from utils.url_cache import get_url_from_hash
 
@@ -225,11 +224,15 @@ async def prepare_facebook_post(
                     f"FB Post Meta - internal_title: {meta.get('internal_title')}, collection_title: {meta.get('titulo_serie')}, titulo_volumen: {meta.get('titulo_volumen')}"
                 )
 
-                # Generar caption completo (sin slug para FB)
-                full_caption = formatear_mensaje_portada(meta, include_slug=False)
+                # Generar caption completo (sin slug para FB) usando el motor unificado
+                from services.publisher.publisher_service import TelegramPublisherProvider
+                from utils.template_engine import apply_publication_template
 
-                # Usar el caption completo
-                caption_base = full_caption
+                # Enriquecer meta con tamaño si no está
+                if "file_size" not in meta and epub_bytes:
+                    meta["file_size"] = len(epub_bytes)
+
+                caption_base = apply_publication_template(TelegramPublisherProvider.COVER_TEMPLATE, meta)
 
         except Exception as e:
             logger.warning(f"Could not fetch/parse EPUB for FB post: {e}")
