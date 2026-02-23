@@ -128,6 +128,12 @@ async def handle_pub_get_templates(data: dict[str, Any], user_data: dict[str, An
 
         defaults = [
             PublicationTemplate(
+                name="Default Telegram Cover",
+                content=TelegramPublisherProvider.COVER_TEMPLATE,
+                platform="telegram",
+                extra_config={"type": "cover"},
+            ),
+            PublicationTemplate(
                 name="Default Telegram Synopsis",
                 content=TelegramPublisherProvider.SYNOPSIS_TEMPLATE,
                 platform="telegram",

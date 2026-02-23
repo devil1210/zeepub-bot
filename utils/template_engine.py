@@ -74,12 +74,28 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         published_at_raw = str(data.get("published_at") or "")
         published_at_formatted = format_published_date(published_at_raw)
 
+        # Formatear fecha_modificacion también
+        fecha_mod_raw = str(data.get("fecha_modificacion") or data.get("updated_at") or data.get("modified_at") or "")
+        fecha_mod_formatted = format_published_date(fecha_mod_raw)
+
         volume_raw = data.get("volume") or data.get("series_index") or ""
         volume_clean = (
             str(int(float(volume_raw)))
             if volume_raw and str(volume_raw).replace(".", "").replace("-", "").isdigit()
             else str(volume_raw)
         )
+
+        # Sanitize sinopsis - remove HTML tags not supported by Telegram
+        sinopsis_raw = data.get("description") or data.get("sinopsis") or ""
+        if sinopsis_raw:
+            sinopsis_raw = re.sub(r"<p[^>]*>", "", sinopsis_raw, flags=re.IGNORECASE)
+            sinopsis_raw = re.sub(r"</p>", "", sinopsis_raw, flags=re.IGNORECASE)
+            sinopsis_raw = re.sub(r"<div[^>]*>", "", sinopsis_raw, flags=re.IGNORECASE)
+            sinopsis_raw = re.sub(r"</div>", "", sinopsis_raw, flags=re.IGNORECASE)
+            sinopsis_raw = re.sub(r"<span[^>]*>", "", sinopsis_raw, flags=re.IGNORECASE)
+            sinopsis_raw = re.sub(r"</span>", "", sinopsis_raw, flags=re.IGNORECASE)
+            sinopsis_raw = re.sub(r"<br\s*/?>", "\n", sinopsis_raw, flags=re.IGNORECASE)
+            sinopsis_raw = re.sub(r"\n{3,}", "\n\n", sinopsis_raw).strip()
 
         mapping.update(
             {
@@ -98,7 +114,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "series_spanish": data.get("series_spanish") or "",
                 "series_english": data.get("series_english") or "",
                 "volumen": volume_clean,
-                "sinopsis": data.get("description") or data.get("sinopsis") or "",
+                "sinopsis": sinopsis_raw,
                 "resumen": data.get("summary") or data.get("resumen") or "",
                 "etiquetas": ", ".join(tags) if tags else "",
                 "idioma": data.get("language") or data.get("idioma") or "",
@@ -117,7 +133,9 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "genres": ", ".join(tags) if tags else "",
                 "demography": data.get("demography") or extract_demography(tags),
                 "published_at": published_at_formatted,
-                "fecha": str(data.get("fecha_modificacion") or data.get("updated_at") or ""),
+                "fecha": fecha_mod_formatted,
+                "fecha_modificacion": fecha_mod_formatted,
+                "updated_at": fecha_mod_formatted,
                 "edition": data.get("edition") or "",
                 "color_mode": data.get("color_mode") or "bw",
                 "is_uncensored": "Sí" if data.get("is_uncensored") else "No",

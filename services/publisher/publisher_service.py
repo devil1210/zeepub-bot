@@ -25,22 +25,26 @@ class PublisherProvider(ABC):
 class TelegramPublisherProvider(PublisherProvider):
     # Plantillas por defecto para facilitar edición/copia
     COVER_TEMPLATE = (
-        "Epub de: {serie} ║ {titulo_serie} ║ {internal_title}\n"
-        "[?volumen]{volumen}[/?]\n"
+        "{serie} ║ {series_spanish} ║ {titulo}\n"
+        "[?volumen]Volumen {volumen}[/?]\n"
+        "#{slug}\n"
         "\n"
-        "<b>Maquetado por:</b> {maquetador}\n"
+        "<b>Maquetado por:</b> #ZeePub\n"
         "<b>Categoría:</b> {tipo}\n"
-        "<b>Géneros:</b> {genres}\n"
+        "[?demography]<b>Demografía:</b> {demography}[/?]\n"
+        "[?genres]<b>Géneros:</b> {genres}[/?]\n"
         "<b>Autor:</b> {autor}\n"
-        "[?illustrator]<b>Ilustrador:</b> {illustrator}\n[/?]"
-        "[?traductor]<b>Traducción:</b> {traductor}\n[/?]"
+        "[?illustrator]<b>Ilustrador:</b> {illustrator}[/?]\n"
+        "[?published_at]<b>Publicado:</b> {published_at}[/?]\n"
+        "[?traductor]<b>Traducción:</b> {traductor}[/?]"
     )
     SYNOPSIS_TEMPLATE = "<b>Sinopsis:</b>\n<blockquote>{sinopsis}</blockquote>\n#{slug}"
     INFO_TEMPLATE = (
         "📂 <b>{titulo}</b>\n"
         "ℹ️ Versión Epub: {version}\n"
         "📅 Actualizado: {fecha}\n"
-        "📦 Tamaño: {size_mb:.2f} MB{rating_txt}\n"
+        "📦 Tamaño: {tamaño}\n"
+        "[?rating_txt]{rating_txt}[/?]\n"
         "#{slug}"
     )
 
