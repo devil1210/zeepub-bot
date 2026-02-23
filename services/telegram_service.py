@@ -628,12 +628,19 @@ async def enviar_libro_directo(
             )
 
         # 5. Preparar Portada (desde ruta en LocalBook)
-        cover_path = meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium")
+        cover_path = (
+            meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium") or meta.get("cover_original")
+        )
         portada_data = None
-        if cover_path and os.path.exists(cover_path):
-            portada_data = cover_path  # send_doc_bytes acepta rutas
+        if cover_path:
+            if os.path.exists(cover_path):
+                portada_data = cover_path
+                logger.info(f"Portada encontrada en: {cover_path}")
+            else:
+                logger.warning(f"Portada no encontrada en ruta: {cover_path}")
         elif cover_url:
             portada_data = await fetch_bytes(cover_url)
+            logger.info(f"Portada descargada desde URL: {cover_url}")
 
         # --- LOGICA FACEBOOK ---
         if format_type in ["fb_preview", "fb_direct"]:
@@ -807,9 +814,9 @@ async def enviar_libro_directo(
             if len(msg_parts) > 1:
                 sinopsis_to_send = msg_parts[1]
             elif not custom_caption:
-                sinopsis = meta.get("sinopsis")
+                sinopsis = meta.get("sinopsis") or meta.get("description") or meta.get("summary")
                 if sinopsis:
-                    sinopsis_esc = escapar_html(sinopsis)
+                    sinopsis_esc = escapar_html(str(sinopsis))
                     sinopsis_to_send = (
                         f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
                     )
@@ -823,22 +830,24 @@ async def enviar_libro_directo(
                 )
 
             # 7. Enviar Archivo EPUB
-            # Calcular tamaño
-            if isinstance(epub_bytes, bytes | bytearray):
+            # Usar tamaño de LocalBook si está disponible, sino calcular
+            size_mb = 0.0
+            file_size = meta.get("file_size") or meta.get("fileSize")
+            if file_size:
+                size_mb = file_size / (1024 * 1024)
+            elif isinstance(epub_bytes, bytes | bytearray):
                 size_mb = len(epub_bytes) / (1024 * 1024)
             elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
                 size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
-            else:
-                size_mb = 0.0
 
             # Caption final
             final_caption = ""
-            titulo_vol = meta.get("titulo_volumen") or meta.get("titulo") or title
+            titulo_vol = meta.get("titulo_volumen") or meta.get("title") or meta.get("english_title") or title
             if len(msg_parts) > 2:
                 final_caption = msg_parts[2]
             elif not final_custom_caption:
-                version = meta.get("epub_version", "2.0")
-                fecha = meta.get("fecha_modificacion", "Desconocida")
+                version = meta.get("epub_version") or meta.get("epubVersion") or "2.0"
+                fecha = meta.get("fecha_modificacion") or meta.get("modified_at") or "Desconocida"
                 final_caption = (
                     f"📂 <b>{titulo_vol}</b>\n"
                     f"ℹ️ Versión Epub: {version}\n"
@@ -853,8 +862,10 @@ async def enviar_libro_directo(
                 mins = auto_delete_seconds // 60
                 final_caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
 
-            # Nombre de archivo desde URL
-            fname = unquote(urlparse(download_url).path.split("/")[-1]) or "archivo.epub"
+            # Nombre de archivo - usar filename de LocalBook o extraer de ruta
+            fname = meta.get("filename") or "archivo.epub"
+            if download_url and not download_url.startswith("http"):
+                fname = os.path.basename(download_url)
 
             sent_doc = await send_doc_bytes(
                 bot,

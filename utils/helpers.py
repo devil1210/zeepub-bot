@@ -351,7 +351,15 @@ def find_zeepubs_destino(feed, prefer_libraries: bool = False):
 def generar_slug_from_meta(meta: dict) -> str:
     titulo_serie = None
     if isinstance(meta, dict):
-        titulo_serie = meta.get("titulo_serie") or meta.get("titulo_volumen")
+        titulo_serie = (
+            meta.get("titulo_serie")
+            or meta.get("titulo_volumen")
+            or meta.get("series")
+            or meta.get("series_spanish")
+            or meta.get("series_english")
+            or meta.get("title")
+            or meta.get("english_title")
+        )
     elif isinstance(meta, str):
         titulo_serie = meta
     if not titulo_serie:
@@ -529,9 +537,12 @@ def formatear_mensaje_portada(meta: dict, include_slug: bool = True) -> str:
     slug = generar_slug_from_meta(meta)
     lines = []
 
-    # Nueva lógica si existen los campos específicos
-    internal_title = meta.get("internal_title")
-    collection_title = meta.get("titulo_serie")
+    # Normalizar campos desde LocalBook o formato legacy
+    # Títulos
+    internal_title = meta.get("internal_title") or meta.get("title") or meta.get("english_title")
+    collection_title = (
+        meta.get("titulo_serie") or meta.get("series") or meta.get("series_spanish") or meta.get("series_english")
+    )
 
     # Si no hay titulo_serie pero sí filename_title, usar filename_title como collection
     if not collection_title and meta.get("filename_title"):
@@ -541,57 +552,53 @@ def formatear_mensaje_portada(meta: dict, include_slug: bool = True) -> str:
     if collection_title:
         collection_title = re.sub(r"\[.*?\]", "", collection_title).strip()
 
+    # Volumen
+    volume_num = meta.get("volume") or meta.get("seriesIndex") or meta.get("seriesIndex")
+
     if internal_title and collection_title:
-        full_title = meta.get("titulo_volumen") or ""
-        series, volume = parse_title_string(full_title)
-
-        # Si no se encontró volumen, usar el título completo como serie (o dejar vacío volumen)
-        if not series:
-            series = full_title
-
-        # Colocar el slug en la misma línea del título (si se solicita)
-        titulo_line = f"Epub de: {series} ║ {collection_title} ║ {internal_title}"
-        lines.append(titulo_line)
-
-        if volume:
-            lines.append(volume)
-
+        lines.append(f"Epub de: {collection_title} ║ {internal_title}")
+        if volume_num:
+            lines.append(f"Volumen {int(volume_num) if isinstance(volume_num, float) else volume_num}")
         if slug and include_slug:
             lines.append(f"#{slug}")
     else:
-        # Lógica antigua (fallback) — poner slug en la misma línea que el título
-        titulo_vol = meta.get("titulo_volumen") or ""
-
-        # Intentar limpiar el título fallback también
+        # Fallback
+        titulo_vol = meta.get("titulo_volumen") or meta.get("title") or ""
         series_fb, volume_fb = parse_title_string(titulo_vol)
         if not series_fb:
             series_fb = titulo_vol
-
         lines.append(series_fb)
-
         if volume_fb:
             lines.append(volume_fb)
-
         if slug and include_slug:
             lines.append(f"#{slug}")
 
-    # Common metadata fields
-    categoria = meta.get("categoria") or "Desconocida"
-    generos = ", ".join(meta.get("generos") or []) or "Desconocido"
-    demografia = ", ".join(meta.get("demografia") or []) or "Desconocida"
-    autor = meta.get("autor") or (meta.get("autores")[0] if meta.get("autores") else "Desconocido")
-    ilustrador = meta.get("ilustrador") or "Desconocido"
-    maqus = meta.get("maquetadores") or []
+    # Normalizar campos de metadata
+    categoria = meta.get("categoria") or meta.get("book_type") or meta.get("bookType") or "Desconocida"
+    generos_raw = meta.get("generos") or meta.get("tags") or []
+    generos = ", ".join(generos_raw) if isinstance(generos_raw, list) else (generos_raw or "Desconocido")
+    demografia_raw = meta.get("demografia") or meta.get("demographics") or []
+    demografia = ", ".join(demografia_raw) if isinstance(demografia_raw, list) else (demografia_raw or "Desconocida")
+    autor = meta.get("autor") or meta.get("author") or "Desconocido"
+    ilustrador = meta.get("ilustrador") or meta.get("illustrator") or "Desconocido"
+
+    # Maquetadores
+    maqus = meta.get("maquetadores") or meta.get("layout_by") or meta.get("layoutBy") or []
+    if isinstance(maqus, str) and maqus:
+        maqus = [maqus]
     if not maqus:
         maqu_line = "<b>Maquetado por:</b>  #ZeePub"
     else:
         maqu_line = "<b>Maquetado por:</b> " + " ".join(f"#{m.replace(' ', '')}" for m in maqus)
 
+    # Traducción
     traduccion_parts = []
-    if meta.get("traductor"):
-        traduccion_parts.append(meta["traductor"])
-    if meta.get("publisher"):
-        traduccion_parts.append(meta["publisher"])
+    traductor = meta.get("traductor") or meta.get("translator")
+    if traductor:
+        traduccion_parts.append(traductor)
+    publisher = meta.get("publisher")
+    if publisher:
+        traduccion_parts.append(publisher)
     if meta.get("publisher_url"):
         traduccion_parts.append(meta["publisher_url"])
     traduccion_line = ""

@@ -260,15 +260,21 @@ class TelegramPublisherProvider(PublisherProvider):
     def _format_info_text(self, meta: dict[str, Any]) -> str:
         from utils.helpers import generar_slug_from_meta
 
-        version = meta.get("epub_version", "2.0")
-        fecha = meta.get("fecha_modificacion", meta.get("updated_at", "Desconocida"))
-        titulo = meta.get("titulo_volumen") or meta.get("title", "Desconocido")
+        version = meta.get("epub_version") or meta.get("epubVersion") or "2.0"
+        fecha = meta.get("fecha_modificacion") or meta.get("modified_at") or meta.get("modifiedAt") or "Desconocida"
+        titulo = meta.get("titulo_volumen") or meta.get("title") or meta.get("english_title") or "Desconocido"
+
+        # Calcular tamaño en MB
         size_mb = meta.get("size_mb", 0.0)
+        if not size_mb:
+            file_size = meta.get("file_size") or meta.get("fileSize") or 0
+            if file_size:
+                size_mb = file_size / (1024 * 1024)
 
         # Stars/Rating
         rating_txt = ""
-        avg = meta.get("rating_average")
-        count = meta.get("rating_count", 0)
+        avg = meta.get("rating_average") or meta.get("ratingAverage")
+        count = meta.get("rating_count") or meta.get("ratingCount") or 0
         if avg and avg > 0:
             rating_txt = f"\n⭐ {avg:.1f} ({count} votos)"
 
