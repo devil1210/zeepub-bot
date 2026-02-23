@@ -273,7 +273,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     # Construct pseudo 'libro' dict
                     libro = {
                         "titulo": book_db.title,
-                        "portada": book_db.cover_path,
+                        "portada": book_db.cover_low or book_db.cover_medium or book_db.cover_high,
                         "descarga": book_db.filepath,
                         "href": book_db.filepath,
                     }

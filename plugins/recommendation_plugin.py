@@ -83,15 +83,15 @@ class RecommendationPlugin(BasePlugin):
 
             # Enviar portada si hay path
             sent = False
-            if book.get("cover_path") and book["cover_path"].startswith("/"):
+            cover_path = book.get("cover") or book.get("cover_low") or book.get("cover_medium")
+            if cover_path and cover_path.startswith("/"):
                 try:
-                    # Check file existence to avoid errors
                     import os
 
-                    if os.path.exists(book["cover_path"]):
+                    if os.path.exists(cover_path):
                         await context.bot.send_photo(
                             chat_id=uid,
-                            photo=open(book["cover_path"], "rb"),
+                            photo=open(cover_path, "rb"),
                             caption=caption,
                             parse_mode="HTML",
                             reply_markup=InlineKeyboardMarkup(kb),
