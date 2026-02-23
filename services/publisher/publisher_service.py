@@ -110,18 +110,19 @@ class TelegramPublisherProvider(PublisherProvider):
         # Prioridad: Bytes directos > URL/Path
         cover_data = book_data.get("cover_bytes")
         if not cover_data and cover_path_or_url:
-            if isinstance(cover_path_or_url, str) and (
+            # Si es URL de API (/api/...), descargarla desde localhost
+            if isinstance(cover_path_or_url, str) and cover_path_or_url.startswith("/api/"):
+                from utils.http_client import fetch_bytes
+
+                cover_url_full = f"http://localhost:8000{cover_path_or_url}"
+                logger.info(f"Descargando portada desde API: {cover_url_full}")
+                cover_data = await fetch_bytes(cover_url_full)
+            elif isinstance(cover_path_or_url, str) and (
                 cover_path_or_url.startswith("http://") or cover_path_or_url.startswith("https://")
             ):
                 from utils.http_client import fetch_bytes
 
-                # Fetch bytes from URL
-                auth = None
-                if config.OPDS_AUTH:
-                    import aiohttp
-
-                    auth = aiohttp.BasicAuth(config.OPDS_AUTH[0], config.OPDS_AUTH[1])
-                cover_data = await fetch_bytes(cover_path_or_url, timeout=15, auth=auth)
+                cover_data = await fetch_bytes(cover_path_or_url, timeout=15)
             else:
                 cover_data = cover_path_or_url
 

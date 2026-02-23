@@ -817,65 +817,65 @@ async def enviar_libro_directo(
                     text="✅ Publicado exitosamente en el Grupo de Facebook.",
                 )
 
-            # --- PROCESAR CAPTION Y PLANTILLAS ---
-            final_custom_caption = custom_caption
-            if caption_template:
-                from utils.template_engine import apply_publication_template
+        # --- PROCESAR CAPTION Y PLANTILLAS ---
+        final_custom_caption = custom_caption
+        if caption_template:
+            from utils.template_engine import apply_publication_template
 
-                final_custom_caption = apply_publication_template(caption_template, meta)
-                logger.info(f"Plantilla aplicada, longitud: {len(final_custom_caption) if final_custom_caption else 0}")
+            final_custom_caption = apply_publication_template(caption_template, meta)
+            logger.info(f"Plantilla aplicada, longitud: {len(final_custom_caption) if final_custom_caption else 0}")
 
-            msg_parts = []
-            if final_custom_caption:
-                # Separadores comunes: <hr>, ---next---, o ---
-                msg_parts = re.split(r"<hr\s*/?>|---next---|---", final_custom_caption)
-                msg_parts = [p.strip() for p in msg_parts if p.strip()]
-                logger.info(f"Mensaje dividido en {len(msg_parts)} partes")
+        msg_parts = []
+        if final_custom_caption:
+            # Separadores comunes: <hr>, ---next---, o ---
+            msg_parts = re.split(r"<hr\s*/?>|---next---|---", final_custom_caption)
+            msg_parts = [p.strip() for p in msg_parts if p.strip()]
+            logger.info(f"Mensaje dividido en {len(msg_parts)} partes")
 
-            # 5. Enviar Portada (Standard)
-            if portada_data:
-                mensaje_portada = msg_parts[0] if len(msg_parts) > 0 else (formatear_mensaje_portada(meta))
-                logger.info(f"Enviando portada a {destino}")
-                await send_photo_bytes(
-                    bot,
-                    destino,
-                    mensaje_portada,
-                    portada_data,
-                    filename="cover.jpg",
-                    parse_mode="HTML",
-                    message_thread_id=message_thread_id,
-                )
-            else:
-                # Si no hay portada, enviar el primer mensaje como texto
-                if len(msg_parts) > 0:
-                    logger.info(f"Enviando mensaje de portada como texto a {destino}")
-                    await bot.send_message(
-                        chat_id=destino,
-                        text=msg_parts[0],
-                        parse_mode="HTML",
-                        message_thread_id=message_thread_id,
-                    )
-
-            # 6. Enviar Sinopsis
-            # Se envía solo si no hay custom_caption o si hay al menos 2 partes
-            sinopsis_to_send = None
-            if len(msg_parts) > 1:
-                sinopsis_to_send = msg_parts[1]
-            elif not custom_caption:
-                sinopsis = meta.get("sinopsis") or meta.get("description") or meta.get("summary")
-                if sinopsis:
-                    sinopsis_esc = escapar_html(str(sinopsis))
-                    sinopsis_to_send = (
-                        f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
-                    )
-
-            if sinopsis_to_send:
+        # 5. Enviar Portada (Standard)
+        if portada_data:
+            mensaje_portada = msg_parts[0] if len(msg_parts) > 0 else (formatear_mensaje_portada(meta))
+            logger.info(f"Enviando portada a {destino}")
+            await send_photo_bytes(
+                bot,
+                destino,
+                mensaje_portada,
+                portada_data,
+                filename="cover.jpg",
+                parse_mode="HTML",
+                message_thread_id=message_thread_id,
+            )
+        else:
+            # Si no hay portada, enviar el primer mensaje como texto
+            if len(msg_parts) > 0:
+                logger.info(f"Enviando mensaje de portada como texto a {destino}")
                 await bot.send_message(
                     chat_id=destino,
-                    text=sinopsis_to_send,
+                    text=msg_parts[0],
                     parse_mode="HTML",
                     message_thread_id=message_thread_id,
                 )
+
+        # 6. Enviar Sinopsis
+        # Se envía solo si no hay custom_caption o si hay al menos 2 partes
+        sinopsis_to_send = None
+        if len(msg_parts) > 1:
+            sinopsis_to_send = msg_parts[1]
+        elif not custom_caption:
+            sinopsis = meta.get("sinopsis") or meta.get("description") or meta.get("summary")
+            if sinopsis:
+                sinopsis_esc = escapar_html(str(sinopsis))
+                sinopsis_to_send = (
+                    f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
+                )
+
+        if sinopsis_to_send:
+            await bot.send_message(
+                chat_id=destino,
+                text=sinopsis_to_send,
+                parse_mode="HTML",
+                message_thread_id=message_thread_id,
+            )
 
             # 7. Enviar Archivo EPUB
             # Usar tamaño de LocalBook si está disponible, sino calcular
