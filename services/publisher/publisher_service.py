@@ -103,8 +103,21 @@ class TelegramPublisherProvider(PublisherProvider):
             msg_parts = [p.strip() for p in msg_parts if p.strip()]
 
         # 1. Mensaje de Portada (o Texto Principal)
-        caption = msg_parts[0] if len(msg_parts) > 0 else (custom_content or formatear_mensaje_portada(book_data))
-        caption = sanitize_tg_html(caption)
+        # Si se pasó una plantilla (vía options['caption']), la dividimos por <hr>
+        # Si no se pasó, usamos la lógica por defecto (que también puede usar plantillas dinámicas)
+        caption_source = options.get("caption")
+        msg_parts = []
+        if caption_source:
+             msg_parts = re.split(r"<hr\s*/?>|---next---|---", caption_source)
+             msg_parts = [p.strip() for p in msg_parts if p.strip()]
+
+        if len(msg_parts) > 0:
+            caption = sanitize_tg_html(msg_parts[0])
+        else:
+             # Si no hay plantilla en options, usamos la COVER_TEMPLATE por defecto pro procesándola con el engine
+             from utils.template_engine import apply_publication_template
+             caption = apply_publication_template(self.COVER_TEMPLATE, book_data)
+             caption = sanitize_tg_html(caption)
 
         # Selección de calidad de portada
         quality = options.get("cover_quality") or self.COVER_QUALITY
@@ -163,13 +176,17 @@ class TelegramPublisherProvider(PublisherProvider):
         if len(msg_parts) > 1:
             sinopsis = sanitize_tg_html(msg_parts[1])
         else:
-            # Comportamiento por defecto
+            # Comportamiento por defecto procesado por el engine
+            from utils.template_engine import apply_publication_template
+            # Preparamos la sinopsis escapando HTML
             raw_sinopsis = book_data.get("description") or book_data.get("summary") or book_data.get("sinopsis")
             if raw_sinopsis:
-                sinopsis_esc = escapar_html(raw_sinopsis)
-                slug = generar_slug_from_meta(book_data)
-                sinopsis = self.SYNOPSIS_TEMPLATE.format(sinopsis=sinopsis_esc, slug=slug or "")
-                if not slug:
+                sinopsis_data = book_data.copy()
+                sinopsis_data["sinopsis"] = escapar_html(raw_sinopsis)
+                sinopsis_data["slug"] = generar_slug_from_meta(book_data) or ""
+                
+                sinopsis = apply_publication_template(self.SYNOPSIS_TEMPLATE, sinopsis_data)
+                if not sinopsis_data["slug"]:
                     sinopsis = sinopsis.replace("\n#", "").strip()
                 sinopsis = sanitize_tg_html(sinopsis)
 
@@ -187,10 +204,12 @@ class TelegramPublisherProvider(PublisherProvider):
         # 3. Archivo EPUB / Mensaje Final
         info_text = ""
         if len(msg_parts) > 2:
-            info_text = msg_parts[2]
+            info_text = sanitize_tg_html(msg_parts[2])
         else:
-            # Comportamiento por defecto
-            info_text = self._format_info_text(book_data)
+            # Comportamiento por defecto procesado por el engine
+            from utils.template_engine import apply_publication_template
+            info_text = apply_publication_template(self.INFO_TEMPLATE, book_data)
+            info_text = sanitize_tg_html(info_text)
 
         epub_data = book_data.get("epub_bytes") or book_data.get("epub_buffer") or book_data.get("filepath")
 
@@ -489,6 +508,26 @@ class PublisherService:
         if not provider:
             logger.error(f"Provider not found for platform: {platform}")
             return False
+
+        options = options or {}
+
+        # 1. Si no hay caption, intentar cargar desde plantilla (ID o Default)
+        if not options.get("caption"):
+            template = None
+            template_id = options.get("template_id")
+            if template_id:
+                template = await self.repo.get_template_by_id(template_id)
+            else:
+                template = await self.repo.get_default_template(platform)
+
+            if template:
+                options["caption"] = self._apply_template(template.content, book_data)
+                # Aplicar extra_config si existe (ej. calidad de portada)
+                if template.extra_config:
+                    for k, v in template.extra_config.items():
+                        if k not in options:
+                            options[k] = v
+
         return await provider.announce_book(target_id, book_data, options)
 
     async def schedule_publication(

@@ -56,6 +56,7 @@ class PublicationTemplate(Base):
     content = Column(Text, nullable=False)  # El template con placeholders {titulo}, {autor}, etc.
     platform = Column(String(20), nullable=False)  # 'telegram', 'facebook'
     extra_config = Column(JSON)  # Para guardar calidad de portada, hilos, etc.
+    is_default = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relación con la cola

@@ -167,6 +167,15 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
                         raise e from None
                 raise e from None
 
+    async def get_default_template(self, platform: str) -> PublicationTemplate | None:
+        """Obtiene la plantilla por defecto para una plataforma."""
+        async with self.db_manager.get_session() as session:
+            stmt = select(PublicationTemplate).where(
+                and_(PublicationTemplate.platform == platform, PublicationTemplate.is_default == True)
+            )
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+
     async def create_template(self, template: PublicationTemplate) -> PublicationTemplate:
         async with self.db_manager.get_session() as session:
             session.add(template)

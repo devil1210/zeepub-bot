@@ -280,7 +280,7 @@ def process_book_identity_comprehensive(epub_path: str, original_filename: str |
         "layout_by": layout_by,
         "language": language,
         "series_spanish": series_spanish,
-        "series_english": series,  # Por defecto coincide con la serie de metadata original
+        "series_english": parsed.get("series_clean") or series or series_spanish,
         "title": ui_title,
         "published_at": meta.get("published_at"),
         "edition": meta.get("edition"),
@@ -351,14 +351,15 @@ def find_zeepubs_destino(feed, prefer_libraries: bool = False):
 def generar_slug_from_meta(meta: dict) -> str:
     titulo_serie = None
     if isinstance(meta, dict):
+        # PRIORIDAD: series_english (el nombre limpio en inglés)
         titulo_serie = (
-            meta.get("titulo_serie")
-            or meta.get("titulo_volumen")
+            meta.get("series_english")
+            or meta.get("titulo_serie")
             or meta.get("series")
+            or meta.get("series_clean")  # Desde process_book_identity_comprehensive
             or meta.get("series_spanish")
-            or meta.get("series_english")
-            or meta.get("title")
             or meta.get("english_title")
+            or meta.get("title")
         )
     elif isinstance(meta, str):
         titulo_serie = meta

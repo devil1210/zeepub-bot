@@ -717,6 +717,8 @@ class ScannerService:
             series = SeriesMetadata(
                 series_name=book.series or book.title,
                 series_spanish=book.series_spanish,
+                series_english=book.series_english,  # Poblado desde identity unificada
+                slug=generar_slug_from_meta(book.to_dict()),
                 series_hash=book.series_hash,
                 author=book.author,
                 author_jap=book.author_jap,
@@ -729,7 +731,7 @@ class ScannerService:
             )
             session.add(series)
             session.flush()  # Para obtener el ID
-            logger.info(f"🆕 Nueva serie detectada: {series.series_name}")
+            logger.info(f"🆕 Nueva serie detectada: {series.series_name} (Slug: {series.slug})")
         else:
             # Sincronizar campos: Actualizar si el libro tiene info y es distinta o la serie está vacía
             if book.author and series.author != book.author:
@@ -748,6 +750,12 @@ class ScannerService:
 
             if book.series_spanish and series.series_spanish != book.series_spanish:
                 series.series_spanish = book.series_spanish
+
+            if book.series_english and series.series_english != book.series_english:
+                series.series_english = book.series_english
+                # Si cambia el nombre en inglés, regeneramos el slug (a menos que halla override manual futuro)
+                series.slug = generar_slug_from_meta(book.to_dict())
+                logger.debug(f"Slug actualizado para serie {series.series_name}: {series.slug}")
 
             if book.book_type and series.book_type != book.book_type:
                 series.book_type = book.book_type

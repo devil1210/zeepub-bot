@@ -587,6 +587,7 @@ async def enviar_libro_directo(
     auto_delete_seconds: int = 0,
     custom_caption: str | None = None,
     caption_template: str | None = None,
+    reply_markup: Any | None = None,
 ):
     """
     Descarga y envía un libro directamente al usuario (para la Mini App).
@@ -822,19 +823,18 @@ async def enviar_libro_directo(
                 )
 
         # --- PROCESAR CAPTION Y PLANTILLAS ---
-        final_custom_caption = custom_caption
-        if caption_template:
-            from utils.template_engine import apply_publication_template
-
-            final_custom_caption = apply_publication_template(caption_template, meta)
-            logger.info(f"Plantilla aplicada, longitud: {len(final_custom_caption) if final_custom_caption else 0}")
-
         msg_parts = []
-        if final_custom_caption:
-            # Separadores comunes: <hr>, ---next---, o ---
-            msg_parts = re.split(r"<hr\s*/?>|---next---|---", final_custom_caption)
-            msg_parts = [p.strip() for p in msg_parts if p.strip()]
-            logger.info(f"Mensaje dividido en {len(msg_parts)} partes")
+        if caption_template:
+            msg_parts = re.split(r"<hr\s*/?>|---next---|---", caption_template)
+            msg_parts = [p.strip() for p in msg_parts if (p and p.strip())]
+        elif custom_caption:
+            msg_parts = re.split(r"<hr\s*/?>|---next---|---", custom_caption)
+            msg_parts = [p.strip() for p in msg_parts if (p and p.strip())]
+
+        # Pre-procesar todas las partes con el motor de plantillas si hay metadata
+        from utils.template_engine import apply_publication_template
+        msg_parts = [apply_publication_template(p, meta) for p in msg_parts]
+        logger.info(f"Mensaje dividido en {len(msg_parts)} partes")
 
         # Función para sanitizar HTML para Telegram
         def sanitize_tg_html(t: str) -> str:
@@ -848,6 +848,7 @@ async def enviar_libro_directo(
 
         # 5. Enviar Portada (Standard)
         if portada_data:
+            from utils.helpers import formatear_mensaje_portada
             mensaje_portada = msg_parts[0] if len(msg_parts) > 0 else (formatear_mensaje_portada(meta))
             mensaje_portada = sanitize_tg_html(mensaje_portada)
             logger.info(f"Enviando portada a {destino}")
@@ -956,6 +957,7 @@ async def enviar_libro_directo(
             filename=fname,
             parse_mode="HTML",
             message_thread_id=message_thread_id,
+            reply_markup=reply_markup,
         )
 
         if sent_doc and auto_delete_seconds > 0:
@@ -1361,129 +1363,43 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
         st.get("destino"),
         st.get("chat_origen"),
     )
-
     destino = st.get("destino") or update.effective_chat.id
     chat_origen = st.get("chat_origen") or destino
     thread_id_origen = st.get("message_thread_id")
 
     meta = st.get("meta_pendiente", {})
     epub_buffer = st.get("epub_buffer")
-    portada_url = st.get("portada_pendiente") or meta.get("portada")
 
-    # Prepare caption for portada
-    mensaje_portada = formatear_mensaje_portada(meta)
+    # Intentar obtener plantilla por defecto para Telegram
+    try:
+        from repositories.publication_repository import pub_repo
+        template = await pub_repo.get_default_template("telegram")
+        caption_template = template.content if template else None
+    except Exception as e:
+        logger.debug("Error fetching default template: %s", e)
+        caption_template = None
 
-    # Get cover from LocalBook path or URL
-    cover_bytes = None
-    cover_path = (
-        meta.get("cover")
-        or meta.get("cover_original")
-        or meta.get("cover_high")
-        or meta.get("cover_medium")
-        or meta.get("cover_low")
-    )
-    if cover_path:
-        cover_bytes = await resolve_cover_data(cover_path)
-
-    portada_data = cover_bytes if cover_bytes else (await fetch_bytes(portada_url, timeout=15) if portada_url else None)
-
-    await send_photo_bytes(
-        bot,
-        destino,
-        mensaje_portada,
-        portada_data,
-        filename="cover.jpg",
-        parse_mode="HTML",
+    # Usar enviar_libro_directo que ya maneja división por <hr>, slugs y plantillas
+    success = await enviar_libro_directo(
+        bot=bot,
+        user_id=uid,
+        title=meta.get("title", "Libro"),
+        download_url=st.get("epub_url"),
+        target_chat_id=destino,
         message_thread_id=thread_id_origen,
+        metadata_override=meta,
+        explicit_file_buffer=epub_buffer,
+        caption_template=caption_template
     )
-    if not cover_bytes and isinstance(portada_data, str):
-        cleanup_tmp(portada_data)
 
-    # Sinopsis
-    sinopsis: str | None = meta.get("sinopsis") or meta.get("description")
-    if isinstance(sinopsis, str) and not sinopsis:
-        sinopsis = None
-    if not sinopsis:
-        series_hash = st.get("series_hash")
-        if series_hash:
-            try:
-                from repositories.series_repository import series_repo
+    if not success:
+        await bot.send_message(chat_id=chat_origen, text="❌ Error al procesar la publicación.")
+        return
 
-                series_meta = await series_repo.get_by_hash(series_hash)
-                if series_meta:
-                    desc = getattr(series_meta, "description", None)
-                    if desc:
-                        sinopsis = str(desc)
-            except Exception as e:
-                logger.debug("Error fetching sinopsis from DB: %s", e)
+    # El bloque de sinopsis e info ya fue manejado por enviar_libro_directo vía msg_parts
+    # conservamos solo la lógica de botones finales si es necesario
 
-    if sinopsis:
-        sinopsis_esc = escapar_html(str(sinopsis))
-        texto = f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
-        try:
-            await bot.send_message(
-                chat_id=destino,
-                text=texto,
-                parse_mode="HTML",
-                message_thread_id=thread_id_origen,
-            )
-        except BadRequest as e:
-            if "Message thread not found" in str(e) and thread_id_origen is not None:
-                await bot.send_message(
-                    chat_id=destino,
-                    text=texto,
-                    parse_mode="HTML",
-                    message_thread_id=None,
-                )
-            else:
-                raise e
-    else:
-        slug = generar_slug_from_meta(meta)
-        fallback = f"Sinopsis: (no disponible)\n#{slug}" if slug else "Sinopsis: (no disponible)"
-        try:
-            await bot.send_message(chat_id=destino, text=fallback, message_thread_id=thread_id_origen)
-        except BadRequest as e:
-            if "Message thread not found" in str(e) and thread_id_origen is not None:
-                await bot.send_message(chat_id=destino, text=fallback, message_thread_id=None)
-            else:
-                raise e
-
-    # Info adicional si tenemos EPUB
-    if epub_buffer:
-        if isinstance(epub_buffer, bytes | bytearray):
-            size_mb = len(epub_buffer) / (1024 * 1024)
-        elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
-            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
-        else:
-            size_mb = 0.0
-
-        version = meta.get("epub_version", "2.0")
-        fecha = meta.get("fecha_modificacion", "Desconocida")
-        titulo_vol = meta.get("titulo_volumen") or st.get("titulo_pendiente", "Desconocido")
-
-        info_text = (
-            f"📂 <b>{titulo_vol}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {size_mb:.2f} MB"
-        )
-        try:
-            msg_info = await bot.send_message(
-                chat_id=chat_origen,
-                text=info_text,
-                parse_mode="HTML",
-                message_thread_id=thread_id_origen,
-            )
-        except BadRequest as e:
-            if "Message thread not found" in str(e) and thread_id_origen is not None:
-                msg_info = await bot.send_message(
-                    chat_id=chat_origen,
-                    text=info_text,
-                    parse_mode="HTML",
-                    message_thread_id=None,
-                )
-            else:
-                raise e
-        st["msg_info_id"] = msg_info.message_id
-
-    # Botones: solo descarga y volver (omitimos Post FB porque eligió Telegram)
+    # Los botones se envían al chat origen (privado) para control del usuario
     keyboard = [
         [InlineKeyboardButton("📥 Descargar EPUB", callback_data="descargar_epub")],
         [InlineKeyboardButton("↩️ Volver", callback_data="volver_ultima")],
@@ -1492,12 +1408,23 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
     try:
         sent = await bot.send_message(
             chat_id=chat_origen,
-            text="¿Deseas descargar este EPUB?",
+            text="¿Deseas descargar este EPUB en tu chat privado?",
             parse_mode="HTML",
             message_thread_id=thread_id_origen,
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
+        st["msg_botones_id"] = sent.message_id
     except BadRequest as e:
+        if "Message thread not found" in str(e) and thread_id_origen is not None:
+            await bot.send_message(
+                chat_id=chat_origen,
+                text="¿Deseas descargar este EPUB?",
+                parse_mode="HTML",
+                message_thread_id=None,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+            )
+        else:
+            raise e
         if "Message thread not found" in str(e) and thread_id_origen is not None:
             sent = await bot.send_message(
                 chat_id=chat_origen,
