@@ -893,54 +893,54 @@ async def enviar_libro_directo(
                 message_thread_id=message_thread_id,
             )
 
-            # 7. Enviar Archivo EPUB
-            # Usar tamaño de LocalBook si está disponible, sino calcular
-            size_mb = 0.0
-            file_size = meta.get("file_size") or meta.get("fileSize")
-            if file_size:
-                size_mb = file_size / (1024 * 1024)
-            elif isinstance(epub_bytes, bytes | bytearray):
-                size_mb = len(epub_bytes) / (1024 * 1024)
-            elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
-                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
+        # 7. Enviar Archivo EPUB
+        # Usar tamaño de LocalBook si está disponible, sino calcular
+        size_mb = 0.0
+        file_size = meta.get("file_size") or meta.get("fileSize")
+        if file_size:
+            size_mb = file_size / (1024 * 1024)
+        elif isinstance(epub_bytes, bytes | bytearray):
+            size_mb = len(epub_bytes) / (1024 * 1024)
+        elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
+            size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
 
-            # Caption final
-            final_caption = ""
-            titulo_vol = meta.get("titulo_volumen") or meta.get("title") or meta.get("english_title") or title
-            if len(msg_parts) > 2:
-                final_caption = sanitize_tg_html(msg_parts[2])
-            elif not final_custom_caption:
-                version = meta.get("epub_version") or meta.get("epubVersion") or "2.0"
-                # Formatear fecha como DD-MM-YYYY
-                fecha_raw = meta.get("fecha_modificacion") or meta.get("modified_at") or meta.get("updated_at")
-                fecha = ""
-                if fecha_raw:
-                    try:
-                        from datetime import datetime
+        # Caption final
+        final_caption = ""
+        titulo_vol = meta.get("titulo_volumen") or meta.get("title") or meta.get("english_title") or title
+        if len(msg_parts) > 2:
+            final_caption = sanitize_tg_html(msg_parts[2])
+        elif not final_custom_caption:
+            version = meta.get("epub_version") or meta.get("epubVersion") or "2.0"
+            # Formatear fecha como DD-MM-YYYY
+            fecha_raw = meta.get("fecha_modificacion") or meta.get("modified_at") or meta.get("updated_at")
+            fecha = ""
+            if fecha_raw:
+                try:
+                    from datetime import datetime
 
-                        if "T" in str(fecha_raw):
-                            dt = datetime.fromisoformat(str(fecha_raw).replace("Z", "+00:00"))
-                            fecha = dt.strftime("%d-%m-%Y")
-                        else:
-                            fecha = str(fecha_raw)[:10]
-                    except Exception:
-                        fecha = str(fecha_raw)[:10] if fecha_raw else "Desconocida"
-                else:
-                    fecha = "Desconocida"
+                    if "T" in str(fecha_raw):
+                        dt = datetime.fromisoformat(str(fecha_raw).replace("Z", "+00:00"))
+                        fecha = dt.strftime("%d-%m-%Y")
+                    else:
+                        fecha = str(fecha_raw)[:10]
+                except Exception:
+                    fecha = str(fecha_raw)[:10] if fecha_raw else "Desconocida"
+            else:
+                fecha = "Desconocida"
 
-                final_caption = (
-                    f"📂 <b>{titulo_vol}</b>\n"
-                    f"ℹ️ Versión Epub: {version}\n"
-                    f"📅 Actualizado: {fecha}\n"
-                    f"📦 Tamaño: {size_mb:.2f} MB"
-                )
-                slug = generar_slug_from_meta(meta)
-                if slug:
-                    final_caption += f"\n#{slug}"
+            final_caption = (
+                f"📂 <b>{titulo_vol}</b>\n"
+                f"ℹ️ Versión Epub: {version}\n"
+                f"📅 Actualizado: {fecha}\n"
+                f"📦 Tamaño: {size_mb:.2f} MB"
+            )
+            slug = generar_slug_from_meta(meta)
+            if slug:
+                final_caption += f"\n#{slug}"
 
-            if auto_delete_seconds > 0:
-                mins = auto_delete_seconds // 60
-                final_caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
+        if auto_delete_seconds > 0:
+            mins = auto_delete_seconds // 60
+            final_caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
 
             # Nombre de archivo - usar filename de LocalBook o extraer de ruta
             fname = meta.get("filename") or "archivo.epub"

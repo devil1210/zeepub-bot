@@ -194,6 +194,61 @@ async def handle_pub_delete_template(data: dict[str, Any], user_data: dict[str, 
     return {"success": True}
 
 
+async def handle_pub_restore_templates(data: dict[str, Any], user_data: dict[str, Any]):
+    """Restaura las plantillas por defecto de Telegram."""
+    check_staff(user_data)
+
+    from services.publisher.publisher_service import TelegramPublisherProvider
+
+    platform = data.get("platform", "telegram")
+
+    # Definir templates por defecto
+    defaults = [
+        PublicationTemplate(
+            name="Default Telegram Cover",
+            content=TelegramPublisherProvider.COVER_TEMPLATE,
+            platform="telegram",
+            extra_config={"type": "cover"},
+        ),
+        PublicationTemplate(
+            name="Default Telegram Synopsis",
+            content=TelegramPublisherProvider.SYNOPSIS_TEMPLATE,
+            platform="telegram",
+            extra_config={"type": "synopsis"},
+        ),
+        PublicationTemplate(
+            name="Default Telegram Info",
+            content=TelegramPublisherProvider.INFO_TEMPLATE,
+            platform="telegram",
+            extra_config={"type": "info"},
+        ),
+    ]
+
+    # Eliminar templates existentes de Telegram
+    existing = await pub_repo.get_templates(platform="telegram")
+    for t in existing:
+        await pub_repo.delete_template(t.id)
+
+    # Crear los nuevos
+    created = []
+    for t in defaults:
+        created.append(await pub_repo.create_template(t))
+
+    return {
+        "success": True,
+        "templates": [
+            {
+                "id": t.id,
+                "name": t.name,
+                "content": t.content,
+                "platform": t.platform,
+                "extra_config": t.extra_config or {},
+            }
+            for t in created
+        ],
+    }
+
+
 async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
 
