@@ -171,12 +171,12 @@ class BookRepository(BaseRepository[LocalBook]):
             await session.commit()
             return result.rowcount > 0
 
-    async def get_books_by_series_hash(self, series_hash: str) -> list[LocalBook]:
-        """Obtiene todos los libros pertenecientes a una serie."""
+    async def get_total_downloads(self, book_hash: str) -> int:
+        """Obtiene el conteo total de descargas para un hash de libro."""
         async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).where(LocalBook.series_hash == series_hash).order_by(LocalBook.volume.asc())
+            stmt = select(func.count(UserDownload.id)).where(UserDownload.book_hash == book_hash)
             result = await session.execute(stmt)
-            return list(result.scalars().all())
+            return result.scalar() or 0
 
 
 # Instancia global

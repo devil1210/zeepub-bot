@@ -57,6 +57,11 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
 
         # Pre-formatear campos numéricos
         size_mb_val = data.get("size_mb") or data.get("size") or 0.0
+        if not size_mb_val:
+            file_size = data.get("file_size") or data.get("fileSize") or 0
+            if file_size:
+                size_mb_val = file_size / (1024 * 1024)
+
         try:
             size_mb_formatted = f"{float(size_mb_val):.2f} MB"
         except (ValueError, TypeError):
@@ -141,8 +146,10 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "is_uncensored": "Sí" if data.get("is_uncensored") else "No",
                 "isbn": data.get("isbn") or "",
                 "asin": data.get("asin") or "",
-                "archivo": data.get("filename") or f"{(data.get('title') or 'archivo').replace(' ', '_')}.epub",
+                "archivo": "",  # Se deja vacío para que no se imprima como texto (se maneja como adjunto)
                 "titulo_serie": data.get("series") or data.get("titulo_serie") or "",
+                "fecha_actualizacion": data.get("updated_at") or data.get("fecha_modificacion") or fecha_mod_formatted,
+                "descargas_globales": str(data.get("descargas_globales") or data.get("total_downloads") or 0),
             }
         )
 

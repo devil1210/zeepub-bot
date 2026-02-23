@@ -111,6 +111,12 @@ export const usePublisher = () => {
         toggleFavorite,
         promoteDiscovered,
         saveTemplate,
-        deleteTemplate
+        deleteTemplate,
+        restoreTemplates: async (platform: string = 'telegram') => {
+            if (!window.confirm('¿Estás seguro de restaurar todas las plantillas por defecto? Se perderán los cambios personalizados.')) return;
+            const res = await publisherApi.restoreTemplates(platform);
+            if (res.success) await fetchData();
+            return res;
+        }
     };
 };

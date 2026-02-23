@@ -41,7 +41,8 @@ export const PublisherDashboard: React.FC = () => {
         saveChannel,
         deleteChannel,
         saveTemplate,
-        deleteTemplate
+        deleteTemplate,
+        restoreTemplates
     } = usePublisher();
     const [activeTab, setActiveTab] = useState<'queue' | 'channels' | 'templates'>('queue');
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -339,13 +340,21 @@ export const PublisherDashboard: React.FC = () => {
                 {activeTab === 'templates' && (
                     <div className="flex flex-col gap-3">
                         <div className="flex justify-between items-center px-1">
-                            <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Plantillas de Texto</h2>
-                            <button
-                                onClick={handleCreateTemplate}
-                                className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                            >
-                                <Plus className="w-3.5 h-3.5" /> Nueva
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => restoreTemplates('telegram')}
+                                    className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase text-gray-400 hover:text-white border-white/5 hover:bg-white/5 transition-all"
+                                    title="Restaurar todas las plantillas de Telegram a sus valores por defecto"
+                                >
+                                    <RefreshCw className="w-3" h-3="" /> Restaurar
+                                </button>
+                                <button
+                                    onClick={handleCreateTemplate}
+                                    className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                                >
+                                    <Plus className="w-3.5 h-3.5" /> Nueva
+                                </button>
+                            </div>
                         </div>
 
                         {templates.map(template => (

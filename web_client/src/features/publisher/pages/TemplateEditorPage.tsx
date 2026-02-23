@@ -32,7 +32,11 @@ export const TemplateEditorPage: React.FC = () => {
 [?autor]<b>Autor:</b> {autor}[/?]
 [?illustrator]<b>Ilustrador:</b> {illustrator}[/?]
 [?published_at]<b>Publicado:</b> {published_at}[/?]
-[?traductor]<b>Traducción:</b> {traductor}[/?]`;
+[?traductor]<b>Traducción:</b> {traductor}[/?]
+[?fecha_actualizacion]📅 <b>Actualizado:</b> {fecha_actualizacion}[/?]
+[?descargas_globales]📥 <b>Descargas:</b> {descargas_globales}[/?]
+
+{archivo}`;
 
     // Form state
     const [name, setName] = useState('');
@@ -202,6 +206,19 @@ export const TemplateEditorPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {!isNew && (
+                        <button
+                            onClick={async () => {
+                                if (window.confirm('¿Estás seguro de restaurar esta plantilla al valor por defecto?')) {
+                                    setContent(DEFAULT_TELEGRAM_TEMPLATE);
+                                    webApp?.HapticFeedback?.impactOccurred('medium');
+                                }
+                            }}
+                            className="hidden md:flex items-center gap-2 rounded-premium-sm px-4 py-2.5 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-white border border-white/5 hover:bg-white/5 transition-all"
+                        >
+                            <Smartphone className="w-4 h-4" /> Restaurar
+                        </button>
+                    )}
                     <button
                         onClick={handleSave}
                         disabled={isSubmitting || isSuccess || !name || !content}

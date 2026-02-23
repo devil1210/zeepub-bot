@@ -52,7 +52,9 @@ const DUMMY_DATA: Record<string, string> = {
     '{archivo}': 'Demon_Slayer_v01.epub',
     '{isbn}': '978-4-08-880723-2',
     '{asin}': 'B01AXHUEPU',
-    '{description}': 'Tanjiro Kamado es un chico inteligente y de buen corazón que vive con su familia y gana dinero vendiendo carbón.'
+    '{description}': 'Tanjiro Kamado es un chico inteligente y de buen corazón que vive con su familia y gana dinero vendiendo carbón.',
+    '{fecha_actualizacion}': '2024-05-20',
+    '{descargas_globales}': '1,234'
 };
 
 function convertHtmlToTelegramVisual(html: string): string {
@@ -85,7 +87,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
 
         if (sampleBook) {
             mapping['{titulo}'] = sampleBook.title || mapping['{titulo}'];
-            mapping['{slug}'] = sampleBook.title 
+            mapping['{slug}'] = sampleBook.title
                 ? sampleBook.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/[\s_]+/g, '_').substring(0, 50)
                 : mapping['{slug}'];
             mapping['{romaji_title}'] = sampleBook.romaji_title || mapping['{romaji_title}'];
@@ -97,10 +99,10 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             mapping['{serie}'] = sampleBook.series || mapping['{serie}'];
             mapping['{series_spanish}'] = sampleBook.series_spanish || mapping['{series_spanish}'];
             mapping['{series_english}'] = sampleBook.series_english || mapping['{series_english}'];
-            
+
             const volNum = sampleBook.volumeNumber || (sampleBook as any).volume || (sampleBook as any).series_index;
             mapping['{volumen}'] = volNum ? String(Math.floor(parseFloat(String(volNum)))) : mapping['{volumen}'];
-            
+
             mapping['{tamaño}'] = sampleBook.size || mapping['{tamaño}'];
             mapping['{is_uncensored}'] = sampleBook.is_uncensored ? 'Sí' : 'No';
             mapping['{traductor}'] = sampleBook.translator || 'Desconocido';
@@ -116,7 +118,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             mapping['{sinopsis}'] = (sampleBook as any).description || (sampleBook as any).summary || (sampleBook as any).sinopsis || mapping['{sinopsis}'];
             mapping['{resumen}'] = (sampleBook as any).summary || (sampleBook as any).description || (sampleBook as any).resumen || mapping['{resumen}'];
             mapping['{version}'] = (sampleBook as any).epub_version || mapping['{version}'];
-            
+
             const pubDate = (sampleBook as any).published_at || '';
             if (pubDate && pubDate.includes('T')) {
                 try {
@@ -128,7 +130,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             } else {
                 mapping['{published_at}'] = pubDate || mapping['{published_at}'];
             }
-            
+
             mapping['{edition}'] = (sampleBook as any).edition || mapping['{edition}'];
             mapping['{color_mode}'] = (sampleBook as any).color_mode || mapping['{color_mode}'];
             mapping['{idioma}'] = (sampleBook as any).language || mapping['{idioma}'];
@@ -137,6 +139,8 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             mapping['{titulo_volumen}'] = (sampleBook as any).title_volumen || sampleBook.title || mapping['{titulo_volumen}'];
             mapping['{author_jap}'] = (sampleBook as any).author_jap || mapping['{author_jap}'];
             mapping['{illustrator_jap}'] = (sampleBook as any).illustrator_jap || mapping['{illustrator_jap}'];
+            mapping['{fecha_actualizacion}'] = (sampleBook as any).updated_at || (sampleBook as any).fecha_modificacion || mapping['{fecha_actualizacion}'];
+            mapping['{descargas_globales}'] = (sampleBook as any).download_count || (sampleBook as any).total_downloads || '0';
 
             const tags = (sampleBook as any).tags || (sampleBook as any).genres || (sampleBook as any).etiquetas;
             if (tags && Array.isArray(tags)) {

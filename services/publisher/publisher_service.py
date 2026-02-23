@@ -504,6 +504,16 @@ class PublisherService:
         options: dict[str, Any] | None = None,
     ) -> bool:
         """Envia una publicación inmediata."""
+        # Enriquecer book_data con metadata adicional para las plantillas
+        from repositories.book_repository import book_repo
+
+        book_hash = book_data.get("book_hash") or book_data.get("hash")
+        if book_hash:
+            if "descargas_globales" not in book_data:
+                book_data["descargas_globales"] = await book_repo.get_total_downloads(book_hash)
+            if "total_downloads" not in book_data:
+                book_data["total_downloads"] = book_data["descargas_globales"]
+
         provider = self.providers.get(platform)
         if not provider:
             logger.error(f"Provider not found for platform: {platform}")

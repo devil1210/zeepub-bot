@@ -96,4 +96,7 @@ export const publisherApi = {
 
     deleteQueueItem: (id: number) =>
         api.rpc('pub_delete_queue_item', { id }),
+
+    restoreTemplates: (platform: string = 'telegram') =>
+        api.rpc('pub_restore_templates', { platform }),
 };
