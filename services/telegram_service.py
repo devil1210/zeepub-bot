@@ -832,9 +832,20 @@ async def enviar_libro_directo(
             msg_parts = [p.strip() for p in msg_parts if p.strip()]
             logger.info(f"Mensaje dividido en {len(msg_parts)} partes")
 
+        # Función para sanitizar HTML para Telegram
+        def sanitize_tg_html(t: str) -> str:
+            if not t:
+                return ""
+            t = re.sub(r"<(/?p|/?div|/?h\d|/?span|/?a[^>]*)>", "\n", t, flags=re.IGNORECASE)
+            t = re.sub(r"<br\s*/?>", "\n", t, flags=re.IGNORECASE)
+            t = re.sub(r"<hr\s*/?>", "\n---\n", t, flags=re.IGNORECASE)
+            t = re.sub(r"\n{3,}", "\n\n", t).strip()
+            return t
+
         # 5. Enviar Portada (Standard)
         if portada_data:
             mensaje_portada = msg_parts[0] if len(msg_parts) > 0 else (formatear_mensaje_portada(meta))
+            mensaje_portada = sanitize_tg_html(mensaje_portada)
             logger.info(f"Enviando portada a {destino}")
             await send_photo_bytes(
                 bot,
@@ -848,6 +859,7 @@ async def enviar_libro_directo(
         else:
             # Si no hay portada, enviar el primer mensaje como texto
             if len(msg_parts) > 0:
+                msg_parts[0] = sanitize_tg_html(msg_parts[0])
                 logger.info(f"Enviando mensaje de portada como texto a {destino}")
                 await bot.send_message(
                     chat_id=destino,
@@ -860,7 +872,7 @@ async def enviar_libro_directo(
         # Se envía solo si no hay custom_caption o si hay al menos 2 partes
         sinopsis_to_send = None
         if len(msg_parts) > 1:
-            sinopsis_to_send = msg_parts[1]
+            sinopsis_to_send = sanitize_tg_html(msg_parts[1])
         elif not custom_caption:
             sinopsis = meta.get("sinopsis") or meta.get("description") or meta.get("summary")
             if sinopsis:
