@@ -1079,12 +1079,11 @@ class ScannerService:
                 cover_dest = os.path.join(COVERS_DIR, cover_filename)
                 cover_paths = extractor.save_cover(cover_dest)
                 if cover_paths:
-                    # Guardar las 4 versiones en la base de datos
-                    base_url = "/api/library/covers/"
-                    book.cover_original = base_url + os.path.basename(cover_paths["original"])
-                    book.cover_high = base_url + os.path.basename(cover_paths["high"])
-                    book.cover_medium = base_url + os.path.basename(cover_paths["medium"])
-                    book.cover_low = base_url + os.path.basename(cover_paths["low"])
+                    # Guardar rutas absolutas en la base de datos
+                    book.cover_original = cover_paths["original"]
+                    book.cover_high = cover_paths["high"]
+                    book.cover_medium = cover_paths["medium"]
+                    book.cover_low = cover_paths["low"]
 
             # session.commit()  # Movido a nivel de batch o fuente
             return outcome
