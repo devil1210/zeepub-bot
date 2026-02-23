@@ -1,6 +1,6 @@
 # SESSION STATE - ZeePub-bot
 
-**Última actualización:** 2026-02-23 04:00 (GMT-3)  
+**Última actualización:** 2026-02-23 04:30 (GMT-3)  
 **Agente Actual:** Antigravity (GLM-5-Free)
 
 ## 📌 Resumen de la Sesión
@@ -17,7 +17,8 @@ Sesión: **Fix del flujo de descarga/publicación en Mini App**
 | `cc382a4a` | **CRÍTICO**: Corregida indentación del bloque CAPTION Y PLANTILLAS |
 | `e346aa75` | Sanitizar HTML para Telegram (remove `<p>`, `<div>`, etc.) |
 | `55e29638` | Usar covers HD (high/original) por defecto |
-| `9edf0c7b` | Formatear fechas como DD-MM-YYYY, sanitizar sinopsis |
+| `566efe23` | Formatear fechas como DD-MM-YYYY, sanitizar sinopsis |
+| `82f09388` | **CRÍTICO**: Corregida indentación del bloque EPUB + restore templates |
 
 ### 🔧 Cambios Principales
 
@@ -34,12 +35,35 @@ Sesión: **Fix del flujo de descarga/publicación en Mini App**
 3. **Templates**
    - `template_engine.py`: sanitiza `<p>`, `<div>`, `<span>` de sinopsis
    - Fechas formateadas como DD-MM-YYYY
-   - Variables: `{published_at}`, `{fecha}`, `{fecha_modificacion}`
-   - **NUEVO**: Templates por defecto actualizadas:
-     - `COVER_TEMPLATE`: mensaje de portada completo
-     - `SYNOPSIS_TEMPLATE`: sinopsis con blockquote
+   - **Templates por defecto actualizadas**:
+     - `COVER_TEMPLATE`: mensaje de portada
+     - `SYNOPSIS_TEMPLATE`: sinopsis con blockquote  
      - `INFO_TEMPLATE`: info del archivo
-   - Variables disponibles: `{serie}`, `{series_spanish}`, `{titulo}`, `{volumen}`, `{slug}`, `{autor}`, `{illustrator}`, `{traductor}`, `{maquetador}`, `{tipo}`, `{genres}`, `{demography}`, `{published_at}`, `{sinopsis}`, `{version}`, `{fecha}`, `{tamaño}`, `{rating_txt}`
+   - **NUEVO**: Botón "Restaurar Templates" (`pub_restore_templates`)
+
+4. **FIXES CRÍTICOS DE INDENTACIÓN**
+   - El bloque `# --- PROCESAR CAPTION Y PLANTILLAS ---` estaba dentro de `if format_type == "fb_*"` (12 espacios vs 8)
+   - El bloque `# 7. Enviar Archivo EPUB` estaba dentro de `if sinopsis_to_send:` (12 espacios vs 8)
+   - Esto causaba que no se enviaran los mensajes correctamente
+
+### 📝 Variables Disponibles en Templates
+```
+{serie}, {series_spanish}, {titulo}, {volumen}, #{slug}
+{autor}, {illustrator}, {traductor}, {maquetador}
+{tipo}, {genres}, {demography}, {published_at}
+{sinopsis}, {version}, {fecha}, {tamaño}, {rating_txt}
+```
+
+### 🚧 Pendientes / Issues Conocidos
+- Verificar que los 3 mensajes se envíen correctamente con templates personalizadas
+- El usuario debe probar el botón "Restaurar Templates"
+
+---
+## 📎 Links Útiles
+- [AGENTS.md](../AGENTS.md) - Reglas del proyecto
+- [MASTER_PLAN.md](MASTER_PLAN.md) - Roadmap general
+- `services/telegram_service.py:820` - Bloque CAPTION Y PLANTILLAS (indentación correcta)
+- `services/telegram_service.py:895` - Bloque EPUB (indentación correcta)
 
 4. **Indentación corregida**
    - El bloque `# --- PROCESAR CAPTION Y PLANTILLAS ---` estaba dentro del `if format_type == "fb_*"` por error
