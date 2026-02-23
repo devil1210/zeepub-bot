@@ -13,7 +13,6 @@ from telegram.ext import ContextTypes
 # from core.state_manager import state_manager (Moved to local scope)
 # from core.session_manager import session_manager (Moved to local scope)
 from config.config_settings import config
-from services.epub_service import extract_cover_from_epub
 from utils.download_limiter import can_download, downloads_left, record_download
 from utils.helpers import (
     escapar_html,
@@ -628,9 +627,13 @@ async def enviar_libro_directo(
                 f"internal_title: {meta.get('internal_title')}, autor: {meta.get('autor')}"
             )
 
-        # 5. Preparar Portada
-        cover_bytes = extract_cover_from_epub(epub_bytes)
-        portada_data = cover_bytes if cover_bytes else (await fetch_bytes(cover_url) if cover_url else None)
+        # 5. Preparar Portada (desde ruta en LocalBook)
+        cover_path = meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium")
+        portada_data = None
+        if cover_path and os.path.exists(cover_path):
+            portada_data = cover_path  # send_doc_bytes acepta rutas
+        elif cover_url:
+            portada_data = await fetch_bytes(cover_url)
 
         # --- LOGICA FACEBOOK ---
         if format_type in ["fb_preview", "fb_direct"]:
@@ -733,11 +736,9 @@ async def enviar_libro_directo(
 
                 fb_cover_url = cover_url
                 if not fb_cover_url and portada_data:
-                    # Si tenemos bytes pero no URL pública, es un problema
+                    # Si tenemos portada local pero no URL pública, es un problema
                     # para la API simple de 'url'.
-                    # Podríamos subir bytes a FB, pero requiere cambiar la lógica de publicación.
                     # Por ahora, si no hay URL pública, avisamos.
-                    # OJO: extract_cover_from_epub devuelve bytes.
                     pass
 
                 if not fb_cover_url or not fb_cover_url.startswith("http"):
@@ -832,12 +833,12 @@ async def enviar_libro_directo(
 
             # Caption final
             final_caption = ""
+            titulo_vol = meta.get("titulo_volumen") or meta.get("titulo") or title
             if len(msg_parts) > 2:
                 final_caption = msg_parts[2]
             elif not final_custom_caption:
                 version = meta.get("epub_version", "2.0")
                 fecha = meta.get("fecha_modificacion", "Desconocida")
-                titulo_vol = meta.get("titulo_volumen") or meta.get("titulo") or title
                 final_caption = (
                     f"📂 <b>{titulo_vol}</b>\n"
                     f"ℹ️ Versión Epub: {version}\n"
@@ -1092,8 +1093,10 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
                 from repositories.series_repository import series_repo
 
                 series_meta = await series_repo.get_by_hash(series_hash)
-                if series_meta and series_meta.description:
-                    sinopsis = series_meta.description
+                if series_meta:
+                    desc = getattr(series_meta, "description", None)
+                    if desc:
+                        sinopsis = str(desc)
             except Exception:
                 sinopsis = None
 
@@ -1188,23 +1191,19 @@ async def _publish_choice_facebook(update, context: ContextTypes.DEFAULT_TYPE, u
         epub_url = pending.get("href")
         st["epub_url"] = epub_url
 
-    # Try to obtain cover bytes from buffer or fetch cover_url from meta
+    # Get cover from LocalBook path
     cover_bytes = None
-    try:
-        if epub_buffer:
-            from services.epub_service import extract_cover_from_epub
+    cover_path = meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium")
+    if cover_path and os.path.exists(cover_path):
+        cover_bytes = cover_path  # send_photo_bytes acepta rutas
 
-            cover_bytes = extract_cover_from_epub(epub_buffer)
-    except Exception:
-        cover_bytes = None
-
-    # If cover not extracted from buffer, try the pending portada or meta portada
+    # If cover not from path, try the pending portada or meta portada URL
     portada_url = pending.get("portada") if pending else meta.get("portada")
     if not cover_bytes and portada_url:
         cover_bytes = await fetch_bytes(portada_url)
 
-    # If we still don't have metadata or buffer, try to fetch EPUB to build meta/cover
-    if (not cover_bytes or not meta) and epub_url:
+    # If we still don't have metadata, try to fetch EPUB to build meta
+    if not meta and epub_url:
         epub_downloaded = await fetch_bytes(epub_url, timeout=60)
         if epub_downloaded:
             st["epub_buffer"] = epub_downloaded
@@ -1214,12 +1213,6 @@ async def _publish_choice_facebook(update, context: ContextTypes.DEFAULT_TYPE, u
 
             meta = await enrich_metadata_from_epub(epub_downloaded, epub_url, meta)
             st["meta_pendiente"] = meta
-
-            if not cover_bytes:
-                try:
-                    cover_bytes = extract_cover_from_epub(epub_downloaded)
-                except Exception:
-                    cover_bytes = None
 
     logger.debug(
         "_publish_choice_facebook: sending cover to origin=%s (thread=%s), have_cover=%s",
@@ -1282,13 +1275,11 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
     # Prepare caption for portada
     mensaje_portada = formatear_mensaje_portada(meta)
 
-    # Extract cover from buffer if present
+    # Get cover from LocalBook path
     cover_bytes = None
-    if epub_buffer:
-        try:
-            cover_bytes = extract_cover_from_epub(epub_buffer)
-        except Exception:
-            cover_bytes = None
+    cover_path = meta.get("cover") or meta.get("cover_low") or meta.get("cover_medium")
+    if cover_path and os.path.exists(cover_path):
+        cover_bytes = cover_path  # send_photo_bytes acepta rutas
 
     portada_data = cover_bytes if cover_bytes else (await fetch_bytes(portada_url, timeout=15) if portada_url else None)
 
@@ -1305,7 +1296,9 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
         cleanup_tmp(portada_data)
 
     # Sinopsis
-    sinopsis = meta.get("sinopsis") or meta.get("description")
+    sinopsis: str | None = meta.get("sinopsis") or meta.get("description")
+    if isinstance(sinopsis, str) and not sinopsis:
+        sinopsis = None
     if not sinopsis:
         series_hash = st.get("series_hash")
         if series_hash:
@@ -1313,13 +1306,15 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
                 from repositories.series_repository import series_repo
 
                 series_meta = await series_repo.get_by_hash(series_hash)
-                if series_meta and series_meta.description:
-                    sinopsis = series_meta.description
+                if series_meta:
+                    desc = getattr(series_meta, "description", None)
+                    if desc:
+                        sinopsis = str(desc)
             except Exception as e:
                 logger.debug("Error fetching sinopsis from DB: %s", e)
 
     if sinopsis:
-        sinopsis_esc = escapar_html(sinopsis)
+        sinopsis_esc = escapar_html(str(sinopsis))
         texto = f"<b>Sinopsis:</b>\n<blockquote>{sinopsis_esc}</blockquote>\n#{generar_slug_from_meta(meta)}"
         try:
             await bot.send_message(
