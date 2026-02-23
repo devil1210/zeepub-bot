@@ -96,9 +96,21 @@ class DeliveryService:
 
         return await provider.deliver_book(target_id, book_data, options)
 
-    # Alias for backward compatibility
-    async def deliver(self, *args, **kwargs):
-        return await self.deliver_book(*args, **kwargs)
+    async def deliver(
+        self,
+        provider_type: str | None = None,
+        target_id: str | int | None = None,
+        book_data: dict[str, Any] | None = None,
+        options: dict[str, Any] | None = None,
+        *,
+        platform: str | None = None,
+    ) -> bool:
+        if platform is not None:
+            provider_type = platform
+        if provider_type is None or target_id is None or book_data is None:
+            logger.error("deliver() missing required arguments")
+            return False
+        return await self.deliver_book(provider_type, target_id, book_data, options)
 
 
 # Singleton instance for easy import
