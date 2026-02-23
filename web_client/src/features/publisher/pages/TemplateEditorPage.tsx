@@ -57,9 +57,10 @@ export const TemplateEditorPage: React.FC = () => {
     const [showResults, setShowResults] = useState(false);
 
     const searchTimeout = useRef<number | ReturnType<typeof setTimeout> | null>(null);
+    const isInitialized = useRef(false);
 
     useEffect(() => {
-        if (!isNew && templates.length > 0) {
+        if (!isNew && templates.length > 0 && !isInitialized.current) {
             const template = templates.find(t => t.id === parseInt(id));
             if (template) {
                 setName(template.name);
@@ -71,6 +72,7 @@ export const TemplateEditorPage: React.FC = () => {
                         savedQuality === 'low' ? 'pequeña' :
                             (savedQuality || 'grande');
                 setCoverQuality(mappedQuality as any);
+                isInitialized.current = true;
             }
         }
     }, [id, isNew, templates]);
@@ -247,7 +249,7 @@ export const TemplateEditorPage: React.FC = () => {
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="Ej: Lanzamientos Diarios"
-                                    className="w-full bg-black/40 border border-white/10 rounded-premium-sm px-4 py-3 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                    className="w-full bg-black/40 border border-white/10 rounded-premium-sm px-4 py-3 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all caret-white"
                                 />
                             </div>
                             <div className="space-y-2">

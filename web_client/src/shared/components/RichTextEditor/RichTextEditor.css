@@ -1,6 +1,9 @@
 .rich-text-editor-container .ProseMirror {
-    outline: none !important;
-    min-height: 15rem;
+    outline: none;
+    min-height: 200px;
+    padding: 1.25rem;
+    color: white;
+    caret-color: white !important;
 }
 
 .rich-text-editor-container .ProseMirror p {

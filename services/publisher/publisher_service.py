@@ -65,7 +65,6 @@ class TelegramPublisherProvider(PublisherProvider):
         """
         from telegram import InlineKeyboardMarkup
 
-        from config.config_settings import config
         from services.telegram_service import send_doc_bytes, send_photo_bytes
         from utils.helpers import (
             escapar_html,
@@ -108,16 +107,17 @@ class TelegramPublisherProvider(PublisherProvider):
         caption_source = options.get("caption")
         msg_parts = []
         if caption_source:
-             msg_parts = re.split(r"<hr\s*/?>|---next---|---", caption_source)
-             msg_parts = [p.strip() for p in msg_parts if p.strip()]
+            msg_parts = re.split(r"<hr\s*/?>|---next---|---", caption_source)
+            msg_parts = [p.strip() for p in msg_parts if p.strip()]
 
         if len(msg_parts) > 0:
             caption = sanitize_tg_html(msg_parts[0])
         else:
-             # Si no hay plantilla en options, usamos la COVER_TEMPLATE por defecto pro procesándola con el engine
-             from utils.template_engine import apply_publication_template
-             caption = apply_publication_template(self.COVER_TEMPLATE, book_data)
-             caption = sanitize_tg_html(caption)
+            # Si no hay plantilla en options, usamos la COVER_TEMPLATE por defecto pro procesándola con el engine
+            from utils.template_engine import apply_publication_template
+
+            caption = apply_publication_template(self.COVER_TEMPLATE, book_data)
+            caption = sanitize_tg_html(caption)
 
         # Selección de calidad de portada
         quality = options.get("cover_quality") or self.COVER_QUALITY
@@ -178,13 +178,14 @@ class TelegramPublisherProvider(PublisherProvider):
         else:
             # Comportamiento por defecto procesado por el engine
             from utils.template_engine import apply_publication_template
+
             # Preparamos la sinopsis escapando HTML
             raw_sinopsis = book_data.get("description") or book_data.get("summary") or book_data.get("sinopsis")
             if raw_sinopsis:
                 sinopsis_data = book_data.copy()
                 sinopsis_data["sinopsis"] = escapar_html(raw_sinopsis)
                 sinopsis_data["slug"] = generar_slug_from_meta(book_data) or ""
-                
+
                 sinopsis = apply_publication_template(self.SYNOPSIS_TEMPLATE, sinopsis_data)
                 if not sinopsis_data["slug"]:
                     sinopsis = sinopsis.replace("\n#", "").strip()
@@ -208,6 +209,7 @@ class TelegramPublisherProvider(PublisherProvider):
         else:
             # Comportamiento por defecto procesado por el engine
             from utils.template_engine import apply_publication_template
+
             info_text = apply_publication_template(self.INFO_TEMPLATE, book_data)
             info_text = sanitize_tg_html(info_text)
 
@@ -559,7 +561,16 @@ class PublisherService:
             status="pending",
             payload=payload,
         )
-        return await self.repo.create(item)
+        result = await self.repo.create(item)
+
+        # Trigger inmediato si es para "ya"
+        if scheduled_for <= datetime.now():
+            import asyncio
+
+            logger.info("⚡ Publicación inmediata detectada. Lanzando procesador de cola...")
+            asyncio.create_task(self.process_queue())
+
+        return result
 
     async def process_queue(self):
         """Procesa los ítems pendientes en la cola."""
