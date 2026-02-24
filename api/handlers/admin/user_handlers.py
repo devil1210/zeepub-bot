@@ -239,10 +239,26 @@ async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dic
         }
 
 
+async def handle_admin_get_recent_audit_logs(data: dict[str, Any], user_data: dict[str, Any]):
+    """Obtiene los logs de auditoría recientes de todo el sistema."""
+    check_staff(user_data)
+    limit = data.get("limit", 100)
+    offset = data.get("offset", 0)
+
+    from services.user_audit_service import UserAuditService
+
+    logs = UserAuditService.get_recent_changes(limit=limit, offset=offset)
+    return {"logs": logs}
+
+
 async def handle_get_user_audit_history(data: dict[str, Any], user_data: dict[str, Any]):
+    """Obtiene el historial de auditoría de un usuario específico."""
     check_staff(user_data)
     target_id = data.get("userId")
-    from repositories.user_repository import user_repo
+    if not target_id:
+        raise HTTPException(status_code=400, detail="Falta userId")
 
-    logs = await user_repo.get_audit_logs(int(target_id) if target_id else None)
+    from services.user_audit_service import UserAuditService
+
+    logs = UserAuditService.get_user_history(str(target_id))
     return {"logs": logs}
