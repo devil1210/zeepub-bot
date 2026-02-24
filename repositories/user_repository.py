@@ -120,7 +120,6 @@ class UserRepository(BaseRepository[User]):
             "telegram_id": user.telegram_id,
             "level_name": user.level_info.name if user.level_info else "free",
             "expires_at": user.expires_at,
-            "nickname": user.nickname,
             "roles": user.roles or [],
             "insignias": user.insignias or [],
             "allow_theme_templates": user.allow_theme_templates,

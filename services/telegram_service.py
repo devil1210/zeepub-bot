@@ -294,8 +294,8 @@ async def publicar_libro(
         thread_id_origen = get_thread_id(update)
         destino = user_state.get("destino") or update.effective_chat.id
         chat_origen = user_state.get("chat_origen") or destino
-        series_id = user_state.get("series_id")
-        volume_id = user_state.get("volume_id")
+        _ = user_state.get("series_id")  # Reserved for future use
+        _ = user_state.get("volume_id")  # Reserved for future use
         user_state["ultima_pagina"] = user_state.get("url", config.BASE_URL)
 
         # Topic resolution for Catalog
@@ -668,9 +668,9 @@ async def enviar_libro_directo(
         )
         portada_data = await resolve_cover_data(cover_path)
         if portada_data:
-            logger.info(f"Portada lista para enviar")
+            logger.info("Portada lista para enviar")
         else:
-            logger.info(f"Sin portada disponible, continuando sin ella")
+            logger.info("Sin portada disponible, continuando sin ella")
 
         if not portada_data and cover_url:
             try:
@@ -1137,7 +1137,7 @@ async def _publish_choice_facebook(update, context: ContextTypes.DEFAULT_TYPE, u
     # If we have a pending_pub_book (set at selection), use it; otherwise rely on meta_pendiente
     pending = st.pop("pending_pub_book", None)
     epub_url = st.get("epub_url", "")
-    epub_buffer = st.get("epub_buffer")
+
     meta = st.get("meta_pendiente", {})
     if pending:
         # populate ephemeral state for this publish flow
@@ -1168,7 +1168,7 @@ async def _publish_choice_facebook(update, context: ContextTypes.DEFAULT_TYPE, u
         epub_downloaded = await fetch_bytes(epub_url, timeout=60)
         if epub_downloaded:
             st["epub_buffer"] = epub_downloaded
-            epub_buffer = epub_downloaded
+
             # Use centralized metadata enrichment
             from services.epub_service import enrich_metadata_from_epub
 
