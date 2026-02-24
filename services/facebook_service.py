@@ -119,7 +119,7 @@ async def _publish_choice_facebook(update, context: ContextTypes.DEFAULT_TYPE, u
     from core.state_manager import state_manager
 
     from utils.http_client import cleanup_tmp, fetch_bytes
-    from services.telegram_service import resolve_cover_data, send_photo_bytes
+    from services.cover_service import resolve_cover_data, send_photo_bytes
 
     st = state_manager.get_user_state(uid)
 

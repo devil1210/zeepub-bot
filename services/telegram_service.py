@@ -1,274 +1,27 @@
 import asyncio
-import io
 import logging
 import os
 import re
 from typing import Any
 
-
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
 # from core.state_manager import state_manager (Moved to local scope)
 # from core.session_manager import session_manager (Moved to local scope)
 from config.config_settings import config
-from utils.download_limiter import can_download, downloads_left, record_download
-
+from utils.download_limiter import can_download, downloads_left
 from utils.http_client import cleanup_tmp, fetch_bytes
 
 logger = logging.getLogger(__name__)
 
-
-async def resolve_cover_data(cover_path: str | None) -> bytes | str | None:
-    """
-    Resuelve la portada desde ruta o URL.
-    - Si es URL de API (/api/...), la descarga desde el servidor local
-    - Si es ruta local absoluta y existe, la usa directamente
-    - Retorna bytes, ruta absoluta, o None
-    """
-    if not cover_path:
-        return None
-
-    # Si es URL de la API o HTTP, descargarla
-    if cover_path.startswith("/api/") or cover_path.startswith("http"):
-        try:
-            # Construir URL completa si es relativa
-            if cover_path.startswith("/api/"):
-                # Usar localhost para peticiones internas (el servidor está en el mismo contenedor)
-                cover_url_full = f"http://localhost:8000{cover_path}"
-            else:
-                cover_url_full = cover_path
-            logger.info(f"Descargando portada desde URL: {cover_url_full}")
-            return await fetch_bytes(cover_url_full)
-        except Exception as e:
-            logger.warning(f"Error descargando portada {cover_path}: {e}")
-            return None
-
-    # Si es ruta local absoluta
-    if os.path.isabs(cover_path) and os.path.exists(cover_path):
-        logger.info(f"Portada encontrada en ruta local: {cover_path}")
-        return cover_path
-
-    logger.warning(f"Portada no encontrada: {cover_path}")
-    return None
-
-
-async def send_photo_bytes(
-    bot,
-    chat_id,
-    caption,
-    data_or_path,
-    filename="cover.jpg",
-    parse_mode=None,
-    message_thread_id=None,
-    reply_markup=None,
-):
-    """Envía imagen desde bytes o ruta de archivo."""
-    if not data_or_path:
-        return None
-    try:
-        if isinstance(data_or_path, bytes | bytearray):
-            bio = io.BytesIO(data_or_path)
-            bio.name = filename
-            bio.seek(0)
-            input_file = InputFile(bio, filename=filename)
-            try:
-                return await bot.send_photo(
-                    chat_id=chat_id,
-                    photo=input_file,
-                    caption=caption,
-                    parse_mode=parse_mode,
-                    message_thread_id=message_thread_id,
-                    reply_markup=reply_markup,
-                )
-            except BadRequest as e:
-                if "Message thread not found" in str(e) and message_thread_id is not None:
-                    # Retry without thread_id (send to General/Main)
-                    bio.seek(0)
-                    return await bot.send_photo(
-                        chat_id=chat_id,
-                        photo=input_file,
-                        caption=caption,
-                        parse_mode=parse_mode,
-                        message_thread_id=None,
-                        reply_markup=reply_markup,
-                    )
-                raise e
-
-        elif isinstance(data_or_path, str) and await asyncio.to_thread(os.path.exists, data_or_path):
-            # Read image file asynchronously into memory (covers are small)
-            try:
-                import aiofiles
-
-                data_bytes = None
-                async with aiofiles.open(data_or_path, "rb") as af:
-                    data_bytes = await af.read()
-                if data_bytes is not None:
-                    bio = io.BytesIO(data_bytes)
-                    bio.name = filename
-                    bio.seek(0)
-                    input_file = InputFile(bio, filename=filename)
-                    try:
-                        return await bot.send_photo(
-                            chat_id=chat_id,
-                            photo=input_file,
-                            caption=caption,
-                            parse_mode=parse_mode,
-                            message_thread_id=message_thread_id,
-                            reply_markup=reply_markup,
-                        )
-                    except BadRequest as e:
-                        if "Message thread not found" in str(e) and message_thread_id is not None:
-                            bio.seek(0)
-                            return await bot.send_photo(
-                                chat_id=chat_id,
-                                photo=input_file,
-                                caption=caption,
-                                parse_mode=parse_mode,
-                                message_thread_id=None,
-                                reply_markup=reply_markup,
-                            )
-                        raise e
-            except Exception:
-                # Fallback to synchronous open if aiofiles fails
-                with open(data_or_path, "rb") as f:
-                    input_file = InputFile(f, filename=filename)
-                    try:
-                        return await bot.send_photo(
-                            chat_id=chat_id,
-                            photo=input_file,
-                            caption=caption,
-                            parse_mode=parse_mode,
-                            message_thread_id=message_thread_id,
-                            reply_markup=reply_markup,
-                        )
-                    except BadRequest as e:
-                        if "Message thread not found" in str(e) and message_thread_id is not None:
-                            f.seek(0)
-                            return await bot.send_photo(
-                                chat_id=chat_id,
-                                photo=input_file,
-                                caption=caption,
-                                parse_mode=parse_mode,
-                                message_thread_id=None,
-                                reply_markup=reply_markup,
-                            )
-                        raise e
-    except Exception as e:
-        logger.debug(f"Error send_photo_bytes: {e}")
-    return None
-
-
-async def send_doc_bytes(
-    bot,
-    chat_id,
-    caption,
-    data_or_path,
-    filename="file.epub",
-    parse_mode=None,
-    message_thread_id=None,
-    reply_markup=None,
-):
-    """Envía documento EPUB desde bytes o ruta de archivo."""
-    if not data_or_path:
-        return None
-    try:
-        if isinstance(data_or_path, bytes | bytearray):
-            bio = io.BytesIO(data_or_path)
-            bio.name = filename
-            bio.seek(0)
-            input_file = InputFile(bio, filename=filename)
-            try:
-                return await bot.send_document(
-                    chat_id=chat_id,
-                    document=input_file,
-                    caption=caption,
-                    parse_mode=parse_mode,
-                    message_thread_id=message_thread_id,
-                    reply_markup=reply_markup,
-                )
-            except BadRequest as e:
-                if "Message thread not found" in str(e) and message_thread_id is not None:
-                    bio.seek(0)
-                    return await bot.send_document(
-                        chat_id=chat_id,
-                        document=input_file,
-                        caption=caption,
-                        parse_mode=parse_mode,
-                        message_thread_id=None,
-                        reply_markup=reply_markup,
-                    )
-                raise e
-        elif isinstance(data_or_path, str) and await asyncio.to_thread(os.path.exists, data_or_path):
-            # Decide whether to load to memory or stream from disk
-            try:
-                size = await asyncio.to_thread(os.path.getsize, data_or_path)
-            except Exception:
-                size = None
-
-            if size is not None and size <= config.MAX_IN_MEMORY_BYTES:
-                # Small file: read async into memory then send
-                try:
-                    import aiofiles
-
-                    async with aiofiles.open(data_or_path, "rb") as af:
-                        data_read = await af.read()
-                    bio = io.BytesIO(data_read)
-                    bio.name = filename
-                    bio.seek(0)
-                    input_file = InputFile(bio, filename=filename)
-                    try:
-                        return await bot.send_document(
-                            chat_id=chat_id,
-                            document=input_file,
-                            caption=caption,
-                            parse_mode=parse_mode,
-                            message_thread_id=message_thread_id,
-                            reply_markup=reply_markup,
-                        )
-                    except BadRequest as e:
-                        if "Message thread not found" in str(e) and message_thread_id is not None:
-                            bio.seek(0)
-                            return await bot.send_document(
-                                chat_id=chat_id,
-                                document=input_file,
-                                caption=caption,
-                                parse_mode=parse_mode,
-                                message_thread_id=None,
-                                reply_markup=reply_markup,
-                            )
-                        raise e
-                except Exception:
-                    pass
-
-            # Large file: open synchronously (cheap) and let telegram lib stream it
-            with open(data_or_path, "rb") as f:
-                input_file = InputFile(f, filename=filename)
-                try:
-                    return await bot.send_document(
-                        chat_id=chat_id,
-                        document=input_file,
-                        caption=caption,
-                        parse_mode=parse_mode,
-                        message_thread_id=message_thread_id,
-                        reply_markup=reply_markup,
-                    )
-                except BadRequest as e:
-                    if "Message thread not found" in str(e) and message_thread_id is not None:
-                        f.seek(0)
-                        return await bot.send_document(
-                            chat_id=chat_id,
-                            document=input_file,
-                            caption=caption,
-                            parse_mode=parse_mode,
-                            message_thread_id=None,
-                            reply_markup=reply_markup,
-                        )
-                    raise e
-    except Exception as e:
-        logger.debug(f"Error send_doc_bytes: {e}")
-    return None
+# Re-export cover/media functions from dedicated module for backward compatibility
+from services.cover_service import (  # noqa: F401, E402
+    resolve_cover_data,
+    send_doc_bytes,
+    send_photo_bytes,
+)
 
 
 async def publicar_libro(
@@ -542,7 +295,6 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
                 logger.error(f"Error finding local book for rating: {e}")
         # -------------------------------------
 
-    from utils.download_limiter import downloads_left
 
     restantes = await downloads_left(uid)
 
@@ -861,134 +613,17 @@ async def enviar_libro_directo(
             else:
                 logger.warning("Auto-delete skipped: No job_queue provided")
 
-        # Registrar en historial
+        # 8. Registrar descarga e historial (Extraído a servicio dedicado)
         if sent_doc:
-            from services.history_service import log_published_book
-
-            file_info = {
-                "file_size": sent_doc.document.file_size,
-                "file_unique_id": sent_doc.document.file_unique_id,
-            }
-            try:
-                log_published_book(
-                    meta=meta,
-                    message_id=sent_doc.message_id,
-                    channel_id=sent_doc.chat.id,
-                    file_info=file_info,
-                )
-            except Exception as e:
-                logger.error(f"Failed to log book history in enviar_libro_directo: {e}")
-
-            # 8. Registrar descarga y notificar
-            await record_download(user_id)
-            logger.info(f"[enviar_libro_directo] Descarga registrada para user {user_id}")
-
-            # Gamificación: Incrementar contador total
-            from services.user_service import increment_download_count
-
-            try:
-                await increment_download_count(user_id)
-                logger.info(f"[enviar_libro_directo] Contador total incrementado para user {user_id}")
-            except Exception as e:
-                logger.error(f"[enviar_libro_directo] Error incrementando contador total: {e}")
-
-            # Registrar en historial de descargas
-            titulo_vol = meta.get("titulo_volumen") or meta.get("title") or meta.get("english_title") or title
-            try:
-                from repositories.download_repository import download_repo
-
-                author = meta.get("autor", "Desconocido")
-
-                # Enrich metadata if needed from title
-                from utils.helpers import parse_metadata_from_title
-
-                title_meta = parse_metadata_from_title(titulo_vol)
-
-                romaji = meta.get("romaji_title") or title_meta.get("romaji")
-                series = meta.get("titulo_serie") or title_meta.get("series")
-                volume = meta.get("series_index") or title_meta.get("volume")
-                clean_title = meta.get("internal_title") or title_meta.get("clean_title")
-                translator = meta.get("traductor") or meta.get("publisher")
-
-                # Generate stable hashes (only if not provided in override)
-                from utils.helpers import generate_book_hash, generate_series_hash
-
-                # CRITICAL: Prioritize hash from library (metadata_override)
-                book_hash = meta.get("book_hash") or meta.get("hash")
-                logger.debug(f"Hash from meta: {book_hash}")
-
-                if not book_hash:
-                    book_hash = generate_book_hash(
-                        series=series,
-                        author=author,
-                        book_type=meta.get("book_type") or meta.get("categoria"),
-                        volume=volume,
-                        translator=translator,
-                        layout_by=meta.get("maquetadores"),
-                        language=meta.get("language"),
-                    )
-                    logger.warning(f"Generated new hash (should use library hash): {book_hash}")
-
-                # ID extraction
-                book_id_raw = meta.get("id") or meta.get("book_id")
-                book_id_numeric = None
-                if isinstance(book_id_raw, str) and book_id_raw.startswith("local_"):
-                    try:
-                        book_id_numeric = int(book_id_raw.replace("local_", ""))
-                    except Exception:
-                        pass
-                elif isinstance(book_id_raw, int):
-                    book_id_numeric = book_id_raw
-                elif isinstance(book_id_raw, str) and book_id_raw.isdigit():
-                    book_id_numeric = int(book_id_raw)
-
-                await download_repo.add_download(
-                    user_id=user_id,
-                    title=titulo_vol,
-                    author=author,
-                    download_url=download_url,
-                    file_size=meta.get("file_size"),
-                    romaji_title=romaji,
-                    series=series,
-                    volume=volume,
-                    translator=translator,
-                    clean_title=clean_title,
-                    book_hash=book_hash,
-                    book_id=book_id_numeric,
-                )
-
-                # Also record in centralized metrics DB
-                from repositories.metrics_repository import metrics_repo
-
-                series_hash = meta.get("series_hash") or (
-                    generate_series_hash(
-                        series=series,
-                        author=author,
-                        book_type=meta.get("book_type") or meta.get("categoria"),
-                    )
-                    if series
-                    else None
-                )
-                await metrics_repo.add_download(
-                    user_id=user_id,
-                    book_hash=book_hash,
-                    series_hash=series_hash,
-                    title=titulo_vol,
-                )
-
-                logger.info(f"[enviar_libro_directo] Historial guardado para user {user_id}: {titulo_vol}")
-            except Exception as e:
-                logger.error(
-                    f"[enviar_libro_directo] Error saving download history for user {user_id}: {e}",
-                    exc_info=True,
-                )
-
-            restantes = await downloads_left(user_id)
-            if restantes != "ilimitadas":
-                await bot.send_message(
-                    chat_id=user_id,
-                    text=f"📥 Te quedan {restantes} descargas disponibles para hoy.",
-                )
+            from services.download_history import register_book_download
+            await register_book_download(
+                bot=bot,
+                user_id=user_id,
+                meta=meta,
+                sent_doc=sent_doc,
+                download_url=download_url,
+                title=title
+            )
 
         # Limpieza
         try:
@@ -1011,8 +646,8 @@ async def enviar_libro_directo(
 
 # Re-export FB functions from dedicated module for backward compatibility
 from services.facebook_service import (  # noqa: F401, E402
-    preparar_post_facebook,
     _publish_choice_facebook,
+    preparar_post_facebook,
     publicar_facebook_action,
 )
 

@@ -75,7 +75,7 @@ class TelegramPublisherProvider(PublisherProvider):
         """
         from telegram import InlineKeyboardMarkup
 
-        from services.telegram_service import send_doc_bytes, send_photo_bytes
+        from services.cover_service import send_doc_bytes, send_photo_bytes
         from utils.helpers import (
             escapar_html,
             generar_slug_from_meta,
