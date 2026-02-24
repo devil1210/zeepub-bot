@@ -25,19 +25,19 @@ class PublisherProvider(ABC):
 class TelegramPublisherProvider(PublisherProvider):
     # Plantillas por defecto para facilitar edición/copia
     COVER_TEMPLATE = (
-        "{serie} ║ {series_spanish} ║ {titulo}"
-        "[?volumen]\nVolumen {volumen}[/?]"
-        "\n#{slug}\n"
-        "[?layout_by]\n<b>Maquetado por:</b> #{layout_by}[/?]"
-        "[?tipo]\n<b>Categoría:</b> {tipo}[/?]"
-        "[?demography]\n<b>Demografía:</b> {demography}[/?]"
-        "[?genres]\n<b>Géneros:</b> {genres}[/?]"
-        "[?autor]\n<b>Autor:</b> {autor}[/?]"
-        "[?illustrator]\n<b>Ilustrador:</b> {illustrator}[/?]"
-        "[?published_at]\n<b>Publicado:</b> {published_at}[/?]"
-        "[?traductor]\n<b>Traducción:</b> {traductor}[/?]"
+        "📚 {serie} ║ {series_spanish} ║ {titulo}"
+        "[?volumen]\n📖 Volumen {volumen}[/?]"
+        "\n#{slug}"
+        "[?layout_by]\n🎨 <b>Maquetado por:</b> #{layout_by}[/?]"
+        "[?tipo]\n🏷️ <b>Categoría:</b> {tipo}[/?]"
+        "[?demography]\n👥 <b>Demografía:</b> {demography}[/?]"
+        "[?genres]\n🎭 <b>Géneros:</b> {genres}[/?]"
+        "[?autor]\n✍️ <b>Autor:</b> {autor}[/?]"
+        "[?illustrator]\n🎨 <b>Ilustrador:</b> {illustrator}[/?]"
+        "[?published_at]\n📅 <b>Publicado:</b> {published_at}[/?]"
+        "[?traductor]\n🌐 <b>Traducción:</b> {traductor}[/?]"
     )
-    SYNOPSIS_TEMPLATE = "<b>Sinopsis:</b>\n<blockquote>{sinopsis}</blockquote>\n#{slug}"
+    SYNOPSIS_TEMPLATE = "📝 <b>Sinopsis:</b>\n<blockquote>{sinopsis}</blockquote>\n#{slug}"
     INFO_TEMPLATE = (
         "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n#{slug}"
     )
@@ -46,17 +46,17 @@ class TelegramPublisherProvider(PublisherProvider):
 
     # Plantilla Facebook (texto plano, sin HTML - FB lo elimina en captions)
     FB_CAPTION_TEMPLATE = (
-        "{serie} ║ {series_spanish} ║ {titulo}"
-        "[?volumen]\nVolumen {volumen}[/?]"
-        "[?layout_by]\nMaquetado por: {layout_by}[/?]"
-        "[?tipo]\nCategoría: {tipo}[/?]"
-        "[?demography]\nDemografía: {demography}[/?]"
-        "[?genres]\nGéneros: {genres}[/?]"
-        "[?autor]\nAutor: {autor}[/?]"
-        "[?illustrator]\nIlustrador: {illustrator}[/?]"
-        "[?published_at]\nPublicado: {published_at}[/?]"
-        "[?traductor]\nTraducción: {traductor}[/?]"
-        "\nSinopsis: {sinopsis}"
+        "📚 {serie} ║ {series_spanish} ║ {titulo}"
+        "[?volumen]\n📖 Volumen {volumen}[/?]"
+        "\n[?layout_by]🎨 Maquetado por: {layout_by}[/?]"
+        "[?tipo]\n🏷️ Categoría: {tipo}[/?]"
+        "[?demography]\n👥 Demografía: {demography}[/?]"
+        "[?genres]\n🎭 Géneros: {genres}[/?]"
+        "[?autor]\n✍️ Autor: {autor}[/?]"
+        "[?illustrator]\n🎨 Ilustrador: {illustrator}[/?]"
+        "[?published_at]\n📅 Publicado: {published_at}[/?]"
+        "[?traductor]\n🌐 Traducción: {traductor}[/?]"
+        "\n📝 Sinopsis: {sinopsis}"
     )
 
     # Calidad de portada por defecto: 'original', 'high', 'medium', 'low'
