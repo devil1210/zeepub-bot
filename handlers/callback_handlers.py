@@ -331,7 +331,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 st["publish_command_origin"] = update.effective_chat.id
                 st["publish_command_thread_id"] = st.get("message_thread_id")
                 st["publish_command_thread_id"] = st.get("message_thread_id")
-                from services.telegram_service import _publish_choice_facebook
+                from services.facebook_service import _publish_choice_facebook
 
                 await _publish_choice_facebook(update, context, uid)
                 return
@@ -402,7 +402,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             st.get("publish_command_origin"),
         )
         if choice == "facebook":
-            from services.telegram_service import _publish_choice_facebook
+            from services.facebook_service import _publish_choice_facebook
 
             await _publish_choice_facebook(update, context, uid)
         elif choice == "telegram":
@@ -635,7 +635,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Facebook handlers
     if data == "preparar_post_fb":
-        from services.telegram_service import preparar_post_facebook
+        from services.facebook_service import preparar_post_facebook
 
         await preparar_post_facebook(update, context, uid)
         try:
@@ -645,7 +645,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if data == "publicar_fb":
-        from services.telegram_service import publicar_facebook_action
+        from services.facebook_service import publicar_facebook_action
 
         await publicar_facebook_action(update, context, uid)
         try:
