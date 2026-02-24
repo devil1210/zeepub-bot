@@ -12,9 +12,9 @@ from api.handlers.helpers import check_staff
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
+from models.download_models import DownloadHistory
 from models.library_models import (
     ArchivedBook,
-    DownloadHistory,
     DuplicateBook,
     LocalBook,
     UploadHistory,
