@@ -583,8 +583,12 @@ class PublisherService:
                             raise Exception(f"Book with hash {item.book_hash} not found")
                         book_data = book.to_dict()
 
-                    # 3. Aplicar plantilla si existe
+                    # 3. Aplicar plantilla y configuración
                     options = {}
+                    # Prioridad: Canal config < Template extra_config
+                    if item.channel.config:
+                        options.update(item.channel.config)
+
                     if item.template:
                         options["caption"] = self._apply_template(item.template.content, book_data)
                         # Añadir configuraciones extra (calidad de portada, etc.)
@@ -638,6 +642,7 @@ class PublisherService:
                     "target_id": c.target_id,
                     "is_favorite": c.is_favorite,
                     "is_active": c.is_active,
+                    "config": c.config or {},
                 }
                 for c in channels
             ],
