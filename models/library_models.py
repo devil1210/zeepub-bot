@@ -349,6 +349,8 @@ class LocalBook(Base):
             "cleanTitle": self.series
             or self.english_title
             or (re.sub(r"\[.*?\]", "", self.title).strip() if self.title else ""),
+            "slug": (self.series_info.slug if self.series_info else None)
+            or (self.series_hash if self.series_hash else None),
         }
 
 

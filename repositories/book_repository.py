@@ -31,7 +31,9 @@ class BookRepository(BaseRepository[LocalBook]):
     async def get_by_hash(self, book_hash: str) -> LocalBook | None:
         """Busca un libro por su hash único."""
         async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).where(LocalBook.book_hash == book_hash)
+            stmt = (
+                select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.book_hash == book_hash)
+            )
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
@@ -136,7 +138,12 @@ class BookRepository(BaseRepository[LocalBook]):
     async def get_recent_books(self, limit: int = 10) -> list[dict[str, Any]]:
         """Obtiene los libros añadidos recientemente."""
         async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).order_by(LocalBook.created_at.desc()).limit(limit)
+            stmt = (
+                select(LocalBook)
+                .options(selectinload(LocalBook.series_info))
+                .order_by(LocalBook.created_at.desc())
+                .limit(limit)
+            )
             result = await session.execute(stmt)
             books = result.scalars().all()
             return [b.to_dict() for b in books]
