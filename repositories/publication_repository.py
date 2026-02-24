@@ -59,14 +59,21 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
             await session.commit()
             return result.rowcount > 0
 
-    async def get_pending_queue(self, limit: int = 50) -> list[PublicationQueue]:
-        """Obtiene las publicaciones pendientes cuya fecha de programación ya pasó."""
-        now = datetime.utcnow()
+    async def get_pending_queue(self, limit: int = 50, lookahead_seconds: int = 10) -> list[PublicationQueue]:
+        """Obtiene las publicaciones pendientes cuya fecha de programación ya pasó o está por pasar."""
+        from datetime import timedelta
+
+        now_plus_lookahead = datetime.utcnow() + timedelta(seconds=lookahead_seconds)
         async with self.db_manager.get_session() as session:
             stmt = (
                 select(PublicationQueue)
                 .options(selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template))
-                .where(and_(PublicationQueue.status == "pending", PublicationQueue.scheduled_for <= now))
+                .where(
+                    and_(
+                        PublicationQueue.status == "pending",
+                        PublicationQueue.scheduled_for <= now_plus_lookahead,
+                    )
+                )
                 .order_by(PublicationQueue.scheduled_for.asc())
                 .limit(limit)
             )

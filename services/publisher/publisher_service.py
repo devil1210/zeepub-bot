@@ -1,9 +1,8 @@
-import asyncio
 import logging
 import os
 import re
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -28,7 +27,7 @@ class TelegramPublisherProvider(PublisherProvider):
     COVER_TEMPLATE = (
         "{serie} ║ {series_spanish} ║ {titulo}"
         "[?volumen]\nVolumen {volumen}[/?]"
-        "\n#{slug}"
+        "\n#{slug}\n"
         "[?layout_by]\n<b>Maquetado por:</b> #{layout_by}[/?]"
         "[?tipo]\n<b>Categoría:</b> {tipo}[/?]"
         "[?demography]\n<b>Demografía:</b> {demography}[/?]"
@@ -550,11 +549,6 @@ class PublisherService:
         )
         result = await self.repo.create(item)
 
-        # Trigger inmediato si es para "ya" (usando UTC para consistencia con DB)
-        if scheduled_for <= datetime.utcnow() + timedelta(hours=1):
-            logger.info(f"⚡ Publicación inmediata detectada ({scheduled_for}). Lanzando procesador de cola...")
-            asyncio.create_task(self.process_queue())
-
         return result
 
     async def process_queue(self):
@@ -565,11 +559,12 @@ class PublisherService:
 
         self._processing = True
         try:
-            pending = await self.repo.get_pending_queue()
+            # Capturar todo lo pendiente o que esté por salir en el próximo minuto
+            pending = await self.repo.get_pending_queue(lookahead_seconds=60)
             if not pending:
                 return
 
-            logger.info(f"Procesando {len(pending)} publicaciones programadas...")
+            logger.info(f"Procesando {len(pending)} publicaciones programadas (lookahead 60s)...")
 
             for item in pending:
                 try:
