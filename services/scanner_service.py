@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 
 from sqlalchemy import text
@@ -213,7 +214,8 @@ class ScannerService:
                 return None
             
             abs_path = os.path.abspath(path)
-            if not os.path.exists(abs_path): return None
+            if not os.path.exists(abs_path):
+                return None
 
             if os.path.isfile(abs_path) and abs_path.lower().endswith(".epub"):
                 res = await EpubScanner.process_book(
@@ -244,7 +246,7 @@ class ScannerService:
             if not books:
                 return {"success": False}
 
-            dirs = {os.path.dirname(b.filepath) for b in books if os.path.exists(os.path.dirname(b.filepath))}
+            dirs = {os.path.dirname(b.filepath) for b in books if b.filepath and os.path.exists(os.path.dirname(b.filepath))}
             results = {"added": 0, "updated": 0, "total_scanned": 0}
 
             for d_path in dirs:
