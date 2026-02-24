@@ -109,7 +109,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         sinopsis_raw = data.get("description") or data.get("sinopsis") or ""
         if sinopsis_raw:
             sinopsis_raw = re.sub(r"<p[^>]*>", "", sinopsis_raw, flags=re.IGNORECASE)
-            sinopsis_raw = re.sub(r"</p>", "", sinopsis_raw, flags=re.IGNORECASE)
+            sinopsis_raw = re.sub(r"</p>", "\n", sinopsis_raw, flags=re.IGNORECASE)
             sinopsis_raw = re.sub(r"<div[^>]*>", "", sinopsis_raw, flags=re.IGNORECASE)
             sinopsis_raw = re.sub(r"</div>", "", sinopsis_raw, flags=re.IGNORECASE)
             sinopsis_raw = re.sub(r"<span[^>]*>", "", sinopsis_raw, flags=re.IGNORECASE)

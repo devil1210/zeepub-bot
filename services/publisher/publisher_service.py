@@ -96,7 +96,8 @@ class TelegramPublisherProvider(PublisherProvider):
                 return ""
             import re
 
-            t = re.sub(r"<(/?p|/?div|/?h\d)>", "\n", t, flags=re.IGNORECASE)
+            t = re.sub(r"<(p|div|h\d)[^>]*>", "", t, flags=re.IGNORECASE)
+            t = re.sub(r"</(p|div|h\d)>", "\n", t, flags=re.IGNORECASE)
             t = re.sub(r"<br\s*/?>", "\n", t, flags=re.IGNORECASE)
 
             t = re.sub(r"<hr\s*/?>", "\n---MSG_SPLIT---\n", t, flags=re.IGNORECASE)
