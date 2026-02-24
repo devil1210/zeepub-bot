@@ -137,4 +137,3 @@ export const SearchBottomNav: React.FC<SearchBottomNavProps> = ({
         </div>
     );
 };
-

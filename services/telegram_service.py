@@ -295,7 +295,6 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
                 logger.error(f"Error finding local book for rating: {e}")
         # -------------------------------------
 
-
     restantes = await downloads_left(uid)
 
     # Mostrar descargas restantes (excepto Premium)
@@ -616,13 +615,9 @@ async def enviar_libro_directo(
         # 8. Registrar descarga e historial (Extraído a servicio dedicado)
         if sent_doc:
             from services.download_history import register_book_download
+
             await register_book_download(
-                bot=bot,
-                user_id=user_id,
-                meta=meta,
-                sent_doc=sent_doc,
-                download_url=download_url,
-                title=title
+                bot=bot, user_id=user_id, meta=meta, sent_doc=sent_doc, download_url=download_url, title=title
             )
 
         # Limpieza

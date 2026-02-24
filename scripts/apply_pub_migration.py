@@ -71,7 +71,7 @@ async def run_migration():
                 payload JSONB,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
-            
+
             -- Asegurar que la columna extra_config existe si la tabla ya existía
             CREATE INDEX IF NOT EXISTS idx_pub_queue_book_hash ON publication_queue(book_hash);
             CREATE INDEX IF NOT EXISTS idx_pub_queue_scheduled_for ON publication_queue(scheduled_for);

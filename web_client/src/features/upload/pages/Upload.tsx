@@ -777,4 +777,3 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
         </div>
     );
 };
-

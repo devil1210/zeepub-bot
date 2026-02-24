@@ -237,10 +237,10 @@ class MaintenancePlugin(BasePlugin):
             async with pg_manager.get_session() as session:
                 res = await session.execute(
                     text("""
-                    SELECT book_hash, COUNT(*) as c 
-                    FROM local_books 
-                    WHERE book_hash IS NOT NULL 
-                    GROUP BY book_hash 
+                    SELECT book_hash, COUNT(*) as c
+                    FROM local_books
+                    WHERE book_hash IS NOT NULL
+                    GROUP BY book_hash
                     HAVING COUNT(*) > 1
                 """)
                 )

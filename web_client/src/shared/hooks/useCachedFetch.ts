@@ -4,7 +4,7 @@ import { api } from '@shared/services/api';
 /**
  * Custom hook for systematic data fetching with Stale-While-Revalidate (SWR).
  * Provides a unified interface for cached requests throughout the app.
- * 
+ *
  * @param key Unique key for the request (e.g., 'books/123')
  * @param fetcher Function that returns the data, defaults to API generic fetcher
  * @param config SWR configuration overrides

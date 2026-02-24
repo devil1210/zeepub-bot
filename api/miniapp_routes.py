@@ -202,6 +202,10 @@ async def handle_bot_request(
             handle_get_download_count,
             handle_get_upload_history,
             handle_get_user_audit_history,
+            handle_observatory_executions,
+            handle_observatory_metrics,
+            handle_observatory_overview,
+            handle_observatory_publications,
             handle_pub_delete_channel,
             handle_pub_delete_queue_item,
             handle_pub_delete_template,
@@ -229,10 +233,6 @@ async def handle_bot_request(
             handle_update_user_setting,
             handle_user_downloads_history,
             handle_user_status,
-            handle_observatory_overview,
-            handle_observatory_executions,
-            handle_observatory_publications,
-            handle_observatory_metrics,
         )
 
         ACTION_HANDLERS = {

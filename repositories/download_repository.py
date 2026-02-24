@@ -122,18 +122,18 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
         try:
             async with pg_manager.get_session() as session:
                 query = text("""
-                    SELECT 
-                        dh.id, 
-                        dh.book_id, 
-                        dh.book_hash, 
-                        dh.title, 
-                        dh.author, 
-                        dh.file_size, 
-                        dh.downloaded_at, 
-                        dh.romaji_title, 
-                        dh.series, 
-                        dh.volume, 
-                        dh.translator, 
+                    SELECT
+                        dh.id,
+                        dh.book_id,
+                        dh.book_hash,
+                        dh.title,
+                        dh.author,
+                        dh.file_size,
+                        dh.downloaded_at,
+                        dh.romaji_title,
+                        dh.series,
+                        dh.volume,
+                        dh.translator,
                         dh.clean_title,
                         lb.cover_medium,
                         lb.cover_low,
@@ -198,7 +198,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                         return True
 
                 query = text("""
-                    SELECT 1 FROM download_history 
+                    SELECT 1 FROM download_history
                     WHERE user_id = :uid AND (title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t)
                     LIMIT 1
                 """)

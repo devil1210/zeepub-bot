@@ -7,6 +7,7 @@ from services.theme_sync_service import theme_sync_service
 
 logger = logging.getLogger(__name__)
 
+
 async def handle_admin_get_themes(data: dict[str, Any], user_data: dict[str, Any]):
     """Retorna la lista de plantillas de temas disponibles."""
     try:
@@ -16,6 +17,7 @@ async def handle_admin_get_themes(data: dict[str, Any], user_data: dict[str, Any
     except Exception as e:
         logger.error(f"Error fetching themes: {e}")
         return {"success": False, "message": str(e)}
+
 
 async def handle_admin_sync_themes(data: dict[str, Any], user_data: dict[str, Any]):
     """Ejecuta sincronización manual de temas."""
@@ -27,6 +29,7 @@ async def handle_admin_sync_themes(data: dict[str, Any], user_data: dict[str, An
         logger.error(f"Error in manual theme sync: {e}")
         return {"success": False, "message": str(e)}
 
+
 async def handle_admin_rename_themes(data: dict[str, Any], user_data: dict[str, Any]):
     """Renombra temas duplicados con nombres únicos usando detección mejorada."""
     check_staff(user_data)
@@ -37,6 +40,7 @@ async def handle_admin_rename_themes(data: dict[str, Any], user_data: dict[str, 
         logger.error(f"Error renaming themes: {e}")
         return {"success": False, "message": str(e)}
 
+
 async def handle_admin_get_theme_sync_logs(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene historial de sincronizaciones de temas."""
     check_staff(user_data)
@@ -46,6 +50,7 @@ async def handle_admin_get_theme_sync_logs(data: dict[str, Any], user_data: dict
     except Exception as e:
         logger.error(f"Error fetching theme sync logs: {e}")
         return {"success": False, "message": str(e)}
+
 
 async def handle_admin_save_theme(data: dict[str, Any], user_data: dict[str, Any]):
     """Guarda o actualiza un tema."""

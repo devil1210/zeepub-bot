@@ -38,12 +38,12 @@ def upgrade():
     # Postgres substring format: substring(string from pattern)
     op.execute(r"""
         INSERT INTO translators_groups (name, siglas)
-        SELECT DISTINCT 
-            publisher, 
+        SELECT DISTINCT
+            publisher,
             substring(filename from '\[(.*?)\]')
         FROM local_books
-        WHERE 
-            publisher IS NOT NULL 
+        WHERE
+            publisher IS NOT NULL
             AND filename ~ '\[.*?\]'
         ON CONFLICT (name, siglas) DO NOTHING
     """)

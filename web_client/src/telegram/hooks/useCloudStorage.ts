@@ -10,7 +10,7 @@ const isCloudStorageAvailable = () => {
 
 /**
  * Hook to use Telegram CloudStorage with localStorage fallback
- * 
+ *
  * @param key - Storage key
  * @param defaultValue - Default value if not found
  * @returns Object with value, saveValue function, and loading state

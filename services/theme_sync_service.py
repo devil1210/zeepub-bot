@@ -479,8 +479,8 @@ class ThemeSyncService:
         async with pg_manager.get_session() as session:
             result = await session.execute(
                 text("""
-                    SELECT * FROM theme_sync_logs 
-                    ORDER BY started_at DESC 
+                    SELECT * FROM theme_sync_logs
+                    ORDER BY started_at DESC
                     LIMIT :limit
                 """),
                 {"limit": limit},

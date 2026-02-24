@@ -1,14 +1,12 @@
 import os
-import sys
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import datetime
 
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
+from sqlalchemy import create_engine, text
 
 load_dotenv()
 
@@ -141,14 +139,14 @@ def render_overview():
 
     with col3:
         today_downloads = fetch_scalar("""
-            SELECT COUNT(*) FROM download_history 
+            SELECT COUNT(*) FROM download_history
             WHERE downloaded_at >= CURRENT_DATE
         """)
         st.metric("⬇️ Descargas Hoy", f"{today_downloads:,}")
 
     with col4:
         pending_pubs = fetch_scalar("""
-            SELECT COUNT(*) FROM publication_queue 
+            SELECT COUNT(*) FROM publication_queue
             WHERE status = 'pending'
         """)
         st.metric("📤 Publicaciones Pendientes", f"{pending_pubs:,}")
@@ -160,7 +158,7 @@ def render_overview():
     with col_left:
         st.markdown("### 📈 Actividad (Últimos 7 días)")
         df_activity = fetch_df("""
-            SELECT 
+            SELECT
                 DATE(downloaded_at) as fecha,
                 COUNT(*) as descargas
             FROM download_history
@@ -191,7 +189,7 @@ def render_overview():
     with col_right:
         st.markdown("### 👥 Distribución de Usuarios")
         df_levels = fetch_df("""
-            SELECT 
+            SELECT
                 COALESCE(ul.name, 'Sin nivel') as nivel,
                 COUNT(u.id) as usuarios
             FROM users u
@@ -227,7 +225,7 @@ def render_executions():
         status_filter = st.selectbox("Estado", ["Todos", "success", "error"], label_visibility="visible")
 
     query = """
-        SELECT 
+        SELECT
             id,
             timestamp,
             func_name,
@@ -307,7 +305,7 @@ def render_publications():
 
         st.markdown("### Últimas Publicaciones")
         df_queue = fetch_df("""
-            SELECT 
+            SELECT
                 pq.id,
                 pq.book_hash,
                 pc.name as canal,
@@ -346,7 +344,7 @@ def render_publications():
 
     with tab2:
         df_channels = fetch_df("""
-            SELECT 
+            SELECT
                 id, name, platform, target_id, is_active, is_favorite, created_at
             FROM publication_channels
             ORDER BY is_favorite DESC, name ASC
@@ -426,7 +424,7 @@ def render_metrics():
         total_downloads = fetch_scalar("SELECT COUNT(*) FROM download_history")
         today_downloads = fetch_scalar("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= CURRENT_DATE")
         week_downloads = fetch_scalar("""
-            SELECT COUNT(*) FROM download_history 
+            SELECT COUNT(*) FROM download_history
             WHERE downloaded_at >= CURRENT_DATE - INTERVAL '7 days'
         """)
 
@@ -439,7 +437,7 @@ def render_metrics():
 
     st.markdown("### 📈 Tendencia de Descargas (30 días)")
     df_trend = fetch_df("""
-        SELECT 
+        SELECT
             DATE(downloaded_at) as fecha,
             COUNT(*) as descargas
         FROM download_history
@@ -476,7 +474,7 @@ def render_metrics():
 
     st.markdown("### 🏆 Top 10 Libros Más Descargados")
     df_top = fetch_df("""
-        SELECT 
+        SELECT
             COALESCE(lb.title, dh.title, 'Desconocido') as titulo,
             COUNT(*) as descargas
         FROM download_history dh

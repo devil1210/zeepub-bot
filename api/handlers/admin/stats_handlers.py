@@ -10,6 +10,7 @@ from models.library_models import LocalBook
 
 logger = logging.getLogger(__name__)
 
+
 async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], request=None):
     """Calcula y devuelve estadísticas globales reales desde PostgreSQL para el Panel Admin."""
     check_staff(user_data)
@@ -56,7 +57,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
             # 4. Revenue Estimation (Real from levels)
             cursor = await session.execute(
                 text("""
-                SELECT ul.price, COUNT(u.telegram_id) 
+                SELECT ul.price, COUNT(u.telegram_id)
                 FROM user_levels ul
                 LEFT JOIN users u ON u.level_id = ul.id
                 GROUP BY ul.id, ul.price
@@ -72,6 +73,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
     start_time = time.time()
     try:
         from api.main import app_state
+
         start_time = app_state.get("start_time", time.time())
     except ImportError:
         pass
@@ -84,6 +86,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
 
     # Active Sessions (via StateManager)
     from core.state_manager import state_manager
+
     active_sessions = len(state_manager.user_state)
 
     # 5. Popular Book (Last 30 days)
@@ -93,7 +96,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
             cursor = await session.execute(
                 text("""
                 SELECT title, clean_title, book_hash, COUNT(*) as dls
-                FROM download_history 
+                FROM download_history
                 WHERE downloaded_at >= NOW() - INTERVAL '30 days'
                 GROUP BY book_hash, title, clean_title
                 ORDER BY dls DESC

@@ -136,4 +136,3 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
         </div>
     );
 };
-

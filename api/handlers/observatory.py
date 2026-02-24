@@ -42,7 +42,7 @@ async def handle_observatory_overview(data: dict[str, Any], user_data: dict[str,
 
             activity = await session.execute(
                 text("""
-                    SELECT 
+                    SELECT
                         DATE(downloaded_at) as fecha,
                         COUNT(*) as descargas
                     FROM download_history
@@ -56,7 +56,7 @@ async def handle_observatory_overview(data: dict[str, Any], user_data: dict[str,
 
             levels = await session.execute(
                 text("""
-                    SELECT 
+                    SELECT
                         COALESCE(ul.name, 'Sin nivel') as nivel,
                         COUNT(u.id) as usuarios
                     FROM users u
@@ -93,7 +93,7 @@ async def handle_observatory_executions(data: dict[str, Any], user_data: dict[st
     try:
         async with pg_manager.get_session() as session:
             query = """
-                SELECT 
+                SELECT
                     id, timestamp, func_name, status, duration, error
                 FROM agent_executions
                 WHERE timestamp >= NOW() - INTERVAL :hours_str
@@ -170,7 +170,7 @@ async def handle_observatory_publications(data: dict[str, Any], user_data: dict[
 
             recent = await session.execute(
                 text("""
-                    SELECT 
+                    SELECT
                         pq.id, pq.book_hash, pc.name as canal, pc.platform,
                         pq.scheduled_for, pq.status, pq.published_at, pq.error_message
                     FROM publication_queue pq
@@ -296,7 +296,7 @@ async def handle_observatory_metrics(data: dict[str, Any], user_data: dict[str, 
 
             trend = await session.execute(
                 text("""
-                    SELECT 
+                    SELECT
                         DATE(downloaded_at) as fecha,
                         COUNT(*) as descargas
                     FROM download_history
@@ -310,7 +310,7 @@ async def handle_observatory_metrics(data: dict[str, Any], user_data: dict[str, 
 
             top = await session.execute(
                 text("""
-                    SELECT 
+                    SELECT
                         COALESCE(lb.title, dh.title, 'Desconocido') as titulo,
                         COUNT(*) as descargas
                     FROM download_history dh

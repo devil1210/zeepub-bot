@@ -99,7 +99,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
 
     const handleSearch = (term: string, scope?: string) => {
         if (setSearchTerm && onNavigate) {
-            // If it's a specific field like translator, maybe add prefix? 
+            // If it's a specific field like translator, maybe add prefix?
             // For now, let's stick to the term as the user expects.
             setSearchTerm(term);
             onNavigate('search');
@@ -156,4 +156,3 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
         />
     );
 };
-

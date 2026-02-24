@@ -1189,4 +1189,3 @@ const StatCard = ({ label, value, icon: Icon, color, bg, delta }: any) => (
         <div className={`absolute -right-4 -bottom-4 w-24 h-24 blur-3xl opacity-10 rounded-full ${bg}`}></div>
     </div>
 );
-

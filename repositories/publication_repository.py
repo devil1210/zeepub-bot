@@ -97,7 +97,7 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
         async with self.db_manager.get_session() as session:
             stmt = select(PublicationChannel)
             if active_only:
-                stmt = stmt.where(PublicationChannel.is_active)
+                stmt = stmt.where(PublicationChannel.is_active.is_(True))
 
             # Ordenar: Favoritos primero, luego alfabético
             stmt = stmt.order_by(PublicationChannel.is_favorite.desc(), PublicationChannel.name.asc())
@@ -171,7 +171,7 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
         """Obtiene la plantilla por defecto para una plataforma."""
         async with self.db_manager.get_session() as session:
             stmt = select(PublicationTemplate).where(
-                and_(PublicationTemplate.platform == platform, PublicationTemplate.is_default == True)
+                and_(PublicationTemplate.platform == platform, PublicationTemplate.is_default.is_(True))
             )
             result = await session.execute(stmt)
             return result.scalar_one_or_none()

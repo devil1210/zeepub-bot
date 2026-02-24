@@ -29,10 +29,6 @@ from .system_handlers import (
     handle_admin_update_system,
 )
 from .theme_handlers import (
-    handle_admin_get_theme_sync_logs,
-    handle_admin_get_themes,
-    handle_admin_rename_themes,
-    handle_admin_save_theme,
     handle_admin_sync_themes,
 )
 from .tier_handlers import (

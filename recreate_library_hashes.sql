@@ -9,7 +9,7 @@
 DROP TABLE IF EXISTS duplicate_books;
 DROP TABLE IF EXISTS local_books CASCADE;
 
--- 3. Recrear tabla local_books (SQLAlchemy la recreará automáticamente al iniciar el bot, 
+-- 3. Recrear tabla local_books (SQLAlchemy la recreará automáticamente al iniciar el bot,
 -- pero aquí tienes la definición manual para asegurar los índices)
 CREATE TABLE local_books (
     id SERIAL PRIMARY KEY,

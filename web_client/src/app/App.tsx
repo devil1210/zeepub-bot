@@ -86,7 +86,7 @@ const TelegramNavigationHandler: React.FC = () => {
       // Check internal stack length
       if (navState.historyStack.length > 1) {
         navigate(-1);
-        // popHistory is handled by the HistoryTracker via POP event, 
+        // popHistory is handled by the HistoryTracker via POP event,
         // but if we trigger it programmatically, we should ensure consistency.
         // Actually, let HistoryTracker handle state updates based on location changes.
       } else {
@@ -95,7 +95,7 @@ const TelegramNavigationHandler: React.FC = () => {
           navigate('/');
         } else {
           // Close app? Or do nothing?
-          // webApp.close(); 
+          // webApp.close();
         }
       }
     };
@@ -134,9 +134,9 @@ const HistoryTracker: React.FC = () => {
     } else if (navType === NavigationType.Pop) {
       popHistory();
     } else if (navType === NavigationType.Replace) {
-      // Replace: usually swaps the current top. 
+      // Replace: usually swaps the current top.
       // We'll simplisticly pop then push, or just do nothing if it's strictly replacing content.
-      // For now, let's treat it as a no-op on stack size, but update top? 
+      // For now, let's treat it as a no-op on stack size, but update top?
       // Simply: do nothing on stack size, assume same depth.
     }
   }, [location.pathname, navType]);
@@ -233,7 +233,7 @@ const UniversalDetailWrapper = () => {
   const onNavigate = useLegacyNavigation();
   const { pathname } = useLocation();
 
-  // Extract ID: 
+  // Extract ID:
   // /book/ID -> parts[2]
   // /series/ID -> parts[2]
   // /read/SID/VID -> parts[3] (prefer volume ID for fetching)

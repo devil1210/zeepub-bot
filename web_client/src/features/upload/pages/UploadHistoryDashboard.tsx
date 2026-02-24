@@ -147,4 +147,3 @@ export const UploadHistoryDashboard: React.FC = () => {
         </div>
     );
 };
-

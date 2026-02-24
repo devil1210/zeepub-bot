@@ -33,7 +33,7 @@ jobs:
           VERSION="${{ github.ref_name }}"
           # Extract version without 'v' prefix
           VERSION_NUM="${VERSION#v}"
-          
+
           # Extract changelog section for this version
           if grep -q "## \[${VERSION_NUM}\]" CHANGELOG.md; then
             # Extract from version heading to next version heading or end
@@ -53,9 +53,9 @@ jobs:
           name: Release ${{ github.ref_name }}
           body: |
             ${{ steps.changelog.outputs.notes }}
-            
+
             ---
-            
+
             ## Cambios Automáticos
             ${{ steps.changelog.outputs.has_notes == 'false' && 'Ver CHANGELOG.md para más detalles.' || '' }}
           generate_release_notes: ${{ steps.changelog.outputs.has_notes == 'false' }}

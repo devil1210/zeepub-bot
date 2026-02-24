@@ -128,13 +128,13 @@ export const ObservatoryPage: React.FC = () => {
                                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                                 <XAxis dataKey="date" stroke="#6b7280" fontSize={10} />
                                 <YAxis stroke="#6b7280" fontSize={10} />
-                                <Tooltip 
-                                    contentStyle={{ 
-                                        backgroundColor: 'rgba(15, 23, 42, 0.9)', 
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
                                         border: '1px solid rgba(255,255,255,0.1)',
                                         borderRadius: '8px',
                                         color: '#fff'
-                                    }} 
+                                    }}
                                 />
                                 <Area type="monotone" dataKey="downloads" stroke="#6366f1" fillOpacity={1} fill="url(#colorDownloads)" />
                             </AreaChart>
@@ -164,13 +164,13 @@ export const ObservatoryPage: React.FC = () => {
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip 
-                                    contentStyle={{ 
-                                        backgroundColor: 'rgba(15, 23, 42, 0.9)', 
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
                                         border: '1px solid rgba(255,255,255,0.1)',
                                         borderRadius: '8px',
                                         color: '#fff'
-                                    }} 
+                                    }}
                                 />
                             </PieChart>
                         </ResponsiveContainer>
@@ -325,13 +325,13 @@ export const ObservatoryPage: React.FC = () => {
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                             <XAxis type="number" stroke="#6b7280" fontSize={10} />
                             <YAxis dataKey="title" type="category" stroke="#6b7280" fontSize={10} width={120} />
-                            <Tooltip 
-                                contentStyle={{ 
-                                    backgroundColor: 'rgba(15, 23, 42, 0.9)', 
+                            <Tooltip
+                                contentStyle={{
+                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     borderRadius: '8px',
                                     color: '#fff'
-                                }} 
+                                }}
                             />
                             <Bar dataKey="downloads" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
                         </BarChart>

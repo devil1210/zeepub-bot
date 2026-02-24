@@ -12,6 +12,7 @@ from utils.library_db import COVERS_DIR
 
 logger = logging.getLogger(__name__)
 
+
 class EpubScanner:
     """
     Lógica especializada en procesar archivos EPUB individuales,
@@ -88,6 +89,7 @@ class EpubScanner:
         Busca metadatos adicionales usando Google Books API.
         """
         import httpx
+
         try:
             if not book.isbn:
                 return False
@@ -138,13 +140,13 @@ class EpubScanner:
 
     @classmethod
     async def process_book(
-        cls, 
-        filepath: str, 
-        source: Any, 
-        session: Any, 
+        cls,
+        filepath: str,
+        source: Any,
+        session: Any,
         force_scan: bool = False,
         series_provider: Any = None,  # Para desacoplar de series_scanner
-        translator_provider: Any = None # Para desacoplar de library_scanner
+        translator_provider: Any = None,  # Para desacoplar de library_scanner
     ) -> str | bool:
         """
         Procesa un archivo individual.
@@ -163,6 +165,7 @@ class EpubScanner:
             missing_covers = False
             if book and book.cover_low:
                 from utils.library_db import DB_DIR
+
                 relative_path = book.cover_low.replace("/api/library/covers/", "")
                 local_cover_path = os.path.join(DB_DIR, "covers", relative_path)
                 if not os.path.exists(local_cover_path):
@@ -198,6 +201,7 @@ class EpubScanner:
                 return False
 
             from utils.helpers import process_book_identity_comprehensive
+
             identity = process_book_identity_comprehensive(filepath)
             if not identity:
                 return False
@@ -234,7 +238,15 @@ class EpubScanner:
             classified_demographics = []
             final_genres = []
             known_demographics = [
-                "shounen", "seinen", "shoujo", "josei", "kodomo", "seijin", "adultos", "mature", "maduro"
+                "shounen",
+                "seinen",
+                "shoujo",
+                "josei",
+                "kodomo",
+                "seijin",
+                "adultos",
+                "mature",
+                "maduro",
             ]
             for tag in raw_tags:
                 t_lower = tag.lower().strip()
@@ -275,10 +287,14 @@ class EpubScanner:
 
                 if existing_same_file:
                     if existing_same_file.book_hash != target_book_hash:
-                        hash_conflict = session.query(LocalBook).filter(
-                            LocalBook.book_hash == target_book_hash,
-                            LocalBook.id != existing_same_file.id,
-                        ).first()
+                        hash_conflict = (
+                            session.query(LocalBook)
+                            .filter(
+                                LocalBook.book_hash == target_book_hash,
+                                LocalBook.id != existing_same_file.id,
+                            )
+                            .first()
+                        )
 
                         if hash_conflict:
                             logger.warning(f"📕 Duplicado detectado: {book.title}")
@@ -309,7 +325,9 @@ class EpubScanner:
 
                     outcome = "updated"
                 else:
-                    existing_with_same_hash = session.query(LocalBook).filter(LocalBook.book_hash == target_book_hash).first()
+                    existing_with_same_hash = (
+                        session.query(LocalBook).filter(LocalBook.book_hash == target_book_hash).first()
+                    )
 
                     if existing_with_same_hash:
                         if not os.path.exists(existing_with_same_hash.filepath):

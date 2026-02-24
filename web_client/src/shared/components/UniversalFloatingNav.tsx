@@ -70,7 +70,7 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             const onBack = () => {
                 webApp.HapticFeedback.impactOccurred('light');
                 handleBack();
-                // If we are at root of a non-main context (like entering 'admin' directly), 
+                // If we are at root of a non-main context (like entering 'admin' directly),
                 // handleBack might need to know where to go.
                 // But usually handleBack in context simply pops history or goes home.
             };

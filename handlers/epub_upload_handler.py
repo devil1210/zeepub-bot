@@ -713,10 +713,10 @@ class EPUBUploader:
             preview_text += f"\n👥 **Demografía:** {', '.join(metadata.get('demography', []))}"
 
         preview_text += f"""
-        
+
         📝 **Descripción:**
         {metadata.get("description", "Sin descripción")[:400]}{"..." if len(metadata.get("description", "")) > 400 else ""}
-        
+
         📁 **Ruta Sugerida:**
         `{metadata.get("suggested_path", "N/A")}`"""
 

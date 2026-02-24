@@ -12,9 +12,9 @@ try:
 
     stale_series = session.execute(
         text("""
-        SELECT sm.series_name, sm.book_count 
-        FROM series_metadata sm 
-        LEFT JOIN local_books lb ON sm.series_hash = lb.series_hash 
+        SELECT sm.series_name, sm.book_count
+        FROM series_metadata sm
+        LEFT JOIN local_books lb ON sm.series_hash = lb.series_hash
         WHERE lb.id IS NULL AND sm.book_count > 0
     """)
     ).fetchall()

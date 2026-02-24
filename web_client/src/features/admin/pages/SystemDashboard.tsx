@@ -615,4 +615,3 @@ export const SystemDashboard: React.FC = () => {
         </div>
     );
 };
-

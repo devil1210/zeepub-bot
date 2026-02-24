@@ -683,4 +683,3 @@ export const InfrastructureDashboard: React.FC = () => {
         </div>
     );
 };
-

@@ -312,14 +312,14 @@ class UserRepository(BaseRepository[User]):
                     await session.execute(
                         text("""
                         INSERT INTO user_levels (
-                            id, name, priority, color, price, daily_downloads, 
-                            can_download, can_read, has_mini_app_access, 
-                            has_library_access, can_request_books, can_upload_epub, 
+                            id, name, priority, color, price, daily_downloads,
+                            can_download, can_read, has_mini_app_access,
+                            has_library_access, can_request_books, can_upload_epub,
                             early_access, custom_themes, allow_theme_templates, show_recommendations
                         ) VALUES (
-                            :id, :name, :priority, :color, :price, :dailyDownloads, 
-                            :canDownload, :canRead, :hasAccess, 
-                            :has_library_access, :can_request_books, :canUploadEpub, 
+                            :id, :name, :priority, :color, :price, :dailyDownloads,
+                            :canDownload, :canRead, :hasAccess,
+                            :has_library_access, :can_request_books, :canUploadEpub,
                             :earlyAccess, :customThemes, :allowThemeTemplates, :show_recommendations
                         )
                     """),

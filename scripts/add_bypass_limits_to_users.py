@@ -19,8 +19,8 @@ async def run_migration():
             logger.info("Adding bypass_limits column to users table...")
             # Check if column exists first
             check_sql = text("""
-                SELECT column_name 
-                FROM information_schema.columns 
+                SELECT column_name
+                FROM information_schema.columns
                 WHERE table_name='users' AND column_name='bypass_limits';
             """)
             res = await session.execute(check_sql)

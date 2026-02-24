@@ -9,6 +9,7 @@ from utils.helpers import generar_slug_from_meta
 
 logger = logging.getLogger(__name__)
 
+
 class SeriesScanner:
     """
     Lógica especializada en la gestión de metadatos de series,
@@ -165,6 +166,7 @@ class SeriesScanner:
         Busca series candidatas y genera propuestas de metadatos vía IA.
         """
         from services.settings_service import get_setting
+
         if get_setting("enable_background_ai_scan", "false").lower() != "true":
             return
 
@@ -203,7 +205,7 @@ class SeriesScanner:
                     current_s = session.query(SeriesMetadata).filter_by(series_hash=s_hash).first()
                     current_name = current_s.series_name if current_s else "Serie Desconocida"
                     series_books = session.query(LocalBook).filter_by(series_hash=s_hash).all()
-                    
+
                     if series_books:
                         try:
                             proposal = await AIService.analyze_series_for_updates(

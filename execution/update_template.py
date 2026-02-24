@@ -11,7 +11,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import text
 
-
 TEMPLATE_CONTENT = """{serie} ║ {series_spanish} ║ {titulo}
 [?volumen]Volumen {volumen}[/?]
 #{slug}
@@ -53,8 +52,8 @@ async def main():
         if existing:
             await session.execute(
                 text("""
-                    UPDATE publication_templates 
-                    SET content = :content 
+                    UPDATE publication_templates
+                    SET content = :content
                     WHERE id = :id
                 """),
                 {"content": TEMPLATE_CONTENT, "id": existing[0]},

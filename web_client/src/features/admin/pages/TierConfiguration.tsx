@@ -591,4 +591,3 @@ export const TierConfiguration: React.FC<TierConfigurationProps> = ({
         </>
     );
 };
-

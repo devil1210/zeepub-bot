@@ -246,10 +246,10 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
                     .html-preview-content u { text-decoration: underline; }
                     .html-preview-content s, .html-preview-content del { text-decoration: line-through; }
                     .html-preview-content a { color: #53a6e4; text-decoration: underline; }
-                    .html-preview-content hr { 
-                        border: none; 
-                        border-top: 1px solid rgba(255,255,255,0.1); 
-                        margin: 8px 0; 
+                    .html-preview-content hr {
+                        border: none;
+                        border-top: 1px solid rgba(255,255,255,0.1);
+                        margin: 8px 0;
                     }
                 `}</style>
 

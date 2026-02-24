@@ -72,6 +72,12 @@ from api.handlers.downloads import (
     handle_user_downloads_history,
 )
 from api.handlers.helpers import check_admin, check_staff
+from api.handlers.observatory import (
+    handle_observatory_executions,
+    handle_observatory_metrics,
+    handle_observatory_overview,
+    handle_observatory_publications,
+)
 from api.handlers.publisher import (
     handle_pub_delete_channel,
     handle_pub_delete_queue_item,
@@ -95,12 +101,6 @@ from api.handlers.settings import (
     handle_update_user_setting,
 )
 from api.handlers.stars import handle_create_stars_invoice
-from api.handlers.observatory import (
-    handle_observatory_executions,
-    handle_observatory_metrics,
-    handle_observatory_overview,
-    handle_observatory_publications,
-)
 from api.handlers.users import (
     handle_bot_info,
     handle_feedback,

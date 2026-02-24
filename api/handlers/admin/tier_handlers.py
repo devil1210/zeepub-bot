@@ -12,12 +12,14 @@ from services.tier_service import tier_service
 
 logger = logging.getLogger(__name__)
 
+
 async def handle_admin_get_tiers(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene todos los niveles y su configuración."""
     check_staff(user_data)
     levels = await tier_service.get_all_tiers()
     logger.info(f"ADMIN: handle_admin_get_tiers found {len(levels)} levels")
     return {"success": True, "levels": levels, "tiers": levels}
+
 
 async def handle_admin_save_tier(data: dict[str, Any], user_data: dict[str, Any]):
     """Guarda cambios en un nivel."""
@@ -27,6 +29,7 @@ async def handle_admin_save_tier(data: dict[str, Any], user_data: dict[str, Any]
         raise HTTPException(status_code=400, detail="Falta level_id")
     await tier_service.update_tier(int(level_id), data)
     return {"success": True}
+
 
 async def handle_admin_get_tier_config(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene la configuración completa de un nivel/tier."""
@@ -45,9 +48,15 @@ async def handle_admin_get_tier_config(data: dict[str, Any], user_data: dict[str
         global_raw = get_setting("ui_defaults_global", "{}")
         g = json.loads(global_raw)
         global_config = {
-            "id": "global", "name": "Global", "icon": "globe", "color": "#ffffff",
-            "dailyDownloads": -1, "maxConcurrent": 10, "priorityRequests": True,
-            "earlyAccess": True, "customThemes": True,
+            "id": "global",
+            "name": "Global",
+            "icon": "globe",
+            "color": "#ffffff",
+            "dailyDownloads": -1,
+            "maxConcurrent": 10,
+            "priorityRequests": True,
+            "earlyAccess": True,
+            "customThemes": True,
             "primaryColor": g.get("primaryColor", "#2b6cee"),
             "glassOpacity": g.get("glassOpacity", 0.6),
             "theme": g.get("theme", "dark"),
@@ -83,6 +92,7 @@ async def handle_admin_get_tier_config(data: dict[str, Any], user_data: dict[str
 
     return {"success": True, "config": tier, "tier": tier}
 
+
 async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[str, Any]):
     """Guarda la configuración completa de un nivel/tier."""
     check_staff(user_data)
@@ -94,15 +104,25 @@ async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[st
     if is_global:
         ui_settings = {}
         field_mapping = {
-            "primaryColor": "primaryColor", "glassOpacity": "glassOpacity",
-            "navOpacity": "navOpacity", "glassBlur": "glassBlur", "coverWidth": "coverWidth",
-            "showRecommendations": "showRecommendations", "theme": "theme",
-            "fontSize": "fontSize", "accentOpacity": "accentOpacity",
-            "canDownload": "canDownload", "canRead": "canRead",
-            "hasLibraryAccess": "hasLibraryAccess", "canRequestBooks": "canRequestBooks",
-            "bannerContentOffset": "bannerContentOffset", "backgroundColor": "backgroundColor",
-            "cardColor": "cardColor", "forceSettings": "forceSettings",
-            "cardGlowIntensity": "cardGlowIntensity", "allowThemeTemplates": "allowThemeTemplates",
+            "primaryColor": "primaryColor",
+            "glassOpacity": "glassOpacity",
+            "navOpacity": "navOpacity",
+            "glassBlur": "glassBlur",
+            "coverWidth": "coverWidth",
+            "showRecommendations": "showRecommendations",
+            "theme": "theme",
+            "fontSize": "fontSize",
+            "accentOpacity": "accentOpacity",
+            "canDownload": "canDownload",
+            "canRead": "canRead",
+            "hasLibraryAccess": "hasLibraryAccess",
+            "canRequestBooks": "canRequestBooks",
+            "bannerContentOffset": "bannerContentOffset",
+            "backgroundColor": "backgroundColor",
+            "cardColor": "cardColor",
+            "forceSettings": "forceSettings",
+            "cardGlowIntensity": "cardGlowIntensity",
+            "allowThemeTemplates": "allowThemeTemplates",
         }
         for frontend_key, setting_key in field_mapping.items():
             if frontend_key in data:
@@ -132,20 +152,36 @@ async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[st
 
     update_data = {}
     field_mapping = {
-        "name": "name", "icon": "icon", "color": "color",
-        "dailyDownloads": "daily_downloads", "maxConcurrent": "max_concurrent",
-        "priorityRequests": "priority_requests", "earlyAccess": "early_access",
-        "customThemes": "custom_themes", "primaryColor": "ui_primary_color",
-        "glassOpacity": "panel_transparency", "theme": "ui_theme", "fontSize": "ui_font_size",
-        "glassBlur": "ui_glass_blur", "coverWidth": "ui_cover_width",
-        "navOpacity": "ui_nav_opacity", "accentOpacity": "ui_accent_opacity",
-        "showRecommendations": "show_recommendations", "canDownload": "can_download",
-        "canRead": "can_read", "canUploadEpub": "can_upload_epub",
-        "hasLibraryAccess": "has_library_access", "canRequestBooks": "can_request_books",
-        "bannerContentOffset": "banner_content_offset", "backgroundColor": "background_color",
-        "cardColor": "card_color", "forceSettings": "force_settings",
-        "cardGlowIntensity": "ui_glow_intensity", "ui_exported_settings": "ui_exported_settings",
-        "allowThemeTemplates": "allow_theme_templates", "defaultThemeId": "default_theme_id",
+        "name": "name",
+        "icon": "icon",
+        "color": "color",
+        "dailyDownloads": "daily_downloads",
+        "maxConcurrent": "max_concurrent",
+        "priorityRequests": "priority_requests",
+        "earlyAccess": "early_access",
+        "customThemes": "custom_themes",
+        "primaryColor": "ui_primary_color",
+        "glassOpacity": "panel_transparency",
+        "theme": "ui_theme",
+        "fontSize": "ui_font_size",
+        "glassBlur": "ui_glass_blur",
+        "coverWidth": "ui_cover_width",
+        "navOpacity": "ui_nav_opacity",
+        "accentOpacity": "ui_accent_opacity",
+        "showRecommendations": "show_recommendations",
+        "canDownload": "can_download",
+        "canRead": "can_read",
+        "canUploadEpub": "can_upload_epub",
+        "hasLibraryAccess": "has_library_access",
+        "canRequestBooks": "can_request_books",
+        "bannerContentOffset": "banner_content_offset",
+        "backgroundColor": "background_color",
+        "cardColor": "card_color",
+        "forceSettings": "force_settings",
+        "cardGlowIntensity": "ui_glow_intensity",
+        "ui_exported_settings": "ui_exported_settings",
+        "allowThemeTemplates": "allow_theme_templates",
+        "defaultThemeId": "default_theme_id",
     }
     for frontend_key, db_key in field_mapping.items():
         if frontend_key in data and data[frontend_key] is not None:
@@ -164,6 +200,7 @@ async def handle_admin_save_tier_config(data: dict[str, Any], user_data: dict[st
 
     await tier_service.update_tier(tier_id, data)
     from core.optimized_sync_engine import optimized_sync_engine
+
     await optimized_sync_engine.force_sync_all()
 
     return {"success": True, "tierId": tier_id}

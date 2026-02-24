@@ -109,9 +109,9 @@ class MetricsRepository:
         try:
             async with pg_manager.get_session() as session:
                 query = text("""
-                    INSERT INTO user_ratings (user_id, book_hash, rating, rated_at) 
+                    INSERT INTO user_ratings (user_id, book_hash, rating, rated_at)
                     VALUES (:user_id, :book_hash, :rating, CURRENT_TIMESTAMP)
-                    ON CONFLICT(user_id, book_hash) DO UPDATE SET 
+                    ON CONFLICT(user_id, book_hash) DO UPDATE SET
                         rating = EXCLUDED.rating,
                         rated_at = CURRENT_TIMESTAMP
                 """)

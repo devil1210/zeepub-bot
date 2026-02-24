@@ -601,4 +601,3 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     </div>
   );
 };
-

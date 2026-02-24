@@ -15,6 +15,7 @@ from models.library_models import (
 
 logger = logging.getLogger(__name__)
 
+
 class LibraryScanner:
     """
     Módulo encargado del mantenimiento global de la librería:
@@ -29,7 +30,7 @@ class LibraryScanner:
         import re
 
         from sqlalchemy import func
-        
+
         translator = book.translator
         if not translator or translator == "Unknown":
             return
@@ -43,9 +44,9 @@ class LibraryScanner:
                     siglas = last_tag
 
         try:
-            existing = session.query(TranslatorsGroup).filter(
-                func.lower(TranslatorsGroup.name) == translator.lower()
-            ).first()
+            existing = (
+                session.query(TranslatorsGroup).filter(func.lower(TranslatorsGroup.name) == translator.lower()).first()
+            )
             if existing:
                 if siglas and (not existing.siglas or len(siglas) < len(existing.siglas or "")):
                     existing.siglas = siglas
@@ -62,7 +63,7 @@ class LibraryScanner:
         """
         archived_count = 0
         removed_count = 0
-        
+
         try:
             db_books = session.query(LocalBook).filter(LocalBook.source_id == source.id).all()
             db_paths = {b.filepath for b in db_books}
@@ -101,7 +102,7 @@ class LibraryScanner:
 
                     session.delete(b)
                     removed_count += 1
-            
+
             session.commit()
             return archived_count, removed_count
         except Exception as e:
@@ -122,7 +123,7 @@ class LibraryScanner:
             return 0, 0
 
         logger.warning(f"⚠️ {len(orphans)} libros huérfanos detectados.")
-        
+
         count_moved = 0
         for orphan in orphans:
             exists = session.query(DuplicateBook).filter_by(duplicate_filepath=orphan.filepath).first()
@@ -137,7 +138,7 @@ class LibraryScanner:
                 session.add(dup)
                 count_moved += 1
             session.delete(orphan)
-        
+
         session.commit()
         return len(orphans), count_moved
 
@@ -147,7 +148,7 @@ class LibraryScanner:
         Verificación manual/profunda de integridad física de toda la librería.
         """
         logger.info("Iniciando auditoría de integridad física...")
-        
+
         from models.download_models import DownloadHistory
         from models.library_models import UserDownload, UserRating
 
@@ -174,7 +175,7 @@ class LibraryScanner:
                     reason="physically_missing_detected",
                 )
                 session.add(archived)
-                
+
                 session.query(DownloadHistory).filter_by(book_id=book.id).update({DownloadHistory.book_id: None})
                 session.query(UserDownload).filter_by(book_id=book.id).update({UserDownload.book_id: None})
                 session.query(UserRating).filter_by(book_id=book.id).update({UserRating.book_id: None})
@@ -183,12 +184,14 @@ class LibraryScanner:
                 deleted_books += 1
 
         session.commit()
-        
+
         # Limpieza de series vacías
-        empty_series = session.query(SeriesMetadata).filter(
-            ~session.query(LocalBook).filter(LocalBook.series_hash == SeriesMetadata.series_hash).exists()
-        ).all()
-        
+        empty_series = (
+            session.query(SeriesMetadata)
+            .filter(~session.query(LocalBook).filter(LocalBook.series_hash == SeriesMetadata.series_hash).exists())
+            .all()
+        )
+
         for s in empty_series:
             archived_s = ArchivedSeries(
                 series_name=s.series_name,
@@ -205,7 +208,7 @@ class LibraryScanner:
             session.add(archived_s)
             session.delete(s)
             deleted_series += 1
-            
+
         session.commit()
 
         log = LibraryCleanupLog(

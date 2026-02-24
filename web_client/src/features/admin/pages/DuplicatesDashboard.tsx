@@ -727,4 +727,3 @@ export const DuplicatesDashboard: React.FC = () => {
         </div>
     );
 };
-

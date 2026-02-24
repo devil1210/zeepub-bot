@@ -95,7 +95,7 @@ class AIService:
            - Si el 'publisher' coincide con uno de los nombres en la 'LISTA DE GRUPOS' proporcionada, DEBES usar la sigla correspondiente de esa lista.
            - Si no hay coincidencia, sigue estas reglas:
              - Longitud Máxima: Las siglas NO deben superar los 6 caracteres.
-             - Unicidad: Cada grupo debe tener una sigla única. 
+             - Unicidad: Cada grupo debe tener una sigla única.
              - Claridad Identificable: Si hay conflicto (mismas siglas), no uses números. Expande la sigla usando letras del nombre para que sea descriptiva (ej. Dark Translations = DARKT, Dragoon Translations = DRAGT).
              - Nombres como Siglas: Si el nombre del grupo tiene una sola palabra de 6 letras o menos (ej. "MiraiK"), la sigla puede ser el mismo nombre.
              - Consistencia: Si el nombre del grupo es casi idéntico (variaciones de espacios o mayúsculas), asígnales la misma sigla.
@@ -107,7 +107,7 @@ class AIService:
              - De lo contrario, no pongas nada delante.
            - Si el volumen es 0.0, usa "Volumen Único" para la parte de {{Volumen}}.
            - Si el volumen es > 0, usa "V{{XX}}" (ej: V01, V08.5).
-        
+
         SEGURIDAD DE ARCHIVOS:
         - El campo `suggested_filename` NUNCA debe incluir caracteres Prohibidos: \\ / : * ? " < > |
         - Los campos de metadata (`series_english`, `series_spanish`) SÍ pueden incluirlos (ej: "Serie: Subtítulo").
@@ -115,7 +115,7 @@ class AIService:
         Datos de Entrada:
         - Filename Original: "{filename}"
         - Metadata Cruda (Contiene 'publisher'): {json.dumps(raw_meta, default=str)}
-        
+
         REGLAS DE CATEGORIZACIÓN:
         - **Book Type**: Identifica si es "Novela Ligera" (Publicada por editorial), "Novela Web" (Publicada en sitios como Syosetu), "Manga" u otro.
         - **Genres**: Devuelve una lista de etiquetas estándar (ej: Fantasía, Romance, Acción, Isekai, RPG).
@@ -165,14 +165,14 @@ class AIService:
         """Sugiere un nombre de serie limpio/estándar."""
         prompt = f"""
         Normaliza el nombre de la serie.
-        
+
         REGLAS:
         1. Elimina volúmenes, "Novela Ligera", etiquetas de formato.
         2. proposed_english: Nombre oficial en INGLÉS o ROMAJI.
         3. proposed_spanish: Nombre oficial en ESPAÑOL.
-        
+
         Input: "{current_name}"
-        
+
         Responde SOLO con un JSON:
         {{
             "proposed_english": "string",
@@ -207,15 +207,15 @@ class AIService:
         # Preferimos mostrar el filename o el nombre en español para que la IA entienda el estado actual
         prompt = f"""
         Actúa como un bibliotecario experto. Analiza este grupo de libros y propón una estandarización coherente.
-        
+
         REGLAS DE IDIOMA:
         - El campo 'reason' (explicación) debe estar SIEMPRE en ESPAÑOL.
-        
+
         Nombre Actual en DB (English): "{current_series_name}"
         Nombre Actual en DB (Spanish): "{current_spanish_name or "No establecido"}"
-        
+
         Datos de libros (filename y publisher): {json.dumps([{"f": b.get("filename"), "p": b.get("publisher")} for b in books[:15]], indent=2)}
-        
+
         Tareas:
         1. **Proposed English Name**: El nombre canónico en INGLÉS/ROMAJI.
         2. **Proposed Spanish Name**: El nombre oficial en ESPAÑOL.
@@ -228,11 +228,11 @@ class AIService:
              - Nombres como Siglas: Si es una palabra de <= 6 letras, úsala tal cual.
              - Consistencia: Nombres casi idénticos = misma sigla.
         4. **Volumes**: Para cada archivo, confirma su volumen real. Usa 0.0 si es Volumen Único.
-        
+
         SEGURIDAD DE ARCHIVOS:
         - La restricción de caracteres (\\ / : * ? " < > |) SOLO aplica a nombres de archivo en disco.
         - Los campos `proposed_english` y `proposed_spanish` PUEDEN contener ":" (ej: "Serie: Subtitulo").
-        
+
         Responde SOLO con este JSON:
         {{
             "proposed_english": "string",
@@ -250,9 +250,9 @@ class AIService:
                 }}
             }}
         }}
-        
+
         NOTA: Si detectas que los libros de la serie han sido traducidos por diferentes grupos, especifica la 'sigla' correcta para cada archivo dentro del objeto 'volumes'. Si no estás seguro o todos son iguales, usa el 'group_siglas' general de la serie como fallback.
-        
+
         {{group_context}}
         """
 
@@ -535,10 +535,10 @@ class AIService:
 
         prompt = f"""
         Actúa como un redactor creativo de una editorial de novelas ligeras. Tu tarea es escribir una sinopsis corta y atractiva para el siguiente libro.
-        
+
         Título: "{title}"
-        Descripción Original: "{description[:2000] if description else "Sin descripción"}" 
-        
+        Descripción Original: "{description[:2000] if description else "Sin descripción"}"
+
         Reglas:
         1. Idioma: Español.
         2. Longitud: Máximo 300 caracteres.

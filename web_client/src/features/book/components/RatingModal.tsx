@@ -85,4 +85,3 @@ export const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, onSub
         </div>
     );
 };
-

@@ -119,7 +119,7 @@ async def fix_schema_if_needed():
             # Relación de series optimizada (Integer) - Debe ir después de crear series_metadata
             await conn.execute(
                 text("""
-                ALTER TABLE local_books 
+                ALTER TABLE local_books
                 ADD COLUMN IF NOT EXISTS series_metadata_id INTEGER REFERENCES series_metadata(id);
             """)
             )

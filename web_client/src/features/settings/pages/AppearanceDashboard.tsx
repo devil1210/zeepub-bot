@@ -759,5 +759,3 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
         </div>
     );
 };
-
-
