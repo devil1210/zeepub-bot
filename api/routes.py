@@ -232,7 +232,7 @@ async def prepare_facebook_post(
                 if "file_size" not in meta and epub_bytes:
                     meta["file_size"] = len(epub_bytes)
 
-                caption_base = apply_publication_template(TelegramPublisherProvider.COVER_TEMPLATE, meta)
+                caption_base = apply_publication_template(TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta)
 
         except Exception as e:
             logger.warning(f"Could not fetch/parse EPUB for FB post: {e}")
