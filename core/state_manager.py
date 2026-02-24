@@ -2,8 +2,6 @@
 
 from typing import Any
 
-from config.config_settings import config
-
 
 class StateManager:
     """Gestión de estado por usuario en memoria."""

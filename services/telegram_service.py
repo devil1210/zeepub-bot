@@ -4,7 +4,7 @@ import logging
 import os
 import re
 from typing import Any
-from urllib.parse import unquote, urlparse
+
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputFile, Update
 from telegram.error import BadRequest
@@ -14,10 +14,7 @@ from telegram.ext import ContextTypes
 # from core.session_manager import session_manager (Moved to local scope)
 from config.config_settings import config
 from utils.download_limiter import can_download, downloads_left, record_download
-from utils.helpers import (
-    escapar_html,
-    generar_slug_from_meta,
-)
+
 from utils.http_client import cleanup_tmp, fetch_bytes
 
 logger = logging.getLogger(__name__)
@@ -692,116 +689,54 @@ async def enviar_libro_directo(
             except Exception as e:
                 logger.warning(f"No se pudo calcular el tamaño del archivo para meta: {e}")
 
-        # --- LOGICA FACEBOOK ---
+        from utils.template_engine import apply_publication_template
+
+        # --- LOGICA FACEBOOK (Unificada con Template Engine) ---
         if format_type in ["fb_preview", "fb_direct"]:
-            # Generar caption FB
-            # Construir link público acortado
-            from utils.helpers import formatear_metadata_fb, formatear_titulo_fb
+            from services.publisher.publisher_service import TelegramPublisherProvider
             from utils.url_cache import create_short_url
 
+            # Generar link público acortado
             dl_domain = config.DL_DOMAIN.rstrip("/")
             if not dl_domain.startswith("http"):
                 dl_domain = f"https://{dl_domain}"
-
             try:
                 url_hash = create_short_url(download_url, book_title=title)
                 public_link = f"{dl_domain}/api/dl/{url_hash}"
             except Exception as e:
                 logger.error("Error creating short URL: %s", e)
-                public_link = download_url  # Fallback
+                public_link = download_url
 
-            # 1. Título
-            title_block = formatear_titulo_fb(meta)
+            # Generar caption FB usando plantilla unificada
+            fb_caption = apply_publication_template(
+                TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta
+            )
+            # Limpiar HTML residual (FB no lo soporta)
+            fb_caption = re.sub(r"<[^>]+>", "", fb_caption)
+            # Añadir link de descarga
+            fb_caption = f"{fb_caption}\n\n⬇️ Descarga: {public_link}"
+            # Truncar si excede límite FB
+            if len(fb_caption) > 2100:
+                fb_caption = fb_caption[:2097] + "..."
 
-            # 2. Link de descarga
-            link_block = f"⬇️ Descarga: {public_link}"
-
-            # 3. Info del archivo (Actualizado, Tamaño)
-            if isinstance(epub_bytes, bytes | bytearray):
-                size_mb = len(epub_bytes) / (1024 * 1024)
-            elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
-                size_mb = await asyncio.to_thread(os.path.getsize, epub_bytes) / (1024 * 1024)
-            else:
-                size_mb = 0.0
-
-            fecha_mod = meta.get("fecha_modificacion", "Desconocida")
-
-            epub_info_block = f"📅 Actualizado: {fecha_mod}\n📦 Tamaño: {size_mb:.2f} MB"
-
-            # 4. Metadatos
-            metadata_block = formatear_metadata_fb(meta)
-
-            # 5. Sinopsis
-            sinopsis = meta.get("sinopsis")
-            sinopsis_block = ""
-            if sinopsis:
-                sinopsis_esc = escapar_html(sinopsis)
-                sinopsis_block = f"<b>Sinopsis:</b>\n{sinopsis_esc}"
-
-            # Construir caption final
-            # IMPORTANTE: NO incluir "Vista Previa Facebook" aquí, se añade al enviar el mensaje
-            parts = [
-                title_block,
-                link_block,
-                epub_info_block,
-                metadata_block,
-                sinopsis_block,
-            ]
-
-            fb_caption = "\n\n".join(p for p in parts if p).strip()
-            logger.debug(f"Caption FB generado, longitud: {len(fb_caption)}")
+            logger.debug(f"Caption FB generado vía template engine, longitud: {len(fb_caption)}")
 
             if format_type == "fb_preview":
-                # Enviar Portada y Caption al usuario
                 if portada_data:
-                    # Enviar portada sola primero? O con caption?
-                    # User request: "mensaje que se enviara al char priavdo sera la vista previa
-                    # facebbok (inluyendo la portada antes del mensaje principal)"
-                    # Esto suena a: Foto con caption, o Foto y luego Texto.
-                    # El bot actual suele enviar Foto con caption corto, y luego Texto largo.
-                    # Pero para FB preview, mejor todo en uno si cabe, o separado.
-                    # Telegram caption limit is 1024 chars. FB posts can be longer.
-                    # Vamos a intentar enviar Foto sin caption (o titulo) y luego el texto completo.
                     await send_photo_bytes(bot, user_id, None, portada_data, filename="cover.jpg")
-
                 await bot.send_message(
                     chat_id=user_id,
                     text=fb_caption,
-                    parse_mode="HTML",
                     disable_web_page_preview=False,
                 )
-
             elif format_type == "fb_direct":
-                # Publicar en FB
                 from utils.helpers import validate_facebook_credentials
-
                 is_valid, error_msg = validate_facebook_credentials(config)
-
                 if not is_valid:
                     await bot.send_message(chat_id=user_id, text=error_msg, parse_mode="HTML")
                     return False
 
-                import httpx
-
-                # Necesitamos una URL pública para la imagen si usamos 'url' param en FB API.
-                # O subir como multipart/form-data.
-                # La API actual usa 'url' param.
-                # Si tenemos cover_url y es http, usamos esa.
-                # Si no, tendríamos que subir bytes. La implementación actual de
-                # /api/facebook/publish usa 'url'.
-                # Vamos a intentar usar cover_url si existe.
-
-                fb_cover_url = cover_url
-                if not fb_cover_url and portada_data:
-                    # Si tenemos portada local pero no URL pública, es un problema
-                    # para la API simple de 'url'.
-                    # Por ahora, si no hay URL pública, avisamos.
-                    pass
-
-                if not fb_cover_url or not fb_cover_url.startswith("http"):
-                    # Fallback: intentar usar la URL de la portada del feed si existe en meta
-                    fb_cover_url = meta.get("portada")
-
+                fb_cover_url = cover_url or meta.get("portada")
                 if not fb_cover_url or not fb_cover_url.startswith("http"):
                     await bot.send_message(
                         chat_id=user_id,
@@ -809,30 +744,26 @@ async def enviar_libro_directo(
                     )
                     return False
 
+                import httpx
                 url = f"https://graph.facebook.com/{config.FACEBOOK_GROUP_ID}/photos"
                 params = {
                     "url": fb_cover_url,
-                    "caption": fb_caption.replace("<b>", "").replace("</b>", ""),  # Strip HTML
+                    "caption": fb_caption,
                     "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
                 }
-
                 async with httpx.AsyncClient() as client:
                     resp = await client.post(url, params=params, timeout=30)
                     if resp.status_code != 200:
                         logger.error(f"FB Error: {resp.text}")
                         await bot.send_message(
-                            chat_id=user_id,
-                            text=f"❌ Error publicando en Facebook: {resp.text}",
+                            chat_id=user_id, text=f"❌ Error publicando en Facebook: {resp.text}"
                         )
                         return False
-
                 await bot.send_message(
-                    chat_id=user_id,
-                    text="✅ Publicado exitosamente en el Grupo de Facebook.",
+                    chat_id=user_id, text="✅ Publicado exitosamente en el Grupo de Facebook."
                 )
 
-        # --- PROCESAR CAPTION Y PLANTILLAS ---
-        from utils.template_engine import apply_publication_template
+        # --- PROCESAR CAPTION Y PLANTILLAS (Telegram) ---
 
         # Si no se provee nada, usamos el estándar del sistema (unificado)
         if not custom_caption and not caption_template:
@@ -964,6 +895,7 @@ async def enviar_libro_directo(
                 logger.error(f"[enviar_libro_directo] Error incrementando contador total: {e}")
 
             # Registrar en historial de descargas
+            titulo_vol = meta.get("titulo_volumen") or meta.get("title") or meta.get("english_title") or title
             try:
                 from repositories.download_repository import download_repo
 
@@ -1017,7 +949,7 @@ async def enviar_libro_directo(
                     title=titulo_vol,
                     author=author,
                     download_url=download_url,
-                    file_size=int(size_mb * 1024 * 1024) if size_mb else None,
+                    file_size=meta.get("file_size"),
                     romaji_title=romaji,
                     series=series,
                     volume=volume,
@@ -1097,14 +1029,12 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
         return
 
     # Construir link público acortado con SHA256 persistente
-    from utils.helpers import escapar_html, formatear_metadata_fb, formatear_titulo_fb
     from utils.url_cache import create_short_url
 
     dl_domain = config.DL_DOMAIN.rstrip("/")
     if not dl_domain.startswith("http"):
         dl_domain = f"https://{dl_domain}"
 
-    # Crear hash y guardar en BD (persistente) con metadata del libro
     try:
         url_hash = create_short_url(epub_url, book_title=titulo)
     except Exception as e:
@@ -1116,68 +1046,36 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
         return
     public_link = f"{dl_domain}/api/dl/{url_hash}"
 
-    # 1. Título
-    title_block = formatear_titulo_fb(meta)
-
-    # 2. Link de descarga
-    link_block = f"⬇️ Descarga: {public_link}"
-
-    # 3. Info del archivo (Actualizado, Tamaño) - Versión removida según solicitud
-    epub_buffer = user_state.get("epub_buffer")
-    if epub_buffer:
-        if isinstance(epub_buffer, bytes | bytearray):
-            size_mb = len(epub_buffer) / (1024 * 1024)
-        elif isinstance(epub_buffer, str) and await asyncio.to_thread(os.path.exists, epub_buffer):
-            size_mb = await asyncio.to_thread(os.path.getsize, epub_buffer) / (1024 * 1024)
-        else:
-            size_mb = 0.0
-    else:
-        size_mb = 0.0
-
-    fecha_mod = meta.get("fecha_modificacion", "Desconocida")
-
-    epub_info_block = f"📅 Actualizado: {fecha_mod}\n📦 Tamaño: {size_mb:.2f} MB"
-
-    # 4. Metadatos (Maquetado, Categoría, etc.)
-    metadata_block = formatear_metadata_fb(meta)
-
-    # 5. Sinopsis
+    # Recuperar sinopsis si no está en meta
     sinopsis = meta.get("sinopsis") or meta.get("description")
     if not sinopsis:
         series_hash = user_state.get("series_hash")
         if series_hash:
             try:
                 from repositories.series_repository import series_repo
-
                 series_meta = await series_repo.get_by_hash(series_hash)
                 if series_meta:
                     desc = getattr(series_meta, "description", None)
                     if desc:
-                        sinopsis = str(desc)
+                        meta["sinopsis"] = str(desc)
             except Exception:
-                sinopsis = None
+                pass
 
-    sinopsis_block = ""
-    if sinopsis:
-        sinopsis_esc = escapar_html(sinopsis)
-        sinopsis_block = f"<b>Sinopsis:</b>\n{sinopsis_esc}"
+    # Generar caption FB usando plantilla unificada
+    from services.publisher.publisher_service import TelegramPublisherProvider
+    from utils.template_engine import apply_publication_template
 
-    # Construir caption final
-    # Orden: Título -> Link -> Info -> Metadata -> Sinopsis
-    parts = [
-        "<b>Vista Previa Facebook:</b>",
-        title_block,
-        link_block,
-        epub_info_block,
-        metadata_block,
-        sinopsis_block,
-    ]
+    fb_caption = apply_publication_template(
+        TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta
+    )
+    # Limpiar HTML residual (FB no soporta)
+    import re as _re
+    fb_caption = _re.sub(r"<[^>]+>", "", fb_caption)
+    fb_caption = f"<b>Vista Previa Facebook:</b>\n\n{fb_caption}\n\n⬇️ Descarga: {public_link}"
 
-    # Unir partes con doble salto de línea, filtrando vacíos
-    caption = "\n\n".join(p for p in parts if p).strip()
 
     # Guardar en estado para publicación
-    user_state["fb_caption"] = caption
+    user_state["fb_caption"] = fb_caption
 
     # Enviar vista previa (caption)
     btns = []
@@ -1203,7 +1101,7 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     preview_thread = user_state.get("publish_command_thread_id")
     await bot.send_message(
         chat_id=preview_chat,
-        text=f"📝 <b>Vista Previa Facebook:</b>\n\n{caption}",
+        text=fb_caption,
         parse_mode="HTML",
         disable_web_page_preview=False,
         reply_markup=InlineKeyboardMarkup(btns),

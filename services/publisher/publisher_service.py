@@ -47,6 +47,21 @@ class TelegramPublisherProvider(PublisherProvider):
         "#{slug}"
     )
 
+    # Plantilla Facebook (texto plano, sin HTML - FB lo elimina en captions)
+    FB_CAPTION_TEMPLATE = (
+        "{serie} ║ {series_spanish} ║ {titulo}"
+        "[?volumen]\nVolumen {volumen}[/?]"
+        "\n\n[?layout_by]Maquetado por: {layout_by}[/?]"
+        "[?tipo]\nCategoría: {tipo}[/?]"
+        "[?demography]\nDemografía: {demography}[/?]"
+        "[?genres]\nGéneros: {genres}[/?]"
+        "[?autor]\nAutor: {autor}[/?]"
+        "[?illustrator]\nIlustrador: {illustrator}[/?]"
+        "[?published_at]\nPublicado: {published_at}[/?]"
+        "[?traductor]\nTraducción: {traductor}[/?]"
+        "[?sinopsis]\n\nSinopsis:\n{sinopsis}[/?]"
+    )
+
     # Calidad de portada por defecto: 'original', 'high', 'medium', 'low'
     COVER_QUALITY = "high"
 
@@ -340,11 +355,8 @@ class FacebookPublisherProvider(PublisherProvider):
         import httpx
 
         from config.config_settings import config
-        from utils.helpers import (
-            formatear_metadata_fb,
-            formatear_titulo_fb,
-            validate_facebook_credentials,
-        )
+        from utils.helpers import validate_facebook_credentials
+        from utils.template_engine import apply_publication_template
 
         logger = logging.getLogger(__name__)
 
@@ -354,63 +366,38 @@ class FacebookPublisherProvider(PublisherProvider):
             logger.error(f"Facebook credentials invalid: {error_msg}")
             return False
 
-        # 2. Build Caption (if not provided in options)
-        caption = options.get("caption")
+        # 2. Build Caption usando template engine unificado
+        caption = (options or {}).get("caption")
         if not caption:
-            # Generate from book_data
-            # Logic replicated from send_direct / fb_preview
-            # a. Title
-            title_block = formatear_titulo_fb(book_data)
+            caption = apply_publication_template(
+                TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
+            )
+            # Limpiar HTML residual (FB no soporta)
+            caption = re.sub(r"<[^>]+>", "", caption)
 
-            # b. Generate Direct Download Link (Secure short URL)
+            # Generar link público
             raw_url = book_data.get("filepath") or book_data.get("download_url") or book_data.get("url")
-            public_link = None
             if raw_url:
                 try:
                     from utils.url_cache import create_short_url
-
                     dl_domain = config.DL_DOMAIN.rstrip("/")
                     if not dl_domain.startswith("http"):
                         dl_domain = f"https://{dl_domain}"
-
                     url_hash = create_short_url(
                         raw_url,
                         book_title=book_data.get("title"),
                         series_name=book_data.get("series"),
                     )
                     public_link = f"{dl_domain}/api/dl/{url_hash}"
+                    caption += f"\n\n🚀 Descarga Directa: {public_link}"
                 except Exception as e:
                     logger.error(f"Failed to create secure link for FB: {e}")
-                    # If short url fails, we DO NOT expose the raw_url if it is a local path
                     if raw_url.startswith("http"):
-                        public_link = raw_url
-                    else:
-                        public_link = None
+                        caption += f"\n\n🚀 Descarga: {raw_url}"
 
-            link_block = f"🚀 Descarga Directa: {public_link}" if public_link else ""
-
-            # c. Metadata
-            metadata_block = formatear_metadata_fb(book_data)
-
-            # d. Synopsis
-            from utils.helpers import limpiar_html_basico
-
-            sinopsis = book_data.get("sinopsis") or book_data.get("description")
-            sinopsis_block = ""
-            if sinopsis:
-                # FB doesn't support blockquotes/b/i tags via API usually
-                clean_syn = limpiar_html_basico(sinopsis)
-                sinopsis_block = f"Sinopsis:\n{clean_syn}"
-
-            parts = [title_block, link_block, metadata_block, sinopsis_block]
-            caption = "\n\n".join(p for p in parts if p).strip()
-            # Clean HTML tags that might remain in metadata formatting
-            caption = re.sub(r"<.*?>", "", caption)
-
-            # FB length limit check
+            # FB length limit
             if len(caption) > 2100:
                 caption = caption[:2097] + "..."
-
         # 3. Handle Cover (URL vs Binary)
         cover_url = book_data.get("cover_url") or book_data.get("portada")
         cover_binary = book_data.get("cover_bytes") or book_data.get("cover")
