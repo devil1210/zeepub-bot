@@ -79,8 +79,16 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         if rating_avg and float(rating_avg) > 0:
             rating_txt = f"\n⭐ {float(rating_avg):.1f} ({rating_count} votos)"
 
-        title = data.get("title") or data.get("titulo") or ""
-        slug = generate_slug_from_title(title)
+        # Prioridad para el slug: la serie (si existe) para que sea corto y limpio
+        slug_source = (
+            data.get("series")
+            or data.get("serie")
+            or data.get("series_spanish")
+            or data.get("clean_title")
+            or data.get("title")
+            or ""
+        )
+        slug = generate_slug_from_title(slug_source)
 
         published_at_raw = str(data.get("published_at") or "")
         published_at_formatted = format_published_date(published_at_raw)

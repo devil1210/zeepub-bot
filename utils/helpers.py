@@ -351,13 +351,13 @@ def find_zeepubs_destino(feed, prefer_libraries: bool = False):
 def generar_slug_from_meta(meta: dict) -> str:
     titulo_serie = None
     if isinstance(meta, dict):
-        # PRIORIDAD: series_english (el nombre limpio en inglés)
+        # PRIORIDAD: series o series_spanish (nombres principales/español)
         titulo_serie = (
-            meta.get("series_english")
-            or meta.get("titulo_serie")
-            or meta.get("series")
-            or meta.get("series_clean")  # Desde process_book_identity_comprehensive
+            meta.get("series")
             or meta.get("series_spanish")
+            or meta.get("series_english")
+            or meta.get("titulo_serie")
+            or meta.get("series_clean")
             or meta.get("english_title")
             or meta.get("title")
         )
@@ -367,7 +367,8 @@ def generar_slug_from_meta(meta: dict) -> str:
         return ""
     base_titulo = titulo_serie.strip()
     base_titulo = re.sub(r"\[.*?\]", "", base_titulo)
-    base_titulo = base_titulo.split("-", 1)[0].strip()
+    # Separar por guiones diversos, tildes, dos puntos o barras
+    base_titulo = re.split(r"[\-\–\—\−\―\:\~\～\|¦]", base_titulo)[0].strip()
     base_titulo = base_titulo.replace("×", "x")
     base_titulo = base_titulo.replace(",", " ")
     for ch in (
@@ -391,6 +392,9 @@ def generar_slug_from_meta(meta: dict) -> str:
         "?",
         "-",
         "_",
+        "―",
+        "—",
+        "–",
     ):
         base_titulo = base_titulo.replace(ch, "")
     base_titulo = re.sub(r"\s+", " ", base_titulo).strip()
