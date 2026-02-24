@@ -330,7 +330,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 st["pending_pub_menu_prep"] = menu_prep
                 st["publish_command_origin"] = update.effective_chat.id
                 st["publish_command_thread_id"] = st.get("message_thread_id")
-                st["publish_command_thread_id"] = st.get("message_thread_id")
                 from services.facebook_service import _publish_choice_facebook
 
                 await _publish_choice_facebook(update, context, uid)
@@ -362,7 +361,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
             # If no temp target is set, fall through to normal behavior (no menu)
 
-        # Publicar EPUB (non-publishers or publisher with no temp)
         # Publicar EPUB (non-publishers or publisher with no temp)
         from services.telegram_service import publicar_libro
 
@@ -420,8 +418,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 # Clear pending flag then call publicar_libro to proceed
                 menu_prep = st.pop("pending_pub_menu_prep", None)
                 st.pop("pending_pub_book", None)
-                # Call publicar_libro using stored href/portada/title
-                # Call publicar_libro using stored href/portada/title
+                # Clear pending flag then call publicar_libro to proceed
                 from services.telegram_service import publicar_libro
 
                 await publicar_libro(
@@ -561,8 +558,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         from services.telegram_service import descargar_epub_pendiente
 
         await descargar_epub_pendiente(update, context, uid, job_queue=context.job_queue)
-        return
-
         return
 
     # Rating Handler

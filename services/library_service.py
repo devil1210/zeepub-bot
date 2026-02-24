@@ -615,7 +615,7 @@ class LibraryService:
 
                 logger.info(f"🔍 Identificando candidatos de duplicados entre {len(series_list)} series.")
 
-                for auth, group in author_map.items():
+                for _auth, group in author_map.items():
                     if len(group) < 2:
                         continue
 

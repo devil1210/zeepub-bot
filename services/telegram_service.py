@@ -1083,18 +1083,7 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
             message_thread_id=thread_id_origen,
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
-        st["msg_botones_id"] = sent.message_id
     except BadRequest as e:
-        if "Message thread not found" in str(e) and thread_id_origen is not None:
-            await bot.send_message(
-                chat_id=chat_origen,
-                text="¿Deseas descargar este EPUB?",
-                parse_mode="HTML",
-                message_thread_id=None,
-                reply_markup=InlineKeyboardMarkup(keyboard),
-            )
-        else:
-            raise e
         if "Message thread not found" in str(e) and thread_id_origen is not None:
             sent = await bot.send_message(
                 chat_id=chat_origen,
@@ -1104,5 +1093,5 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
                 reply_markup=InlineKeyboardMarkup(keyboard),
             )
         else:
-            raise e
+            raise
     st["msg_botones_id"] = sent.message_id
