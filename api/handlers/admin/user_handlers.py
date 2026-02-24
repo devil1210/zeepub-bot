@@ -155,7 +155,9 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
                     try:
                         client.table("users").upsert(batch).execute()
                     except Exception as upsert_e:
-                        logger.error(f"Supabase PUSH error for user batch (indices {i}-{i+len(batch)-1}): {upsert_e}")
+                        logger.error(
+                            f"Supabase PUSH error for user batch (indices {i}-{i + len(batch) - 1}): {upsert_e}"
+                        )
 
             # 3. Pull from Supabase
             logger.info("ADMIN: Triggering immediate PULL from Supabase to Local")
