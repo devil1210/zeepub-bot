@@ -427,10 +427,7 @@ async def download_book(
         # Usar DeliveryService para que se apliquen las plantillas y demás lógica centralizada
         delivery_service = DeliveryService(bot=bot.app.bot)
         success = await delivery_service.deliver_book(
-            provider_type="telegram",
-            target_id=real_target or user_id,
-            book_data=book_data,
-            options=options
+            provider_type="telegram", target_id=real_target or user_id, book_data=book_data, options=options
         )
 
         if success:

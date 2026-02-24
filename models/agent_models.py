@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, Float, Text, DateTime
 from datetime import datetime
 from .base import Base
 
+
 class AgentExecution(Base):
     __tablename__ = "agent_executions"
 
@@ -11,7 +12,7 @@ class AgentExecution(Base):
     status = Column(String(50), nullable=False)
     duration = Column(Float)
     error = Column(Text)
-    metadata_json = Column(Text) # metadata is a reserved word in some contexts, using metadata_json
+    metadata_json = Column(Text)  # metadata is a reserved word in some contexts, using metadata_json
 
     def __repr__(self):
         return f"<AgentExecution(func='{self.func_name}', status='{self.status}')>"

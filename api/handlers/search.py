@@ -23,9 +23,4 @@ async def handle_search_volumes(data: dict[str, Any], user_data: dict[str, Any])
     limit = data.get("limit", 10)
 
     # Llama directamente al método que devuelve libros, no series
-    return await LibraryService.search_books(
-        query=query or "", 
-        page=page, 
-        items_per_page=limit, 
-        search_type="all"
-    )
+    return await LibraryService.search_books(query=query or "", page=page, items_per_page=limit, search_type="all")

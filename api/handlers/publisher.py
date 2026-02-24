@@ -200,7 +200,6 @@ async def handle_pub_restore_templates(data: dict[str, Any], user_data: dict[str
 
     from services.publisher.publisher_service import TelegramPublisherProvider
 
-
     # Definir templates por defecto
     defaults = [
         PublicationTemplate(

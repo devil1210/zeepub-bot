@@ -708,9 +708,7 @@ async def enviar_libro_directo(
                 public_link = download_url
 
             # Generar caption FB usando plantilla unificada
-            fb_caption = apply_publication_template(
-                TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta
-            )
+            fb_caption = apply_publication_template(TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta)
             # Limpiar HTML residual (FB no lo soporta)
             fb_caption = re.sub(r"<[^>]+>", "", fb_caption)
             # Añadir link de descarga
@@ -731,6 +729,7 @@ async def enviar_libro_directo(
                 )
             elif format_type == "fb_direct":
                 from utils.helpers import validate_facebook_credentials
+
                 is_valid, error_msg = validate_facebook_credentials(config)
                 if not is_valid:
                     await bot.send_message(chat_id=user_id, text=error_msg, parse_mode="HTML")
@@ -745,6 +744,7 @@ async def enviar_libro_directo(
                     return False
 
                 import httpx
+
                 url = f"https://graph.facebook.com/{config.FACEBOOK_GROUP_ID}/photos"
                 params = {
                     "url": fb_cover_url,
@@ -755,19 +755,16 @@ async def enviar_libro_directo(
                     resp = await client.post(url, params=params, timeout=30)
                     if resp.status_code != 200:
                         logger.error(f"FB Error: {resp.text}")
-                        await bot.send_message(
-                            chat_id=user_id, text=f"❌ Error publicando en Facebook: {resp.text}"
-                        )
+                        await bot.send_message(chat_id=user_id, text=f"❌ Error publicando en Facebook: {resp.text}")
                         return False
-                await bot.send_message(
-                    chat_id=user_id, text="✅ Publicado exitosamente en el Grupo de Facebook."
-                )
+                await bot.send_message(chat_id=user_id, text="✅ Publicado exitosamente en el Grupo de Facebook.")
 
         # --- PROCESAR CAPTION Y PLANTILLAS (Telegram) ---
 
         # Si no se provee nada, usamos el estándar del sistema (unificado)
         if not custom_caption and not caption_template:
             from services.publisher.publisher_service import TelegramPublisherProvider
+
             caption_template = f"{TelegramPublisherProvider.COVER_TEMPLATE}\n<hr>\n{TelegramPublisherProvider.SYNOPSIS_TEMPLATE}\n<hr>\n{TelegramPublisherProvider.INFO_TEMPLATE}"
             logger.info("Usando plantilla predeterminada del sistema para entrega directa.")
 
@@ -790,6 +787,7 @@ async def enviar_libro_directo(
             t = re.sub(r"<hr\s*/?>", "\n---\n", t, flags=re.IGNORECASE)
             t = re.sub(r"\n{3,}", "\n\n", t).strip()
             return t
+
         # 5. Enviar Portada
         if len(msg_parts) > 0:
             mensaje_portada = sanitize_tg_html(msg_parts[0])
@@ -1053,6 +1051,7 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
         if series_hash:
             try:
                 from repositories.series_repository import series_repo
+
                 series_meta = await series_repo.get_by_hash(series_hash)
                 if series_meta:
                     desc = getattr(series_meta, "description", None)
@@ -1065,14 +1064,12 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     from services.publisher.publisher_service import TelegramPublisherProvider
     from utils.template_engine import apply_publication_template
 
-    fb_caption = apply_publication_template(
-        TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta
-    )
+    fb_caption = apply_publication_template(TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta)
     # Limpiar HTML residual (FB no soporta)
     import re as _re
+
     fb_caption = _re.sub(r"<[^>]+>", "", fb_caption)
     fb_caption = f"<b>Vista Previa Facebook:</b>\n\n{fb_caption}\n\n⬇️ Descarga: {public_link}"
-
 
     # Guardar en estado para publicación
     user_state["fb_caption"] = fb_caption
@@ -1234,6 +1231,7 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
     # Intentar obtener plantilla por defecto para Telegram
     try:
         from repositories.publication_repository import pub_repo
+
         template = await pub_repo.get_default_template("telegram")
         caption_template = template.content if template else None
     except Exception as e:
@@ -1250,7 +1248,7 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
         message_thread_id=thread_id_origen,
         metadata_override=meta,
         explicit_file_buffer=epub_buffer,
-        caption_template=caption_template
+        caption_template=caption_template,
     )
 
     if not success:

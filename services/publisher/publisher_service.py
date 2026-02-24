@@ -40,11 +40,7 @@ class TelegramPublisherProvider(PublisherProvider):
     )
     SYNOPSIS_TEMPLATE = "<b>Sinopsis:</b>\n<blockquote>{sinopsis}</blockquote>\n#{slug}"
     INFO_TEMPLATE = (
-        "📂 <b>{titulo}</b>\n"
-        "ℹ️ Versión Epub: {version}\n"
-        "📅 Actualizado: {fecha}\n"
-        "📦 Tamaño: {tamaño}\n"
-        "#{slug}"
+        "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n#{slug}"
     )
 
     # Plantilla Facebook (texto plano, sin HTML - FB lo elimina en captions)
@@ -369,9 +365,7 @@ class FacebookPublisherProvider(PublisherProvider):
         # 2. Build Caption usando template engine unificado
         caption = (options or {}).get("caption")
         if not caption:
-            caption = apply_publication_template(
-                TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
-            )
+            caption = apply_publication_template(TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data)
             # Limpiar HTML residual (FB no soporta)
             caption = re.sub(r"<[^>]+>", "", caption)
 
@@ -380,6 +374,7 @@ class FacebookPublisherProvider(PublisherProvider):
             if raw_url:
                 try:
                     from utils.url_cache import create_short_url
+
                     dl_domain = config.DL_DOMAIN.rstrip("/")
                     if not dl_domain.startswith("http"):
                         dl_domain = f"https://{dl_domain}"

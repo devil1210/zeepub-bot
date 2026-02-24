@@ -100,7 +100,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         demography_raw = data.get("demography") or data.get("demographics") or extract_demography(tags)
         if isinstance(demography_raw, list):
             demography_raw = ", ".join(demography_raw)
-        
+
         demographics_raw = data.get("demographics") or data.get("demography") or extract_demography(tags)
         if isinstance(demographics_raw, list):
             demographics_raw = ", ".join(demographics_raw)

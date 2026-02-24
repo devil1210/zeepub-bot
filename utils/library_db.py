@@ -39,7 +39,7 @@ def create_library_engine():
 
     # Fallback 'db' to 'localhost' if running outside Docker (common for local agents)
     # Testing host 'db' reaches vs 'localhost'
-    if "@db:" in db_url and os.name == 'nt':
+    if "@db:" in db_url and os.name == "nt":
         # Simple hack for local agent on Windows reaching Docker Postgres
         db_url = db_url.replace("@db:", "@localhost:", 1)
         _log.debug("Converting 'db' to 'localhost' for Windows local execution.")
