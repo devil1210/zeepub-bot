@@ -145,6 +145,13 @@ async def handle_pub_get_templates(data: dict[str, Any], user_data: dict[str, An
                 platform="telegram",
                 extra_config={"type": "info"},
             ),
+            PublicationTemplate(
+                name="Default Telegram Unified",
+                content=TelegramPublisherProvider.FULL_TEMPLATE,
+                platform="telegram",
+                is_default=True,
+                extra_config={"type": "unified"},
+            ),
         ]
 
         for t in defaults:
@@ -219,6 +226,13 @@ async def handle_pub_restore_templates(data: dict[str, Any], user_data: dict[str
             content=TelegramPublisherProvider.INFO_TEMPLATE,
             platform="telegram",
             extra_config={"type": "info"},
+        ),
+        PublicationTemplate(
+            name="Default Telegram Unified",
+            content=TelegramPublisherProvider.FULL_TEMPLATE,
+            platform="telegram",
+            is_default=True,
+            extra_config={"type": "unified"},
         ),
     ]
 

@@ -28,9 +28,9 @@ class TelegramPublisherProvider(PublisherProvider):
     COVER_TEMPLATE = (
         "{serie} ║ {series_spanish} ║ {titulo}"
         "[?volumen]\nVolumen {volumen}[/?]"
-        "\n#{slug}\n"
-        "[?layout_by]\n<b>\nMaquetado por:</b> #{layout_by}[/?]"
-        "[?tipo]\n<b>\nCategoría:</b> {tipo}[/?]"
+        "\n#{slug}"
+        "[?layout_by]\n<b>Maquetado por:</b> #{layout_by}[/?]"
+        "[?tipo]\n<b>Categoría:</b> {tipo}[/?]"
         "[?demography]\n<b>Demografía:</b> {demography}[/?]"
         "[?genres]\n<b>Géneros:</b> {genres}[/?]"
         "[?autor]\n<b>Autor:</b> {autor}[/?]"
@@ -42,12 +42,14 @@ class TelegramPublisherProvider(PublisherProvider):
     INFO_TEMPLATE = (
         "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n#{slug}"
     )
+    # Plantilla completa (Unión de las 3 partes)
+    FULL_TEMPLATE = COVER_TEMPLATE + "\n<hr/>\n" + SYNOPSIS_TEMPLATE + "\n<hr/>\n" + INFO_TEMPLATE
 
     # Plantilla Facebook (texto plano, sin HTML - FB lo elimina en captions)
     FB_CAPTION_TEMPLATE = (
         "{serie} ║ {series_spanish} ║ {titulo}"
         "[?volumen]\nVolumen {volumen}[/?]"
-        "\n\n[?layout_by]Maquetado por: {layout_by}[/?]"
+        "[?layout_by]\nMaquetado por: {layout_by}[/?]"
         "[?tipo]\nCategoría: {tipo}[/?]"
         "[?demography]\nDemografía: {demography}[/?]"
         "[?genres]\nGéneros: {genres}[/?]"
@@ -55,7 +57,7 @@ class TelegramPublisherProvider(PublisherProvider):
         "[?illustrator]\nIlustrador: {illustrator}[/?]"
         "[?published_at]\nPublicado: {published_at}[/?]"
         "[?traductor]\nTraducción: {traductor}[/?]"
-        "[?sinopsis]\n\nSinopsis:\n{sinopsis}[/?]"
+        "\nSinopsis: {sinopsis}"
     )
 
     # Calidad de portada por defecto: 'original', 'high', 'medium', 'low'
@@ -515,11 +517,15 @@ class PublisherService:
 
             if template:
                 options["caption"] = self._apply_template(template.content, book_data)
-                # Aplicar extra_config si existe (ej. calidad de portada)
-                if template.extra_config:
-                    for k, v in template.extra_config.items():
-                        if k not in options:
-                            options[k] = v
+            elif platform == "telegram":
+                # Fallback a la plantilla unificada por defecto
+                options["caption"] = self._apply_template(TelegramPublisherProvider.FULL_TEMPLATE, book_data)
+
+            # Aplicar extra_config si existe (ej. calidad de portada)
+            if template and template.extra_config:
+                for k, v in template.extra_config.items():
+                    if k not in options:
+                        options[k] = v
 
         return await provider.announce_book(target_id, book_data, options)
 
