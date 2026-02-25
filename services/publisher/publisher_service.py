@@ -27,7 +27,7 @@ class TelegramPublisherProvider(PublisherProvider):
     COVER_TEMPLATE = (
         "📚 {serie} ║ {series_spanish} ║ {titulo}"
         "[?volumen]\n📖 Volumen {volumen}[/?]"
-        "\n#{slug}"
+        "\n#{slug}\n"
         "[?layout_by]\n🎨 <b>Maquetado por:</b> #{layout_by}[/?]"
         "[?tipo]\n🏷️ <b>Categoría:</b> {tipo}[/?]"
         "[?demography]\n👥 <b>Demografía:</b> {demography}[/?]"

@@ -68,7 +68,7 @@ export const PublisherDashboard: React.FC = () => {
     const handleEditQueueItem = (item: PublicationQueueItem) => {
         setEditingQueueItem(item);
         setSelectedBookHash(item.book_hash);
-        setSelectedBookTitle('Editando Publicación');
+        setSelectedBookTitle(`${item.series_spanish || item.series || 'Editando Publicación'}`);
         setIsScheduleModalOpen(true);
     };
 
@@ -173,12 +173,24 @@ export const PublisherDashboard: React.FC = () => {
                                             <div className={`p-2 rounded-xl bg-white/5 ${item.platform === 'telegram' ? 'text-blue-400' : 'text-primary'}`}>
                                                 {item.platform === 'telegram' ? <TelegramIcon className="w-4 h-4" /> : <Facebook className="w-4 h-4" />}
                                             </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[11px] font-black uppercase tracking-wider">{item.channel}</span>
-                                                <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                                                    <Calendar className="w-3 h-3" />
-                                                    {new Date(item.scheduled_for).toLocaleString()}
-                                                </span>
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-center gap-1.5">
+                                                    <span className="text-[11px] font-black uppercase tracking-[0.05em] text-white">
+                                                        {item.series_spanish || item.series || 'Sin Título'}
+                                                    </span>
+                                                    {item.volume !== undefined && item.volume !== null && (
+                                                        <span className="text-[9px] font-black bg-primary/10 px-1.5 py-0.5 rounded text-primary border border-primary/20">
+                                                            VOL. {item.volume}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.channel}</span>
+                                                    <span className="text-[10px] text-gray-500 flex items-center gap-1">
+                                                        <Calendar className="w-2.5 h-2.5" />
+                                                        {new Date(item.scheduled_for).toLocaleString()}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">

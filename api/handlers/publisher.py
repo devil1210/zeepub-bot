@@ -21,6 +21,26 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
     limit = data.get("limit", 50)
     items = await pub_repo.get_full_queue(status=status, limit=limit)
     logger.info(f"Found {len(items)} items in publication queue")
+
+    # Enrichment: Pre-fetch book info for the whole queue
+    book_hashes = {i.book_hash for i in items}
+    book_info_map = {}
+    if book_hashes:
+        from sqlalchemy import select
+
+        from core.db_manager_pg import pg_manager
+        from models.library_models import LocalBook
+
+        async with pg_manager.get_session() as session:
+            stmt = select(LocalBook).where(LocalBook.book_hash.in_(list(book_hashes)))
+            result = await session.execute(stmt)
+            for b in result.scalars():
+                book_info_map[b.book_hash] = {
+                    "series": b.series or b.title,
+                    "volume": b.volume,
+                    "series_spanish": b.series_spanish,
+                }
+
     return {
         "items": [
             {
@@ -35,6 +55,9 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
                 "published_at": i.published_at.isoformat() if i.published_at else None,
                 "error": i.error_message,
                 "payload": i.payload,
+                "series": book_info_map.get(i.book_hash, {}).get("series"),
+                "volume": book_info_map.get(i.book_hash, {}).get("volume"),
+                "series_spanish": book_info_map.get(i.book_hash, {}).get("series_spanish"),
             }
             for i in items
         ]

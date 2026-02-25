@@ -12,6 +12,9 @@ export interface PublicationQueueItem {
     published_at?: string;
     error?: string;
     payload?: any;
+    series?: string;
+    volume?: number;
+    series_spanish?: string;
 }
 
 export interface PublicationChannel {
