@@ -368,6 +368,12 @@ class EpubScanner:
                         session.add(book)
                         outcome = "added"
 
+            # 🚀 Asignar short_link determinista basado en el hash del libro
+            from utils.helpers import generate_short_link
+            new_sl = generate_short_link(book.book_hash)
+            if book.short_link != new_sl:
+                book.short_link = new_sl
+
             # Vinculación (Se delega al orquestador o providers)
             if book not in session:
                 session.add(book)

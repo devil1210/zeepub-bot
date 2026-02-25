@@ -11,26 +11,7 @@ from sqlalchemy import select
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook
 
-def hash_to_short_link(book_hash: str) -> str:
-    """Convierte el hash de un libro en un short_link estable de 10 caracteres."""
-    if not book_hash:
-        return ""
-    
-    # Usamos los primeros 10 caracteres de un hash MD5 del hash original
-    # (MD5 es suficiente para colisiones en 10 caracteres y da un set alfanumérico limpio)
-    # Alphabet: a-z, A-Z, 0-9 para Base62-like stability
-    alphabet = string.ascii_letters + string.digits
-    
-    # Derivamos un valor numérico del hash
-    hash_int = int(hashlib.md5(book_hash.encode()).hexdigest(), 16)
-    
-    res = []
-    temp_hash = hash_int
-    for _ in range(10):
-        res.append(alphabet[temp_hash % len(alphabet)])
-        temp_hash //= len(alphabet)
-    
-    return "".join(res)
+from utils.helpers import generate_short_link
 
 async def main():
     print("Iniciando asignación de short_links estables basados en hash...")
@@ -63,7 +44,7 @@ async def main():
 
         updates = 0
         for book in books:
-            new_link = hash_to_short_link(book.book_hash)
+            new_link = generate_short_link(book.book_hash)
             if book.short_link != new_link:
                 book.short_link = new_link
                 updates += 1
