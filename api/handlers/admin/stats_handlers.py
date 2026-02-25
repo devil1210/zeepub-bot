@@ -113,7 +113,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
                 }
                 stmt_lb = select(LocalBook).where(or_(LocalBook.book_hash == p_book_hash, LocalBook.title == p_title))
                 lb_res = await session.execute(stmt_lb)
-                lb = lb_res.scalar_one_or_none()
+                lb = lb_res.scalars().first()
                 if lb:
                     popular_book["author"] = lb.author
                     popular_book["cover"] = lb.cover_low
