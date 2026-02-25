@@ -413,7 +413,7 @@ export const AIHub: React.FC = () => {
                                     />
                                     <button
                                         onClick={() => setShowSearch(true)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 px-6 py-3 rounded-premium-sm bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] border border-white/5 active:scale-95"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 min-h-[44px] px-6 py-3 rounded-premium-sm bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] border border-white/5 active:scale-95 flex items-center justify-center"
                                     >
                                         BUSCAR
                                     </button>
@@ -421,7 +421,7 @@ export const AIHub: React.FC = () => {
                                 <button
                                     onClick={handleScan}
                                     disabled={!scanHash || scanning || !aiActive}
-                                    className="px-12 py-6 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs transition-all shadow-2xl shadow-primary/30 flex items-center justify-center gap-4 active:scale-95 group"
+                                    className="min-h-[44px] px-12 py-6 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs transition-all shadow-2xl shadow-primary/30 flex items-center justify-center gap-4 active:scale-95 group"
                                 >
                                     {scanning ? (
                                         <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -477,9 +477,9 @@ export const AIHub: React.FC = () => {
                                     </div>
                                     <button
                                         onClick={handleToggleBackgroundScan}
-                                        className={`w-14 h-8 rounded-full transition-all relative flex items-center ${backgroundScanEnabled ? 'bg-primary shadow-[0_0_20px_rgba(59,130,246,0.5)]' : 'bg-gray-800'}`}
+                                        className={`w-14 h-8 min-h-[44px] rounded-full transition-all relative flex items-center justify-center ${backgroundScanEnabled ? 'bg-primary shadow-[0_0_20px_rgba(59,130,246,0.5)]' : 'bg-gray-800'}`}
                                     >
-                                        <div className={`w-6 h-6 rounded-full bg-white transition-all shadow-lg ${backgroundScanEnabled ? 'translate-x-7' : 'translate-x-1'}`}></div>
+                                        <div className={`w-6 h-6 rounded-full bg-white transition-all shadow-lg absolute ${backgroundScanEnabled ? 'right-1' : 'left-1'}`}></div>
                                     </button>
                                 </label>
                             </div>
@@ -533,7 +533,7 @@ export const AIHub: React.FC = () => {
                             </h3>
                             <button
                                 onClick={loadProposals}
-                                className="p-3 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-all active:scale-95"
+                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-all active:scale-95"
                                 title="Refrescar propuestas"
                             >
                                 <Activity className={`w-5 h-5 text-gray-400 ${loadingLists ? 'animate-spin text-primary' : ''}`} />
@@ -800,7 +800,7 @@ export const AIHub: React.FC = () => {
                             </div>
                             <button
                                 onClick={() => setShowProposal(false)}
-                                className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all"
+                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -847,7 +847,7 @@ export const AIHub: React.FC = () => {
                                                 {!isEditingSeries ? (
                                                     <button
                                                         onClick={() => setIsEditingSeries(true)}
-                                                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all opacity-0 group-hover:opacity-100"
                                                         title="Editar propuesta"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
@@ -855,7 +855,7 @@ export const AIHub: React.FC = () => {
                                                 ) : (
                                                     <button
                                                         onClick={() => setIsEditingSeries(false)}
-                                                        className="p-1.5 rounded-lg bg-primary/20 text-primary border border-primary/30"
+                                                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-primary/20 text-primary border border-primary/30"
                                                     >
                                                         <Save className="w-4 h-4" />
                                                     </button>
@@ -994,7 +994,7 @@ export const AIHub: React.FC = () => {
                                                                 />
                                                                 <button
                                                                     onClick={() => setEditingBookId(null)}
-                                                                    className="p-1 text-green-400 hover:text-green-300 transition-colors"
+                                                                    className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-green-400 hover:text-green-300 transition-colors"
                                                                 >
                                                                     <Check className="w-4 h-4" />
                                                                 </button>
@@ -1009,7 +1009,7 @@ export const AIHub: React.FC = () => {
                                                                 </div>
                                                                 <button
                                                                     onClick={() => setEditingBookId(change.book_id)}
-                                                                    className="p-1 rounded bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                                    className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
                                                                     title="Editar nombre"
                                                                 >
                                                                     <Edit2 className="w-3.5 h-3.5" />
@@ -1030,14 +1030,14 @@ export const AIHub: React.FC = () => {
                         <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
                             <button
                                 onClick={() => setShowProposal(false)}
-                                className="px-6 py-3 rounded-premium-sm font-bold text-gray-400 hover:bg-white/5 transition-all"
+                                className="min-h-[44px] flex items-center justify-center px-6 py-3 rounded-premium-sm font-bold text-gray-400 hover:bg-white/5 transition-all"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleApplyChanges}
                                 disabled={processingProposal}
-                                className="px-8 py-3 rounded-premium-sm font-bold bg-primary hover:bg-primary/90 text-white flex items-center gap-2 transition-all shadow-lg shadow-primary/20"
+                                className="min-h-[44px] flex items-center justify-center px-8 py-3 rounded-premium-sm font-bold bg-primary hover:bg-primary/90 text-white gap-2 transition-all shadow-lg shadow-primary/20"
                             >
                                 {processingProposal ? (
                                     <>
@@ -1062,7 +1062,7 @@ export const AIHub: React.FC = () => {
                     <div className="w-full max-w-2xl bg-[#0a0a0c] border border-white/10 rounded-premium p-6 shadow-2xl relative">
                         <button
                             onClick={() => setShowSearch(false)}
-                            className="absolute top-4 right-4 text-gray-500 hover:text-white"
+                            className="absolute top-4 right-4 p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-500 hover:text-white"
                         >
                             <X className="w-6 h-6" />
                         </button>
@@ -1082,7 +1082,7 @@ export const AIHub: React.FC = () => {
                             <button
                                 onClick={runSearch}
                                 disabled={searching}
-                                className="bg-primary hover:bg-primary/90 text-white px-6 rounded-premium-sm font-bold transition-all"
+                                className="min-h-[44px] flex items-center justify-center bg-primary hover:bg-primary/90 text-white px-6 rounded-premium-sm font-bold transition-all"
                             >
                                 {searching ? "..." : "Buscar"}
                             </button>

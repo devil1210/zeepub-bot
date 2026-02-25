@@ -147,10 +147,12 @@ enable_miniapp = os.getenv("ENABLE_MINI_APP", "True").lower() == "true"
 
 if enable_miniapp:
     # Importar rutas solo si está activo
+    from api.handlers.public_routes import router as public_router
     from api.library_routes import router as library_router
     from api.miniapp_routes import router as miniapp_router
     from api.routes import router
 
+    app.include_router(public_router, prefix="/api")
     app.include_router(router)
     app.include_router(miniapp_router)
     app.include_router(library_router)

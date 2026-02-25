@@ -131,7 +131,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
         { icon: <ShieldCheck className="w-3 h-3" />, label: 'Sin Censura', value: 'is_uncensored' },
         { icon: <Palette className="w-3 h-3" />, label: 'Color/B&N', value: 'color_mode' },
         { icon: <Languages className="w-3 h-3" />, label: 'Idioma', value: 'language' },
-        { icon: <FileArchive className="w-3 h-3" />, label: 'Archivo', value: 'archivo' }
+        { icon: <FileArchive className="w-3 h-3" />, label: 'Archivo', value: 'archivo' },
+        { icon: <LinkIcon className="w-3 h-3 border-primary text-primary" />, label: 'Descarga', value: 'download_link' }
     ];
 
     return (

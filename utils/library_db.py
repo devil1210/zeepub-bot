@@ -160,6 +160,7 @@ def check_migrations():
                 add_column_if_missing("local_books", "cover_low", "VARCHAR(1024)")
                 add_column_if_missing("local_books", "summary", "VARCHAR(1024)")
                 add_column_if_missing("local_books", "demographics", "JSONB")
+                add_column_if_missing("local_books", "short_link", "VARCHAR(20) UNIQUE")
 
             # 2. user_levels
             if table_exists("user_levels"):

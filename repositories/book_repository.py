@@ -154,6 +154,11 @@ class BookRepository(BaseRepository[LocalBook]):
 
     async def create(self, book: LocalBook) -> LocalBook:
         """Crea un nuevo libro en la base de datos."""
+        from utils.helpers import generate_short_link
+
+        if not book.short_link:
+            book.short_link = generate_short_link()
+
         async with pg_manager.get_session() as session:
             session.add(book)
             await session.commit()

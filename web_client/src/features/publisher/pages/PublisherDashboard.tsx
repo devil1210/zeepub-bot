@@ -133,7 +133,7 @@ export const PublisherDashboard: React.FC = () => {
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        className={`min-h-[44px] flex-1 flex items-center justify-center gap-2 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         {tab === 'queue' && <Calendar className="w-3.5 h-3.5" />}
@@ -149,7 +149,7 @@ export const PublisherDashboard: React.FC = () => {
                     <div className="flex flex-col gap-3">
                         <div className="flex justify-between items-center px-1">
                             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Cola de Publicación</h2>
-                            <button onClick={refresh} className="p-2 glass-panel rounded-full hover:bg-white/10 transition-all">
+                            <button onClick={refresh} className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center glass-panel rounded-full hover:bg-white/10 transition-all">
                                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                             </button>
                         </div>
@@ -205,14 +205,14 @@ export const PublisherDashboard: React.FC = () => {
                                             </div>
                                             <button
                                                 onClick={() => handleEditQueueItem(item)}
-                                                className="p-1.5 text-gray-400 hover:text-white transition-colors"
+                                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-white transition-colors"
                                                 title="Editar"
                                             >
                                                 <Edit3 className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => deleteQueueItem(item.id)}
-                                                className="p-1.5 text-gray-500 hover:text-red-400 transition-colors"
+                                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-500 hover:text-red-400 transition-colors"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -244,7 +244,7 @@ export const PublisherDashboard: React.FC = () => {
                                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Canales Vinculados</h2>
                                 <button
                                     onClick={handleCreateChannel}
-                                    className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                                    className="min-h-[44px] flex items-center gap-2 px-4 py-2 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20"
                                 >
                                     <Plus className="w-3.5 h-3.5" /> Nuevo
                                 </button>
@@ -276,20 +276,20 @@ export const PublisherDashboard: React.FC = () => {
                                         <div className="flex items-center gap-1">
                                             <button
                                                 onClick={() => toggleFavorite(channel.id)}
-                                                className={`p-2 transition-colors ${channel.is_favorite ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-600 hover:text-yellow-400'}`}
+                                                className={`p-3 min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${channel.is_favorite ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-600 hover:text-yellow-400'}`}
                                                 title={channel.is_favorite ? "Quitar de favoritos" : "Marcar como favorito"}
                                             >
                                                 <Star className={`w-4 h-4 ${channel.is_favorite ? 'fill-yellow-400' : ''}`} />
                                             </button>
                                             <button
                                                 onClick={() => handleEditChannel(channel)}
-                                                className="p-2 text-gray-400 hover:text-white transition-colors"
+                                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-white transition-colors"
                                             >
                                                 <Edit3 className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => deleteChannel(channel.id)}
-                                                className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-red-400 transition-colors"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -336,7 +336,7 @@ export const PublisherDashboard: React.FC = () => {
                                             ) : (
                                                 <button
                                                     onClick={() => promoteDiscovered(chat.chat_id, chat.title)}
-                                                    className="opacity-60 group-hover:opacity-100 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[9px] font-black uppercase tracking-wider transition-all"
+                                                    className="opacity-60 group-hover:opacity-100 flex items-center justify-center gap-1.5 min-w-[44px] min-h-[44px] px-3 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 text-[9px] font-black uppercase tracking-wider transition-all"
                                                 >
                                                     Agregar <Plus className="w-3 h-3" />
                                                 </button>
@@ -355,14 +355,14 @@ export const PublisherDashboard: React.FC = () => {
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => restoreTemplates('telegram')}
-                                    className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase text-gray-400 hover:text-white border-white/5 hover:bg-white/5 transition-all"
+                                    className="min-h-[44px] flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase text-gray-400 hover:text-white border-white/5 hover:bg-white/5 transition-all"
                                     title="Restaurar todas las plantillas de Telegram a sus valores por defecto"
                                 >
-                                    <RefreshCw className="w-3" h-3="" /> Restaurar
+                                    <RefreshCw className="w-3 h-3" /> Restaurar
                                 </button>
                                 <button
                                     onClick={handleCreateTemplate}
-                                    className="flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                                    className="min-h-[44px] flex items-center gap-2 px-3 py-1.5 glass-panel rounded-premium-sm text-[9px] font-black uppercase bg-primary text-white border-primary shadow-lg shadow-primary/20"
                                 >
                                     <Plus className="w-3.5 h-3.5" /> Nueva
                                 </button>
@@ -387,13 +387,13 @@ export const PublisherDashboard: React.FC = () => {
                                 <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => handleEditTemplate(template)}
-                                        className="p-2 text-gray-400 hover:text-white transition-colors"
+                                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-white transition-colors"
                                     >
                                         <Edit3 className="w-4 h-4" />
                                     </button>
                                     <button
                                         onClick={() => deleteTemplate(template.id)}
-                                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-red-400 transition-colors"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>

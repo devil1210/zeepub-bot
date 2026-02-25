@@ -23,7 +23,7 @@ class PublicationChannel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relación con la cola
-    queued_items = relationship("PublicationQueue", back_populates="channel")
+    queued_items = relationship("PublicationQueue", back_populates="channel", cascade="all, delete-orphan")
 
 
 class DiscoveredChat(Base):

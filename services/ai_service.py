@@ -62,6 +62,11 @@ class AIService:
                     )
 
                     response = client.models.generate_content(model=model_name, contents=prompt, config=config_args)
+                    if hasattr(response, "usage_metadata") and response.usage_metadata:
+                        usage = response.usage_metadata
+                        logger.info(
+                            f"🧠 [{model_name}] Tokens -> In: {usage.prompt_token_count} | Out: {usage.candidates_token_count} | Total: {usage.total_token_count}"
+                        )
                     return response.text
                 except Exception as e:
                     error_str = str(e).upper()

@@ -127,6 +127,16 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
             sinopsis_raw = re.sub(r"<br\s*/?>", "\n", sinopsis_raw, flags=re.IGNORECASE)
             sinopsis_raw = re.sub(r"\n{3,}", "\n\n", sinopsis_raw).strip()
 
+        from config.config_settings import config
+
+        download_link = ""
+        short_link = data.get("short_link")
+        if short_link:
+            base_url = config.DL_DOMAIN.rstrip("/") if config.DL_DOMAIN else config.BASE_URL.rstrip("/")
+            if base_url and not base_url.startswith("http"):
+                base_url = f"https://{base_url}"
+            download_link = f"{base_url}/api/s/{short_link}"
+
         mapping.update(
             {
                 "titulo": data.get("title") or data.get("titulo") or "",
@@ -177,6 +187,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "titulo_serie": data.get("series") or data.get("titulo_serie") or "",
                 "fecha_actualizacion": data.get("updated_at") or data.get("fecha_modificacion") or fecha_mod_formatted,
                 "descargas_globales": str(data.get("descargas_globales") or data.get("total_downloads") or 0),
+                "download_link": download_link,
             }
         )
 

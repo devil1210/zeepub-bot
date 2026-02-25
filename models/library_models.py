@@ -259,6 +259,7 @@ class LocalBook(Base):
     series_metadata_id = Column(Integer, ForeignKey("series_metadata.id"), index=True)
     series_hash = Column(String(64), index=True)  # Mantener por compatibilidad y búsqueda rápida
     book_hash = Column(String(64), index=True, unique=True)  # Identificador único del libro (antes content_hash)
+    short_link = Column(String(20), unique=True, index=True, nullable=True)  # Enlace corto descargas seguras
 
     source = relationship("LibrarySource", back_populates="books")
     series_info = relationship("SeriesMetadata", back_populates="books")
@@ -270,6 +271,7 @@ class LocalBook(Base):
         return {
             "id": f"local_{self.id}",  # Prefijo para distinguir de Kavita IDs
             "hash": self.book_hash,
+            "short_link": self.short_link,
             "title": self.title,
             "author": self.author,
             "romajiTitle": self.romaji_title,
