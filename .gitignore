@@ -18,8 +18,7 @@
 !scripts/*.py
 
 !.agent/
-!.agent/workflows/
-.agent/skills/
+!.agent/**
 
 # Virtualenvs
 venv/
