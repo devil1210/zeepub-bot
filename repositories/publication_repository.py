@@ -128,6 +128,11 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
 
     async def delete_channel(self, channel_id: int) -> bool:
         async with self.db_manager.get_session() as session:
+            # Desvincular o eliminar de la cola antes de eliminar el canal
+            # Como channel_id es NOT NULL en PublicationQueue, eliminamos los items de la cola asociados
+            stmt_queue = delete(PublicationQueue).where(PublicationQueue.channel_id == channel_id)
+            await session.execute(stmt_queue)
+
             stmt = delete(PublicationChannel).where(PublicationChannel.id == channel_id)
             result = await session.execute(stmt)
             await session.commit()
