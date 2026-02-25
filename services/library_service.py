@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import String, and_, cast, exists, func, or_, select, text
+from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, MetadataProposal, SeriesMetadata, UserDownload
@@ -229,6 +230,7 @@ class LibraryService:
                 # Optimized query using outer join and group_by for much faster performance on large series
                 stmt = (
                     select(LocalBook, func.count(UserDownload.id).label("download_count"))
+                    .options(selectinload(LocalBook.series_info))
                     .outerjoin(UserDownload, UserDownload.book_hash == LocalBook.book_hash)
                     .where(LocalBook.series_hash == series_hash)
                     .group_by(LocalBook.id)
@@ -339,6 +341,7 @@ class LibraryService:
                 # Esta consulta simplificada obtiene libros sin serie asignda explícitamente
                 stmt = (
                     select(LocalBook)
+                    .options(selectinload(LocalBook.series_info))
                     .where(or_(LocalBook.series.is_(None), LocalBook.series == ""))
                     .order_by(LocalBook.author, LocalBook.title)
                 )
@@ -407,6 +410,7 @@ class LibraryService:
             try:
                 stmt = (
                     select(LocalBook)
+                    .options(selectinload(LocalBook.series_info))
                     .where(or_(LocalBook.series.is_(None), LocalBook.series == ""))
                     .order_by(LocalBook.indexed_at.desc())
                     .limit(limit)
@@ -435,9 +439,11 @@ class LibraryService:
         async with pg_manager.get_session() as session:
             try:
                 if series_hash:
-                    # List volumes of a specific series
                     stmt = (
-                        select(LocalBook).where(LocalBook.series_hash == series_hash).order_by(LocalBook.volume.asc())
+                        select(LocalBook)
+                        .options(selectinload(LocalBook.series_info))
+                        .where(LocalBook.series_hash == series_hash)
+                        .order_by(LocalBook.volume.asc())
                     )
                     res = await session.execute(stmt)
                     books = res.scalars().all()

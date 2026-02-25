@@ -94,7 +94,11 @@ class BookRepository(BaseRepository[LocalBook]):
                     .scalar_subquery()
                 )
 
-                stmt = select(LocalBook, dl_subquery.label("download_count")).where(or_(*filters))
+                stmt = (
+                    select(LocalBook, dl_subquery.label("download_count"))
+                    .options(selectinload(LocalBook.series_info))
+                    .where(or_(*filters))
+                )
 
                 if source_id:
                     stmt = stmt.where(LocalBook.source_id == source_id)

@@ -4,6 +4,7 @@ from datetime import date
 from typing import Any
 
 from sqlalchemy import String, case, cast, desc, or_, select
+from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, UserDownload, UserRating
@@ -42,7 +43,11 @@ class RecommendationService:
                     )
 
                 # 3. Analizar perfiles (Tags y Autores)
-                hist_stmt = select(LocalBook).where(LocalBook.book_hash.in_(combined_hashes))
+                hist_stmt = (
+                    select(LocalBook)
+                    .options(selectinload(LocalBook.series_info))
+                    .where(LocalBook.book_hash.in_(combined_hashes))
+                )
                 hist_res = await session.execute(hist_stmt)
                 history_books = hist_res.scalars().all()
 
@@ -64,7 +69,11 @@ class RecommendationService:
                 target_tags = [t[0] for t in top_tags]
 
                 # 4. Buscar similares
-                cand_stmt = select(LocalBook).where(LocalBook.book_hash.notin_(downloaded_hashes))
+                cand_stmt = (
+                    select(LocalBook)
+                    .options(selectinload(LocalBook.series_info))
+                    .where(LocalBook.book_hash.notin_(downloaded_hashes))
+                )
 
                 # Construir filtros dinámicos (OR de autores o tags)
                 filters = []
@@ -114,7 +123,7 @@ class RecommendationService:
         """Fallback: Libros populares del catálogo total si no hay historial."""
 
         async def execute_query(sess):
-            query = select(LocalBook)
+            query = select(LocalBook).options(selectinload(LocalBook.series_info))
             if exclude_hashes:
                 query = query.where(LocalBook.book_hash.notin_(exclude_hashes))
 
@@ -149,7 +158,7 @@ class RecommendationService:
             # Super fallback
             try:
                 async with pg_manager.get_session() as last_resort:
-                    stmt = select(LocalBook).limit(limit)
+                    stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).limit(limit)
                     res = await last_resort.execute(stmt)
                     books = res.scalars().all()
                     return [book.to_dict() for book in books]
