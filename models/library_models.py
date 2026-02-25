@@ -43,7 +43,7 @@ class SeriesMetadata(Base):
     series_name = Column(String(255), nullable=False)
     series_spanish = Column(String(255))
     series_english = Column(String(255))  # Nueva columna para visualización coherente (Modificable por IA)
-    slug = Column(String(100), index=True)  # Slug persistente para URLs y referencias
+    slug = Column(String(512), index=True)  # Slug persistente para URLs y referencias
     spanish_title = Column(String(255))  # Para paridad con LocalBook
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
