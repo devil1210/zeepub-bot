@@ -73,7 +73,9 @@ class SeriesScanner:
 
             if book.series_english and series.series_english != book.series_english:
                 series.series_english = book.series_english
-                series.slug = generar_slug_from_meta(book.to_dict())
+                # Solo actualizar slug si no existe o es un hash largo residual
+                if not series.slug or len(str(series.slug)) > 40:
+                    series.slug = generar_slug_from_meta(book.to_dict())
 
             if book.book_type and series.book_type != book.book_type:
                 series.book_type = book.book_type
@@ -144,6 +146,11 @@ class SeriesScanner:
                 if hasattr(b, "series_english") and b.series_english:
                     series.series_english = b.series_english
                     break
+
+        # Completar o corregir SLUG solo si es nulo o es un hash largo (SHA256 de 64 chars)
+        # Una vez que tiene un slug humano (ej: "slayers"), no se toca más.
+        if books and (not series.slug or len(str(series.slug)) > 40):
+            series.slug = generar_slug_from_meta(books[0].to_dict())
 
         if not series.cover_url or "_low.jpg" not in series.cover_url:
             for b in books:
