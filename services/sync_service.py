@@ -144,6 +144,7 @@ class SyncService:
                 try:
                     client.table("series_metadata").upsert(data, on_conflict="series_hash").execute()
                     stats["series"] += len(data)
+                    print(f"📚 Series sincronizadas: {stats['series']}/{len(series_list)}")
                 except Exception as ex:
                     logger.error(f"Error syncing series batch {i}: {ex}")
 
@@ -330,8 +331,11 @@ class SyncService:
                 try:
                     client.table("local_books").upsert(batch, on_conflict="book_hash").execute()
                     stats["books"] += len(batch)
+                    if i % 250 == 0:
+                        print(f"📦 Libros sincronizados: {stats['books']}/{len(data)}")
                 except Exception as ex:
                     logger.error(f"Error syncing books batch {i}: {ex}")
+                    print(f"❌ Error en lote {i}: {ex}")
 
         except Exception as e:
             logger.error(f"Error en _sync_books: {e}")

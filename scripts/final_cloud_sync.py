@@ -3,11 +3,17 @@ import os
 import sys
 
 # Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from dotenv import load_dotenv
+# Bloquear uso de host Docker/db para PostgresManager local ANTES de importar config/manager
+os.environ["DATABASE_URL"] = "postgresql+asyncpg://zeepub:zeepub@localhost:5432/zeepub"
 
-# Import ALL models
+from config.config_settings import config
+
+# Sobreescribir el valor en el objeto cargado por si acaso
+config.DATABASE_URL = "postgresql+asyncpg://zeepub:zeepub@localhost:5432/zeepub"
+
+# Importar modelos ANTES que el manager para resolver relaciones
 try:
     import models.agent_models  # noqa: F401
     import models.library_models  # noqa: F401
@@ -19,14 +25,10 @@ except ImportError:
 from core.db_manager_pg import pg_manager
 from services.sync_service import SyncService
 
-load_dotenv()
-
 
 async def run_final_sync():
-    print("🚀 Inciando Sincronización Final a Supabase...")
-
-    # Asegurar configuración
-    os.environ["DATABASE_URL"] = "postgresql+asyncpg://zeepub:zeepub@localhost:5432/zeepub"
+    print("🚀 Iniciando Sincronización Final a Supabase...")
+    print(f"🔗 Usando DB: {config.DATABASE_URL}")
 
     try:
         await pg_manager.initialize()
@@ -50,6 +52,4 @@ async def run_final_sync():
 
 
 if __name__ == "__main__":
-    # Aumentar timeout si es necesario mediante settings de asyncpg si fuera accesible,
-    # pero intentaremos ejecución normal primero.
     asyncio.run(run_final_sync())
