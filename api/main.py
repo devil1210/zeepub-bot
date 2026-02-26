@@ -171,13 +171,39 @@ if enable_miniapp:
     from models.library_models import LocalBook as _LB
     from utils.library_db import get_session as _get_session
 
+    # Almacén temporal en memoria para Rate Limiting
+    _rate_limit_data = {}  # {ip: [timestamps]}
+
     @app.get("/{short_link}")
-    async def short_link_download(short_link: str):
+    async def short_link_download(request: Request, short_link: str):
         """Descarga segura de un libro mediante su short_link (Formato Ultra-Corto)."""
-        # Validar formato: 10 caracteres alfanuméricos
+        # 1. Validar formato: 10 caracteres alfanuméricos
         if not short_link or not _re.match(r"^[a-zA-Z0-9]{10}$", short_link):
             # No levantar error aquí, dejar que continúe al siguiente router (SPA)
             raise HTTPException(status_code=404)
+
+        # 2. Protección contra Crawlers y Bots (User-Agent)
+        user_agent = request.headers.get("User-Agent", "").lower()
+        blocked_bots = ["googlebot", "bingbot", "slurp", "duckduckbot", "baiduspider", "yandexbot", "sogou", "exabot", "ia_archiver", "curl", "python-requests", "wget"]
+        if not user_agent or any(bot in user_agent for bot in blocked_bots):
+            logger.warning(f"⚠️ Intento de bot bloqueado: {short_link} (UA: {user_agent})")
+            raise HTTPException(status_code=403, detail="Acceso denegado: Bots no permitidos")
+
+        # 3. Rate Limiting Simple (5 descargas por IP cada minuto)
+        client_ip = request.headers.get("X-Forwarded-For", request.client.host)
+        now = _asyncio.get_event_loop().time()
+        
+        if client_ip not in _rate_limit_data:
+            _rate_limit_data[client_ip] = []
+        
+        # Limpiar entradas de más de 60 segundos
+        _rate_limit_data[client_ip] = [t for t in _rate_limit_data[client_ip] if now - t < 60]
+        
+        if len(_rate_limit_data[client_ip]) >= 5:
+            logger.warning(f"🚫 Rate limit excedido para IP {client_ip} en link {short_link}")
+            raise HTTPException(status_code=429, detail="Has excedido el límite de descargas (5/min). Por favor, intenta más tarde.")
+        
+        _rate_limit_data[client_ip].append(now)
 
         def _find_book():
             session = _get_session()
@@ -208,12 +234,15 @@ if enable_miniapp:
                     status_code=404,
                     detail="El archivo físico no se encuentra disponible",
                 )
-            logger.info(f"Descarga segura: {book_data['title']} ({short_link})")
-            safe_title = _re.sub(r'[\\/*?:"<>|]', "", book_data["title"])
+            logger.info(f"📥 Descarga segura iniciada: {book_data['title']} por IP {client_ip}")
+            
+            # Usar el nombre de archivo real de la biblioteca
+            real_filename = os.path.basename(filepath)
+            
             return FileResponse(
                 path=filepath,
                 media_type="application/epub+zip",
-                filename=f"{safe_title}.epub",
+                filename=real_filename,
                 content_disposition_type="attachment",
             )
         except HTTPException:
