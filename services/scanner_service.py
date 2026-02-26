@@ -140,6 +140,11 @@ class ScannerService:
             if all_new_books:
                 asyncio.create_task(notification_service.notify_new_books(all_new_books))
 
+            # 🛠️ AUTO-HEAL: Corregir integridad y slugs automáticamente
+            logger.info("🛠️ Ejecutando auto-correcciones de integridad y slugs...")
+            await MaintenanceOrchestrator.run_tool("db_integrity")
+            await MaintenanceOrchestrator.run_tool("slug_recalculate")
+
             ScannerService._current_progress.update(
                 {
                     "status": "completed",

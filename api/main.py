@@ -1,14 +1,16 @@
 import asyncio
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
-# Configurar logging
 from config.config_settings import config
 from core.bot import ZeePubBot
+from utils.log_manager import setup_global_logging
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -23,14 +25,11 @@ logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # Configurar captura de logs para la interfaz
-from utils.log_manager import setup_global_logging
 
 setup_global_logging()
 
 # Instancia global del bot
 bot = ZeePubBot()
-
-import time
 
 app_start_time = time.time()
 
@@ -61,6 +60,11 @@ async def lifespan(app: FastAPI):
             logger.info("📦 Base de Datos: PostgreSQL (Activa)")
         else:
             logger.info(f"📦 Base de Datos: {config.DATABASE_URL.split(':', 1)[0]} (Activa)")
+
+        # 🛠️ AUTO-HEAL: Corregir integridad en segundo plano al iniciar
+        from services.maintenance.orchestrator import MaintenanceOrchestrator
+
+        asyncio.create_task(MaintenanceOrchestrator.run_tool("db_integrity"))
     else:
         logger.warning("📦 WARNING: DATABASE_URL no configurada.")
     try:
@@ -106,8 +110,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-from fastapi.middleware.gzip import GZipMiddleware
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 

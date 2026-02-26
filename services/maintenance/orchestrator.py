@@ -4,6 +4,7 @@ from datetime import datetime
 from services.maintenance.base import MaintenanceTool
 from services.maintenance.cover_tool import CoverRefreshTool
 from services.maintenance.enrich_tool import MetadataEnrichmentTool
+from services.maintenance.integrity_tool import DatabaseIntegrityTool
 from services.maintenance.slug_tool import SlugRecalculateTool
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ class MaintenanceOrchestrator:
         "cover_refresh": CoverRefreshTool(),
         "slug_recalculate": SlugRecalculateTool(),
         "metadata_enrich": MetadataEnrichmentTool(),
+        "db_integrity": DatabaseIntegrityTool(),
     }
 
     _is_running = False

@@ -466,3 +466,15 @@ async def handle_admin_update_covers(data: dict[str, Any], user_data: dict[str, 
     asyncio.create_task(MaintenanceOrchestrator.run_tool("cover_refresh"))
 
     return {"success": True, "message": "Actualización de portadas iniciada en segundo plano."}
+
+
+async def handle_admin_fix_integrity(data: dict[str, Any], user_data: dict[str, Any]):
+    """Activates background database integrity check for series linkage."""
+    check_staff(user_data)
+
+    from services.maintenance.orchestrator import MaintenanceOrchestrator
+
+    # Iniciar en segundo plano
+    asyncio.create_task(MaintenanceOrchestrator.run_tool("db_integrity"))
+
+    return {"success": True, "message": "Corrección de integridad iniciada en segundo plano."}
