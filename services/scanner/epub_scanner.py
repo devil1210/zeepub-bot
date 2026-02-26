@@ -260,12 +260,7 @@ class EpubScanner:
             book.demographics = classified_demographics
             book.tags = final_genres
 
-            # Romaji
-            romaji = meta.get("romaji_title")
-            if not romaji and book.title:
-                title_without_vol = re.sub(r"\s*-\s*Volumen\s+\d+.*$", "", book.title, flags=re.IGNORECASE).strip()
-                romaji = title_without_vol.split(" - ")[0].strip() if " - " in title_without_vol else title_without_vol
-            book.romaji_title = romaji
+            book.romaji_title = identity.get("romaji_title") or meta.get("romaji_title")
 
             book.isbn = meta.get("isbn")
             book.asin = meta.get("asin")

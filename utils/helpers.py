@@ -212,10 +212,12 @@ def process_book_identity_comprehensive(epub_path: str, original_filename: str |
     title = meta.get("title") or original_filename or "Sin título"
     author = normalize_author_name(meta.get("author"))
     series_meta = meta.get("series")
+    romaji_from_series = None
     # Si la serie viene con subtítulos en la metadata (ej: "Serie ~ Subtítulo"), limpiarla
     if series_meta:
         series_parsed_meta = parse_metadata_from_title(series_meta)
-        series = series_parsed_meta.get("series") or series_meta
+        series = series_parsed_meta.get("series_clean") or series_parsed_meta.get("series") or series_meta
+        romaji_from_series = series_parsed_meta.get("romaji")
     else:
         series = None
     volume = meta.get("volume")
@@ -313,6 +315,7 @@ def process_book_identity_comprehensive(epub_path: str, original_filename: str |
         "edition": meta.get("edition"),
         "is_uncensored": meta.get("is_uncensored", 0),
         "color_mode": meta.get("color_mode", "bw"),
+        "romaji_title": romaji_from_series or parsed.get("romaji"),
     }
 
 
