@@ -64,7 +64,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=v6-alpha,enable=${{ github.ref == 'refs/heads/feat/v6-local-index' || github.ref == 'refs/heads/feat/integrate-web-client' }}
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.ref == 'refs/heads/feat/integrate-web-client' }}
           labels: |
             org.opencontainers.image.title=ZeePub Bot
             org.opencontainers.image.description=Bot de Telegram para descargas de EPUB con Mini App y soporte de Facebook
