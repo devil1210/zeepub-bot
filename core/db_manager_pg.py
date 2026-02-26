@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -16,6 +17,7 @@ class PostgresManager:
     """
 
     _instance = None
+    _lock = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -27,50 +29,56 @@ class PostgresManager:
         self.engine = None
         self.session_maker = None
         self._initialized = False
+        self._lock = asyncio.Lock()
 
     async def initialize(self):
         """Initializes the database engine and session factory."""
         if self._initialized:
             return
 
-        db_url = config.DATABASE_URL
-        if not db_url:
-            logger.warning("No DATABASE_URL found. PostgresManager will not work.")
-            return
+        async with self._lock:
+            # Check again inside lock
+            if self._initialized:
+                return
 
-        # Handle 'postgres://' vs 'postgresql://' for SQLAlchemy
-        if db_url.startswith("postgres://"):
-            db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
-        elif db_url.startswith("postgresql://") and "+asyncpg" not in db_url:
-            db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-        try:
-            # Optimized async connection pool settings for production
-            engine_args = {
-                "echo": False,
-                "pool_pre_ping": True,  # Verify connections before using
-                "pool_size": config.DB_POOL_SIZE or 10,  # Base pool size
-                "max_overflow": config.DB_MAX_OVERFLOW or 20,  # Additional connections
-                "pool_recycle": 3600,  # Recycle connections after 1 hour
-                "pool_timeout": 30,  # Wait up to 30s for available connection
-                "connect_args": {
-                    "server_settings": {"jit": "off"},  # Disable JIT for faster simple queries
-                    "timeout": 10,  # Connection timeout (10s)
-                    "command_timeout": 30,  # Query timeout (30s)
-                },
-            }
+            db_url = config.DATABASE_URL
+            if not db_url:
+                logger.warning("No DATABASE_URL found. PostgresManager will not work.")
+                return
 
-            self.engine = create_async_engine(db_url, **engine_args)
+            # Handle 'postgres://' vs 'postgresql://' for SQLAlchemy
+            if db_url.startswith("postgres://"):
+                db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif db_url.startswith("postgresql://") and "+asyncpg" not in db_url:
+                db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            try:
+                # Optimized async connection pool settings for production
+                engine_args = {
+                    "echo": False,
+                    "pool_pre_ping": True,  # Verify connections before using
+                    "pool_size": config.DB_POOL_SIZE or 10,  # Base pool size
+                    "max_overflow": config.DB_MAX_OVERFLOW or 20,  # Additional connections
+                    "pool_recycle": 3600,  # Recycle connections after 1 hour
+                    "pool_timeout": 30,  # Wait up to 30s for available connection
+                    "connect_args": {
+                        "server_settings": {"jit": "off"},  # Disable JIT for faster simple queries
+                        "timeout": 10,  # Connection timeout (10s)
+                        "command_timeout": 30,  # Query timeout (30s)
+                    },
+                }
 
-            self.session_maker = async_sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
+                self.engine = create_async_engine(db_url, **engine_args)
 
-            # Verify connection
-            async with self.engine.begin() as conn:
-                await conn.run_sync(lambda _: logger.info("Postgres connection established successfully."))
+                self.session_maker = async_sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
 
-            self._initialized = True
-        except Exception as e:
-            logger.error(f"Failed to initialize Postgres connection: {e}")
-            raise
+                # Verify connection
+                async with self.engine.begin() as conn:
+                    await conn.run_sync(lambda _: logger.info("Postgres connection established successfully."))
+
+                self._initialized = True
+            except Exception as e:
+                logger.error(f"Failed to initialize Postgres connection: {e}")
+                raise
 
     @asynccontextmanager
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:

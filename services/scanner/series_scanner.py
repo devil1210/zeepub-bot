@@ -36,7 +36,7 @@ class SeriesScanner:
 
         if not series:
             series = SeriesMetadata(
-                series_name=book.series or book.title,
+                series_name=book.series_english or book.series or book.title,
                 series_spanish=book.series_spanish,
                 series_english=book.series_english,
                 series_hash=book.series_hash,

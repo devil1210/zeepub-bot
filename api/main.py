@@ -39,6 +39,21 @@ app_state = {"start_time": app_start_time}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Maneja el ciclo de vida de la aplicación:
+    1. Registra handlers del bot.
+    2. Inicia el bot en segundo plano.
+    3. Inicializa el gestor de base de datos.
+    4. Limpia recursos al apagar.
+    """
+    from core.db_manager_pg import pg_manager
+
+    # 1. Inicializar DB (Prevenir errores de loop en tareas de fondo)
+    try:
+        await pg_manager.initialize()
+    except Exception as e:
+        logger.error(f"Postgres initial connection failed: {e}")
+
     # Startup: Iniciar el bot
     logger.info("Iniciando ZeePub Bot junto con la API...")
 
@@ -93,6 +108,9 @@ async def lifespan(app: FastAPI):
     from utils.url_validator import stop_background_validator
 
     stop_background_validator()
+
+    # Close DB connections
+    await pg_manager.close()
 
 
 app = FastAPI(

@@ -31,11 +31,18 @@ class DatabaseIntegrityTool(MaintenanceTool):
         try:
             async with pg_manager.get_session() as session:
                 # 1. Buscar hashes de series que tienen libros sin vincular
-                stmt = (
+                stmt_unlinked = (
                     select(LocalBook.series_hash)
                     .where(LocalBook.series_metadata_id.is_(None), LocalBook.series_hash.is_not(None))
                     .distinct()
                 )
+
+                # 2. También incluir todas las series para "sanar" nombres y tags si es necesario
+                stmt_all_series = select(SeriesMetadata.series_hash)
+
+                from sqlalchemy import union
+
+                stmt = union(stmt_unlinked, stmt_all_series)
 
                 result = await session.execute(stmt)
                 hashes = result.scalars().all()
@@ -53,18 +60,26 @@ class DatabaseIntegrityTool(MaintenanceTool):
                 logger.info(f"Integrity check: Processing {total} unlinked series hashes...")
 
                 for i, s_hash in enumerate(hashes):
-                    # Buscar la serie correspondiente
-                    series_stmt = select(SeriesMetadata.id).where(SeriesMetadata.series_hash == s_hash)
+                    # 2. Re-verificar la serie y sus nombres
+                    series_stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == s_hash)
                     series_res = await session.execute(series_stmt)
-                    series_id = series_res.scalar_one_or_none()
+                    series = series_res.scalar_one_or_none()
 
-                    if series_id:
+                    if series:
+                        # Auto-heal series_name: Preferir series_english (el limpio) sobre el raw si es posible
+                        old_name = series.series_name
+                        if series.series_english and series.series_english != series.series_name:
+                            # Heurística: Si el nombre actual tiene mucho Romaji o es sospechoso,
+                            # o simplemente si series_english existe y no es el slug hash
+                            series.series_name = series.series_english
+                            logger.info(f"Integrity: Healed name for {s_hash[:8]}: {old_name} -> {series.series_name}")
+
                         # Vincular todos los libros con este hash
                         update_stmt = (
                             update(LocalBook)
                             .where(LocalBook.series_hash == s_hash)
                             .where(LocalBook.series_metadata_id.is_(None))
-                            .values(series_metadata_id=series_id)
+                            .values(series_metadata_id=series.id)
                         )
                         upd_res = await session.execute(update_stmt)
                         stats["books_linked"] += upd_res.rowcount

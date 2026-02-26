@@ -186,8 +186,8 @@ class LibraryService:
                     dto = SeriesDTO(
                         id=f"series_{s.series_hash}",
                         series_hash=s.series_hash,
-                        title=s.series_english or s.series_name,
-                        series=s.series_english or s.series_name,
+                        title=s.series_name,
+                        series=s.series_name,
                         series_spanish=s.series_spanish,
                         series_english=s.series_english,
                         author=s.author,

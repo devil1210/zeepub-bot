@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 import shutil
-import threading
 from typing import Any
 
 from fastapi import HTTPException
@@ -66,17 +65,6 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
     force = data.get("force", False)
     soft = data.get("soft", False)
 
-    def run_scan_in_thread(scanner_obj, force_val, soft_val):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            logger.info(f"Background scan thread started (Force: {force_val}, Soft: {soft_val})")
-            loop.run_until_complete(scanner_obj.sync_all(force_scan=force_val, soft_scan=soft_val))
-        except Exception as e:
-            logger.error(f"Background scan thread error: {e}")
-        finally:
-            loop.close()
-
     if ScannerService._is_scanning:
         return {"success": False, "message": "⚠️ Ya hay un escaneo de librería en progreso."}
 
@@ -85,8 +73,8 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
         return {"success": False, "message": "LOCAL_LIBRARIES no configurada."}
 
     scanner = ScannerService(libs_json)
-    t = threading.Thread(target=run_scan_in_thread, args=(scanner, force, soft))
-    t.start()
+    # 🛠️ CORRECCIÓN: Usar asyncio.create_task en el loop principal en lugar de nuevo thread+loop
+    asyncio.create_task(scanner.sync_all(force_scan=force, soft_scan=soft))
     return {"success": True, "message": "Escaneo iniciado en segundo plano."}
 
 
@@ -114,23 +102,13 @@ async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, An
     if not series_hash:
         return {"success": False, "message": "series_hash es requerido."}
 
-    def run_series_scan_in_thread(scanner_obj, s_hash, force_val):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(scanner_obj.sync_series(s_hash, force_scan=force_val))
-        except Exception as e:
-            logger.error(f"Background series scan error: {e}")
-        finally:
-            loop.close()
-
     if ScannerService._is_scanning:
         return {"success": False, "message": "⚠️ Ya hay un escaneo de librería en progreso."}
 
     libs_json = os.getenv("LOCAL_LIBRARIES")
     scanner = ScannerService(libs_json or "{}")
-    t = threading.Thread(target=run_series_scan_in_thread, args=(scanner, series_hash, force))
-    t.start()
+    # 🛠️ CORRECCIÓN: Usar asyncio.create_task
+    asyncio.create_task(scanner.sync_series(series_hash, force_scan=force))
     return {"success": True, "message": "Sincronización de serie iniciada en segundo plano."}
 
 
@@ -348,21 +326,19 @@ async def handle_admin_clear_duplicates(data: dict[str, Any], user_data: dict[st
 async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
 
-    def run_ai_scan_in_thread():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            LibraryService._is_ai_scanning = True
-            loop.run_until_complete(LibraryService.find_ai_series_duplicates())
-        except Exception as e:
-            logger.error(f"AI scan thread error: {e}")
-        finally:
-            LibraryService._is_ai_scanning = False
-            loop.close()
-
     if LibraryService._is_ai_scanning:
         return {"success": False, "message": "Ya en curso."}
-    threading.Thread(target=run_ai_scan_in_thread).start()
+
+    async def run_ai_scan():
+        try:
+            LibraryService._is_ai_scanning = True
+            await LibraryService.find_ai_series_duplicates()
+        except Exception as e:
+            logger.error(f"AI scan task error: {e}")
+        finally:
+            LibraryService._is_ai_scanning = False
+
+    asyncio.create_task(run_ai_scan())
     return {"success": True, "message": "Iniciado en segundo plano."}
 
 
