@@ -5,11 +5,11 @@ Reads each SKILL.md frontmatter 'name' field and uses it as a flat directory
 name under skills/ to comply with the repository's indexing conventions.
 """
 
+import json
 import re
 import shutil
 import subprocess
 import tempfile
-import json
 from pathlib import Path
 
 MS_REPO = "https://github.com/microsoft/skills.git"
@@ -54,8 +54,7 @@ def cleanup_previous_sync():
             shutil.rmtree(skill_dir)
             removed_count += 1
 
-    print(
-        f"  🗑️  Removed {removed_count} previously synced skill directories.")
+    print(f"  🗑️  Removed {removed_count} previously synced skill directories.")
     return removed_count
 
 
@@ -127,11 +126,13 @@ def find_skills_in_directory(source_dir: Path):
         except ValueError:
             continue
 
-        results.append({
-            "relative_path": relative_path,
-            "skill_md": skill_md,
-            "source_dir": actual_dir,
-        })
+        results.append(
+            {
+                "relative_path": relative_path,
+                "skill_md": skill_md,
+                "source_dir": actual_dir,
+            }
+        )
 
     return results
 
@@ -149,11 +150,13 @@ def find_plugin_skills(source_dir: Path, already_synced_names: set):
         skill_name = skill_dir.name
 
         if skill_name not in already_synced_names:
-            results.append({
-                "relative_path": Path("plugins") / skill_name,
-                "skill_md": skill_file,
-                "source_dir": skill_dir,
-            })
+            results.append(
+                {
+                    "relative_path": Path("plugins") / skill_name,
+                    "skill_md": skill_file,
+                    "source_dir": skill_dir,
+                }
+            )
 
     return results
 
@@ -171,11 +174,13 @@ def find_github_skills(source_dir: Path, already_synced_names: set):
             continue
 
         if skill_dir.name not in already_synced_names:
-            results.append({
-                "relative_path": Path(".github/skills") / skill_dir.name,
-                "skill_md": skill_dir / "SKILL.md",
-                "source_dir": skill_dir,
-            })
+            results.append(
+                {
+                    "relative_path": Path(".github/skills") / skill_dir.name,
+                    "skill_md": skill_dir / "SKILL.md",
+                    "source_dir": skill_dir,
+                }
+            )
 
     return results
 
@@ -192,9 +197,7 @@ def sync_skills_flat(source_dir: Path, target_dir: Path):
         try:
             with open(ATTRIBUTION_FILE) as f:
                 prev = json.load(f)
-            previously_synced_names = {
-                s["flat_name"] for s in prev.get("skills", []) if s.get("flat_name")
-            }
+            previously_synced_names = {s["flat_name"] for s in prev.get("skills", []) if s.get("flat_name")}
         except (json.JSONDecodeError, OSError):
             pass
 
@@ -211,14 +214,12 @@ def sync_skills_flat(source_dir: Path, target_dir: Path):
 
         if not skill_name:
             skill_name = generate_fallback_name(entry["relative_path"])
-            print(
-                f"  ⚠️  No frontmatter name for {entry['relative_path']}, using fallback: {skill_name}")
+            print(f"  ⚠️  No frontmatter name for {entry['relative_path']}, using fallback: {skill_name}")
 
         # Internal collision detection (two Microsoft skills with same name)
         if skill_name in used_names:
             original = used_names[skill_name]
-            print(
-                f"  ⚠️  Name collision '{skill_name}': {entry['relative_path']} vs {original}")
+            print(f"  ⚠️  Name collision '{skill_name}': {entry['relative_path']} vs {original}")
             lang = entry["relative_path"].parts[0] if entry["relative_path"].parts else "unknown"
             skill_name = f"{skill_name}-{lang}"
             print(f"       Resolved to: {skill_name}")
@@ -228,8 +229,7 @@ def sync_skills_flat(source_dir: Path, target_dir: Path):
         if target_skill_dir.exists() and skill_name not in previously_synced_names:
             original_name = skill_name
             skill_name = f"{skill_name}-ms"
-            print(
-                f"  ⚠️  '{original_name}' exists as a non-Microsoft skill, using: {skill_name}")
+            print(f"  ⚠️  '{original_name}' exists as a non-Microsoft skill, using: {skill_name}")
 
         used_names[skill_name] = str(entry["relative_path"])
 
@@ -245,19 +245,20 @@ def sync_skills_flat(source_dir: Path, target_dir: Path):
             if file_item.name != "SKILL.md" and file_item.is_file():
                 shutil.copy2(file_item, target_skill_dir / file_item.name)
 
-        skill_metadata.append({
-            "flat_name": skill_name,
-            "original_path": str(entry["relative_path"]),
-            "source": "microsoft/skills",
-        })
+        skill_metadata.append(
+            {
+                "flat_name": skill_name,
+                "original_path": str(entry["relative_path"]),
+                "source": "microsoft/skills",
+            }
+        )
 
         synced_count += 1
         print(f"  ✅ {entry['relative_path']} → skills/{skill_name}/")
 
     # Collect all source directory names already synced (for dedup)
     synced_names = set(used_names.keys())
-    already_synced_dir_names = {
-        e["source_dir"].name for e in all_skill_entries}
+    already_synced_dir_names = {e["source_dir"].name for e in all_skill_entries}
 
     # Sync plugin skills from .github/plugins/
     plugin_entries = find_plugin_skills(source_dir, already_synced_dir_names)
@@ -278,8 +279,7 @@ def sync_skills_flat(source_dir: Path, target_dir: Path):
                 original_name = skill_name
                 skill_name = f"{skill_name}-ms"
                 target_skill_dir = target_dir / skill_name
-                print(
-                    f"  ⚠️  '{original_name}' exists as a non-Microsoft skill, using: {skill_name}")
+                print(f"  ⚠️  '{original_name}' exists as a non-Microsoft skill, using: {skill_name}")
 
             synced_names.add(skill_name)
             already_synced_dir_names.add(entry["source_dir"].name)
@@ -292,22 +292,22 @@ def sync_skills_flat(source_dir: Path, target_dir: Path):
                 if file_item.name != "SKILL.md" and file_item.is_file():
                     shutil.copy2(file_item, target_skill_dir / file_item.name)
 
-            skill_metadata.append({
-                "flat_name": skill_name,
-                "original_path": str(entry["relative_path"]),
-                "source": "microsoft/skills (plugin)",
-            })
+            skill_metadata.append(
+                {
+                    "flat_name": skill_name,
+                    "original_path": str(entry["relative_path"]),
+                    "source": "microsoft/skills (plugin)",
+                }
+            )
 
             synced_count += 1
             print(f"  ✅ {entry['relative_path']} → skills/{skill_name}/")
 
     # Sync skills in .github/skills/ not reachable via the skills/ symlink tree
-    github_skill_entries = find_github_skills(
-        source_dir, already_synced_dir_names)
+    github_skill_entries = find_github_skills(source_dir, already_synced_dir_names)
 
     if github_skill_entries:
-        print(
-            f"\n  � Found {len(github_skill_entries)} skills in .github/skills/ not linked from skills/")
+        print(f"\n  � Found {len(github_skill_entries)} skills in .github/skills/ not linked from skills/")
         for entry in github_skill_entries:
             skill_name = extract_skill_name(entry["skill_md"])
             if not skill_name:
@@ -322,8 +322,7 @@ def sync_skills_flat(source_dir: Path, target_dir: Path):
                 original_name = skill_name
                 skill_name = f"{skill_name}-ms"
                 target_skill_dir = target_dir / skill_name
-                print(
-                    f"  ⚠️  '{original_name}' exists as a non-Microsoft skill, using: {skill_name}")
+                print(f"  ⚠️  '{original_name}' exists as a non-Microsoft skill, using: {skill_name}")
 
             synced_names.add(skill_name)
 
@@ -335,11 +334,13 @@ def sync_skills_flat(source_dir: Path, target_dir: Path):
                 if file_item.name != "SKILL.md" and file_item.is_file():
                     shutil.copy2(file_item, target_skill_dir / file_item.name)
 
-            skill_metadata.append({
-                "flat_name": skill_name,
-                "original_path": str(entry["relative_path"]),
-                "source": "microsoft/skills (.github/skills)",
-            })
+            skill_metadata.append(
+                {
+                    "flat_name": skill_name,
+                    "original_path": str(entry["relative_path"]),
+                    "source": "microsoft/skills (.github/skills)",
+                }
+            )
 
             synced_count += 1
             print(f"  ✅ {entry['relative_path']} → skills/{skill_name}/")
@@ -392,8 +393,7 @@ def main():
             save_attribution(metadata)
             copy_license(temp_path)
 
-            print(
-                f"\n✨ Success! Synced {count} Microsoft skills (flat structure)")
+            print(f"\n✨ Success! Synced {count} Microsoft skills (flat structure)")
             print(f"📁 Location: {TARGET_DIR}/")
 
             # Show summary of languages
@@ -403,7 +403,7 @@ def main():
                 if len(parts) >= 1 and parts[0] != "plugins":
                     languages.add(parts[0])
 
-            print(f"\n📊 Organization:")
+            print("\n📊 Organization:")
             print(f"  Total skills: {count}")
             print(f"  Languages: {', '.join(sorted(languages))}")
 
@@ -414,6 +414,7 @@ def main():
         except Exception as e:
             print(f"\n❌ Error: {e}")
             import traceback
+
             traceback.print_exc()
             return 1
 

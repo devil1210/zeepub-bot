@@ -7,8 +7,8 @@ Ensures all skills are captured and no directory name collisions exist.
 import re
 import subprocess
 import tempfile
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 MS_REPO = "https://github.com/microsoft/skills.git"
 
@@ -89,8 +89,7 @@ def analyze_skill_locations():
             if not name:
                 missing_names.append(str(rel))
                 # Generate fallback
-                parts = [p for p in rel.parts if p not in (
-                    ".github", "skills", "plugins")]
+                parts = [p for p in rel.parts if p not in (".github", "skills", "plugins")]
                 name = "ms-" + "-".join(parts) if parts else str(rel)
 
             if name not in name_map:
@@ -98,16 +97,13 @@ def analyze_skill_locations():
             name_map[name].append(str(rel))
 
         # Report results
-        collisions = {n: paths for n, paths in name_map.items()
-                      if len(paths) > 1}
-        unique_names = {n: paths for n,
-                        paths in name_map.items() if len(paths) == 1}
+        collisions = {n: paths for n, paths in name_map.items() if len(paths) > 1}
+        unique_names = {n: paths for n, paths in name_map.items() if len(paths) == 1}
 
         print(f"\n  ✅ Unique names: {len(unique_names)}")
 
         if missing_names:
-            print(
-                f"\n  ⚠️  Skills missing frontmatter 'name' ({len(missing_names)}):")
+            print(f"\n  ⚠️  Skills missing frontmatter 'name' ({len(missing_names)}):")
             for path in missing_names[:5]:
                 print(f"     - {path}")
             if len(missing_names) > 5:
@@ -120,7 +116,7 @@ def analyze_skill_locations():
                 for p in paths:
                     print(f"       - {p}")
         else:
-            print(f"\n  ✅ No collisions detected!")
+            print("\n  ✅ No collisions detected!")
 
         # Validate all names are valid directory names
         print("\n5️⃣ Directory Name Validation:")
@@ -149,9 +145,9 @@ def analyze_skill_locations():
 
         is_pass = len(collisions) == 0 and len(invalid_names) == 0
         if is_pass:
-            print(f"\n  ✅ ALL CHECKS PASSED")
+            print("\n  ✅ ALL CHECKS PASSED")
         else:
-            print(f"\n  ⚠️  SOME CHECKS NEED ATTENTION")
+            print("\n  ⚠️  SOME CHECKS NEED ATTENTION")
 
         print("\n✨ Analysis complete!")
 
@@ -186,4 +182,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()

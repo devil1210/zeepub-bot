@@ -52,7 +52,7 @@ def inspect_repo():
         print(f"\n2️⃣ Total SKILL.md files found: {len(all_skill_mds)}")
 
         # Show flat name mapping
-        print(f"\n3️⃣ Flat Name Mapping (frontmatter 'name' → directory name):")
+        print("\n3️⃣ Flat Name Mapping (frontmatter 'name' → directory name):")
         print("-" * 60)
 
         names_seen: dict[str, list[str]] = {}
@@ -74,8 +74,7 @@ def inspect_repo():
             names_seen[effective_name].append(str(rel))
 
         # Collision check
-        collisions = {n: paths for n, paths in names_seen.items()
-                      if len(paths) > 1}
+        collisions = {n: paths for n, paths in names_seen.items() if len(paths) > 1}
         if collisions:
             print(f"\n4️⃣ ⚠️  Name Collisions Detected ({len(collisions)}):")
             for name, paths in collisions.items():
@@ -83,8 +82,7 @@ def inspect_repo():
                 for p in paths:
                     print(f"    - {p}")
         else:
-            print(
-                f"\n4️⃣ ✅ No name collisions — all {len(names_seen)} names are unique!")
+            print(f"\n4️⃣ ✅ No name collisions — all {len(names_seen)} names are unique!")
 
         print("\n✨ Inspection complete!")
 
@@ -95,4 +93,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()

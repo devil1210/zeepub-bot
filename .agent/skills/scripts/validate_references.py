@@ -6,6 +6,7 @@ Validate cross-references in data/workflows.json and data/bundles.json.
 - Every skill slug in each bundle's skills list must exist under skills/.
 Exits with 1 if any reference is broken.
 """
+
 import json
 import os
 import re
@@ -39,9 +40,9 @@ def main():
         sys.exit(1)
 
     skill_ids = collect_skill_ids(skills_dir)
-    with open(workflows_path, "r", encoding="utf-8") as f:
+    with open(workflows_path, encoding="utf-8") as f:
         workflows_data = json.load(f)
-    with open(bundles_path, "r", encoding="utf-8") as f:
+    with open(bundles_path, encoding="utf-8") as f:
         bundles_data = json.load(f)
 
     bundle_ids = set(bundles_data.get("bundles", {}).keys())
@@ -67,7 +68,7 @@ def main():
     # BUNDLES.md: links like [text](../skills/slug/) must point to existing skill dirs
     bundles_md_path = os.path.join(base_dir, "docs", "BUNDLES.md")
     if os.path.exists(bundles_md_path):
-        with open(bundles_md_path, "r", encoding="utf-8") as f:
+        with open(bundles_md_path, encoding="utf-8") as f:
             bundles_md = f.read()
         for m in re.finditer(r"\]\(\.\./skills/([^)]+)/\)", bundles_md):
             slug = m.group(1).rstrip("/")
