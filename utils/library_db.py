@@ -44,18 +44,18 @@ def create_library_engine():
         db_url = db_url.replace("@db:", "@localhost:", 1)
         _log.debug("Converting 'db' to 'localhost' for Windows local execution.")
 
-    # Optimized connection pool settings for production
+    # Configuración de pool optimizada para producción
+    # Eliminamos connect_timeout que causa problemas en algunas versiones del driver
     return create_engine(
         db_url,
         echo=False,
-        pool_pre_ping=True,  # Verify connections before using
-        pool_size=10,  # Base pool size (concurrent connections)
-        max_overflow=20,  # Additional connections when pool is exhausted
-        pool_recycle=3600,  # Recycle connections after 1 hour
-        pool_timeout=30,  # Wait up to 30s for available connection
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20,
+        pool_recycle=3600,
+        pool_timeout=30,
         connect_args={
-            "connect_timeout": 10,  # Connection timeout
-            "options": "-c statement_timeout=30000",  # 30s query timeout
+            "options": "-c statement_timeout=30000",  # Sigue permitiendo timeout de query
         },
     )
 
