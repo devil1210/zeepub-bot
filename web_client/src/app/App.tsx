@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense, useCallback } from 'react';
 import { MemoryRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { ThemeProvider } from '@shared/contexts/ThemeContext';
 import { TelegramProvider, useTelegram } from '@shared/contexts/TelegramContext';
@@ -35,7 +35,7 @@ const PageLoader = () => (
 const useLegacyNavigation = () => {
   const navigate = useNavigate();
 
-  return (tab: string, series?: Series | null, volume?: Volume | null) => {
+  return useCallback((tab: string, series?: Series | null, volume?: Volume | null) => {
     const performNavigation = () => {
       // Handle 'book:ID' shortcut
       if (tab.startsWith('book:')) {
@@ -67,7 +67,7 @@ const useLegacyNavigation = () => {
     } else {
       performNavigation();
     }
-  };
+  }, [navigate]);
 };
 
 /**

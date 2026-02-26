@@ -184,7 +184,20 @@ if enable_miniapp:
 
         # 2. Protección contra Crawlers y Bots (User-Agent)
         user_agent = request.headers.get("User-Agent", "").lower()
-        blocked_bots = ["googlebot", "bingbot", "slurp", "duckduckbot", "baiduspider", "yandexbot", "sogou", "exabot", "ia_archiver", "curl", "python-requests", "wget"]
+        blocked_bots = [
+            "googlebot",
+            "bingbot",
+            "slurp",
+            "duckduckbot",
+            "baiduspider",
+            "yandexbot",
+            "sogou",
+            "exabot",
+            "ia_archiver",
+            "curl",
+            "python-requests",
+            "wget",
+        ]
         if not user_agent or any(bot in user_agent for bot in blocked_bots):
             logger.warning(f"⚠️ Intento de bot bloqueado: {short_link} (UA: {user_agent})")
             raise HTTPException(status_code=403, detail="Acceso denegado: Bots no permitidos")
@@ -192,17 +205,19 @@ if enable_miniapp:
         # 3. Rate Limiting Simple (5 descargas por IP cada minuto)
         client_ip = request.headers.get("X-Forwarded-For", request.client.host)
         now = _asyncio.get_event_loop().time()
-        
+
         if client_ip not in _rate_limit_data:
             _rate_limit_data[client_ip] = []
-        
+
         # Limpiar entradas de más de 60 segundos
         _rate_limit_data[client_ip] = [t for t in _rate_limit_data[client_ip] if now - t < 60]
-        
+
         if len(_rate_limit_data[client_ip]) >= 5:
             logger.warning(f"🚫 Rate limit excedido para IP {client_ip} en link {short_link}")
-            raise HTTPException(status_code=429, detail="Has excedido el límite de descargas (5/min). Por favor, intenta más tarde.")
-        
+            raise HTTPException(
+                status_code=429, detail="Has excedido el límite de descargas (5/min). Por favor, intenta más tarde."
+            )
+
         _rate_limit_data[client_ip].append(now)
 
         def _find_book():
@@ -222,23 +237,19 @@ if enable_miniapp:
         try:
             book_data = await _asyncio.to_thread(_find_book)
             if not book_data:
-                raise HTTPException(
-                    status_code=404, detail="Libro no encontrado o enlace expirado"
-                )
+                raise HTTPException(status_code=404, detail="Libro no encontrado o enlace expirado")
             filepath = book_data["filepath"]
             if not os.path.exists(filepath) or not os.path.isfile(filepath):
-                logger.error(
-                    f"Archivo no encontrado para libro ID {book_data['id']}: {filepath}"
-                )
+                logger.error(f"Archivo no encontrado para libro ID {book_data['id']}: {filepath}")
                 raise HTTPException(
                     status_code=404,
                     detail="El archivo físico no se encuentra disponible",
                 )
             logger.info(f"📥 Descarga segura iniciada: {book_data['title']} por IP {client_ip}")
-            
+
             # Usar el nombre de archivo real de la biblioteca
             real_filename = os.path.basename(filepath)
-            
+
             return FileResponse(
                 path=filepath,
                 media_type="application/epub+zip",
@@ -249,7 +260,7 @@ if enable_miniapp:
             raise
         except Exception as e:
             logger.error(f"Error descarga segura {short_link}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Error interno del servidor")
+            raise HTTPException(status_code=500, detail="Error interno del servidor") from e
 
     # Montar archivos estáticos del frontend
     from fastapi.staticfiles import StaticFiles
