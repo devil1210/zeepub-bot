@@ -8,7 +8,7 @@ from typing import Any
 from models.library_models import DuplicateBook, LocalBook
 from services.hash_service import hash_service
 from utils.epub_extractor import EpubMetadataExtractor
-from utils.helpers import COVERS_DIR
+from utils.library_db import COVERS_DIR
 
 logger = logging.getLogger(__name__)
 
