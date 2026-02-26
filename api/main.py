@@ -159,16 +159,15 @@ async def shortlink_debug():
 @app.get("/api/shortlink-check/{short_link}")
 async def shortlink_check(short_link: str):
     """Diagnóstico: muestra info del libro sin intentar descargarlo."""
-    from sqlalchemy import select
+    import asyncio
 
-    from core.db_manager_pg import pg_manager
     from models.library_models import LocalBook
+    from utils.library_db import get_session
 
-    try:
-        async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).where(LocalBook.short_link == short_link)
-            result = await session.execute(stmt)
-            book = result.scalar_one_or_none()
+    def _query():
+        session = get_session()
+        try:
+            book = session.query(LocalBook).filter(LocalBook.short_link == short_link).first()
             if not book:
                 return {"found": False, "short_link": short_link}
             file_exists = os.path.exists(book.filepath) if book.filepath else False
@@ -181,8 +180,12 @@ async def shortlink_check(short_link: str):
                 "short_link": book.short_link,
                 "book_hash": book.book_hash[:16] + "...",
             }
-    except Exception as e:
-        return {"error": str(e), "type": type(e).__name__}
+        except Exception as e:
+            return {"error": str(e), "type": type(e).__name__}
+        finally:
+            session.close()
+
+    return await asyncio.to_thread(_query)
 
 
 # Importar rutas
@@ -204,46 +207,59 @@ if enable_miniapp:
 
     # ==========================================
     # Short Link Download - SIEMPRE activo con miniapp
-    # Registrado directamente en app para máxima prioridad
+    # Usa library_db (sync) porque LocalBook vive ahí
     # ==========================================
+    import asyncio as _asyncio
     import re as _re
 
     from fastapi.responses import FileResponse
-    from sqlalchemy import select as _select
 
-    from core.db_manager_pg import pg_manager as _pg
     from models.library_models import LocalBook as _LB
+    from utils.library_db import get_session as _get_session
 
     @app.get("/api/s/{short_link}")
     async def short_link_download(short_link: str):
         """Descarga segura de un libro mediante su short_link."""
         if not short_link or len(short_link) != 10:
             raise HTTPException(status_code=400, detail="Enlace inválido")
-        try:
-            async with _pg.get_session() as session:
-                stmt = _select(_LB).where(_LB.short_link == short_link)
-                result = await session.execute(stmt)
-                book = result.scalar_one_or_none()
+
+        def _find_book():
+            session = _get_session()
+            try:
+                book = session.query(_LB).filter(_LB.short_link == short_link).first()
                 if not book:
-                    raise HTTPException(
-                        status_code=404, detail="Libro no encontrado o enlace expirado"
-                    )
-                if not os.path.exists(book.filepath) or not os.path.isfile(book.filepath):
-                    logger.error(
-                        f"Archivo no encontrado para libro ID {book.id}: {book.filepath}"
-                    )
-                    raise HTTPException(
-                        status_code=404,
-                        detail="El archivo físico no se encuentra disponible",
-                    )
-                logger.info(f"Descarga segura: {book.title} ({short_link})")
-                safe_title = _re.sub(r'[\\/*?:"<>|]', "", book.title)
-                return FileResponse(
-                    path=book.filepath,
-                    media_type="application/epub+zip",
-                    filename=f"{safe_title}.epub",
-                    content_disposition_type="attachment",
+                    return None
+                return {
+                    "id": book.id,
+                    "title": book.title,
+                    "filepath": book.filepath,
+                }
+            finally:
+                session.close()
+
+        try:
+            book_data = await _asyncio.to_thread(_find_book)
+            if not book_data:
+                raise HTTPException(
+                    status_code=404, detail="Libro no encontrado o enlace expirado"
                 )
+            filepath = book_data["filepath"]
+            if not os.path.exists(filepath) or not os.path.isfile(filepath):
+                logger.error(
+                    f"Archivo no encontrado para libro ID {book_data['id']}: {filepath}"
+                )
+                raise HTTPException(
+                    status_code=404,
+                    detail="El archivo físico no se encuentra disponible",
+                )
+            logger.info(f"Descarga segura: {book_data['title']} ({short_link})")
+            safe_title = _re.sub(r'[\\/*?:"<>|]', "", book_data["title"])
+            return FileResponse(
+                path=filepath,
+                media_type="application/epub+zip",
+                filename=f"{safe_title}.epub",
+                content_disposition_type="attachment",
+            )
         except HTTPException:
             raise
         except Exception as e:
