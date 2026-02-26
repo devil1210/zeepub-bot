@@ -3,7 +3,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 # Configurar logging
@@ -201,6 +201,45 @@ if enable_miniapp:
                 StaticFiles(directory=next_dir),
                 name="next_static",
             )
+
+        # ==========================================
+        # Short Link Download - registered directly on app for priority
+        # ==========================================
+        import re as _re
+
+        from sqlalchemy import select as _select
+
+        from core.db_manager_pg import pg_manager as _pg
+        from models.library_models import LocalBook as _LB
+
+        @app.get("/api/s/{short_link}")
+        async def short_link_download(short_link: str):
+            """Descarga segura de un libro mediante su short_link."""
+            if not short_link or len(short_link) != 10:
+                raise HTTPException(status_code=400, detail="Enlace inválido")
+            try:
+                async with _pg.get_session() as session:
+                    stmt = _select(_LB).where(_LB.short_link == short_link)
+                    result = await session.execute(stmt)
+                    book = result.scalar_one_or_none()
+                    if not book:
+                        raise HTTPException(status_code=404, detail="Libro no encontrado o enlace expirado")
+                    if not os.path.exists(book.filepath) or not os.path.isfile(book.filepath):
+                        logger.error(f"Archivo no encontrado para libro ID {book.id}: {book.filepath}")
+                        raise HTTPException(status_code=404, detail="El archivo físico no se encuentra disponible")
+                    logger.info(f"Descarga segura: {book.title} ({short_link})")
+                    safe_title = _re.sub(r'[\\/*?:"<>|]', "", book.title)
+                    return FileResponse(
+                        path=book.filepath,
+                        media_type="application/epub+zip",
+                        filename=f"{safe_title}.epub",
+                        content_disposition_type="attachment",
+                    )
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"Error descarga segura {short_link}: {e}", exc_info=True)
+                raise HTTPException(status_code=500, detail="Error interno del servidor")
 
         @app.get("/{full_path:path}")
         async def serve_spa(full_path: str):
