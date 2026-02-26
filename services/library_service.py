@@ -182,6 +182,9 @@ class LibraryService:
                 for s in series_list:
                     rep = rep_books_map.get(s.series_hash)
 
+                    # Fallback cover from representative book if series cover is missing
+                    display_cover = s.cover_url or (rep.cover_low if rep else None) or (rep.cover_high if rep else None)
+
                     # Map to DTO
                     dto = SeriesDTO(
                         id=f"series_{s.series_hash}",
@@ -192,16 +195,23 @@ class LibraryService:
                         series_english=s.series_english,
                         author=s.author,
                         description=s.description,
-                        cover=s.cover_url,
+                        cover=display_cover,
                         coverUrl=CoverUrlDTO(
-                            cover_low=s.cover_url,
-                            cover_medium=s.cover_url.replace("_low.jpg", "_medium.jpg") if s.cover_url else None,
-                            cover_high=s.cover_url.replace("_low.jpg", "_high.jpg") if s.cover_url else None,
-                            cover_original=s.cover_url.replace("_low.jpg", "_original.jpg") if s.cover_url else None,
-                            cover=s.cover_url,
+                            cover_low=display_cover,
+                            cover_medium=display_cover.replace("_low.jpg", "_medium.jpg")
+                            if display_cover and "_low.jpg" in display_cover
+                            else display_cover,
+                            cover_high=display_cover.replace("_low.jpg", "_high.jpg")
+                            if display_cover and "_low.jpg" in display_cover
+                            else display_cover,
+                            cover_original=display_cover.replace("_low.jpg", "_original.jpg")
+                            if display_cover and "_low.jpg" in display_cover
+                            else display_cover,
                         ),
                         numBooks=s.book_count,
+                        book_count=s.book_count,
                         book_type=s.book_type,
+                        tag_list=s.tags if s.tags else [],
                         rating_average=s.rating_average,
                         rating_count=s.rating_count,
                         illustrator=s.illustrator or (rep.illustrator if rep else None),

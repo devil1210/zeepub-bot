@@ -329,7 +329,9 @@ class SyncService:
             for i in range(0, len(data), 50):
                 batch = data[i : i + 50]
                 try:
-                    client.table("local_books").upsert(batch, on_conflict="filepath").execute()
+                    # Usamos book_hash como conflicto primario porque Supabase tiene restricción única ahí.
+                    # Esto permite que si un archivo se mueve locally (nueva ruta), se actualice en la nube.
+                    client.table("local_books").upsert(batch, on_conflict="book_hash").execute()
                     stats["books"] += len(batch)
                     if i % 250 == 0:
                         print(f"📦 Libros sincronizados: {stats['books']}/{len(data)}")
