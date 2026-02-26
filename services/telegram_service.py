@@ -591,17 +591,44 @@ async def enviar_libro_directo(
         if download_url and not download_url.startswith("http"):
             fname = os.path.basename(download_url)
 
-        logger.info(f"Enviando archivo EPUB a {destino}: {fname}")
-        sent_doc = await send_doc_bytes(
-            bot,
-            destino,
-            final_caption,
-            epub_bytes,
-            filename=fname,
-            parse_mode="HTML",
-            message_thread_id=message_thread_id,
-            reply_markup=reply_markup,
-        )
+        # Determinar si debemos enviar el archivo según señal en plantilla
+        attach_signal = "__ATTACH_FILE_SIGNAL__"
+        should_send_file_by_template = False
+
+        # Limpiar señal en todas las partes y detectar si alguna la tiene
+        for i, part in enumerate(msg_parts):
+            if attach_signal in part:
+                should_send_file_by_template = True
+                msg_parts[i] = part.replace(attach_signal, "").strip()
+
+        # Limpiar también en final_caption por si acaso
+        if attach_signal in final_caption:
+            should_send_file_by_template = True
+            final_caption = final_caption.replace(attach_signal, "").strip()
+
+        if epub_bytes and should_send_file_by_template:
+            logger.info(f"Enviando archivo EPUB a {destino} (Plantilla con {{archivo}}): {fname}")
+            sent_doc = await send_doc_bytes(
+                bot,
+                destino,
+                final_caption,
+                epub_bytes,
+                filename=fname,
+                parse_mode="HTML",
+                message_thread_id=message_thread_id,
+                reply_markup=reply_markup,
+            )
+        else:
+            logger.info(f"No se envía archivo a {destino} (Plantilla sin {{archivo}})")
+            sent_doc = None
+            if final_caption:
+                await bot.send_message(
+                    chat_id=destino,
+                    text=final_caption,
+                    parse_mode="HTML",
+                    message_thread_id=message_thread_id,
+                    reply_markup=reply_markup,
+                )
 
         if sent_doc and auto_delete_seconds > 0:
             if job_queue:

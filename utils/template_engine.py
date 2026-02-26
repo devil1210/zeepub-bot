@@ -185,7 +185,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "is_uncensored": "Sí" if data.get("is_uncensored") else "No",
                 "isbn": data.get("isbn") or "",
                 "asin": data.get("asin") or "",
-                "archivo": "",  # Se deja vacío para que no se imprima como texto (se maneja como adjunto)
+                "archivo": "__ATTACH_FILE_SIGNAL__",  # Marcador para que el Publisher sepa que debe adjuntar el archivo
                 "titulo_serie": data.get("series") or data.get("titulo_serie") or "",
                 "fecha_actualizacion": data.get("updated_at") or data.get("fecha_modificacion") or fecha_mod_formatted,
                 "descargas_globales": str(data.get("descargas_globales") or data.get("total_downloads") or 0),

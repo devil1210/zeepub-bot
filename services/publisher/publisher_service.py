@@ -39,7 +39,7 @@ class TelegramPublisherProvider(PublisherProvider):
     )
     SYNOPSIS_TEMPLATE = "📝 <b>Sinopsis:</b>\n<blockquote>{sinopsis}</blockquote>\n#{slug}"
     INFO_TEMPLATE = (
-        "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n#{slug}"
+        "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n#{slug}{archivo}"
     )
     # Plantilla completa (Unión de las 3 partes)
     FULL_TEMPLATE = COVER_TEMPLATE + "\n<hr/>\n" + SYNOPSIS_TEMPLATE + "\n<hr/>\n" + INFO_TEMPLATE
@@ -56,7 +56,7 @@ class TelegramPublisherProvider(PublisherProvider):
         "[?illustrator]\n🎨 Ilustrador: {illustrator}[/?]"
         "[?published_at]\n📅 Publicado: {published_at}[/?]"
         "[?traductor]\n🌐 Traducción: {traductor}[/?]"
-        "\n📝 Sinopsis: {sinopsis}"
+        "\n📝 Sinopsis: {sinopsis}{archivo}"
     )
 
     # Calidad de portada por defecto: 'original', 'high', 'medium', 'low'
@@ -227,7 +227,30 @@ class TelegramPublisherProvider(PublisherProvider):
         keyboard = options.get("custom_keyboard")
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
 
-        if epub_data:
+        should_send_file_by_template = False
+        attach_signal = "__ATTACH_FILE_SIGNAL__"
+
+        # Limpiar señal en todas las partes (msg_parts ya contiene las partes splits y sanitizadas)
+        cleaned_parts = []
+        for p in msg_parts:
+            if attach_signal in p:
+                should_send_file_by_template = True
+                p = p.replace(attach_signal, "").strip()
+            cleaned_parts.append(p)
+        msg_parts = cleaned_parts
+
+        # También limpiar en caption e info_text que se usan para enviar
+        if attach_signal in caption:
+            should_send_file_by_template = True
+            caption = caption.replace(attach_signal, "").strip()
+
+        if attach_signal in info_text:
+            should_send_file_by_template = True
+            info_text = info_text.replace(attach_signal, "").strip()
+
+        # Si es una publicación con archivo, comprobamos si la plantilla lo pedía
+        # Si NO hay señal y es una plantilla personalizada, no enviamos el EPUB
+        if epub_data and should_send_file_by_template:
             from urllib.parse import unquote, urlparse
 
             fname = book_data.get("filename")
@@ -262,14 +285,16 @@ class TelegramPublisherProvider(PublisherProvider):
                     thread_id=thread_id,
                 )
         else:
-            # Si no hay archivo, enviamos el texto informativo solo
-            await self._send_message(
-                chat_id=target_id,
-                text=info_text,
-                parse_mode="HTML",
-                thread_id=thread_id,
-                reply_markup=reply_markup,
-            )
+            # Si no hay archivo o la plantilla NO pidió adjunto ({archivo}), enviamos el texto solo
+            # Pero solo si info_text no está vacío (para no mandar mensaje vacío)
+            if info_text:
+                await self._send_message(
+                    chat_id=target_id,
+                    text=info_text,
+                    parse_mode="HTML",
+                    thread_id=thread_id,
+                    reply_markup=reply_markup,
+                )
 
         return True
 
@@ -364,8 +389,9 @@ class FacebookPublisherProvider(PublisherProvider):
         caption = (options or {}).get("caption")
         if not caption:
             caption = apply_publication_template(TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data)
-            # Limpiar HTML residual (FB no soporta)
+            # Limpiar HTML residual (FB no soporta) y señales de adjunto
             caption = re.sub(r"<[^>]+>", "", caption)
+            caption = caption.replace("__ATTACH_FILE_SIGNAL__", "").strip()
 
             # Generar link público
             raw_url = book_data.get("filepath") or book_data.get("download_url") or book_data.get("url")
