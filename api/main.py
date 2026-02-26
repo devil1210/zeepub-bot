@@ -73,8 +73,6 @@ async def lifespan(app: FastAPI):
             logger.error("Bot no se pudo inicializar correctamente. El bot NO estará disponible.")
     except Exception as e:
         logger.error(f"Fallo crítico al iniciar el bot: {e}", exc_info=True)
-        # No relanzamos para que la API pueda al menos responder con su estado de error
-        # o permitir administración remota si es posible.
     # Start background URL validator (only if enabled by config)
     from utils.url_validator import start_background_validator
 
@@ -157,8 +155,55 @@ if enable_miniapp:
     app.include_router(miniapp_router)
     app.include_router(library_router)
 
-    # Montar archivos estáticos del frontend
+    # ==========================================
+    # Short Link Download - SIEMPRE activo con miniapp
+    # Registrado directamente en app para máxima prioridad
+    # ==========================================
+    import re as _re
+
     from fastapi.responses import FileResponse
+    from sqlalchemy import select as _select
+
+    from core.db_manager_pg import pg_manager as _pg
+    from models.library_models import LocalBook as _LB
+
+    @app.get("/api/s/{short_link}")
+    async def short_link_download(short_link: str):
+        """Descarga segura de un libro mediante su short_link."""
+        if not short_link or len(short_link) != 10:
+            raise HTTPException(status_code=400, detail="Enlace inválido")
+        try:
+            async with _pg.get_session() as session:
+                stmt = _select(_LB).where(_LB.short_link == short_link)
+                result = await session.execute(stmt)
+                book = result.scalar_one_or_none()
+                if not book:
+                    raise HTTPException(
+                        status_code=404, detail="Libro no encontrado o enlace expirado"
+                    )
+                if not os.path.exists(book.filepath) or not os.path.isfile(book.filepath):
+                    logger.error(
+                        f"Archivo no encontrado para libro ID {book.id}: {book.filepath}"
+                    )
+                    raise HTTPException(
+                        status_code=404,
+                        detail="El archivo físico no se encuentra disponible",
+                    )
+                logger.info(f"Descarga segura: {book.title} ({short_link})")
+                safe_title = _re.sub(r'[\\/*?:"<>|]', "", book.title)
+                return FileResponse(
+                    path=book.filepath,
+                    media_type="application/epub+zip",
+                    filename=f"{safe_title}.epub",
+                    content_disposition_type="attachment",
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error descarga segura {short_link}: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+    # Montar archivos estáticos del frontend
     from fastapi.staticfiles import StaticFiles
 
     # Montar portadas de la librería local
@@ -179,7 +224,6 @@ if enable_miniapp:
         )
 
     # Ruta al directorio de build del frontend (Configurable)
-    # Permite cambiar entre 'web_client' (nuevo) y 'zeepub-web' (anterior)
     web_client_dir = os.getenv("WEB_CLIENT_DIR", "web_client")
     frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), web_client_dir, "dist")
 
@@ -202,65 +246,19 @@ if enable_miniapp:
                 name="next_static",
             )
 
-        # ==========================================
-        # Short Link Download - registered directly on app for priority
-        # ==========================================
-        import re as _re
-
-        from sqlalchemy import select as _select
-
-        from core.db_manager_pg import pg_manager as _pg
-        from models.library_models import LocalBook as _LB
-
-        @app.get("/api/s/{short_link}")
-        async def short_link_download(short_link: str):
-            """Descarga segura de un libro mediante su short_link."""
-            if not short_link or len(short_link) != 10:
-                raise HTTPException(status_code=400, detail="Enlace inválido")
-            try:
-                async with _pg.get_session() as session:
-                    stmt = _select(_LB).where(_LB.short_link == short_link)
-                    result = await session.execute(stmt)
-                    book = result.scalar_one_or_none()
-                    if not book:
-                        raise HTTPException(status_code=404, detail="Libro no encontrado o enlace expirado")
-                    if not os.path.exists(book.filepath) or not os.path.isfile(book.filepath):
-                        logger.error(f"Archivo no encontrado para libro ID {book.id}: {book.filepath}")
-                        raise HTTPException(status_code=404, detail="El archivo físico no se encuentra disponible")
-                    logger.info(f"Descarga segura: {book.title} ({short_link})")
-                    safe_title = _re.sub(r'[\\/*?:"<>|]', "", book.title)
-                    return FileResponse(
-                        path=book.filepath,
-                        media_type="application/epub+zip",
-                        filename=f"{safe_title}.epub",
-                        content_disposition_type="attachment",
-                    )
-            except HTTPException:
-                raise
-            except Exception as e:
-                logger.error(f"Error descarga segura {short_link}: {e}", exc_info=True)
-                raise HTTPException(status_code=500, detail="Error interno del servidor")
-
         @app.get("/{full_path:path}")
         async def serve_spa(full_path: str):
             # Si es una ruta de API, dejar que FastAPI la maneje (ya definidas arriba)
             if full_path.startswith("api"):
-                # Si llegamos aquí y no matcheó api routes, es 404
                 return {"error": "Not found"}
 
-            # Next.js static export generates individual HTML files for each page
-            # Try to serve the specific HTML file first
             if full_path == "":
-                # Root path
                 html_path = os.path.join(frontend_dist, "index.html")
             else:
-                # Try exact match first (e.g., search.html for /search)
                 html_path = os.path.join(frontend_dist, f"{full_path}.html")
                 if not os.path.exists(html_path):
-                    # Try as directory with index (e.g., search/index.html)
                     html_path = os.path.join(frontend_dist, full_path, "index.html")
                 if not os.path.exists(html_path):
-                    # Fallback to root index.html for client-side routing
                     html_path = os.path.join(frontend_dist, "index.html")
 
             if os.path.exists(html_path):
