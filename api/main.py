@@ -146,13 +146,13 @@ async def shortlink_debug():
     for route in app.routes:
         if hasattr(route, "path"):
             routes_list.append({"path": route.path, "name": getattr(route, "name", "N/A")})
-        elif hasattr(route, "path"):
-            routes_list.append({"mount": route.path})
+        elif hasattr(route, "mount_path"):
+            routes_list.append({"mount": route.mount_path})
     return {
-        "version": "2026-02-26-v5",
+        "version": "2026-02-26-v6 (01:45 UTC)",
         "total_routes": len(routes_list),
         "routes_with_api_s": [r for r in routes_list if "/api/s" in r.get("path", "")],
-        "all_routes": routes_list[:30],
+        "all_routes": routes_list,
     }
 
 
