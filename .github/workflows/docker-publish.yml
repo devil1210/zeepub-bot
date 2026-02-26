@@ -2,11 +2,11 @@ name: Docker
 
 on:
   push:
-    branches: [ "main", "feat/*" ]
+    branches: ["main", "feat/*"]
     # Publish semver tags as releases.
-    tags: [ 'v*' ]
+    tags: ["v*"]
   pull_request:
-    branches: [ "main", "feat/*" ]
+    branches: ["main", "feat/*"]
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -14,10 +14,8 @@ env:
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
 
-
 jobs:
   build:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,7 +34,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v3.5.0
         with:
-          cosign-release: 'v2.2.4'
+          cosign-release: "v2.2.4"
 
       # Set up Buildx runner buildkit
       - name: Set up Docker Buildx
@@ -65,7 +63,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-            type=raw,value=v6-alpha,enable=${{ github.ref == 'refs/heads/feat/v6-local-index' }}
+            type=raw,value=v6-alpha,enable=${{ github.ref == 'refs/heads/feat/v6-local-index' || github.ref == 'refs/heads/feat/integrate-web-client' }}
             type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.title=ZeePub Bot
