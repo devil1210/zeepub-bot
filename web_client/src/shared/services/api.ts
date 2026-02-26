@@ -285,10 +285,11 @@ export const api = {
 
     rejectAiProposal: (proposalId: number) => rpc('ai_reject_proposal', { proposal_id: proposalId }),
 
-
     applyAiMerge: (proposalId: number) => rpc('ai_apply_merge', { proposal_id: proposalId }),
 
     resetAiSeries: (seriesHash: string) => rpc('ai_reset_series', { series_hash: seriesHash }),
+
+    aiRecalculateAllSlugs: () => rpc('ai_recalculate_all_slugs'),
 
     uploadEpub: (file: File, onProgress?: (p: number) => void) =>
         uploadFile('/api/library/upload', file, onProgress),

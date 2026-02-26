@@ -378,11 +378,12 @@ def find_zeepubs_destino(feed, prefer_libraries: bool = False):
 def generar_slug_from_meta(meta: dict) -> str:
     titulo_serie = None
     if isinstance(meta, dict):
-        # PRIORIDAD: series o series_spanish (nombres principales/español)
+        # PRIORIDAD: series_name (de series_metadata), series_english, series
         titulo_serie = (
-            meta.get("series")
-            or meta.get("series_spanish")
+            meta.get("series_name")
             or meta.get("series_english")
+            or meta.get("series")
+            or meta.get("series_spanish")
             or meta.get("titulo_serie")
             or meta.get("series_clean")
             or meta.get("english_title")

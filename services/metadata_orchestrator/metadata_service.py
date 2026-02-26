@@ -24,23 +24,33 @@ class MetadataOrchestrator:
 
         try:
             async with pg_manager.get_session() as session:
+                from sqlalchemy.orm import selectinload
+
                 lb = None
 
                 # Check if it's a known hash
-                stmt_hash = select(LocalBook).where(LocalBook.book_hash == book_id)
+                stmt_hash = (
+                    select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.book_hash == book_id)
+                )
                 res_hash = await session.execute(stmt_hash)
                 lb = res_hash.scalar_one_or_none()
 
                 # Fallback: try by ID
                 if not lb and (str(book_id).startswith("local_") or str(book_id).isdigit()):
                     clean_id = int(str(book_id).replace("local_", ""))
-                    stmt_id = select(LocalBook).where(LocalBook.id == clean_id)
+                    stmt_id = (
+                        select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.id == clean_id)
+                    )
                     res_id = await session.execute(stmt_id)
                     lb = res_id.scalar_one_or_none()
 
                 # Fallback: try by path
                 if not lb and ("/" in str(book_id) or "\\" in str(book_id)):
-                    stmt_path = select(LocalBook).where(LocalBook.filepath == book_id)
+                    stmt_path = (
+                        select(LocalBook)
+                        .options(selectinload(LocalBook.series_info))
+                        .where(LocalBook.filepath == book_id)
+                    )
                     res_path = await session.execute(stmt_path)
                     lb = res_path.scalar_one_or_none()
 

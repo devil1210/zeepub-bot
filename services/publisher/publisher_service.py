@@ -107,7 +107,9 @@ class TelegramPublisherProvider(PublisherProvider):
 
         custom_content = options.get("caption")
         msg_parts = []
+        is_custom = False
         if custom_content:
+            is_custom = True
             # Separadores comunes: <hr>, ---next---, o ---
             msg_parts = re.split(r"<hr\s*/?>|---next---|---", custom_content)
             msg_parts = [p.strip() for p in msg_parts if p.strip()]
@@ -115,12 +117,6 @@ class TelegramPublisherProvider(PublisherProvider):
         # 1. Mensaje de Portada (o Texto Principal)
         # Si se pasó una plantilla (vía options['caption']), la dividimos por <hr>
         # Si no se pasó, usamos la lógica por defecto (que también puede usar plantillas dinámicas)
-        caption_source = options.get("caption")
-        msg_parts = []
-        if caption_source:
-            msg_parts = re.split(r"<hr\s*/?>|---next---|---", caption_source)
-            msg_parts = [p.strip() for p in msg_parts if p.strip()]
-
         if len(msg_parts) > 0:
             caption = sanitize_tg_html(msg_parts[0])
         else:
@@ -186,7 +182,7 @@ class TelegramPublisherProvider(PublisherProvider):
         sinopsis = ""
         if len(msg_parts) > 1:
             sinopsis = sanitize_tg_html(msg_parts[1])
-        else:
+        elif not is_custom:
             # Comportamiento por defecto procesado por el engine
             from utils.template_engine import apply_publication_template
 
@@ -217,7 +213,7 @@ class TelegramPublisherProvider(PublisherProvider):
         info_text = ""
         if len(msg_parts) > 2:
             info_text = sanitize_tg_html(msg_parts[2])
-        else:
+        elif not is_custom:
             # Comportamiento por defecto procesado por el engine
             from utils.template_engine import apply_publication_template
 

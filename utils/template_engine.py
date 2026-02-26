@@ -83,9 +83,11 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         slug = data.get("slug")
         if not slug:
             slug_source = (
-                data.get("series")
+                data.get("series_english")
+                or data.get("series")
                 or data.get("serie")
                 or data.get("series_spanish")
+                or data.get("titulo_serie")
                 or data.get("clean_title")
                 or data.get("title")
                 or ""

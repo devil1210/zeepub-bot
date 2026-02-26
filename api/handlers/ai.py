@@ -201,6 +201,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         # Global series metadata overrides
         proposed_series = data.get("proposed_series")
         proposed_spanish = data.get("proposed_spanish")
+        proposed_slug = data.get("proposed_slug")
 
         # Optional flags
         apply_renames = data.get("apply_renames", True)
@@ -210,15 +211,19 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         errors = []
 
         # 1. Update Series Metadata (Global)
-        if apply_meta and proposed_series:
+        if apply_meta and (proposed_series or proposed_slug):
             # Sync with SeriesMetadata table
             series = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
             # If not in data, fallback to proposal
             if not proposed_spanish:
                 proposed_spanish = proposal.get("proposed_spanish")
+            if not proposed_slug:
+                proposed_slug = proposal.get("proposed_slug")
 
             # Debug logging
-            logger.info(f"📝 Applying AI changes - Series: {proposed_series}, Spanish: {proposed_spanish}")
+            logger.info(
+                f"📝 Applying AI changes - Series: {proposed_series}, Spanish: {proposed_spanish}, Slug: {proposed_slug}"
+            )
 
             # --- HASH MIGRATION LOGIC ---
             # Si el nombre de la serie cambia, el hash DEBE cambiar para mantener la integridad.
@@ -272,9 +277,16 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
             if series:
                 # series_name sigue siendo el nombre visual principal corregido
-                series.series_name = proposed_series
-                series.series_english = proposed_series  # Nueva columna específica para IA
-                series.series_spanish = proposed_spanish or series.series_spanish or proposed_series
+                if proposed_series:
+                    series.series_name = proposed_series
+                    series.series_english = proposed_series  # Nueva columna específica para IA
+
+                if proposed_spanish:
+                    series.series_spanish = proposed_spanish
+
+                if proposed_slug:
+                    series.slug = proposed_slug
+
                 if proposal.get("description"):
                     series.description = proposal["description"]
 
@@ -320,6 +332,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                         "author": series.author,
                         "book_count": series.book_count,
                         "rating_average": series.rating_average,
+                        "slug": series.slug,
                     }
                     client.table("series_metadata").upsert(s_data, on_conflict="series_hash").execute()
                 except Exception as cloud_e:
@@ -767,3 +780,62 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
     except Exception as e:
         logger.error(f"Error fetching AI lists: {e}", exc_info=True)
         return {"success": False, "message": str(e)}
+
+
+async def handle_ai_recalculate_all_slugs(data: dict[str, Any], user_data: dict[str, Any]):
+    """Recalcula todos los slugs de las series basándose en su nombre canónico."""
+    check_staff(user_data)
+
+    from utils.helpers import generar_slug_from_meta
+
+    updated_count = 0
+    total_processed = 0
+    errors = []
+
+    async with pg_manager.get_session() as session:
+        # Obtener todas las series
+        stmt = select(SeriesMetadata)
+        result = await session.execute(stmt)
+        series_list = result.scalars().all()
+
+        total_processed = len(series_list)
+
+        # Preparar cliente de Supabase si está activo
+        supabase_client = None
+        if config.ENABLE_SUPABASE:
+            try:
+                from core.supabase_manager import supabase_manager
+
+                supabase_client = supabase_manager.get_client()
+            except Exception as e:
+                logger.warning(f"No se pudo conectar con Supabase para sincronización masiva: {e}")
+
+        for series in series_list:
+            old_slug = series.slug
+            # Generar nuevo slug usando la lógica centralizada
+            new_slug = generar_slug_from_meta(series.to_dict())
+
+            if new_slug and new_slug != old_slug:
+                series.slug = new_slug
+                updated_count += 1
+
+                # Sincronizar con Supabase individualmente para evitar timeouts masivos
+                if supabase_client:
+                    try:
+                        supabase_client.table("series_metadata").update({"slug": new_slug}).eq(
+                            "series_hash", series.series_hash
+                        ).execute()
+                    except Exception as se:
+                        logger.error(f"Error sincronizando slug de '{series.series_name}' con Supabase: {se}")
+
+        if updated_count > 0:
+            await session.commit()
+            logger.info(f"Mantenimiento: {updated_count} slugs actualizados globalmente.")
+
+    return {
+        "success": True,
+        "message": f"Sincronización de slugs completada. {updated_count} actualizados de {total_processed} totales.",
+        "updated_count": updated_count,
+        "total": total_processed,
+        "errors": errors,
+    }

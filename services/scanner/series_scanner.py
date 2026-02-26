@@ -39,7 +39,6 @@ class SeriesScanner:
                 series_name=book.series or book.title,
                 series_spanish=book.series_spanish,
                 series_english=book.series_english,
-                slug=generar_slug_from_meta(book.to_dict()),
                 series_hash=book.series_hash,
                 author=book.author,
                 author_jap=book.author_jap,
@@ -50,6 +49,8 @@ class SeriesScanner:
                 cover_url=book.cover_low or book.cover_medium,
                 book_count=0,
             )
+            # Generar slug usando el objeto recién creado (que ya tiene series_name)
+            series.slug = generar_slug_from_meta(series.to_dict())
             session.add(series)
             session.flush()
             logger.info(f"🆕 Nueva serie detectada: {series.series_name}")
@@ -75,7 +76,7 @@ class SeriesScanner:
                 series.series_english = book.series_english
                 # Solo actualizar slug si no existe o es un hash largo residual
                 if not series.slug or len(str(series.slug)) > 40:
-                    series.slug = generar_slug_from_meta(book.to_dict())
+                    series.slug = generar_slug_from_meta(series.to_dict())
 
             if book.book_type and series.book_type != book.book_type:
                 series.book_type = book.book_type
@@ -150,7 +151,7 @@ class SeriesScanner:
         # Completar o corregir SLUG solo si es nulo o es un hash largo (SHA256 de 64 chars)
         # Una vez que tiene un slug humano (ej: "slayers"), no se toca más.
         if books and (not series.slug or len(str(series.slug)) > 40):
-            series.slug = generar_slug_from_meta(books[0].to_dict())
+            series.slug = generar_slug_from_meta(series.to_dict())
 
         if not series.cover_url or "_low.jpg" not in series.cover_url:
             for b in books:

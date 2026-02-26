@@ -224,7 +224,8 @@ class AIService:
         Tareas:
         1. **Proposed English Name**: El nombre canónico en INGLÉS/ROMAJI.
         2. **Proposed Spanish Name**: El nombre oficial en ESPAÑOL.
-        3. **Group Siglas & Name (PROPRIEDAD CRÍTICA)**:
+        3. **Proposed Slug**: Un identificador único para la URL. Debe ser 'series_name' en minúsculas con guiones bajos, sin caracteres especiales ni tildes. Ej: 'the_pet_girl_of_sakurasou'.
+        4. **Group Siglas & Name (PROPRIEDAD CRÍTICA)**:
            - **IMPORTANTE**: Usa el campo 'publisher' de cada libro para identificar al grupo.
            - Si el 'publisher' coincide con uno de los nombres en la 'LISTA DE GRUPOS' proporcionada, DEBES usar la sigla correspondiente de esa lista.
            - Si no hay coincidencia, sigue estas reglas:
@@ -232,16 +233,17 @@ class AIService:
              - **Group Siglas**: Siglas de <= 6 caracteres. No uses números si hay conflicto. Expande usando letras descriptivas del nombre (ej: 'DARKT', 'DRAGT').
              - Nombres como Siglas: Si es una palabra de <= 6 letras, úsala tal cual.
              - Consistencia: Nombres casi idénticos = misma sigla.
-        4. **Volumes**: Para cada archivo, confirma su volumen real. Usa 0.0 si es Volumen Único.
+        5. **Volumes**: Para cada archivo, confirma su volumen real. Usa 0.0 si es Volumen Único.
 
         SEGURIDAD DE ARCHIVOS:
         - La restricción de caracteres (\\ / : * ? " < > |) SOLO aplica a nombres de archivo en disco.
-        - Los campos `proposed_english` y `proposed_spanish` PUEDEN contener ":" (ej: "Serie: Subtitulo").
+        - Los campos `proposed_english`, `proposed_spanish` y `proposed_slug` PUEDEN contener ":" (ej: "Serie: Subtitulo").
 
         Responde SOLO con este JSON:
         {{
             "proposed_english": "string",
             "proposed_spanish": "string",
+            "proposed_slug": "string",
             "group_full": "string",
             "group_siglas": "string",
             "detected_tags": ["tag1", "tag2"],
@@ -261,14 +263,19 @@ class AIService:
         {{group_context}}
         """
 
-        # 0. Get Learning Context (RAG-lite)
+        # 0. Get Learning Context (RAG-lite) and Current Series Info
         learning_context = ""
+        current_s = None
         try:
             from sqlalchemy import text
 
+            from models.library_models import SeriesMetadata
             from utils.library_db import get_session
 
             with get_session() as session:
+                # Get current series metadata for slug context
+                current_s = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
+
                 # Get valid siglas
                 res_siglas = session.execute(
                     text("SELECT siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 100")
@@ -286,7 +293,7 @@ class AIService:
                 if corrections:
                     learning_context += "\nAPRENDIZAJE DE CORRECCIONES PASADAS:\n" + "\n".join(corrections)
         except Exception as e:
-            logger.warning(f"Failed to load learning context: {e}")
+            logger.warning(f"Failed to load learning context or series info: {e}")
 
         try:
             group_context = await AIService._get_group_context()
@@ -305,8 +312,10 @@ class AIService:
                 "series_hash": series_hash,
                 "current_series": current_series_name,
                 "current_spanish": current_spanish_name,
+                "current_slug": current_s.slug if current_s else None,
                 "proposed_series": analysis.get("proposed_english"),
                 "proposed_spanish": analysis.get("proposed_spanish"),
+                "proposed_slug": analysis.get("proposed_slug"),
                 "group_full": analysis.get("group_full", "Unknown"),
                 "group_siglas": analysis.get("group_siglas", "Unknown"),
                 "reason": analysis.get("reason"),
