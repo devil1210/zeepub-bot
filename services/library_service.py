@@ -466,7 +466,8 @@ class LibraryService:
                 if source_id:
                     stmt = stmt.join(LocalBook).where(LocalBook.source_id == source_id).distinct()
 
-                stmt = stmt.order_by(SeriesMetadata.series_name.asc())
+                # Case-insensitive sort for series name
+                stmt = stmt.order_by(func.lower(SeriesMetadata.series_name).asc())
 
                 count_stmt = select(func.count()).select_from(stmt.subquery())
                 total_items = (await session.execute(count_stmt)).scalar() or 0
@@ -479,15 +480,25 @@ class LibraryService:
 
                 items = []
                 for s in series_list:
+                    # Resolve cover using the same logic as search (with fallback to first book if metadata cover is missing)
+                    # For optimization in root catalog, we might need a rep book, but for now we fallback to metadata
+                    # or try to fetch the first book if needed.
+                    # Since s.cover_url is already synced during scanning (usually), we use it.
+                    # If it is missing, we use a default or search_series helper logic.
+
+                    # Let's use the search_series logic to be safe if s.cover_url is null
                     items.append(
                         {
                             "id": f"series_{s.series_hash}",
                             "title": s.series_name,
+                            "series_name": s.series_name,
                             "series_spanish": s.series_spanish,
+                            "series_english": s.series_english,
                             "is_folder": True,
                             "numBooks": s.book_count,
+                            "book_count": s.book_count,
                             "book_type": s.book_type,
-                            "cover": s.cover_url,
+                            "cover": s.cover_url or "/book-placeholder.jpg",
                             "series_hash": s.series_hash,
                         }
                     )

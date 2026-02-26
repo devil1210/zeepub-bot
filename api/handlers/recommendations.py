@@ -41,27 +41,26 @@ async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]
 
     # Format for frontend (ensure we don't double-prefix IDs if to_dict already did it)
     results = []
-    for book_data in local_recs:
-        # If book_data is from to_dict(), it already has "id": "local_X", "cover", "cover_thumb", etc.
-        # We ensure cleanTitle and other expected fields are present
-        res_item = book_data.copy()
+    for item_data in local_recs:
+        res_item = item_data.copy()
 
         # Ensure ID format for frontend consistency
-        if not str(res_item.get("id", "")).startswith("local_"):
-            res_item["id"] = f"local_{res_item.get('id')}"
+        # If it's a series, it already has the 'series_' prefix from the service
+        # If it's a book (fallback), it should have 'local_'
+        current_id = str(res_item.get("id", ""))
+        if not (current_id.startswith("local_") or current_id.startswith("series_")):
+            res_item["id"] = f"local_{current_id}"
 
-        # Fix missing cover: use 'cover' from to_dict() instead of 'cover_url'
+        # Fix missing cover: use 'cover' from to_dict() / service
         if not res_item.get("cover") and res_item.get("cover_url"):
             res_item["cover"] = res_item.get("cover_url")
-        elif not res_item.get("cover"):
-            res_item["cover"] = res_item.get("cover_low") or res_item.get("cover_medium") or res_item.get("cover_high")
 
-        # Compatibility with RecommendationCard.tsx
+        # Compatibility with RecommendationCard.tsx cleanTitle
         res_item["cleanTitle"] = (
             res_item.get("cleanTitle")
+            or res_item.get("title")
             or res_item.get("series")
             or res_item.get("english_title")
-            or res_item.get("title")
         )
 
         results.append(res_item)

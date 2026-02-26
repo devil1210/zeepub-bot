@@ -4,10 +4,9 @@ from datetime import date
 from typing import Any
 
 from sqlalchemy import String, case, cast, desc, or_, select
-from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, UserDownload, UserRating
+from models.library_models import LocalBook, SeriesMetadata, UserDownload, UserRating
 
 logger = logging.getLogger(__name__)
 
@@ -16,96 +15,107 @@ class RecommendationService:
     @staticmethod
     async def get_recommendations(user_id: int, limit: int = 4) -> list[dict[str, Any]]:
         """
-        Genera recomendaciones basadas en descargas y valoraciones.
-        Cambia una vez al día por usuario.
+        Genera recomendaciones de SERIES basadas en descargas y valoraciones.
+        Cambia una vez al día por usuario. Regresa diccionarios listos para el Mini App.
         """
         try:
-            downloaded_hashes = set()
-            liked_hashes = set()
+            downloaded_series_hashes = set()
+            liked_series_hashes = set()
 
             async with pg_manager.get_session() as session:
-                # 1. Obtener historial de descargas
-                dl_stmt = select(UserDownload.book_hash).where(UserDownload.user_id == user_id)
+                # 1. Obtener historial de descargas -> Extraer series_hash
+                dl_stmt = (
+                    select(LocalBook.series_hash)
+                    .join(UserDownload, UserDownload.book_hash == LocalBook.book_hash)
+                    .where(UserDownload.user_id == user_id)
+                )
                 dl_res = await session.execute(dl_stmt)
-                downloaded_hashes = {row[0] for row in dl_res.fetchall() if row[0]}
+                downloaded_series_hashes = {row[0] for row in dl_res.fetchall() if row[0]}
 
-                # 2. Obtener valoraciones positivas (>= 4 estrellas)
-                # UserRating has book_hash
-                rate_stmt = select(UserRating.book_hash).where(UserRating.user_id == user_id, UserRating.rating >= 4)
+                # 2. Valoraciones positivas -> Extraer series_hash
+                rate_stmt = (
+                    select(LocalBook.series_hash)
+                    .join(UserRating, UserRating.book_hash == LocalBook.book_hash)
+                    .where(UserRating.user_id == user_id, UserRating.rating >= 4)
+                )
                 rate_res = await session.execute(rate_stmt)
-                liked_hashes = {row[0] for row in rate_res.fetchall() if row[0]}
+                liked_series_hashes = {row[0] for row in rate_res.fetchall() if row[0]}
 
-                combined_hashes = downloaded_hashes.union(liked_hashes)
+                combined_hashes = downloaded_series_hashes.union(liked_series_hashes)
 
                 if not combined_hashes:
                     return await RecommendationService._get_popular_recommendations(
-                        user_id, session, limit, downloaded_hashes
+                        user_id, session, limit, downloaded_series_hashes
                     )
 
-                # 3. Analizar perfiles (Tags y Autores)
-                hist_stmt = (
-                    select(LocalBook)
-                    .options(selectinload(LocalBook.series_info))
-                    .where(LocalBook.book_hash.in_(combined_hashes))
-                )
+                # 3. Analizar perfiles de Series (Tags y Autores)
+                hist_stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash.in_(combined_hashes))
                 hist_res = await session.execute(hist_stmt)
-                history_books = hist_res.scalars().all()
+                history_series = hist_res.scalars().all()
 
                 tags_freq = {}
                 authors_freq = {}
 
-                for b in history_books:
-                    if b.author and b.author != "Desconocido":
-                        authors_freq[b.author] = authors_freq.get(b.author, 0) + 2  # Peso autores
-                    if b.tags:
-                        for t in b.tags:
+                for s in history_series:
+                    if s.author and s.author != "Desconocido":
+                        authors_freq[s.author] = authors_freq.get(s.author, 0) + 2
+                    if s.tags:
+                        for t in s.tags:
                             tags_freq[t] = tags_freq.get(t, 0) + 1
 
-                # Top de cada uno
                 top_authors = sorted(authors_freq.items(), key=lambda x: x[1], reverse=True)[:3]
                 top_tags = sorted(tags_freq.items(), key=lambda x: x[1], reverse=True)[:5]
 
                 target_authors = [a[0] for a in top_authors]
                 target_tags = [t[0] for t in top_tags]
 
-                # 4. Buscar similares
-                cand_stmt = (
-                    select(LocalBook)
-                    .options(selectinload(LocalBook.series_info))
-                    .where(LocalBook.book_hash.notin_(downloaded_hashes))
-                )
+                # 4. Buscar Series similares (excluyendo lo que ya descargó)
+                cand_stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash.notin_(downloaded_series_hashes))
 
-                # Construir filtros dinámicos (OR de autores o tags)
                 filters = []
                 if target_authors:
-                    filters.append(LocalBook.author.in_(target_authors))
+                    filters.append(SeriesMetadata.author.in_(target_authors))
 
                 if target_tags:
-                    # tags is JSONB in Postgres usually, or if it's text we use like
-                    # LocalBook.tags is JSON (Column(JSON))
-                    # In Postgres, we can use JSONB containment or just cast to string for simplicity if it varies
-                    tag_filters = [cast(LocalBook.tags, String).ilike(f"%{tag}%") for tag in target_tags]
+                    tag_filters = [cast(SeriesMetadata.tags, String).ilike(f"%{tag}%") for tag in target_tags]
                     filters.append(or_(*tag_filters))
 
                 if filters:
                     cand_stmt = cand_stmt.where(or_(*filters))
 
                 # Ordenar por rating y luego variedad
-                cand_stmt = cand_stmt.order_by(desc(LocalBook.rating_average), desc(LocalBook.rating_count)).limit(
-                    limit * 6
-                )
+                cand_stmt = cand_stmt.order_by(
+                    desc(SeriesMetadata.rating_average), desc(SeriesMetadata.rating_count)
+                ).limit(limit * 6)
 
                 cand_res = await session.execute(cand_stmt)
                 candidates = cand_res.scalars().all()
 
                 if not candidates:
                     return await RecommendationService._get_popular_recommendations(
-                        user_id, session, limit, downloaded_hashes
+                        user_id, session, limit, downloaded_series_hashes
                     )
 
-                results = [book.to_dict() for book in candidates]
+                # Formatear como diccionarios compatibles con Mini App (Series Style)
+                results = []
+                for s in candidates:
+                    results.append(
+                        {
+                            "id": f"series_{s.series_hash}",
+                            "title": s.series_name,
+                            "author": s.author,
+                            "cover": s.cover_url or "/book-placeholder.jpg",
+                            "is_folder": True,
+                            "series_hash": s.series_hash,
+                            "numBooks": s.book_count,
+                            "book_count": s.book_count,
+                            "rating_average": s.rating_average,
+                            "book_type": s.book_type,
+                            "tags": s.tags or [],
+                        }
+                    )
 
-                # Semilla diaria por usuario
+                # Semilla diaria
                 daily_seed = f"{user_id}_{date.today().isoformat()}"
                 r = random.Random(daily_seed)
                 r.shuffle(results)
@@ -120,20 +130,17 @@ class RecommendationService:
     async def _get_popular_recommendations(
         user_id: int, session, limit: int, exclude_hashes: set
     ) -> list[dict[str, Any]]:
-        """Fallback: Libros populares del catálogo total si no hay historial."""
+        """Fallback: Series populares si no hay historial."""
 
         async def execute_query(sess):
-            query = select(LocalBook).options(selectinload(LocalBook.series_info))
+            query = select(SeriesMetadata)
             if exclude_hashes:
-                query = query.where(LocalBook.book_hash.notin_(exclude_hashes))
+                query = query.where(SeriesMetadata.series_hash.notin_(exclude_hashes))
 
-            # Priorizar libros con miniatura y buen rating
             query = query.order_by(
-                desc(
-                    case((LocalBook.cover_low.isnot(None), 1), else_=0)
-                ),  # Fix: is not None evaluates to True in python, use .isnot(None) expression
-                desc(LocalBook.rating_average),
-                desc(LocalBook.rating_count),
+                desc(case((SeriesMetadata.cover_url.isnot(None), 1), else_=0)),
+                desc(SeriesMetadata.rating_average),
+                desc(SeriesMetadata.rating_count),
             ).limit(limit * 3)
 
             res = await sess.execute(query)
@@ -141,12 +148,28 @@ class RecommendationService:
 
         try:
             if session:
-                books = await execute_query(session)
+                series_list = await execute_query(session)
             else:
                 async with pg_manager.get_session() as new_session:
-                    books = await execute_query(new_session)
+                    series_list = await execute_query(new_session)
 
-            results = [book.to_dict() for book in books]
+            results = []
+            for s in series_list:
+                results.append(
+                    {
+                        "id": f"series_{s.series_hash}",
+                        "title": s.series_name,
+                        "author": s.author,
+                        "cover": s.cover_url or "/book-placeholder.jpg",
+                        "is_folder": True,
+                        "series_hash": s.series_hash,
+                        "numBooks": s.book_count,
+                        "book_count": s.book_count,
+                        "rating_average": s.rating_average,
+                        "book_type": s.book_type,
+                        "tags": s.tags or [],
+                    }
+                )
 
             daily_seed = f"{user_id}_{date.today().isoformat()}"
             r = random.Random(daily_seed)
@@ -155,12 +178,19 @@ class RecommendationService:
             return results[:limit]
         except Exception as e:
             logger.error(f"Error getting popular recommendations: {e}")
-            # Super fallback
             try:
                 async with pg_manager.get_session() as last_resort:
-                    stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).limit(limit)
+                    stmt = select(SeriesMetadata).limit(limit)
                     res = await last_resort.execute(stmt)
-                    books = res.scalars().all()
-                    return [book.to_dict() for book in books]
+                    series_list = res.scalars().all()
+                    return [
+                        {
+                            "id": f"series_{s.series_hash}",
+                            "title": s.series_name,
+                            "is_folder": True,
+                            "cover": s.cover_url,
+                        }
+                        for s in series_list
+                    ]
             except Exception:
                 return []

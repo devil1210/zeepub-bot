@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import select, update
 
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook, SeriesMetadata
@@ -96,63 +96,6 @@ class DatabaseIntegrityTool(MaintenanceTool):
                         await session.commit()
 
                 await session.commit()
-
-                # 3. Merge Duplicate Series: Fusionar metadatos que tienen el mismo nombre canónico
-                logger.info("Integrity check: Starting series merge phase...")
-                # Agrupamos por nombre (insensible a mayúsculas) y contamos
-                subq_dup = (
-                    select(func.lower(SeriesMetadata.series_name).label("name"))
-                    .group_by(func.lower(SeriesMetadata.series_name))
-                    .having(func.count(SeriesMetadata.id) > 1)
-                    .subquery()
-                )
-
-                stmt_dup_groups = (
-                    select(SeriesMetadata)
-                    .join(subq_dup, func.lower(SeriesMetadata.series_name) == subq_dup.c.name)
-                    .order_by(func.lower(SeriesMetadata.series_name))
-                )
-                res_dups = await session.execute(stmt_dup_groups)
-                dup_entities = res_dups.scalars().all()
-
-                # Agrupar en memoria las entidades de base de datos
-                merge_groups = {}
-                for s in dup_entities:
-                    key = s.series_name.lower()
-                    if key not in merge_groups:
-                        merge_groups[key] = []
-                    merge_groups[key].append(s)
-
-                for _, entities in merge_groups.items():
-                    # Pick Master: The one with most books or a cover
-                    entities.sort(key=lambda x: (x.book_count, 1 if x.cover_url else 0), reverse=True)
-                    master = entities[0]
-                    duplicates = entities[1:]
-
-                    logger.info(
-                        f"Merging {len(duplicates)} duplicates into master series: {master.series_name} ({master.series_hash[:8]})"
-                    )
-
-                    for dup in duplicates:
-                        # 1. Update books to point to master
-                        upd_books = (
-                            update(LocalBook)
-                            .where(
-                                or_(LocalBook.series_metadata_id == dup.id, LocalBook.series_hash == dup.series_hash)
-                            )
-                            .values(series_metadata_id=master.id, series_hash=master.series_hash)
-                        )
-                        await session.execute(upd_books)
-
-                        # 2. Delete duplicate metadata
-                        from sqlalchemy import delete
-
-                        await session.execute(delete(SeriesMetadata).where(SeriesMetadata.id == dup.id))
-
-                    # Recalcular book_count del master
-                    count_q = select(func.count(LocalBook.id)).where(LocalBook.series_metadata_id == master.id)
-                    count_res = await session.execute(count_q)
-                    master.book_count = count_res.scalar() or 0
 
                 await session.commit()
 

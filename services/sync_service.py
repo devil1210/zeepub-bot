@@ -326,15 +326,24 @@ class SyncService:
                     }
                 )
 
-            for i in range(0, len(data), 50):
-                batch = data[i : i + 50]
+            # Deduplicar por book_hash para evitar errores en lotes de upsert
+            unique_data = {}
+            for item in data:
+                h = item.get("book_hash")
+                if h:
+                    unique_data[h] = item
+
+            final_data = list(unique_data.values())
+
+            for i in range(0, len(final_data), 50):
+                batch = final_data[i : i + 50]
                 try:
                     # Usamos book_hash como conflicto primario porque Supabase tiene restricción única ahí.
                     # Esto permite que si un archivo se mueve locally (nueva ruta), se actualice en la nube.
                     client.table("local_books").upsert(batch, on_conflict="book_hash").execute()
                     stats["books"] += len(batch)
                     if i % 250 == 0:
-                        print(f"📦 Libros sincronizados: {stats['books']}/{len(data)}")
+                        print(f"📦 Libros sincronizados: {stats['books']}/{len(final_data)}")
                 except Exception as ex:
                     logger.error(f"Error syncing books batch {i}: {ex}")
                     print(f"❌ Error en lote {i}: {ex}")
