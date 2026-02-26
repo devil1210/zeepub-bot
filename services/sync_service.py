@@ -137,6 +137,8 @@ class SyncService:
                             "rating_average": float(s.rating_average) if s.rating_average is not None else 0.0,
                             "rating_count": s.rating_count,
                             "book_count": s.book_count,
+                            "slug": s.slug,
+                            "series_english": s.series_english,
                         }
                     )
                 try:
@@ -319,6 +321,7 @@ class SyncService:
                         "is_uncensored": 1 if b.is_uncensored else 0,
                         "color_mode": b.color_mode,
                         "publisher": b.publisher,
+                        "short_link": b.short_link,
                     }
                 )
 
