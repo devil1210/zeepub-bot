@@ -8,7 +8,7 @@ from typing import Any
 from models.library_models import DuplicateBook, LocalBook
 from services.hash_service import hash_service
 from utils.epub_extractor import EpubMetadataExtractor
-from utils.library_db import COVERS_DIR
+from utils.helpers import COVERS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -397,6 +397,10 @@ class EpubScanner:
                     book.cover_high = base_url + os.path.basename(cover_paths["high"])
                     book.cover_medium = base_url + os.path.basename(cover_paths["medium"])
                     book.cover_low = base_url + os.path.basename(cover_paths["low"])
+
+            # Link corto estable
+            if book.book_hash:
+                book.short_link = generate_short_link(book.book_hash)
 
             return outcome
         except Exception as e:

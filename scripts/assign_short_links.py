@@ -7,7 +7,15 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from sqlalchemy import select
 
-# Importar todos los modelos para asegurar que SQLAlchemy resuelva relaciones
+# Import ALL models to ensure SQLAlchemy resolves all relationships
+try:
+    import models.agent_models  # noqa: F401
+    import models.library_models  # noqa: F401
+    import models.publication_models  # noqa: F401
+    import models.user_models  # noqa: F401
+except ImportError:
+    pass
+
 from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook
 from utils.helpers import generate_short_link
@@ -39,16 +47,16 @@ async def main():
             print("No se encontraron libros en la base de datos.")
             return
 
-        print(f"Procesando {len(books)} libros...")
+        print(f"✅ Se encontraron {len(books)} libros.")
+        print("Procesando en lotes de 20...")
 
-        updates = 0
-        batch_size = 50
-
-        for i in range(0, len(books), batch_size):
-            batch = books[i : i + batch_size]
+        total_updated = 0
+        for i in range(0, len(books), 20):
+            batch = books[i : i + 20]
             batch_updates = 0
-
             for book in batch:
+                if not book.book_hash:
+                    continue
                 new_link = generate_short_link(book.book_hash)
                 if book.short_link != new_link:
                     book.short_link = new_link
@@ -56,14 +64,15 @@ async def main():
 
             if batch_updates > 0:
                 await session.flush()
-                updates += batch_updates
-                print(f"Lote procesado: {i + len(batch)}/{len(books)} (Actualizados en este lote: {batch_updates})")
+                await session.commit()  # Commit each batch for safety and visibility
+                total_updated += batch_updates
+                print(
+                    f"📦 Lote {i // 20 + 1} completado. Actualizados: {batch_updates} (Total: {total_updated}/{len(books)})"
+                )
+            else:
+                print(f"⏭️ Lote {i // 20 + 1} saltado (sin cambios).")
 
-        if updates > 0:
-            await session.commit()
-            print(f"✅ Se han actualizado/asignado {updates} short_links de forma estable.")
-        else:
-            print("✨ Todos los short_links ya eran consistentes con el hash.")
+        print(f"\n✨ Proceso terminado. Se actualizaron {total_updated} short_links.")
 
     await pg_manager.close()
 
