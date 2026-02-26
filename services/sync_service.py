@@ -335,6 +335,37 @@ class SyncService:
 
             final_data = list(unique_data.values())
 
+            # 6.1 Fase de Limpieza (Evita conflictos "duplicate key" limitados por constraints como filepath)
+            try:
+                local_hashes = {item["book_hash"] for item in final_data}
+                local_paths = {item["filepath"] for item in final_data}
+
+                # Pedimos a Supabase lo que tiene actualmente
+                remote_books_response = client.table("local_books").select("id, book_hash, filepath").execute()
+                remote_books = (
+                    remote_books_response.data
+                    if hasattr(remote_books_response, "data")
+                    else remote_books_response[0]
+                    if isinstance(remote_books_response, tuple)
+                    else remote_books_response.get("data", [])
+                )
+
+                to_delete = []
+                for rb in remote_books:
+                    # Si el hash cambió o si el filepath pertenece ahora a otro hash distinto
+                    if rb.get("book_hash") not in local_hashes or rb.get("filepath") not in local_paths:
+                        to_delete.append(rb.get("id"))
+
+                if to_delete:
+                    print(
+                        f"🧹 Eliminando {len(to_delete)} registros obsoletos/conflictivos de Supabase para evitar colisiones..."
+                    )
+                    for i in range(0, len(to_delete), 100):
+                        client.table("local_books").delete().in_("id", to_delete[i : i + 100]).execute()
+            except Exception as e:
+                logger.warning(f"Error en fase de purga de libros: {e}")
+
+            # 6.2 Upsert por lotes
             for i in range(0, len(final_data), 50):
                 batch = final_data[i : i + 50]
                 try:
