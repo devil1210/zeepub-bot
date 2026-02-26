@@ -54,4 +54,4 @@ async def secure_short_download(short_link: str):
         raise
     except Exception as e:
         logger.error(f"Error procesando descarga segura para {short_link}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Error interno del servidor")
+        raise HTTPException(status_code=500, detail="Error interno del servidor") from e

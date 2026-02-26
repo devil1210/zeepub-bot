@@ -402,3 +402,38 @@ class EpubScanner:
             logger.error(f"Error procesando libro {filepath}: {e}")
             session.rollback()
             return False
+
+    @classmethod
+    async def refresh_book_cover(cls, filepath: str, book: LocalBook, session: Any) -> bool:
+        """
+        Extrae y guarda únicamente la portada de un libro existente.
+        """
+        try:
+            if not os.path.exists(filepath):
+                logger.error(f"Archivo no encontrado para refrescar portada: {filepath}")
+                return False
+
+            extractor = EpubMetadataExtractor(filepath)
+            # Solo necesitamos la portada, pero extract() hace todo.
+            # Podríamos optimizar EpubMetadataExtractor si fuera necesario,
+            # pero por ahora usamos extract().
+            meta = extractor.extract()
+
+            if extractor.cover_data:
+                cover_filename = f"{hashlib.md5(filepath.encode()).hexdigest()}.jpg"
+                cover_dest = os.path.join(COVERS_DIR, cover_filename)
+                cover_paths = extractor.save_cover(cover_dest)
+                if cover_paths:
+                    base_url = "/api/library/covers/"
+                    book.cover_original = base_url + os.path.basename(cover_paths["original"])
+                    book.cover_high = base_url + os.path.basename(cover_paths["high"])
+                    book.cover_medium = base_url + os.path.basename(cover_paths["medium"])
+                    book.cover_low = base_url + os.path.basename(cover_paths["low"])
+                    return True
+            else:
+                logger.warning(f"No se encontró portada en el EPUB: {filepath}")
+
+            return False
+        except Exception as e:
+            logger.error(f"Error refrescando portada para {filepath}: {e}")
+            return False

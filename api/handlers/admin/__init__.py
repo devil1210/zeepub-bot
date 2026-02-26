@@ -17,6 +17,7 @@ from .library_handlers import (
     handle_admin_scan_series,
     handle_admin_scan_status,
     handle_admin_sync_library_cloud,
+    handle_admin_update_covers,
     handle_get_upload_history,
 )
 from .stats_handlers import handle_admin_stats
@@ -96,4 +97,5 @@ __all__ = [
     "handle_admin_get_themes",
     "handle_admin_get_theme_sync_logs",
     "handle_admin_save_theme",
+    "handle_admin_update_covers",
 ]

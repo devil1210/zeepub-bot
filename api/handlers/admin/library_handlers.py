@@ -448,17 +448,21 @@ async def handle_get_upload_history(data: dict[str, Any], user_data: dict[str, A
 async def handle_admin_enrich_metadata(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
 
-    def run_enrichment_in_thread(scanner_obj):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            scanner_obj.enrich_all_metadata()
-        except Exception as e:
-            logger.error(f"Enrichment thread error: {e}")
-        finally:
-            loop.close()
+    from services.maintenance.orchestrator import MaintenanceOrchestrator
 
-    libs_json = os.getenv("LOCAL_LIBRARIES")
-    scanner = ScannerService(libs_json or "{}")
-    threading.Thread(target=run_enrichment_in_thread, args=(scanner,)).start()
+    # Iniciar en segundo plano
+    asyncio.create_task(MaintenanceOrchestrator.run_tool("metadata_enrich"))
+
     return {"success": True, "message": "Enriquecimiento en segundo plano iniciado."}
+
+
+async def handle_admin_update_covers(data: dict[str, Any], user_data: dict[str, Any]):
+    """Activates background book cover update for all books."""
+    check_staff(user_data)
+
+    from services.maintenance.orchestrator import MaintenanceOrchestrator
+
+    # Iniciar en segundo plano sin esperar
+    asyncio.create_task(MaintenanceOrchestrator.run_tool("cover_refresh"))
+
+    return {"success": True, "message": "Actualización de portadas iniciada en segundo plano."}

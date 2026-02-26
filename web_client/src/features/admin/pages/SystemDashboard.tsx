@@ -563,6 +563,33 @@ export const SystemDashboard: React.FC = () => {
                         ></div>
                     </div>
 
+                    {/* Actualizar Portadas */}
+                    <div className="glass-panel p-6 rounded-premium flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                            <div className="flex flex-col">
+                                <h4 className="font-black text-white text-[10px] uppercase tracking-widest mb-1">Actualizar Portadas</h4>
+                                <p className="text-[11px] text-gray-500 leading-relaxed max-w-[180px]">Forzar la recreación de portada para todos los libros en la librería.</p>
+                            </div>
+                            <div className="p-3 bg-indigo-500/20 rounded-premium-sm text-indigo-400 border border-indigo-500/20 shadow-lg shadow-indigo-500/10">
+                                <Palette className="w-5 h-5" />
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                if (confirm('¿Deseas forzar la actualización de portadas de toda la biblioteca? Este proceso reconstruirá las portadas de los EPUBs.')) {
+                                    handleAction('Actualizando Portadas', api.adminUpdateCovers);
+                                }
+                            }}
+                            className="mt-4 w-full py-3 text-[10px] font-black text-center bg-indigo-500/10 hover:bg-indigo-500 text-indigo-400 hover:text-white border border-indigo-500/20 rounded-premium-sm transition-all uppercase tracking-widest active:scale-95 relative z-10"
+                        >
+                            {actionLoading === 'Actualizando Portadas' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Refresh Covers"}
+                        </button>
+                        <div
+                            className="absolute -right-6 -bottom-6 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl group-hover:bg-indigo-500/10 transition-all duration-700 pointer-events-none"
+                            style={{ opacity: settings.cardGlowIntensity }}
+                        ></div>
+                    </div>
+
                     {/* Recalcular Slugs */}
                     <div className="glass-panel p-6 rounded-premium flex flex-col group hover:scale-[1.02] transition-all duration-300 relative overflow-hidden">
                         <div className="flex justify-between items-start mb-4 relative z-10">

@@ -1,3 +1,4 @@
+import asyncio
 import os
 import shutil
 from typing import Annotated, Any
@@ -269,6 +270,15 @@ async def optimize_database(user_data: Annotated[dict, Depends(require_admin)]):
 @router.post("/api/library/cleanup")
 async def cleanup_orphaned_files(user_data: Annotated[dict, Depends(require_admin)]):
     return LibraryMaintenanceService.cleanup_orphaned_covers()
+
+
+@router.post("/api/library/update-covers")
+async def update_all_covers(user_data: Annotated[dict, Depends(require_admin)]):
+    """Refresca todas las portadas de los libros de la biblioteca."""
+    scanner = ScannerService("{}")
+    # Iniciamos en segundo plano
+    asyncio.create_task(scanner.update_all_covers())
+    return {"success": True, "message": "Actualización de portadas iniciada en segundo plano"}
 
 
 @router.get("/api/library/stats")

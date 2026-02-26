@@ -426,6 +426,13 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
     }
   };
 
+  // Memoize theme options once so they aren't computed inside the render return
+  const memoizedThemeOptions = useMemo(() =>
+    allThemes.map(t => (
+      <option key={t.id} value={t.id}>{t.name}</option>
+    )),
+    [allThemes]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -862,9 +869,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                       defaultValue=""
                     >
                       <option value="" disabled>Aplicar tema guardado...</option>
-                      {useMemo(() => allThemes.map(t => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      )), [allThemes])}
+                      {memoizedThemeOptions}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                   </div>

@@ -10,6 +10,7 @@ from models.library_models import (
     LibrarySource,
     LocalBook,
 )
+from services.maintenance.orchestrator import MaintenanceOrchestrator
 from services.notification_service import notification_service
 
 # Importar sub-scanners
@@ -319,25 +320,8 @@ class ScannerService:
 
     async def enrich_all_metadata(self, delay_seconds=2.0):
         """Busca metadatos online para libros que tienen ISBN."""
-        if ScannerService._is_scanning:
-            return False
-        ScannerService._is_scanning = True
-        session = get_session()
-        try:
-            books = (
-                session.query(LocalBook)
-                .filter(
-                    LocalBook.isbn.isnot(None),
-                    LocalBook.isbn != "",
-                    (LocalBook.spanish_title.is_(None)) | (LocalBook.description.is_(None)),
-                )
-                .all()
-            )
-            for book in books:
-                if await EpubScanner.enrich_from_isbn(book):
-                    session.commit()
-                    await asyncio.sleep(delay_seconds)
-            return True
-        finally:
-            session.close()
-            ScannerService._is_scanning = False
+        return await MaintenanceOrchestrator.run_tool("metadata_enrich", delay_seconds=delay_seconds)
+
+    async def update_all_covers(self):
+        """Refresca las portadas de todos los libros en la biblioteca."""
+        return await MaintenanceOrchestrator.run_tool("cover_refresh")

@@ -1,7 +1,7 @@
 import os
 from logging.config import fileConfig
 
-from sqlalchemy import pool
+from sqlalchemy import Boolean, Column, DateTime, Integer, MetaData, String, Table, Text, pool
 
 from alembic import context
 
@@ -18,7 +18,6 @@ if db_url:
     config.set_main_option("sqlalchemy.url", db_url)
 
 # Define metadata directly to avoid circular imports
-from sqlalchemy import Boolean, Column, DateTime, Integer, MetaData, String, Table, Text
 
 meta = MetaData()
 Table(

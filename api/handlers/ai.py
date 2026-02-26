@@ -786,56 +786,16 @@ async def handle_ai_recalculate_all_slugs(data: dict[str, Any], user_data: dict[
     """Recalcula todos los slugs de las series basándose en su nombre canónico."""
     check_staff(user_data)
 
-    from utils.helpers import generar_slug_from_meta
+    from services.maintenance.orchestrator import MaintenanceOrchestrator
 
-    updated_count = 0
-    total_processed = 0
-    errors = []
+    results = await MaintenanceOrchestrator.run_tool("slug_recalculate")
 
-    async with pg_manager.get_session() as session:
-        # Obtener todas las series
-        stmt = select(SeriesMetadata)
-        result = await session.execute(stmt)
-        series_list = result.scalars().all()
-
-        total_processed = len(series_list)
-
-        # Preparar cliente de Supabase si está activo
-        supabase_client = None
-        if config.ENABLE_SUPABASE:
-            try:
-                from core.supabase_manager import supabase_manager
-
-                supabase_client = supabase_manager.get_client()
-            except Exception as e:
-                logger.warning(f"No se pudo conectar con Supabase para sincronización masiva: {e}")
-
-        for series in series_list:
-            old_slug = series.slug
-            # Generar nuevo slug usando la lógica centralizada
-            new_slug = generar_slug_from_meta(series.to_dict())
-
-            if new_slug and new_slug != old_slug:
-                series.slug = new_slug
-                updated_count += 1
-
-                # Sincronizar con Supabase individualmente para evitar timeouts masivos
-                if supabase_client:
-                    try:
-                        supabase_client.table("series_metadata").update({"slug": new_slug}).eq(
-                            "series_hash", series.series_hash
-                        ).execute()
-                    except Exception as se:
-                        logger.error(f"Error sincronizando slug de '{series.series_name}' con Supabase: {se}")
-
-        if updated_count > 0:
-            await session.commit()
-            logger.info(f"Mantenimiento: {updated_count} slugs actualizados globalmente.")
+    if not results.get("success"):
+        return {"success": False, "message": f"Error recalculando slugs: {results.get('error')}"}
 
     return {
         "success": True,
-        "message": f"Sincronización de slugs completada. {updated_count} actualizados de {total_processed} totales.",
-        "updated_count": updated_count,
-        "total": total_processed,
-        "errors": errors,
+        "message": f"Sincronización de slugs completada. {results.get('updated')} actualizados de {results.get('processed')} totales.",
+        "updated_count": results.get("updated"),
+        "total": results.get("processed"),
     }
