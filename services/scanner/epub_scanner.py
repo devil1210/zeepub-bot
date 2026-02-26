@@ -8,6 +8,7 @@ from typing import Any
 from models.library_models import DuplicateBook, LocalBook
 from services.hash_service import hash_service
 from utils.epub_extractor import EpubMetadataExtractor
+from utils.helpers import generate_short_link
 from utils.library_db import COVERS_DIR
 
 logger = logging.getLogger(__name__)
@@ -367,13 +368,6 @@ class EpubScanner:
                         book.book_hash = target_book_hash
                         session.add(book)
                         outcome = "added"
-
-            # 🚀 Asignar short_link determinista basado en el hash del libro
-            from utils.helpers import generate_short_link
-
-            new_sl = generate_short_link(book.book_hash)
-            if book.short_link != new_sl:
-                book.short_link = new_sl
 
             # Vinculación (Se delega al orquestador o providers)
             if book not in session:
