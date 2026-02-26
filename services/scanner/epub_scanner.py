@@ -184,6 +184,7 @@ class EpubScanner:
                 and book.file_modified_at == mtime
                 and book.file_size == size
                 and book.book_hash
+                and book.short_link
                 and book.cover_low
                 and book.series_metadata_id is not None
                 and book.series

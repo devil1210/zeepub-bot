@@ -138,65 +138,8 @@ async def health_check():
     return {
         "status": "online",
         "message": "ZeePub Bot API is running",
-        "version": "2026-02-26-v8",
+        "version": "1.0.0-stable",
     }
-
-
-# DEBUG: Endpoint ultra-prioritario fuera de /api para evitar el SPA catch-all
-@app.get("/v8-debug")
-async def shortlink_debug_v8():
-    """Diagnóstico de emergencia: lista rutas y versión."""
-    try:
-        routes_list = []
-        for route in app.routes:
-            if hasattr(route, "path"):
-                routes_list.append({"path": route.path, "name": getattr(route, "name", "N/A")})
-        return {
-            "version": "2026-02-26-v8",
-            "routes_count": len(routes_list),
-            "env_postgres_active": os.getenv("ENABLE_POSTGRES_PLUGIN", "False"),
-            "database_url_set": bool(os.getenv("DATABASE_URL")),
-        }
-    except Exception as e:
-        return {"error": str(e), "version": "2026-02-26-v8-fallback"}
-
-
-@app.get("/api/shortlink-debug")
-async def shortlink_debug():
-    """Versión legacy de debug (ahora en /v8-debug)."""
-    return await shortlink_debug_v8()
-
-
-@app.get("/api/shortlink-check/{short_link}")
-async def shortlink_check(short_link: str):
-    """Diagnóstico: muestra info del libro sin intentar descargarlo."""
-    import asyncio
-
-    from models.library_models import LocalBook
-    from utils.library_db import get_session
-
-    def _query():
-        session = get_session()
-        try:
-            book = session.query(LocalBook).filter(LocalBook.short_link == short_link).first()
-            if not book:
-                return {"found": False, "short_link": short_link}
-            file_exists = os.path.exists(book.filepath) if book.filepath else False
-            return {
-                "found": True,
-                "id": book.id,
-                "title": book.title,
-                "filepath": book.filepath,
-                "file_exists": file_exists,
-                "short_link": book.short_link,
-                "book_hash": book.book_hash[:16] + "...",
-            }
-        except Exception as e:
-            return {"error": str(e), "type": type(e).__name__}
-        finally:
-            session.close()
-
-    return await asyncio.to_thread(_query)
 
 
 # Importar rutas
