@@ -149,11 +149,40 @@ async def shortlink_debug():
         elif hasattr(route, "path"):
             routes_list.append({"mount": route.path})
     return {
-        "version": "2026-02-26-v2",
+        "version": "2026-02-26-v3",
         "total_routes": len(routes_list),
         "routes_with_api_s": [r for r in routes_list if "/api/s" in r.get("path", "")],
-        "all_routes": routes_list[:30],  # Primeras 30 para no saturar
+        "all_routes": routes_list[:30],
     }
+
+
+@app.get("/api/shortlink-check/{short_link}")
+async def shortlink_check(short_link: str):
+    """Diagnóstico: muestra info del libro sin intentar descargarlo."""
+    from sqlalchemy import select
+
+    from core.db_manager_pg import pg_manager
+    from models.library_models import LocalBook
+
+    try:
+        async with pg_manager.get_session() as session:
+            stmt = select(LocalBook).where(LocalBook.short_link == short_link)
+            result = await session.execute(stmt)
+            book = result.scalar_one_or_none()
+            if not book:
+                return {"found": False, "short_link": short_link}
+            file_exists = os.path.exists(book.filepath) if book.filepath else False
+            return {
+                "found": True,
+                "id": book.id,
+                "title": book.title,
+                "filepath": book.filepath,
+                "file_exists": file_exists,
+                "short_link": book.short_link,
+                "book_hash": book.book_hash[:16] + "...",
+            }
+    except Exception as e:
+        return {"error": str(e), "type": type(e).__name__}
 
 
 # Importar rutas
