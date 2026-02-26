@@ -138,6 +138,24 @@ async def health_check():
     return {"message": "ZeePub Bot API is running"}
 
 
+# DEBUG: Endpoint para diagnóstico de rutas en VPS
+@app.get("/api/shortlink-debug")
+async def shortlink_debug():
+    """Diagnóstico: lista todas las rutas registradas y verifica si el código está actualizado."""
+    routes_list = []
+    for route in app.routes:
+        if hasattr(route, "path"):
+            routes_list.append({"path": route.path, "name": getattr(route, "name", "N/A")})
+        elif hasattr(route, "path"):
+            routes_list.append({"mount": route.path})
+    return {
+        "version": "2026-02-26-v2",
+        "total_routes": len(routes_list),
+        "routes_with_api_s": [r for r in routes_list if "/api/s" in r.get("path", "")],
+        "all_routes": routes_list[:30],  # Primeras 30 para no saturar
+    }
+
+
 # Importar rutas
 
 # Validar si el plugin está activo
