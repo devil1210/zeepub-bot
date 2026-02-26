@@ -135,25 +135,32 @@ async def add_cache_headers(request: Request, call_next):
 
 @app.get("/api_health")
 async def health_check():
-    return {"message": "ZeePub Bot API is running"}
+    return {
+        "status": "online",
+        "message": "ZeePub Bot API is running",
+        "version": "2026-02-26-v7",
+    }
 
 
-# DEBUG: Endpoint para diagnóstico de rutas en VPS
-@app.get("/api/shortlink-debug")
-async def shortlink_debug():
-    """Diagnóstico: lista todas las rutas registradas y verifica si el código está actualizado."""
+# DEBUG: Endpoint ultra-prioritario fuera de /api para evitar el SPA catch-all
+@app.get("/v7-debug")
+async def shortlink_debug_v7():
+    """Diagnóstico de emergencia: lista rutas y versión."""
     routes_list = []
     for route in app.routes:
         if hasattr(route, "path"):
             routes_list.append({"path": route.path, "name": getattr(route, "name", "N/A")})
-        elif hasattr(route, "mount_path"):
-            routes_list.append({"mount": route.mount_path})
     return {
-        "version": "2026-02-26-v6 (01:45 UTC)",
-        "total_routes": len(routes_list),
-        "routes_with_api_s": [r for r in routes_list if "/api/s" in r.get("path", "")],
-        "all_routes": routes_list,
+        "version": "2026-02-26-v7",
+        "routes_count": len(routes_list),
+        "debug_check_url": "/api/shortlink-check/t9TyVfeSdP",
     }
+
+
+@app.get("/api/shortlink-debug")
+async def shortlink_debug():
+    """Versión legacy de debug (ahora en /v7-debug)."""
+    return await shortlink_debug_v7()
 
 
 @app.get("/api/shortlink-check/{short_link}")
