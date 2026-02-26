@@ -138,29 +138,33 @@ async def health_check():
     return {
         "status": "online",
         "message": "ZeePub Bot API is running",
-        "version": "2026-02-26-v7",
+        "version": "2026-02-26-v8",
     }
 
 
 # DEBUG: Endpoint ultra-prioritario fuera de /api para evitar el SPA catch-all
-@app.get("/v7-debug")
-async def shortlink_debug_v7():
+@app.get("/v8-debug")
+async def shortlink_debug_v8():
     """Diagnóstico de emergencia: lista rutas y versión."""
-    routes_list = []
-    for route in app.routes:
-        if hasattr(route, "path"):
-            routes_list.append({"path": route.path, "name": getattr(route, "name", "N/A")})
-    return {
-        "version": "2026-02-26-v7",
-        "routes_count": len(routes_list),
-        "debug_check_url": "/api/shortlink-check/t9TyVfeSdP",
-    }
+    try:
+        routes_list = []
+        for route in app.routes:
+            if hasattr(route, "path"):
+                routes_list.append({"path": route.path, "name": getattr(route, "name", "N/A")})
+        return {
+            "version": "2026-02-26-v8",
+            "routes_count": len(routes_list),
+            "env_postgres_active": os.getenv("ENABLE_POSTGRES_PLUGIN", "False"),
+            "database_url_set": bool(os.getenv("DATABASE_URL")),
+        }
+    except Exception as e:
+        return {"error": str(e), "version": "2026-02-26-v8-fallback"}
 
 
 @app.get("/api/shortlink-debug")
 async def shortlink_debug():
-    """Versión legacy de debug (ahora en /v7-debug)."""
-    return await shortlink_debug_v7()
+    """Versión legacy de debug (ahora en /v8-debug)."""
+    return await shortlink_debug_v8()
 
 
 @app.get("/api/shortlink-check/{short_link}")
