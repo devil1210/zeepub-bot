@@ -135,7 +135,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
             base_url = config.DL_DOMAIN.rstrip("/") if config.DL_DOMAIN else config.BASE_URL.rstrip("/")
             if base_url and not base_url.startswith("http"):
                 base_url = f"https://{base_url}"
-            download_link = f"{base_url}/s/{short_link}"
+            download_link = f"{base_url}/{short_link}"
 
         mapping.update(
             {

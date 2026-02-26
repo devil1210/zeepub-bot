@@ -171,11 +171,13 @@ if enable_miniapp:
     from models.library_models import LocalBook as _LB
     from utils.library_db import get_session as _get_session
 
-    @app.get("/s/{short_link}")
+    @app.get("/{short_link}")
     async def short_link_download(short_link: str):
-        """Descarga segura de un libro mediante su short_link."""
-        if not short_link or len(short_link) != 10:
-            raise HTTPException(status_code=400, detail="Enlace inválido")
+        """Descarga segura de un libro mediante su short_link (Formato Ultra-Corto)."""
+        # Validar formato: 10 caracteres alfanuméricos
+        if not short_link or not _re.match(r"^[a-zA-Z0-9]{10}$", short_link):
+            # No levantar error aquí, dejar que continúe al siguiente router (SPA)
+            raise HTTPException(status_code=404)
 
         def _find_book():
             session = _get_session()
@@ -265,7 +267,7 @@ if enable_miniapp:
 
         @app.get("/{full_path:path}")
         async def serve_spa(full_path: str):
-            if full_path.startswith("api") or full_path.startswith("s/"):
+            if full_path.startswith("api"):
                 return {"error": "Not found"}
 
             if full_path == "":
