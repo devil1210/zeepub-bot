@@ -36,13 +36,29 @@ class MetadataOrchestrator:
                 lb = res_hash.scalar_one_or_none()
 
                 # Fallback: try by ID
-                if not lb and (str(book_id).startswith("local_") or str(book_id).isdigit()):
-                    clean_id = int(str(book_id).replace("local_", ""))
-                    stmt_id = (
-                        select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.id == clean_id)
-                    )
-                    res_id = await session.execute(stmt_id)
-                    lb = res_id.scalar_one_or_none()
+                if not lb:
+                    id_str = str(book_id)
+                    if id_str.startswith("series_"):
+                        # Resolve the most relevant book of the series (usually volume 1)
+                        s_hash = id_str.replace("series_", "")
+                        stmt_s = (
+                            select(LocalBook)
+                            .options(selectinload(LocalBook.series_info))
+                            .where(LocalBook.series_hash == s_hash)
+                            .order_by(LocalBook.volume.asc())
+                            .limit(1)
+                        )
+                        res_s = await session.execute(stmt_s)
+                        lb = res_s.scalar_one_or_none()
+                    elif id_str.startswith("local_") or id_str.isdigit():
+                        clean_id = int(id_str.replace("local_", ""))
+                        stmt_id = (
+                            select(LocalBook)
+                            .options(selectinload(LocalBook.series_info))
+                            .where(LocalBook.id == clean_id)
+                        )
+                        res_id = await session.execute(stmt_id)
+                        lb = res_id.scalar_one_or_none()
 
                 # Fallback: try by path
                 if not lb and ("/" in str(book_id) or "\\" in str(book_id)):

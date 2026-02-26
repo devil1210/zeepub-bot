@@ -147,7 +147,7 @@ class LibraryService:
                 elif sort_by == "downloads":
                     stmt = stmt.order_by(SeriesMetadata.rating_count.desc())
                 else:
-                    stmt = stmt.order_by(SeriesMetadata.series_name.asc())
+                    stmt = stmt.order_by(func.lower(SeriesMetadata.series_name).asc())
 
                 count_stmt = select(func.count()).select_from(stmt.subquery())
                 total_series = (await session.execute(count_stmt)).scalar() or 0
