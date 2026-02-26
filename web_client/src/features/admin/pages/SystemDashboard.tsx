@@ -26,6 +26,7 @@ export const SystemDashboard: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [scanStatus, setScanStatus] = useState<any>(null);
     const [softScan, setSoftScan] = useState(true); // Default to soft scan as it's safer/faster
+    const [clearSlugs, setClearSlugs] = useState(false);
 
     // Polling for scan status
     useEffect(() => {
@@ -601,17 +602,32 @@ export const SystemDashboard: React.FC = () => {
                                 <RefreshCw className="w-5 h-5" />
                             </div>
                         </div>
-                        <button
-                            onClick={() => {
-                                if (confirm('¿Deseas recalcular todos los slugs? Esto afectará los enlaces públicos actuales si los nombres han cambiado.')) {
-                                    handleAction('Sincronizando Slugs', api.aiRecalculateAllSlugs);
-                                }
-                            }}
-                            disabled={loading}
-                            className="mt-4 w-full py-3 text-[10px] font-black text-center bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/20 rounded-premium-sm transition-all uppercase tracking-widest active:scale-95 disabled:opacity-50 relative z-10"
-                        >
-                            {actionLoading === 'Sincronizando Slugs' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Recalcular Slugs"}
-                        </button>
+                        <div className="mt-4 flex flex-col gap-3 relative z-10">
+                            <label className="flex items-center gap-2 cursor-pointer group/chk">
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${clearSlugs ? 'bg-blue-500 border-blue-500' : 'border-white/20 bg-black/20 group-hover/chk:border-blue-500/50'}`}>
+                                    {clearSlugs && <div className="w-2 h-2 rounded-sm bg-white" />}
+                                </div>
+                                <span className={`text-[10px] uppercase font-bold tracking-wider ${clearSlugs ? 'text-white' : 'text-gray-400'}`}>Borrar slugs actuales</span>
+                                <input
+                                    type="checkbox"
+                                    className="hidden"
+                                    checked={clearSlugs}
+                                    onChange={(e) => setClearSlugs(e.target.checked)}
+                                />
+                            </label>
+
+                            <button
+                                onClick={() => {
+                                    if (confirm(clearSlugs ? '¿Deseas BORRAR y recalcular todos los slugs? Cambiarán todos los enlaces públicos.' : '¿Deseas recalcular todos los slugs? Esto afectará los enlaces públicos actuales si los nombres han cambiado.')) {
+                                        handleAction('Sincronizando Slugs', () => api.aiRecalculateAllSlugs(clearSlugs));
+                                    }
+                                }}
+                                disabled={loading}
+                                className="w-full py-3 text-[10px] font-black text-center bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/20 rounded-premium-sm transition-all uppercase tracking-widest active:scale-95 disabled:opacity-50"
+                            >
+                                {actionLoading === 'Sincronizando Slugs' ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Recalcular Slugs"}
+                            </button>
+                        </div>
                         <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl group-hover:bg-blue-500/10 transition-all duration-700"></div>
                     </div>
 

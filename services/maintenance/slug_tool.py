@@ -23,6 +23,8 @@ class SlugRecalculateTool(MaintenanceTool):
         return "Recalcula todos los slugs de las series basándose en su nombre canónico."
 
     async def run(self, progress_callback=None, **kwargs) -> dict[str, Any]:
+        clear_current = kwargs.get("clear_current", False)
+        
         from config.config_settings import config
 
         updated_count = 0
@@ -45,14 +47,15 @@ class SlugRecalculateTool(MaintenanceTool):
                 series_list = result.scalars().all()
                 total = len(series_list)
 
-                logger.info(f"Starting slug recalculation for {total} series")
+                logger.info(f"Starting slug recalculation for {total} series (clear_current={clear_current})")
 
                 for i, series in enumerate(series_list):
                     total_processed += 1
                     old_slug = series.slug
-                    new_slug = generar_slug_from_meta(series)
-
-                    if old_slug != new_slug:
+                    # Use a dictionary representation for generating the slug correctly per priority rules
+                    new_slug = generar_slug_from_meta(series.to_dict() if hasattr(series, "to_dict") else {"series_name": series.series_name, "series_english": series.series_english, "series": series.series_name})
+                    
+                    if clear_current or old_slug != new_slug:
                         series.slug = new_slug
                         updated_count += 1
                         logger.debug(f"Slug updated for {series.series_name}: {old_slug} -> {new_slug}")

@@ -788,7 +788,8 @@ async def handle_ai_recalculate_all_slugs(data: dict[str, Any], user_data: dict[
 
     from services.maintenance.orchestrator import MaintenanceOrchestrator
 
-    results = await MaintenanceOrchestrator.run_tool("slug_recalculate")
+    clear_current = data.get("clear_current", False)
+    results = await MaintenanceOrchestrator.run_tool("slug_recalculate", clear_current=clear_current)
 
     if not results.get("success"):
         return {"success": False, "message": f"Error recalculando slugs: {results.get('error')}"}

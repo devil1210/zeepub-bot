@@ -291,7 +291,7 @@ export const api = {
 
     resetAiSeries: (seriesHash: string) => rpc('ai_reset_series', { series_hash: seriesHash }),
 
-    aiRecalculateAllSlugs: () => rpc('ai_recalculate_all_slugs'),
+    aiRecalculateAllSlugs: (clearCurrent: boolean = false) => rpc('ai_recalculate_all_slugs', { clear_current: clearCurrent }),
 
     uploadEpub: (file: File, onProgress?: (p: number) => void) =>
         uploadFile('/api/library/upload', file, onProgress),
