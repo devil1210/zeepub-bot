@@ -171,7 +171,7 @@ if enable_miniapp:
     from models.library_models import LocalBook as _LB
     from utils.library_db import get_session as _get_session
 
-    @app.get("/api/s/{short_link}")
+    @app.get("/s/{short_link}")
     async def short_link_download(short_link: str):
         """Descarga segura de un libro mediante su short_link."""
         if not short_link or len(short_link) != 10:
@@ -265,8 +265,7 @@ if enable_miniapp:
 
         @app.get("/{full_path:path}")
         async def serve_spa(full_path: str):
-            # Si es una ruta de API, dejar que FastAPI la maneje (ya definidas arriba)
-            if full_path.startswith("api"):
+            if full_path.startswith("api") or full_path.startswith("s/"):
                 return {"error": "Not found"}
 
             if full_path == "":
