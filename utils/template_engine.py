@@ -98,7 +98,13 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         published_at_formatted = format_published_date(published_at_raw)
 
         # Formatear fecha_modificacion también
-        fecha_mod_raw = str(data.get("fecha_modificacion") or data.get("updated_at") or data.get("modified_at") or "")
+        fecha_mod_raw = str(
+            data.get("fecha_modificacion")
+            or data.get("updated_at")
+            or data.get("modified_at")
+            or data.get("modified_at_opf")
+            or ""
+        )
         fecha_mod_formatted = format_published_date(fecha_mod_raw)
 
         volume_raw = data.get("volume") or data.get("series_index") or ""

@@ -74,7 +74,19 @@ async def publicar_libro(
 
         epub_downloaded = None
         if epub_url:
-            epub_downloaded = await fetch_bytes(epub_url, timeout=120)
+            if epub_url.startswith("http://") or epub_url.startswith("https://"):
+                epub_downloaded = await fetch_bytes(epub_url, timeout=120)
+            else:
+                try:
+                    import asyncio
+
+                    def read_local():
+                        with open(epub_url, "rb") as f:
+                            return f.read()
+
+                    epub_downloaded = await asyncio.to_thread(read_local)
+                except Exception as e:
+                    logger.error(f"Error al leer el archivo local {epub_url}: {e}")
 
             if epub_downloaded:
                 # Use orchestrator for enrichment

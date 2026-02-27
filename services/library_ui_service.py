@@ -112,7 +112,7 @@ async def mostrar_series(
         st["colecciones"][i] = {"titulo": s["title"], "href": href}
         keyboard.append([InlineKeyboardButton(s["title"], callback_data=f"col|{i}")])
 
-    nav_row = []
+    nav_row = [InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")]
     if page > 1:
         nav_row.append(
             InlineKeyboardButton("⬅️ Ant.", callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page - 1}")
@@ -122,7 +122,6 @@ async def mostrar_series(
             InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page + 1}")
         )
 
-    nav_row.append(InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel"))
     keyboard.append(nav_row)
 
     st["current_view"] = "series_list"
@@ -186,7 +185,7 @@ async def mostrar_libros(
 
         keyboard.append([InlineKeyboardButton(display, callback_data=f"lib|{key}")])
 
-    nav_row = []
+    nav_row = [InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")]
     if page > 1:
         nav_row.append(
             InlineKeyboardButton("⬅️ Ant.", callback_data=f"nav_b|{origin_type}|{filter_val or ''}|{page - 1}")
@@ -196,7 +195,6 @@ async def mostrar_libros(
             InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_b|{origin_type}|{filter_val or ''}|{page + 1}")
         )
 
-    nav_row.append(InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel"))
     keyboard.append(nav_row)
 
     st["current_view"] = "books_list"

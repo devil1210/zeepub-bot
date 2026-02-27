@@ -21,7 +21,7 @@ def fix_dangling_links(skills_dir):
             except Exception:
                 continue
 
-            def replacer(match):
+            def replacer(match, root_bound=root, file_path_bound=file_path):
                 nonlocal fixed_count
                 text = match.group(1)
                 href = match.group(2)
@@ -33,10 +33,10 @@ def fix_dangling_links(skills_dir):
                 if os.path.isabs(href_clean):
                     return match.group(0)
 
-                target_path = os.path.normpath(os.path.join(root, href_clean))
+                target_path = os.path.normpath(os.path.join(root_bound, href_clean))
                 if not os.path.exists(target_path):
                     # Dangling link detected. Replace markdown link with just its text.
-                    print(f"Fixing dangling link in {os.path.relpath(file_path, skills_dir)}: {href}")
+                    print(f"Fixing dangling link in {os.path.relpath(file_path_bound, skills_dir)}: {href}")
                     fixed_count += 1
                     return text
                 return match.group(0)

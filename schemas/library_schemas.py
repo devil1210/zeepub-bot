@@ -63,6 +63,8 @@ class BookDTO(BaseModel):
     # Explicit compatibility fields
     is_uncensored: bool = False
     color_mode: str | None = None
+    filepath: str | None = None
+    filename: str | None = None
 
 
 class SeriesDTO(BaseModel):

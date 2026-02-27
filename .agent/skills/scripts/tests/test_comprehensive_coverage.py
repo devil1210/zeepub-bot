@@ -136,7 +136,7 @@ def analyze_skill_locations():
         print("\n6️⃣ Summary:")
         print("-" * 60)
         total = len(all_skill_files)
-        unique = len(unique_names) + len(collisions)
+        len(unique_names) + len(collisions)
 
         print(f"  Total SKILL.md files: {total}")
         print(f"  Unique flat names: {len(unique_names)}")
