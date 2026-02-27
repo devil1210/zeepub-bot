@@ -21,11 +21,10 @@ async def mostrar_menu_principal(update: Update, context: ContextTypes.DEFAULT_T
     st["titulo"] = "📚 Biblioteca Local"
 
     keyboard = [
-        [InlineKeyboardButton("📚 Catálogo de Libros", callback_data="nav_local|recent_books")],
+        [InlineKeyboardButton("📖 Catálogo de Series", callback_data="nav_local|all_series")],
         [InlineKeyboardButton("⭐ Novedades (Series)", callback_data="nav_local|newest")],
         [InlineKeyboardButton("🏷️ Géneros", callback_data="nav_local|genres")],
         [InlineKeyboardButton("✍️ Autores", callback_data="nav_local|authors")],
-        [InlineKeyboardButton("📖 Todas las Series", callback_data="nav_local|all_series")],
         [InlineKeyboardButton("🔍 Buscar EPUB", callback_data="buscar")],
         [InlineKeyboardButton("❌ Salir", callback_data="cerrar")],
     ]
@@ -123,10 +122,8 @@ async def mostrar_series(
             InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page + 1}")
         )
 
-    if nav_row:
-        keyboard.append(nav_row)
-
-    keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")])
+    nav_row.append(InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel"))
+    keyboard.append(nav_row)
 
     st["current_view"] = "series_list"
     st["titulo"] = title
@@ -199,10 +196,8 @@ async def mostrar_libros(
             InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_b|{origin_type}|{filter_val or ''}|{page + 1}")
         )
 
-    if nav_row:
-        keyboard.append(nav_row)
-
-    keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")])
+    nav_row.append(InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel"))
+    keyboard.append(nav_row)
 
     st["current_view"] = "books_list"
     title = "📚 Catálogo de Libros" if origin_type == "recent" else "📖 Libros"
