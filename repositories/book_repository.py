@@ -152,7 +152,7 @@ class BookRepository(BaseRepository[LocalBook]):
 
             # Paginación y Orden
             start = (page - 1) * items_per_page
-            stmt = stmt.order_by(LocalBook.created_at.desc()).offset(start).limit(items_per_page)
+            stmt = stmt.order_by(LocalBook.indexed_at.desc()).offset(start).limit(items_per_page)
 
             result = await session.execute(stmt)
             books = result.scalars().all()
