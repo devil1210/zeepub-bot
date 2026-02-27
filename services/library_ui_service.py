@@ -1,4 +1,5 @@
 import logging
+import os
 import uuid
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -231,14 +232,6 @@ async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_
 
     for v in volumes:
         key = uuid.uuid4().hex[:8]
-        st["libros"][key] = {
-            "titulo": v.get("title", ""),
-            "autor": v.get("author", ""),
-            "descarga": v.get("filepath", "N/A"),  # safe fallback Since BookDTO doesn't have filepath
-            "portada": v.get("coverUrl", ""),
-            "hash": v.get("book_hash", ""),
-        }
-
         # Nuevo formato: Vol. X [TR] [Color]
         vol = v.get("volume")
         if vol is not None:
@@ -256,6 +249,20 @@ async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_
 
         display = f"{vol_str} [{tr_acronym}]{color_tag}"
 
+        st["libros"][key] = {
+            "titulo": v.get("title", ""),
+            "autor": v.get("author", ""),
+            "descarga": v.get("filepath", "N/A"),
+            "portada": v.get("coverUrl", ""),
+            "hash": v.get("book_hash", ""),
+            "display": display,
+            "series": series_name,
+            "volume": vol,
+            "translator": translator,
+            "translator_siglas": tr_acronym,
+            "color": is_color,
+        }
+
         if len(display) > 35:
             display = display[:32] + "..."
 
@@ -266,10 +273,85 @@ async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_
     st["current_view"] = "volumes_local"
     st["current_series_hash"] = series_hash
 
-    text = f"<b>📖 {series_name}</b>\n\nSelecciona un volumen para descargar:"
+    text = f"<b>📖 {series_name}</b>\n\nSelecciona un volumen para obtener más detalles:"
     if update.callback_query:
         await update.callback_query.edit_message_text(
             text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML",
+            message_thread_id=get_thread_id(update),
+        )
+
+
+async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_TYPE, key: str):
+    """Muestra la ficha técnica del libro y confirmación de descarga."""
+    from utils.download_limiter import downloads_left
+
+    uid = update.effective_user.id
+    st = state_manager.get_user_state(uid)
+    libro = st.get("libros", {}).get(key)
+
+    if not libro:
+        if update.callback_query:
+            await update.callback_query.answer("⚠️ Libro no encontrado.", show_alert=True)
+        return
+
+    # Info de descargas
+    left = await downloads_left(uid)
+    left_str = f"descargas restantes hoy: <b>{left}</b>" if isinstance(left, int) else "descargas <b>ilimitadas</b>"
+
+    # Construir ficha
+    text = f"<b>📖 {libro['titulo']}</b>\n"
+    if libro.get("series"):
+        v_num = libro.get("volume")
+        v_str = f" Vol. {int(v_num) if float(v_num or 0).is_integer() else v_num}" if v_num else ""
+        text += f"📚 Serie: {libro['series']}{v_str}\n"
+
+    if libro.get("autor"):
+        text += f"✍️ Autor: {libro['autor']}\n"
+
+    tr = libro.get("translator")
+    sigla = libro.get("translator_siglas")
+    if tr:
+        text += f"🌐 Traducción: {tr} ({sigla})\n" if sigla else f"🌐 Traducción: {tr}\n"
+
+    if libro.get("color"):
+        text += "🎨 Edición: <b>Color</b>\n"
+
+    text += f"\n📥 Tienes {left_str}."
+
+    keyboard = [
+        [InlineKeyboardButton("📥 Descargar volumen", callback_data=f"dl_confirm|{key}")],
+        [InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")],
+    ]
+
+    portada = libro.get("portada")
+
+    if update.callback_query:
+        # Intentar borrar el anterior y mandar foto si hay portada
+        try:
+            await context.bot.delete_message(
+                chat_id=update.effective_chat.id, message_id=update.callback_query.message.message_id
+            )
+        except Exception:
+            pass
+
+    if portada and (portada.startswith("http") or os.path.exists(portada)):
+        from services.cover_service import send_photo_bytes
+
+        await send_photo_bytes(
+            context.bot,
+            update.effective_chat.id,
+            text,
+            portada,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML",
+            message_thread_id=get_thread_id(update),
         )
     else:
         await context.bot.send_message(

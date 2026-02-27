@@ -83,6 +83,8 @@ async def handle_bot_info(data: dict[str, Any], user_data: dict[str, Any], reque
 
 async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve el nivel del usuario e información de descargas (límites, etc)."""
+    from utils.download_limiter import downloads_left
+
     user_id = user_data.get("user_id")
     level_key = user_data.get("level", "free")
     st = state_manager.get_user_state(user_id)
@@ -100,17 +102,17 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
     # Prioritize label from user_data (which comes from get_effective_user)
     system_role_text = user_data.get("status_label") or roles_display.get(level_key, "Lector")
 
-    # Determine max downloads
-    if level_key in ("admin", "staff", "premium", "banned"):
-        max_dl = None
-    elif level_key == "vip":
-        max_dl = config.VIP_DOWNLOADS_PER_DAY
-    elif level_key == "white":
-        max_dl = config.WHITELIST_DOWNLOADS_PER_DAY
-    else:
-        max_dl = config.MAX_DOWNLOADS_PER_DAY
-
+    # 1. Use Unified Download Limiter
+    left = await downloads_left(user_id)
     used = st.get("downloads_used", 0)
+
+    # Calculate max based on what's left + what's used, but only if not unlimited
+    if isinstance(left, int):
+        max_dl = left + used
+        has_unlimited = False
+    else:
+        max_dl = 999
+        has_unlimited = True
 
     # Calculate time until next reset (midnight)
     now = datetime.now()
@@ -142,11 +144,11 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
             "is_real_admin": user_data.get("is_real_admin", False),
             "downloads": {
                 "used": int(used or 0),
-                "limit": max_dl if max_dl is not None else 999,
+                "limit": max_dl,
             },
         },
         "timeUntilReset": f"{hours}h {minutes}m",
-        "hasUnlimitedDownloads": max_dl is None and level_key != "banned",
+        "hasUnlimitedDownloads": has_unlimited,
         "isBanned": level_key == "banned",
         "isAdmin": level_key == "admin",
     }

@@ -11,6 +11,7 @@ from core.state_manager import state_manager
 from services.library_service import LibraryService
 from services.library_ui_service import (
     mostrar_autores_local,
+    mostrar_detalles_libro,
     mostrar_generos,
     mostrar_menu_principal,
     mostrar_resultados_locales,
@@ -279,50 +280,46 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await query.answer("⚠️ Recurso no disponible localmente.", show_alert=True)
         return
 
-    # Selección de libro
+    # Selección de libro -> Ahora muestra ficha técnica antes de descargar
     if data.startswith("lib|"):
-        # Limpiar estado temporal de libro anterior
-        for k in (
-            "epub_buffer",
-            "meta_pendiente",
-            "portada_pendiente",
-            "titulo_pendiente",
-            "fb_caption",
-        ):
-            st.pop(k, None)
         key = data.split("|", 1)[1]
-        libro = None
-        if key.startswith("local_"):
-            # Stateless lookup from DB (for recommendations/scheduler)
+        st = state_manager.get_user_state(uid)
+
+        # Si no existe en el estado pero es un ID local, intentamos recuperarlo
+        if key not in st.get("libros", {}) and key.startswith("local_"):
             try:
                 local_id = int(key.split("_")[1])
                 from repositories.book_repository import book_repo
 
                 book_db = await book_repo.get_by_id(local_id)
                 if book_db:
-                    # Construct pseudo 'libro' dict
-                    libro = {
+                    if "libros" not in st:
+                        st["libros"] = {}
+                    st["libros"][key] = {
                         "titulo": book_db.title,
-                        "portada": book_db.cover_low or book_db.cover_medium or book_db.cover_high,
+                        "autor": book_db.author,
                         "descarga": book_db.filepath,
-                        "href": book_db.filepath,
+                        "portada": book_db.cover_low or book_db.cover_medium or book_db.cover_high,
+                        "hash": book_db.book_hash,
                     }
             except Exception as e:
-                logger.error(f"Error fetching local book {key}: {e}")
+                logger.error(f"Error recuperando libro {key}: {e}")
 
-        # Fallback to session state if not found via stateless or not local key
-        if not libro:
-            libro = st["libros"].get(key)
+        await mostrar_detalles_libro(update, context, key)
+        return
+
+    # Confirmación de descarga real
+    if data.startswith("dl_confirm|"):
+        key = data.split("|", 1)[1]
+        st = state_manager.get_user_state(uid)
+        libro = st.get("libros", {}).get(key)
 
         if not libro:
-            # Try refreshing if session expired? Or just fail gracefully
-            try:
-                await query.answer("⚠️ Sesión expirada o libro no encontrado.", show_alert=True)
-            except Exception:
-                pass
+            await query.answer("⚠️ Libro no encontrado.", show_alert=True)
             return
 
         href = libro.get("descarga") or libro.get("href")
+        # Guardamos en estado para flujo publicar_libro
         m = re.search(r"/series/(\d+)/volume/(\d+)/", href)
         if m:
             st["series_id"], st["volume_id"] = m.group(1), m.group(2)
@@ -332,23 +329,31 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         actual_destino = st.get("destino") or update.effective_chat.id
         chat_origen = st.get("chat_origen") or update.effective_chat.id
         menu_prep = None
+
+        # Opcional: Avisar con popup
+        await query.answer("🚀 Preparando descarga...", show_alert=False)
+
+        # Si el destino es el mismo chat, borramos el mensaje de la ficha
         if actual_destino == chat_origen:
             try:
-                await context.bot.delete_message(chat_id=chat_origen, message_id=query.message.message_id)
+                await query.message.delete()
             except Exception:
-                logger.debug("No se pudo borrar menú")
+                pass
             try:
-                thread_id = st.get("message_thread_id")  # Usar el guardado
+                thread_id = st.get("message_thread_id")
                 prep = await context.bot.send_message(
                     chat_id=chat_origen,
-                    text="⏳ Preparando...",
+                    text="⏳ Preparando archivo...",
                     message_thread_id=thread_id,
                 )
                 menu_prep = (chat_origen, prep.message_id)
             except Exception as e:
                 logger.debug("No se pudo enviar 'Preparando...': %s", e)
 
-        # If user is a publisher/admin, honor their ephemeral publish target if set
+        # Proceder a la descarga/publicación normal
+        from services.telegram_service import publicar_libro
+
+        # If user is a publisher/admin, check if they have a target set
         if uid in config.FACEBOOK_PUBLISHERS or uid in config.ADMIN_USERS:
             default_target = st.pop("publish_target_temp", None)
             if default_target == "facebook":
@@ -365,8 +370,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await _publish_choice_facebook(update, context, uid)
                 return
             elif default_target == "telegram":
-                from services.telegram_service import publicar_libro
-
                 await publicar_libro(
                     update,
                     context,
@@ -376,23 +379,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     href,
                     menu_prep=menu_prep,
                 )
-                if actual_destino != chat_origen:
-                    try:
-                        cms = context.application.plugin_manager.get_plugin("custom_messages")
-                        base_success = f"✅ Publicado: {libro['titulo']}"
-                        text_success = (
-                            await cms.get_text("publish_success_telegram", Titulo=libro["titulo"])
-                            if (cms and cms.enabled)
-                            else base_success
-                        )
-                        await query.edit_message_text(text_success)
-                    except Exception:
-                        logger.debug("Error al editar confirmación")
                 return
-            # If no temp target is set, fall through to normal behavior (no menu)
-
-        # Publicar EPUB (non-publishers or publisher with no temp)
-        from services.telegram_service import publicar_libro
 
         await publicar_libro(
             update,
@@ -403,18 +390,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             href,
             menu_prep=menu_prep,
         )
-        if actual_destino != chat_origen:
-            try:
-                cms = context.application.plugin_manager.get_plugin("custom_messages")
-                base_success = f"✅ Publicado: {libro['titulo']}"
-                text_success = (
-                    await cms.get_text("publish_success_telegram", Titulo=libro["titulo"])
-                    if (cms and cms.enabled)
-                    else base_success
-                )
-                await query.edit_message_text(text_success)
-            except Exception:
-                logger.debug("Error al editar confirmación")
         return
 
     # Publisher flow: publish target selection

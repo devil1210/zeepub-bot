@@ -30,6 +30,7 @@ async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
     from services.delivery.delivery_service import delivery_service
     from services.identity.identity_service import identity_service
     from services.metadata_orchestrator.metadata_service import metadata_orchestrator
+    from utils.download_limiter import can_download
 
     user_id = user_data.get("user_id")
     book_id = data.get("bookId")
@@ -40,6 +41,10 @@ async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
 
     if not book_id:
         raise HTTPException(status_code=400, detail="Missing bookId")
+
+    # 0. Quota Check (Synchronize with bot)
+    if not await can_download(user_id):
+        raise HTTPException(status_code=403, detail="Has alcanzado tu límite de descargas por hoy.")
 
     # 1. Resolve Target Chat and Thread
     target_chat_id = user_id
