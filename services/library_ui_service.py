@@ -32,7 +32,7 @@ async def mostrar_menu_principal(update: Update, context: ContextTypes.DEFAULT_T
 
     text = "<b>📚 Bienvenido a la Biblioteca Local</b>\n\n🎯 <i>Selecciona una categoría para explorar nuestra colección:</i>"
 
-    if hasattr(update, "callback_query"):
+    if update.callback_query:
         await update.callback_query.edit_message_text(
             text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
         )
