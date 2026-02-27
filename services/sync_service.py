@@ -284,9 +284,7 @@ class SyncService:
                         "book_hash": b.book_hash,
                         "series_hash": b.series_hash,
                         "title": b.title,
-                        "author": b.author,
                         "volume": float(b.volume) if b.volume is not None else 0.0,
-                        "book_type": b.book_type,
                         # UI fields
                         "cover_low": b.cover_low,
                         "cover_medium": b.cover_medium,
@@ -297,8 +295,6 @@ class SyncService:
                         "rating_count": b.rating_count,
                         "file_size": b.file_size,
                         # Metadata
-                        "description": b.description,
-                        "tags": b.tags,
                         "language": b.language,
                         # Tech
                         "source_id": b.source_id,

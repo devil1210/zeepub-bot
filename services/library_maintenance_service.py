@@ -4,7 +4,7 @@ from pathlib import Path
 
 from sqlalchemy import func, text
 
-from models.library_models import LibrarySource, LocalBook
+from models.library_models import LibrarySource, LocalBook, SeriesMetadata
 from utils.library_db import COVERS_DIR, engine, get_session
 
 logger = logging.getLogger(__name__)
@@ -106,11 +106,15 @@ class LibraryMaintenanceService:
             total_books = session.query(LocalBook).count()
             total_sources = session.query(LibrarySource).count()
 
-            unique_series = session.query(func.count(func.distinct(LocalBook.series))).scalar()
-            unique_authors = session.query(func.count(func.distinct(LocalBook.author))).scalar()
+            unique_series = session.query(func.count(func.distinct(SeriesMetadata.series_name))).scalar()
+            unique_authors = session.query(func.count(func.distinct(SeriesMetadata.author))).scalar()
 
             book_types = (
-                session.query(LocalBook.book_type, func.count(LocalBook.id)).group_by(LocalBook.book_type).all()
+                session.query(SeriesMetadata.book_type, func.count(LocalBook.id))
+                .select_from(LocalBook)
+                .join(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
+                .group_by(SeriesMetadata.book_type)
+                .all()
             )
 
             total_file_size = session.query(func.sum(LocalBook.file_size)).scalar() or 0

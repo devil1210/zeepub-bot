@@ -295,7 +295,7 @@ class LibraryService:
         """Actualiza metadatos de un libro y recalcula el hash de serie."""
         async with pg_manager.get_session() as session:
             try:
-                stmt = select(LocalBook).where(LocalBook.id == book_id)
+                stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.id == book_id)
                 result = await session.execute(stmt)
                 book = result.scalar_one_or_none()
 
@@ -305,8 +305,6 @@ class LibraryService:
                 # Update allowed fields
                 if "title" in updates:
                     book.title = updates["title"]
-                if "author" in updates:
-                    book.author = updates["author"]
                 if "series" in updates:
                     book.series = updates["series"]
                 if "volume" in updates:
@@ -329,9 +327,10 @@ class LibraryService:
                 from utils.helpers import generate_series_hash
 
                 series_name = book.series or book.english_title or book.title
-                book.series_hash = generate_series_hash(
-                    series=series_name, author=book.author, book_type=book.book_type
-                )
+
+                # Fetch author from series implicitly if possible
+                author_val = book.series_info.author if book.series_info else None
+                book.series_hash = generate_series_hash(series=series_name, author=author_val, book_type=book.book_type)
 
                 await session.commit()
                 return True
@@ -352,8 +351,9 @@ class LibraryService:
                 stmt = (
                     select(LocalBook)
                     .options(selectinload(LocalBook.series_info))
+                    .outerjoin(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
                     .where(or_(LocalBook.series.is_(None), LocalBook.series == ""))
-                    .order_by(LocalBook.author, LocalBook.title)
+                    .order_by(SeriesMetadata.author, LocalBook.title)
                 )
 
                 result = await session.execute(stmt)
@@ -377,7 +377,9 @@ class LibraryService:
                             continue
 
                         # Mismo autor es un requisito fuerte
-                        if book_a.author and book_b.author and book_a.author.lower() != book_b.author.lower():
+                        author_a = book_a.series_info.author if book_a.series_info else None
+                        author_b = book_b.series_info.author if book_b.series_info else None
+                        if author_a and author_b and author_a.lower() != author_b.lower():
                             continue
 
                         # Similitud de título
@@ -536,9 +538,9 @@ class LibraryService:
         async with pg_manager.get_session() as session:
             try:
                 stmt = (
-                    select(func.distinct(LocalBook.author))
-                    .where(LocalBook.author != "")
-                    .order_by(LocalBook.author.asc())
+                    select(func.distinct(SeriesMetadata.author))
+                    .where(SeriesMetadata.author != "")
+                    .order_by(SeriesMetadata.author.asc())
                 )
                 res = await session.execute(stmt)
                 return [r[0] for r in res.all() if r[0]]

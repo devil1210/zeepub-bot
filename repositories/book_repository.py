@@ -5,7 +5,7 @@ from sqlalchemy import String, cast, delete, func, or_, select
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, UserDownload
+from models.library_models import LocalBook, SeriesMetadata, UserDownload
 from repositories.base_repository import BaseRepository
 from schemas.library_schemas import BookDTO
 
@@ -63,10 +63,10 @@ class BookRepository(BaseRepository[LocalBook]):
                 # Filtros base
                 filters = [
                     LocalBook.title.ilike(pattern),
-                    LocalBook.author.ilike(pattern),
-                    LocalBook.series.ilike(pattern),
-                    LocalBook.series_spanish.ilike(pattern),
-                    LocalBook.series_english.ilike(pattern),
+                    SeriesMetadata.author.ilike(pattern),
+                    SeriesMetadata.series_name.ilike(pattern),
+                    SeriesMetadata.series_spanish.ilike(pattern),
+                    SeriesMetadata.series_english.ilike(pattern),
                     LocalBook.romaji_title.ilike(pattern),
                     LocalBook.english_title.ilike(pattern),
                     LocalBook.spanish_title.ilike(pattern),
@@ -74,13 +74,14 @@ class BookRepository(BaseRepository[LocalBook]):
 
                 # Filtros extendidos según el tipo de búsqueda
                 if search_type in ("all", "todos", "genres", "géneros", "tags"):
-                    filters.append(cast(LocalBook.tags, String).ilike(pattern))
+                    filters.append(cast(SeriesMetadata.tags, String).ilike(pattern))
                 if search_type in ("all", "todos", "demographics", "demografía"):
-                    filters.append(cast(LocalBook.demographics, String).ilike(pattern))
+                    filters.append(cast(SeriesMetadata.demographics, String).ilike(pattern))
                 if search_type in ("all", "todos", "translator", "traductor", "group", "grupo"):
                     filters.append(LocalBook.translator.ilike(pattern))
                 if search_type in ("all", "todos", "illustrator", "ilustrador"):
-                    filters.append(LocalBook.illustrator.ilike(pattern))
+                    # Fallback to checking author or related since illustrator was removed from LocalBook
+                    filters.append(SeriesMetadata.author.ilike(pattern))
                 if search_type in ("all", "todos", "layout", "maquetador", "typesetter"):
                     filters.append(LocalBook.layout_by.ilike(pattern))
                 if search_type in ("all", "todos", "isbn"):
@@ -96,6 +97,7 @@ class BookRepository(BaseRepository[LocalBook]):
 
                 stmt = (
                     select(LocalBook, dl_subquery.label("download_count"))
+                    .join(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
                     .options(selectinload(LocalBook.series_info))
                     .where(or_(*filters))
                 )

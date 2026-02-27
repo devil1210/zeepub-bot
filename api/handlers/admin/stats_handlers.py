@@ -3,6 +3,7 @@ import time
 from typing import Any
 
 from sqlalchemy import or_, select, text
+from sqlalchemy.orm import selectinload
 
 from api.handlers.helpers import check_staff
 from core.db_manager_pg import pg_manager
@@ -111,11 +112,15 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
                     "downloads": p_dls,
                     "author": "N/A",
                 }
-                stmt_lb = select(LocalBook).where(or_(LocalBook.book_hash == p_book_hash, LocalBook.title == p_title))
+                stmt_lb = (
+                    select(LocalBook)
+                    .options(selectinload(LocalBook.series_info))
+                    .where(or_(LocalBook.book_hash == p_book_hash, LocalBook.title == p_title))
+                )
                 lb_res = await session.execute(stmt_lb)
                 lb = lb_res.scalars().first()
                 if lb:
-                    popular_book["author"] = lb.author
+                    popular_book["author"] = lb.series_info.author if lb.series_info else "N/A"
                     popular_book["cover"] = lb.cover_low
     except Exception as e:
         logger.error(f"Error fetching popular book: {e}")
