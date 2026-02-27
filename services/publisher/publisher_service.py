@@ -37,10 +37,8 @@ class TelegramPublisherProvider(PublisherProvider):
         "[?published_at]\n📅 <b>Publicado:</b> {published_at}[/?]"
         "[?traductor]\n🌐 <b>Traducción:</b> {traductor}[/?]"
     )
-    SYNOPSIS_TEMPLATE = "📝 <b>Sinopsis:</b>\n<blockquote>{sinopsis}</blockquote>\n#{slug}"
-    INFO_TEMPLATE = (
-        "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n#{slug}{archivo}"
-    )
+    SYNOPSIS_TEMPLATE = "📝 <b>Sinopsis:</b>\n\n<blockquote>{sinopsis}</blockquote>\n\n#{slug}"
+    INFO_TEMPLATE = "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n\n#{slug}{archivo}"
     # Plantilla completa (Unión de las 3 partes)
     FULL_TEMPLATE = COVER_TEMPLATE + "\n<hr/>\n" + SYNOPSIS_TEMPLATE + "\n<hr/>\n" + INFO_TEMPLATE
 
