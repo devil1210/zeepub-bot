@@ -265,26 +265,33 @@ async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_
         )
 
 
-async def mostrar_autores_local(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Muestra lista de autores locales."""
+async def mostrar_autores_local(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 1):
+    """Muestra lista de autores locales paginada."""
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
-    authors = await LibraryService.get_authors()
+    page_size = 10
+
+    data = await LibraryService.get_authors(page=page, page_size=page_size)
+    authors = data["items"]
+    total = data["total"]
 
     keyboard = []
-    # Autores suelen ser muchos, mostrar de 1 en 1 o 2 en 2
-    for i in range(0, len(authors), 1):
-        keyboard.append([InlineKeyboardButton(authors[i], callback_data=f"aut|{authors[i]}")])
-        if i > 50:  # Evitar teclados gigantescos
-            keyboard.append([InlineKeyboardButton("... y más", callback_data="none")])
-            break
+    # Mostramos de 1 en 1 para mayor claridad
+    for auth in authors:
+        keyboard.append([InlineKeyboardButton(auth, callback_data=f"aut|{auth}")])
 
-    keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")])
+    nav_row = [InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")]
+    if page > 1:
+        nav_row.append(InlineKeyboardButton("⬅️ Ant.", callback_data=f"nav_au|{page - 1}"))
+    if page * page_size < total:
+        nav_row.append(InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_au|{page + 1}"))
+
+    keyboard.append(nav_row)
 
     st["current_view"] = "authors"
     st["titulo"] = "✍️ Autores"
 
-    text = "<b>✍️ Selecciona un Autor:</b>"
+    text = f"<b>✍️ Selecciona un Autor:</b>\nMostrando {len(authors)} autores (Pág. {page})."
     if update.callback_query:
         await update.callback_query.edit_message_text(
             text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
@@ -299,43 +306,74 @@ async def mostrar_autores_local(update: Update, context: ContextTypes.DEFAULT_TY
         )
 
 
-async def mostrar_resultados_locales(update: Update, context: ContextTypes.DEFAULT_TYPE, query: str, results: list):
-    """Muestra los resultados de una búsqueda local."""
+async def mostrar_resultados_locales(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    query: str,
+    series: list,
+    books_standalone: list = None,
+):
+    """Muestra los resultados de una búsqueda local agrupada por series."""
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
 
     st["libros"] = {}
+    st["colecciones"] = {}
     keyboard = []
 
-    for b in results:
-        key = uuid.uuid4().hex[:8]
-        st["libros"][key] = {
-            "titulo": b["title"],
-            "autor": b["author"],
-            "descarga": b["filepath"],
-            "portada": b.get("cover_medium") or b.get("cover_low"),
-            "hash": b["book_hash"],
-        }
+    # 1. Agregar Series (Resultados agrupados)
+    if series:
+        for i, s in enumerate(series):
+            # Límite para no saturar el mensaje de Telegram
+            if i >= 15:
+                break
+            href = f"local_series|{s['series_hash']}"
+            st["colecciones"][i] = {"titulo": s["title"], "href": href}
+            keyboard.append([InlineKeyboardButton(f"📁 {s['title']}", callback_data=f"col|{i}")])
 
-        display = b["title"]
-        if len(display) > 35:
-            display = display[:32] + "..."
+    # 2. Agregar Libros "Sueltos" (que no pertenecen a las series encontradas o no tienen serie)
+    if books_standalone:
+        for b in books_standalone:
+            # Si ya tenemos suficientes botones, paramos
+            if len(keyboard) >= 20:
+                break
+            key = uuid.uuid4().hex[:8]
+            st["libros"][key] = {
+                "titulo": b["title"],
+                "autor": b["author"],
+                "descarga": b["filepath"],
+                "portada": b.get("cover_medium") or b.get("cover_low"),
+                "hash": b["book_hash"],
+            }
 
-        keyboard.append([InlineKeyboardButton(display, callback_data=f"lib|{key}")])
+            display = f"📕 {b['title']}"
+            if len(display) > 35:
+                display = display[:32] + "..."
+
+            keyboard.append([InlineKeyboardButton(display, callback_data=f"lib|{key}")])
 
     keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")])
 
     st["current_view"] = "search_results"
-    st["titulo"] = f"🔍 Resultados: {query}"
+    st["titulo"] = f"🔍 Resultado: {query}"
 
-    text = f"<b>🔍 Resultados para:</b> {query}\nEncontrados: {len(results)} libros."
+    total_s = len(series) if series else 0
+    total_b = len(books_standalone) if books_standalone else 0
+
+    if total_s > 0 or total_b > 0:
+        text = f"<b>🔍 Resultados para:</b> {query}\n"
+        if total_s > 0:
+            text += f"📂 Encontradas <b>{total_s}</b> series.\n"
+        if total_b > 0:
+            text += f"📕 Encontrados <b>{total_b}</b> libros individuales.\n"
+    else:
+        text = f"❌ No se han encontrado resultados para: <b>{query}</b>"
 
     if hasattr(update, "callback_query") and update.callback_query:
         await update.callback_query.edit_message_text(
             text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
         )
     else:
-        # Si viene de handle_search_text (mensaje nuevo)
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,

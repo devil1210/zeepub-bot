@@ -537,20 +537,29 @@ class LibraryService:
                 return []
 
     @staticmethod
-    async def get_authors() -> list[str]:
-        """Obtiene la lista de autores únicos."""
+    async def get_authors(page: int = 1, page_size: int = 10) -> dict[str, Any]:
+        """Obtiene la lista de autores únicos paginada."""
         async with pg_manager.get_session() as session:
             try:
+                # Count total authors
+                count_stmt = select(func.count(func.distinct(SeriesMetadata.author))).where(SeriesMetadata.author != "")
+                total = (await session.execute(count_stmt)).scalar() or 0
+
+                # Fetch paginated authors
                 stmt = (
                     select(func.distinct(SeriesMetadata.author))
                     .where(SeriesMetadata.author != "")
                     .order_by(SeriesMetadata.author.asc())
+                    .offset((page - 1) * page_size)
+                    .limit(page_size)
                 )
                 res = await session.execute(stmt)
-                return [r[0] for r in res.all() if r[0]]
+                authors = [r[0] for r in res.all() if r[0]]
+
+                return {"items": authors, "total": total}
             except Exception as e:
                 logger.error(f"Error fetching authors: {e}")
-                return []
+                return {"items": [], "total": 0}
 
     @staticmethod
     async def get_series_by_tag(tag: str, page: int = 1, page_size: int = 20) -> dict[str, Any]:

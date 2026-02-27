@@ -212,12 +212,24 @@ async def recibir_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.debug(f"Usuario {uid} buscando: {text}")
         st["esperando_busqueda"] = False
 
-        # Búsqueda local
+        # 1. Búsqueda de Series (Agrupada)
+        # Esto busca por nombre de serie (romaji, eng, spa), autor, tags, etc.
+        # Y también busca dentro de los libros de la serie (maquetador, traductor, etc.)
+        res_series = await LibraryService.search_series(text, items_per_page=30)
+        series_list = res_series.get("items", [])
+        series_hashes = {s["series_hash"] for s in series_list}
+
+        # 2. Búsqueda de Libros Individuales
+        # Para encontrar libros que quizás no tienen serie definida o para dar fallback
+        res_books = await LibraryService.search_books(text)
+        all_books = res_books.get("results", [])
+
+        # Filtramos libros que YA pertenecen a las series encontradas para evitar duplicados visuales
+        books_standalone = [b for b in all_books if b.get("series_hash") not in series_hashes]
+
         from services.library_ui_service import mostrar_resultados_locales
 
-        res = await LibraryService.search_books(text)
-        results_list = res.get("results", [])
-        await mostrar_resultados_locales(update, context, text, results_list)
+        await mostrar_resultados_locales(update, context, text, series_list, books_standalone)
         return
 
     # 4) Cualquier otro texto - solo responder en chats privados

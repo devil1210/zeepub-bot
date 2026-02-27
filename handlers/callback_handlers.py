@@ -103,10 +103,19 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
     termino = update.message.text.strip()
     st.pop("esperando_busqueda", None)
 
-    # Lanza búsqueda local y muestra resultados
-    res = await LibraryService.search_books(termino)
-    results_list = res.get("results", [])
-    await mostrar_resultados_locales(update, context, termino, results_list)
+    # 1. Búsqueda de Series (Agrupada)
+    res_series = await LibraryService.search_series(termino, items_per_page=30)
+    series_list = res_series.get("items", [])
+    series_hashes = {s["series_hash"] for s in series_list}
+
+    # 2. Búsqueda de Libros Individuales
+    res_books = await LibraryService.search_books(termino)
+    all_books = res_books.get("results", [])
+
+    # Filtramos libros que YA pertenecen a las series encontradas
+    books_standalone = [b for b in all_books if b.get("series_hash") not in series_hashes]
+
+    await mostrar_resultados_locales(update, context, termino, series_list, books_standalone)
 
 
 async def abrir_zeepubs(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -247,6 +256,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         filter_v = parts[2]
         page = int(parts[3])
         await mostrar_series(update, context, origin_type=origin, filter_val=filter_v or None, page=page)
+        return
+
+    if data.startswith("nav_au|"):
+        parts = data.split("|")
+        page = int(parts[1])
+        await mostrar_autores_local(update, context, page=page)
         return
 
     # Selección de colección (Series Local)

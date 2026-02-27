@@ -495,10 +495,19 @@ class CommandHandlers:
             from services.library_service import LibraryService
             from services.library_ui_service import mostrar_resultados_locales
 
-            # Búsqueda local
-            res = await LibraryService.search_books(termino)
-            results_list = res.get("results", [])
-            await mostrar_resultados_locales(update, context, termino, results_list)
+            # 1. Búsqueda de Series (Agrupada)
+            res_series = await LibraryService.search_series(termino, items_per_page=30)
+            series_list = res_series.get("items", [])
+            series_hashes = {s["series_hash"] for s in series_list}
+
+            # 2. Búsqueda de Libros Individuales
+            res_books = await LibraryService.search_books(termino)
+            all_books = res_books.get("results", [])
+
+            # Filtramos libros que YA pertenecen a las series encontradas
+            books_standalone = [b for b in all_books if b.get("series_hash") not in series_hashes]
+
+            await mostrar_resultados_locales(update, context, termino, series_list, books_standalone)
             return
         else:
             st["esperando_busqueda"] = True
