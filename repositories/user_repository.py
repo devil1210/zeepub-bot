@@ -348,19 +348,23 @@ class UserRepository(BaseRepository[User]):
         except Exception as e:
             logger.error(f"Error seeding default levels: {e}")
 
-    async def update_user_level(self, telegram_id: int, level_name: str, days: int = 30) -> bool:
+    async def update_user_level(self, telegram_id: int, level_ref: str | int, days: int = 30) -> bool:
         """Actualiza el nivel de un usuario y su fecha de expiración."""
         try:
             from datetime import timedelta
 
             async with pg_manager.get_session() as session:
-                # 1. Obtener el nivel por nombre (case insensitive)
-                stmt_lvl = select(UserLevel).where(UserLevel.name.ilike(level_name))
+                # 1. Obtener el nivel por ID o Nombre
+                if isinstance(level_ref, int) or (isinstance(level_ref, str) and level_ref.isdigit()):
+                    stmt_lvl = select(UserLevel).where(UserLevel.id == int(level_ref))
+                else:
+                    stmt_lvl = select(UserLevel).where(UserLevel.name.ilike(level_ref))
+
                 res_lvl = await session.execute(stmt_lvl)
                 level_obj = res_lvl.scalar_one_or_none()
 
                 if not level_obj:
-                    logger.error(f"Level '{level_name}' not found.")
+                    logger.error(f"Level '{level_ref}' not found.")
                     return False
 
                 # 2. Obtener usuario
@@ -378,8 +382,8 @@ class UserRepository(BaseRepository[User]):
                 user.expires_at = datetime.utcnow() + timedelta(days=days)
 
                 # Si el nivel es admin/staff, actualizar role también
-                if level_name.lower() in ("admin", "staff"):
-                    user.role = level_name.lower()
+                if level_obj.name.lower() in ("admin", "staff", "administrador"):
+                    user.role = "admin" if level_obj.name.lower() in ("admin", "administrador") else "staff"
 
                 await session.commit()
 
@@ -388,7 +392,7 @@ class UserRepository(BaseRepository[User]):
                     try:
                         self.supabase.get_client().table("users").update(
                             {
-                                "level": level_name,
+                                "level": level_obj.name,
                                 "level_id": level_obj.id,
                                 "expires_at": user.expires_at.isoformat(),
                                 "role": user.role,

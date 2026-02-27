@@ -198,13 +198,17 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-        user.has_library_access = data.get("has_library_access", user.has_library_access)
-        user.can_request_books = data.get("can_request_books", user.can_request_books)
-        user.can_upload_epub = data.get("can_upload_epub", user.can_upload_epub)
-        user.beta_tester = data.get("beta_tester", user.beta_tester)
+        if "levelId" in data:
+            user.level_id = int(data["levelId"])
+
+        user.has_library_access = data.get("hasLibraryAccess", user.has_library_access)
+        user.can_request_books = data.get("canRequestBooks", user.can_request_books)
+        user.can_upload_epub = data.get("canUploadEpub", user.can_upload_epub)
+        user.beta_tester = data.get("betaTester", user.beta_tester)
+        user.allow_theme_templates = data.get("allowThemeTemplates", user.allow_theme_templates)
         user.role = data.get("role", user.role)
 
-        expires_str = data.get("expires_at")
+        expires_str = data.get("expiresAt") or data.get("expires_at")
         if expires_str:
             from datetime import datetime
 
@@ -227,17 +231,39 @@ async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dic
         raise HTTPException(status_code=400, detail="Falta userId")
 
     async with pg_manager.get_session() as session:
-        user = await session.get(User, int(target_id))
+        from sqlalchemy.orm import selectinload
+
+        stmt = select(User).options(selectinload(User.level_info)).where(User.telegram_id == int(target_id))
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
         return {
-            "has_library_access": user.has_library_access,
-            "can_request_books": user.can_request_books,
-            "can_upload_epub": user.can_upload_epub,
-            "beta_tester": user.beta_tester,
-            "role": user.role,
-            "expires_at": user.expires_at.isoformat() if user.expires_at else None,
+            "success": True,
+            "user": {
+                "id": str(user.telegram_id),
+                "telegramId": user.telegram_id,
+                "username": user.username,
+                "name": user.name,
+                "nickname": user.nickname,
+                "levelId": user.level_id,
+                "levelName": user.level_info.name if user.level_info else "Básico",
+                "levelColor": user.level_info.color if user.level_info else "#3b82f6",
+                "hasLibraryAccess": user.has_library_access,
+                "canRequestBooks": user.can_request_books,
+                "canUploadEpub": user.can_upload_epub,
+                "betaTester": user.beta_tester,
+                "role": user.role,
+                "expiresAt": user.expires_at.isoformat() if user.expires_at else None,
+                "photo_url": user.photo_url,
+                "insignias": user.insignias,
+                "settings": user.settings,
+                "allowThemeTemplates": user.allow_theme_templates,
+                "canReport": True,  # Fallback as not in schema yet
+                "bypassLimits": user.bypass_limits,
+            },
         }
 
 
@@ -263,4 +289,4 @@ async def handle_get_user_audit_history(data: dict[str, Any], user_data: dict[st
     from services.user_audit_service import UserAuditService
 
     logs = UserAuditService.get_user_history(str(target_id))
-    return {"logs": logs}
+    return {"success": True, "history": logs, "logs": logs}
