@@ -239,14 +239,14 @@ async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_
     for v in volumes:
         key = uuid.uuid4().hex[:8]
         st["libros"][key] = {
-            "titulo": v["title"],
-            "autor": v["author"],
-            "descarga": v["filepath"],
-            "portada": v.get("cover_medium") or v.get("cover_low"),
-            "hash": v["book_hash"],
+            "titulo": v.get("title", ""),
+            "autor": v.get("author", ""),
+            "descarga": v.get("filepath", "N/A"),  # safe fallback Since BookDTO doesn't have filepath
+            "portada": v.get("coverUrl", ""),
+            "hash": v.get("book_hash", ""),
         }
 
-        display = f"Vol. {v['volume']}" if v.get("volume") else v["title"]
+        display = f"Vol. {v.get('volume', '')}" if v.get("volume") else v.get("title", "")
         if len(display) > 35:
             display = display[:32] + "..."
 
