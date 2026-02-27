@@ -89,7 +89,6 @@ class LibraryService:
 
                 if search_type in ("todos", "all", "illustrator", "ilustrador"):
                     series_filters.append(SeriesMetadata.illustrator.ilike(pattern))  # Check series level
-                    book_filters.append(LocalBook.illustrator.ilike(pattern))  # Check book level
 
                 if search_type in ("todos", "all", "isbn"):
                     book_filters.append(LocalBook.isbn.ilike(pattern))
@@ -214,7 +213,7 @@ class LibraryService:
                         tag_list=s.tags if s.tags else [],
                         rating_average=s.rating_average,
                         rating_count=s.rating_count,
-                        illustrator=s.illustrator or (rep.illustrator if rep else None),
+                        illustrator=s.illustrator,
                         translator=(rep.translator if rep else None),
                         layout_by=(rep.layout_by if rep else None),
                         lastUpdated=s.updated_at.isoformat() if s.updated_at else None,
@@ -303,34 +302,32 @@ class LibraryService:
                     return False
 
                 # Update allowed fields
+                # Metadata updates that now live in SeriesMetadata are handled via series_hash re-calculation
+                # title, volume, romaji_title, english_title, book_hash are still in LocalBook
                 if "title" in updates:
                     book.title = updates["title"]
-                if "series" in updates:
-                    book.series = updates["series"]
                 if "volume" in updates:
                     try:
                         book.volume = float(updates["volume"])
                     except (ValueError, TypeError):
                         pass
-                if "book_type" in updates:
-                    book.book_type = updates["book_type"]
                 if "romaji_title" in updates:
                     book.romaji_title = updates["romaji_title"]
                 if "english_title" in updates:
                     book.english_title = updates["english_title"]
-                if "tags" in updates:
-                    book.tags = updates["tags"]
-                if "demographics" in updates:
-                    book.demographics = updates["demographics"]
+                if "isbn" in updates:
+                    book.isbn = updates["isbn"]
 
                 # Recalculate Series Hash to regroup
                 from utils.helpers import generate_series_hash
 
-                series_name = book.series or book.english_title or book.title
+                series_name = updates.get("series") or (
+                    book.series_info.series_name if book.series_info else book.title
+                )
+                author_val = updates.get("author") or (book.series_info.author if book.series_info else "Unknown")
+                bt_val = updates.get("book_type") or (book.series_info.book_type if book.series_info else "Light Novel")
 
-                # Fetch author from series implicitly if possible
-                author_val = book.series_info.author if book.series_info else None
-                book.series_hash = generate_series_hash(series=series_name, author=author_val, book_type=book.book_type)
+                book.series_hash = generate_series_hash(series=series_name, author=author_val, book_type=bt_val)
 
                 await session.commit()
                 return True
@@ -352,8 +349,8 @@ class LibraryService:
                     select(LocalBook)
                     .options(selectinload(LocalBook.series_info))
                     .outerjoin(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
-                    .where(or_(LocalBook.series.is_(None), LocalBook.series == ""))
-                    .order_by(SeriesMetadata.author, LocalBook.title)
+                    .where(LocalBook.series_metadata_id.is_(None))
+                    .order_by(LocalBook.title)
                 )
 
                 result = await session.execute(stmt)
@@ -423,7 +420,7 @@ class LibraryService:
                 stmt = (
                     select(LocalBook)
                     .options(selectinload(LocalBook.series_info))
-                    .where(or_(LocalBook.series.is_(None), LocalBook.series == ""))
+                    .where(LocalBook.series_metadata_id.is_(None))
                     .order_by(LocalBook.indexed_at.desc())
                     .limit(limit)
                 )
@@ -522,10 +519,10 @@ class LibraryService:
         """Obtiene la lista de géneros únicos (procedente de la columna tags)."""
         async with pg_manager.get_session() as session:
             try:
-                # tags es JSONB en Postgres
-                stmt = select(func.distinct(func.jsonb_array_elements_text(cast(LocalBook.tags, func.jsonb)))).order_by(
-                    text("1")
-                )
+                # tags es JSONB en Postgres y ahora vive en SeriesMetadata
+                stmt = select(
+                    func.distinct(func.jsonb_array_elements_text(cast(SeriesMetadata.tags, func.jsonb)))
+                ).order_by(text("1"))
                 res = await session.execute(stmt)
                 return [r[0] for r in res.all() if r[0]]
             except Exception as e:

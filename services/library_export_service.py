@@ -2,7 +2,9 @@ import json
 from datetime import datetime
 from typing import Any
 
-from models.library_models import LibrarySource, LocalBook
+from sqlalchemy.orm import selectinload
+
+from models.library_models import LibrarySource, LocalBook, SeriesMetadata
 from utils.library_db import get_session
 
 
@@ -30,13 +32,13 @@ class LibraryExportService:
         """
         session = get_session()
         try:
-            query = session.query(LocalBook)
+            query = session.query(LocalBook).options(selectinload(LocalBook.series_info))
 
             if source_id:
                 query = query.filter(LocalBook.source_id == source_id)
 
             if series:
-                query = query.filter(LocalBook.series == series)
+                query = query.join(LocalBook.series_info).filter(SeriesMetadata.series_name == series)
 
             books = query.all()
 

@@ -66,17 +66,6 @@ class DatabaseIntegrityTool(MaintenanceTool):
                     series = series_res.scalar_one_or_none()
 
                     if series:
-                        # Auto-heal series_name: Preferir el 'series' del libro (metadata del EPUB)
-                        old_name = series.series_name
-
-                        book_stmt = select(LocalBook).where(LocalBook.series_hash == s_hash).limit(1)
-                        book_res = await session.execute(book_stmt)
-                        first_book = book_res.scalar_one_or_none()
-
-                        if first_book and first_book.series and first_book.series != series.series_name:
-                            series.series_name = first_book.series
-                            logger.info(f"Integrity: Healed name for {s_hash[:8]}: {old_name} -> {series.series_name}")
-
                         # Vincular todos los libros con este hash
                         update_stmt = (
                             update(LocalBook)

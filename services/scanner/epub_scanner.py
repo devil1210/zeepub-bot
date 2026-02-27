@@ -5,6 +5,8 @@ import re
 from datetime import datetime
 from typing import Any
 
+from sqlalchemy.orm import selectinload
+
 from models.library_models import DuplicateBook, LocalBook
 from services.hash_service import hash_service
 from utils.epub_extractor import EpubMetadataExtractor
@@ -26,9 +28,9 @@ class EpubScanner:
         Genera un hash estable basado en la metadata técnica del libro.
         """
         return hash_service.generate_book_hash(
-            series=book.series,
-            author=book.author,
-            book_type=book.book_type,
+            series=book.series_info.series_name if book.series_info else "Unknown",
+            author=book.series_info.author if book.series_info else "Unknown",
+            book_type=book.series_info.book_type if book.series_info else "Light Novel",
             volume=book.volume,
             translator=book.translator,
             layout_by=book.layout_by,
@@ -44,9 +46,9 @@ class EpubScanner:
         Genera un hash estable para la serie.
         """
         return hash_service.generate_series_hash(
-            series=book.series or book.title,
-            author=book.author,
-            book_type=book.book_type,
+            series=(book.series_info.series_name if book.series_info else book.title),
+            author=(book.series_info.author if book.series_info else "Unknown"),
+            book_type=(book.series_info.book_type if book.series_info else "Light Novel"),
         )
 
     @staticmethod
@@ -141,7 +143,12 @@ class EpubScanner:
             mtime = datetime.fromtimestamp(stat.st_mtime)
             size = stat.st_size
 
-            book = session.query(LocalBook).filter_by(filepath=filepath).first()
+            book = (
+                session.query(LocalBook)
+                .options(selectinload(LocalBook.series_info))
+                .filter_by(filepath=filepath)
+                .first()
+            )
 
             force_metadata = False
             filename = os.path.basename(filepath)
@@ -170,11 +177,11 @@ class EpubScanner:
                 and book.book_hash
                 and book.short_link
                 and book.cover_low
-                and book.series_metadata_id is not None
-                and book.series
-                and book.author
-                and book.volume is not None
-                and book.series_hash == hash_service.generate_series_hash(book.series, book.author, book.book_type)
+                and book.series_info is not None
+                and book.series_hash
+                == hash_service.generate_series_hash(
+                    book.series_info.series_name, book.series_info.author, book.series_info.book_type
+                )
             ):
                 return "skipped"
 

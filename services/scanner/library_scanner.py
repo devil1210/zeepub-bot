@@ -2,6 +2,8 @@ import logging
 import os
 from typing import Any
 
+from sqlalchemy.orm import selectinload
+
 from models.library_models import (
     ArchivedBook,
     ArchivedSeries,
@@ -65,7 +67,12 @@ class LibraryScanner:
         removed_count = 0
 
         try:
-            db_books = session.query(LocalBook).filter(LocalBook.source_id == source.id).all()
+            db_books = (
+                session.query(LocalBook)
+                .options(selectinload(LocalBook.series_info))
+                .filter(LocalBook.source_id == source.id)
+                .all()
+            )
             db_paths = {b.filepath for b in db_books}
 
             missing_paths = db_paths - found_files
@@ -87,8 +94,8 @@ class LibraryScanner:
                         filename=b.filename,
                         last_filepath=b.filepath,
                         volume=b.volume,
-                        author=b.author,
-                        book_type=b.book_type,
+                        author=b.series_info.author if b.series_info else "Unknown",
+                        book_type=b.series_info.book_type if b.series_info else "Light Novel",
                         original_book_id=b.id,
                         reason="physically_deleted",
                     )

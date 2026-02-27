@@ -215,9 +215,9 @@ class ScannerService:
                             results["added_books_details"].append(
                                 {
                                     "title": book.title,
-                                    "series": book.series,
+                                    "series": book.series_info.series_name if book.series_info else "Unknown",
                                     "volume": book.volume,
-                                    "author": book.author,
+                                    "author": book.series_info.author if book.series_info else "Unknown",
                                 }
                             )
                         else:
