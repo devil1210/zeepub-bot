@@ -4,10 +4,11 @@ TypeScript Project Diagnostic Script
 Analyzes TypeScript projects for configuration, performance, and common issues.
 """
 
-import json
 import subprocess
+import sys
+import os
+import json
 from pathlib import Path
-
 
 def run_cmd(cmd: str) -> str:
     """Run shell command and return output."""
@@ -175,7 +176,7 @@ def check_performance():
     
     result = run_cmd("npx tsc --extendedDiagnostics --noEmit 2>&1 | grep -E 'Check time|Files:|Lines:|Nodes:'")
     if result.strip():
-        for line in result.strip().split("\n"):
+        for line in result.strip().split('\n'):
             print(f"  {line}")
     else:
         print("  ⚠️ Could not measure performance")
