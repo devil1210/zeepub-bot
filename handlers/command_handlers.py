@@ -39,6 +39,24 @@ class CommandHandlers:
         app.add_handler(CommandHandler("acceso_web", self.acceso_web))
         app.add_handler(CommandHandler("web_login", self.acceso_web))
 
+        # Nuevos handlers para catálogo
+        app.add_handler(CommandHandler("catalog", self.catalog))
+        app.add_handler(CommandHandler("catalogo", self.catalog))
+
+    @rate_limit(max_calls=5, period=timedelta(minutes=1))
+    async def catalog(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /catalog: Muestra el catálogo principal."""
+        from services.library_ui_service import mostrar_menu_principal
+
+        # Opcional: limpiar mensajes innecesarios si es en privado
+        if update.message and update.effective_chat.type == "private":
+            try:
+                await update.message.delete()
+            except Exception:
+                pass
+
+        await mostrar_menu_principal(update, context)
+
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start: inicializa estado; admin->evil, otros->normal."""
 

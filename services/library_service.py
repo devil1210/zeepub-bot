@@ -433,6 +433,13 @@ class LibraryService:
                 return []
 
     @staticmethod
+    async def get_recent_books(page: int = 1, items_per_page: int = 10) -> dict[str, Any]:
+        """
+        Obtiene los libros añadidos recientemente delegando al repositorio.
+        """
+        return await book_repo.get_recent_books(page=page, items_per_page=items_per_page)
+
+    @staticmethod
     async def get_catalog(
         source_id: int | None = None,
         folder: str | None = None,

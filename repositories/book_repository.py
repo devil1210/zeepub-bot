@@ -141,18 +141,32 @@ class BookRepository(BaseRepository[LocalBook]):
                 logger.error(f"Error en search_books del repositorio: {e}")
                 return {"results": [], "totalItems": 0, "totalPages": 0}
 
-    async def get_recent_books(self, limit: int = 10) -> list[dict[str, Any]]:
-        """Obtiene los libros añadidos recientemente."""
+    async def get_recent_books(self, page: int = 1, items_per_page: int = 10) -> dict[str, Any]:
+        """Obtiene los libros añadidos recientemente con soporte de paginación."""
         async with pg_manager.get_session() as session:
-            stmt = (
-                select(LocalBook)
-                .options(selectinload(LocalBook.series_info))
-                .order_by(LocalBook.created_at.desc())
-                .limit(limit)
-            )
+            stmt = select(LocalBook).options(selectinload(LocalBook.series_info))
+
+            # Contar total de resultados
+            count_stmt = select(func.count()).select_from(stmt.subquery())
+            total_items = (await session.execute(count_stmt)).scalar() or 0
+
+            # Paginación y Orden
+            start = (page - 1) * items_per_page
+            stmt = stmt.order_by(LocalBook.created_at.desc()).offset(start).limit(items_per_page)
+
             result = await session.execute(stmt)
             books = result.scalars().all()
-            return [b.to_dict() for b in books]
+
+            results = [b.to_dict() for b in books]
+            total_pages = (total_items + items_per_page - 1) // items_per_page
+
+            return {
+                "results": results,
+                "items": results,
+                "currentPage": page,
+                "totalPages": total_pages,
+                "totalItems": total_items,
+            }
 
     async def create(self, book: LocalBook) -> LocalBook:
         """Crea un nuevo libro en la base de datos."""

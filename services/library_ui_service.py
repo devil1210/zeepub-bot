@@ -21,7 +21,8 @@ async def mostrar_menu_principal(update: Update, context: ContextTypes.DEFAULT_T
     st["titulo"] = "📚 Biblioteca Local"
 
     keyboard = [
-        [InlineKeyboardButton("⭐ Novedades", callback_data="nav_local|newest")],
+        [InlineKeyboardButton("📚 Catálogo de Libros", callback_data="nav_local|recent_books")],
+        [InlineKeyboardButton("⭐ Novedades (Series)", callback_data="nav_local|newest")],
         [InlineKeyboardButton("🏷️ Géneros", callback_data="nav_local|genres")],
         [InlineKeyboardButton("✍️ Autores", callback_data="nav_local|authors")],
         [InlineKeyboardButton("📖 Todas las Series", callback_data="nav_local|all_series")],
@@ -29,7 +30,7 @@ async def mostrar_menu_principal(update: Update, context: ContextTypes.DEFAULT_T
         [InlineKeyboardButton("❌ Salir", callback_data="cerrar")],
     ]
 
-    text = "<b>📚 Bienvenido a la Biblioteca Local</b>\n\nSelecciona una categoría para explorar:"
+    text = "<b>📚 Bienvenido a la Biblioteca Local</b>\n\n🎯 <i>Selecciona una categoría para explorar nuestra colección:</i>"
 
     if hasattr(update, "callback_query"):
         await update.callback_query.edit_message_text(
@@ -132,6 +133,84 @@ async def mostrar_series(
 
     text = f"<b>{title}</b>\nResultados: {data['total']} series."
     if update.callback_query:
+        await update.callback_query.edit_message_text(
+            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+        )
+    else:
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+            parse_mode="HTML",
+            message_thread_id=get_thread_id(update),
+        )
+
+
+async def mostrar_libros(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    origin_type: str = "recent",
+    filter_val: str = None,
+    page: int = 1,
+):
+    """Muestra libros filtrados o recientes (paginados 10 max)."""
+    uid = update.effective_user.id
+    st = state_manager.get_user_state(uid)
+    page_size = 10
+
+    st["origin_type_b"] = origin_type
+    st["filter_val_b"] = filter_val
+    st["current_page_b"] = page
+    st["prev_view_local"] = "main"
+
+    if origin_type == "recent":
+        # Usamos el nuevo fetcher de LibraryService
+        data = await LibraryService.get_recent_books(page=page, items_per_page=page_size)
+    else:
+        # Fallback futuro
+        data = {"items": [], "totalItems": 0, "totalPages": 0}
+
+    st["libros"] = {}
+    keyboard = []
+
+    for b in data.get("items", []):
+        key = uuid.uuid4().hex[:8]
+        st["libros"][key] = {
+            "titulo": b["title"],
+            "autor": b["author"],
+            "descarga": b["filepath"],
+            "portada": b.get("coverUrl", b.get("cover_medium") or b.get("cover_low")),
+            "hash": b["book_hash"],
+        }
+
+        display = f"📕 {b['title']}"
+        if len(display) > 35:
+            display = display[:32] + "..."
+
+        keyboard.append([InlineKeyboardButton(display, callback_data=f"lib|{key}")])
+
+    nav_row = []
+    if page > 1:
+        nav_row.append(
+            InlineKeyboardButton("⬅️ Ant.", callback_data=f"nav_b|{origin_type}|{filter_val or ''}|{page - 1}")
+        )
+    if page < data.get("totalPages", 1):
+        nav_row.append(
+            InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_b|{origin_type}|{filter_val or ''}|{page + 1}")
+        )
+
+    if nav_row:
+        keyboard.append(nav_row)
+
+    keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")])
+
+    st["current_view"] = "books_list"
+    title = "📚 Catálogo de Libros" if origin_type == "recent" else "📖 Libros"
+    st["titulo"] = title
+
+    text = f"<b>{title}</b>\n✨ Explorando {data.get('totalItems', 0)} libros disponibles (Pág. {page}/{data.get('totalPages', 1)})."
+
+    if hasattr(update, "callback_query") and update.callback_query:
         await update.callback_query.edit_message_text(
             text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
         )

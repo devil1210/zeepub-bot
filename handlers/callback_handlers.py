@@ -213,6 +213,11 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == "nav_local|authors":
         await mostrar_autores_local(update, context)
         return
+    if data == "nav_local|recent_books":
+        from services.library_ui_service import mostrar_libros
+
+        await mostrar_libros(update, context, origin_type="recent")
+        return
     if data.startswith("nav_local|"):
         _, origin = data.split("|", 1)
         await mostrar_series(update, context, origin_type=origin)
@@ -224,6 +229,16 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data.startswith("aut|"):
         _, auth = data.split("|", 1)
         await mostrar_series(update, context, origin_type="author", filter_val=auth)
+        return
+    if data.startswith("nav_b|"):
+        from services.library_ui_service import mostrar_libros
+
+        parts = data.split("|")
+        # Format: nav_b|origin|filter|page
+        origin = parts[1]
+        filter_v = parts[2]
+        page = int(parts[3])
+        await mostrar_libros(update, context, origin_type=origin, filter_val=filter_v or None, page=page)
         return
     if data.startswith("nav_p|"):
         parts = data.split("|")
