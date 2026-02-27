@@ -43,7 +43,7 @@ class CommandHandlers:
         app.add_handler(CommandHandler("catalog", self.catalog))
         app.add_handler(CommandHandler("catalogo", self.catalog))
 
-    @rate_limit(max_calls=5, period=timedelta(minutes=1))
+    @rate_limit("catalog", max_requests=5, window_seconds=60)
     async def catalog(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /catalog: Muestra el catálogo principal."""
         from services.library_ui_service import mostrar_menu_principal
