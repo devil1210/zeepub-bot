@@ -10,15 +10,15 @@ logger = logging.getLogger(__name__)
 # Add current directory to path
 sys.path.append(os.getcwd())
 
-from config.config_settings import config
+from config.config_settings import config  # noqa: E402
 
 # Patch DATABASE_URL to use localhost for local migration
 if "db:5432" in config.DATABASE_URL:
     config.DATABASE_URL = config.DATABASE_URL.replace("db:5432", "localhost:5432")
 
-from sqlalchemy import text
+from sqlalchemy import text  # noqa: E402
 
-from core.db_manager_pg import pg_manager
+from core.db_manager_pg import pg_manager  # noqa: E402
 
 
 async def apply_local_migration():

@@ -32,20 +32,24 @@ class SeriesScanner:
         Obtiene o crea una entrada en SeriesMetadata para el libro.
         Normaliza campos comunes de la serie.
         """
+        extracted = getattr(book, "extracted_data", {})
         series = session.query(SeriesMetadata).filter_by(series_hash=book.series_hash).first()
 
         if not series:
             series = SeriesMetadata(
-                series_name=book.series or book.series_english or book.title,
+                series_name=extracted.get("series") or book.series_english or book.title,
                 series_spanish=book.series_spanish,
                 series_english=book.series_english,
                 series_hash=book.series_hash,
-                author=book.author,
-                author_jap=book.author_jap,
-                description=book.description,
-                tags=book.tags or [],
-                book_type=book.book_type,
-                publisher=book.publisher,
+                author=extracted.get("author") or "",
+                author_jap=extracted.get("author_jap"),
+                illustrator=extracted.get("illustrator"),
+                illustrator_jap=extracted.get("illustrator_jap"),
+                description=extracted.get("description"),
+                tags=extracted.get("tags") or [],
+                demographics=extracted.get("demographics"),
+                book_type=extracted.get("book_type"),
+                publisher=extracted.get("publisher") or book.publisher,
                 cover_url=book.cover_low or book.cover_medium,
                 book_count=0,
             )
@@ -56,16 +60,19 @@ class SeriesScanner:
             logger.info(f"🆕 Nueva serie detectada: {series.series_name}")
         else:
             # Sincronizar campos
-            if book.author and series.author != book.author:
-                series.author = book.author
+            book_author = extracted.get("author")
+            if book_author and series.author != book_author:
+                series.author = book_author
 
-            if book.description and (not series.description or len(book.description) > len(series.description)):
-                series.description = book.description
+            book_desc = extracted.get("description")
+            if book_desc and (not series.description or len(book_desc) > len(series.description)):
+                series.description = book_desc
 
             # UNIÓN DE TAGS
-            if book.tags:
+            book_tags = extracted.get("tags")
+            if book_tags:
                 existing_tags = set(series.tags) if series.tags else set()
-                new_tags = set(book.tags)
+                new_tags = set(book_tags)
                 if not new_tags.issubset(existing_tags):
                     series.tags = list(existing_tags | new_tags)
 
@@ -78,11 +85,13 @@ class SeriesScanner:
                 if not series.slug or len(str(series.slug)) > 40:
                     series.slug = generar_slug_from_meta(series.to_dict())
 
-            if book.book_type and series.book_type != book.book_type:
-                series.book_type = book.book_type
+            book_type = extracted.get("book_type")
+            if book_type and series.book_type != book_type:
+                series.book_type = book_type
 
-            if book.publisher and series.publisher != book.publisher:
-                series.publisher = book.publisher
+            book_publisher = extracted.get("publisher") or book.publisher
+            if book_publisher and series.publisher != book_publisher:
+                series.publisher = book_publisher
 
             # PORTADA: Usar la del volumen 1
             if book.cover_low or book.cover_medium:
@@ -119,22 +128,6 @@ class SeriesScanner:
             session.add(archived_s)
             session.delete(series)
             return
-
-        all_tags = set()
-        for b in books:
-            if b.tags:
-                all_tags.update(b.tags)
-
-        if series.tags:
-            all_tags.update(series.tags)
-
-        series.tags = list(all_tags)
-
-        if not series.description:
-            for b in books:
-                if b.description:
-                    series.description = b.description
-                    break
 
         if not series.series_spanish:
             for b in books:

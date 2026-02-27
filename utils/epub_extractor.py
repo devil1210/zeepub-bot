@@ -90,10 +90,9 @@ class EpubMetadataExtractor:
                             cid = refines.replace("#", "")
                             if prop == "role":
                                 role_map[cid] = meta.text
-                            elif (
-                                prop == "alternate-script"
-                                and meta.get("{http://www.w3.org/XML/1998/namespace}lang") == "ja"
-                                or meta.get("xml:lang") == "ja"
+                            elif prop == "alternate-script" and (
+                                meta.get("{http://www.w3.org/XML/1998/namespace}lang") in ("ja", "ja-JP")
+                                or meta.get("xml:lang") in ("ja", "ja-JP")
                             ):
                                 creators_jap[cid] = meta.text
 

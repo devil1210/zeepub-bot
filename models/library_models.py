@@ -44,7 +44,6 @@ class SeriesMetadata(Base):
     series_spanish = Column(String(255))
     series_english = Column(String(255))  # Nueva columna para visualización coherente (Modificable por IA)
     slug = Column(String(512), index=True)  # Slug persistente para URLs y referencias
-    spanish_title = Column(String(255))  # Para paridad con LocalBook
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
     author = Column(String(255))
@@ -114,15 +113,9 @@ class UploadBook(Base):
 
     # Metadata extraída (similar a LocalBook)
     title = Column(String(512), nullable=False)
-    series = Column(String(255))
     series_spanish = Column(String(255))
     series_english = Column(String(255))
     volume = Column(Float)
-    author = Column(String(255))
-    author_jap = Column(String(255))
-    illustrator = Column(String(255))
-    illustrator_jap = Column(String(255))
-    book_type = Column(String(100))
     translator = Column(String(255))
     layout_by = Column(String(255))
     language = Column(String(10), default="es")
@@ -198,17 +191,11 @@ class LocalBook(Base):
     spanish_title = Column(String(512))  # Nueva columna
     english_title = Column(String(512))
     jap_title = Column(String(512))
-    series = Column(String(255))
-    series_spanish = Column(String(255))  # New column for Spanish series name from filename
-    series_english = Column(String(255))  # New column for English series name for display
+    jap_title = Column(String(512))
     volume = Column(Float)  # Soporta 1, 1.5, etc
     edition = Column(String(255))  # Ej: "Honorificos", "Colector", etc.
 
     # Personas
-    author = Column(String(255))
-    author_jap = Column(String(255))
-    illustrator = Column(String(255))
-    illustrator_jap = Column(String(255))
     translator = Column(String(255))
     layout_by = Column(String(255))  # Maquetador
     publisher = Column(String(255))
@@ -221,7 +208,6 @@ class LocalBook(Base):
     # Fechas y Tipo
     published_at = Column(String(100))
     modified_at_opf = Column(String(50))
-    book_type = Column(String(100))  # Ej: Novela Ligera, Novela Web
     epub_version = Column(String(20))  # Ej: 2.0, 3.0
 
     # Advanced metrics
@@ -234,10 +220,7 @@ class LocalBook(Base):
     rating_count = Column(Integer, default=0)
 
     # Contenido
-    description = Column(String(5000))
     summary = Column(String(1024))  # AI generated catchy summary
-    demographics = Column(JSON)  # Ej: ["Seinen", "Adultos"]
-    tags = Column(JSON)  # Lista de géneros/etiquetas
     language = Column(String(10), default="es")
 
     # Edition Characteristics
@@ -273,21 +256,50 @@ class LocalBook(Base):
             "hash": self.book_hash,
             "short_link": self.short_link,
             "title": self.title,
-            "author": self.author,
             "romajiTitle": self.romaji_title,
             "spanishTitle": self.spanish_title,
             "englishTitle": self.english_title,
             "japTitle": self.jap_title,
-            "series": self.series,
-            "series_english": self.series_english,
+            "series": (
+                (self.series_info.series_name if getattr(self, "series_info", None) else None)
+                if "series_info" not in inspect(self).unloaded
+                else None
+            ),
+            "author": (
+                (self.series_info.author if getattr(self, "series_info", None) else None)
+                if "series_info" not in inspect(self).unloaded
+                else None
+            ),
+            "series_english": (
+                (self.series_info.series_english if getattr(self, "series_info", None) else None)
+                if "series_info" not in inspect(self).unloaded
+                else None
+            ),
             "seriesHash": self.series_hash,
             "seriesIndex": self.volume,
             "volume": self.volume,
-            "tags": self.tags,
-            "demographics": self.demographics,
-            "description": limpiar_html_basico(self.description),
-            "description_clean": limpiar_html_basico(self.description),  # Alias for backward compatibility
-            "summary": self.summary or limpiar_html_basico(self.description),
+            "tags": (
+                (self.series_info.tags if getattr(self, "series_info", None) else [])
+                if "series_info" not in inspect(self).unloaded
+                else []
+            ),
+            "demographics": (
+                (self.series_info.demographics if getattr(self, "series_info", None) else [])
+                if "series_info" not in inspect(self).unloaded
+                else []
+            ),
+            "description": limpiar_html_basico(self.series_info.description)
+            if getattr(self, "series_info", None) and self.series_info.description
+            else "",
+            "description_clean": limpiar_html_basico(self.series_info.description)
+            if getattr(self, "series_info", None) and self.series_info.description
+            else "",
+            "summary": self.summary
+            or (
+                limpiar_html_basico(self.series_info.description)
+                if getattr(self, "series_info", None) and self.series_info.description
+                else ""
+            ),
             "fileSize": self.file_size,
             "file_size": self.file_size,
             "size": (
@@ -307,7 +319,11 @@ class LocalBook(Base):
             "filepath": self.filepath,
             "is_folder": False,
             # Metadata enriquecida
-            "illustrator": self.illustrator,
+            "illustrator": (
+                (self.series_info.illustrator if getattr(self, "series_info", None) else None)
+                if "series_info" not in inspect(self).unloaded
+                else None
+            ),
             "translator": self.translator,
             "group": self.translator,
             "layoutBy": self.layout_by,
@@ -318,8 +334,16 @@ class LocalBook(Base):
             "published_at": self.published_at,
             "modifiedAtOpf": self.modified_at_opf,
             "modified_at_opf": self.modified_at_opf,
-            "bookType": self.book_type,
-            "book_type": self.book_type,
+            "bookType": (
+                (self.series_info.book_type if getattr(self, "series_info", None) else None)
+                if "series_info" not in inspect(self).unloaded
+                else None
+            ),
+            "book_type": (
+                (self.series_info.book_type if getattr(self, "series_info", None) else None)
+                if "series_info" not in inspect(self).unloaded
+                else None
+            ),
             "isbn": self.isbn,
             "asin": self.asin,
             "uriId": self.uri_id,
@@ -329,8 +353,16 @@ class LocalBook(Base):
             "word_count": self.word_count,
             "pageCount": self.page_count,
             "page_count": self.page_count,
-            "author_jap": self.author_jap,
-            "illustrator_jap": self.illustrator_jap,
+            "author_jap": (
+                (self.series_info.author_jap if getattr(self, "series_info", None) else None)
+                if "series_info" not in inspect(self).unloaded
+                else None
+            ),
+            "illustrator_jap": (
+                (self.series_info.illustrator_jap if getattr(self, "series_info", None) else None)
+                if "series_info" not in inspect(self).unloaded
+                else None
+            ),
             "language": self.language,
             "is_uncensored": self.is_uncensored == 1,
             "color_mode": self.color_mode,
@@ -338,7 +370,11 @@ class LocalBook(Base):
             "romaji_title": self.romaji_title,
             "english_title": self.english_title,
             "spanish_title": self.spanish_title,
-            "series_spanish": self.series_spanish,
+            "series_spanish": (
+                (self.series_info.series_spanish if getattr(self, "series_info", None) else None)
+                if "series_info" not in inspect(self).unloaded
+                else None
+            ),
             "readingTime": self.reading_time,
             "reading_time": self.reading_time,
             "book_hash": self.book_hash,
@@ -346,10 +382,10 @@ class LocalBook(Base):
             "rating_average": self.rating_average,
             "rating_count": self.rating_count,
             "votes": self.rating_count,
-            "clean_title": self.series
+            "clean_title": (self.series_info.series_name if getattr(self, "series_info", None) else None)
             or self.english_title
             or (re.sub(r"\[.*?\]", "", self.title).strip() if self.title else ""),
-            "cleanTitle": self.series
+            "cleanTitle": (self.series_info.series_name if getattr(self, "series_info", None) else None)
             or self.english_title
             or (re.sub(r"\[.*?\]", "", self.title).strip() if self.title else ""),
             "slug": (
@@ -476,15 +512,10 @@ class ArchivedSeries(Base):
     series_name = Column(String(255), nullable=False)
     series_spanish = Column(String(255))
     series_english = Column(String(255))
-    spanish_title = Column(String(255))
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
-    author = Column(String(255))
-    description = Column(String(5000))
-    tags = Column(JSON)
     cover_url = Column(String(1024))
 
-    book_type = Column(String(100))
     publisher = Column(String(255))
 
     archived_at = Column(DateTime, default=datetime.utcnow)
@@ -507,8 +538,6 @@ class ArchivedBook(Base):
     last_filepath = Column(String(1024))
 
     volume = Column(Float)
-    author = Column(String(255))
-    book_type = Column(String(100))
 
     archived_at = Column(DateTime, default=datetime.utcnow)
     original_book_id = Column(Integer)  # ID original para referencia

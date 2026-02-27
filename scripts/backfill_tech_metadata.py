@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 # Patch DATABASE_URL IMMEDIATELY before any local imports
 import os
 

@@ -56,24 +56,8 @@ class EpubScanner:
         target_book.romaji_title = source_book.romaji_title
         target_book.english_title = source_book.english_title
         target_book.spanish_title = source_book.spanish_title
-        target_book.series = source_book.series
-        target_book.volume = source_book.volume
-        target_book.author = source_book.author
-        target_book.author_jap = source_book.author_jap
-        target_book.illustrator = source_book.illustrator
-        target_book.illustrator_jap = source_book.illustrator_jap
-        target_book.translator = source_book.translator
-        target_book.layout_by = source_book.layout_by
-        target_book.publisher = source_book.publisher
-        target_book.description = source_book.description
-        target_book.book_type = source_book.book_type
-        target_book.tags = source_book.tags
-        target_book.demographics = source_book.demographics
-        target_book.series_hash = source_book.series_hash
         target_book.is_uncensored = source_book.is_uncensored
         target_book.color_mode = source_book.color_mode
-        target_book.series_spanish = source_book.series_spanish
-        target_book.series_english = source_book.series_english
         target_book.edition = source_book.edition
         target_book.isbn = source_book.isbn
         target_book.asin = source_book.asin
@@ -218,21 +202,14 @@ class EpubScanner:
             book.file_created_at = datetime.fromtimestamp(stat.st_ctime)
 
             book.title = identity["title"]
-            book.author = identity["author"]
-            book.series = identity["series"]
             book.volume = identity["volume"]
-            book.book_type = identity["book_type"]
             book.language = identity["language"]
             book.translator = identity["translator"]
             book.layout_by = identity["layout_by"]
-            book.series_spanish = identity["series_spanish"]
-            book.series_english = identity["series_english"]
+            book.english_title = identity.get("series")
+            book.jap_title = identity.get("romaji_title")
             book.edition = identity["edition"]
 
-            book.author_jap = meta.get("author_jap")
-            book.illustrator_jap = meta.get("illustrator_jap")
-            book.description = meta.get("description")
-            book.illustrator = meta.get("illustrator")
             book.publisher = meta.get("publisher")
 
             # Tags
@@ -249,6 +226,7 @@ class EpubScanner:
                 "adultos",
                 "mature",
                 "maduro",
+                "juvenil",
             ]
             for tag in raw_tags:
                 t_lower = tag.lower().strip()
@@ -257,10 +235,29 @@ class EpubScanner:
                 else:
                     final_genres.append(tag)
 
-            book.demographics = classified_demographics
-            book.tags = final_genres
+            extracted_data = {
+                "series": identity["series"] or book.title,
+                "author": identity["author"],
+                "author_jap": meta.get("author_jap"),
+                "illustrator": meta.get("illustrator"),
+                "illustrator_jap": meta.get("illustrator_jap"),
+                "description": meta.get("description"),
+                "tags": final_genres,
+                "demographics": classified_demographics,
+                "book_type": identity["book_type"],
+            }
+
+            # Attach to book transiently for series_provider to consume
+            book.extracted_data = extracted_data
 
             book.romaji_title = identity.get("romaji_title") or meta.get("romaji_title")
+
+            # Generate MD5 hash for the file
+            try:
+                with open(filepath, "rb") as f:
+                    book.hash_md5 = hashlib.md5(f.read()).hexdigest()
+            except Exception as e:
+                logger.warning(f"No se pudo generar MD5 para {filename}: {e}")
 
             book.isbn = meta.get("isbn")
             book.asin = meta.get("asin")
@@ -274,8 +271,23 @@ class EpubScanner:
             book.is_uncensored = meta.get("is_uncensored", 0)
             book.color_mode = meta.get("color_mode")
 
-            target_series_hash = cls.generate_series_hash(book)
-            target_book_hash = cls.generate_book_hash(book)
+            target_series_hash = hash_service.generate_series_hash(
+                series=extracted_data["series"],
+                author=extracted_data["author"],
+                book_type=extracted_data["book_type"],
+            )
+            target_book_hash = hash_service.generate_book_hash(
+                series=identity.get("series"),
+                author=identity.get("author"),
+                book_type=identity.get("book_type"),
+                volume=identity.get("volume"),
+                translator=identity.get("translator"),
+                layout_by=identity.get("layout_by"),
+                language=identity.get("language"),
+                edition=identity.get("edition"),
+                is_uncensored=meta.get("is_uncensored", 0),
+                color_mode=meta.get("color_mode") or "bw",
+            )
 
             extracted_book_data = book
 
@@ -317,8 +329,6 @@ class EpubScanner:
                         book.series_hash = target_series_hash
                     if not book.book_hash or force_scan:
                         book.book_hash = target_book_hash
-                    if not book.series or force_scan:
-                        book.series = extracted_book_data.series
 
                     outcome = "updated"
                 else:
@@ -412,7 +422,7 @@ class EpubScanner:
             # Solo necesitamos la portada, pero extract() hace todo.
             # Podríamos optimizar EpubMetadataExtractor si fuera necesario,
             # pero por ahora usamos extract().
-            meta = extractor.extract()
+            _ = extractor.extract()
 
             if extractor.cover_data:
                 cover_filename = f"{hashlib.md5(filepath.encode()).hexdigest()}.jpg"
