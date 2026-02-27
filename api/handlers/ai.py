@@ -725,7 +725,7 @@ async def handle_ai_get_lists(data: dict[str, Any], user_data: dict[str, Any]):
                 query = (
                     session.query(
                         LocalBook.series_hash,
-                        func.min(LocalBook.series).label("series_name"),
+                        func.min(LocalBook.title).label("series_name"),
                         func.count(LocalBook.id).label("books_count"),
                     )
                     .filter(~exists().where(SeriesMetadata.series_hash == LocalBook.series_hash))

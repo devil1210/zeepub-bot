@@ -184,7 +184,6 @@ async def handle_admin_find_duplicates(data: dict[str, Any], user_data: dict[str
                 {
                     "book_hash": content_hash,
                     "title": books[0].title,
-                    "author": books[0].author,
                     "count": len(books),
                     "total_size": sum(file_sizes),
                     "wasted_space": wasted,

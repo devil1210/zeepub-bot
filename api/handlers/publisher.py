@@ -27,18 +27,23 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
     book_info_map = {}
     if book_hashes:
         from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
 
         from core.db_manager_pg import pg_manager
         from models.library_models import LocalBook
 
         async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).where(LocalBook.book_hash.in_(list(book_hashes)))
+            stmt = (
+                select(LocalBook)
+                .options(selectinload(LocalBook.series_info))
+                .where(LocalBook.book_hash.in_(list(book_hashes)))
+            )
             result = await session.execute(stmt)
             for b in result.scalars():
                 book_info_map[b.book_hash] = {
-                    "series": b.series or b.title,
+                    "series": (b.series_info.series_name if b.series_info else b.title),
                     "volume": b.volume,
-                    "series_spanish": b.series_spanish,
+                    "series_spanish": (b.series_info.series_spanish if b.series_info else None),
                 }
 
     return {
