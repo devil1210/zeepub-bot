@@ -6,7 +6,7 @@ from sqlalchemy import String, and_, cast, exists, func, or_, select, text
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, MetadataProposal, SeriesMetadata, UserDownload
+from models.library_models import LocalBook, MetadataProposal, SeriesMetadata, TranslatorsGroup, UserDownload
 from repositories.book_repository import book_repo
 from repositories.series_repository import series_repo
 from schemas.library_schemas import BookDTO, CoverUrlDTO, SeriesDTO
@@ -232,6 +232,18 @@ class LibraryService:
                 return {"results": [], "totalItems": 0}
 
     @staticmethod
+    async def get_translator_siglas_map() -> dict[str, str]:
+        """Obtiene un mapa de nombre_traductor -> siglas."""
+        async with pg_manager.get_session() as session:
+            try:
+                stmt = select(TranslatorsGroup.name, TranslatorsGroup.siglas)
+                res = await session.execute(stmt)
+                return {row[0].lower(): row[1] for row in res.all() if row[0] and row[1]}
+            except Exception as e:
+                logger.error(f"Error fetching translator siglas: {e}")
+                return {}
+
+    @staticmethod
     async def get_series_volumes(series_hash: str, limit: int | None = None, offset: int = 0) -> list[dict[str, Any]]:
         """Retorna los volúmenes de una serie agrupada (Async). Validado con Pydantic."""
         async with pg_manager.get_session() as session:
@@ -252,6 +264,9 @@ class LibraryService:
                 res = await session.execute(stmt)
                 rows = res.all()
 
+                # Get translator siglas mapping
+                sigla_map = await LibraryService.get_translator_siglas_map()
+
                 results = []
                 for row in rows:
                     b = row[0]
@@ -261,6 +276,11 @@ class LibraryService:
                     # Ensure series name is present for DTO consistency
                     if not b_dict.get("series"):
                         b_dict["series"] = b_dict.get("title")
+
+                    # Add translator siglas if available
+                    tr = b_dict.get("translator")
+                    if tr:
+                        b_dict["translator_siglas"] = sigla_map.get(tr.lower())
 
                     dto = BookDTO(**b_dict, download_count=dl_count, coverUrl=b.cover_medium or b.cover_low)
                     results.append(dto.model_dump())

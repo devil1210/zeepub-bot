@@ -248,7 +248,8 @@ async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_
             vol_str = v.get("title", "")
 
         translator = v.get("translator")
-        tr_acronym = get_translator_acronym(translator)
+        # Preferimos siglas de BD, si no hay, usamos heurística
+        tr_acronym = v.get("translator_siglas") or get_translator_acronym(translator)
 
         is_color = v.get("color_mode") == "color"
         color_tag = " [🎨]" if is_color else ""

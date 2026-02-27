@@ -59,6 +59,7 @@ class BookDTO(BaseModel):
     modified_at_opf: str | None = None
     group: str | None = None
     volumeNumber: float | None = None
+    translator_siglas: str | None = None
 
     # Explicit compatibility fields
     is_uncensored: bool = False
