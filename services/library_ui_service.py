@@ -6,7 +6,7 @@ from telegram.ext import ContextTypes
 
 from core.state_manager import state_manager
 from services.library_service import LibraryService
-from utils.helpers import get_thread_id
+from utils.helpers import get_thread_id, get_translator_acronym
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +239,22 @@ async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_
             "hash": v.get("book_hash", ""),
         }
 
-        display = f"Vol. {v.get('volume', '')}" if v.get("volume") else v.get("title", "")
+        # Nuevo formato: Vol. X [TR] [Color]
+        vol = v.get("volume")
+        if vol is not None:
+            vol_display = int(vol) if float(vol).is_integer() else vol
+            vol_str = f"Vol. {vol_display}"
+        else:
+            vol_str = v.get("title", "")
+
+        translator = v.get("translator")
+        tr_acronym = get_translator_acronym(translator)
+
+        is_color = v.get("color_mode") == "color"
+        color_tag = " [🎨]" if is_color else ""
+
+        display = f"{vol_str} [{tr_acronym}]{color_tag}"
+
         if len(display) > 35:
             display = display[:32] + "..."
 

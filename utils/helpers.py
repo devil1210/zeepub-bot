@@ -44,6 +44,28 @@ def extract_author(entry, is_folder=False) -> str:
     return "Desconocido"
 
 
+def get_translator_acronym(translator: str | None) -> str:
+    """Extrae las siglas de un traductor."""
+    if not translator or translator == "Desconocido":
+        return "?"
+
+    # Si ya es corto (siglas existentes), devolverlo tal cual
+    if len(translator) <= 5 and any(c.isupper() for c in translator):
+        return translator
+
+    # Limpiar tags y símbolos comunes
+    name = re.sub(r"\[.*?\]", "", translator).strip()
+    name = re.sub(r"\(.*?\)", "", name).strip()
+
+    # Extraer letras iniciales de cada palabra
+    parts = name.split()
+    if not parts:
+        return "?"
+
+    acronym = "".join([p[0].upper() for p in parts if p and p[0].isalpha()])
+    return acronym or "?"
+
+
 def get_thread_id(update) -> int:
     """
     Extrae el message_thread_id de un Update de Telegram.
