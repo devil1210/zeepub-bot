@@ -11,7 +11,7 @@ from utils.helpers import get_thread_id, get_translator_acronym
 logger = logging.getLogger(__name__)
 
 
-async def mostrar_menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def mostrar_menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE, force_new: bool = False):
     """Muestra el menú principal basado en la BD local."""
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
@@ -31,12 +31,23 @@ async def mostrar_menu_principal(update: Update, context: ContextTypes.DEFAULT_T
 
     text = "<b>📚 Bienvenido a la Biblioteca Local</b>\n\n🎯 <i>Selecciona una categoría para explorar nuestra colección:</i>"
 
-    if update.callback_query:
-        await update.callback_query.edit_message_text(
-            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
-        )
-    else:
-        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
+    if update.callback_query and not force_new:
+        try:
+            await update.callback_query.edit_message_text(
+                text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+            )
+            return
+        except Exception:
+            pass
+
+    # Si no hay callback, o force_new=True, o falló la edición (mensaje borrado)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="HTML",
+        message_thread_id=get_thread_id(update),
+    )
 
 
 async def mostrar_generos(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -217,7 +228,9 @@ async def mostrar_libros(
         )
 
 
-async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_TYPE, series_hash: str):
+async def mostrar_volumenes_local(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, series_hash: str, force_new: bool = False
+):
     """Muestra volúmenes de una serie local."""
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
@@ -275,7 +288,7 @@ async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_
     text = f"<b>📖 {series_name}</b>\n\nSelecciona un volumen para obtener más detalles:"
 
     # Intentar editar, si falla (mensaje borrado), enviar uno nuevo
-    if update.callback_query:
+    if update.callback_query and not force_new:
         try:
             await update.callback_query.edit_message_text(
                 text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
@@ -304,7 +317,7 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
     Muestra la ficha técnica del libro con el flujo de 3 mensajes: Portada, Sinopsis y Technical Info.
     Sigue el patrón Premium/Glassmorphism y sincroniza la cuota de descargas.
     """
-    from services.cover_service import send_photo_bytes
+    from services.cover_service import resolve_cover_data, send_photo_bytes
     from services.metadata_orchestrator.metadata_service import metadata_orchestrator
     from services.publisher.publisher_service import TelegramPublisherProvider
     from utils.download_limiter import downloads_left
@@ -393,6 +406,7 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
     st["last_detalles_msg_ids"] = []
 
     # A. Mensaje de Portada
+    # Flujo de Prioridad: Alta -> Media -> Baja -> Original -> Portada genérica
     portada_raw = (
         libro.get("cover_high")
         or libro.get("cover_medium")
@@ -401,24 +415,17 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
         or libro.get("portada")
     )
 
-    # Resolver ruta absoluta si es relativa
-    portada = portada_raw
-    if portada and not (
-        portada.startswith("http") or portada.startswith("/") or (len(portada) > 1 and portada[1] == ":")
-    ):
-        import os
-
-        full_path = os.path.abspath(os.path.join(os.getcwd(), portada))
-        if os.path.exists(full_path):
-            portada = full_path
+    # El servicio de portadas resuelve automáticamente rutas locales, URLs remotas y URLs de API interna
+    portada = await resolve_cover_data(portada_raw)
 
     msg_portada = None
     if portada:
         msg_portada = await send_photo_bytes(
             context.bot, chat_id, part0, portada, parse_mode="HTML", message_thread_id=thread_id
         )
-    else:
-        # Fallback a texto si no hay portada
+
+    # Fallback si no hay portada O si falló el envío (ej: formato no soportado)
+    if not msg_portada:
         msg_portada = await context.bot.send_message(
             chat_id=chat_id, text=part0, parse_mode="HTML", message_thread_id=thread_id
         )
@@ -452,13 +459,15 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
         ]
     ]
 
-    await context.bot.send_message(
+    msg_info = await context.bot.send_message(
         chat_id=chat_id,
         text=text_final,
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode="HTML",
         message_thread_id=thread_id,
     )
+    if msg_info:
+        st["last_detalles_msg_ids"].append(msg_info.message_id)
 
 
 async def mostrar_autores_local(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 1):

@@ -548,30 +548,20 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await mostrar_menu_principal(update, context)
         return
 
-    # Volver a última página donde se listaban los EPUB
+    # Volver a última página manteniendo los detalles visibles
     if data == "volver_ultima":
-        # 1. Limpiar todos los mensajes de detalles (Portada, Sinopsis, Info)
-        ids = st.get("last_detalles_msg_ids", [])
-        if ids:
-            for mid in ids:
-                try:
-                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=mid)
-                except Exception:
-                    pass
-            st["last_detalles_msg_ids"] = []
-
-        # 2. Borrar el mensaje actual de botones si no estaba en la lista anterior
+        # 1. Quitar botones del mensaje actual (Technical Info) para no confundir
         try:
-            await query.message.delete()
+            await query.edit_message_reply_markup(reply_markup=None)
         except Exception:
             pass
 
-        # 3. Restaurar la vista anterior
+        # 2. Restaurar la vista anterior (enviando mensaje nuevo para mantener el historial)
         current_series_hash = st.get("current_series_hash")
         if current_series_hash:
-            await mostrar_volumenes_local(update, context, current_series_hash)
+            await mostrar_volumenes_local(update, context, current_series_hash, force_new=True)
         else:
-            await mostrar_menu_principal(update, context)
+            await mostrar_menu_principal(update, context, force_new=True)
         return
 
     # Cerrar menú / Salir
