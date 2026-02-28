@@ -105,16 +105,35 @@ async def handle_search_text(update: Update, context: ContextTypes.DEFAULT_TYPE)
     termino = update.message.text.strip()
     st.pop("esperando_busqueda", None)
 
-    # 1. Búsqueda de Series (Agrupada)
+    # 1. Búsqueda de Libros Individuales
+    res_books = await LibraryService.search_books(termino)
+    all_books = res_books.get("results", [])
+
+    # 2. Búsqueda de Series (Agrupada)
     res_series = await LibraryService.search_series(termino, items_per_page=30)
     series_list = res_series.get("items", [])
     series_hashes = {s["series_hash"] for s in series_list}
 
-    # 2. Búsqueda de Libros Individuales
-    res_books = await LibraryService.search_books(termino)
-    all_books = res_books.get("results", [])
+    # 3. Enriquecer series con los libros encontrados (si algun libro pertenece a una serie no listada aun)
+    books_series_hashes = {b.get("series_hash") for b in all_books if b.get("series_hash")}
+    missing_hashes = books_series_hashes - series_hashes
 
-    # Filtramos libros que YA pertenecen a las series encontradas
+    if missing_hashes:
+        for sh in missing_hashes:
+            s_meta = await LibraryService.get_series_metadata(sh)
+            if s_meta:
+                # Convertir a dict DTO manual
+                series_list.append(
+                    {
+                        "series_hash": sh,
+                        "title": s_meta.series_name,
+                        "series_name": s_meta.series_name,
+                        "coverUrl": s_meta.cover_url,
+                    }
+                )
+                series_hashes.add(sh)
+
+    # 4. Filtramos libros que YA pertenecen a las series encontradas
     books_standalone = [b for b in all_books if b.get("series_hash") not in series_hashes]
 
     await mostrar_resultados_locales(update, context, termino, series_list, books_standalone)
@@ -531,19 +550,23 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Volver a última página donde se listaban los EPUB
     if data == "volver_ultima":
-        # Borrar mensaje de botones (el actual)
+        # 1. Limpiar todos los mensajes de detalles (Portada, Sinopsis, Info)
+        ids = st.get("last_detalles_msg_ids", [])
+        if ids:
+            for mid in ids:
+                try:
+                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=mid)
+                except Exception:
+                    pass
+            st["last_detalles_msg_ids"] = []
+
+        # 2. Borrar el mensaje actual de botones si no estaba en la lista anterior
         try:
             await query.message.delete()
         except Exception:
             pass
 
-        # Si estábamos en volumes_local o search_results
-
-        # Por simplicidad, volvemos al menú principal o tratamos de recrear la vista.
-        # Dado que no guardamos el objeto "search_results" en estado completo,
-        # lo más seguro es volver al menú principal en modo local estricto
-        # O volver a la serie si tenemos hash
-
+        # 3. Restaurar la vista anterior
         current_series_hash = st.get("current_series_hash")
         if current_series_hash:
             await mostrar_volumenes_local(update, context, current_series_hash)

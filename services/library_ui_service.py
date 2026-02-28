@@ -273,10 +273,22 @@ async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_
     st["current_series_hash"] = series_hash
 
     text = f"<b>📖 {series_name}</b>\n\nSelecciona un volumen para obtener más detalles:"
+
+    # Intentar editar, si falla (mensaje borrado), enviar uno nuevo
     if update.callback_query:
-        await update.callback_query.edit_message_text(
-            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
-        )
+        try:
+            await update.callback_query.edit_message_text(
+                text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+            )
+        except Exception:
+            # Si el mensaje original fue borrado (común en flujo de detalles), enviamos uno nuevo
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=text,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode="HTML",
+                message_thread_id=get_thread_id(update),
+            )
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -334,13 +346,16 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
         libro["sinopsis"] = "Sin sinopsis disponible."
 
     # Mapeo manual para asegurar que todas las variables del template están presentes
-    # y formateadas según el gusto del usuario (hashtags, etc)
     libro_map = libro.copy()
     libro_map.update(
         {
             "slug": libro.get("slug") or "",
             "layout_by": libro.get("layout_by") or "Desconocido",
             "traductor": libro.get("translator") or "Desconocida",
+            # Pasar como listas para que apply_publication_template los procese correctamente
+            "tags": libro.get("tags", []),
+            "demographics": libro.get("demographics", []),
+            "tipo": libro.get("book_type") or "Novela",
         }
     )
 
@@ -378,13 +393,25 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
     st["last_detalles_msg_ids"] = []
 
     # A. Mensaje de Portada
-    portada = (
+    portada_raw = (
         libro.get("cover_high")
         or libro.get("cover_medium")
         or libro.get("cover_low")
         or libro.get("cover_original")
         or libro.get("portada")
     )
+
+    # Resolver ruta absoluta si es relativa
+    portada = portada_raw
+    if portada and not (
+        portada.startswith("http") or portada.startswith("/") or (len(portada) > 1 and portada[1] == ":")
+    ):
+        import os
+
+        full_path = os.path.abspath(os.path.join(os.getcwd(), portada))
+        if os.path.exists(full_path):
+            portada = full_path
+
     msg_portada = None
     if portada:
         msg_portada = await send_photo_bytes(

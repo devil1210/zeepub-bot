@@ -10,7 +10,6 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    inspect,
 )
 from sqlalchemy.orm import relationship
 
@@ -191,7 +190,6 @@ class LocalBook(Base):
     spanish_title = Column(String(512))  # Nueva columna
     english_title = Column(String(512))
     jap_title = Column(String(512))
-    jap_title = Column(String(512))
     volume = Column(Float)  # Soporta 1, 1.5, etc
     edition = Column(String(255))  # Ej: "Honorificos", "Colector", etc.
 
@@ -260,44 +258,16 @@ class LocalBook(Base):
             "spanishTitle": self.spanish_title,
             "englishTitle": self.english_title,
             "japTitle": self.jap_title,
-            "series": (
-                (self.series_info.series_name if getattr(self, "series_info", None) else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
-            "series_spanish": (
-                (self.series_info.series_spanish if getattr(self, "series_info", None) else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
-            "author": (
-                (self.series_info.author if getattr(self, "series_info", None) else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
-            "series_english": (
-                (self.series_info.series_english if getattr(self, "series_info", None) else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
-            "slug": (
-                (self.series_info.slug if getattr(self, "series_info", None) else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
+            "series": self.series_info.series_name if getattr(self, "series_info", None) else None,
+            "series_spanish": self.series_info.series_spanish if getattr(self, "series_info", None) else None,
+            "author": self.series_info.author if getattr(self, "series_info", None) else None,
+            "series_english": self.series_info.series_english if getattr(self, "series_info", None) else None,
+            "slug": self.series_info.slug if getattr(self, "series_info", None) else None,
             "seriesHash": self.series_hash,
             "seriesIndex": self.volume,
             "volume": self.volume,
-            "tags": (
-                (self.series_info.tags if getattr(self, "series_info", None) else [])
-                if "series_info" not in inspect(self).unloaded
-                else []
-            ),
-            "demographics": (
-                (self.series_info.demographics if getattr(self, "series_info", None) else [])
-                if "series_info" not in inspect(self).unloaded
-                else []
-            ),
+            "tags": (self.series_info.tags if getattr(self, "series_info", None) else []),
+            "demographics": (self.series_info.demographics if getattr(self, "series_info", None) else []),
             "description": limpiar_html_basico(self.series_info.description)
             if getattr(self, "series_info", None) and self.series_info.description
             else "",
@@ -329,11 +299,7 @@ class LocalBook(Base):
             "filepath": self.filepath,
             "is_folder": False,
             # Metadata enriquecida
-            "illustrator": (
-                (self.series_info.illustrator if getattr(self, "series_info", None) else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
+            "illustrator": self.series_info.illustrator if getattr(self, "series_info", None) else None,
             "translator": self.translator,
             "group": self.translator,
             "layoutBy": self.layout_by,
@@ -344,16 +310,8 @@ class LocalBook(Base):
             "published_at": self.published_at,
             "modifiedAtOpf": self.modified_at_opf,
             "modified_at_opf": self.modified_at_opf,
-            "bookType": (
-                (self.series_info.book_type if getattr(self, "series_info", None) else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
-            "book_type": (
-                (self.series_info.book_type if getattr(self, "series_info", None) else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
+            "bookType": self.series_info.book_type if getattr(self, "series_info", None) else None,
+            "book_type": self.series_info.book_type if getattr(self, "series_info", None) else None,
             "isbn": self.isbn,
             "asin": self.asin,
             "uriId": self.uri_id,
@@ -363,16 +321,8 @@ class LocalBook(Base):
             "word_count": self.word_count,
             "pageCount": self.page_count,
             "page_count": self.page_count,
-            "author_jap": (
-                (self.series_info.author_jap if getattr(self, "series_info", None) else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
-            "illustrator_jap": (
-                (self.series_info.illustrator_jap if getattr(self, "series_info", None) else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
+            "author_jap": self.series_info.author_jap if getattr(self, "series_info", None) else None,
+            "illustrator_jap": self.series_info.illustrator_jap if getattr(self, "series_info", None) else None,
             "language": self.language,
             "is_uncensored": self.is_uncensored == 1,
             "color_mode": self.color_mode,
