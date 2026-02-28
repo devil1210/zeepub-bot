@@ -1,5 +1,4 @@
 import logging
-import os
 import uuid
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -268,7 +267,7 @@ async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_
 
         keyboard.append([InlineKeyboardButton(display, callback_data=f"lib|{key}")])
 
-    keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")])
+    keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="volver_ultima")])
 
     st["current_view"] = "volumes_local"
     st["current_series_hash"] = series_hash
@@ -289,78 +288,131 @@ async def mostrar_volumenes_local(update: Update, context: ContextTypes.DEFAULT_
 
 
 async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_TYPE, key: str):
-    """Muestra la ficha técnica del libro y confirmación de descarga."""
+    """
+    Muestra la ficha técnica del libro con el flujo de 3 mensajes: Portada, Sinopsis y Technical Info.
+    Sigue el patrón Premium/Glassmorphism y sincroniza la cuota de descargas.
+    """
+    from services.cover_service import send_photo_bytes
+    from services.metadata_orchestrator.metadata_service import metadata_orchestrator
+    from services.publisher.publisher_service import TelegramPublisherProvider
     from utils.download_limiter import downloads_left
+    from utils.helpers import get_thread_id
+    from utils.template_engine import apply_publication_template
 
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
-    libro = st.get("libros", {}).get(key)
+    libro_st = st.get("libros", {}).get(key)
 
-    if not libro:
+    if not libro_st:
+        logger.warning(f"Libro no encontrado en estado para key: {key}")
         if update.callback_query:
-            await update.callback_query.answer("⚠️ Libro no encontrado.", show_alert=True)
+            await update.callback_query.answer("⚠️ Información no disponible.", show_alert=True)
         return
 
-    # Info de descargas
-    left = await downloads_left(uid)
-    left_str = f"descargas restantes hoy: <b>{left}</b>" if isinstance(left, int) else "descargas <b>ilimitadas</b>"
+    # 1. Obtener Metadata Enriquecida (incluye sinopsis y detalles técnicos)
+    book_id = libro_st.get("hash") or libro_st.get("descarga")
+    meta = await metadata_orchestrator.get_enriched_metadata(book_id)
 
-    # Construir ficha
-    text = f"<b>📖 {libro['titulo']}</b>\n"
-    if libro.get("series"):
-        v_num = libro.get("volume")
-        v_str = f" Vol. {int(v_num) if float(v_num or 0).is_integer() else v_num}" if v_num else ""
-        text += f"📚 Serie: {libro['series']}{v_str}\n"
+    # Actualizar estado local con la data enriquecida
+    st["libros"][key].update(meta)
+    libro = st["libros"][key]
 
-    if libro.get("autor"):
-        text += f"✍️ Autor: {libro['autor']}\n"
-
-    tr = libro.get("translator")
-    sigla = libro.get("translator_siglas")
-    if tr:
-        text += f"🌐 Traducción: {tr} ({sigla})\n" if sigla else f"🌐 Traducción: {tr}\n"
-
-    if libro.get("color"):
-        text += "🎨 Edición: <b>Color</b>\n"
-
-    text += f"\n📥 Tienes {left_str}."
-
-    keyboard = [
-        [InlineKeyboardButton("📥 Descargar volumen", callback_data=f"dl_confirm|{key}")],
-        [InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")],
+    # 2. Preparar Capciones usando el Publisher Provider oficial (Garantiza paridad bot/canal)
+    # Parte 0: Portada/Principal, Parte 1: Sinopsis, Parte 2: Info técnica
+    templates = [
+        TelegramPublisherProvider.COVER_TEMPLATE,
+        TelegramPublisherProvider.SYNOPSIS_TEMPLATE,
+        TelegramPublisherProvider.INFO_TEMPLATE,
     ]
 
-    portada = libro.get("portada")
+    # Fallback si no hay sinopsis
+    if not libro.get("sinopsis") and libro.get("description"):
+        libro["sinopsis"] = libro.get("description")
 
+    # Si aún no hay sinopsis, la cubrimos
+    if not libro.get("sinopsis"):
+        libro["sinopsis"] = "Sin sinopsis disponible."
+
+    # Limpiamos HTML de las partes antes de enviar (Telegram es delicado)
+    def sanitize_tg_html(t: str) -> str:
+        if not t:
+            return ""
+        import re
+
+        t = re.sub(r"<(/?p|/?div|/?h\d|/?span|/?a[^>]*)>", "\n", t, flags=re.IGNORECASE)
+        t = re.sub(r"<br\s*/?>", "\n", t, flags=re.IGNORECASE)
+        t = re.sub(r"<hr\s*/?>", "\n---\n", t, flags=re.IGNORECASE)
+        t = re.sub(r"\n{3,}", "\n\n", t).strip()
+        return t
+
+    part0 = sanitize_tg_html(apply_publication_template(templates[0], libro))
+    part1 = sanitize_tg_html(apply_publication_template(templates[1], libro))
+    part2 = sanitize_tg_html(apply_publication_template(templates[2], libro))
+
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
+
+    # 3. Limpiar Menú de Volúmenes (Opcional, pero recomendado para el flujo solicitado)
     if update.callback_query:
-        # Intentar borrar el anterior y mandar foto si hay portada
         try:
-            await context.bot.delete_message(
-                chat_id=update.effective_chat.id, message_id=update.callback_query.message.message_id
-            )
+            await update.callback_query.message.delete()
         except Exception:
             pass
 
-    if portada and (portada.startswith("http") or os.path.exists(portada)):
-        from services.cover_service import send_photo_bytes
+    # 4. ENVIAR MENSAJES (Flujo solicitado: Portada -> Sinopsis -> Detalles)
+    st["last_detalles_msg_ids"] = []
 
-        await send_photo_bytes(
-            context.bot,
-            update.effective_chat.id,
-            text,
-            portada,
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="HTML",
-            message_thread_id=get_thread_id(update),
+    # A. Mensaje de Portada
+    portada = (
+        libro.get("cover_high")
+        or libro.get("cover_medium")
+        or libro.get("cover_low")
+        or libro.get("cover_original")
+        or libro.get("portada")
+    )
+    msg_portada = None
+    if portada:
+        msg_portada = await send_photo_bytes(
+            context.bot, chat_id, part0, portada, parse_mode="HTML", message_thread_id=thread_id
         )
     else:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="HTML",
-            message_thread_id=get_thread_id(update),
+        # Fallback a texto si no hay portada
+        msg_portada = await context.bot.send_message(
+            chat_id=chat_id, text=part0, parse_mode="HTML", message_thread_id=thread_id
         )
+
+    if msg_portada:
+        st["last_detalles_msg_ids"].append(msg_portada.message_id)
+
+    # B. Mensaje de Sinopsis
+    msg_sinopsis = await context.bot.send_message(
+        chat_id=chat_id, text=part1, parse_mode="HTML", message_thread_id=thread_id
+    )
+    if msg_sinopsis:
+        st["last_detalles_msg_ids"].append(msg_sinopsis.message_id)
+
+    # C. Mensaje Técnico + Botones + Cuota
+    left = await downloads_left(uid)
+    left_str = (
+        f"tienes <b>{left}</b> descargas restantes hoy"
+        if isinstance(left, int)
+        else "tienes <b>descargas ilimitadas</b>"
+    )
+
+    text_final = f"{part2}\n\n💡 <i>Recuerda que {left_str}.</i>"
+
+    keyboard = [
+        [InlineKeyboardButton("📥 Descargar volumen", callback_data=f"dl_confirm|{key}")],
+        [InlineKeyboardButton("🔙 Volver", callback_data="volver_ultima")],
+    ]
+
+    await context.bot.send_message(
+        chat_id=chat_id,
+        text=text_final,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode="HTML",
+        message_thread_id=thread_id,
+    )
 
 
 async def mostrar_autores_local(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 1):
