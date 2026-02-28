@@ -550,17 +550,36 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Volver a última página manteniendo los detalles visibles
     if data == "volver_ultima":
-        # 1. Quitar botones del mensaje actual (Technical Info) para no confundir
+        # 1. Quitar botones del mensaje actual para no confundir
         try:
             await query.edit_message_reply_markup(reply_markup=None)
         except Exception:
             pass
 
-        # 2. Restaurar la vista anterior (enviando mensaje nuevo para mantener el historial)
-        current_series_hash = st.get("current_series_hash")
-        if current_series_hash:
-            await mostrar_volumenes_local(update, context, current_series_hash, force_new=True)
+        view = st.get("current_view")
+
+        # 2. Lógica de navegación persistente (Jerárquica)
+        if view == "detalles_libro":
+            # Si estábamos en detalle, volvemos a la lista de volúmenes de la serie
+            current_series_hash = st.get("current_series_hash")
+            if current_series_hash:
+                await mostrar_volumenes_local(update, context, current_series_hash, force_new=True)
+            else:
+                await mostrar_menu_principal(update, context, force_new=True)
+        elif view == "volumes_local":
+            # Si estábamos en la lista de volúmenes, volvemos un nivel arriba (Lista de Series o Menú)
+            st.pop("current_series_hash", None)
+            origin = st.get("origin_type")
+            if origin:
+                filter_v = st.get("filter_val")
+                page = st.get("current_page", 1)
+                await mostrar_series(
+                    update, context, origin_type=origin, filter_val=filter_v, page=page, force_new=True
+                )
+            else:
+                await mostrar_menu_principal(update, context, force_new=True)
         else:
+            # Fallback seguro al menú principal
             await mostrar_menu_principal(update, context, force_new=True)
         return
 

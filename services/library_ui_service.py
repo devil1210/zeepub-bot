@@ -90,6 +90,7 @@ async def mostrar_series(
     origin_type: str,
     filter_val: str = None,
     page: int = 1,
+    force_new: bool = False,
 ):
     """Muestra series filtradas por tag, autor o todas."""
     uid = update.effective_user.id
@@ -139,10 +140,19 @@ async def mostrar_series(
     st["titulo"] = title
 
     text = f"<b>{title}</b>\nResultados: {data['total']} series."
-    if update.callback_query:
-        await update.callback_query.edit_message_text(
-            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
-        )
+    if update.callback_query and not force_new:
+        try:
+            await update.callback_query.edit_message_text(
+                text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+            )
+        except Exception:
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=text,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                parse_mode="HTML",
+                message_thread_id=get_thread_id(update),
+            )
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -326,6 +336,10 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
 
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
+
+    # Actualizar vista actual
+    st["current_view"] = "detalles_libro"
+
     libro_st = st.get("libros", {}).get(key)
 
     if not libro_st:
