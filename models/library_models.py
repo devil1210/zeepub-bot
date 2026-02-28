@@ -265,6 +265,11 @@ class LocalBook(Base):
                 if "series_info" not in inspect(self).unloaded
                 else None
             ),
+            "series_spanish": (
+                (self.series_info.series_spanish if getattr(self, "series_info", None) else None)
+                if "series_info" not in inspect(self).unloaded
+                else None
+            ),
             "author": (
                 (self.series_info.author if getattr(self, "series_info", None) else None)
                 if "series_info" not in inspect(self).unloaded
@@ -272,6 +277,11 @@ class LocalBook(Base):
             ),
             "series_english": (
                 (self.series_info.series_english if getattr(self, "series_info", None) else None)
+                if "series_info" not in inspect(self).unloaded
+                else None
+            ),
+            "slug": (
+                (self.series_info.slug if getattr(self, "series_info", None) else None)
                 if "series_info" not in inspect(self).unloaded
                 else None
             ),
@@ -370,11 +380,6 @@ class LocalBook(Base):
             "romaji_title": self.romaji_title,
             "english_title": self.english_title,
             "spanish_title": self.spanish_title,
-            "series_spanish": (
-                (self.series_info.series_spanish if getattr(self, "series_info", None) else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
             "readingTime": self.reading_time,
             "reading_time": self.reading_time,
             "book_hash": self.book_hash,
@@ -388,11 +393,6 @@ class LocalBook(Base):
             "cleanTitle": (self.series_info.series_name if getattr(self, "series_info", None) else None)
             or self.english_title
             or (re.sub(r"\[.*?\]", "", self.title).strip() if self.title else ""),
-            "slug": (
-                (self.series_info.slug if self.series_info else None)
-                if "series_info" not in inspect(self).unloaded
-                else None
-            ),
         }
 
 

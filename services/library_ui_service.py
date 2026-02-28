@@ -333,6 +333,17 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
     if not libro.get("sinopsis"):
         libro["sinopsis"] = "Sin sinopsis disponible."
 
+    # Mapeo manual para asegurar que todas las variables del template están presentes
+    # y formateadas según el gusto del usuario (hashtags, etc)
+    libro_map = libro.copy()
+    libro_map.update(
+        {
+            "slug": libro.get("slug") or "",
+            "layout_by": libro.get("layout_by") or "Desconocido",
+            "traductor": libro.get("translator") or "Desconocida",
+        }
+    )
+
     # Limpiamos HTML de las partes antes de enviar (Telegram es delicado)
     def sanitize_tg_html(t: str) -> str:
         if not t:
@@ -345,14 +356,18 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
         t = re.sub(r"\n{3,}", "\n\n", t).strip()
         return t
 
-    part0 = sanitize_tg_html(apply_publication_template(templates[0], libro))
-    part1 = sanitize_tg_html(apply_publication_template(templates[1], libro))
-    part2 = sanitize_tg_html(apply_publication_template(templates[2], libro))
+    part0 = sanitize_tg_html(apply_publication_template(templates[0], libro_map))
+    part1 = sanitize_tg_html(apply_publication_template(templates[1], libro_map))
+    part2 = sanitize_tg_html(apply_publication_template(templates[2], libro_map))
+
+    # IMPORTANTE: El template INFO_TEMPLATE incluye {archivo} que se expande a __ATTACH_FILE_SIGNAL__
+    # Para la visualización previa en el bot, lo eliminamos para que no ensucie el slug
+    part2 = part2.replace("__ATTACH_FILE_SIGNAL__", "").strip()
 
     chat_id = update.effective_chat.id
     thread_id = get_thread_id(update)
 
-    # 3. Limpiar Menú de Volúmenes (Opcional, pero recomendado para el flujo solicitado)
+    # 3. Limpiar Menú de Volúmenes (Efecto de transición al detalle)
     if update.callback_query:
         try:
             await update.callback_query.message.delete()
@@ -401,9 +416,13 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
 
     text_final = f"{part2}\n\n💡 <i>Recuerda que {left_str}.</i>"
 
+    # Botones en UNA SOLA FILA según solicitado
     keyboard = [
-        [InlineKeyboardButton("📥 Descargar volumen", callback_data=f"dl_confirm|{key}")],
-        [InlineKeyboardButton("🔙 Volver", callback_data="volver_ultima")],
+        [
+            InlineKeyboardButton("📥 Descargar volumen", callback_data=f"dl_confirm|{key}"),
+            InlineKeyboardButton("🔙 Volver", callback_data="volver_ultima"),
+            InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+        ]
     ]
 
     await context.bot.send_message(

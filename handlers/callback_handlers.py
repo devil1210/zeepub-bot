@@ -18,6 +18,7 @@ from services.library_ui_service import (
     mostrar_series,
     mostrar_volumenes_local,
 )
+from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
 
@@ -550,16 +551,37 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await mostrar_menu_principal(update, context)
         return
 
-    # Cerrar menú
+    # Cerrar menú / Salir
     if data == "cerrar":
-        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        # Si venimos de la vista de detalles de 3 mensajes, limpiamos todo
+        ids = st.get("last_detalles_msg_ids", [])
+        if ids:
+            for mid in ids:
+                try:
+                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=mid)
+                except Exception:
+                    pass
+            st["last_detalles_msg_ids"] = []
 
-        base_closing = "👋 Gracias por usar el bot."
-        text_closing = base_closing
-        if cms and cms.enabled:
-            text_closing = await cms.get_text("bot_closing")
+        # Enviar mensaje de despedida o simplemente borrar el último si era de botones
+        try:
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_closing = "👋 Gracias por usar el bot."
+            text_closing = base_closing
+            if cms and cms.enabled:
+                text_closing = await cms.get_text("bot_closing")
 
-        await query.edit_message_text(text_closing)
+            # Si no era el último de detalles, editamos, si no lo borramos
+            await query.message.delete()
+            # Enviar despedida efímera o mensaje nuevo
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=text_closing,
+                parse_mode="HTML",
+                message_thread_id=get_thread_id(update),
+            )
+        except Exception:
+            pass
         return
 
     # Descargar EPUB pendiente
