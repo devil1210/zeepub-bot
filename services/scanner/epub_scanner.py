@@ -322,7 +322,8 @@ class EpubScanner:
                                         original_filepath=hash_conflict.filepath,
                                         duplicate_filepath=filepath,
                                         title=book.title,
-                                        author=book.author,
+                                        author=extracted_data.get("author")
+                                        or (book.series_info.author if book.series_info else "Unknown"),
                                     )
                                     session.add(dup)
                                     session.commit()
@@ -368,7 +369,8 @@ class EpubScanner:
                                         original_filepath=existing_with_same_hash.filepath,
                                         duplicate_filepath=filepath,
                                         title=book.title,
-                                        author=book.author,
+                                        author=extracted_data.get("author")
+                                        or (book.series_info.author if book.series_info else "Unknown"),
                                     )
                                     session.add(dup)
                                     session.commit()

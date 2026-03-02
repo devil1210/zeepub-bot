@@ -121,6 +121,10 @@ class BotConfig:
             self._ai_key_logged = True
         return key
 
+    @property
+    def PERPLEXITY_API_KEY(self) -> str:
+        return os.getenv("PERPLEXITY_API_KEY", "")
+
     # Notion Integration
     NOTION_TOKEN: str = os.getenv("NOTION_TOKEN", "")
     NOTION_DATABASE_ID: str = os.getenv("NOTION_DATABASE_ID", "")

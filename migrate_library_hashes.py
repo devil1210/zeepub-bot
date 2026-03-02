@@ -24,17 +24,21 @@ def migrate():
             old_hash = book.book_hash
 
             # Recalcular usando la nueva lógica (series + author + type + vol + trans + layout)
+            series_name = book.series_info.series_name if book.series_info else (book.series_english or book.title)
+            author_name = book.series_info.author if book.series_info else "Unknown"
+            book_type = book.series_info.book_type if book.series_info else "Light Novel"
+
             new_book_hash = generate_book_hash(
-                series=book.series,
-                author=book.author,
-                book_type=book.book_type,
+                series=series_name,
+                author=author_name,
+                book_type=book_type,
                 volume=book.volume,
                 translator=book.translator,
                 layout_by=book.layout_by,
                 language=book.language,
             )
 
-            new_series_hash = generate_series_hash(series=book.series, author=book.author, book_type=book.book_type)
+            new_series_hash = generate_series_hash(series=series_name, author=author_name, book_type=book_type)
 
             if old_hash != new_book_hash:
                 book.book_hash = new_book_hash

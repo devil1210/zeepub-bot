@@ -42,6 +42,9 @@ export const AIHub: React.FC = () => {
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searching, setSearching] = useState(false);
 
+    // AI Model
+    const [targetModel, setTargetModel] = useState('gemini-2.5-flash');
+
     // Proposal State (Interactive Mode)
     const [proposal, setProposal] = useState<any>(null);
     const [showProposal, setShowProposal] = useState(false);
@@ -160,7 +163,7 @@ export const AIHub: React.FC = () => {
         try {
             webApp?.HapticFeedback?.impactOccurred('medium');
             // ALWAYS use dry_run=true first for user safety
-            const res = await api.scanSeriesAi(scanHash, true); // true = dry_run
+            const res = await api.scanSeriesAi(scanHash, true, targetModel); // true = dry_run
 
             if (res.dry_run && res.proposal) {
                 webApp?.HapticFeedback?.notificationOccurred('success');
@@ -397,7 +400,16 @@ export const AIHub: React.FC = () => {
                                 </h3>
                                 <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-premium-sm border border-white/10">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Modelo:</span>
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">Gemini 3 Flash Preview</span>
+                                    <select
+                                        value={targetModel}
+                                        onChange={(e) => setTargetModel(e.target.value)}
+                                        className="bg-transparent text-[10px] font-black uppercase tracking-widest text-primary focus:outline-none cursor-pointer appearance-none"
+                                        style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+                                    >
+                                        <option value="gemini-2.5-flash" className="bg-[#0a0a0c] text-white">Gemini 2.5 Flash</option>
+                                        <option value="gemini-3-flash-preview" className="bg-[#0a0a0c] text-white">Gemini 3 Flash</option>
+                                        <option value="perplexity" className="bg-[#0a0a0c] text-white">Perplexity</option>
+                                    </select>
                                 </div>
                             </div>
 

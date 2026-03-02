@@ -273,8 +273,8 @@ export const api = {
 
 
 
-    scanSeriesAi: (seriesHash: string, dryRun: boolean = false) =>
-        rpc('ai_scan_series', { series_hash: seriesHash, dry_run: dryRun }),
+    scanSeriesAi: (seriesHash: string, dryRun: boolean = false, targetModel: string = 'gemini-2.5-flash') =>
+        rpc('ai_scan_series', { series_hash: seriesHash, dry_run: dryRun, target_model: targetModel }),
 
 
     applyAiChanges: (proposal: any, approvedChanges: any[], applyRenames: boolean = true, applyMeta: boolean = true, proposedSeries?: string, proposedSpanish?: string) =>
@@ -320,6 +320,9 @@ export const api = {
         apiClient.post('/api/library/upload/confirm', data),
     confirmEpubUploadBulk: (data: { upload_ids?: string[], selected_ids?: string[], discarded_ids?: string[] }) =>
         apiClient.post('/api/library/upload/bulk/confirm', data),
+
+    publishToChannel: (bookId: string, channelId: number) =>
+        rpc('pub_quick_post', { book_id: bookId, channel_id: channelId }),
 
     getUploadHistory: (limit: number = 100, offset: number = 0) =>
         apiClient.get(`/api/admin/upload-history?limit=${limit}&offset=${offset}`).then(res => res.data),

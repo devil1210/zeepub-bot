@@ -40,14 +40,20 @@ class AIService:
         system_instruction: str | None = None,
         max_retries: int = 3,
         json_mode: bool = False,
+        target_model: str | None = None,
     ) -> str | None:
-        """Llamada a Gemini con reintentos."""
+        """Llamada a servicios de IA (Gemini o Perplexity)."""
+        # 1. Perplexity Routing
+        if target_model == "perplexity":
+            return await cls._call_perplexity(prompt, system_instruction, max_retries, json_mode)
+
+        # 2. Gemini Routing (Default)
         client = cls._get_client()
         if not client:
             return None
 
-        # Modelos: gemini-3-flash-preview (objetivo) y gemini-2.5-flash (estable)
-        models_to_try = ["gemini-3-flash-preview", "gemini-2.5-flash"]
+        # Modelos: gemini-2.5-flash (estable/por defecto según usuario), gemini-3-flash-preview
+        models_to_try = [target_model] if target_model else ["gemini-2.5-flash", "gemini-3-flash-preview"]
         now = time.time()
 
         for model_name in models_to_try:
@@ -77,6 +83,57 @@ class AIService:
                         await asyncio.sleep(2**attempt)
                     else:
                         logger.error(f"❌ Error en {model_name}: {e}")
+        return None
+
+    @classmethod
+    async def _call_perplexity(
+        cls,
+        prompt: str,
+        system_instruction: str | None = None,
+        max_retries: int = 3,
+        json_mode: bool = False,
+    ) -> str | None:
+        """Llamada a Perplexity API (compatible con OpenAI)."""
+        key = config.PERPLEXITY_API_KEY
+        if not key:
+            logger.error("❌ Perplexity API Key no configurada en el .env")
+            return None
+
+        import aiohttp
+
+        url = "https://api.perplexity.ai/chat/completions"
+        headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+
+        # Perplexity models: sonar, sonar-reasoning, etc. Default to sonar
+        payload = {
+            "model": "sonar",
+            "messages": [
+                {"role": "system", "content": system_instruction or "Eres un bibliotecario experto."},
+                {"role": "user", "content": prompt},
+            ],
+            "response_format": {"type": "json_object"} if json_mode else None,
+        }
+
+        for attempt in range(max_retries):
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, headers=headers, json=payload, timeout=60) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            content = data["choices"][0]["message"]["content"]
+                            logger.info("🧠 [perplexity/sonar] Success")
+                            return content
+                        elif resp.status == 429:
+                            logger.warning("⚠️ Perplexity Quota reached. Retrying...")
+                        else:
+                            error_text = await resp.text()
+                            logger.error(f"❌ Perplexity Error {resp.status}: {error_text}")
+            except Exception as e:
+                logger.error(f"❌ Exception in _call_perplexity: {e}")
+
+            if attempt < max_retries - 1:
+                await asyncio.sleep(2**attempt)
+
         return None
 
     @staticmethod
@@ -203,6 +260,7 @@ class AIService:
         current_series_name: str,
         books: list[dict[str, Any]],
         current_spanish_name: str = None,
+        target_model: str | None = None,
     ) -> dict[str, Any]:
         """
         Analiza un grupo de libros y propone estandarización.
@@ -301,7 +359,7 @@ class AIService:
                 prompt.replace("{group_context}", group_context)
                 + f"\n\nCONTEXTO ADICIONAL DE APRENDIZAJE:\n{learning_context}"
             )
-            response_text = await AIService._call_ai(full_prompt, json_mode=True)
+            response_text = await AIService._call_ai(full_prompt, json_mode=True, target_model=target_model)
             if not response_text:
                 return {"error": "AI failed or quota exceeded"}
             txt = AIService._extract_json_from_text(response_text)

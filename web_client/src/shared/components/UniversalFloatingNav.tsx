@@ -14,15 +14,14 @@ import {
     ArrowUp,
     Library,
     Settings,
-    LayoutGrid,
     Reply,
-    Check,
-    RefreshCw,
     RotateCcw,
     Save,
-    Layers,
-    ChevronDown
+    ChevronDown,
+    Send,
+    CheckCircle2
 } from 'lucide-react';
+import { publisherApi, PublicationChannel } from '@features/publisher/services/publisherApi';
 
 const sortOptions = [
     { id: 'a-z', label: 'A-Z', icon: ArrowUp },
@@ -43,20 +42,27 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
         handleSortChange,
         handleHome,
         handleBack,
-        setMenuOpen
+        setMenuOpen,
+        setSelectedChannelId
     } = useNavigation();
 
     const { contextType, isMenuOpen, currentPage, totalPages, activeSort, isVisible } = state;
     const isTelegram = !!webApp;
 
-    // --- TELEGRAM NATIVE INTEGRATION ---
+    const [channels, setChannels] = useState<PublicationChannel[]>([]);
 
-    // 1. Native Back Button & Header Color
+    useEffect(() => {
+        if (isMenuOpen && (contextType === 'main' || contextType === 'none') && channels.length === 0) {
+            publisherApi.getChannels().then(res => {
+                if (res.channels) setChannels(res.channels);
+            });
+        }
+    }, [isMenuOpen, contextType, channels.length]);
+
+    // --- TELEGRAM NATIVE INTEGRATION ---
     useEffect(() => {
         if (!webApp) return;
 
-        // Sync header color with our glass theme or Telegram theme
-        // We use the bg-color computed by ThemeContext which might be synced or custom
         const rootStyle = getComputedStyle(document.documentElement);
         const bgColor = rootStyle.getPropertyValue('--bg-color').trim();
         if (bgColor) {
@@ -64,15 +70,11 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             webApp.setBackgroundColor(settings.theme === 'amoled' ? '#000000' : bgColor);
         }
 
-        // Logic for Back Button
         if (contextType !== 'main') {
             webApp.BackButton.show();
             const onBack = () => {
                 webApp.HapticFeedback.impactOccurred('light');
                 handleBack();
-                // If we are at root of a non-main context (like entering 'admin' directly),
-                // handleBack might need to know where to go.
-                // But usually handleBack in context simply pops history or goes home.
             };
             webApp.BackButton.onClick(onBack);
             return () => {
@@ -83,11 +85,9 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
         }
     }, [webApp, contextType, handleBack, settings.theme]);
 
-    // 2. Native Main Button for Primary Actions
     useEffect(() => {
         if (!webApp) return;
 
-        // Find a primary action button (highlighted) in current state
         const primaryBtn = state.actionButtons?.find(b => b.highlight);
 
         if (primaryBtn) {
@@ -103,7 +103,7 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             });
 
             const onMainClick = () => {
-                webApp.HapticFeedback.impactOccurred('heavy'); // Stronger feedback for key actions
+                webApp.HapticFeedback.impactOccurred('heavy');
                 primaryBtn.onClick();
             };
             webApp.MainButton.onClick(onMainClick);
@@ -117,10 +117,8 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
         }
     }, [webApp, state.actionButtons, settings.primaryColor]);
 
-
     if (!isVisible || contextType === 'none') return null;
 
-    // Render logic for different contexts
     const renderContent = () => {
         switch (contextType) {
             case 'search':
@@ -208,7 +206,6 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                                 />
                             </>
                         )}
-                        {/* Hide "Volver" on Telegram as we use Native BackButton */}
                         {!isTelegram && (
                             <>
                                 <NavDivider />
@@ -267,7 +264,7 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                         )}
                         {state.actionButtons ? (
                             state.actionButtons
-                                .filter(btn => !isTelegram || !btn.highlight) // Filter out primary if on Telegram (moved to MainButton)
+                                .filter(btn => !isTelegram || !btn.highlight)
                                 .map((btn, idx, arr) => (
                                     <React.Fragment key={btn.id}>
                                         <NavButton
@@ -308,7 +305,6 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                             icon={RotateCcw}
                             label="Restaurar"
                         />
-                        {/* "Guardar" moved to MainButton on Telegram */}
                         {!isTelegram && (
                             <>
                                 <NavDivider />
@@ -335,17 +331,11 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                         />
                         <NavDivider />
                         <NavButton
-                            isActive={activeTab === 'search'}
-                            onClick={() => onTabChange?.('search')}
-                            icon={LayoutGrid}
-                            label="Catálogo"
-                        />
-                        <NavDivider />
-                        <NavButton
-                            isActive={activeTab === 'library'}
-                            onClick={() => onTabChange?.('library')}
-                            icon={Library}
-                            label="Mi Lib"
+                            isActive={isMenuOpen}
+                            onClick={() => setMenuOpen(!isMenuOpen)}
+                            icon={Send}
+                            label="Publicar"
+                            highlightOnActive
                         />
                         <NavDivider />
                         <NavButton
@@ -360,8 +350,8 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
     };
 
     return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-3 w-[90%] max-w-xl md:w-auto md:min-w-[600px] px-0 animate-in slide-in-from-bottom-4 duration-300 floating-nav-container">
-            {/* Contextual Menus */}
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-3 w-[90%] max-w-xl md:w-auto md:min-w-[500px] px-0 animate-in slide-in-from-bottom-4 duration-300 floating-nav-container">
+            {/* Sorting Menu */}
             {isMenuOpen && (contextType === 'search' || contextType === 'series') && (
                 <div
                     className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
@@ -392,6 +382,7 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                 </div>
             )}
 
+            {/* Admin/AI Actions Menu */}
             {isMenuOpen && (contextType === 'admin' || contextType === 'ai') && state.actionButtons && (
                 <div
                     className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
@@ -423,7 +414,55 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                 </div>
             )}
 
-            {/* Main Bar */}
+            {/* Publication Channels Menu */}
+            {isMenuOpen && contextType === 'main' && (
+                <div
+                    className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    style={{
+                        background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
+                        backdropFilter: `blur(${settings.glassBlur}px)`,
+                        WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+                    }}
+                >
+                    <div className="flex flex-col gap-2">
+                        <p className="px-3 py-1 text-[10px] font-black uppercase text-primary/70 tracking-[0.2em]">Seleccionar Destino</p>
+                        <div className="grid grid-cols-1 gap-1.5 max-h-[40vh] overflow-y-auto custom-scrollbar pr-1">
+                            {channels.length === 0 ? (
+                                <div className="p-4 text-center text-gray-500 text-[10px] uppercase font-bold italic">
+                                    Cargando canales...
+                                </div>
+                            ) : (
+                                channels.map((channel) => (
+                                    <button
+                                        key={channel.id}
+                                        onClick={() => {
+                                            webApp?.HapticFeedback?.impactOccurred('medium');
+                                            setSelectedChannelId(channel.id);
+                                            onTabChange?.('library');
+                                            setMenuOpen(false);
+                                        }}
+                                        className={`flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all border ${state.selectedChannelId === channel.id
+                                            ? 'bg-primary/20 text-white border-primary shadow-lg shadow-primary/10'
+                                            : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
+                                            }`}
+                                    >
+                                        <div className={`p-1.5 rounded-lg ${channel.platform === 'telegram' ? 'bg-blue-500/10 text-blue-400' : 'bg-primary/10 text-primary'}`}>
+                                            <Send className="w-3.5 h-3.5" />
+                                        </div>
+                                        <div className="flex flex-col items-start min-w-0">
+                                            <span className="text-[10px] font-black uppercase tracking-widest truncate w-full">{channel.name}</span>
+                                            <span className="text-[8px] font-bold text-gray-500 uppercase tracking-tighter truncate w-full">{channel.target_id}</span>
+                                        </div>
+                                        {state.selectedChannelId === channel.id && <CheckCircle2 className="w-4 h-4 ml-auto text-primary" />}
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Main Nav Bar */}
             <div
                 className="glass-panel rounded-premium p-1.5 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
                 style={{
@@ -461,8 +500,7 @@ const NavButton: React.FC<{
             className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-500 relative z-10 ${disabled ? 'opacity-30 cursor-not-allowed' : 'hover:scale-105 active:scale-90 hover:text-black dark:hover:text-white'} ${isActive ? 'text-primary' : 'text-gray-500'}`}
         >
             <div
-                key={label} // Trigger animation on label/button change
-                className={`p-1.5 rounded-full transition-all duration-500 animate-in zoom-in-75 fade-in duration-500 ${isActive && highlightOnActive ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}
+                className={`p-1.5 rounded-full transition-all duration-500 animate-in zoom-in-75 fade-in ${isActive && highlightOnActive ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}
             >
                 <Icon className={`w-4 h-4 ${(isActive && highlightOnActive) ? 'text-white' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
             </div>

@@ -61,6 +61,7 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
     series_hash = data.get("series_hash")
     series_name = data.get("series_name")  # Optional fallback
     dry_run = data.get("dry_run", False)
+    target_model = data.get("target_model", "gemini-2.5-flash")
 
     if not config.GEMINI_API_KEY:
         return {"success": False, "message": "IA no configurada (Falta API Key)"}
@@ -75,17 +76,23 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
                 return {"success": False, "message": "Serie no encontrada"}
 
             rep_book = books[0]  # Usar cualquiera como representante base
-            current_name = rep_book.series or series_name or rep_book.title
+            current_name = (
+                (rep_book.series_info.series_name if rep_book.series_info else None) or series_name or rep_book.title
+            )
 
             # Obtener nombre español si ya existe
             series_meta = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
-            current_spanish = series_meta.series_spanish if series_meta else rep_book.series_spanish
+            current_spanish = (
+                series_meta.series_spanish
+                if series_meta
+                else (rep_book.series_info.series_spanish if rep_book.series_info else None)
+            )
 
             # --- DRY RUN MODE (PROPOSAL) ---
             if dry_run:
                 books_dicts = [b.to_dict() for b in books]
                 proposal = await AIService.analyze_series_for_updates(
-                    series_hash, current_name, books_dicts, current_spanish
+                    series_hash, current_name, books_dicts, current_spanish, target_model=target_model
                 )
 
                 if "error" in proposal:
@@ -136,7 +143,7 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
             # Ya NO aplicamos cambios directamente. Guardamos como propuesta.
             books_dicts = [b.to_dict() for b in books]
             proposal = await AIService.analyze_series_for_updates(
-                series_hash, current_name, books_dicts, current_spanish
+                series_hash, current_name, books_dicts, current_spanish, target_model=target_model
             )
 
             if not proposal or "error" in proposal:
@@ -347,7 +354,6 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 # Si el hash cambió, ya lo actualizamos arriba vía SQL masivo por eficiencia,
                 # pero nos aseguramos de que el objeto en memoria esté sincronizado si se usa después.
                 book.series_hash = effective_hash
-                book.series = proposed_series
                 book.series_english = proposed_series  # Nueva columna visual (IA)
                 book.is_uncensored = proposal.get("is_uncensored_series", False)
                 book.series_spanish = proposed_spanish or series.series_spanish or proposed_series
@@ -489,7 +495,7 @@ async def handle_ai_apply_merge(data: dict[str, Any], user_data: dict[str, Any])
             session.execute(
                 update(LocalBook)
                 .where(LocalBook.series_hash == hash_a)
-                .values(series=main_name, series_spanish=main_spanish or main_name)
+                .values(series_english=main_name, series_spanish=main_spanish or main_name)
             )
 
             # Cloud Sync A

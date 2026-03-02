@@ -31,6 +31,8 @@ export interface NavigationState {
     actionButtons?: NavActionButton[];
     // History stack management
     historyStack: string[];
+    // Publisher integration
+    selectedChannelId: number | null;
 }
 
 interface NavigationContextType {
@@ -45,6 +47,7 @@ interface NavigationContextType {
     setViewMode: (mode: 'list' | 'grid') => void;
     setLoading: (loading: boolean) => void;
     setCustomActions: (actions: { back?: () => void; home?: () => void; title?: string; buttons?: NavActionButton[] }) => void;
+    setSelectedChannelId: (id: number | null) => void;
 
     // Stack management
     pushHistory: (path: string) => void;
@@ -89,7 +92,8 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         selectedScope: 'TODOS',
         viewMode: 'list',
         loading: false,
-        historyStack: ['/'] // Initial root
+        historyStack: ['/'], // Initial root
+        selectedChannelId: null
     });
 
     const [callbacks, setCallbacks] = useState<any>(null);
@@ -184,6 +188,10 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         }));
     }, []);
 
+    const setSelectedChannelId = React.useCallback((id: number | null) => {
+        setState(prev => ({ ...prev, selectedChannelId: id }));
+    }, []);
+
     const handlePrevPage = React.useCallback(() => callbacks?.onPrevPage?.(), [callbacks]);
     const handleNextPage = React.useCallback(() => callbacks?.onNextPage?.(), [callbacks]);
     const handleSortChange = React.useCallback((sort: string) => {
@@ -233,6 +241,7 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         handleHome,
         handleBack,
         handleScopeClick,
+        setSelectedChannelId,
         registerCallbacks
     }), [
         state,
@@ -257,6 +266,7 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         handleHome,
         handleBack,
         handleScopeClick,
+        setSelectedChannelId,
         registerCallbacks
     ]);
 

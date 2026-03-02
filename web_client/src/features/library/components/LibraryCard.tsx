@@ -1,5 +1,8 @@
 import React, { memo } from 'react';
+import { Send, CheckCircle2 } from 'lucide-react';
 import { ProgressiveImage } from '@shared/components/ProgressiveImage';
+import { useNavigation } from '@shared/contexts/NavigationContext';
+import { api } from '@shared/services/api';
 
 interface LibraryCardProps {
     book: {
@@ -16,10 +19,32 @@ interface LibraryCardProps {
 }
 
 export const LibraryCard = memo<LibraryCardProps>(({ book, onClick }) => {
+    const { state: navState } = useNavigation();
+    const [status, setStatus] = React.useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+    const handlePost = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!navState.selectedChannelId || status === 'loading') return;
+
+        setStatus('loading');
+        try {
+            // Assume we have an endpoint for direct publishing
+            await api.publishToChannel(book.id, navState.selectedChannelId);
+            setStatus('success');
+            setTimeout(() => setStatus('idle'), 3000);
+        } catch (err) {
+            console.error("Error publishing:", err);
+            setStatus('error');
+            setTimeout(() => setStatus('idle'), 3000);
+        }
+    };
+
+    const hasChannel = !!navState.selectedChannelId;
+
     return (
         <div
             onClick={onClick}
-            className={`group relative flex flex-col rounded-[2.5rem] transition-all duration-500 glass-panel hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 overflow-hidden cursor-pointer bg-slate-900/50 ${book.isNew ? 'border-primary/30 ring-1 ring-primary/20' : 'border-white/5'}`}
+            className={`group relative flex flex-col rounded-[2.5rem] transition-all duration-500 glass-panel hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 overflow-hidden cursor-pointer bg-slate-900/50 ${book.isNew ? 'border-primary/30 ring-1 ring-primary/20' : 'border-white/5'} ${hasChannel ? 'ring-2 ring-primary/40 shadow-2xl shadow-primary/20' : ''}`}
         >
             {/* Image Container */}
             <div className="relative aspect-[2/3] w-full shrink-0 overflow-hidden bg-black/80">
@@ -43,6 +68,31 @@ export const LibraryCard = memo<LibraryCardProps>(({ book, onClick }) => {
                     containerClassName="w-full h-full"
                 />
 
+                {/* Post Overlay Button */}
+                {hasChannel && (
+                    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <button
+                            onClick={handlePost}
+                            disabled={status === 'loading'}
+                            className={`px-8 py-4 rounded-full font-black uppercase tracking-[0.2em] text-[12px] transition-all flex items-center gap-3 shadow-2xl ${status === 'success'
+                                ? 'bg-emerald-500 text-white scale-110'
+                                : status === 'error'
+                                    ? 'bg-red-500 text-white'
+                                    : 'bg-primary text-white hover:scale-110 active:scale-95'
+                                }`}
+                        >
+                            {status === 'loading' ? (
+                                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            ) : status === 'success' ? (
+                                <CheckCircle2 className="w-5 h-5" />
+                            ) : (
+                                <Send className="w-5 h-5" />
+                            )}
+                            {status === 'success' ? 'Enviado' : status === 'error' ? 'Error' : 'Postear'}
+                        </button>
+                    </div>
+                )}
+
                 {/* Subtle Gradient for depth only, no text overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none"></div>
 
@@ -51,7 +101,7 @@ export const LibraryCard = memo<LibraryCardProps>(({ book, onClick }) => {
             </div>
 
             {/* Content */}
-            <div className="flex flex-col gap-2 p-5 relative z-10 flex-1 bg-white/5 backdrop-blur-sm">
+            <div className={`flex flex-col gap-2 p-5 relative z-10 flex-1 backdrop-blur-sm transition-colors ${hasChannel ? 'bg-primary/10' : 'bg-white/5'}`}>
                 <h3 className="line-clamp-2 text-[15px] font-black text-white group-hover:text-primary transition-colors tracking-tight leading-tight min-h-[2.5em]">{book.title}</h3>
 
                 <div className="mt-auto pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-gray-400">

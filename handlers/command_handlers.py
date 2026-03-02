@@ -151,13 +151,20 @@ class CommandHandlers:
             st["historial"] = []
             st["ultima_pagina"] = config.BASE_URL
 
-            keyboard = [
-                [InlineKeyboardButton("📍 Aquí", callback_data="destino|aqui")],
-                [InlineKeyboardButton("📣 BotTest", callback_data="destino|@ZeePubBotTest")],
-                [InlineKeyboardButton("📣 ZeePubs", callback_data="destino|@ZeePubs")],
-                [InlineKeyboardButton("📚 Mi Catálogo", callback_data="ver_catalogo_normal")],
-                [InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")],
-            ]
+            from repositories.publication_repository import PublicationRepository
+
+            pub_repo = PublicationRepository()
+            active_channels = await pub_repo.get_channels(active_only=True)
+
+            keyboard = [[InlineKeyboardButton("📍 Aquí", callback_data="destino|aqui")]]
+
+            # Insert dynamic channels
+            for ch in active_channels:
+                prefix = "📣 " if ch.type == "telegram" else "📘 " if ch.type == "facebook" else "🌐 "
+                btn_text = f"{prefix}{ch.name}"
+                keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"destino|{ch.chat_id_or_username}")])
+
+            keyboard.append([InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")])
 
             cms = context.application.plugin_manager.get_plugin("custom_messages")
             base_txt = "🔧 Modo Evil: ¿Dónde quieres publicar?"

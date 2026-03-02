@@ -384,3 +384,37 @@ async def handle_pub_delete_queue_item(data: dict[str, Any], user_data: dict[str
         raise HTTPException(status_code=400, detail="Falta id")
     await pub_repo.delete(item_id)
     return {"success": True}
+
+
+async def handle_pub_quick_post(data: dict[str, Any], user_data: dict[str, Any]):
+    """Publica un libro inmediatamente a un canal usando el template por defecto."""
+    check_staff(user_data)
+    book_id = data.get("book_id")
+    channel_id = data.get("channel_id")
+
+    if not book_id or not channel_id:
+        raise HTTPException(status_code=400, detail="Missing book_id or channel_id")
+
+    # Obtener el canal
+    channel = await pub_repo.get_channel_by_id(int(channel_id))
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    # Obtener el template por defecto para la plataforma
+    templates = await pub_repo.get_templates(platform=channel.platform)
+    template = next((t for t in templates if t.is_default), None)
+    if not template and templates:
+        template = templates[0]
+
+    # Programar para ahora mismo
+    await publisher_service.schedule_publication(
+        book_hash=str(book_id),
+        channel_id=int(channel_id),
+        scheduled_for=datetime.utcnow(),
+        template_id=template.id if template else None,
+    )
+
+    # Procesar cola inmediatamente en segundo plano
+    asyncio.create_task(publisher_service.process_queue())
+
+    return {"success": True}
