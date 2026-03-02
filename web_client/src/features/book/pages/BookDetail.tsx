@@ -383,13 +383,13 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
   // Intentar obtener romaji de múltiples fuentes
   const getRomajiTitle = (): string => {
-    // 1. Usar romajiTitle de la serie (prioridad)
-    const seriesRomaji = cleanRomajiText(String(curSeries?.romajiTitle || ''));
-    if (seriesRomaji) return seriesRomaji;
-
-    // 2. Usar romaji_title del volumen
+    // 1. Usar romaji_title del volumen (LocalBook) - PRIORIDAD MÁXIMA
     const volumeRomaji = cleanRomajiText(String(curVolume.romaji_title || ''));
     if (volumeRomaji) return volumeRomaji;
+
+    // 2. Usar romajiTitle de la serie (fallback)
+    const seriesRomaji = cleanRomajiText(String(curSeries?.romajiTitle || ''));
+    if (seriesRomaji) return seriesRomaji;
 
     // 3. Intentar extraer del título principal
     const mainTitle = String(curSeries?.title || curVolume.series || '');

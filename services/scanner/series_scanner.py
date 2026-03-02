@@ -62,7 +62,6 @@ class SeriesScanner:
                 series_name=final_series_name,
                 series_spanish=book.series_spanish,
                 series_english=book.series_english,
-                romaji_title=book.romaji_title,  # 🆕 Copiar desde LocalBook
                 series_hash=book.series_hash,
                 author=extracted.get("author") or "",
                 author_jap=extracted.get("author_jap"),
@@ -133,27 +132,22 @@ class SeriesScanner:
             if book.series_english and series.series_english != book.series_english:
                 series.series_english = book.series_english
 
-            # COPIAR ROMAJI_TITLE desde LocalBook a SeriesMetadata
-            if book.romaji_title and series.romaji_title != book.romaji_title:
-                series.romaji_title = book.romaji_title
-                logger.info(f"📝 Actualizado romaji_title desde LocalBook: {series.romaji_title}")
+            # Preservar slug manual vs auto-generado
+            current_slug = series.slug or ""
+            new_slug = generar_slug_from_meta(series.to_dict())
 
-                # Preservar slug manual vs auto-generado
-                current_slug = series.slug or ""
-                new_slug = generar_slug_from_meta(series.to_dict())
+            # Solo actualizar slug si parece auto-generado o está vacío
+            should_update_slug = (
+                not current_slug  # Vacío
+                or len(str(current_slug)) > 40  # Hash residual muy largo
+                or current_slug == str(book.series_hash)[:40]  # Igual al hash (auto-gen)
+            )
 
-                # Solo actualizar slug si parece auto-generado o está vacío
-                should_update_slug = (
-                    not current_slug  # Vacío
-                    or len(str(current_slug)) > 40  # Hash residual muy largo
-                    or current_slug == str(book.series_hash)[:40]  # Igual al hash (auto-gen)
-                )
-
-                if should_update_slug:
-                    series.slug = new_slug
-                    logger.info(f"📝 Actualizado slug (auto-generado): {current_slug} → {new_slug}")
-                else:
-                    logger.info(f"🔒 Preservado slug manual: {current_slug}")
+            if should_update_slug:
+                series.slug = new_slug
+                logger.info(f"📝 Actualizado slug (auto-generado): {current_slug} → {new_slug}")
+            else:
+                logger.info(f"🔒 Preservado slug manual: {current_slug}")
 
             book_type = extracted.get("book_type")
             if book_type and series.book_type != book_type:
