@@ -36,8 +36,26 @@ class SeriesScanner:
         series = session.query(SeriesMetadata).filter_by(series_hash=book.series_hash).first()
 
         if not series:
+            # Para creación inicial, preservar caracteres especiales del título original
+            # Usar el título del libro como fallback si el extraído pierde caracteres importantes
+            book_title = book.title or ""
+            extracted_series = extracted.get("series") or book.series_english or ""
+
+            # Detectar si el extraído pierde caracteres importantes
+            special_chars = [":", "!", "?", "...", "—", "[", "]", "(", ")", "&", "%", "#", "@", "*", "+"]
+            book_has_special = any(char in book_title for char in special_chars)
+            extracted_has_special = any(char in extracted_series for char in special_chars)
+
+            # Preferir el título original si el extraído pierde caracteres especiales
+            if book_has_special and not extracted_has_special:
+                final_series_name = book_title
+                logger.info(f"🔒 Preservando título original con caracteres especiales: {book_title}")
+            else:
+                final_series_name = extracted_series
+                logger.info(f"📝 Usando título extraído: {extracted_series}")
+
             series = SeriesMetadata(
-                series_name=extracted.get("series") or book.series_english or book.title,
+                series_name=final_series_name,
                 series_spanish=book.series_spanish,
                 series_english=book.series_english,
                 series_hash=book.series_hash,
