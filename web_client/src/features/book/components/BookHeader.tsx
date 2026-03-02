@@ -4,7 +4,7 @@ import { Calendar, Clock, Download, Hash, Languages, PenTool, Star, User } from 
 interface BookHeaderProps {
     displayTitle: string;
     romajiTitle: string;
-    seriesName?: string; // Nuevo: nombre de la serie
+    seriesName?: string; // Nombre de la serie
     author: string;
     rating: number;
     ratingCount: number;
@@ -13,7 +13,7 @@ interface BookHeaderProps {
     volumeNumber: number;
     publishedDate: string;
     translator: string;
-    lastUpdated: string;
+    lastUpdated: string; // Fecha de actualización
     group: string;
     color_mode?: string;
     is_uncensored?: boolean;
@@ -90,11 +90,13 @@ export const BookHeader: React.FC<BookHeaderProps> = ({
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-2 tracking-tight drop-shadow-xl">
-                {seriesName || displayTitle}
+                {displayTitle}
             </h1>
-            <h2 className="text-base sm:text-lg text-white/50 italic font-medium mb-6 leading-relaxed">
-                {romajiTitle}
-            </h2>
+            {romajiTitle && (
+                <h2 className="text-base sm:text-lg text-white/50 italic font-medium mb-6 leading-relaxed">
+                    {romajiTitle}
+                </h2>
+            )}
 
             {/* Desktop Stats Row - Simplified */}
             <div className="hidden md:flex flex-wrap items-center gap-x-8 gap-y-3 text-sm text-gray-400 border-b border-white/5 pb-6 mb-2">
@@ -111,6 +113,12 @@ export const BookHeader: React.FC<BookHeaderProps> = ({
                         <Languages className="w-4 h-4 text-indigo-400" />
                         <span className="font-bold group-hover:underline">{translator}</span>
                     </button>
+                )}
+                {lastUpdated && (
+                    <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gray-500" />
+                        <span>Actualizado: {lastUpdated}</span>
+                    </div>
                 )}
             </div>
         </div>
