@@ -216,7 +216,7 @@ class ScannerService:
                 if soft_scan:
                     mtime = os.path.getmtime(full_path)
                     if (datetime.now() - datetime.fromtimestamp(mtime)).total_seconds() > 86400:
-                        if session.query(LocalBook).filter_by(filepath=full_path).exists():
+                        if session.query(LocalBook).filter_by(filepath=full_path).first():
                             continue
 
                 # Delegar al EpubScanner
