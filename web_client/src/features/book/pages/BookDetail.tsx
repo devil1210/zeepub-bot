@@ -341,6 +341,64 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     </div>
   );
 
+  // Función para limpiar y validar que el texto sea romaji (solo caracteres latinos)
+  const cleanRomajiText = (text: string): string => {
+    if (!text) return '';
+
+    // Si contiene caracteres japoneses (hiragana, katakana, kanji), no es romaji válido
+    const hasJapaneseChars = /[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/.test(text);
+
+    if (hasJapaneseChars) {
+      console.warn('Texto japonés detectado en romajiTitle:', text);
+      return ''; // No mostrar si no es romaji válido
+    }
+
+    return text.trim();
+  };
+
+  // Función para intentar extraer romaji del título si no hay romajiTitle válido
+  const extractRomajiFromTitle = (title: string): string => {
+    if (!title) return '';
+
+    // Patrones comunes de títulos japoneses con romaji
+    // Ej: "Kagurabachi: Yuugen no Ma" -> "Kagurabachi: Yuugen no Ma"
+    const romajiPatterns = [
+      /([a-zA-Z\s\-\:]+)/,  // Extraer caracteres latinos
+      /([^\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]+)/  // Extraer lo que no es japonés
+    ];
+
+    for (const pattern of romajiPatterns) {
+      const match = title.match(pattern);
+      if (match) {
+        const extracted = match[1].trim();
+        if (extracted && extracted.length > 2) { // Mínimo 3 caracteres para ser válido
+          console.log('Romaji extraído del título:', extracted);
+          return extracted;
+        }
+      }
+    }
+
+    return '';
+  };
+
+  // Intentar obtener romaji de múltiples fuentes
+  const getRomajiTitle = (): string => {
+    // 1. Usar romajiTitle de la serie (prioridad)
+    const seriesRomaji = cleanRomajiText(String(curSeries?.romajiTitle || ''));
+    if (seriesRomaji) return seriesRomaji;
+
+    // 2. Usar romaji_title del volumen
+    const volumeRomaji = cleanRomajiText(String(curVolume.romaji_title || ''));
+    if (volumeRomaji) return volumeRomaji;
+
+    // 3. Intentar extraer del título principal
+    const mainTitle = String(curSeries?.title || curVolume.series || '');
+    const extractedRomaji = extractRomajiFromTitle(mainTitle);
+    if (extractedRomaji) return extractedRomaji;
+
+    return ''; // No se encontró romaji válido
+  };
+
   const displayData = {
     ...curVolume,
     rating: localRating,
@@ -360,7 +418,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     publishedDate: formatDate(String(curVolume.published_at || curVolume.publishedAt || curVolume.publishedDate || '')),
     description: String(curVolume.description || curVolume.summary || 'Sin sinopsis disponible.'),
     displayTitle: String(curSeries?.title || curVolume.series || curVolume.english_title || curVolume.englishTitle || curVolume.title || 'Libro sin título'),
-    romajiTitle: String(curSeries?.romajiTitle || curVolume.romaji_title || ''),
+    romajiTitle: getRomajiTitle(),
     illustrator: String(curVolume.illustrator || 'N/A'),
     translator: String(curVolume.translator || 'ZeePub'),
     group: String(curVolume.group || curVolume.publisher || curVolume.translator || 'ZeePub'),
