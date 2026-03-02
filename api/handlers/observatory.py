@@ -58,10 +58,10 @@ async def handle_observatory_overview(data: dict[str, Any], user_data: dict[str,
                 text("""
                     SELECT
                         COALESCE(ul.name, 'Sin nivel') as nivel,
-                        COUNT(u.id) as usuarios
+                        COUNT(u.telegram_id) as usuarios
                     FROM users u
                     LEFT JOIN user_levels ul ON u.level_id = ul.id
-                    GROUP BY ul.name
+                    GROUP BY ul.name, ul.id
                     ORDER BY usuarios DESC
                 """)
             )
@@ -96,9 +96,9 @@ async def handle_observatory_executions(data: dict[str, Any], user_data: dict[st
                 SELECT
                     id, timestamp, func_name, status, duration, error
                 FROM agent_executions
-                WHERE timestamp >= NOW() - INTERVAL :hours_str
+                WHERE timestamp >= NOW() - (INTERVAL '1 hour' * :hours)
             """
-            params = {"hours_str": f"{hours} hours"}
+            params = {"hours": hours}
 
             if status_filter:
                 query += " AND status = :status"
@@ -315,7 +315,7 @@ async def handle_observatory_metrics(data: dict[str, Any], user_data: dict[str, 
                         COUNT(*) as descargas
                     FROM download_history dh
                     LEFT JOIN local_books lb ON dh.book_hash = lb.book_hash
-                    GROUP BY COALESCE(lb.title, dh.title)
+                    GROUP BY COALESCE(lb.title, dh.title, 'Desconocido')
                     ORDER BY descargas DESC
                     LIMIT 10
                 """)

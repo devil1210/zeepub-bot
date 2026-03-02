@@ -117,6 +117,13 @@ async def handle_admin_scan_status(data: dict[str, Any], user_data: dict[str, An
     return {"success": True, "is_scanning": ScannerService._is_scanning, "progress": ScannerService._current_progress}
 
 
+async def handle_admin_stop_scan(data: dict[str, Any], user_data: dict[str, Any]):
+    """Stops the current scan."""
+    check_staff(user_data)
+    success = ScannerService.stop_scan()
+    return {"success": success, "message": "Escaneo detenido." if success else "No hay escaneo en curso."}
+
+
 async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
     if not data.get("confirmed", False):

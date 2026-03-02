@@ -189,6 +189,8 @@ class LocalBook(Base):
     romaji_title = Column(String(512))
     spanish_title = Column(String(512))  # Nueva columna
     english_title = Column(String(512))
+    series_spanish = Column(String(255))  # Nueva columna (Denormalizada para scanner)
+    series_english = Column(String(255))  # Nueva columna (Denormalizada para scanner)
     jap_title = Column(String(512))
     volume = Column(Float)  # Soporta 1, 1.5, etc
     edition = Column(String(255))  # Ej: "Honorificos", "Colector", etc.

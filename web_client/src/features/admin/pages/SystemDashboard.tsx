@@ -320,9 +320,22 @@ export const SystemDashboard: React.FC = () => {
                                 </p>
                             </div>
                         </div>
-                        <div className="text-right mr-8">
-                            <span className="text-xl font-black text-white">{scanStatus.scanned || 0}</span>
-                            <span className="text-[10px] text-gray-500 ml-2 font-black uppercase">Libros</span>
+                        <div className="flex items-center gap-6 mr-8">
+                            <div className="text-right">
+                                <span className="text-xl font-black text-white">{scanStatus.scanned || 0}</span>
+                                <span className="text-[10px] text-gray-500 ml-2 font-black uppercase">Libros</span>
+                            </div>
+                            {scanStatus.status === 'scanning' && (
+                                <button
+                                    onClick={() => handleAction('Detener Escaneo', api.adminStopScan)}
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-500 rounded-premium-sm border border-red-500/20 hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
+                                    title="Detener Escaneo"
+                                    disabled={loading}
+                                >
+                                    {actionLoading === 'Detener Escaneo' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Detener</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 

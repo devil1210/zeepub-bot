@@ -24,8 +24,13 @@ export interface BotRequest {
 }
 
 const getInitData = () => {
-    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp) {
+    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData) {
         return (window as any).Telegram.WebApp.initData || '';
+    }
+    // Local development bypass: if on localhost, send a 'debug' token
+    // This allows testing the app in a regular browser during development
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        return 'debug_admin';
     }
     return '';
 };
@@ -170,6 +175,7 @@ export const api = {
     adminUpdateSystem: () => rpc('admin_update_system'),
     adminUpdateCovers: () => rpc('admin_update_covers'),
     getAdminScanStatus: () => rpc('admin_scan_status'),
+    adminStopScan: () => rpc('admin_stop_scan'),
 
 
     // Tier Configuration

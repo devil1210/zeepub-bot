@@ -17,7 +17,7 @@ from services.notification_service import notification_service
 from services.scanner.epub_scanner import EpubScanner
 from services.scanner.library_scanner import LibraryScanner
 from services.scanner.series_scanner import SeriesScanner
-from utils.library_db import get_session
+from utils.library_db import get_session, session_factory
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ class ScannerService:
 
     _scan_lock = asyncio.Lock()
     _is_scanning = False
+    _stop_requested = False
     _current_progress = {
         "status": "idle",
         "scanned": 0,
@@ -55,6 +56,7 @@ class ScannerService:
             return False
 
         ScannerService._is_scanning = True
+        ScannerService._stop_requested = False
         ScannerService._current_progress.update(
             {
                 "status": "scanning",
@@ -67,7 +69,8 @@ class ScannerService:
             }
         )
 
-        session = get_session()
+        # Usar session_factory directamente para evitar conflictos de scoped_session en segundo plano
+        session = session_factory()
         try:
             results = {
                 "total_scanned": 0,
@@ -88,6 +91,10 @@ class ScannerService:
             all_new_books = []
 
             for name, path in local_libs_map.items():
+                if ScannerService._stop_requested:
+                    logger.info("Escaneo detenido por el usuario.")
+                    break
+
                 ScannerService._current_progress["current_source"] = name
                 source = session.query(LibrarySource).filter_by(path=path).first()
                 if not source:
@@ -145,13 +152,23 @@ class ScannerService:
             await MaintenanceOrchestrator.run_tool("db_integrity")
             await MaintenanceOrchestrator.run_tool("slug_recalculate")
 
-            ScannerService._current_progress.update(
-                {
-                    "status": "completed",
-                    "results": results,
-                    "last_run": datetime.utcnow().isoformat(),
-                }
-            )
+            if ScannerService._stop_requested:
+                ScannerService._current_progress.update(
+                    {
+                        "status": "cancelled",
+                        "results": results,
+                        "last_run": datetime.utcnow().isoformat(),
+                    }
+                )
+                logger.info("Escaneo finalizado prematuramente (detenido).")
+            else:
+                ScannerService._current_progress.update(
+                    {
+                        "status": "completed",
+                        "results": results,
+                        "last_run": datetime.utcnow().isoformat(),
+                    }
+                )
             return results
         except Exception as e:
             logger.error(f"Error en sync_all: {e}")
@@ -182,7 +199,13 @@ class ScannerService:
         import os
 
         for root, _, files in os.walk(source.path):
+            if ScannerService._stop_requested:
+                break
+
             for file in files:
+                if ScannerService._stop_requested:
+                    break
+
                 if not file.lower().endswith(".epub"):
                     continue
 
@@ -330,3 +353,12 @@ class ScannerService:
     async def update_all_covers(self):
         """Refresca las portadas de todos los libros en la biblioteca."""
         return await MaintenanceOrchestrator.run_tool("cover_refresh")
+
+    @classmethod
+    def stop_scan(cls):
+        """Solicita detener el escaneo actual."""
+        if cls._is_scanning:
+            cls._stop_requested = True
+            logger.info("Solicitud de detención de escaneo recibida.")
+            return True
+        return False

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -51,6 +52,12 @@ class PostgresManager:
                 db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
             elif db_url.startswith("postgresql://") and "+asyncpg" not in db_url:
                 db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+            # Fallback 'db' to 'localhost' if running outside Docker (common for local agents on Windows)
+            if "@db:" in db_url and os.name == "nt":
+                db_url = db_url.replace("@db:", "@localhost:", 1)
+                logger.info("Converting 'db' to 'localhost' for Windows local execution.")
+
             try:
                 # Optimized async connection pool settings for production
                 engine_args = {

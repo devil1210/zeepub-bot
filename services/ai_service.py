@@ -543,10 +543,6 @@ class AIService:
     @staticmethod
     async def generate_synopsis(title: str, description: str) -> str | None:
         """Genera una sinopsis corta y atractiva para el libro."""
-        model = AIService._get_model()
-        if not model:
-            return None
-
         prompt = f"""
         Actúa como un redactor creativo de una editorial de novelas ligeras. Tu tarea es escribir una sinopsis corta y atractiva para el siguiente libro.
 

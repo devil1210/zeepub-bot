@@ -134,6 +134,8 @@ async def fix_schema_if_needed():
             await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);"))
             await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS illustrator_jap VARCHAR(255);"))
             await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(512);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS series_spanish VARCHAR(255);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS series_english VARCHAR(255);"))
             await conn.execute(
                 text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS is_uncensored INTEGER DEFAULT 0;")
             )
