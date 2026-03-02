@@ -145,7 +145,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     meta = user_state.pop("meta_pendiente", {})
     titulo = user_state.pop("titulo_pendiente", "")
     msg_id = user_state.pop("msg_botones_id", None)
-    msg_info_id = user_state.pop("msg_info_id", None)
+    _msg_info_id = user_state.pop("msg_info_id", None)
     destino = user_state.get("destino") or update.effective_chat.id
     chat_origen = user_state.get("chat_origen") or destino
 
@@ -180,20 +180,15 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         # el mensaje "Preparando..." va al privado.
         # Eso es correcto.
 
-    # Borrar botones (siempre)
+    # Borrar botones (siempre) para evitar doble click
     if msg_id:
         try:
             await bot.delete_message(chat_id=chat_origen, message_id=msg_id)
         except Exception as e:
             logger.debug("Could not delete msg_id %s: %s", msg_id, e)
 
-    # Borrar mensaje de info (SOLO si NO es grupo)
-    # En grupos queremos que persista para contexto
-    if msg_info_id and not is_group:
-        try:
-            await bot.delete_message(chat_id=chat_origen, message_id=msg_info_id)
-        except Exception as e:
-            logger.debug("Could not delete msg_info_id %s: %s", msg_info_id, e)
+    # NO borrar mensaje de info (el usuario quiere que persista el contexto del catálogo)
+    # Anteriormente se borraba aquí si no era grupo.
 
     # Si eligió Volver, descartar buffer
     if update.callback_query.data == "volver_ultima":
@@ -241,6 +236,12 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         **meta,  # Include all metadata
     }
 
+    # Forzar que solo se envíe el mensaje del archivo con la info (1 solo mensaje)
+    # Usamos <hr><hr> para que enviar_libro_directo salte Part 0 (Portada) y Part 1 (Sinopsis)
+    from services.publisher.publisher_service import TelegramPublisherProvider
+
+    compact_caption = f"<hr><hr>{TelegramPublisherProvider.INFO_TEMPLATE}"
+
     # Intentar enviar
     success = await delivery_service.deliver(
         platform="telegram",
@@ -251,6 +252,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
             "message_thread_id": thread_id_destino,
             "job_queue": job_queue,
             "auto_delete_seconds": delete_seconds,
+            "caption": compact_caption,
         },
     )
 
@@ -308,16 +310,11 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         # -------------------------------------
 
     restantes = await downloads_left(uid)
-
-    # Mostrar descargas restantes (excepto Premium)
+    quota_text = ""
     if restantes != "ilimitadas":
-        await bot.send_message(
-            chat_id=destino,
-            text=f"📥 Te quedan {restantes} descargas disponibles para hoy.",
-            message_thread_id=thread_id_destino,
-        )
+        quota_text = f"\n\n📥 Te quedan {restantes} descargas disponibles para hoy."
 
-    # Mostrar opciones finales
+    # Mostrar opciones finales unificadas con la cuota
     keyboard = [
         [InlineKeyboardButton("📚 Volver a categorías", callback_data="volver_colecciones")],
         [InlineKeyboardButton("↩️ Volver a la página anterior", callback_data="volver_ultima")],
@@ -325,9 +322,10 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     ]
     await bot.send_message(
         chat_id=chat_origen,
-        text="Selecciona una opción:",
+        text=f"✅ <b>Descarga procesada con éxito.</b>{quota_text}\n\nSelecciona una opción para continuar:",
         reply_markup=InlineKeyboardMarkup(keyboard),
         message_thread_id=thread_id_origen,
+        parse_mode="HTML",
     )
 
 
@@ -535,7 +533,7 @@ async def enviar_libro_directo(
         msg_parts = []
         if source_text:
             msg_parts = re.split(r"<hr\s*/?>|---next---|---", source_text)
-            msg_parts = [p.strip() for p in msg_parts if (p and p.strip())]
+            msg_parts = [p.strip() for p in msg_parts]
 
         # Aplicar el motor de plantillas a cada parte
         msg_parts = [apply_publication_template(p, meta) for p in msg_parts]
@@ -554,7 +552,7 @@ async def enviar_libro_directo(
         # 5. Enviar Portada
         if len(msg_parts) > 0:
             mensaje_portada = sanitize_tg_html(msg_parts[0])
-            if portada_data:
+            if portada_data and mensaje_portada:  # Solo si hay texto
                 logger.info(f"Enviando portada a {destino}")
                 await send_photo_bytes(
                     bot,
@@ -565,7 +563,7 @@ async def enviar_libro_directo(
                     parse_mode="HTML",
                     message_thread_id=message_thread_id,
                 )
-            else:
+            elif mensaje_portada:  # Solo enviar si hay texto
                 logger.info(f"Enviando mensaje de portada como texto a {destino}")
                 await bot.send_message(
                     chat_id=destino,
