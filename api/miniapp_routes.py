@@ -200,6 +200,9 @@ async def handle_bot_request(
             handle_ai_toggle_background_scan,
             handle_book_detail,
             handle_bot_info,
+            handle_bulk_analyze_library,
+            handle_bulk_get_job_status,
+            handle_bulk_update_metadata,
             handle_create_stars_invoice,
             handle_download,
             handle_feedback,
@@ -334,6 +337,9 @@ async def handle_bot_request(
             "observatory_executions": handle_observatory_executions,
             "observatory_publications": handle_observatory_publications,
             "observatory_metrics": handle_observatory_metrics,
+            "bulk-analyze-library": handle_bulk_analyze_library,
+            "bulk-update-metadata": handle_bulk_update_metadata,
+            "bulk-get-job-status": handle_bulk_get_job_status,
         }
 
         if action == "admin_bulk_upload_confirm":
@@ -747,6 +753,70 @@ async def get_upload_history(
     from api.miniapp_handlers import handle_get_upload_history
 
     return await handle_get_upload_history(limit, offset)
+
+
+@router.post("/api/admin/library/bulk-analyze")
+async def bulk_analyze_library(
+    data: dict[str, Any],
+    user_data: Annotated[dict[str, Any], Depends(require_admin)],
+):
+    """
+    Analiza masivamente la librería en busca de problemas de metadatos
+    """
+    from services.bulk_review_service import bulk_review_service
+
+    try:
+        filters = data.get("filters", {})
+        batch_size = data.get("batch_size", 100)
+
+        result = await bulk_review_service.analyze_library(filters, batch_size)
+        return {"success": True, "result": result}
+
+    except Exception as e:
+        logger.error(f"Error en análisis masivo: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/api/admin/library/bulk-update")
+async def bulk_update_metadata(
+    data: dict[str, Any],
+    user_data: Annotated[dict[str, Any], Depends(require_admin)],
+):
+    """
+    Aplica actualizaciones masivas de metadatos
+    """
+    from services.bulk_review_service import bulk_review_service
+
+    try:
+        updates = data.get("updates", [])
+        if not updates:
+            raise HTTPException(status_code=400, detail="No updates provided")
+
+        result = await bulk_review_service.bulk_update_metadata(updates)
+        return {"success": True, "result": result}
+
+    except Exception as e:
+        logger.error(f"Error en actualización masiva: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/api/admin/library/bulk-status/{job_id}")
+async def get_bulk_job_status(
+    job_id: str,
+    user_data: Annotated[dict[str, Any], Depends(require_admin)],
+):
+    """
+    Obtiene el estado de un trabajo de procesamiento masivo
+    """
+    from services.bulk_review_service import bulk_review_service
+
+    try:
+        status = await bulk_review_service.get_job_status(job_id)
+        return {"success": True, "status": status}
+
+    except Exception as e:
+        logger.error(f"Error obteniendo estado del job: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/api/bot/avatar")

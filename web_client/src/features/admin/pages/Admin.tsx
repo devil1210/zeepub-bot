@@ -12,7 +12,8 @@ import {
   UploadCloud,
   Layers,
   Send,
-  Activity
+  Activity,
+  Database
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { useNavigation } from '@shared/contexts/NavigationContext';
@@ -25,6 +26,7 @@ import { DuplicatesDashboard } from './DuplicatesDashboard';
 import { UploadHistoryDashboard } from '@features/upload/pages/UploadHistoryDashboard';
 import { PublisherDashboard } from '@features/publisher/pages/PublisherDashboard';
 import { ObservatoryPage } from './ObservatoryPage';
+import { BulkReviewPage } from './BulkReviewPage';
 import { useTelegram } from '@shared/contexts/TelegramContext';
 
 interface AdminProps {
@@ -41,7 +43,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const setIsViewSelectorOpen = setMenuOpen;
 
   // Derived state from URL
-  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads' | 'publisher' | 'observatory') || 'monitor';
+  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads' | 'publisher' | 'observatory' | 'bulk-review') || 'monitor';
   const selectedUserId = searchParams.get('userId');
   const tierName = searchParams.get('tierName');
   const tierColor = searchParams.get('tierColor');
@@ -98,6 +100,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
     const views = [
       { id: 'monitor', label: 'Monitor', icon: BarChart3 },
       { id: 'observatory', label: 'Observatorio', icon: Activity },
+      { id: 'bulk-review', label: 'Revisión Masiva', icon: Database },
       { id: 'system', label: 'Sistema', icon: Server },
       { id: 'interface', label: 'Interfaz', icon: Palette },
       { id: 'access', label: 'Acceso', icon: ShieldCheck },
@@ -201,6 +204,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       case 'uploads': return <UploadHistoryDashboard />;
       case 'publisher': return <PublisherDashboard />;
       case 'observatory': return <ObservatoryPage />;
+      case 'bulk-review': return <BulkReviewPage />;
       default: return <MonitorDashboard />;
     }
   };

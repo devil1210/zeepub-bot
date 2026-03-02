@@ -3,6 +3,11 @@ Facade for api/handlers/ modules.
 Maintains backward compatibility by re-exporting handlers from the modular structure.
 """
 
+from api.bulk_handlers import (
+    handle_bulk_analyze_library,
+    handle_bulk_get_job_status,
+    handle_bulk_update_metadata,
+)
 from api.handlers.admin import (
     handle_admin_ai_series_duplicate_scan,
     handle_admin_backup_library,
@@ -208,5 +213,8 @@ __all__ = [
     "handle_observatory_executions",
     "handle_observatory_publications",
     "handle_observatory_metrics",
+    "handle_bulk_analyze_library",
+    "handle_bulk_update_metadata",
+    "handle_bulk_get_job_status",
     "handle_admin_update_covers",
 ]
