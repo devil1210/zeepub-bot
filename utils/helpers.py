@@ -458,10 +458,14 @@ def generar_slug_from_meta(meta: dict) -> str:
     return slug
 
 
-def parse_metadata_from_title(title_str: str) -> dict:
-    """ "
+def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = False) -> dict:
+    """
     Parsea un título completo de forma inteligente.
     Retorna diccionario con: series, volume, clean_title, tags, romaji.
+
+    Args:
+        title_str: Título a parsear
+        preserve_special_chars: Si True, preserva caracteres especiales como :, !, ?
     """
     if not title_str or not isinstance(title_str, str):
         return {"series": "", "volume": "", "clean_title": "", "tags": [], "romaji": ""}
@@ -473,70 +477,70 @@ def parse_metadata_from_title(title_str: str) -> dict:
     # Limpiar paréntesis residuales que a veces se usan como tags
     clean = re.sub(r"\(.*?\)", " ", clean).strip()
 
-    # 1b. Limpiar símbolos decorativos al inicio de forma muy agresiva
-    clean = re.sub(r"^[^\w\(\)\[\]]+", "", clean).strip()
+    # 2. Separar por guiones diversos, tildes, dos puntos o barras
+    parts = re.split(r"[\-\–\—\−\―\:\~～\|¦]", clean)
 
-    # 2. Extract volume first to facilitate title splitting
-    # Handles: Volumen, Vol., Tomo, t., v., V, #, Parte, Chapter
-    vol_pattern = r"(?:\s*[\-\–\—\−\―\:\~～\|¦]?\s*(?:Volumen|Vol\.?|Tomo|t\.?|v\.?|V|Parte|#|Chapter|Capítulo)\s*(\d+(?:\.\d+)?).*)?"
-    match = re.search(vol_pattern, clean, re.IGNORECASE)
-
+    # 3. Identificar volumen (números, vol, v, etc.)
     volume = ""
-    clean_no_vol = clean
-    if match and match.group(1):
-        volume = match.group(1)
-        # Remove everything from the volume identifier onwards
-        clean_no_vol = clean[: match.start()].strip()
-    else:
-        # Fallback to look specifically for just the volume part if the above failed
-        specific_vol_match = re.search(
-            r"(?:Volumen|Vol\.?|Tomo|t\.?|v\.?|V|Parte|#)\s*(\d+(?:\.\d+)?)", clean, re.IGNORECASE
-        )
-        if specific_vol_match:
-            volume = specific_vol_match.group(1)
-            clean_no_vol = clean[: specific_vol_match.start()].strip()
-
-    # 3. Split parts by various hyphen types, colons, or dots to find English vs Romaji
-    separators = r"\s+[\-\–\—\−\―\.\~～\|¦\:\/]\s+"
-    parts = [p.strip() for p in re.split(separators, clean_no_vol) if p.strip()]
-
-    romaji = ""
-    series = clean_no_vol
-
     if len(parts) >= 2:
-        p1, p2 = parts[0], parts[1]
+        # Patrones de volumen comunes
+        volume_patterns = [
+            r"^vol\.?\s*\d+",
+            r"^v\s*\d+",
+            r"^volume\s*\d+",
+            r"^tomo\s*\d+",
+            r"^part\s*\d+",
+            r"^capítulo\s*\d+",
+            r"^chapter\s*\d+",
+            r"^\d+$",
+        ]
 
-        def has_jp(s):
-            return bool(re.search(r"[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\uFF00-\uFFEF]", s))
+        for i, part in enumerate(parts):
+            if i == len(parts) - 1 and any(
+                re.match(pattern, part.strip(), re.IGNORECASE) for pattern in volume_patterns
+            ):
+                volume = part.strip()
+                parts = parts[:i]  # Todo antes del volumen es la serie
+                break
 
-        if has_jp(p2) and not has_jp(p1):
+    # 4. Reconocer si hay subtítulo romaji (segunda parte en caracteres latinos/japoneses)
+    romaji = ""
+    if len(parts) >= 2 and not volume:
+        # Si no hay volumen pero hay 2+ partes, buscar romaji
+        # El romaji suele estar después del título principal
+        p1 = parts[0].strip()
+        p2 = parts[1].strip()
+
+        # Heurística: si la segunda parte parece romaji (mix de caracteres)
+        if re.search(r"[ひらがなカ]", p2) or re.search(r"[a-zA-Z\s]+[ひらがなカ]", p2):
             romaji = p2
             series = p1
-        elif has_jp(p1) and not has_jp(p2):
-            romaji = p1
-            series = p2
+        elif len(p1) < len(p2) * 0.8:  # p1 es más corto, probable subtítulo
+            romaji = p2
+            series = p1
         else:
-            # Si no hay JP, priorizamos el primer elemento como serie principal si el segundo parece un subtítulo románico
-            if len(p1) < len(p2) * 0.8:  # p1 es más corto, p2 es probablemente el subtítulo extendido
-                romaji = p1
-                series = p2
-            else:
-                romaji = p2
-                series = p1
+            # Si no hay romaji claro, priorizar el primer elemento como serie
+            series = p1
 
-    # 4. Final cleaning of series title and romaji
-    series = re.sub(r"^[^\w\(\)\[\]]+", "", series).strip()
-    series = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\#]+$", "", series).strip()
+    # 5. Si no hay romaji, unir todo lo que no es volumen
+    if not romaji:
+        series = " ".join(parts).strip()
 
-    if romaji:
-        romaji = re.sub(r"^[^\w\(\)\[\]]+", "", romaji).strip()
-        romaji = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\#]+$", "", romaji).strip()
+    # 6. Final cleaning of series title and romaji
+    if not preserve_special_chars:
+        # Limpiar caracteres especiales SOLO si no se deben preservar
+        series = re.sub(r"^[^\w\(\)\[\]]+", "", series).strip()
+        series = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\#]+$", "", series).strip()
+
+        if romaji:
+            romaji = re.sub(r"^[^\w\(\)\[\]]+", "", romaji).strip()
+            romaji = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\#]+$", "", romaji).strip()
 
     # REMOVE metadata brackets from series name for the "English Title" display
     series_clean = re.sub(r"\s*\[.*?\]\s*", " ", series).strip()
     series_clean = re.sub(r"[\-\–\—\−\―\:\.\s]+$", "", series_clean).strip()
 
-    clean_title_result = series_clean if romaji else series_clean or clean_no_vol
+    clean_title_result = series_clean if romaji else series_clean or clean
     clean_title_result = re.sub(r"\s+", " ", clean_title_result).strip()
 
     return {

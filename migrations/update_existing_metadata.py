@@ -40,7 +40,7 @@ async def update_existing_metadata():
 
         for series_id, current_name, _ in all_series:
             # Reprocesar el título con el código corregido
-            parsed = parse_metadata_from_title(current_name)
+            parsed = parse_metadata_from_title(current_name, preserve_special_chars=True)
             new_name = parsed.get("series") or current_name
 
             # Solo actualizar si hay cambios

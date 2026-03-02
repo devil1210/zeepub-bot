@@ -116,7 +116,7 @@ class BulkReviewService:
             )
 
         # 2. Reprocesar título con parse_metadata_from_title corregido
-        parsed = parse_metadata_from_title(series_name)
+        parsed = parse_metadata_from_title(series_name, preserve_special_chars=True)
         clean_name = parsed.get("series") or series_name
 
         if clean_name != series_name:

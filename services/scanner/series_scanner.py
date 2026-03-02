@@ -5,7 +5,7 @@ from sqlalchemy import text
 
 from models.library_models import ArchivedSeries, LocalBook, MetadataProposal, SeriesMetadata
 from services.ai_service import AIService
-from utils.helpers import generar_slug_from_meta
+from utils.helpers import generar_slug_from_meta, parse_metadata_from_title
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,10 @@ class SeriesScanner:
             # Usar el título del libro como fallback si el extraído pierde caracteres importantes
             book_title = book.title or ""
             extracted_series = extracted.get("series") or book.series_english or ""
+
+            # Parsear con preservación de caracteres especiales
+            parsed = parse_metadata_from_title(book_title, preserve_special_chars=True)
+            final_series_name = parsed.get("series") or extracted_series
 
             # Detectar si el extraído pierde caracteres importantes
             special_chars = [":", "!", "?", "...", "—", "[", "]", "(", ")", "&", "%", "#", "@", "*", "+"]
