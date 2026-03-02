@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import re
 from typing import Any
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -454,116 +453,31 @@ async def enviar_libro_directo(
             except Exception as e:
                 logger.warning(f"No se pudo calcular el tamaño del archivo para meta: {e}")
 
-        from utils.template_engine import apply_publication_template
-
         # --- LOGICA FACEBOOK (Unificada con Template Engine) ---
         if format_type in ["fb_preview", "fb_direct"]:
-            from services.publisher.publisher_service import TelegramPublisherProvider
-            from utils.url_cache import create_short_url
+            from services.publisher.facebook_publisher import handle_facebook_publication
 
-            # Generar link público acortado
-            dl_domain = config.DL_DOMAIN.rstrip("/")
-            if not dl_domain.startswith("http"):
-                dl_domain = f"https://{dl_domain}"
-            try:
-                url_hash = create_short_url(download_url, book_title=title)
-                public_link = f"{dl_domain}/api/dl/{url_hash}"
-            except Exception as e:
-                logger.error("Error creating short URL: %s", e)
-                public_link = download_url
-
-            # Generar caption FB usando plantilla unificada
-            fb_caption = apply_publication_template(TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta)
-            # Limpiar HTML residual (FB no lo soporta)
-            fb_caption = re.sub(r"<[^>]+>", "", fb_caption)
-            # Añadir link de descarga
-            fb_caption = f"{fb_caption}\n\n⬇️ Descarga: {public_link}"
-            # Truncar si excede límite FB
-            if len(fb_caption) > 2100:
-                fb_caption = fb_caption[:2097] + "..."
-
-            logger.debug(f"Caption FB generado vía template engine, longitud: {len(fb_caption)}")
-
-            if format_type == "fb_preview":
-                if portada_data:
-                    await send_photo_bytes(bot, user_id, None, portada_data, filename="cover.jpg")
-                await bot.send_message(
-                    chat_id=user_id,
-                    text=fb_caption,
-                    disable_web_page_preview=False,
-                )
-            elif format_type == "fb_direct":
-                from utils.helpers import validate_facebook_credentials
-
-                is_valid, error_msg = validate_facebook_credentials(config)
-                if not is_valid:
-                    await bot.send_message(chat_id=user_id, text=error_msg, parse_mode="HTML")
-                    return False
-
-                fb_cover_url = cover_url or meta.get("portada")
-                if not fb_cover_url or not fb_cover_url.startswith("http"):
-                    await bot.send_message(
-                        chat_id=user_id,
-                        text="⚠️ No se pudo obtener una URL pública para la portada. Facebook requiere una URL pública.",
-                    )
-                    return False
-
-                import httpx
-
-                url = f"https://graph.facebook.com/{config.FACEBOOK_GROUP_ID}/photos"
-                params = {
-                    "url": fb_cover_url,
-                    "caption": fb_caption,
-                    "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
-                }
-                async with httpx.AsyncClient() as client:
-                    resp = await client.post(url, params=params, timeout=30)
-                    if resp.status_code != 200:
-                        logger.error(f"FB Error: {resp.text}")
-                        await bot.send_message(chat_id=user_id, text=f"❌ Error publicando en Facebook: {resp.text}")
-                        return False
-                await bot.send_message(chat_id=user_id, text="✅ Publicado exitosamente en el Grupo de Facebook.")
+            return await handle_facebook_publication(
+                bot=bot,
+                user_id=user_id,
+                format_type=format_type,
+                title=title,
+                download_url=download_url,
+                cover_url=cover_url,
+                meta=meta,
+                portada_data=portada_data,
+            )
 
         # --- PROCESAR CAPTION Y PLANTILLAS (Telegram) ---
+        from services.presentation.delivery_formatter import build_telegram_delivery_parts
 
-        # Si no se provee nada, usamos el estándar del sistema (unificado)
-        if not custom_caption and not caption_template:
-            from services.publisher.publisher_service import TelegramPublisherProvider
-
-            caption_template = f"{TelegramPublisherProvider.COVER_TEMPLATE}\n<hr>\n{TelegramPublisherProvider.SYNOPSIS_TEMPLATE}\n<hr>\n{TelegramPublisherProvider.INFO_TEMPLATE}"
-            logger.info("Usando plantilla predeterminada del sistema para entrega directa.")
-
-        source_text = caption_template or custom_caption
-        msg_parts = []
-        if source_text:
-            # Detectar si empieza por separadores (indica que queremos saltar partes)
-            starts_with_sep = source_text.startswith("<hr>") or source_text.startswith("---")
-            msg_parts = re.split(r"<hr\s*/?>|---next---|---", source_text)
-
-            # Si empezaba por separador, la primera parte de re.split será vacía.
-            # La mantenemos si queremos que el índice coincida (Part 0 vacía = no enviar portada).
-            if starts_with_sep:
-                msg_parts = [p.strip() for p in msg_parts]
-            else:
-                msg_parts = [p.strip() for p in msg_parts if p.strip()]
-
-        # Aplicar el motor de plantillas a cada parte
-        msg_parts = [apply_publication_template(p, meta) for p in msg_parts]
-        logger.info(f"Mensaje procesado en {len(msg_parts)} partes")
-
-        # Función para sanitizar HTML para Telegram
-        def sanitize_tg_html(t: str) -> str:
-            if not t:
-                return ""
-            t = re.sub(r"<(/?p|/?div|/?h\d|/?span|/?a[^>]*)>", "\n", t, flags=re.IGNORECASE)
-            t = re.sub(r"<br\s*/?>", "\n", t, flags=re.IGNORECASE)
-            t = re.sub(r"<hr\s*/?>", "\n---\n", t, flags=re.IGNORECASE)
-            t = re.sub(r"\n{3,}", "\n\n", t).strip()
-            return t
+        msg_parts, final_caption, should_send_file_by_template = build_telegram_delivery_parts(
+            meta=meta, custom_caption=custom_caption, caption_template=caption_template
+        )
 
         # 5. Enviar Portada
         if len(msg_parts) > 0:
-            mensaje_portada = sanitize_tg_html(msg_parts[0])
+            mensaje_portada = msg_parts[0]
             if portada_data and mensaje_portada:  # Solo si hay texto
                 logger.info(f"Enviando portada a {destino}")
                 await send_photo_bytes(
@@ -586,7 +500,7 @@ async def enviar_libro_directo(
 
         # 6. Enviar Sinopsis
         if len(msg_parts) > 1:
-            sinopsis_to_send = sanitize_tg_html(msg_parts[1])
+            sinopsis_to_send = msg_parts[1]
             if sinopsis_to_send:
                 logger.info(f"Enviando sinopsis a {destino}")
                 await bot.send_message(
@@ -597,13 +511,6 @@ async def enviar_libro_directo(
                 )
 
         # 7. Enviar Archivo EPUB
-        final_caption = ""
-        if len(msg_parts) > 2:
-            final_caption = sanitize_tg_html(msg_parts[2])
-        else:
-            # Fallback mínimo si solo hay 1 o 2 partes
-            final_caption = f"📂 <b>{title}</b>"
-
         if auto_delete_seconds > 0:
             mins = auto_delete_seconds // 60
             final_caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
@@ -612,21 +519,6 @@ async def enviar_libro_directo(
         fname = meta.get("filename") or "archivo.epub"
         if download_url and not download_url.startswith("http"):
             fname = os.path.basename(download_url)
-
-        # Determinar si debemos enviar el archivo según señal en plantilla
-        attach_signal = "__ATTACH_FILE_SIGNAL__"
-        should_send_file_by_template = False
-
-        # Limpiar señal en todas las partes y detectar si alguna la tiene
-        for i, part in enumerate(msg_parts):
-            if attach_signal in part:
-                should_send_file_by_template = True
-                msg_parts[i] = part.replace(attach_signal, "").strip()
-
-        # Limpiar también en final_caption por si acaso
-        if attach_signal in final_caption:
-            should_send_file_by_template = True
-            final_caption = final_caption.replace(attach_signal, "").strip()
 
         if epub_bytes and should_send_file_by_template:
             logger.info(f"Enviando archivo EPUB a {destino} (Plantilla con {{archivo}}): {fname}")

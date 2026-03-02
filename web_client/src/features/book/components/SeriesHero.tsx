@@ -154,8 +154,6 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
                                 <button
                                     onClick={(e) => {
                                         e.preventDefault();
-                                        // TODO: Implement AI Summary modal or logic
-                                        // For now, it's a visual indicator of the new feature
                                         onOpenSynopsis();
                                     }}
                                     className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 text-violet-300 border border-violet-500/30 text-[10px] font-black uppercase tracking-wider hover:bg-violet-500/30 transition-all shadow-lg shadow-violet-500/10 backdrop-blur-md"

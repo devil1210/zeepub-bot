@@ -1,5 +1,4 @@
 import io
-import json
 import logging
 import os
 from datetime import datetime
@@ -10,8 +9,8 @@ from PIL import Image
 from config.config_settings import config
 from repositories.user_repository import user_repo
 from services.cache_service import AsyncTTLCache, cache_manager
+from services.presentation.user_presentation import load_global_ui_defaults, merge_user_ui_settings, normalize_ui
 from services.rbac_service import rbac_service
-from services.settings_service import get_setting
 from services.tier_service import tier_service
 from utils.library_db import PROFILES_DIR
 
@@ -165,60 +164,7 @@ async def get_effective_user(
         )
 
     # 0. Load Global UI Defaults
-    global_raw = get_setting("ui_defaults_global", "{}")
-    global_ui = json.loads(global_raw)
-
-    # Robust Defaults if DB is empty
-    if not global_ui:
-        global_ui = {
-            "theme": "dark",
-            "primaryColor": "#3b82f6",
-            "fontSize": 14,
-            "navOpacity": 0.8,
-            "accentOpacity": 0.2,
-            "glassBlur": 12,
-            "backgroundColor": "#0f172a",
-            "cardColor": "#1e293b",
-            "glassOpacity": 0.6,
-            "cardGlowIntensity": 0.5,
-        }
-
-    def normalize_ui(s: dict[str, Any]):
-        """Normaliza valores de opacidad y asegura que no haya Nones en campos críticos."""
-        # 1. Opacity normalization (0-100 to 0.0-1.0)
-        opacity_keys = [
-            "navOpacity",
-            "accentOpacity",
-            "glassOpacity",
-            "cardGlowIntensity",
-        ]
-        for k in opacity_keys:
-            if k in s and isinstance(s[k], (int, float)):
-                if s[k] > 1.1:
-                    s[k] = s[k] / 100.0
-            elif k in s and s[k] is None:
-                # Provide defaults if None
-                defaults = {
-                    "navOpacity": 0.8,
-                    "accentOpacity": 0.2,
-                    "glassOpacity": 0.6,
-                    "cardGlowIntensity": 0.5,
-                }
-                s[k] = defaults.get(k)
-
-        # 2. Key fallbacks for common visual properties
-        if not s.get("theme"):
-            s["theme"] = "dark"
-        if not s.get("primaryColor"):
-            s["primaryColor"] = "#3b82f6"
-        if s.get("fontSize") is None:
-            s["fontSize"] = 14
-        if not s.get("backgroundColor"):
-            s["backgroundColor"] = "#0f172a"
-        if not s.get("cardColor"):
-            s["cardColor"] = "#1e293b"
-
-        return s
+    global_ui = load_global_ui_defaults()
 
     result = {
         "user_id": uid,
@@ -424,62 +370,14 @@ async def get_effective_user(
 
         # --- Refined Personalized UI Logic ---
         level_settings = access_info["level"]
+        personal_settings = info.get("settings", {}) if info and simulated_level_id is None else {}
 
-        # 1. Start with Global UI as base
-        final_ui = normalize_ui(global_ui.copy())
-
-        # 2. Overlay Level Defaults (if defined)
-        override_keys = [
-            "theme",
-            "fontSize",
-            "glassBlur",
-            "coverWidth",
-            "navOpacity",
-            "accentOpacity",
-            "primaryColor",
-            "showRecommendations",
-            "backgroundColor",
-            "cardColor",
-            "cardGlowIntensity",
-            "bannerContentOffset",
-            "glassOpacity",
-        ]
-        for k in override_keys:
-            if k in level_settings and level_settings[k] is not None:
-                final_ui[k] = level_settings[k]
-
-        # Normalize after level overlay
-        final_ui = normalize_ui(final_ui)
-        # SKIP PERSONAL OVERRIDES IF SIMULATING
-        if simulated_level_id is None:
-            personal_settings = info.get("settings", {}) if info else {}
-
-            # Get exported settings list
-            exported_raw = level_settings.get("ui_exported_settings")
-            exported_list = []
-            if exported_raw:
-                try:
-                    exported_list = json.loads(exported_raw) if isinstance(exported_raw, str) else exported_raw
-                except Exception:
-                    exported_list = []
-
-            is_forced = level_settings.get("forceSettings", False)
-
-            for k, v in personal_settings.items():
-                if v is None:
-                    continue  # Skip nulls
-                if not is_forced:
-                    # Not forced: user settings always win
-                    final_ui[k] = v
-                else:
-                    # Forced: only if specifically exported by admin
-                    if k in exported_list:
-                        final_ui[k] = v
-        else:
+        if simulated_level_id is not None:
             logger.debug(f"Simulation Mode: Skipping personal settings for user {uid}")
 
-        # Final normalization
-        final_ui = normalize_ui(final_ui)
+        final_ui, exported_list = merge_user_ui_settings(
+            global_ui=global_ui, level_settings=level_settings, personal_settings=personal_settings, is_simulated=False
+        )
         result["settings"] = final_ui
 
         # Overwrite identities if present
@@ -493,18 +391,7 @@ async def get_effective_user(
             result["roles"] = access_info["roles"]
 
         # Add exported UI settings list to result
-        exported = level_settings.get("ui_exported_settings")
-        if exported:
-            try:
-                if isinstance(exported, str):
-                    result["ui_exported_settings"] = json.loads(exported)
-                else:
-                    result["ui_exported_settings"] = exported
-            except Exception:
-                result["ui_exported_settings"] = []
-        else:
-            # Fallback for old/empty tiers
-            result["ui_exported_settings"] = ["theme", "primaryColor", "fontSize"]
+        result["ui_exported_settings"] = exported_list
 
     # 5. Legacy Config Fallbacks (only if NOT found in DB/Access Info)
     elif uid in config.FACEBOOK_PUBLISHERS:
@@ -572,30 +459,9 @@ async def get_effective_user(
 
             # Simulación: Priorizamos los ajustes del nivel para "ver" la identidad del rango
             # En modo simulación, NO usamos ajustes personales. Solo Global + Level.
-
-            # Merge settings from level
-            level_settings_overlay = {
-                "theme": sim_level.get("theme"),
-                "fontSize": sim_level.get("fontSize"),
-                "glassBlur": sim_level.get("glassBlur"),
-                "coverWidth": sim_level.get("coverWidth"),
-                "navOpacity": sim_level.get("navOpacity"),
-                "accentOpacity": sim_level.get("accentOpacity"),
-                "primaryColor": sim_level.get("primaryColor"),
-                "showRecommendations": sim_level.get("showRecommendations"),
-                "backgroundColor": sim_level.get("backgroundColor"),
-                "cardColor": sim_level.get("cardColor"),
-                "cardGlowIntensity": sim_level.get("cardGlowIntensity"),
-                "panelTransparency": sim_level.get("glassOpacity") * 100 if sim_level.get("glassOpacity") else 60,
-                "bannerContentOffset": sim_level.get("bannerContentOffset", 0),
-            }
-            # Remove None values
-            level_settings_overlay = {k: v for k, v in level_settings_overlay.items() if v is not None}
-
-            # Reset settings to Global UI base before applying level overrides
-            final_sim_ui = global_ui.copy()
-            final_sim_ui.update(level_settings_overlay)
-
+            final_sim_ui, _ = merge_user_ui_settings(
+                global_ui=global_ui, level_settings=sim_level, personal_settings={}, is_simulated=True
+            )
             result["settings"] = final_sim_ui
 
             # Special flag to let frontend know it's a simulation

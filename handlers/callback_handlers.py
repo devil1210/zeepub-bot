@@ -605,7 +605,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text_closing = await cms.get_text("bot_closing")
 
             # Si no era el último de detalles, editamos, si no lo borramos
-            await query.message.delete()
+            if getattr(query.message, "document", None):
+                await query.edit_message_reply_markup(reply_markup=None)
+            else:
+                await query.message.delete()
             # Enviar despedida efímera o mensaje nuevo
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
