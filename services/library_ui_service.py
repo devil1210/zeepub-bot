@@ -467,7 +467,7 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
     # Botones en UNA SOLA FILA según solicitado
     keyboard = [
         [
-            InlineKeyboardButton("📥 Descargar volumen", callback_data=f"dl_confirm|{key}"),
+            InlineKeyboardButton("Descargar", callback_data=f"dl_confirm|{key}"),
             InlineKeyboardButton("🔙 Volver", callback_data="volver_ultima"),
             InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
         ]

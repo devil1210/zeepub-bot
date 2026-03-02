@@ -116,16 +116,21 @@ async def publicar_libro(
             except Exception:
                 pass
 
-        # 4. Announce Book using PublisherService
-        await publisher_service.announce(
-            platform="telegram",
-            target_id=destino,
-            book_data=meta,
-            options={"message_thread_id": thread_id_destino, "state": user_state},
-        )
-
+        # 4. Announce Book using PublisherService (or skip if direct download)
         user_state["portada_pendiente"] = portada_url
         user_state["titulo_pendiente"] = titulo
+
+        if menu_prep:
+            # Es una descarga directa iniciada por el usuario (dl_confirm), saltamos el anuncio
+            await descargar_epub_pendiente(update, context, uid)
+        else:
+            # Es una publicación al canal/grupo, enviar anuncio completo
+            await publisher_service.announce(
+                platform="telegram",
+                target_id=destino,
+                book_data=meta,
+                options={"message_thread_id": thread_id_destino, "state": user_state},
+            )
 
 
 async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int, job_queue=None):
@@ -745,7 +750,7 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
 
     # Los botones se envían al chat origen (privado) para control del usuario
     keyboard = [
-        [InlineKeyboardButton("📥 Descargar EPUB", callback_data="descargar_epub")],
+        [InlineKeyboardButton("Descargar", callback_data="descargar_epub")],
         [InlineKeyboardButton("↩️ Volver", callback_data="volver_ultima")],
     ]
 
