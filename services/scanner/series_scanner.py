@@ -76,7 +76,22 @@ class SeriesScanner:
                 book_count=0,
             )
             # Generar slug usando el objeto recién creado (que ya tiene series_name)
-            series.slug = generar_slug_from_meta(series.to_dict())
+            generated_slug = generar_slug_from_meta(series.to_dict())
+
+            # Preservar slug manual vs auto-generado (aunque sea creación inicial)
+            should_preserve_slug, slug_reason = SeriesScanner._should_preserve_current_slug(
+                "", generated_slug, book.series_hash
+            )
+
+            if should_preserve_slug:
+                # Para creación inicial, no hay slug actual, así que usamos el generado
+                series.slug = generated_slug
+                logger.info(f"📝 Slug inicial generado: {generated_slug}")
+            else:
+                # Si hubiera existido un slug manual, se preservaría
+                series.slug = generated_slug
+                logger.info(f"📝 Slug inicial (sin previo): {generated_slug}")
+
             session.add(series)
             session.flush()
             logger.info(f"🆕 Nueva serie detectada: {series.series_name}")
@@ -116,9 +131,22 @@ class SeriesScanner:
 
             if book.series_english and series.series_english != book.series_english:
                 series.series_english = book.series_english
-                # Solo actualizar slug si no existe o es un hash largo residual
-                if not series.slug or len(str(series.slug)) > 40:
-                    series.slug = generar_slug_from_meta(series.to_dict())
+                # Preservar slug manual vs auto-generado
+                current_slug = series.slug or ""
+                new_slug = generar_slug_from_meta(series.to_dict())
+
+                # Solo actualizar slug si parece auto-generado o está vacío
+                should_update_slug = (
+                    not current_slug  # Vacío
+                    or len(str(current_slug)) > 40  # Hash residual muy largo
+                    or current_slug == str(book.series_hash)[:40]  # Igual al hash (auto-gen)
+                )
+
+                if should_update_slug:
+                    series.slug = new_slug
+                    logger.info(f"📝 Actualizado slug (auto-generado): {current_slug} → {new_slug}")
+                else:
+                    logger.info(f"🔒 Preservado slug manual: {current_slug}")
 
             book_type = extracted.get("book_type")
             if book_type and series.book_type != book_type:
@@ -167,6 +195,31 @@ class SeriesScanner:
         )
         if has_complex_format and not any(c.isupper() for c in extracted_name if c.isalpha()):
             return True, "preservar formato complejo manual"
+
+        return False, "auto-generado o mejorable"
+
+    @staticmethod
+    def _should_preserve_current_slug(current_slug: str, new_slug: str, series_hash: str) -> tuple[bool, str]:
+        """
+        Determina si se debe preservar el slug actual.
+        Retorna (should_preserve, reason).
+        """
+        if not current_slug:
+            return False, "vacío"
+
+        if current_slug == new_slug:
+            return True, "idéntico"
+
+        # Preservar si el actual no parece auto-generado
+        # Los slugs auto-generados suelen ser hashes o muy simples
+        is_auto_generated = (
+            current_slug == str(series_hash)[:40]  # Igual al hash
+            or len(current_slug) > 40  # Hash residual muy largo
+            or (len(current_slug) < 5 and current_slug.replace("_", "").isalnum())  # Muy corto y solo alfanumérico
+        )
+
+        if not is_auto_generated:
+            return True, "slug manual detectado"
 
         return False, "auto-generado o mejorable"
 
