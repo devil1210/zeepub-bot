@@ -924,7 +924,10 @@ class EPUBUploader:
         try:
             file_path = Path(upload_info["file_path"])
 
-            await query.edit_message_text("❌ **Upload rechazado**", parse_mode=ParseMode.MARKDOWN)
+            await query.edit_message_text(
+                "❌ **Upload rechazado**\n\n🙏 **¡Gracias por usar ZeePub-bot!**\n\nSi necesitas ayuda o quieres subir otro archivo, simplemente envíalo de nuevo.",
+                parse_mode=ParseMode.MARKDOWN,
+            )
 
             # Limpiar archivo temporal
             self.cleanup_upload(upload_id, file_path)

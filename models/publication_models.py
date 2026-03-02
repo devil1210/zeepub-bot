@@ -22,6 +22,11 @@ class PublicationChannel(Base):
     config = Column(JSON)  # Configuración extra (thread_id, tokens específicos, etc.)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    @property
+    def chat_id_or_username(self) -> str:
+        """Retorna el target_id para compatibilidad con código existente."""
+        return self.target_id
+
     # Relación con la cola
     queued_items = relationship("PublicationQueue", back_populates="channel", cascade="all, delete-orphan")
 

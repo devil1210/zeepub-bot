@@ -200,19 +200,22 @@ class LibraryScanner:
         )
 
         for s in empty_series:
-            archived_s = ArchivedSeries(
-                series_name=s.series_name,
-                series_spanish=s.series_spanish,
-                series_hash=s.series_hash,
-                author=s.author,
-                description=s.description,
-                tags=s.tags,
-                cover_url=s.cover_url,
-                book_type=s.book_type,
-                publisher=s.publisher,
-                original_series_id=s.id,
-            )
-            session.add(archived_s)
+            # Verificar si ya existe en archived_series para evitar duplicate key
+            existing = session.query(ArchivedSeries).filter_by(series_hash=s.series_hash).first()
+            if not existing:
+                archived_s = ArchivedSeries(
+                    series_name=s.series_name,
+                    series_spanish=s.series_spanish,
+                    series_hash=s.series_hash,
+                    author=s.author,
+                    description=s.description,
+                    tags=s.tags,
+                    cover_url=s.cover_url,
+                    book_type=s.book_type,
+                    publisher=s.publisher,
+                    original_series_id=s.id,
+                )
+                session.add(archived_s)
             session.delete(s)
             deleted_series += 1
 
