@@ -1,4 +1,4 @@
-import logging
+import re
 from typing import Any
 
 from sqlalchemy import text
@@ -6,8 +6,7 @@ from sqlalchemy import text
 from models.library_models import ArchivedSeries, LocalBook, MetadataProposal, SeriesMetadata
 from services.ai_service import AIService
 from utils.helpers import generar_slug_from_meta, parse_metadata_from_title
-
-logger = logging.getLogger(__name__)
+from utils.logger import logger
 
 
 class SeriesScanner:
@@ -132,6 +131,18 @@ class SeriesScanner:
             if book.series_english and series.series_english != book.series_english:
                 series.series_english = book.series_english
 
+            # DETECTAR Y COMPLETAR ROMAJI_TITLE VACÍOS
+            if not book.romaji_title or book.romaji_title.strip() == "":
+                # Intentar extraer romaji del título principal
+                title_source = book.title or book.series_spanish or book.series_english or ""
+                extracted_romaji = SeriesScanner._extract_romaji_from_title(title_source)
+
+                if extracted_romaji:
+                    book.romaji_title = extracted_romaji
+                    logger.info(f"🔤 Auto-poblado romaji_title vacío: '{title_source}' -> '{extracted_romaji}'")
+                else:
+                    logger.warning(f"⚠️  No se pudo extraer romaji de: '{title_source}'")
+
             # Preservar slug manual vs auto-generado
             current_slug = series.slug or ""
             new_slug = generar_slug_from_meta(series.to_dict())
@@ -198,6 +209,25 @@ class SeriesScanner:
             return True, "preservar formato complejo manual"
 
         return False, "auto-generado o mejorable"
+
+    @staticmethod
+    def _extract_romaji_from_title(title: str) -> str:
+        """
+        Extrae caracteres romaji (latinos) de un título mixto.
+        Usado para poblar automáticamente romaji_title vacíos.
+        """
+        if not title:
+            return ""
+
+        # Extraer solo caracteres latinos y espacios básicos
+        latin_chars = re.sub(r"[^\w\s\-\:]", "", title)
+        romaji = re.sub(r"\s+", " ", latin_chars).strip()
+
+        # Validar que sea romaji válido (mínimo 3 caracteres)
+        if len(romaji) >= 3:
+            return romaji
+
+        return ""
 
     @staticmethod
     def _should_preserve_current_slug(current_slug: str, new_slug: str, series_hash: str) -> tuple[bool, str]:
