@@ -31,7 +31,10 @@ export const LoginGate: React.FC<LoginGateProps> = () => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] bg-[#0a0c10] flex items-center justify-center p-6 overflow-hidden">
+        <div
+            className="fixed inset-0 z-[100] bg-[#0a0c10] flex items-center justify-center p-6 overflow-hidden"
+            style={{ height: 'var(--tg-viewport-stable-height, 100vh)' }}
+        >
             {/* Background Effects */}
             <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-primary/20 rounded-full blur-[180px] animate-pulse-slow"></div>
             <div className="absolute bottom-[-15%] left-[-20%] w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[150px] animate-float"></div>

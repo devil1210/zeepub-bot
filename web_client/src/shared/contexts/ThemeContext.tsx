@@ -127,7 +127,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // 1. Try to load from CloudStorage first (instant)
         const cached = await loadFromCloudStorage();
         if (cached && isMounted) {
-          setSettings(cached.settings);
+          const mergedCached = { ...defaultSettings, ...cached.settings };
+          setSettings(mergedCached);
           setSettingsVersion(cached.version || 0);
           setIsLoading(false); // Show UI immediately with cached data
         }

@@ -183,7 +183,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
           className={`flex-1 overflow-y-auto relative scroll-smooth custom-scrollbar pb-24 md:pb-0 ${activeTab === 'search' ? '' : 'pt-4 md:pt-8'}`}
           style={{
             paddingTop: (isMobile && activeTab !== 'search') ? 'calc(1.5rem + 1rem + 0.5rem)' : undefined,
-            marginTop: (isMobile && activeTab !== 'search') ? 'calc(-1 * env(safe-area-inset-top, 0px))' : undefined
+            marginTop: (isMobile && activeTab !== 'search') ? 'calc(-1 * env(safe-area-inset-top, 0px))' : undefined,
+            maxHeight: 'var(--tg-viewport-stable-height, 100vh)',
           }}
         >
           {/* Search Header - Sticky inside scroll area */}

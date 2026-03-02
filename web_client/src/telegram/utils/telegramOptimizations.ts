@@ -82,8 +82,8 @@ export const enableVirtualScrolling = (containerRef: HTMLElement | null) => {
             });
         },
         {
-            root: containerRef,
-            rootMargin: '100px', // Start loading 100px before visible
+            root: null, // Observe relative to viewport
+            rootMargin: '300px', // Start loading 300px before visible
             threshold: 0.01
         }
     );
