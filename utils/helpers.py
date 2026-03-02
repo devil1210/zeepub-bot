@@ -199,20 +199,23 @@ def extract_spanish_series_from_filename(filename: str) -> str:
     # 1. Quitar extensión
     name = filename.rsplit(".", 1)[0]
 
-    # 2. Quitar tags entre corchetes [TAG]
+    # 2. Quitar tags entre corchetes [TAG] e inclusive paréntesis (TAG)
     name = re.sub(r"\[.*?\]", "", name)
+    name = re.sub(r"\(.*?\)", "", name)
 
     # 3. Quitar patrón de volumen - VXX, VXX, etc.
-    vol_pattern = r"(?:\s*[\-\–\—\−]?\s*(?:Volumen|Vol\.?|Tomo|v\.?|V)\s*\d+(?:\.\d+)?.*)"
+    # Soportamos: Volumen, Vol, Tomo, Parte, v., V, #
+    vol_pattern = r"(?:\s*[\-\–\—\−\―\:\~～\|¦]?\s*(?:Volumen|Vol\.?|Tomo|v\.?|V|Parte|#)\s*\d+(?:\.\d+)?.*)"
     name = re.sub(vol_pattern, "", name, flags=re.IGNORECASE).strip()
 
     # 4. Quitar subtítulos tras ~ o | si los hay (Normalización de serie)
     name = re.split(r"\s+[\~～\|¦]\s+", name)[0].strip()
 
-    # 4. Quitar guiones y símbolos al final que puedan haber quedado
-    name = re.sub(r"[\-\–\—\−\―\:\.\s]+$", "", name).strip()
+    # 5. Quitar guiones y símbolos al final/inicio que puedan haber quedado
+    name = re.sub(r"^[^\w\(\)\[\]]+", "", name).strip()
+    name = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\?\#]+$", "", name).strip()
 
-    # 5. Limpiar espacios múltiples
+    # 6. Limpiar espacios múltiples
     name = re.sub(r"\s+", " ", name).strip()
 
     return name
@@ -459,64 +462,52 @@ def parse_metadata_from_title(title_str: str) -> dict:
     """ "
     Parsea un título completo de forma inteligente.
     Retorna diccionario con: series, volume, clean_title, tags, romaji.
-    Ej: "⭘ 86 - EIGHTY-SIX [NL] - 86 ―Eitishikkusu― - Volumen 01 [TFP]" ->
-        series="86 - EIGHTY-SIX [NL]", volume="01", tags=["NL", "TFP"], romaji="86 ―Eitishikkusu―"
     """
-    if not title_str:
+    if not title_str or not isinstance(title_str, str):
         return {"series": "", "volume": "", "clean_title": "", "tags": [], "romaji": ""}
 
     # 1. Extraer tags en corchetes [Tag]
     tags = re.findall(r"\[(.*?)\]", title_str)
     # Limpiar título inicial de corchetes de forma global
-    clean = re.sub(r"\[.*?\]", "", title_str).strip()
+    clean = re.sub(r"\[.*?\]", " ", title_str).strip()
+    # Limpiar paréntesis residuales que a veces se usan como tags
+    clean = re.sub(r"\(.*?\)", " ", clean).strip()
 
     # 1b. Limpiar símbolos decorativos al inicio de forma muy agresiva
-    # Maneja ○, ●, ⭘, • y varios tipos de guiones/puntos
     clean = re.sub(r"^[^\w\(\)\[\]]+", "", clean).strip()
 
     # 2. Extract volume first to facilitate title splitting
-    # Handles: Volumen, Vol, Tomo, v. y números decimales
-    vol_pattern = r"(?:Volumen|Vol\.?|Tomo|v\.?|V)\s*(\d+(?:\.\d+)?)"
+    # Handles: Volumen, Vol., Tomo, t., v., V, #, Parte, Chapter
+    vol_pattern = r"(?:\s*[\-\–\—\−\―\:\~～\|¦]?\s*(?:Volumen|Vol\.?|Tomo|t\.?|v\.?|V|Parte|#|Chapter|Capítulo)\s*(\d+(?:\.\d+)?).*)?"
     match = re.search(vol_pattern, clean, re.IGNORECASE)
 
     volume = ""
     clean_no_vol = clean
-    if match:
+    if match and match.group(1):
         volume = match.group(1)
-        full_vol_str = match.group(0)
-        # Remove " - Volumen XX" or " Volumen XX" from the string to get the base title
-        # regex handles various hyphen types: - (hyphen), – (en dash), — (em dash), − (minus)
-        clean_no_vol = re.sub(
-            rf"\s*[\-\–\—\−]?\s*{re.escape(full_vol_str)}.*",
-            "",
-            clean,
-            flags=re.IGNORECASE,
-        ).strip()
+        # Remove everything from the volume identifier onwards
+        clean_no_vol = clean[: match.start()].strip()
+    else:
+        # Fallback to look specifically for just the volume part if the above failed
+        specific_vol_match = re.search(
+            r"(?:Volumen|Vol\.?|Tomo|t\.?|v\.?|V|Parte|#)\s*(\d+(?:\.\d+)?)", clean, re.IGNORECASE
+        )
+        if specific_vol_match:
+            volume = specific_vol_match.group(1)
+            clean_no_vol = clean[: specific_vol_match.start()].strip()
 
     # 3. Split parts by various hyphen types, colons, or dots to find English vs Romaji
-    # re handles various hyphen types: - (hyphen), – (en dash), — (em dash), − (minus), ― (horizontal bar), ~ (tilde), ～ (full-width tilde)
-    # Also support : and . as separators if followed by space, and | (pipe)
-    # REQUIRE spaces around hyphens/colons/dots/tildes to avoid splitting names like Arya-san or St. Louis
-    separators = r"\s+[\-\–\—\−\―\.\~～\|¦]\s+"
+    separators = r"\s+[\-\–\—\−\―\.\~～\|¦\:\/]\s+"
     parts = [p.strip() for p in re.split(separators, clean_no_vol) if p.strip()]
 
     romaji = ""
     series = clean_no_vol
 
     if len(parts) >= 2:
-        # If we have exactly 2 parts, we need to decide which is English (series) and which is Romaji
-        # Heuristic: The one with many non-ascii or Japanese characters is likely Romaji
-        # Or if one is "Arifureta" and other is "From Commonplace...", the shorter one usually is Romaji
         p1, p2 = parts[0], parts[1]
 
-        # Check for Japanese characters
         def has_jp(s):
-            return bool(
-                re.search(
-                    r"[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\uFF00-\uFFEF]",
-                    s,
-                )
-            )
+            return bool(re.search(r"[\u3000-\u303F\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\uFF00-\uFFEF]", s))
 
         if has_jp(p2) and not has_jp(p1):
             romaji = p2
@@ -525,56 +516,32 @@ def parse_metadata_from_title(title_str: str) -> dict:
             romaji = p1
             series = p2
         else:
-            # Fallback heuristic: the last part is often the Romaji subtitle in our library
-            # UNLESS it's very long and the first part is short.
-            # For "Arifureta: From ...", p1="Arifureta", p2="From Commonplace..."
-            # Here "Arifureta" is Romaji.
-            if len(p1) < len(p2) * 0.5:
+            # Si no hay JP, priorizamos el primer elemento como serie principal si el segundo parece un subtítulo románico
+            if len(p1) < len(p2) * 0.8:  # p1 es más corto, p2 es probablemente el subtítulo extendido
                 romaji = p1
                 series = p2
             else:
                 romaji = p2
                 series = p1
 
-    # 4. Special case for "Storyline" or "Libro"
-    if romaji.lower() in ["storyline", "libro"] and len(parts) >= 3:
-        romaji = parts[-2]
-        series = " - ".join(parts[:-2])
-    if not romaji:
-        specific_romaji_pattern = (
-            r"\s+[\-\–\—\−]\s+([^-]+?[―‐—–\u3000-\u303F\u3040-\u309F\u30A0-\u30FF]+[^-]*?)\s+[\-\–\—\−]\s+"
-        )
-        sr_match = re.search(specific_romaji_pattern, clean, re.IGNORECASE)
-        if sr_match:
-            romaji = sr_match.group(1).strip()
-            series = clean.replace(sr_match.group(0), " - ").strip()
-            series = re.sub(vol_pattern, "", series, flags=re.IGNORECASE).strip()
-
-    # 5. Final cleaning of series title and romaji
-    # Ensure no leading symbols or trailing punctuation reach the final fields
+    # 4. Final cleaning of series title and romaji
     series = re.sub(r"^[^\w\(\)\[\]]+", "", series).strip()
-    series = re.sub(r"[\-:\s]+$", "", series).strip()
+    series = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\?\#]+$", "", series).strip()
 
     if romaji:
         romaji = re.sub(r"^[^\w\(\)\[\]]+", "", romaji).strip()
-        romaji = re.sub(r"[\-:\s]+$", "", romaji).strip()
+        romaji = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\?\#]+$", "", romaji).strip()
 
     # REMOVE metadata brackets from series name for the "English Title" display
-    # (e.g. "Series [NL]" -> "Series")
     series_clean = re.sub(r"\s*\[.*?\]\s*", " ", series).strip()
-    # Also remove trailing punctuation if any remained after bracket removal
-    series_clean = re.sub(r"[\-:\s]+$", "", series_clean).strip()
+    series_clean = re.sub(r"[\-\–\—\−\―\:\.\s]+$", "", series_clean).strip()
 
-    # If we have Romaji, cleanTitle should be the English Part (series_clean)
-    # This allows the frontend to show English as main title if romaji exists
     clean_title_result = series_clean if romaji else series_clean or clean_no_vol
-
-    # Ensure no double spaces
     clean_title_result = re.sub(r"\s+", " ", clean_title_result).strip()
 
     return {
         "series": series,
-        "series_clean": series_clean,  # New field for explicit clean English series
+        "series_clean": series_clean,
         "volume": volume,
         "clean_title": clean_title_result,
         "tags": tags,

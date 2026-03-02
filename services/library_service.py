@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import String, and_, cast, exists, func, or_, select, text
+from sqlalchemy import String, and_, cast, func, select, text
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
@@ -46,190 +46,83 @@ class LibraryService:
         sort_by: str = "a-z",
     ) -> dict[str, Any]:
         """
-        Búsqueda agrupada por series_hash. Retorna un objeto similar a Series
-        en lugar de volúmenes individuales (Exclusivo para PostgreSQL).
+        Búsqueda agrupada por series. Retorna DTOs de Series.
         """
+        # 1. Ejecutar búsqueda en el repositorio
+        search_results = await series_repo.search_series(
+            query=query,
+            page=page,
+            items_per_page=items_per_page,
+            source_id=source_id,
+            search_type=search_type,
+            sort_by=sort_by,
+        )
+
+        series_list = search_results.get("results", [])
+
+        # 2. Mapeo a DTOs (con pre-carga de libros representativos si es necesario)
         async with pg_manager.get_session() as session:
-            try:
-                pattern = f"%{query}%"
-                # 1. Construcción dinámica de filtros y necesidad de Join
+            series_hashes = [s.series_hash for s in series_list]
+            rep_books_map = {}
+            if series_hashes:
+                # Subconsulta para obtener el ID del primer libro por serie
+                subq = (
+                    select(LocalBook.series_hash, func.min(LocalBook.id).label("min_id"))
+                    .where(LocalBook.series_hash.in_(series_hashes))
+                    .group_by(LocalBook.series_hash)
+                    .subquery()
+                )
+                rep_stmt = select(LocalBook).join(subq, LocalBook.id == subq.c.min_id)
+                rep_res = await session.execute(rep_stmt)
+                for b in rep_res.scalars().all():
+                    rep_books_map[b.series_hash] = b
 
-                search_type = search_type.lower() if search_type else "todos"
+            results = []
+            for s in series_list:
+                rep = rep_books_map.get(s.series_hash)
+                display_cover = s.cover_url or (rep.cover_low if rep else None) or (rep.cover_high if rep else None)
 
-                # Base query
-                stmt = select(SeriesMetadata)
+                dto = SeriesDTO(
+                    id=f"series_{s.series_hash}",
+                    series_hash=s.series_hash,
+                    title=s.series_name,
+                    series=s.series_name,
+                    series_spanish=s.series_spanish,
+                    series_english=s.series_english,
+                    author=s.author,
+                    description=s.description,
+                    cover=display_cover,
+                    coverUrl=CoverUrlDTO(
+                        cover_low=display_cover,
+                        cover_medium=display_cover.replace("_low.jpg", "_medium.jpg")
+                        if display_cover and "_low.jpg" in display_cover
+                        else display_cover,
+                        cover_high=display_cover.replace("_low.jpg", "_high.jpg")
+                        if display_cover and "_low.jpg" in display_cover
+                        else display_cover,
+                        cover_original=display_cover.replace("_low.jpg", "_original.jpg")
+                        if display_cover and "_low.jpg" in display_cover
+                        else display_cover,
+                    ),
+                    numBooks=s.book_count,
+                    book_count=s.book_count,
+                    book_type=s.book_type,
+                    tag_list=s.tags if s.tags else [],
+                    rating_average=s.rating_average,
+                    rating_count=s.rating_count,
+                    illustrator=s.illustrator,
+                    translator=(rep.translator if rep else None),
+                    layout_by=(rep.layout_by if rep else None),
+                    lastUpdated=s.updated_at.isoformat() if s.updated_at else None,
+                )
+                results.append(dto.model_dump())
 
-                # Definimos filtros de serie
-                series_filters = []
-                if search_type in ("todos", "all", "series", "serie", "título", "títulos"):
-                    series_filters.extend(
-                        [
-                            SeriesMetadata.series_name.ilike(pattern),
-                            SeriesMetadata.series_spanish.ilike(pattern),
-                            SeriesMetadata.series_english.ilike(pattern),
-                        ]
-                    )
-
-                if search_type in ("todos", "all", "author", "autor"):
-                    series_filters.append(SeriesMetadata.author.ilike(pattern))
-
-                if search_type in ("todos", "all", "tags", "géneros", "genres"):
-                    series_filters.append(cast(SeriesMetadata.tags, String).ilike(pattern))
-
-                if search_type in ("todos", "all", "demographics", "demografía"):
-                    series_filters.append(cast(SeriesMetadata.demographics, String).ilike(pattern))
-
-                # Definimos filtros de libro
-                book_filters = []
-                if search_type in ("todos", "all", "maquetador", "layout", "typesetter"):
-                    book_filters.append(LocalBook.layout_by.ilike(pattern))
-
-                if search_type in ("todos", "all", "traductor", "translator", "group", "grupo"):
-                    book_filters.append(LocalBook.translator.ilike(pattern))
-
-                if search_type in ("todos", "all", "illustrator", "ilustrador"):
-                    series_filters.append(SeriesMetadata.illustrator.ilike(pattern))  # Check series level
-
-                if search_type in ("todos", "all", "isbn"):
-                    book_filters.append(LocalBook.isbn.ilike(pattern))
-
-                # Combinamos filtros
-                final_filters = []
-                if series_filters:
-                    final_filters.append(or_(*series_filters))
-
-                if book_filters:
-                    # Agregamos condición EXISTS para los filtros de libros
-                    # Join flexible: id de metadata o hash de serie
-                    book_exists_filter = exists().where(
-                        and_(
-                            or_(
-                                LocalBook.series_metadata_id == SeriesMetadata.id,
-                                LocalBook.series_hash == SeriesMetadata.series_hash,
-                            ),
-                            or_(*book_filters),
-                        )
-                    )
-                    final_filters.append(book_exists_filter)
-
-                if final_filters:
-                    # Si es búsqueda específica de libro (ej: maquetador), usamos AND para el EXISTS
-                    # Si es 'todos', usamos OR entre filtros de serie y filtros de libro
-                    if search_type in ("todos", "all"):
-                        stmt = stmt.where(or_(*final_filters))
-                    else:
-                        # Si buscamos algo que solo está en libros, los filtros de serie estarán vacíos o no deben interferir
-                        # final_filters tendrá el o_(*series_filters) if any, y el EXISTS.
-                        # Para búsquedas específicas (ej: maquetador), solo queremos resultados que cumplan ese criterio.
-                        stmt = stmt.where(and_(*final_filters))
-
-                # Filtro por fuente (siempre requiere Join o EXISTS)
-                if source_id:
-                    # Para source_id, es preferible el Join porque usualmente filtramos TODO el catálogo por fuente
-                    stmt = (
-                        stmt.join(
-                            LocalBook,
-                            or_(
-                                LocalBook.series_metadata_id == SeriesMetadata.id,
-                                LocalBook.series_hash == SeriesMetadata.series_hash,
-                            ),
-                        )
-                        .where(LocalBook.source_id == source_id)
-                        .distinct()
-                    )
-
-                # 3. Ordenamiento
-                if sort_by == "newest":
-                    stmt = stmt.order_by(SeriesMetadata.id.desc())
-                elif sort_by == "popular":
-                    stmt = stmt.order_by(SeriesMetadata.rating_count.desc())
-                elif sort_by == "downloads":
-                    stmt = stmt.order_by(SeriesMetadata.rating_count.desc())
-                else:
-                    stmt = stmt.order_by(func.lower(SeriesMetadata.series_name).asc())
-
-                count_stmt = select(func.count()).select_from(stmt.subquery())
-                total_series = (await session.execute(count_stmt)).scalar() or 0
-
-                start = (page - 1) * items_per_page
-                stmt = stmt.offset(start).limit(items_per_page)
-
-                res = await session.execute(stmt)
-                series_list = res.scalars().all()
-
-                # Para evitar N+1 queries al mapear DTOs, obtenemos un libro representativo para cada serie en lote
-                series_hashes = [s.series_hash for s in series_list]
-                rep_books_map = {}
-                if series_hashes:
-                    # Buscamos el primer libro de cada serie para extraer metadatos extras (traductor, maquetador)
-                    # Usamos una query que agrupa por series_hash y toma el primer libro
-
-                    # Subconsulta para obtener el ID del primer libro por serie
-                    subq = (
-                        select(LocalBook.series_hash, func.min(LocalBook.id).label("min_id"))
-                        .where(LocalBook.series_hash.in_(series_hashes))
-                        .group_by(LocalBook.series_hash)
-                        .subquery()
-                    )
-
-                    rep_stmt = select(LocalBook).join(subq, LocalBook.id == subq.c.min_id)
-                    rep_res = await session.execute(rep_stmt)
-                    for b in rep_res.scalars().all():
-                        rep_books_map[b.series_hash] = b
-
-                results = []
-                for s in series_list:
-                    rep = rep_books_map.get(s.series_hash)
-
-                    # Fallback cover from representative book if series cover is missing
-                    display_cover = s.cover_url or (rep.cover_low if rep else None) or (rep.cover_high if rep else None)
-
-                    # Map to DTO
-                    dto = SeriesDTO(
-                        id=f"series_{s.series_hash}",
-                        series_hash=s.series_hash,
-                        title=s.series_name,
-                        series=s.series_name,
-                        series_spanish=s.series_spanish,
-                        series_english=s.series_english,
-                        author=s.author,
-                        description=s.description,
-                        cover=display_cover,
-                        coverUrl=CoverUrlDTO(
-                            cover_low=display_cover,
-                            cover_medium=display_cover.replace("_low.jpg", "_medium.jpg")
-                            if display_cover and "_low.jpg" in display_cover
-                            else display_cover,
-                            cover_high=display_cover.replace("_low.jpg", "_high.jpg")
-                            if display_cover and "_low.jpg" in display_cover
-                            else display_cover,
-                            cover_original=display_cover.replace("_low.jpg", "_original.jpg")
-                            if display_cover and "_low.jpg" in display_cover
-                            else display_cover,
-                        ),
-                        numBooks=s.book_count,
-                        book_count=s.book_count,
-                        book_type=s.book_type,
-                        tag_list=s.tags if s.tags else [],
-                        rating_average=s.rating_average,
-                        rating_count=s.rating_count,
-                        illustrator=s.illustrator,
-                        translator=(rep.translator if rep else None),
-                        layout_by=(rep.layout_by if rep else None),
-                        lastUpdated=s.updated_at.isoformat() if s.updated_at else None,
-                    )
-                    results.append(dto.model_dump())
-
-                return {
-                    "results": results,
-                    "currentPage": page,
-                    "totalPages": (total_series + items_per_page - 1) // items_per_page,
-                    "totalItems": total_series,
-                }
-
-            except Exception as e:
-                logger.error(f"[LibraryService.search_series] Error: {e}")
-                return {"results": [], "totalItems": 0}
+            return {
+                "results": results,
+                "currentPage": page,
+                "totalPages": search_results.get("totalPages", 0),
+                "totalItems": search_results.get("totalItems", 0),
+            }
 
     @staticmethod
     async def get_translator_siglas_map() -> dict[str, str]:

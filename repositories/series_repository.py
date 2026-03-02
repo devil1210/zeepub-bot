@@ -110,60 +110,81 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
         sort_by: str = "a-z",
     ) -> dict[str, Any]:
         """
-        Búsqueda agrupada por series_hash de forma eficiente.
+        Búsqueda agrupada por series de forma eficiente usando PostgreSQL.
         """
         async with pg_manager.get_session() as session:
             try:
                 pattern = f"%{query}%"
+                search_type = search_type.lower() if search_type else "todos"
 
-                # 1. Filtros para la serie
-                series_filters = [
-                    SeriesMetadata.series_name.ilike(pattern),
-                    SeriesMetadata.series_spanish.ilike(pattern),
-                    SeriesMetadata.series_english.ilike(pattern),
-                    SeriesMetadata.author.ilike(pattern),
-                ]
-
-                # 2. Filtros para libros individuales (vía EXISTS)
-                # Esto permite encontrar una serie si el nombre de un volumen coincide
-                book_exists_filters = [
-                    LocalBook.title.ilike(pattern),
-                    LocalBook.filename.ilike(pattern),
-                    LocalBook.translator.ilike(pattern),
-                ]
-
-                # Búsquedas por tags o demografía (campos JSON)
-                if search_type in ("todos", "all", "genres", "géneros", "tags"):
-                    series_filters.append(cast(SeriesMetadata.tags, String).ilike(pattern))
-                    book_exists_filters.append(cast(LocalBook.tags, String).ilike(pattern))
-                if search_type in ("todos", "all", "demographics", "demografía"):
-                    series_filters.append(cast(SeriesMetadata.demographics, String).ilike(pattern))
-                if search_type in ("translator", "traductor", "group", "grupo"):
-                    book_exists_filters.append(LocalBook.translator.ilike(pattern))
-                    # También buscamos en el campo publisher de la serie
-                    series_filters.append(SeriesMetadata.publisher.ilike(pattern))
-
-                # Construcción de la consulta con EXISTS para eficiencia
-                from sqlalchemy import exists as sa_exists
-
-                book_subq = sa_exists().where(
-                    and_(
-                        or_(
-                            LocalBook.series_metadata_id == SeriesMetadata.id,
-                            LocalBook.series_hash == SeriesMetadata.series_hash,
-                        ),
-                        or_(*book_exists_filters),
-                    )
-                )
-
-                final_filters = [or_(*series_filters), book_subq]
+                # Base query
                 stmt = select(SeriesMetadata)
 
-                if search_type in ("todos", "all"):
-                    stmt = stmt.where(or_(*final_filters))
-                else:
-                    stmt = stmt.where(and_(*final_filters))
+                # 1. Filtros de Serie
+                series_filters = []
+                if search_type in ("todos", "all", "series", "serie", "título", "títulos"):
+                    series_filters.extend(
+                        [
+                            SeriesMetadata.series_name.ilike(pattern),
+                            SeriesMetadata.series_spanish.ilike(pattern),
+                            SeriesMetadata.series_english.ilike(pattern),
+                        ]
+                    )
 
+                if search_type in ("todos", "all", "author", "autor"):
+                    series_filters.append(SeriesMetadata.author.ilike(pattern))
+
+                if search_type in ("todos", "all", "tags", "géneros", "genres"):
+                    series_filters.append(cast(SeriesMetadata.tags, String).ilike(pattern))
+
+                if search_type in ("todos", "all", "demographics", "demografía"):
+                    series_filters.append(cast(SeriesMetadata.demographics, String).ilike(pattern))
+
+                if search_type in ("translator", "traductor", "group", "grupo"):
+                    series_filters.append(SeriesMetadata.publisher.ilike(pattern))
+
+                # 2. Filtros de Libro (vía EXISTS)
+                book_filters = []
+                if search_type in ("todos", "all", "maquetador", "layout", "typesetter"):
+                    book_filters.append(LocalBook.layout_by.ilike(pattern))
+
+                if search_type in ("todos", "all", "traductor", "translator", "group", "grupo"):
+                    book_filters.append(LocalBook.translator.ilike(pattern))
+
+                if search_type in ("todos", "all", "isbn"):
+                    book_filters.append(LocalBook.isbn.ilike(pattern))
+
+                if search_type in ("todos", "all"):
+                    # En modo 'todos', también buscamos título/filename en libros
+                    book_filters.extend([LocalBook.title.ilike(pattern), LocalBook.filename.ilike(pattern)])
+
+                # 3. Combinar filtros
+                final_where = []
+                if query:
+                    if series_filters:
+                        final_where.append(or_(*series_filters))
+
+                    if book_filters:
+                        from sqlalchemy import exists as sa_exists
+
+                        book_subq = sa_exists().where(
+                            and_(
+                                or_(
+                                    LocalBook.series_metadata_id == SeriesMetadata.id,
+                                    LocalBook.series_hash == SeriesMetadata.series_hash,
+                                ),
+                                or_(*book_filters),
+                            )
+                        )
+                        final_where.append(book_subq)
+
+                if final_where:
+                    if search_type in ("todos", "all"):
+                        stmt = stmt.where(or_(*final_where))
+                    else:
+                        stmt = stmt.where(and_(*final_where))
+
+                # 4. Filtro por Fuente
                 if source_id:
                     stmt = (
                         stmt.join(
@@ -177,15 +198,15 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                         .distinct()
                     )
 
-                # Ordenamiento
+                # 5. Ordenamiento
                 if sort_by == "newest":
                     stmt = stmt.order_by(SeriesMetadata.id.desc())
-                elif sort_by == "popular" or sort_by == "downloads":
+                elif sort_by in ("popular", "downloads"):
                     stmt = stmt.order_by(SeriesMetadata.rating_count.desc())
                 else:
-                    stmt = stmt.order_by(SeriesMetadata.series_name.asc())
+                    stmt = stmt.order_by(func.lower(SeriesMetadata.series_name).asc())
 
-                # Conteo y Paginación
+                # 6. Conteo y Paginación
                 count_stmt = select(func.count()).select_from(stmt.subquery())
                 total_series = (await session.execute(count_stmt)).scalar() or 0
 
@@ -195,15 +216,9 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 res = await session.execute(stmt)
                 series_list = res.scalars().all()
 
-                # 4. Mapeo de DTOs y Datos Representativos
-                results = []
-                for s in series_list:
-                    s_dict = s.to_dict()
-                    results.append(s_dict)
-
                 return {
-                    "results": results,
-                    "items": results,
+                    "results": series_list,
+                    "items": series_list,
                     "currentPage": page,
                     "totalPages": (total_series + items_per_page - 1) // items_per_page,
                     "totalItems": total_series,
@@ -211,7 +226,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 }
             except Exception as e:
                 logger.error(f"Error en SeriesRepository.search_series: {e}")
-                return {"results": [], "totalItems": 0}
+                return {"results": [], "totalItems": 0, "currentPage": page, "totalPages": 0}
 
     async def sync_book_count(self, series_hash: str) -> int:
         """Actualiza el contador de libros de una serie basado en los libros reales en DB."""

@@ -71,6 +71,7 @@ class HashService:
             redundant = [
                 r"ilustraciones a color",
                 r"full color",
+                r"color version",
                 r"color",
                 r"sin censura",
                 r"uncensored",
@@ -80,10 +81,16 @@ class HashService:
                 r"b&n",
                 r"grayscale",
                 r"b/n",
+                r"standard",
+                r"regular",
+                r"edición",
+                r"edition",
             ]
             for pattern in redundant:
                 ed_norm = re.sub(rf"\b{pattern}\b", "", ed_norm, flags=re.IGNORECASE)
-            # Limpiar espacios extra resultantes
+
+            # Limpiar símbolos residuales y espacios extra
+            ed_norm = re.sub(r"[\(\)\[\]\-\:\.]", " ", ed_norm)
             ed_norm = " ".join(ed_norm.split()).strip()
 
         # Cadena de identidad determinista según especificación estricta del usuario

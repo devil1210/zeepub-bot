@@ -40,6 +40,7 @@ from api.handlers.admin import (
     handle_admin_scan_user,
     handle_admin_send_logs_telegram,
     handle_admin_set_user_level,
+    handle_admin_stats,
     handle_admin_sync_library_cloud,
     handle_admin_sync_themes,
     handle_admin_sync_users_cloud,

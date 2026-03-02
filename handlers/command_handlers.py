@@ -66,9 +66,7 @@ class CommandHandlers:
         from services.user_service import sync_user_from_env
 
         try:
-            synced = await sync_user_from_env(uid, tg_user=update.effective_user)
-            if synced:
-                logger.info(f"User {uid} auto-synced from ENV: level={synced.get('level')}")
+            await sync_user_from_env(uid, tg_user=update.effective_user)
         except Exception as e:
             logger.error(f"Error syncing user {uid} from ENV: {e}")
 
@@ -140,61 +138,19 @@ class CommandHandlers:
         # Publishers (ephemeral choice for next book). Admin-only users (not publishers)
         # will be handled separately (go directly to Evil). For users that are both
         # admin+publisher we still show the ephemeral choice here.
-        user_data_start = await get_effective_user(uid, tg_user=update.effective_user)
-        level_start = user_data_start.get("level", "free")
-        role_start = user_data_start.get("role")
-
+        # 1. Definir Nivel y Rol prioritario
+        user_info = await get_effective_user(uid, tg_user=update.effective_user)
+        level_start = user_info.get("level", "free")
+        role_start = user_info.get("role")
+        is_admin = uid in config.ADMIN_USERS
         is_publisher = level_start == "staff" and role_start == "Publicador"
 
-        # Legacy fallback or Override: Check config list too?
-        # User said "para esta nueva combinacion es...", implying strict definition.
-        # But let's keep config list as "Super Publishers" just in case, or stick to strict req.
-        # Sticking to strict requirement per user instruction.
-        # Publishers (ephemeral choice for next book). Admin-only users (not publishers)
-        # will be handled separately (go directly to Evil). For users that are both
-        # admin+publisher we still show the ephemeral choice here.
-        if is_publisher:
-            keyboard = [
-                [
-                    InlineKeyboardButton(
-                        "📨 Publicar en Telegram (próximo libro)",
-                        callback_data="set_publish_temp|telegram",
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        "📝 Publicar en Facebook (próximo libro)",
-                        callback_data="set_publish_temp|facebook",
-                    )
-                ],
-                [InlineKeyboardButton("⛔ Omitir", callback_data="set_publish_temp|none")],
-            ]
-            cms = context.application.plugin_manager.get_plugin("custom_messages")
-            base_txt = "🔧 Eres publisher — ¿dónde quieres publicar la próxima vez que selecciones un libro?"
-            text_pub = await cms.get_text("publisher_target_prompt") if (cms and cms.enabled) else base_txt
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=text_pub,
-                reply_markup=InlineKeyboardMarkup(keyboard),
-                message_thread_id=thread_id,
-            )
-            # When a publisher sees this choice we must not continue to show
-            # the collections menu until they choose where to publish. Defer
-            # showing collections until the selection callback runs.
-            return
+        # 2. Lógica de Menús (Jerarquía: Admin > Publisher > User)
+        if is_admin and not is_publisher:
+            # Administradores puros: Menú Evil directo
+            st["historial"] = []
+            st["ultima_pagina"] = config.BASE_URL
 
-        # Administradores: mostrar selección de destino Evil directamente
-        # NOTE: If a user is both admin and publisher we *do not* show the
-        # destination menu here. For admin+publisher the ephemeral publish
-        # choice shown above will decide whether to show the destination
-        # selection (Telegram) or assume "aquí" (Facebook). If the user is an
-        # admin but *not* a publisher, we show the Evil menu immediately.
-        if uid in config.ADMIN_USERS and not is_publisher:
-            # Administradores entran directamente en el menú Evil (sin contraseña)
-            if uid in config.ADMIN_USERS:
-                st["historial"] = []
-                st["ultima_pagina"] = config.BASE_URL
-            # Mostrar opciones de destino
             keyboard = [
                 [InlineKeyboardButton("📍 Aquí", callback_data="destino|aqui")],
                 [InlineKeyboardButton("📣 BotTest", callback_data="destino|@ZeePubBotTest")],
@@ -213,6 +169,24 @@ class CommandHandlers:
                 reply_markup=InlineKeyboardMarkup(keyboard),
                 message_thread_id=thread_id,
                 parse_mode=ParseMode.HTML,
+            )
+            return
+
+        if is_publisher:
+            # Publishers: Selector de destino efímero
+            keyboard = [
+                [InlineKeyboardButton("📨 Publicar en Telegram", callback_data="set_publish_temp|telegram")],
+                [InlineKeyboardButton("📝 Publicar en Facebook", callback_data="set_publish_temp|facebook")],
+                [InlineKeyboardButton("⛔ Omitir", callback_data="set_publish_temp|none")],
+            ]
+            cms = context.application.plugin_manager.get_plugin("custom_messages")
+            base_txt = "🔧 Eres publisher — ¿dónde quieres publicar la próxima vez?"
+            text_pub = await cms.get_text("publisher_target_prompt") if (cms and cms.enabled) else base_txt
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=text_pub,
+                reply_markup=InlineKeyboardMarkup(keyboard),
+                message_thread_id=thread_id,
             )
             return
 
@@ -564,47 +538,27 @@ class CommandHandlers:
             )
             return
 
-        # Actualizar .env
-        import os
-
-        env_path = ".env"
-        lines = []
-        updated = False
-
+        # Delegar actualización segura al SettingsService
         try:
-            if os.path.exists(env_path):
-                with open(env_path) as f:
-                    lines = f.readlines()
+            success = await self.settings_service.update_env_variable("WEB_CLIENT_DIR", new_val)
+            if success:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text=f"✅ Configuración actualizada a: <code>{new_val}</code>\n\n🔄 Reiniciando bot para aplicar cambios...",
+                    parse_mode="HTML",
+                    message_thread_id=thread_id,
+                )
 
-                with open(env_path, "w") as f:
-                    for line in lines:
-                        if line.startswith("WEB_CLIENT_DIR="):
-                            f.write(f"WEB_CLIENT_DIR={new_val}\n")
-                            updated = True
-                        else:
-                            f.write(line)
-                    if not updated:
-                        f.write(f"\nWEB_CLIENT_DIR={new_val}\n")
+                import sys
+                import time
+
+                # Salida controlada
+                time.sleep(1.5)
+                sys.exit(0)
             else:
-                with open(env_path, "w") as f:
-                    f.write(f"WEB_CLIENT_DIR={new_val}\n")
-
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=f"✅ Configuración actualizada a: <code>{new_val}</code>\n\n🔄 Reiniciando bot para aplicar cambios...",
-                parse_mode="HTML",
-                message_thread_id=thread_id,
-            )
-
-            # Reiniciar proceso (Docker debería reiniciarlo)
-            import sys
-            import time
-
-            time.sleep(1)  # Dar tiempo a que salga el mensaje
-            sys.exit(0)
-
+                raise ValueError("No se pudo actualizar el archivo .env")
         except Exception as e:
-            logger.error(f"Error actualizando .env: {e}")
+            logger.error(f"Error en /changeweb: {e}")
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=f"❌ Error al actualizar configuración: {e}",
@@ -632,35 +586,47 @@ class CommandHandlers:
         from core.supabase_manager import supabase_manager
 
         if not supabase_manager.is_active:
-            await update.message.reply_html("❌ El servicio Supabase no está configurado.")
+            await update.message.reply_html(
+                "❌ <b>Servidor No Configurado</b>\n\nEl servicio de autenticación Supabase no está activo. "
+                "Contacta con un administrador."
+            )
             return
 
         try:
             client = supabase_manager.get_client()
-            # redirectTo debe coincidir con los permitidos en Supabase Auth Settings
+
+            # 1. Validar WEBAPP_URL
             redirect_url = config.WEBAPP_URL
+            if not redirect_url or "localhost" in redirect_url and not config.DEBUG:
+                logger.warning(f"WEBAPP_URL potencialmente inválido: {redirect_url}")
+
             if not redirect_url.startswith("http"):
                 redirect_url = f"https://{redirect_url}"
 
-            # Generar link de login (Magic Link)
+            # 2. Intentar generar link
             res = client.auth.admin.generate_link(
                 {"type": "magiclink", "email": email, "options": {"redirectTo": redirect_url}}
             )
 
-            # Validar respuesta
             if not res or not hasattr(res, "properties") or not res.properties.action_link:
-                raise ValueError("No se recibió action_link de Supabase")
+                error_msg = getattr(res, "error", "Error desconocido en Supabase")
+                raise ValueError(f"Fallo al generar enlace: {error_msg}")
 
             link = res.properties.action_link
 
             await update.message.reply_html(
-                f"🔗 <b>¡Listo! {update.effective_user.first_name}</b>\n\n"
-                f"Puedes acceder a la web usando este enlace (válido por 1 hora):\n\n"
-                f"<a href='{link}'>🚀 Entrar a ZeePub Web</a>\n\n"
-                f"<i>Este enlace te autenticará automáticamente vinculando tu ID de Telegram ({uid}).</i>"
+                f"🔗 <b>¡Listo, {update.effective_user.first_name}!</b>\n\n"
+                f"Usa este enlace para entrar sin contraseña (válido 1h):\n\n"
+                f"<a href='{link}'>🚀 Acceder a ZeePub Web</a>\n\n"
+                f"<i>Nota: Este enlace es personal y vincula tu cuenta de Telegram ({uid}).</i>"
             )
         except Exception as e:
-            logger.error(f"Error generando link mágico para {uid} ({email}): {e}")
+            logger.error(f"Error en /acceso_web para {uid}: {e}")
             await update.message.reply_html(
-                "❌ Error al generar el acceso web. Por favor, asegúrate de que tu email esté registrado en Supabase o reintenta más tarde."
+                "❌ <b>Error de Autenticación</b>\n\n"
+                "No pudimos generar tu acceso. Posibles causas:\n"
+                "• El correo no está registrado en el sistema.\n"
+                "• Error de conexión con Supabase.\n"
+                "• Configuración de URL desactualizada.\n\n"
+                "<i>Reintenta en unos minutos o usa /start para refrescar tu sesión.</i>"
             )

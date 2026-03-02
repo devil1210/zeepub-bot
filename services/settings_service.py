@@ -110,3 +110,45 @@ class SettingsService:
         import asyncio
 
         return await asyncio.to_thread(get_setting, key, default)
+
+    async def update_env_variable(self, key: str, value: str) -> bool:
+        """
+        Actualiza una variable en el archivo .env de forma segura.
+        Evita condiciones de carrera y mantiene el formato del archivo.
+        """
+        import asyncio
+
+        def _update():
+            env_path = ".env"
+            try:
+                lines = []
+                if os.path.exists(env_path):
+                    with open(env_path, encoding="utf-8") as f:
+                        lines = f.readlines()
+
+                new_lines = []
+                found = False
+                for line in lines:
+                    if line.startswith(f"{key}="):
+                        new_lines.append(f"{key}={value}\n")
+                        found = True
+                    else:
+                        new_lines.append(line)
+
+                if not found:
+                    if new_lines and not new_lines[-1].endswith("\n"):
+                        new_lines.append("\n")
+                    new_lines.append(f"{key}={value}\n")
+
+                # Escritura atómica usando un archivo temporal
+                temp_path = f"{env_path}.tmp"
+                with open(temp_path, "w", encoding="utf-8") as f:
+                    f.writelines(new_lines)
+
+                os.replace(temp_path, env_path)
+                return True
+            except Exception as e:
+                logger.error(f"Error actualizando .env: {e}")
+                return False
+
+        return await asyncio.to_thread(_update)
