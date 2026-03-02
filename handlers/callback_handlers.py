@@ -355,13 +355,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Si el destino es el mismo chat, borramos el mensaje de la ficha
         if actual_destino == chat_origen:
-            # Borrar mensajes previos de la ficha (portada y sinopsis) si existen
-            old_ids = st.pop("last_detalles_msg_ids", [])
-            for m_id in old_ids:
-                try:
-                    await context.bot.delete_message(chat_id=chat_origen, message_id=m_id)
-                except Exception:
-                    pass
+            # Quitamos los ids de la lista para que no queden vinculados (y no se borren a futuro en 'cerrar')
+            # Pero ya no los borramos aquí para mantener el contexto visual
+            st.pop("last_detalles_msg_ids", [])
 
             try:
                 await query.message.delete()

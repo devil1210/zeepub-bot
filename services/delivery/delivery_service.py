@@ -73,6 +73,7 @@ class TelegramDeliveryProvider(DeliveryProvider):
             auto_delete_seconds=options.get("auto_delete_seconds", 0),
             custom_caption=custom_caption,
             caption_template=caption_template,
+            reply_markup=options.get("reply_markup"),
         )
 
 
