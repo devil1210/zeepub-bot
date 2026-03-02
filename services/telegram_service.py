@@ -240,7 +240,19 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     # Usamos <hr><hr> para que enviar_libro_directo salte Part 0 (Portada) y Part 1 (Sinopsis)
     from services.publisher.publisher_service import TelegramPublisherProvider
 
-    compact_caption = f"<hr><hr>{TelegramPublisherProvider.INFO_TEMPLATE}"
+    # Botones de navegación integrados
+    restantes = await downloads_left(uid)
+    quota_text = ""
+    if restantes != "ilimitadas":
+        quota_text = f"\n\n📥 Te quedan {restantes} descargas disponibles para hoy."
+
+    compact_caption = f"<hr><hr>{TelegramPublisherProvider.INFO_TEMPLATE}{quota_text}"
+
+    keyboard = [
+        [InlineKeyboardButton("📚 Volver a categorías", callback_data="volver_colecciones")],
+        [InlineKeyboardButton("↩️ Volver a la página anterior", callback_data="volver_ultima")],
+        [InlineKeyboardButton("❌ Cerrar", callback_data="cerrar")],
+    ]
 
     # Intentar enviar
     success = await delivery_service.deliver(
@@ -253,6 +265,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
             "job_queue": job_queue,
             "auto_delete_seconds": delete_seconds,
             "caption": compact_caption,
+            "reply_markup": InlineKeyboardMarkup(keyboard),  # Integrar botones aquí
         },
     )
 
@@ -309,24 +322,10 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
                 logger.error(f"Error finding local book for rating: {e}")
         # -------------------------------------
 
-    restantes = await downloads_left(uid)
-    quota_text = ""
-    if restantes != "ilimitadas":
-        quota_text = f"\n\n📥 Te quedan {restantes} descargas disponibles para hoy."
-
-    # Mostrar opciones finales unificadas con la cuota
-    keyboard = [
-        [InlineKeyboardButton("📚 Volver a categorías", callback_data="volver_colecciones")],
-        [InlineKeyboardButton("↩️ Volver a la página anterior", callback_data="volver_ultima")],
-        [InlineKeyboardButton("❌ Cerrar", callback_data="cerrar")],
-    ]
-    await bot.send_message(
-        chat_id=chat_origen,
-        text=f"✅ <b>Descarga procesada con éxito.</b>{quota_text}\n\nSelecciona una opción para continuar:",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        message_thread_id=thread_id_origen,
-        parse_mode="HTML",
-    )
+    # --- Limpieza de mensajes antiguos de detalles (Opcional, si el usuario prefiere no borrarlos los dejamos) ---
+    # Pero el usuario pidió: "sigues borrando los mensajes de portada y sinoposis innecesariamente"
+    # Así que NO los borramos. Los identificadores están en st.get("last_detalles_msg_ids") si hiciera falta.
+    pass
 
 
 async def enviar_libro_directo(
@@ -532,8 +531,16 @@ async def enviar_libro_directo(
         source_text = caption_template or custom_caption
         msg_parts = []
         if source_text:
+            # Detectar si empieza por separadores (indica que queremos saltar partes)
+            starts_with_sep = source_text.startswith("<hr>") or source_text.startswith("---")
             msg_parts = re.split(r"<hr\s*/?>|---next---|---", source_text)
-            msg_parts = [p.strip() for p in msg_parts]
+
+            # Si empezaba por separador, la primera parte de re.split será vacía.
+            # La mantenemos si queremos que el índice coincida (Part 0 vacía = no enviar portada).
+            if starts_with_sep:
+                msg_parts = [p.strip() for p in msg_parts]
+            else:
+                msg_parts = [p.strip() for p in msg_parts if p.strip()]
 
         # Aplicar el motor de plantillas a cada parte
         msg_parts = [apply_publication_template(p, meta) for p in msg_parts]
