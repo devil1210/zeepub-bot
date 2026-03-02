@@ -63,39 +63,15 @@ class SeriesScanner:
             current_name = series.series_name or ""
             extracted_name = extracted.get("series") or book.series_english or book.title
 
-            # Lógica inteligente para preservar ediciones manuales
-            should_update_name = False
-            update_reason = ""
-
-            if not current_name:
-                should_update_name = True
-                update_reason = "vacío"
-            elif current_name == book.series_english and extracted_name != book.series_english:
-                # Era solo título en inglés, actualizar con versión procesada
-                should_update_name = True
-                update_reason = "mejora de título inglés"
-            elif current_name == book.title and extracted_name != book.title:
-                # Era solo título crudo, actualizar con versión procesada
-                should_update_name = True
-                update_reason = "mejora de título crudo"
-            elif len(current_name) < 5 and current_name == current_name.upper():
-                # Probable auto-generado (muy corto y todo mayúsculas)
-                should_update_name = True
-                update_reason = "auto-generado detectado"
-            elif "?" in extracted_name and "?" not in current_name:
-                # El extraído tiene signo de interrogación pero el actual no
-                should_update_name = True
-                update_reason = "añadir signo de interrogación faltante"
-            elif "?" in current_name and "?" not in extracted_name:
-                # El actual tiene signo pero el extraído no, preservar
-                should_update_name = False
-                update_reason = "preservar signo de interrogación manual"
+            # Usar lógica inteligente para decidir si preservar
+            should_preserve, preserve_reason = SeriesScanner._should_preserve_current_name(current_name, extracted_name)
+            should_update_name = not should_preserve
 
             if should_update_name:
                 series.series_name = extracted_name
-                logger.info(f"📝 Actualizado series_name ({update_reason}): {current_name} → {extracted_name}")
+                logger.info(f"📝 Actualizado series_name ({preserve_reason}): {current_name} → {extracted_name}")
             else:
-                logger.info(f"🔒 Preservado series_name manual ({update_reason}): {current_name}")
+                logger.info(f"🔒 Preservado series_name manual ({preserve_reason}): {current_name}")
 
             book_author = extracted.get("author")
             if book_author and series.author != book_author:
@@ -136,6 +112,41 @@ class SeriesScanner:
                     series.cover_url = book.cover_low or book.cover_medium
 
         return series
+
+    @staticmethod
+    def _should_preserve_current_name(current_name: str, extracted_name: str) -> tuple[bool, str]:
+        """
+        Determina si se debe preservar el nombre actual de la serie.
+        Retorna (should_preserve, reason).
+        """
+        if not current_name:
+            return False, "vacío"
+
+        if current_name == extracted_name:
+            return True, "idéntico"
+
+        # Preservar si el actual tiene caracteres especiales que el extraído no tiene
+        special_chars = [":", "!", "?", "...", "—", "[", "]", "(", ")", "&", "%", "#", "@", "*", "+"]
+        has_special_current = any(char in current_name for char in special_chars)
+        has_special_extracted = any(char in extracted_name for char in special_chars)
+
+        if has_special_current and not has_special_extracted:
+            return True, f"preservar carácter especial: {[c for c in special_chars if c in current_name][0]}"
+
+        # Preservar si el actual es significativamente más largo (edición manual)
+        if len(current_name) > len(extracted_name) + 5:
+            return True, "preservar título extendido manual"
+
+        # Preservar si el actual tiene formato complejo (mix de mayúsculas/minúsculas, números)
+        has_complex_format = (
+            any(c.isupper() for c in current_name if c.isalpha())
+            and any(c.islower() for c in current_name if c.isalpha())
+            and any(c.isdigit() for c in current_name)
+        )
+        if has_complex_format and not any(c.isupper() for c in extracted_name if c.isalpha()):
+            return True, "preservar formato complejo manual"
+
+        return False, "auto-generado o mejorable"
 
     @staticmethod
     def sync_series_metadata(session: Any, series_hash: str):
