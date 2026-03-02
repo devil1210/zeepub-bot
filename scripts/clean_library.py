@@ -16,25 +16,26 @@ import utils.library_db
 utils.library_db.engine = utils.library_db.create_library_engine()  # Force re-init with new URL
 import logging
 
-from utils.library_db import get_session
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("cleanup")
 
 
-def cleanup_library():
+async def cleanup_library():
     """
     Verifica la existencia física de CADA libro en la base de datos local.
     Si no existe, lo elimina/archiva.
     """
     logger.info(f"Starting Library Integrity Check on {config.DATABASE_URL}...")
 
+    from core.db_manager_pg import pg_manager
     from services.scanner_service import ScannerService
 
-    with get_session() as session:
-        stats = ScannerService.cleanup_library_orphans(session, user_id=0)  # 0 for System/Script
+    async with pg_manager.get_session() as session:
+        stats = await ScannerService.cleanup_library_orphans(session, user_id=0)  # 0 for System/Script
         logger.info(f"Integrity check complete: {stats}")
 
 
 if __name__ == "__main__":
-    cleanup_library()
+    import asyncio
+
+    asyncio.run(cleanup_library())

@@ -82,8 +82,8 @@ async def handle_admin_cleanup_library(data: dict[str, Any], user_data: dict[str
     """Checks for physical existence of all books and cleans up the database."""
     check_staff(user_data)
     try:
-        with get_session() as session:
-            stats = ScannerService.cleanup_library_orphans(session, user_id=user_data.get("user_id"))
+        async with pg_manager.get_session() as session:
+            stats = await ScannerService.cleanup_library_orphans(session, user_id=user_data.get("user_id"))
             return {
                 "success": True,
                 "message": f"Limpieza completada: Se eliminaron {stats['deleted_books']} libros.",
