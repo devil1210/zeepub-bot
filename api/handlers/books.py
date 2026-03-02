@@ -36,11 +36,12 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
         v_limit = data.get("limit", 100)
         v_offset = data.get("offset", 0)
 
-        # Optimization: Fetch metadata and volumes in parallel
+        # Optimization: Fetch metadata, total downloads and volumes in parallel
         series_task = LibraryService.get_series_metadata(s_hash)
+        downloads_task = LibraryService.get_series_total_downloads(s_hash)
         volumes_task = LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
 
-        series, volumes = await asyncio.gather(series_task, volumes_task)
+        series, total_downloads, volumes = await asyncio.gather(series_task, downloads_task, volumes_task)
 
         if not series and not volumes:
             raise HTTPException(status_code=404, detail="Serie no encontrada")
@@ -77,6 +78,7 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
             else None,
             "rating_average": series.rating_average if series else 0,
             "rating_count": (series.rating_count if series else 0) or 0,
+            "download_count": total_downloads,
             "numBooks": series.book_count if series else len(volumes),
             "is_uncensored": rep.get("is_uncensored", False) if rep else False,
             "color_mode": rep.get("color_mode") if rep else None,

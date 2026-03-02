@@ -144,7 +144,15 @@ class BookRepository(BaseRepository[LocalBook]):
     async def get_recent_books(self, page: int = 1, items_per_page: int = 10) -> dict[str, Any]:
         """Obtiene los libros añadidos recientemente con soporte de paginación."""
         async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).options(selectinload(LocalBook.series_info))
+            # Subquery for download count
+            dl_subquery = (
+                select(func.count(UserDownload.id))
+                .where(UserDownload.book_hash == LocalBook.book_hash)
+                .correlate(LocalBook)
+                .scalar_subquery()
+            )
+
+            stmt = select(LocalBook, dl_subquery.label("download_count")).options(selectinload(LocalBook.series_info))
 
             # Contar total de resultados
             count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -155,9 +163,15 @@ class BookRepository(BaseRepository[LocalBook]):
             stmt = stmt.order_by(LocalBook.indexed_at.desc()).offset(start).limit(items_per_page)
 
             result = await session.execute(stmt)
-            books = result.scalars().all()
+            rows = result.all()
 
-            results = [b.to_dict() for b in books]
+            results = []
+            for row in rows:
+                book, dl_count = row
+                book_dict = book.to_dict()
+                book_dict["download_count"] = dl_count or 0
+                results.append(book_dict)
+
             total_pages = (total_items + items_per_page - 1) // items_per_page
 
             return {

@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
 )
 from sqlalchemy.orm import relationship
 
@@ -467,7 +468,10 @@ class ArchivedSeries(Base):
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
     cover_url = Column(String(1024))
-
+    author = Column(String(255))
+    description = Column(Text)
+    tags = Column(JSON)
+    book_type = Column(String(100))
     publisher = Column(String(255))
 
     archived_at = Column(DateTime, default=datetime.utcnow)
@@ -490,6 +494,8 @@ class ArchivedBook(Base):
     last_filepath = Column(String(1024))
 
     volume = Column(Float)
+    author = Column(String(255))
+    book_type = Column(String(100))
 
     archived_at = Column(DateTime, default=datetime.utcnow)
     original_book_id = Column(Integer)  # ID original para referencia

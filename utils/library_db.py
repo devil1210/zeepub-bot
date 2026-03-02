@@ -216,7 +216,10 @@ def check_migrations():
 
             # 8. archived_series columns
             if table_exists("archived_series"):
-                add_column_if_missing("archived_series", "spanish_title", "VARCHAR(255)")
+                add_column_if_missing("archived_series", "series_spanish", "VARCHAR(255)")
+                add_column_if_missing("archived_series", "author", "VARCHAR(255)")
+                add_column_if_missing("archived_series", "description", "TEXT")
+                add_column_if_missing("archived_series", "tags", "JSONB")
                 add_column_if_missing("archived_series", "book_type", "VARCHAR(100)")
                 add_column_if_missing("archived_series", "publisher", "VARCHAR(255)")
 

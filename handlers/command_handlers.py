@@ -160,7 +160,7 @@ class CommandHandlers:
 
             # Insert dynamic channels
             for ch in active_channels:
-                prefix = "📣 " if ch.type == "telegram" else "📘 " if ch.type == "facebook" else "🌐 "
+                prefix = "📣 " if ch.platform == "telegram" else "📘 " if ch.platform == "facebook" else "🌐 "
                 btn_text = f"{prefix}{ch.name}"
                 keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"destino|{ch.chat_id_or_username}")])
 
@@ -349,13 +349,27 @@ class CommandHandlers:
         chat_id = update.effective_chat.id
         msg_id = update.message.message_id
 
-        # Borrar el último mensaje anterior (el menú)
-        try:
-            await context.bot.delete_message(chat_id=chat_id, message_id=msg_id - 1)
-        except Exception:
-            logger.debug("No se pudo borrar mensaje anterior")
+        # Si estamos en vista de detalles (3 mensajes), NO borrar el mensaje anterior.
+        # En su lugar, quitar botones del último mensaje de detalles para quedar en "espera"
+        if st.get("current_view") == "detalles_libro":
+            last_ids = st.get("last_detalles_msg_ids", [])
+            if last_ids:
+                try:
+                    # El último mensaje de la lista es el que tiene los botones
+                    await context.bot.edit_message_reply_markup(
+                        chat_id=chat_id, message_id=last_ids[-1], reply_markup=None
+                    )
+                except Exception:
+                    pass
+            # No borramos el mensaje anterior (msg_id - 1) para mantener la información visible
+        else:
+            # Comportamiento normal fuera de detalles: Borrar el último mensaje anterior (el menú)
+            try:
+                await context.bot.delete_message(chat_id=chat_id, message_id=msg_id - 1)
+            except Exception:
+                logger.debug("No se pudo borrar mensaje anterior")
 
-        # Borrar el mensaje de /cancel
+        # Borrar el mensaje del comando /cancel
         try:
             await update.message.delete()
         except Exception:

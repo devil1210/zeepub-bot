@@ -110,6 +110,7 @@ class LibraryService:
                     tag_list=s.tags if s.tags else [],
                     rating_average=s.rating_average,
                     rating_count=s.rating_count,
+                    download_count=getattr(s, "download_count", 0),
                     illustrator=s.illustrator,
                     translator=(rep.translator if rep else None),
                     layout_by=(rep.layout_by if rep else None),
@@ -141,13 +142,18 @@ class LibraryService:
         """Retorna los volúmenes de una serie agrupada (Async). Validado con Pydantic."""
         async with pg_manager.get_session() as session:
             try:
-                # Optimized query using outer join and group_by for much faster performance on large series
+                # Use correlated subquery for download counts to avoid grouping issues with selectinload
+                dl_subquery = (
+                    select(func.count(UserDownload.id))
+                    .where(UserDownload.book_hash == LocalBook.book_hash)
+                    .correlate(LocalBook)
+                    .scalar_subquery()
+                )
+
                 stmt = (
-                    select(LocalBook, func.count(UserDownload.id).label("download_count"))
+                    select(LocalBook, dl_subquery.label("download_count"))
                     .options(selectinload(LocalBook.series_info))
-                    .outerjoin(UserDownload, UserDownload.book_hash == LocalBook.book_hash)
                     .where(LocalBook.series_hash == series_hash)
-                    .group_by(LocalBook.id)
                     .order_by(LocalBook.volume.asc(), LocalBook.id.asc())
                 )
 
@@ -187,6 +193,14 @@ class LibraryService:
     async def get_series_metadata(series_hash: str) -> SeriesMetadata | None:
         """Obtiene la metadata de una serie por su hash (Async)."""
         return await series_repo.get_by_hash(series_hash)
+
+    @staticmethod
+    async def get_series_total_downloads(series_hash: str) -> int:
+        """Calcula el total de descargas de todos los libros de una serie."""
+        async with pg_manager.get_session() as session:
+            stmt = select(func.count(UserDownload.id)).where(UserDownload.series_hash == series_hash)
+            res = await session.execute(stmt)
+            return res.scalar() or 0
 
     @staticmethod
     async def get_book_by_id(book_id: int) -> dict[str, Any] | None:
@@ -379,8 +393,15 @@ class LibraryService:
                     items = [b.to_dict() for b in books]
                     return {"items": items, "total": len(items), "type": "volumes"}
 
-                # Root or folder navigation: Use SeriesMetadata
-                stmt = select(SeriesMetadata)
+                # Root or folder navigation: Use SeriesMetadata with download count
+                dl_subquery = (
+                    select(func.count(UserDownload.id))
+                    .where(UserDownload.series_hash == SeriesMetadata.series_hash)
+                    .correlate(SeriesMetadata)
+                    .scalar_subquery()
+                )
+
+                stmt = select(SeriesMetadata, dl_subquery.label("download_count"))
 
                 if source_id:
                     stmt = stmt.join(LocalBook).where(LocalBook.source_id == source_id).distinct()
@@ -395,17 +416,13 @@ class LibraryService:
                 stmt = stmt.offset(start).limit(page_size)
 
                 res = await session.execute(stmt)
-                series_list = res.scalars().all()
+                rows = res.all()
 
                 items = []
-                for s in series_list:
-                    # Resolve cover using the same logic as search (with fallback to first book if metadata cover is missing)
-                    # For optimization in root catalog, we might need a rep book, but for now we fallback to metadata
-                    # or try to fetch the first book if needed.
-                    # Since s.cover_url is already synced during scanning (usually), we use it.
-                    # If it is missing, we use a default or search_series helper logic.
+                for row in rows:
+                    s = row[0]
+                    dl_count = row[1] or 0
 
-                    # Let's use the search_series logic to be safe if s.cover_url is null
                     items.append(
                         {
                             "id": f"series_{s.series_hash}",
@@ -417,6 +434,7 @@ class LibraryService:
                             "numBooks": s.book_count,
                             "book_count": s.book_count,
                             "book_type": s.book_type,
+                            "download_count": dl_count,
                             "cover": s.cover_url or "/book-placeholder.jpg",
                             "series_hash": s.series_hash,
                         }

@@ -5,7 +5,7 @@ from sqlalchemy import String, and_, cast, delete, func, or_, select
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, SeriesMetadata
+from models.library_models import LocalBook, SeriesMetadata, UserDownload
 from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
@@ -117,8 +117,15 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 pattern = f"%{query}%"
                 search_type = search_type.lower() if search_type else "todos"
 
-                # Base query
-                stmt = select(SeriesMetadata)
+                # Base query with download count subquery
+                dl_subquery = (
+                    select(func.count(UserDownload.id))
+                    .where(UserDownload.series_hash == SeriesMetadata.series_hash)
+                    .correlate(SeriesMetadata)
+                    .scalar_subquery()
+                )
+
+                stmt = select(SeriesMetadata, dl_subquery.label("download_count"))
 
                 # 1. Filtros de Serie
                 series_filters = []
@@ -214,7 +221,13 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 stmt = stmt.offset(start).limit(items_per_page)
 
                 res = await session.execute(stmt)
-                series_list = res.scalars().all()
+                rows = res.all()
+                series_list = []
+                for row in rows:
+                    s = row[0]
+                    # Attach download_count attribute manually for the Service layer to use
+                    s.download_count = row[1] or 0
+                    series_list.append(s)
 
                 return {
                     "results": series_list,

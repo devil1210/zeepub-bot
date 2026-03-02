@@ -4,12 +4,11 @@ Project Architect
 Automated tool for senior architect tasks
 """
 
-import os
-import sys
-import json
 import argparse
+import json
+import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+
 
 class ProjectArchitect:
     """Main class for project architect functionality"""
@@ -19,7 +18,7 @@ class ProjectArchitect:
         self.verbose = verbose
         self.results = {}
     
-    def run(self) -> Dict:
+    def run(self) -> dict:
         """Execute the main functionality"""
         print(f"🚀 Running {self.__class__.__name__}...")
         print(f"📁 Target: {self.target_path}")
@@ -50,9 +49,9 @@ class ProjectArchitect:
             print("📊 Analyzing...")
         
         # Main logic here
-        self.results['status'] = 'success'
-        self.results['target'] = str(self.target_path)
-        self.results['findings'] = []
+        self.results["status"] = "success"
+        self.results["target"] = str(self.target_path)
+        self.results["findings"] = []
         
         # Add analysis results
         if self.verbose:
@@ -74,22 +73,22 @@ def main():
         description="Project Architect"
     )
     parser.add_argument(
-        'target',
-        help='Target path to analyze or process'
+        "target",
+        help="Target path to analyze or process"
     )
     parser.add_argument(
-        '--verbose', '-v',
-        action='store_true',
-        help='Enable verbose output'
+        "--verbose", "-v",
+        action="store_true",
+        help="Enable verbose output"
     )
     parser.add_argument(
-        '--json',
-        action='store_true',
-        help='Output results as JSON'
+        "--json",
+        action="store_true",
+        help="Output results as JSON"
     )
     parser.add_argument(
-        '--output', '-o',
-        help='Output file path'
+        "--output", "-o",
+        help="Output file path"
     )
     
     args = parser.parse_args()
@@ -104,11 +103,11 @@ def main():
     if args.json:
         output = json.dumps(results, indent=2)
         if args.output:
-            with open(args.output, 'w') as f:
+            with open(args.output, "w") as f:
                 f.write(output)
             print(f"Results written to {args.output}")
         else:
             print(output)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

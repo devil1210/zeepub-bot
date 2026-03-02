@@ -586,15 +586,30 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Cerrar menú / Salir
     if data == "cerrar":
-        # Si venimos de la vista de detalles de 3 mensajes, limpiamos todo
+        # Si venimos de la vista de detalles de 3 mensajes, QUEDAR EN ESPERA
         ids = st.get("last_detalles_msg_ids", [])
-        if ids:
+        if ids and st.get("current_view") == "detalles_libro":
+            # Solo quitamos botones del mensaje de info (el último de los 3)
+            mid = ids[-1]
+            try:
+                await context.bot.edit_message_reply_markup(
+                    chat_id=update.effective_chat.id, message_id=mid, reply_markup=None
+                )
+            except Exception:
+                pass
+            st["last_detalles_msg_ids"] = []  # Ya no los vinculamos para borrado futuro
+        elif ids:
+            # Fallback para otras vistas que usen last_detalles_msg_ids (si las hay): borrar todo
             for mid in ids:
                 try:
                     await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=mid)
                 except Exception:
                     pass
             st["last_detalles_msg_ids"] = []
+
+        # Si ya procesamos el modo espera (quitando botones), salimos sin enviar despedida extra
+        if st.get("current_view") == "detalles_libro" and not st.get("last_detalles_msg_ids"):
+            return
 
         # Enviar mensaje de despedida o simplemente borrar el último si era de botones
         try:
