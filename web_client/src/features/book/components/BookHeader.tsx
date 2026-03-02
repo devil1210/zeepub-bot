@@ -4,6 +4,7 @@ import { Calendar, Clock, Download, Hash, Languages, PenTool, Star, User } from 
 interface BookHeaderProps {
     displayTitle: string;
     romajiTitle: string;
+    seriesName?: string; // Nuevo: nombre de la serie
     author: string;
     rating: number;
     ratingCount: number;
@@ -22,6 +23,7 @@ interface BookHeaderProps {
 export const BookHeader: React.FC<BookHeaderProps> = ({
     displayTitle,
     romajiTitle,
+    seriesName,
     author,
     rating,
     ratingCount,
@@ -88,7 +90,7 @@ export const BookHeader: React.FC<BookHeaderProps> = ({
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-2 tracking-tight drop-shadow-xl">
-                {displayTitle}
+                {seriesName || displayTitle}
             </h1>
             <h2 className="text-base sm:text-lg text-white/50 italic font-medium mb-6 leading-relaxed">
                 {romajiTitle}

@@ -359,8 +359,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     lastUpdated: curVolume.modified_at_opf || curVolume.modifiedAtOpf ? formatDate(String(curVolume.modified_at_opf || curVolume.modifiedAtOpf)) : (curVolume.modified_at || curVolume.modifiedAt ? formatDate(String(curVolume.modified_at || curVolume.modifiedAt)) : 'N/A'),
     publishedDate: formatDate(String(curVolume.published_at || curVolume.publishedAt || curVolume.publishedDate || '')),
     description: String(curVolume.description || curVolume.summary || 'Sin sinopsis disponible.'),
-    displayTitle: String(curVolume.series || curSeries?.title || curVolume.english_title || curVolume.englishTitle || curVolume.title || 'Libro sin título'),
-    romajiTitle: String(curVolume.romaji_title || curVolume.romajiTitle || curSeries?.romajiTitle || ''),
+    displayTitle: String(curSeries?.title || curVolume.series || curVolume.english_title || curVolume.englishTitle || curVolume.title || 'Libro sin título'),
+    romajiTitle: String(curSeries?.romajiTitle || curVolume.romaji_title || ''),
     illustrator: String(curVolume.illustrator || 'N/A'),
     translator: String(curVolume.translator || 'ZeePub'),
     group: String(curVolume.group || curVolume.publisher || curVolume.translator || 'ZeePub'),
@@ -492,6 +492,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               <BookHeader
                 displayTitle={displayData.displayTitle}
                 romajiTitle={displayData.romajiTitle}
+                seriesName={curSeries?.title}
                 author={curSeries.author}
                 rating={displayData.rating}
                 ratingCount={displayData.ratingCount}
