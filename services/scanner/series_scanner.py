@@ -62,6 +62,7 @@ class SeriesScanner:
                 series_name=final_series_name,
                 series_spanish=book.series_spanish,
                 series_english=book.series_english,
+                romaji_title=book.romaji_title,  # 🆕 Copiar desde LocalBook
                 series_hash=book.series_hash,
                 author=extracted.get("author") or "",
                 author_jap=extracted.get("author_jap"),
@@ -131,6 +132,12 @@ class SeriesScanner:
 
             if book.series_english and series.series_english != book.series_english:
                 series.series_english = book.series_english
+
+            # COPIAR ROMAJI_TITLE desde LocalBook a SeriesMetadata
+            if book.romaji_title and series.romaji_title != book.romaji_title:
+                series.romaji_title = book.romaji_title
+                logger.info(f"📝 Actualizado romaji_title desde LocalBook: {series.romaji_title}")
+
                 # Preservar slug manual vs auto-generado
                 current_slug = series.slug or ""
                 new_slug = generar_slug_from_meta(series.to_dict())
