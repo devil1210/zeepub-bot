@@ -541,7 +541,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Volver a categorías raíz
     if data == "volver_colecciones":
-        await mostrar_menu_principal(update, context)
+        # Delete the current message (usually the epub cover + buttons) to prevent clutter
+        try:
+            await update.callback_query.message.delete()
+        except Exception:
+            pass
+        await mostrar_menu_principal(update, context, force_new=True)
         return
 
     # Volver a última página manteniendo los detalles visibles
