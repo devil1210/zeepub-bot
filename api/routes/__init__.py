@@ -1,0 +1,15 @@
+# api/routes/__init__.py
+
+from .admin_routes import AdminRoutes
+from .auth_routes import AuthRoutes
+from .config_routes import ConfigRoutes
+from .library_routes import LibraryRoutes
+from .media_routes import MediaRoutes
+
+__all__ = [
+    "LibraryRoutes",
+    "AdminRoutes",
+    "MediaRoutes",
+    "AuthRoutes",
+    "ConfigRoutes",
+]
