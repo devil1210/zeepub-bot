@@ -51,28 +51,38 @@ class SearchHandler(BaseCommandHandler):
     async def _search_by_term(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE, search_term: str, thread_id: int
     ):
-        """Perform search by term and show results."""
-        # This would integrate with the actual search service
-        # For now, showing a placeholder implementation
+        """Busca series por término y muestra los resultados."""
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-        from services.library_ui_service import search_library
+        from services.library_service import LibraryService
 
-        results = await search_library(search_term, uid=update.effective_user.id)
+        # Usar la misma lógica que la Mini App: buscar SERIES
+        data = await LibraryService.search_series(search_term, page=1, items_per_page=10)
+        results = data.get("results", [])
+        total = data.get("totalItems", 0)
 
         if not results:
-            no_results_text = f"🔍 <b>No se encontraron resultados para:</b>\n\n<code>{search_term}</code>\n\n💡 Intenta con otros términos."
+            no_results_text = f"🔍 <b>No se encontraron series para:</b>\n\n<code>{search_term}</code>\n\n💡 Intenta con otros términos."
             await self._send_message(update, no_results_text, thread_id)
             return
 
-        # Format and show results
-        results_text = f"🔍 <b>Resultados para:</b> <code>{search_term}</code>\n\n"
+        # Formatear resultados
+        results_text = f"🔍 <b>Series encontradas para:</b> <code>{search_term}</code>\n"
+        results_text += f"✨ Total: {total} series.\n\n"
 
-        for i, book in enumerate(results[:10], 1):  # Limit to 10 results
-            results_text += f"{i}. 📖 {book.get('title', 'Sin título')}\n"
-            results_text += f"   📝 Volumen: {book.get('volume', 'N/A')}\n"
-            results_text += f"   👤 Autor: {book.get('author', 'N/A')}\n\n"
+        for i, series in enumerate(results[:10], 1):
+            title = series.get("title", series.get("series", "Sin título"))
+            author = series.get("author", "Desconocido")
+            count = series.get("book_count", 0)
+            results_text += f"{i}. 📁 <b>{title}</b>\n"
+            results_text += f"   ✍️ {author} | 📚 {count} vol.\n\n"
 
-        if len(results) > 10:
-            results_text += f"\n... y {len(results) - 10} resultados más."
+        if total > 10:
+            results_text += f"<i>... y {total - 10} resultados más.</i>\n\n"
 
-        await self._send_message(update, results_text, thread_id)
+        results_text += "💡 <i>Usa la Mini App para explorar los volúmenes y descargar.</i>"
+
+        # Añadir botón para abrir la Mini App
+        keyboard = [[InlineKeyboardButton("🚀 Abrir en Mini App", url=f"https://t.me/{context.bot.username}/app")]]
+
+        await self._send_message(update, results_text, thread_id, reply_markup=InlineKeyboardMarkup(keyboard))

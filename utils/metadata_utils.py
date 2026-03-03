@@ -137,34 +137,17 @@ def generar_slug_from_meta(meta: Any) -> str:
     base_titulo = base_titulo.replace("×", "x")
     base_titulo = base_titulo.replace(",", " ")
 
-    for ch in (
-        "'",
-        "’",
-        "#",
-        "・",
-        "+",
-        ".",
-        "‘",
-        "’",
-        "“",
-        "”",
-        "（",
-        "）",
-        "、",
-        "：",
-        "？",
-        "！",
-        "；",
-        "?",
-        "-",
-        "_",
-        "―",
-        "—",
-        "–",
-    ):
-        base_titulo = base_titulo.replace(ch, "")
+    # Limpiar solo caracteres alfanuméricos y espacios
+    base_titulo = base_titulo.strip()
+    # Reemplazar caracteres con tildes y ñ por sus equivalentes básicos
+    import unicodedata
 
+    base_titulo = "".join(c for c in unicodedata.normalize("NFD", base_titulo) if unicodedata.category(c) != "Mn")
+    # Solo permitir letras, números y espacios (luego se convertirán a _)
+    base_titulo = re.sub(r"[^\w\s]", "", base_titulo)
+    # Reemplazar múltiples espacios por uno solo
     base_titulo = re.sub(r"\s+", " ", base_titulo).strip()
+    # Los espacios pasan a ser guiones bajos
     slug = base_titulo.replace(" ", "_")
     return slug
 
