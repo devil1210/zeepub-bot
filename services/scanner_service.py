@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import func, select, text
+from sqlalchemy import select, text
 
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
@@ -234,11 +234,6 @@ class ScannerService:
                         if book_res == "added":
                             results["added"] += 1
 
-                            stmt_s = (
-                                select(func.coalesce(text("series_name"), "Unknown"))
-                                .select_from(text("series_metadata"))
-                                .where(text("series_hash = :h"))
-                            )
                             # Better use relation if available
                             results["added_books_details"].append(
                                 {

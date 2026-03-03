@@ -62,7 +62,11 @@ class SearchHandler(BaseCommandHandler):
         total = data.get("totalItems", 0)
 
         if not results:
-            no_results_text = f"🔍 <b>No se encontraron series para:</b>\n\n<code>{search_term}</code>\n\n💡 Intenta con otros términos."
+            no_results_text = (
+                f"🔍 <b>¡Vaya! No encontré nada para:</b> <code>{search_term}</code>\n\n"
+                f"💡 <i>¿Quizás con una palabra clave diferente o revisando las tildes?</i>\n\n"
+                f"🔗 También puedes navegar por el catálogo completo en la Mini App."
+            )
             await self._send_message(update, no_results_text, thread_id)
             return
 

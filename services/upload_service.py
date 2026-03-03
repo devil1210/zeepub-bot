@@ -291,7 +291,7 @@ class UploadService:
                 return f"{int(v_float):02d}"
             parts = str(v_float).split(".")
             return f"{int(parts[0]):02d}.{parts[1]}"
-        except:
+        except Exception:
             return str(volume)
 
     def _clean_fs_name(self, name: str) -> str:
@@ -327,7 +327,7 @@ class UploadService:
         try:
             match = re.search(r"(\d+(?:\.\d+)?)", str(volume_str))
             return float(match.group(1)) if match else None
-        except:
+        except Exception:
             return None
 
     async def finalize_upload(self, epub_path: Path, suggested_path: str, metadata: dict) -> bool:

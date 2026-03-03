@@ -5,7 +5,6 @@ import re
 
 from models.library_models import LocalBook, SeriesMetadata
 from utils.helpers import generar_slug_from_meta
-from utils.logger import logger
 
 logger = logging.getLogger(__name__)
 

@@ -59,7 +59,7 @@ class StartHandler(BaseCommandHandler):
             return "🔧 <b>Modo Administrador</b>\n\nComandos especiales disponibles:\n• /evil - Modo mantenimiento\n• /changeweb - Cambiar interfaz\n\nUsa /catalog para continuar."
 
         text = "📚 <b>Bienvenido a ZeePub</b>\n\n"
-        text += "Tu biblioteca personal de novelas ligeras y manga.\n\n"
+        text += "Tu biblioteca personal de novelas ligeras.\n\n"
         text += "📖 <b>Comandos disponibles:</b>\n"
         text += "• /catalog - Explorar catálogo\n"
         text += "• /search - Buscar títulos\n"

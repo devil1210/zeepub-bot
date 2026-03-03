@@ -40,6 +40,7 @@ class GroupSettingsRepository(BaseRepository[GroupSettings]):
     async def delete(self, id: Any) -> bool:
         """Elimina una configuración de grupo por ID."""
         from sqlalchemy import delete
+
         async with pg_manager.get_session() as session:
             try:
                 stmt = delete(GroupSettings).where(GroupSettings.id == id)

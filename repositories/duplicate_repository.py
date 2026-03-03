@@ -1,8 +1,7 @@
 import logging
-from datetime import datetime
 from typing import Any
 
-from sqlalchemy import and_, delete, select, update
+from sqlalchemy import delete, select
 
 from core.db_manager_pg import pg_manager
 from models.library_models import DuplicateBook
@@ -59,7 +58,7 @@ class DuplicateRepository(BaseRepository[DuplicateBook]):
         """Obtiene todos los registros de duplicados detectados."""
         async with pg_manager.get_session() as session:
             try:
-                stmt = select(DuplicateBook).order_by(desc(DuplicateBook.detected_at))
+                stmt = select(DuplicateBook).order_by(DuplicateBook.detected_at.desc())
                 result = await session.execute(stmt)
                 return result.scalars().all()
             except Exception as e:

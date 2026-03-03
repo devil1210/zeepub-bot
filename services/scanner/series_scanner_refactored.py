@@ -5,7 +5,6 @@ import logging
 from typing import Any
 
 from models.library_models import LocalBook, MetadataProposal, SeriesMetadata
-from utils.logger import logger
 
 from .ai_processor import AIProcessor
 from .metadata_processor import MetadataProcessor

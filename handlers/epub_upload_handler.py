@@ -167,8 +167,10 @@ class EPUBUploader:
 
         if success:
             await query.edit_message_text(
-                f"✅ **Subida completada con éxito**\n\nEl libro ha sido indexado y está disponible en la librería.\n📍 `{info['metadata']['suggested_path']}`",
-                parse_mode=ParseMode.MARKDOWN,
+                f"✨ <b>¡Genial! Subida completada con éxito</b>\n\n"
+                f"El libro ha sido indexado y ya está disponible para toda la comunidad. ¡Gracias por tu gran aporte! 💖\n\n"
+                f"📍 <code>{info['metadata']['suggested_path']}</code>",
+                parse_mode="HTML",
             )
             # Log Historial via Repository (via service ideally but repo is fine)
             await upload_repo.log_history(

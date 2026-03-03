@@ -5,7 +5,6 @@ from typing import Any
 
 from models.library_models import LocalBook, SeriesMetadata
 from utils.helpers import parse_metadata_from_title
-from utils.logger import logger
 
 logger = logging.getLogger(__name__)
 

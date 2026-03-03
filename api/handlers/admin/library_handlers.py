@@ -165,12 +165,12 @@ async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, 
 async def handle_admin_find_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
     try:
-        async with pg_manager.get_session() as session:
+        async with pg_manager.get_session() as _:
             duplicate_hashes = await book_repo.get_duplicate_hashes()
             duplicate_groups = []
             total_wasted_space = 0
 
-            for content_hash, count in duplicate_hashes:
+            for content_hash, _ in duplicate_hashes:
                 books = await book_repo.get_books_by_hash(content_hash)
 
                 if len(books) <= 1:

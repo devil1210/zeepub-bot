@@ -202,7 +202,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     if not epub_buffer:
         await bot.send_message(
             chat_id=chat_origen,
-            text="⚠️ EPUB no disponible.",
+            text="⚠️ Lo sentimos, pero el archivo EPUB no está disponible en este momento. Inténtalo de nuevo más tarde o prueba con otro volumen. 🙏",
             message_thread_id=thread_id_origen,
         )
         return
@@ -211,7 +211,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     if not await can_download(uid):
         await bot.send_message(
             chat_id=destino,
-            text="🚫 Límite de descargas alcanzado.",
+            text="🚫 ¡Vaya! Has alcanzado tu límite de descargas por hoy. Vuelve mañana para seguir explorando nuevas historias. ✨",
             message_thread_id=thread_id_destino,
         )
         return
@@ -250,7 +250,8 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     if restantes != "ilimitadas":
         quota_text = f"\n\n📥 Te quedan {restantes} descargas disponibles para hoy."
 
-    compact_caption = f"<hr><hr>{TelegramPublisherProvider.INFO_TEMPLATE}{quota_text}"
+    gratitude = "\n\n✨ ¡Disfruta de tu lectura! Gracias por ser parte de nuestra comunidad. ❤️"
+    compact_caption = f"<hr><hr>{TelegramPublisherProvider.INFO_TEMPLATE}{quota_text}{gratitude}"
 
     keyboard = [
         [InlineKeyboardButton("📚 Volver a categorías", callback_data="volver_colecciones")],
@@ -364,7 +365,11 @@ async def enviar_libro_directo(
         # 2. Mensaje de preparación (siempre al usuario que interactúa)
         prep_msg = None
         try:
-            prep_msg = await bot.send_message(chat_id=user_id, text=f"⏳ Procesando: {title}...")
+            prep_msg = await bot.send_message(
+                chat_id=user_id,
+                text=f"⏳ Estamos preparando tu lectura: <b>{title}</b>... ¡Solo un momento! 🚀",
+                parse_mode="HTML",
+            )
         except Exception as e:
             logger.warning(f"No se pudo enviar mensaje de preparación: {e}")
 

@@ -40,7 +40,7 @@ class ConfigRoutes:
                 "app": {
                     "name": "ZeePub Mini App",
                     "version": "2.0.0",
-                    "description": "Biblioteca personal de novelas ligeras y manga",
+                    "description": "Biblioteca personal de novelas ligeras",
                 },
                 "user": {
                     "id": user_data.get("user_id"),

@@ -26,6 +26,13 @@ class StatusHandler(BaseCommandHandler):
         user_info = self._get_user_info(update)
         st = self._get_user_state(update.effective_user.id)
 
+        if not st:
+            no_activity_text = (
+                "✨ <b>Tu estado está limpio</b>\n\nNo hay operaciones activas en este momento. ¡Todo en orden! 👌"
+            )
+            await self._send_message(update, no_activity_text, thread_id)
+            return
+
         # Build status message
         status_text = await self._build_status_message(user_info, st, update.effective_user.id)
 
@@ -38,7 +45,7 @@ class StatusHandler(BaseCommandHandler):
         is_admin = uid in self.settings_service.get_admin_users()
 
         # User level and role info
-        status_text = "👤 <b>Tu Estado en ZeePub</b>\n\n"
+        status_text = "✨ <b>Perfil de Lector - ZeePub</b> ✨\n\n"
 
         if is_admin:
             status_text += "🔧 <b>Rol:</b> Administrador\n"
@@ -73,8 +80,6 @@ class StatusHandler(BaseCommandHandler):
                 status_text += "🖼️ Portada pendiente de confirmar\n"
             if st.get("titulo_pendiente"):
                 status_text += "📋 Título pendiente de asignar\n"
-        else:
-            status_text += "\n✅ <b>Estado:</b> Inactivo\n"
 
         # Account info
         status_text += f"\n📅 <b>Miembro desde:</b> {user_info.get('joined_date', 'Desconocido')}\n"
@@ -85,7 +90,9 @@ class StatusHandler(BaseCommandHandler):
                 status_text += f"📚 <b>Última descarga:</b> {last_download.strftime('%d/%m/%Y %H:%M')}\n"
 
         # Help footer
-        status_text += "\n💡 <b>Comandos útiles:</b>\n"
+        status_text += "\n📚 <b>Bienvenido a ZeePub</b>\n\n"
+        status_text += "Tu biblioteca personal de novelas ligeras.\n\n"
+        status_text += "📖 <b>Comandos disponibles:</b>\n"
         status_text += "• /cancel - Cancelar operación actual\n"
         status_text += "• /catalog - Explorar biblioteca\n"
         status_text += "• /search - Buscar contenido\n"

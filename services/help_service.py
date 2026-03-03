@@ -49,7 +49,7 @@ class HelpService:
         # Sort commands alphabetically
         commands.sort(key=lambda x: x[0])
 
-        for cmd_name, data in commands:
+        for cmd_name, _ in commands:
             button = InlineKeyboardButton(f"/{cmd_name}", callback_data=f"help_cmd:{cmd_name}")
             row.append(button)
 

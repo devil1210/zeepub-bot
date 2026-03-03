@@ -29,7 +29,11 @@ async def mostrar_menu_principal(update: Update, context: ContextTypes.DEFAULT_T
         [InlineKeyboardButton("❌ Salir", callback_data="cerrar")],
     ]
 
-    text = "<b>📚 Bienvenido a la Biblioteca Local</b>\n\n🎯 <i>Selecciona una categoría para explorar nuestra colección:</i>"
+    text = (
+        "<b>📚 Bienvenido a la Biblioteca Local</b>\n\n"
+        "✨ <i>Explora nuestra colección curada de Novelas Ligeras.</i>\n\n"
+        "🎯 <b>¿Qué novela te apetece leer hoy?</b>"
+    )
 
     if update.callback_query and not force_new:
         try:
@@ -258,7 +262,7 @@ async def mostrar_volumenes_local(
         vol = v.get("volume")
         if vol is not None:
             vol_display = int(vol) if float(vol).is_integer() else vol
-            vol_str = f"Vol. {vol_display}"
+            vol_str = f"📖 Vol. {vol_display}"
         else:
             vol_str = v.get("title", "")
 
@@ -417,7 +421,10 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
             pass
 
     # 4. ENVIAR MENSAJES (Flujo solicitado: Portada -> Sinopsis -> Detalles)
-    st["last_detalles_msg_ids"] = []
+    st["last_detalles_msg_ids"] = []  # Ya no los vinculamos para borrado futuro
+    if update.callback_query:
+        # Notificar que se queda en espera de forma sutil
+        await update.callback_query.answer("📌 Ficha técnica fijada en el chat.", show_alert=False)
 
     # A. Mensaje de Portada
     # Flujo de Prioridad: Alta -> Media -> Baja -> Original -> Portada genérica

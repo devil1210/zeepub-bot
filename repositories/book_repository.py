@@ -32,7 +32,12 @@ class BookRepository(BaseRepository[LocalBook]):
             return result.scalar_one_or_none()
 
     async def create(self, entity: LocalBook) -> LocalBook:
-        """Persiste un nuevo libro."""
+        """Persiste un nuevo libro con generación de short_link si es necesario."""
+        from utils.helpers import generate_short_link
+
+        if not entity.short_link:
+            entity.short_link = generate_short_link()
+
         async with pg_manager.get_session() as session:
             session.add(entity)
             await session.commit()
@@ -48,12 +53,22 @@ class BookRepository(BaseRepository[LocalBook]):
             return merged
 
     async def delete(self, id: Any) -> bool:
-        """Elimina un libro por ID."""
+        """Elimina un libro por ID manejando referencias en otras tablas."""
         async with pg_manager.get_session() as session:
-            stmt = delete(LocalBook).where(LocalBook.id == id)
-            result = await session.execute(stmt)
-            await session.commit()
-            return result.rowcount > 0
+            try:
+                # Actualizar referencias en otras tablas
+                await session.execute(update(DownloadHistory).where(DownloadHistory.book_id == id).values(book_id=None))
+                await session.execute(update(UserDownload).where(UserDownload.book_id == id).values(book_id=None))
+                await session.execute(update(UserRating).where(UserRating.book_id == id).values(book_id=None))
+
+                stmt = delete(LocalBook).where(LocalBook.id == id)
+                result = await session.execute(stmt)
+                await session.commit()
+                return result.rowcount > 0
+            except Exception as e:
+                logger.error(f"Error deleting book {id}: {e}")
+                await session.rollback()
+                return False
 
     async def get_by_hash(self, book_hash: str) -> LocalBook | None:
         """Busca un libro por su hash único."""
@@ -208,53 +223,6 @@ class BookRepository(BaseRepository[LocalBook]):
                 "totalPages": total_pages,
                 "totalItems": total_items,
             }
-
-    async def create(self, book: LocalBook) -> LocalBook:
-        """Crea un nuevo libro en la base de datos."""
-        from utils.helpers import generate_short_link
-
-        if not book.short_link:
-            book.short_link = generate_short_link()
-
-        async with pg_manager.get_session() as session:
-            session.add(book)
-            await session.commit()
-            await session.refresh(book)
-            return book
-
-    async def update(self, book_id: int, data: dict[str, Any]) -> bool:
-        """Actualiza metadatos de un libro."""
-        async with pg_manager.get_session() as session:
-            book = await session.get(LocalBook, book_id)
-            if not book:
-                return False
-
-            for key, value in data.items():
-                if hasattr(book, key):
-                    setattr(book, key, value)
-
-            await session.commit()
-            return True
-
-    async def delete(self, book_id: int) -> bool:
-        """Elimina un libro por ID manejando referencias."""
-        async with pg_manager.get_session() as session:
-            try:
-                # Actualizar referencias en otras tablas
-                await session.execute(
-                    update(DownloadHistory).where(DownloadHistory.book_id == book_id).values(book_id=None)
-                )
-                await session.execute(update(UserDownload).where(UserDownload.book_id == book_id).values(book_id=None))
-                await session.execute(update(UserRating).where(UserRating.book_id == book_id).values(book_id=None))
-
-                stmt = delete(LocalBook).where(LocalBook.id == book_id)
-                result = await session.execute(stmt)
-                await session.commit()
-                return result.rowcount > 0
-            except Exception as e:
-                logger.error(f"Error deleting book {book_id}: {e}")
-                await session.rollback()
-                return False
 
     async def get_duplicate_hashes(self) -> list[tuple[str, int]]:
         """Obtiene hashes duplicados y su conteo."""

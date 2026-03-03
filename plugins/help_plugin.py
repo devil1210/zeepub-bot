@@ -241,7 +241,7 @@ class HelpPlugin(BasePlugin):
         cmd = context.args[0].lower().replace("/", "")
         try:
             pos = int(context.args[1]) - 1
-        except:
+        except (ValueError, IndexError):
             return
 
         current = get_setting("menu_public_commands", "")

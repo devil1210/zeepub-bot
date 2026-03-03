@@ -4,8 +4,6 @@ import logging
 import re
 from typing import Any
 
-from utils.logger import logger
-
 logger = logging.getLogger(__name__)
 
 

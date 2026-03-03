@@ -143,8 +143,9 @@ def generar_slug_from_meta(meta: Any) -> str:
     import unicodedata
 
     base_titulo = "".join(c for c in unicodedata.normalize("NFD", base_titulo) if unicodedata.category(c) != "Mn")
-    # Solo permitir letras, números y espacios (luego se convertirán a _)
-    base_titulo = re.sub(r"[^\w\s]", "", base_titulo)
+    # Solo permitir letras latinas básicas, números y espacios (luego se convertirán a _)
+    # Eliminamos cualquier carácter que no sea a-z, A-Z, 0-9 o espacio
+    base_titulo = re.sub(r"[^a-zA-Z0-9\s]", "", base_titulo)
     # Reemplazar múltiples espacios por uno solo
     base_titulo = re.sub(r"\s+", " ", base_titulo).strip()
     # Los espacios pasan a ser guiones bajos

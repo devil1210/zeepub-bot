@@ -356,15 +356,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Si el destino es el mismo chat, borramos el mensaje de la ficha
         if actual_destino == chat_origen:
             # Quitamos los ids de la lista para que no queden vinculados (y no se borren a futuro en 'cerrar')
-            # Pero ya no los borramos aquí para mantener el contexto visual
+            # Mantenemos el contexto visual: YA NO borramos la ficha aquí.
             st.pop("last_detalles_msg_ids", [])
 
             try:
-                await query.message.delete()
-            except Exception:
-                pass
-            try:
                 thread_id = st.get("message_thread_id")
+                # prep = await context.bot.send_message(...) # Opcional: ¿Aún necesitamos el mensaje de "Preparando"?
+                # Si no borramos la ficha, el mensaje de preparando puede ser redundante o complementario.
+                # Lo mantendremos como un indicador de progreso.
                 prep = await context.bot.send_message(
                     chat_id=chat_origen,
                     text="⏳ Preparando archivo...",

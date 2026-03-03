@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 
 from dateutil import parser
-from sqlalchemy import String, cast, delete, select
+from sqlalchemy import String, cast, select
 from sqlalchemy.orm import selectinload
 
 from config.config_settings import config
@@ -47,6 +47,7 @@ class UserRepository(BaseRepository[User]):
     async def delete(self, id: Any) -> bool:
         """Elimina un usuario por su Telegram ID."""
         from sqlalchemy import delete
+
         async with pg_manager.get_session() as session:
             try:
                 stmt = delete(User).where(User.telegram_id == id)
@@ -269,34 +270,6 @@ class UserRepository(BaseRepository[User]):
             logger.error(f"Error updating user level: {e}")
             return False
 
-    # --- Level proxy methods (delegated to LevelRepository) ---
-
-    async def update_level(self, level_id: int, data: dict[str, Any]) -> bool:
-        """Delegado a LevelRepository."""
-        return await level_repo.update_fields(level_id, data)
-
-    async def update_level_access(self, level_id: int, has_access: bool) -> bool:
-        """Delegado a LevelRepository."""
-        return await level_repo.update_access(level_id, has_access)
-
-    async def get_level_by_id(self, level_id: int) -> dict[str, Any] | None:
-        """Delegado a LevelRepository."""
-        return await level_repo.get_by_id_as_dict(level_id)
-
-    async def get_all_levels(self) -> list[dict[str, Any]]:
-        """Delegado a LevelRepository."""
-        return await level_repo.get_all_as_dict()
-
-    def get_default_levels(self) -> list[dict[str, Any]]:
-        """Delegado a LevelRepository."""
-        from repositories.level_repository import DEFAULT_LEVELS
-
-        return DEFAULT_LEVELS
-
-    async def ensure_default_levels(self) -> None:
-        """Delegado a LevelRepository."""
-        await level_repo.ensure_defaults()
-
     async def update_user_settings(self, telegram_id: int, settings: dict[str, Any]) -> bool:
         """Actualiza la configuración de UI del usuario."""
         try:
@@ -442,42 +415,6 @@ class UserRepository(BaseRepository[User]):
             username=username,
             role="user",
         )
-
-    async def create(self, entity: User) -> User:
-        """Crea un nuevo usuario."""
-        async with pg_manager.get_session() as session:
-            session.add(entity)
-            await session.commit()
-            await session.refresh(entity)
-            return entity
-
-    async def update(self, entity: User) -> User:
-        """Actualiza un usuario existente."""
-        async with pg_manager.get_session() as session:
-            # merged_entity = await session.merge(entity) # Alternativa
-            # For simplicity, we assume the session is handled outside if needed,
-            # but for our repo pattern, we usually get and update.
-            # If we pass a detached object:
-            await session.merge(entity)
-            await session.commit()
-            return entity
-
-    async def delete(self, telegram_id: int) -> bool:
-        # Postgres ORM
-        try:
-            async with pg_manager.get_session() as session:
-                stmt = delete(User).where(User.telegram_id == telegram_id)
-                await session.execute(stmt)
-
-            # Supabase Fallback
-            if self.supabase.is_active:
-                self.supabase.get_client().table("users").delete().eq("telegram_id", telegram_id).execute()
-
-            await cache_manager.delete_user(telegram_id)
-            return True
-        except Exception as e:
-            logger.error(f"Delete user error: {e}")
-            return False
 
     async def upsert(
         self,

@@ -88,7 +88,7 @@ COMMANDS_REGISTRY: dict[str, dict[str, Any]] = {
     "series": {
         "cat": "content",
         "desc": "Explorar por series",
-        "long_desc": "Muestra un listado de todos los mangas/novelas organizados por series para facilitar la navegación.",
+        "long_desc": "Muestra un listado de todas las novelas organizadas por series para facilitar la navegación.",
         "usage": "/series",
         "example": "/series",
     },

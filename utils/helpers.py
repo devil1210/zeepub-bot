@@ -7,6 +7,9 @@ Centralizes re-exports for backward-compatible imports across the project.
 # Re-exports for backward compatibility
 from urllib.parse import urljoin
 
+# --- identity_utils ---
+from utils.identity_utils import generate_short_link  # noqa: F401
+
 # --- metadata_utils ---
 from utils.metadata_utils import (
     generar_slug_from_meta,  # noqa: F401
@@ -26,9 +29,6 @@ from utils.system_utils import (
     get_last_commit_message,  # noqa: F401
     get_version_string,  # noqa: F401
 )
-
-# --- identity_utils ---
-from utils.identity_utils import generate_short_link  # noqa: F401
 
 # --- telegram_utils ---
 from utils.telegram_utils import (  # noqa: F401
