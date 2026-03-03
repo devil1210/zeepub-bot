@@ -9,7 +9,7 @@ from sqlalchemy import func, select, text
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from models.library_models import LibrarySource, LocalBook
-from services.maintenance_orchestrator import MaintenanceOrchestrator
+from services.maintenance.orchestrator import MaintenanceOrchestrator
 from services.notification_service import notification_service
 from services.scanner.epub_scanner import EpubScanner
 from services.scanner.library_scanner import LibraryScanner

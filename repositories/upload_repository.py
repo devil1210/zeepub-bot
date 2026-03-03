@@ -19,6 +19,33 @@ class UploadRepository(BaseRepository[UploadBook]):
     def __init__(self, db_manager=None):
         super().__init__(db_manager or pg_manager, "upload_books")
 
+    # --- Implementación de métodos abstractos de BaseRepository ---
+
+    async def get_by_id(self, id: Any) -> UploadBook | None:
+        """Obtiene un UploadBook por su ID primario."""
+        async with pg_manager.get_session() as session:
+            return await session.get(UploadBook, id)
+
+    async def create(self, entity: UploadBook) -> UploadBook:
+        """Persiste un nuevo UploadBook en la base de datos."""
+        async with pg_manager.get_session() as session:
+            session.add(entity)
+            await session.commit()
+            await session.refresh(entity)
+            return entity
+
+    async def update(self, entity: UploadBook) -> UploadBook:
+        """Actualiza un UploadBook existente."""
+        async with pg_manager.get_session() as session:
+            merged = await session.merge(entity)
+            await session.commit()
+            await session.refresh(merged)
+            return merged
+
+    async def delete(self, id: Any) -> bool:
+        """Elimina un UploadBook por ID."""
+        return await self.delete_upload_record(id)
+
     async def create_upload_record(self, upload_data: dict[str, Any]) -> UploadBook:
         """Crea un registro de libro pendiente de aprobación."""
         async with pg_manager.get_session() as session:
