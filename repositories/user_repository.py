@@ -11,6 +11,7 @@ from core.db_manager_pg import pg_manager
 from core.state_manager import state_manager
 from models.user_models import User, UserLevel, UserUISettings
 from repositories.base_repository import BaseRepository
+from repositories.level_repository import LEVEL_NAME_TO_ID, level_repo
 from services.cache_service import cache_manager
 
 logger = logging.getLogger(__name__)
@@ -161,233 +162,61 @@ class UserRepository(BaseRepository[User]):
 
     # ... CRUD methods ... (create, update, delete, upsert kept as is or simplified)
 
+    # --- Level Methods (delegated to LevelRepository) ---
+    # Proxies mantenidos para compatibilidad con código existente.
+
     async def get_all_levels(self) -> list[dict[str, Any]]:
-        """Devuelve todos los niveles de usuario disponibles."""
-        try:
-            async with pg_manager.get_session() as session:
-                stmt = select(UserLevel).order_by(UserLevel.priority.desc())
-                result = await session.execute(stmt)
-                levels = result.scalars().all()
-
-                if not levels:
-                    await self.ensure_default_levels()
-                    # Re-query after seed
-                    result = await session.execute(stmt)
-                    levels = result.scalars().all()
-
-                if not levels:  # Fallback if seeding failed or still empty
-                    return self.get_default_levels()
-
-                return [
-                    {
-                        "id": str(lvl.id),
-                        "name": lvl.name,
-                        "priority": lvl.priority,
-                        "color": lvl.color,
-                        "price": lvl.price,
-                        "dailyDownloads": lvl.daily_downloads,
-                        "canDownload": lvl.can_download,
-                        "canRead": lvl.can_read,
-                        "hasAccess": lvl.has_mini_app_access,
-                        "allowThemeTemplates": lvl.allow_theme_templates,
-                        "earlyAccess": lvl.early_access,
-                        "customThemes": lvl.custom_themes,
-                    }
-                    for lvl in levels
-                ]
-        except Exception as e:
-            logger.error(f"Error fetching user levels: {e}")
-            return self.get_default_levels()
+        """Delegado a LevelRepository."""
+        return await level_repo.get_all_as_dict()
 
     def get_default_levels(self) -> list[dict[str, Any]]:
-        """Devuelve los niveles por defecto cuando la DB está vacía o falla."""
-        return [
-            {
-                "id": "1",
-                "name": "Administrador",
-                "priority": 100,
-                "color": "#FF4B4B",
-                "price": 0.0,
-                "dailyDownloads": -1,
-                "canDownload": True,
-                "canRead": True,
-                "hasAccess": True,
-                "allowThemeTemplates": True,
-                "earlyAccess": True,
-                "customThemes": True,
-                "canUploadEpub": True,
-            },
-            {
-                "id": "2",
-                "name": "Staff",
-                "priority": 90,
-                "color": "#4ECDC4",
-                "price": 0.0,
-                "dailyDownloads": 50,
-                "canDownload": True,
-                "canRead": True,
-                "hasAccess": True,
-                "allowThemeTemplates": True,
-                "earlyAccess": True,
-                "customThemes": True,
-                "canUploadEpub": False,
-            },
-            {
-                "id": "3",
-                "name": "Premium",
-                "priority": 80,
-                "color": "#FFD93D",
-                "price": 0.0,
-                "dailyDownloads": 50,
-                "canDownload": True,
-                "canRead": False,
-                "hasAccess": True,
-                "allowThemeTemplates": True,
-                "earlyAccess": False,
-                "customThemes": False,
-                "canUploadEpub": False,
-            },
-            {
-                "id": "4",
-                "name": "VIP",
-                "priority": 70,
-                "color": "#1A5F7A",
-                "price": 0.0,
-                "dailyDownloads": 20,
-                "canDownload": True,
-                "canRead": False,
-                "hasAccess": True,
-                "allowThemeTemplates": True,
-                "earlyAccess": False,
-                "customThemes": False,
-                "canUploadEpub": False,
-            },
-            {
-                "id": "5",
-                "name": "Patrocinador",
-                "priority": 60,
-                "color": "#FFFFFF",
-                "price": 0.0,
-                "dailyDownloads": 10,
-                "canDownload": True,
-                "canRead": False,
-                "hasAccess": True,
-                "allowThemeTemplates": True,
-                "earlyAccess": True,
-                "customThemes": False,
-                "canUploadEpub": False,
-            },
-            {
-                "id": "6",
-                "name": "Gratis",
-                "priority": 0,
-                "color": "#888888",
-                "price": 0.0,
-                "dailyDownloads": 2,
-                "canDownload": True,
-                "canRead": False,
-                "hasAccess": True,
-                "allowThemeTemplates": True,
-                "earlyAccess": False,
-                "customThemes": False,
-                "canUploadEpub": False,
-            },
-        ]
+        """Delegado a LevelRepository."""
+        from repositories.level_repository import DEFAULT_LEVELS
 
-    async def ensure_default_levels(self):
-        """Asegura que existan los niveles básicos en la base de datos."""
-        try:
-            from sqlalchemy import text
+        return DEFAULT_LEVELS
 
-            async with pg_manager.get_session() as session:
-                res = await session.execute(text("SELECT count(*) FROM user_levels"))
-                if res.scalar() > 0:
-                    return
+    async def ensure_default_levels(self) -> None:
+        """Delegado a LevelRepository."""
+        await level_repo.ensure_defaults()
 
-                logger.info("Seeding default user levels into Postgres...")
+    async def update_level(self, level_id: int, data: dict[str, Any]) -> bool:
+        """Delegado a LevelRepository."""
+        return await level_repo.update_fields(level_id, data)
 
-                defaults = self.get_default_levels()
-                for lvl in defaults:
-                    # Convert frontend-style keys to DB-style columns
-                    await session.execute(
-                        text("""
-                        INSERT INTO user_levels (
-                            id, name, priority, color, price, daily_downloads,
-                            can_download, can_read, has_mini_app_access,
-                            has_library_access, can_request_books, can_upload_epub,
-                            early_access, custom_themes, allow_theme_templates, show_recommendations
-                        ) VALUES (
-                            :id, :name, :priority, :color, :price, :dailyDownloads,
-                            :canDownload, :canRead, :hasAccess,
-                            :has_library_access, :can_request_books, :canUploadEpub,
-                            :earlyAccess, :customThemes, :allowThemeTemplates, :show_recommendations
-                        )
-                    """),
-                        {
-                            "id": int(lvl["id"]),
-                            "name": lvl["name"],
-                            "priority": lvl["priority"],
-                            "color": lvl["color"],
-                            "price": lvl["price"],
-                            "dailyDownloads": lvl["dailyDownloads"],
-                            "canDownload": lvl["canDownload"],
-                            "canRead": lvl["canRead"],
-                            "hasAccess": lvl["hasAccess"],
-                            "has_library_access": lvl.get("has_library_access", True),
-                            "can_request_books": lvl.get("can_request_books", True),
-                            "canUploadEpub": lvl["canUploadEpub"],
-                            "earlyAccess": lvl["earlyAccess"],
-                            "customThemes": lvl["customThemes"],
-                            "allowThemeTemplates": lvl["allowThemeTemplates"],
-                            "show_recommendations": lvl.get("show_recommendations", True),
-                        },
-                    )
+    async def update_level_access(self, level_id: int, has_access: bool) -> bool:
+        """Delegado a LevelRepository."""
+        return await level_repo.update_access(level_id, has_access)
 
-                await session.commit()
-                logger.info("Default user levels seeded.")
-        except Exception as e:
-            logger.error(f"Error seeding default levels: {e}")
+    async def get_level_by_id(self, level_id: int) -> dict[str, Any] | None:
+        """Delegado a LevelRepository."""
+        return await level_repo.get_by_id_as_dict(level_id)
 
     async def update_user_level(self, telegram_id: int, level_ref: str | int, days: int = 30) -> bool:
         """Actualiza el nivel de un usuario y su fecha de expiración."""
         try:
             from datetime import timedelta
 
+            level_obj = await level_repo.get_by_ref(level_ref)
+            if not level_obj:
+                logger.error(f"Level '{level_ref}' not found.")
+                return False
+
             async with pg_manager.get_session() as session:
-                # 1. Obtener el nivel por ID o Nombre
-                if isinstance(level_ref, int) or (isinstance(level_ref, str) and level_ref.isdigit()):
-                    stmt_lvl = select(UserLevel).where(UserLevel.id == int(level_ref))
-                else:
-                    stmt_lvl = select(UserLevel).where(UserLevel.name.ilike(level_ref))
-
-                res_lvl = await session.execute(stmt_lvl)
-                level_obj = res_lvl.scalar_one_or_none()
-
-                if not level_obj:
-                    logger.error(f"Level '{level_ref}' not found.")
-                    return False
-
-                # 2. Obtener usuario
                 stmt_user = select(User).where(User.telegram_id == telegram_id)
-                res_user = await session.execute(stmt_user)
-                user = res_user.scalar_one_or_none()
+                user = (await session.execute(stmt_user)).scalar_one_or_none()
 
                 if not user:
-                    # Crear usuario on-the-fly si no existe
                     user = User(telegram_id=telegram_id, nickname=f"User_{telegram_id}")
                     session.add(user)
 
-                # 3. Actualizar
                 user.level_id = level_obj.id
                 user.expires_at = datetime.utcnow() + timedelta(days=days)
 
-                # Si el nivel es admin/staff, actualizar role también
                 if level_obj.name.lower() in ("admin", "staff", "administrador"):
                     user.role = "admin" if level_obj.name.lower() in ("admin", "administrador") else "staff"
 
                 await session.commit()
 
-                # Sincronizar con Supabase si está activo
                 if self.supabase.is_active:
                     try:
                         self.supabase.get_client().table("users").update(
@@ -401,7 +230,6 @@ class UserRepository(BaseRepository[User]):
                     except Exception as s_err:
                         logger.warning(f"Supabase tier sync failed: {s_err}")
 
-                # Invalidar caché
                 await cache_manager.delete_user(telegram_id)
                 return True
 
@@ -409,100 +237,33 @@ class UserRepository(BaseRepository[User]):
             logger.error(f"Error updating user level: {e}")
             return False
 
+    # --- Level proxy methods (delegated to LevelRepository) ---
+
     async def update_level(self, level_id: int, data: dict[str, Any]) -> bool:
-        """Actualiza la configuración de un nivel (UserLevel) en Postgres."""
-        try:
-            async with pg_manager.get_session() as session:
-                stmt = select(UserLevel).where(UserLevel.id == level_id)
-                result = await session.execute(stmt)
-                level = result.scalar_one_or_none()
-
-                if not level:
-                    logger.warning(f"Level ID {level_id} not found in Postgres.")
-                    return False
-
-                # Map fields
-                mapping = {
-                    "name": "name",
-                    "priority": "priority",
-                    "color": "color",
-                    "price": "price",
-                    "dailyDownloads": "daily_downloads",
-                    "canDownload": "can_download",
-                    "canRead": "can_read",
-                    "hasAccess": "has_mini_app_access",
-                    "allowThemeTemplates": "allow_theme_templates",
-                    "earlyAccess": "early_access",
-                    "customThemes": "custom_themes",
-                    "showRecommendations": "show_recommendations",
-                    "defaultThemeId": "default_theme_id",
-                    "theme": "ui_theme",
-                    "primaryColor": "ui_primary_color",
-                    "fontSize": "ui_font_size",
-                    "glassBlur": "ui_glass_blur",
-                    "navOpacity": "ui_nav_opacity",
-                    "accentOpacity": "ui_accent_opacity",
-                    "backgroundColor": "background_color",
-                    "cardColor": "card_color",
-                    "forceSettings": "force_settings",
-                    "borderRadius": "border_radius",
-                    "borderWidth": "border_width",
-                    "canUploadEpub": "can_upload_epub",
-                    "hasLibraryAccess": "has_library_access",
-                    "canRequestBooks": "can_request_books",
-                }
-
-                for key, col in mapping.items():
-                    if key in data:
-                        setattr(level, col, data[key])
-
-                # Special transparency fix (0-1 to 0-100)
-                if "glassOpacity" in data:
-                    val = data["glassOpacity"]
-                    if isinstance(val, (int, float)) and val <= 1.0:
-                        level.panel_transparency = int(val * 100)
-                    else:
-                        level.panel_transparency = int(val)
-
-                if "bannerContentOffset" in data:
-                    level.banner_content_offset = int(data["bannerContentOffset"])
-
-                await session.commit()
-                return True
-        except Exception as e:
-            logger.error(f"Error updating level {level_id} in Postgres: {e}")
-            return False
+        """Delegado a LevelRepository."""
+        return await level_repo.update_fields(level_id, data)
 
     async def update_level_access(self, level_id: int, has_access: bool) -> bool:
-        """Helper para actualizar solo el flag de acceso de un nivel."""
-        return await self.update_level(level_id, {"hasAccess": has_access})
+        """Delegado a LevelRepository."""
+        return await level_repo.update_access(level_id, has_access)
 
     async def get_level_by_id(self, level_id: int) -> dict[str, Any] | None:
-        """Obtiene un nivel de usuario por ID."""
-        try:
-            async with pg_manager.get_session() as session:
-                stmt = select(UserLevel).where(UserLevel.id == level_id)
-                result = await session.execute(stmt)
-                lvl = result.scalar_one_or_none()
+        """Delegado a LevelRepository."""
+        return await level_repo.get_by_id_as_dict(level_id)
 
-                if lvl:
-                    return {
-                        "id": lvl.id,
-                        "name": lvl.name,
-                        "priority": lvl.priority,
-                        "color": lvl.color,
-                        "price": lvl.price,
-                        "dailyDownloads": lvl.daily_downloads,
-                        "canDownload": lvl.can_download,
-                        "canRead": lvl.can_read,
-                        "hasAccess": lvl.has_mini_app_access,
-                        "customThemes": lvl.custom_themes,
-                        "allowThemeTemplates": lvl.allow_theme_templates,
-                    }
-                return None
-        except Exception as e:
-            logger.error(f"Error fetching level by id: {e}")
-            return None
+    async def get_all_levels(self) -> list[dict[str, Any]]:
+        """Delegado a LevelRepository."""
+        return await level_repo.get_all_as_dict()
+
+    def get_default_levels(self) -> list[dict[str, Any]]:
+        """Delegado a LevelRepository."""
+        from repositories.level_repository import DEFAULT_LEVELS
+
+        return DEFAULT_LEVELS
+
+    async def ensure_default_levels(self) -> None:
+        """Delegado a LevelRepository."""
+        await level_repo.ensure_defaults()
 
     async def update_user_settings(self, telegram_id: int, settings: dict[str, Any]) -> bool:
         """Actualiza la configuración de UI del usuario."""
@@ -714,7 +475,7 @@ class UserRepository(BaseRepository[User]):
         Inserta o actualiza un usuario en PostgreSQL y opcionalmente sincroniza con Supabase.
         Retorna el objeto User actualizado.
         """
-        level_to_id = {"admin": 1, "staff": 2, "premium": 3, "vip": 4, "white": 5, "free": 6}
+        level_to_id = LEVEL_NAME_TO_ID
         final_level_id = level_id or level_to_id.get(level.lower(), 6)
 
         async with pg_manager.get_session() as session:
