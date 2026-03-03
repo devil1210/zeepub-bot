@@ -290,11 +290,18 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
             except Exception:
                 pass
 
-    cleanup_tmp(epub_buffer)
+        # --- Limpieza de mensajes antiguos de detalles ---
+        # Si el envío fue exitoso, borramos los mensajes de la ficha (portada, sinopsis, info)
+        # para evitar redundancia ya que el archivo trae su propia info.
+        old_ids = user_state.pop("last_detalles_msg_ids", [])
+        if old_ids and destino == chat_origen:
+            for old_id in old_ids:
+                try:
+                    await bot.delete_message(chat_id=chat_origen, message_id=old_id)
+                except Exception:
+                    pass
 
-    # --- Limpieza de mensajes antiguos de detalles (Opcional, si el usuario prefiere no borrarlos los dejamos) ---
-    # Pero el usuario pidió: "sigues borrando los mensajes de portada y sinoposis innecesariamente"
-    # Así que NO los borramos. Los identificadores están en st.get("last_detalles_msg_ids") si hiciera falta.
+    cleanup_tmp(epub_buffer)
     pass
 
 

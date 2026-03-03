@@ -70,8 +70,19 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             webApp.setBackgroundColor(settings.theme === 'amoled' ? '#000000' : bgColor);
         }
 
-        // Forzado de ocultación del botón nativo (según requerimiento de testers para evitar salida accidental)
-        webApp.BackButton.hide();
+        if (contextType !== 'main') {
+            webApp.BackButton.show();
+            const onBack = () => {
+                webApp.HapticFeedback.impactOccurred('light');
+                handleBack();
+            };
+            webApp.BackButton.onClick(onBack);
+            return () => {
+                webApp.BackButton.offClick(onBack);
+            };
+        } else {
+            webApp.BackButton.hide();
+        }
     }, [webApp, contextType, handleBack, settings.theme]);
 
     useEffect(() => {

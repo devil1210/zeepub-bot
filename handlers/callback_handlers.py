@@ -355,9 +355,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Si el destino es el mismo chat, borramos el mensaje de la ficha
         if actual_destino == chat_origen:
-            # Quitamos los ids de la lista para que no queden vinculados (y no se borren a futuro en 'cerrar')
-            # Mantenemos el contexto visual: YA NO borramos la ficha aquí.
-            st.pop("last_detalles_msg_ids", [])
+            # Mantener los IDs para limpiarlos tras el envío exitoso en descargar_epub_pendiente
+            pass
 
             try:
                 thread_id = st.get("message_thread_id")

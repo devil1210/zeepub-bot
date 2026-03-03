@@ -74,12 +74,38 @@ const useLegacyNavigation = () => {
  * Handles Telegram Back Button integration with internal history stack
  */
 const TelegramNavigationHandler: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { webApp } = useTelegram();
+  const { state: navState } = useNavigation();
 
   useEffect(() => {
     if (!webApp?.BackButton) return;
-    webApp.BackButton.hide();
-  }, [webApp]);
+
+    const handleBack = () => {
+      if (navState.historyStack.length > 1) {
+        navigate(-1);
+      } else {
+        if (location.pathname !== '/') {
+          navigate('/');
+        }
+      }
+    };
+
+    const rootPaths = ['/', '/search', '/library', '/requests', '/settings', '/downloads', '/admin'];
+    const isRoot = navState.historyStack.length <= 1 && rootPaths.includes(location.pathname);
+
+    if (isRoot) {
+      webApp.BackButton.hide();
+    } else {
+      webApp.BackButton.show();
+      webApp.BackButton.onClick(handleBack);
+    }
+
+    return () => {
+      webApp.BackButton.offClick(handleBack);
+    };
+  }, [webApp, location.pathname, navState.historyStack.length, navigate]);
 
   return null;
 };
