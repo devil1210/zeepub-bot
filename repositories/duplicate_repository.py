@@ -1,6 +1,8 @@
 import logging
+from datetime import datetime
+from typing import Any
 
-from sqlalchemy import delete, desc, select
+from sqlalchemy import and_, delete, select, update
 
 from core.db_manager_pg import pg_manager
 from models.library_models import DuplicateBook
