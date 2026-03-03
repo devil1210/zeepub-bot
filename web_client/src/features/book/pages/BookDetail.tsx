@@ -417,7 +417,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     lastUpdated: curVolume.modified_at_opf || curVolume.modifiedAtOpf ? formatDate(String(curVolume.modified_at_opf || curVolume.modifiedAtOpf)) : (curVolume.modified_at || curVolume.modifiedAt ? formatDate(String(curVolume.modified_at || curVolume.modifiedAt)) : 'N/A'),
     publishedDate: formatDate(String(curVolume.published_at || curVolume.publishedAt || curVolume.publishedDate || '')),
     description: String(curVolume.description || curVolume.summary || 'Sin sinopsis disponible.'),
-    displayTitle: String(curVolume.title || curVolume.english_title || curVolume.englishTitle || curSeries?.title || curVolume.series || 'Libro sin título'),
+    displayTitle: String(curVolume.english_title || curVolume.englishTitle || curVolume.title || curSeries?.title || curVolume.series || 'Libro sin título'),
     romajiTitle: getRomajiTitle(),
     illustrator: String(curVolume.illustrator || 'N/A'),
     translator: String(curVolume.translator || 'ZeePub'),

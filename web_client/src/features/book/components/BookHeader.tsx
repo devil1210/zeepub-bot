@@ -106,7 +106,7 @@ export const BookHeader: React.FC<BookHeaderProps> = ({
                 </button>
                 <div className="flex items-center gap-2">
                     <Hash className="w-4 h-4 text-gray-500" />
-                    <span>{(!volumeNumber || volumeNumber === 0) ? 'Volumen Único' : `Volumen ${volumeNumber}`}</span>
+                    <span>{(!volumeNumber || volumeNumber === 0) ? 'Único' : `${volumeNumber}`}</span>
                 </div>
                 {translator && (
                     <button onClick={() => onSearch(translator, 'translator')} className="flex items-center gap-2 group hover:text-white transition-colors">
