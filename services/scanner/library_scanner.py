@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Any
 
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import selectinload
 
 from models.library_models import (
@@ -25,13 +26,11 @@ class LibraryScanner:
     """
 
     @staticmethod
-    def sync_translator_group(session: Any, book: LocalBook):
+    async def sync_translator_group(session: Any, book: LocalBook):
         """
         Extrae traductor y asegura que exista en la tabla translators_groups.
         """
         import re
-
-        from sqlalchemy import func
 
         translator = book.translator
         if not translator or translator == "Unknown":
@@ -46,15 +45,19 @@ class LibraryScanner:
                     siglas = last_tag
 
         try:
-            existing = (
-                session.query(TranslatorsGroup).filter(func.lower(TranslatorsGroup.name) == translator.lower()).first()
-            )
+            stmt = select(TranslatorsGroup).where(func.lower(TranslatorsGroup.name) == translator.lower())
+            result = await session.execute(stmt)
+            existing = result.scalar_one_or_none()
+
             if existing:
                 if siglas and (not existing.siglas or len(siglas) < len(existing.siglas or "")):
                     existing.siglas = siglas
             else:
                 new_group = TranslatorsGroup(name=translator, siglas=siglas)
                 session.add(new_group)
+
+            # Flush to get ID if needed, but usually we commit in batches elsewhere
+            await session.flush()
         except Exception as e:
             logger.warning(f"Error sincronizando grupo traductor: {e}")
 
@@ -67,12 +70,12 @@ class LibraryScanner:
         removed_count = 0
 
         try:
-            db_books = (
-                session.query(LocalBook)
-                .options(selectinload(LocalBook.series_info))
-                .filter(LocalBook.source_id == source.id)
-                .all()
+            stmt = (
+                select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.source_id == source.id)
             )
+            result = await session.execute(stmt)
+            db_books = result.scalars().all()
+
             db_paths = {b.filepath for b in db_books}
 
             missing_paths = db_paths - found_files
@@ -102,30 +105,35 @@ class LibraryScanner:
                     session.add(archived)
                     archived_count += 1
 
-                    # Desvincular
-                    session.query(DownloadHistory).filter_by(book_id=b.id).update({DownloadHistory.book_id: None})
-                    session.query(UserDownload).filter_by(book_id=b.id).update({UserDownload.book_id: None})
-                    session.query(UserRating).filter_by(book_id=b.id).update({UserRating.book_id: None})
+                    # Desvincular - PostgreSQL async style
+                    await session.execute(
+                        update(DownloadHistory).where(DownloadHistory.book_id == b.id).values(book_id=None)
+                    )
+                    await session.execute(update(UserDownload).where(UserDownload.book_id == b.id).values(book_id=None))
+                    await session.execute(update(UserRating).where(UserRating.book_id == b.id).values(book_id=None))
 
-                    session.delete(b)
+                    await session.delete(b)
                     removed_count += 1
 
-            session.commit()
+            await session.flush()
             return archived_count, removed_count
         except Exception as e:
             logger.error(f"Error en pruning de {source.name}: {e}")
-            session.rollback()
+            await session.rollback()
             return 0, 0
 
     @staticmethod
-    def resolve_orphans(session: Any, scanned_source_ids: list) -> tuple[int, int]:
+    async def resolve_orphans(session: Any, scanned_source_ids: list) -> tuple[int, int]:
         """
         Detecta libros que pertenecen a fuentes no escaneadas o inexistentes.
         """
         if not scanned_source_ids:
             return 0, 0
 
-        orphans = session.query(LocalBook).filter(LocalBook.source_id.notin_(scanned_source_ids)).all()
+        stmt = select(LocalBook).where(LocalBook.source_id.notin_(scanned_source_ids))
+        result = await session.execute(stmt)
+        orphans = result.scalars().all()
+
         if not orphans:
             return 0, 0
 
@@ -133,7 +141,10 @@ class LibraryScanner:
 
         count_moved = 0
         for orphan in orphans:
-            exists = session.query(DuplicateBook).filter_by(duplicate_filepath=orphan.filepath).first()
+            dup_stmt = select(DuplicateBook).where(DuplicateBook.duplicate_filepath == orphan.filepath)
+            dup_result = await session.execute(dup_stmt)
+            exists = dup_result.scalar_one_or_none()
+
             if not exists:
                 dup = DuplicateBook(
                     book_hash=orphan.book_hash,
@@ -144,9 +155,9 @@ class LibraryScanner:
                 )
                 session.add(dup)
                 count_moved += 1
-            session.delete(orphan)
+            await session.delete(orphan)
 
-        session.commit()
+        await session.flush()
         return len(orphans), count_moved
 
     @staticmethod
@@ -159,7 +170,10 @@ class LibraryScanner:
         from models.download_models import DownloadHistory
         from models.library_models import UserDownload, UserRating
 
-        books = session.query(LocalBook).all()
+        stmt = select(LocalBook)
+        result = await session.execute(stmt)
+        books = result.scalars().all()
+
         deleted_books = 0
         deleted_series = 0
         total_checked = len(books)
@@ -183,25 +197,30 @@ class LibraryScanner:
                 )
                 session.add(archived)
 
-                session.query(DownloadHistory).filter_by(book_id=book.id).update({DownloadHistory.book_id: None})
-                session.query(UserDownload).filter_by(book_id=book.id).update({UserDownload.book_id: None})
-                session.query(UserRating).filter_by(book_id=book.id).update({UserRating.book_id: None})
+                await session.execute(
+                    update(DownloadHistory).where(DownloadHistory.book_id == book.id).values(book_id=None)
+                )
+                await session.execute(update(UserDownload).where(UserDownload.book_id == book.id).values(book_id=None))
+                await session.execute(update(UserRating).where(UserRating.book_id == book.id).values(book_id=None))
 
-                session.delete(book)
+                await session.delete(book)
                 deleted_books += 1
 
-        session.commit()
+        await session.flush()
 
         # Limpieza de series vacías
-        empty_series = (
-            session.query(SeriesMetadata)
-            .filter(~session.query(LocalBook).filter(LocalBook.series_hash == SeriesMetadata.series_hash).exists())
-            .all()
-        )
+        # Subquery for exists
+        lb_exists = select(LocalBook).where(LocalBook.series_hash == SeriesMetadata.series_hash).exists()
+        empty_series_stmt = select(SeriesMetadata).where(~lb_exists)
+        empty_series_result = await session.execute(empty_series_stmt)
+        empty_series = empty_series_result.scalars().all()
 
         for s in empty_series:
             # Verificar si ya existe en archived_series para evitar duplicate key
-            existing = session.query(ArchivedSeries).filter_by(series_hash=s.series_hash).first()
+            arch_stmt = select(ArchivedSeries).where(ArchivedSeries.series_hash == s.series_hash)
+            arch_result = await session.execute(arch_stmt)
+            existing = arch_result.scalar_one_or_none()
+
             if not existing:
                 archived_s = ArchivedSeries(
                     series_name=s.series_name,
@@ -216,10 +235,10 @@ class LibraryScanner:
                     original_series_id=s.id,
                 )
                 session.add(archived_s)
-            session.delete(s)
+            await session.delete(s)
             deleted_series += 1
 
-        session.commit()
+        await session.flush()
 
         log = LibraryCleanupLog(
             performed_by=user_id,
@@ -229,10 +248,15 @@ class LibraryScanner:
             status="success",
         )
         session.add(log)
-        session.commit()
+        await session.flush()
+
+        # Count total books
+        count_stmt = select(func.count()).select_from(LocalBook)
+        count_result = await session.execute(count_stmt)
+        total_books_count = count_result.scalar()
 
         return {
             "deleted_books": deleted_books,
             "deleted_series": deleted_series,
-            "total_books": session.query(LocalBook).count(),
+            "total_books": total_books_count,
         }

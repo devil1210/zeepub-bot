@@ -1,11 +1,12 @@
 import logging
 from typing import Any
 
-from sqlalchemy import String, cast, delete, func, or_, select
+from sqlalchemy import String, cast, delete, func, or_, select, update
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, SeriesMetadata, UserDownload
+from models.download_models import DownloadHistory
+from models.library_models import LocalBook, SeriesMetadata, UserDownload, UserRating
 from repositories.base_repository import BaseRepository
 from schemas.library_schemas import BookDTO
 
@@ -210,12 +211,51 @@ class BookRepository(BaseRepository[LocalBook]):
             return True
 
     async def delete(self, book_id: int) -> bool:
-        """Elimina un libro por ID."""
+        """Elimina un libro por ID manejando referencias."""
         async with pg_manager.get_session() as session:
-            stmt = delete(LocalBook).where(LocalBook.id == book_id)
-            result = await session.execute(stmt)
-            await session.commit()
-            return result.rowcount > 0
+            try:
+                # Actualizar referencias en otras tablas
+                await session.execute(
+                    update(DownloadHistory).where(DownloadHistory.book_id == book_id).values(book_id=None)
+                )
+                await session.execute(update(UserDownload).where(UserDownload.book_id == book_id).values(book_id=None))
+                await session.execute(update(UserRating).where(UserRating.book_id == book_id).values(book_id=None))
+
+                stmt = delete(LocalBook).where(LocalBook.id == book_id)
+                result = await session.execute(stmt)
+                await session.commit()
+                return result.rowcount > 0
+            except Exception as e:
+                logger.error(f"Error deleting book {book_id}: {e}")
+                await session.rollback()
+                return False
+
+    async def get_duplicate_hashes(self) -> list[tuple[str, int]]:
+        """Obtiene hashes duplicados y su conteo."""
+        async with pg_manager.get_session() as session:
+            try:
+                stmt = (
+                    select(LocalBook.book_hash, func.count().label("count"))
+                    .where(LocalBook.book_hash.isnot(None))
+                    .group_by(LocalBook.book_hash)
+                    .having(func.count() > 1)
+                )
+                result = await session.execute(stmt)
+                return result.all()
+            except Exception as e:
+                logger.error(f"Error getting duplicate hashes: {e}")
+                return []
+
+    async def get_books_by_hash(self, book_hash: str) -> list[LocalBook]:
+        """Obtiene todos los libros que comparten un hash."""
+        async with pg_manager.get_session() as session:
+            try:
+                stmt = select(LocalBook).where(LocalBook.book_hash == book_hash).order_by(LocalBook.indexed_at.asc())
+                result = await session.execute(stmt)
+                return result.scalars().all()
+            except Exception as e:
+                logger.error(f"Error getting books by hash {book_hash}: {e}")
+                return []
 
     async def get_total_downloads(self, book_hash: str) -> int:
         """Obtiene el conteo total de descargas para un hash de libro."""

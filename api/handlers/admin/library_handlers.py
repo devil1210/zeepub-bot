@@ -5,25 +5,24 @@ import shutil
 from typing import Any
 
 from fastapi import HTTPException
-from sqlalchemy import desc, func, select
+from sqlalchemy import select, text
 
 from api.handlers.helpers import check_staff
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
-from models.download_models import DownloadHistory
 from models.library_models import (
     ArchivedBook,
     DuplicateBook,
-    LocalBook,
-    UploadHistory,
-    UserDownload,
-    UserRating,
 )
+from repositories.book_repository import book_repo
+from repositories.duplicate_repository import duplicate_repo
+from repositories.upload_repository import upload_repo
 from services.library_service import LibraryService
 from services.scanner_service import ScannerService
 from services.sync_service import SyncService
-from utils.library_db import COVERS_DIR, engine, get_session, init_library_db
+from services.upload_service import upload_service
+from utils.library_db import COVERS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +81,7 @@ async def handle_admin_cleanup_library(data: dict[str, Any], user_data: dict[str
     """Checks for physical existence of all books and cleans up the database."""
     check_staff(user_data)
     try:
-        with get_session() as session:
+        async with pg_manager.get_session() as session:
             stats = await ScannerService.cleanup_library_orphans(session, user_id=user_data.get("user_id"))
             return {
                 "success": True,
@@ -90,7 +89,7 @@ async def handle_admin_cleanup_library(data: dict[str, Any], user_data: dict[str
                 "stats": stats,
             }
     except Exception as e:
-        logger.error(f"Error during library cleanup: {e}")
+        logger.error(f"Error during library cleanup: {e}", exc_info=True)
         return {"success": False, "message": f"Error during cleanup: {str(e)}"}
 
 
@@ -130,10 +129,8 @@ async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, 
         return {"success": False, "message": "Confirmación requerida.", "requireConfirmation": True}
 
     try:
-        import sqlalchemy as sa
-
         items_deleted = []
-        with engine.begin() as conn:
+        async with pg_manager.get_session() as session:
             for table in [
                 "user_ratings",
                 "user_downloads",
@@ -145,80 +142,76 @@ async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, 
                 "duplicate_books",
                 "upload_books",
             ]:
-                conn.execute(sa.text(f"DELETE FROM {table}"))
-            items_deleted.append("Tablas de PostgreSQL limpiadas")
+                await session.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
+            await session.commit()
+            items_deleted.append("Tablas de PostgreSQL truncadas (CASCADE)")
 
         if os.path.exists(COVERS_DIR):
             shutil.rmtree(COVERS_DIR)
             os.makedirs(COVERS_DIR, exist_ok=True)
             items_deleted.append("Directorio de portadas reseteado")
 
+        from utils.library_db import init_library_db
+
         init_library_db()
-        items_deleted.append("Esquema de base de datos recreado")
+        items_deleted.append("Esquema de base de datos verificado")
+
         return {"success": True, "message": "Base de datos local reseteada exitosamente.", "details": items_deleted}
     except Exception as e:
-        logger.error(f"Error reset library: {e}")
+        logger.error(f"Error reset library: {e}", exc_info=True)
         return {"success": False, "message": str(e)}
 
 
 async def handle_admin_find_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
-    session = get_session()
     try:
-        duplicate_hashes = (
-            session.query(LocalBook.book_hash, func.count().label("count"))
-            .filter(LocalBook.book_hash.isnot(None))
-            .group_by(LocalBook.book_hash)
-            .having(func.count() > 1)
-            .all()
-        )
-        duplicate_groups = []
-        total_wasted_space = 0
-        for hash_row in duplicate_hashes:
-            content_hash = hash_row[0]
-            books = (
-                session.query(LocalBook)
-                .filter(LocalBook.book_hash == content_hash)
-                .order_by(LocalBook.indexed_at.asc())
-                .all()
-            )
-            if len(books) <= 1:
-                continue
-            file_sizes = [b.file_size or 0 for b in books]
-            wasted = sum(file_sizes) - min(file_sizes)
-            total_wasted_space += wasted
-            duplicate_groups.append(
-                {
-                    "book_hash": content_hash,
-                    "title": books[0].title,
-                    "count": len(books),
-                    "total_size": sum(file_sizes),
-                    "wasted_space": wasted,
-                    "books": [
-                        {
-                            "id": b.id,
-                            "filepath": b.filepath,
-                            "filename": b.filename,
-                            "file_size": b.file_size or 0,
-                            "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
-                        }
-                        for b in books
-                    ],
-                }
-            )
-        duplicate_groups.sort(key=lambda x: x["wasted_space"], reverse=True)
-        return {
-            "success": True,
-            "duplicate_groups": duplicate_groups,
-            "summary": {
-                "total_duplicates": len(duplicate_hashes),
-                "wasted_space_mb": round(total_wasted_space / (1024 * 1024), 2),
-            },
-        }
+        async with pg_manager.get_session() as session:
+            duplicate_hashes = await book_repo.get_duplicate_hashes()
+            duplicate_groups = []
+            total_wasted_space = 0
+
+            for content_hash, count in duplicate_hashes:
+                books = await book_repo.get_books_by_hash(content_hash)
+
+                if len(books) <= 1:
+                    continue
+
+                file_sizes = [b.file_size or 0 for b in books]
+                wasted = sum(file_sizes) - min(file_sizes)
+                total_wasted_space += wasted
+
+                duplicate_groups.append(
+                    {
+                        "book_hash": content_hash,
+                        "title": books[0].title,
+                        "count": len(books),
+                        "total_size": sum(file_sizes),
+                        "wasted_space": wasted,
+                        "books": [
+                            {
+                                "id": b.id,
+                                "filepath": b.filepath,
+                                "filename": b.filename,
+                                "file_size": b.file_size or 0,
+                                "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
+                            }
+                            for b in books
+                        ],
+                    }
+                )
+
+            duplicate_groups.sort(key=lambda x: x["wasted_space"], reverse=True)
+            return {
+                "success": True,
+                "duplicate_groups": duplicate_groups,
+                "summary": {
+                    "total_duplicates": len(duplicate_hashes),
+                    "wasted_space_mb": round(total_wasted_space / (1024 * 1024), 2),
+                },
+            }
     except Exception as e:
+        logger.error(f"Error finding duplicates: {e}", exc_info=True)
         return {"success": False, "message": str(e)}
-    finally:
-        session.close()
 
 
 async def handle_admin_delete_duplicate(data: dict[str, Any], user_data: dict[str, Any]):
@@ -226,66 +219,74 @@ async def handle_admin_delete_duplicate(data: dict[str, Any], user_data: dict[st
     book_ids = data.get("book_ids", [])
     if not book_ids:
         return {"success": False, "message": "No se especificaron libros"}
-    session = get_session()
+
     try:
-        books = session.query(LocalBook).filter(LocalBook.id.in_(book_ids)).all()
         count = 0
-        for book in books:
+        for book_id in book_ids:
+            book = await book_repo.get_by_id(book_id)
+            if not book:
+                continue
+
             if book.filepath and os.path.exists(book.filepath):
-                os.remove(book.filepath)
-            session.query(DownloadHistory).filter_by(book_id=book.id).update({DownloadHistory.book_id: None})
-            session.query(UserDownload).filter_by(book_id=book.id).update({UserDownload.book_id: None})
-            session.query(UserRating).filter_by(book_id=book.id).update({UserRating.book_id: None})
-            session.delete(book)
-            count += 1
-        session.commit()
+                try:
+                    os.remove(book.filepath)
+                except Exception as fe:
+                    logger.warning(f"Could not delete physical file {book.filepath}: {fe}")
+
+            success = await book_repo.delete(book_id)
+            if success:
+                count += 1
         return {"success": True, "deleted_count": count}
     except Exception as e:
+        logger.error(f"Error deleting duplicate: {e}", exc_info=True)
         return {"success": False, "message": str(e)}
-    finally:
-        session.close()
 
 
 async def handle_admin_delete_duplicate_item(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
     dup_id, target = data.get("id"), data.get("target")
-    session = get_session()
     try:
-        dup = session.query(DuplicateBook).filter_by(id=dup_id).first()
-        if not dup:
-            return {"success": False, "message": "No encontrado"}
-        path = dup.original_filepath if target == "original" else dup.duplicate_filepath
-        if path and os.path.exists(path):
-            os.remove(path)
-        if target == "original":
-            book = session.query(LocalBook).filter_by(filepath=path).first()
-            if book:
-                session.add(
-                    ArchivedBook(
-                        series_hash=book.series_hash,
-                        book_hash=book.book_hash,
-                        title=book.title,
-                        filename=book.filename,
-                        last_filepath=book.filepath,
-                        original_book_id=book.id,
-                        reason="manual_duplicate_resolution",
+        async with pg_manager.get_session() as session:
+            stmt = select(DuplicateBook).where(DuplicateBook.id == dup_id)
+            dup = (await session.execute(stmt)).scalar_one_or_none()
+            if not dup:
+                return {"success": False, "message": "No encontrado"}
+
+            path = dup.original_filepath if target == "original" else dup.duplicate_filepath
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception as e:
+                    logger.warning(f"Could not remove file at {path}: {e}")
+
+            if target == "original":
+                book = await book_repo.get_by_filepath(path)
+                if book:
+                    session.add(
+                        ArchivedBook(
+                            series_hash=book.series_hash,
+                            book_hash=book.book_hash,
+                            title=book.title,
+                            filename=book.filename,
+                            last_filepath=book.filepath,
+                            original_book_id=book.id,
+                            reason="manual_duplicate_resolution",
+                        )
                     )
-                )
-                session.delete(book)
-        session.delete(dup)
-        session.commit()
-        return {"success": True, "message": "Eliminado correctamente"}
+                    await book_repo.delete(book.id)
+
+            await session.delete(dup)
+            await session.commit()
+            return {"success": True, "message": "Eliminado correctamente"}
     except Exception as e:
+        logger.error(f"Error deleting duplicate item: {e}", exc_info=True)
         return {"success": False, "message": str(e)}
-    finally:
-        session.close()
 
 
 async def handle_admin_get_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
-    session = get_session()
     try:
-        dups = session.query(DuplicateBook).order_by(desc(DuplicateBook.detected_at)).all()
+        dups = await duplicate_repo.get_all_duplicates()
         return {
             "success": True,
             "duplicates": [
@@ -301,32 +302,37 @@ async def handle_admin_get_duplicates(data: dict[str, Any], user_data: dict[str,
                 for d in dups
             ],
         }
-    finally:
-        session.close()
+    except Exception as e:
+        logger.error(f"Error getting duplicates: {e}", exc_info=True)
+        return {"success": False, "message": str(e)}
 
 
 async def handle_admin_recheck_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
-    session = get_session()
     try:
-        dups, removed = session.query(DuplicateBook).all(), 0
-        for d in dups:
-            if not os.path.exists(d.duplicate_filepath) or not os.path.exists(d.original_filepath):
-                session.delete(d)
-                removed += 1
-        session.commit()
-        return {"success": True, "removed_count": removed}
-    finally:
-        session.close()
+        async with pg_manager.get_session() as session:
+            stmt = select(DuplicateBook)
+            dups = (await session.execute(stmt)).scalars().all()
+            removed = 0
+            for d in dups:
+                if not os.path.exists(d.duplicate_filepath or "") or not os.path.exists(d.original_filepath or ""):
+                    await session.delete(d)
+                    removed += 1
+            await session.commit()
+            return {"success": True, "removed_count": removed}
+    except Exception as e:
+        logger.error(f"Error rechecking duplicates: {e}", exc_info=True)
+        return {"success": False, "message": str(e)}
 
 
 async def handle_admin_clear_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
-    session = get_session()
-    session.query(DuplicateBook).delete()
-    session.commit()
-    session.close()
-    return {"success": True}
+    try:
+        success = await duplicate_repo.clear_all()
+        return {"success": success}
+    except Exception as e:
+        logger.error(f"Error clearing duplicates: {e}", exc_info=True)
+        return {"success": False, "message": str(e)}
 
 
 async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data: dict[str, Any]):
@@ -373,58 +379,76 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
 
     from pathlib import Path
 
-    from handlers.epub_upload_handler import epub_uploader, pending_uploads
+    from handlers.epub_upload_handler import pending_uploads
 
+    # Clean up discarded
     for disc_id in discarded_ids:
         if disc_id in pending_uploads:
-            epub_uploader.cleanup_upload(disc_id, Path(pending_uploads[disc_id]["file_path"]))
+            info = pending_uploads[disc_id]
+            f_p = Path(info["file_path"])
+            if f_p.exists():
+                f_p.unlink()
+            del pending_uploads[disc_id]
 
     results = []
     for upload_id in selected_ids:
         if upload_id not in pending_uploads:
             continue
+
         info = pending_uploads[upload_id]
-        f_path, meta = Path(info["file_path"]), info["metadata"]
+        f_path = Path(info["file_path"])
+        meta = info["metadata"]
+
         try:
-            success = await epub_uploader.add_to_library(f_path, meta.get("suggested_path"), meta)
+            # Use UploadService for robustness
+            success = await upload_service.finalize_upload(f_path, meta.get("suggested_path"), meta)
+
             status = "success" if success else "error"
-            epub_uploader._log_history(
-                user_id=info["user_id"],
-                filename=info["original_filename"],
-                book_hash=meta.get("book_hash"),
-                status=status,
-                final_path=meta.get("suggested_path") if success else None,
+
+            # Log history via repository
+            await upload_repo.log_history(
+                {
+                    "user_id": info["user_id"],
+                    "filename": info["original_filename"],
+                    "book_hash": meta.get("book_hash"),
+                    "status": status,
+                    "final_path": meta.get("suggested_path") if success else None,
+                }
             )
+
             if success:
-                epub_uploader.cleanup_upload(upload_id, f_path)
+                if f_path.exists():
+                    f_path.unlink()
+                del pending_uploads[upload_id]
+
             results.append({"upload_id": upload_id, "success": success})
+
         except Exception as e:
+            logger.error(f"Error finalizing bulk upload {upload_id}: {e}", exc_info=True)
             results.append({"upload_id": upload_id, "success": False, "error": str(e)})
+
     return {"success": True, "results": results}
 
 
 async def handle_get_upload_history(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
-    async with pg_manager.get_session() as session:
-        stmt = (
-            select(UploadHistory)
-            .order_by(desc(UploadHistory.created_at))
-            .limit(data.get("limit", 100))
-            .offset(data.get("offset", 0))
-        )
-        res = (await session.execute(stmt)).scalars().all()
-        return {
-            "history": [
-                {
-                    "id": i.id,
-                    "user_id": i.user_id,
-                    "filename": i.filename,
-                    "status": i.status,
-                    "created_at": i.created_at.isoformat() if i.created_at else None,
-                }
-                for i in res
-            ]
-        }
+    limit = data.get("limit", 100)
+    offset = data.get("offset", 0)
+
+    history_entries = await upload_repo.get_history(limit=limit, offset=offset)
+
+    return {
+        "history": [
+            {
+                "id": i.id,
+                "user_id": i.user_id,
+                "filename": i.filename,
+                "status": i.status,
+                "created_at": i.created_at.isoformat() if i.created_at else None,
+            }
+            for i in history_entries
+        ]
+    }
 
 
 async def handle_admin_enrich_metadata(data: dict[str, Any], user_data: dict[str, Any]):

@@ -25,7 +25,7 @@ async def test_saludo_parsing(monkeypatch):
     context.bot = MagicMock()
     context.bot.send_message = AsyncMock()
 
-    plugin._get_message = MagicMock(return_value=None)
+    plugin._get_message = AsyncMock(return_value=None)
     context.args = ["-100123", "Hola", "Mundo"]
 
     await plugin.saludo(update, context)

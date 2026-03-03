@@ -44,7 +44,7 @@ class SearchHandler(BaseCommandHandler):
 
     async def _show_search_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE, thread_id: int):
         """Show search help and options."""
-        help_text = "🔍 <b>Búsqueda de EPUBs</b>\n\n" "💡 <b>Formas de buscar:</b>\n\n"
+        help_text = "🔍 <b>Búsqueda de EPUBs</b>\n\n💡 <b>Formas de buscar:</b>\n\n"
 
         await self._send_message(update, help_text, thread_id)
 

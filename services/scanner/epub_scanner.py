@@ -5,13 +5,14 @@ import re
 from datetime import datetime
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from models.library_models import DuplicateBook, LocalBook
 from services.hash_service import hash_service
 from utils.epub_extractor import EpubMetadataExtractor
 from utils.helpers import generate_short_link
-from utils.library_db import COVERS_DIR
+from utils.library_db import COVERS_DIR, DB_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -122,7 +123,6 @@ class EpubScanner:
                         return True
         except Exception as e:
             logger.error(f"Error enriqueciendo desde ISBN {book.isbn}: {e}")
-
         return False
 
     @classmethod
@@ -132,8 +132,8 @@ class EpubScanner:
         source: Any,
         session: Any,
         force_scan: bool = False,
-        series_provider: Any = None,  # Para desacoplar de series_scanner
-        translator_provider: Any = None,  # Para desacoplar de library_scanner
+        series_provider: Any = None,
+        translator_provider: Any = None,
     ) -> str | bool:
         """
         Procesa un archivo individual.
@@ -143,12 +143,9 @@ class EpubScanner:
             mtime = datetime.fromtimestamp(stat.st_mtime)
             size = stat.st_size
 
-            book = (
-                session.query(LocalBook)
-                .options(selectinload(LocalBook.series_info))
-                .filter_by(filepath=filepath)
-                .first()
-            )
+            stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.filepath == filepath)
+            result = await session.execute(stmt)
+            book = result.scalar_one_or_none()
 
             force_metadata = False
             filename = os.path.basename(filepath)
@@ -156,8 +153,6 @@ class EpubScanner:
             # Verificar portadas
             missing_covers = False
             if book and book.cover_low:
-                from utils.library_db import DB_DIR
-
                 relative_path = book.cover_low.replace("/api/library/covers/", "")
                 local_cover_path = os.path.join(DB_DIR, "covers", relative_path)
                 if not os.path.exists(local_cover_path):
@@ -216,10 +211,9 @@ class EpubScanner:
             book.english_title = identity.get("series")
             book.jap_title = identity.get("romaji_title")
             book.edition = identity["edition"]
-
             book.publisher = meta.get("publisher")
 
-            # Tags
+            # Tags clasificación
             raw_tags = meta.get("tags", [])
             classified_demographics = []
             final_genres = []
@@ -235,6 +229,7 @@ class EpubScanner:
                 "maduro",
                 "juvenil",
             ]
+
             for tag in raw_tags:
                 t_lower = tag.lower().strip()
                 if any(d in t_lower for d in known_demographics):
@@ -253,18 +248,14 @@ class EpubScanner:
                 "demographics": classified_demographics,
                 "book_type": identity["book_type"],
             }
-
-            # Attach to book transiently for series_provider to consume
             book.extracted_data = extracted_data
-
             book.romaji_title = identity.get("romaji_title") or meta.get("romaji_title")
 
-            # Generate MD5 hash for the file
             try:
                 with open(filepath, "rb") as f:
                     book.hash_md5 = hashlib.md5(f.read()).hexdigest()
-            except Exception as e:
-                logger.warning(f"No se pudo generar MD5 para {filename}: {e}")
+            except Exception:
+                pass
 
             book.isbn = meta.get("isbn")
             book.asin = meta.get("asin")
@@ -296,104 +287,64 @@ class EpubScanner:
                 color_mode=meta.get("color_mode") or "bw",
             )
 
-            extracted_book_data = book
-
             with session.no_autoflush:
-                existing_same_file = session.query(LocalBook).filter(LocalBook.filepath == filepath).first()
+                # El book ya puede estar en la sesión si existía para ese filepath
+                book.series_hash = target_series_hash
+                book.book_hash = target_book_hash
 
-                if existing_same_file:
-                    if existing_same_file.book_hash != target_book_hash:
-                        hash_conflict = (
-                            session.query(LocalBook)
-                            .filter(
-                                LocalBook.book_hash == target_book_hash,
-                                LocalBook.id != existing_same_file.id,
-                            )
-                            .first()
-                        )
+                # Buscar conflictos de hash con OTROS paths
+                conflict_stmt = select(LocalBook).where(
+                    LocalBook.book_hash == target_book_hash, LocalBook.filepath != filepath
+                )
+                conflict_res = await session.execute(conflict_stmt)
+                hash_conflict = conflict_res.scalar_one_or_none()
 
-                        if hash_conflict:
-                            logger.warning(f"📕 Duplicado detectado: {book.title}")
-                            try:
-                                dup_exists = session.query(DuplicateBook).filter_by(duplicate_filepath=filepath).first()
-                                if not dup_exists:
-                                    dup = DuplicateBook(
-                                        book_hash=target_book_hash,
-                                        original_filepath=hash_conflict.filepath,
-                                        duplicate_filepath=filepath,
-                                        title=book.title,
-                                        author=extracted_data.get("author")
-                                        or (book.series_info.author if book.series_info else "Unknown"),
-                                    )
-                                    session.add(dup)
-                                    session.commit()
-                            except Exception as de:
-                                logger.error(f"Error registrando duplicado: {de}")
-                                session.rollback()
-                            return "duplicate"
-
-                    book = existing_same_file
-                    if not book.series_hash or force_scan:
-                        book.series_hash = target_series_hash
-                    if not book.book_hash or force_scan:
-                        book.book_hash = target_book_hash
-
-                    outcome = "updated"
-                else:
-                    existing_with_same_hash = (
-                        session.query(LocalBook).filter(LocalBook.book_hash == target_book_hash).first()
-                    )
-
-                    if existing_with_same_hash:
-                        if not os.path.exists(existing_with_same_hash.filepath):
-                            logger.info(f"🔄 Migración detectada: {existing_with_same_hash.filepath} -> {filepath}")
-                            cls.copy_metadata_to_existing(extracted_book_data, existing_with_same_hash)
-                            book = existing_with_same_hash
-                            book.filepath = filepath
-                            book.filename = filename
-                            book.file_size = size
-                            book.file_modified_at = mtime
-                            book.source_id = source.id
-                            if not book.series_hash or force_scan:
-                                book.series_hash = target_series_hash
-                            if not book.book_hash or force_scan:
-                                book.book_hash = target_book_hash
-                            outcome = "updated"
-                        else:
-                            logger.warning(f"📕 Duplicado detectado: {book.title}")
-                            try:
-                                dup_exists = session.query(DuplicateBook).filter_by(duplicate_filepath=filepath).first()
-                                if not dup_exists:
-                                    dup = DuplicateBook(
-                                        book_hash=target_book_hash,
-                                        original_filepath=existing_with_same_hash.filepath,
-                                        duplicate_filepath=filepath,
-                                        title=book.title,
-                                        author=extracted_data.get("author")
-                                        or (book.series_info.author if book.series_info else "Unknown"),
-                                    )
-                                    session.add(dup)
-                                    session.commit()
-                            except Exception as de:
-                                logger.error(f"Error registrando duplicado: {de}")
-                                session.rollback()
-                            return "duplicate"
+                if hash_conflict:
+                    if not os.path.exists(hash_conflict.filepath):
+                        logger.info(f"🔄 Migración detectada: {hash_conflict.filepath} -> {filepath}")
+                        # En lugar de crear uno nuevo, tomamos el conflictivo y actualizamos su path
+                        # Pero ya tenemos un objeto 'book', así que es más fácil borrar el conflictivo
+                        # o actualizarlo. Hagamos lo segundo: borramos el 'book' (si es nuevo) y usamos el conflictivo.
+                        cls.copy_metadata_to_existing(book, hash_conflict)
+                        hash_conflict.filepath = filepath
+                        hash_conflict.filename = filename
+                        hash_conflict.file_size = size
+                        hash_conflict.file_modified_at = mtime
+                        hash_conflict.source_id = source.id
+                        hash_conflict.series_hash = target_series_hash
+                        # Si 'book' es nuevo y no estaba en DB, no pasa nada.
+                        # Si estaba en DB (existing_same_file), borrarlo.
+                        if book.id and book.id != hash_conflict.id:
+                            await session.delete(book)
+                        book = hash_conflict
+                        outcome = "updated"
                     else:
-                        book.series_hash = target_series_hash
-                        book.book_hash = target_book_hash
-                        session.add(book)
-                        outcome = "added"
+                        logger.warning(f"📕 Duplicado detectado: {book.title}")
+                        dup_stmt = select(DuplicateBook).where(DuplicateBook.duplicate_filepath == filepath)
+                        dup_res = await session.execute(dup_stmt)
+                        if not dup_res.scalar_one_or_none():
+                            dup = DuplicateBook(
+                                book_hash=target_book_hash,
+                                original_filepath=hash_conflict.filepath,
+                                duplicate_filepath=filepath,
+                                title=book.title,
+                                author=extracted_data.get("author")
+                                or (book.series_info.author if book.series_info else "Unknown"),
+                            )
+                            session.add(dup)
+                        return "duplicate"
 
-            # Vinculación (Se delega al orquestador o providers)
-            if book not in session:
-                session.add(book)
+                if book not in session:
+                    session.add(book)
+                outcome = "added" if not book.id else "updated"
 
+            # Vinculación
             if series_provider:
-                series = series_provider(session, book)
+                series = await series_provider(session, book)
                 book.series_metadata_id = series.id
 
             if translator_provider:
-                translator_provider(session, book)
+                await translator_provider(session, book)
 
             # Portadas
             if extractor.cover_data:
@@ -407,14 +358,14 @@ class EpubScanner:
                     book.cover_medium = base_url + os.path.basename(cover_paths["medium"])
                     book.cover_low = base_url + os.path.basename(cover_paths["low"])
 
-            # Link corto estable
             if book.book_hash:
                 book.short_link = generate_short_link(book.book_hash)
 
+            await session.flush()
             return outcome
         except Exception as e:
             logger.error(f"Error procesando libro {filepath}: {e}")
-            session.rollback()
+            await session.rollback()
             return False
 
     @classmethod
@@ -424,15 +375,9 @@ class EpubScanner:
         """
         try:
             if not os.path.exists(filepath):
-                logger.error(f"Archivo no encontrado para refrescar portada: {filepath}")
                 return False
-
             extractor = EpubMetadataExtractor(filepath)
-            # Solo necesitamos la portada, pero extract() hace todo.
-            # Podríamos optimizar EpubMetadataExtractor si fuera necesario,
-            # pero por ahora usamos extract().
-            _ = extractor.extract()
-
+            extractor.extract()
             if extractor.cover_data:
                 cover_filename = f"{hashlib.md5(filepath.encode()).hexdigest()}.jpg"
                 cover_dest = os.path.join(COVERS_DIR, cover_filename)
@@ -443,10 +388,8 @@ class EpubScanner:
                     book.cover_high = base_url + os.path.basename(cover_paths["high"])
                     book.cover_medium = base_url + os.path.basename(cover_paths["medium"])
                     book.cover_low = base_url + os.path.basename(cover_paths["low"])
+                    await session.flush()
                     return True
-            else:
-                logger.warning(f"No se encontró portada en el EPUB: {filepath}")
-
             return False
         except Exception as e:
             logger.error(f"Error refrescando portada para {filepath}: {e}")

@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlalchemy import select, text
@@ -17,98 +17,99 @@ logger = logging.getLogger(__name__)
 
 class OptimizedSyncEngine:
     """
-    Motor de sincronización optimizado que reduce drásticamente las solicitudes a Supabase.
+    Optimized synchronization engine that drastically reduces Supabase requests.
 
-    Estrategia:
-    - Event-driven en lugar de time-based polling
-    - Batch processing para operaciones masivas
-    - Cache inteligente para reducir consultas
-    - Detección de cambios mediante timestamps
+    Strategy:
+    - Event-driven instead of time-based polling (simulated via pending_changes)
+    - Batch processing for massive operations
+    - Intelligent caching to reduce redundant queries
+    - Change detection via timestamps
     """
 
     def __init__(self):
         self.running = False
-        self.last_sync_times = {
+        self.last_sync_times: dict[str, datetime] = {
             "users": datetime.min,
             "user_levels": datetime.min,
             "admins": datetime.min,
         }
-        self.pending_changes = {"users": set(), "user_levels": set(), "admins": set()}
+        self.pending_changes: dict[str, set[Any]] = {"users": set(), "user_levels": set(), "admins": set()}
         self.sync_intervals = {
-            "users": 86400,  # 24 horas (Predeterminado para minimizar solicitudes)
-            "user_levels": 86400,  # 24 horas
-            "admins": 86400,  # 24 horas
+            "users": 86400,  # 24 hours (Default to minimize requests)
+            "user_levels": 86400,  # 24 hours
+            "admins": 86400,  # 24 hours
         }
         self.force_next_run = False
 
     async def start(self):
-        """Inicia el motor de sincronización optimizado."""
+        """Starts the optimized synchronization engine."""
         if self.running:
             return
 
         self.running = True
-        logger.info("Optimized Sync Engine started (Long-interval Polling mode)")
+        logger.info("[SYNC_ENGINE] Optimized Sync Engine started (Adaptive Polling mode)")
 
-        # Iniciar tareas en segundo plano
+        # Start background tasks
         asyncio.create_task(self._sync_loop())
         asyncio.create_task(self._change_detector_loop())
 
     async def stop(self):
-        """Detiene el motor de sincronización."""
+        """Stops the synchronization engine."""
         self.running = False
-        logger.info("Optimized Sync Engine stopped")
+        logger.info("[SYNC_ENGINE] Optimized Sync Engine stopped")
 
     async def _sync_loop(self):
-        """Bucle principal de sincronización optimizado."""
+        """Main optimized synchronization loop."""
         while self.running:
             try:
                 if config.ENABLE_SUPABASE and config.ENABLE_POSTGRES_PLUGIN:
-                    # Sincronizar solo si hay cambios pendientes
+                    # Sync only if there are pending changes or interval expired
                     await self._sync_if_changed("users")
                     await self._sync_if_changed("user_levels")
                     await self._sync_if_changed("admins")
 
             except Exception as e:
-                logger.error(f"Error in optimized sync loop: {e}")
+                logger.error(f"[SYNC_ENGINE] Error in optimized sync loop: {e}", exc_info=True)
 
-            # Esperar adaptativa (1 hora entre verificadores de sync pasivos)
-            # Si se forzó una ejecución, esperamos poco; de lo cual, esperamos el intervalo largo.
+            # Adaptive wait (1 hour between passive sync checks)
+            # If a run was forced, we wait shortly; otherwise, we wait the long interval.
             await asyncio.sleep(60 if self.force_next_run else 3600)
             self.force_next_run = False
 
     async def _change_detector_loop(self):
-        """Bucle de detección de cambios."""
+        """Change detection loop."""
         while self.running:
             try:
                 await self._detect_changes()
             except Exception as e:
-                logger.error(f"Error in change detector: {e}")
+                logger.error(f"[SYNC_ENGINE] Error in change detector loop: {e}")
 
-            await asyncio.sleep(3600)  # Revisar cambios remotos cada hora
+            await asyncio.sleep(3600)  # Check for remote changes every hour
 
     async def _detect_changes(self):
-        """Detecta cambios en Supabase sin hacer polling constante."""
+        """Detects changes in Supabase without constant polling."""
         if not supabase_manager.is_active:
             return
 
         try:
-            # Detectar cambios en usuarios
+            # Detect user changes
             await self._detect_user_changes()
 
-            # Detectar cambios en niveles (menos frecuente)
-            if datetime.utcnow() - self.last_sync_times["user_levels"] > timedelta(hours=1):
+            # Detect level changes (less frequent)
+            now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+            if now_utc - self.last_sync_times["user_levels"] > timedelta(hours=1):
                 await self._detect_level_changes()
 
         except Exception as e:
-            logger.error(f"Error detecting changes: {e}")
+            logger.error(f"[SYNC_ENGINE] Error detecting changes: {e}")
 
     async def _detect_user_changes(self):
-        """Detecta cambios en usuarios de Supabase."""
+        """Detects changes in Supabase users."""
         try:
-            # Usar timestamp differential query
+            # Use timestamp differential query
             last_check = self.last_sync_times["users"]
 
-            # Query optimizada para obtener solo usuarios modificados
+            # Optimized query to get only modified users
             result = (
                 supabase_manager.get_client()
                 .table("users")
@@ -123,82 +124,86 @@ class OptimizedSyncEngine:
                 self.pending_changes["users"].update(changed_users)
 
                 if changed_users:
-                    logger.info(f"Detected {len(changed_users)} user changes in Supabase")
+                    logger.info(f"[SYNC] Detected {len(changed_users)} user changes in Supabase")
 
         except Exception as e:
-            logger.error(f"Error detecting user changes: {e}")
+            logger.error(f"[SYNC_ENGINE] Error detecting user changes: {e}")
 
     async def _detect_level_changes(self):
-        """Detecta cambios en niveles de usuario."""
+        """Detects changes in user levels."""
         try:
             result = supabase_manager.get_client().table("user_levels").select("id, updated_at").execute()
 
             if result and result.data:
-                # Comparar con versión local
+                # Compare with local version
                 local_levels = await self._get_local_level_ids()
                 remote_levels = {item["id"] for item in result.data}
 
                 if local_levels != remote_levels:
-                    self.pending_changes["user_levels"].update(remote_levels)
-                    logger.info("Detected user_levels changes")
+                    self.pending_changes["user_levels"].add("all")
+                    logger.info("[SYNC_ENGINE] Detected user_levels changes in Supabase")
 
         except Exception as e:
-            logger.error(f"Error detecting level changes: {e}")
+            logger.error(f"[SYNC_ENGINE] Error detecting level changes: {e}")
 
     async def _get_local_level_ids(self) -> set[int]:
-        """Obtiene IDs de niveles locales."""
+        """Gets local level IDs."""
         try:
             async with pg_manager.get_session() as session:
                 result = await session.execute(select(UserLevel.id))
                 return {row[0] for row in result.fetchall()}
         except Exception as e:
-            logger.error(f"Error getting local level IDs: {e}")
+            logger.error(f"[SYNC_ENGINE] Error getting local level IDs: {e}")
             return set()
 
     async def _sync_if_changed(self, table_name: str):
-        """Sincroniza tabla solo si hay cambios pendientes o ha pasado el intervalo."""
-        if not self.pending_changes[table_name]:
-            # Si no hay cambios explícitos, verificar si ha pasado el intervalo para un Full Sync
-            time_since_last = datetime.utcnow() - self.last_sync_times[table_name]
-            if time_since_last < timedelta(seconds=self.sync_intervals[table_name]):
-                return
+        """Syncs table only if there are pending changes or interval has passed."""
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
 
-        logger.info(f"Syncing {table_name} - {len(self.pending_changes[table_name])} changes or interval expired")
+        has_pending = bool(self.pending_changes[table_name])
+        time_since_last = now_utc - self.last_sync_times[table_name]
+        interval_expired = time_since_last >= timedelta(seconds=self.sync_intervals[table_name])
 
-        # Guardar para reporte
-        self.last_sync_times[table_name] = datetime.utcnow()
+        if not has_pending and not interval_expired:
+            return
 
-        if table_name == "users":
-            await self._sync_users_optimized()
-        elif table_name == "user_levels":
-            await self._sync_user_levels_optimized()
-        elif table_name == "admins":
-            await self._sync_admins_optimized()
+        reason = "pending changes" if has_pending else "interval expired"
+        logger.info(f"[SYNC_ENGINE] Syncing {table_name} ({reason})")
 
-        # Limpiar cambios procesados y actualizar timestamp
-        self.pending_changes[table_name].clear()
-        self.last_sync_times[table_name] = datetime.utcnow()
+        try:
+            if table_name == "users":
+                await self._sync_users_optimized()
+            elif table_name == "user_levels":
+                await self._sync_user_levels_optimized()
+            elif table_name == "admins":
+                await self._sync_admins_optimized()
+
+            # Update last sync time and clear pending
+            self.last_sync_times[table_name] = now_utc
+            self.pending_changes[table_name].clear()
+
+        except Exception as e:
+            logger.error(f"[SYNC_ENGINE] Error during {table_name} sync: {e}")
 
     async def _sync_users_optimized(self):
-        """Sincronización optimizada de usuarios."""
+        """Optimized user synchronization."""
         if not supabase_manager.is_active:
             return
 
         try:
-            # Obtener usuarios modificados de Supabase
             last_sync = self.last_sync_times["users"]
 
             try:
-                # Intento 1: Filtrado por updated_at (eficiente)
+                # Attempt 1: Filter by updated_at (efficient)
                 query = supabase_manager.get_client().table("users").select("*")
                 if last_sync > datetime.min:
                     query = query.gte("updated_at", last_sync.isoformat())
 
                 result = query.order("updated_at", desc=True).limit(200).execute()
             except Exception as query_e:
+                # Log only the error message to avoid flooding
                 if "column" in str(query_e) and "updated_at" in str(query_e):
-                    logger.warning("Supabase schema missing 'updated_at'. Falling back to full fetch.")
-                    # Intento 2: Fallback sin filtros de tiempo (menos eficiente pero robusto)
+                    logger.warning("[SYNC_ENGINE] Supabase schema missing 'updated_at'. Falling back to full fetch.")
                     result = supabase_manager.get_client().table("users").select("*").limit(500).execute()
                 else:
                     raise query_e
@@ -209,25 +214,25 @@ class OptimizedSyncEngine:
             # Batch update local
             await self._batch_update_users(result.data)
 
-            # Invalidar caché de usuarios afectados
+            # Invalidate affected users cache
             for user_data in result.data:
-                # Usar invalidate_user que es lo correcto en cache_manager
                 try:
-                    await cache_manager.delete_user(user_data["telegram_id"])
+                    await cache_manager.invalidate_user(user_data["telegram_id"])
                 except Exception:
                     pass
 
-            logger.info(f"Synced {len(result.data)} users from Supabase to local")
+            logger.info(f"[SYNC_ENGINE] Successfully synced {len(result.data)} users")
 
         except Exception as e:
-            logger.error(f"Error in optimized users sync: {e}")
+            logger.error(f"[SYNC_ENGINE] Error in optimized users sync: {e}")
 
     async def _batch_update_users(self, users_data: list[dict[str, Any]]):
-        """Actualización batch de usuarios en local."""
+        """Batch update users in local database."""
         try:
+            now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
             async with pg_manager.get_session() as session:
                 for user_data in users_data:
-                    # Mapear datos de Supabase a modelo local
+                    # Map Supabase data to local model
                     mapped_data = {
                         "telegram_id": user_data["telegram_id"],
                         "username": user_data.get("username"),
@@ -245,10 +250,10 @@ class OptimizedSyncEngine:
                         "settings": json.dumps(user_data.get("settings", {})),
                         "expires_at": self._parse_datetime(user_data.get("expires_at")),
                         "created_at": self._parse_datetime(user_data.get("added_at") or user_data.get("created_at")),
-                        "updated_at": datetime.utcnow(),
+                        "updated_at": now_utc,
                     }
 
-                    # Upsert optimizado
+                    # Optimized Upsert
                     await session.execute(
                         text("""
                             INSERT INTO users (
@@ -284,11 +289,11 @@ class OptimizedSyncEngine:
                 await session.commit()
 
         except Exception as e:
-            logger.error(f"Error in batch user update: {e}")
+            logger.error(f"[SYNC_ENGINE] Error in batch user update: {e}")
             raise
 
     async def _sync_user_levels_optimized(self):
-        """Sincronización optimizada de niveles."""
+        """Optimized level synchronization."""
         if not supabase_manager.is_active:
             return
 
@@ -299,17 +304,16 @@ class OptimizedSyncEngine:
                 return
 
             await self._batch_update_levels(result.data)
-            logger.info(f"Synced {len(result.data)} user levels from Supabase")
+            logger.info(f"[SYNC_ENGINE] Successfully synced {len(result.data)} user levels")
 
         except Exception as e:
-            logger.error(f"Error in user levels sync: {e}")
+            logger.error(f"[SYNC_ENGINE] Error in user levels sync: {e}")
 
     async def _batch_update_levels(self, levels_data: list[dict[str, Any]]):
-        """Actualización batch de niveles."""
+        """Batch update levels in local database."""
         try:
             async with pg_manager.get_session() as session:
                 for level_data in levels_data:
-                    # Mapear datos
                     mapped_data = {
                         "id": level_data["id"],
                         "name": level_data["name"],
@@ -327,7 +331,6 @@ class OptimizedSyncEngine:
                         "allow_theme_templates": level_data.get("allow_theme_templates", False),
                         "show_recommendations": level_data.get("show_recommendations", True),
                         "default_theme_id": level_data.get("default_theme_id"),
-                        # ... otros campos de UI
                     }
 
                     # Upsert
@@ -367,11 +370,11 @@ class OptimizedSyncEngine:
                 await session.commit()
 
         except Exception as e:
-            logger.error(f"Error in batch level update: {e}")
+            logger.error(f"[SYNC_ENGINE] Error in batch level update: {e}")
             raise
 
     async def _sync_admins_optimized(self):
-        """Sincronización optimizada de admins."""
+        """Optimized admin synchronization."""
         if not supabase_manager.is_active:
             return
 
@@ -384,19 +387,19 @@ class OptimizedSyncEngine:
             admin_ids = {item["user_id"] for item in result.data}
             await self._update_admins_table(admin_ids)
 
-            logger.info(f"Synced {len(admin_ids)} admins from Supabase")
+            logger.info(f"[SYNC_ENGINE] Successfully synced {len(admin_ids)} admins")
 
         except Exception as e:
-            logger.error(f"Error in admins sync: {e}")
+            logger.error(f"[SYNC_ENGINE] Error in admins sync: {e}")
 
     async def _update_admins_table(self, admin_ids: set[int]):
-        """Actualiza tabla de admins."""
+        """Updates admins table in local database."""
         try:
             async with pg_manager.get_session() as session:
-                # Limpiar tabla actual
+                # Clear current table
                 await session.execute(text("DELETE FROM admins"))
 
-                # Insertar admins actuales
+                # Insert current admins
                 for admin_id in admin_ids:
                     await session.execute(
                         text("INSERT INTO admins (user_id) VALUES (:user_id)"),
@@ -406,53 +409,53 @@ class OptimizedSyncEngine:
                 await session.commit()
 
         except Exception as e:
-            logger.error(f"Error updating admins table: {e}")
+            logger.error(f"[SYNC_ENGINE] Error updating admins table: {e}")
             raise
 
     def _parse_datetime(self, dt_str: str | None) -> datetime | None:
-        """Parsea datetime de Supabase."""
+        """Parses ISO datetime string from Supabase."""
         if not dt_str:
             return None
 
         try:
-            # Supabase envía ISO 8601 con Z
+            # Handle 'Z' suffix and ISO format
             dt_str = dt_str.replace("Z", "+00:00")
-            return datetime.fromisoformat(dt_str).astimezone().replace(tzinfo=None)
+            return datetime.fromisoformat(dt_str).astimezone(timezone.utc).replace(tzinfo=None)
         except Exception:
             return None
 
+    # Public helper methods
     async def mark_user_changed(self, telegram_id: int):
-        """Marca un usuario como modificado para sincronización."""
+        """Marks a user as changed for synchronization."""
         self.pending_changes["users"].add(telegram_id)
 
     async def mark_levels_changed(self):
-        """Marca los niveles como modificados."""
-        self.pending_changes["user_levels"].add("changed")
+        """Marks user levels as changed."""
+        self.pending_changes["user_levels"].add("all")
 
     async def force_sync_all(self):
-        """Fuerza sincronización completa y bidireccional DE INMEDIATO."""
-        logger.info("ADMIN: Triggering immediate bidirectional sync")
+        """Triggers an immediate full synchronization."""
+        logger.info("[SYNC_ENGINE] Force triggering immediate bidirectional sync...")
 
         if not config.ENABLE_SUPABASE:
+            logger.warning("[SYNC_ENGINE] Supabase is disabled. Skipping force sync.")
             return
 
-        # 1. PUSH: Enviar cambios locales a Supabase (lo que esté pendiente)
-        # Por ahora el empuje es por solicitud, pero aquí forzamos limpieza.
-
-        # 2. PULL: Traer todo de Supabase
+        # Pull everything from Supabase
         await self._sync_users_optimized()
         await self._sync_user_levels_optimized()
         await self._sync_admins_optimized()
 
-        # Resetear estado
+        # Reset states
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
         for key in self.last_sync_times:
-            self.last_sync_times[key] = datetime.utcnow()
+            self.last_sync_times[key] = now_utc
             self.pending_changes[key].clear()
 
-        logger.info("Bidirectional sync completed successfully.")
+        logger.info("[SYNC_ENGINE] Bidirectional sync completed successfully")
 
     async def get_sync_status(self) -> dict[str, Any]:
-        """Obtiene estado actual de sincronización."""
+        """Gets the current synchronization status."""
         return {
             "running": self.running,
             "last_sync_times": {k: v.isoformat() for k, v in self.last_sync_times.items()},
@@ -462,5 +465,5 @@ class OptimizedSyncEngine:
         }
 
 
-# Instancia global
+# Global Instance
 optimized_sync_engine = OptimizedSyncEngine()

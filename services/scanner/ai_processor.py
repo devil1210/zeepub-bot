@@ -161,7 +161,7 @@ class AIProcessor:
             Analiza la siguiente serie de novela ligera y sugiere etiquetas apropiadas:
 
             Serie: {title}
-            Tags actuales: {', '.join(current_tags)}
+            Tags actuales: {", ".join(current_tags)}
 
             Sugiere 5-10 etiquetas relevantes que incluyan:
             - Géneros (romance, isekai, fantasía, etc.)

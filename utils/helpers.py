@@ -1,590 +1,67 @@
-import html
-import os
-import re
-import string
-from typing import Any
+"""
+ZeePub Bot: Helpers Utility Module
+This module acts as a facade for various specialized utilities.
+Centralizes re-exports for backward-compatible imports across the project.
+"""
+
+# Re-exports for backward compatibility
 from urllib.parse import urljoin
 
-from utils.epub_extractor import clean_metadata_tags
+from utils.metadata_utils import (
+    parse_metadata_from_title,
+)
+
+# Telegram utility re-exports (many modules import these from helpers)
 
 
-def generate_short_link(book_hash: str) -> str:
-    """
-    Genera un link corto determinista de 10 caracteres basado en el hash del libro.
-    Garantiza que el mismo libro siempre tenga el mismo link.
-    """
-    if not book_hash:
-        import secrets
-
-        alphabet = string.ascii_letters + string.digits
-        return "".join(secrets.choice(alphabet) for _ in range(10))
-
-    import hashlib
-
-    # Derivamos un valor numérico estable del hash usando MD5
-    alphabet = string.ascii_letters + string.digits
-    hash_int = int(hashlib.md5(book_hash.encode()).hexdigest(), 16)
-
-    res = []
-    temp_hash = hash_int
-    for _ in range(10):
-        res.append(alphabet[temp_hash % len(alphabet)])
-        temp_hash //= len(alphabet)
-
-    return "".join(res)
-
-
-def extract_creators_by_role(entry, role_code: str) -> str | None:
-    """DESACTIVADO."""
+# Legacy / Unused Proxies
+def extract_creators_by_role(entry, role_code: str):
     return None
 
 
-def extract_author(entry, is_folder=False) -> str:
-    """DESACTIVADO."""
+def extract_author(entry, is_folder=False):
     return "Desconocido"
-
-
-def get_translator_acronym(translator: str | None) -> str:
-    """Extrae las siglas de un traductor."""
-    if not translator or translator == "Desconocido":
-        return "?"
-
-    # Si ya es corto (siglas existentes), devolverlo tal cual
-    if len(translator) <= 5 and any(c.isupper() for c in translator):
-        return translator
-
-    # Limpiar tags y símbolos comunes
-    name = re.sub(r"\[.*?\]", "", translator).strip()
-    name = re.sub(r"\(.*?\)", "", name).strip()
-
-    # Extraer letras iniciales de cada palabra
-    parts = name.split()
-    if not parts:
-        return "?"
-
-    acronym = "".join([p[0].upper() for p in parts if p and p[0].isalpha()])
-    return acronym or "?"
-
-
-def get_thread_id(update) -> int:
-    """
-    Extrae el message_thread_id de un Update de Telegram.
-    Retorna None si no hay thread_id (chat privado o grupo sin topics).
-    """
-    if not update:
-        return None
-
-    # Intentar desde message
-    if hasattr(update, "message") and update.message:
-        return getattr(update.message, "message_thread_id", None)
-
-    # Intentar desde callback_query.message
-    if hasattr(update, "callback_query") and update.callback_query:
-        if hasattr(update.callback_query, "message") and update.callback_query.message:
-            return getattr(update.callback_query.message, "message_thread_id", None)
-
-    return None
-
-
-def is_command_for_bot(update, bot_username: str) -> bool:
-    """
-    Verifica si un comando está dirigido a este bot específicamente.
-    En grupos con múltiples bots, los comandos pueden ir dirigidos a un bot
-    específico usando /comando@nombrebot
-
-    Args:
-        update: Update de Telegram
-        bot_username: Username del bot (sin @)
-
-    Returns:
-        True si el comando es para este bot o no tiene bot específico (chat privado)
-        False si el comando es para otro bot
-    """
-    if not update or not hasattr(update, "message") or not update.message:
-        return True
-
-    # En chats privados, siempre es para este bot
-    if update.effective_chat.type == "private":
-        return True
-
-    # Verificar si el mensaje tiene entidades de comando
-    if not update.message.entities:
-        return True
-
-    # Buscar la entidad de bot_command
-    for entity in update.message.entities:
-        if entity.type == "bot_command":
-            # Extraer el texto del comando
-            command_text = update.message.text[entity.offset : entity.offset + entity.length]
-
-            # Si el comando tiene @botusername, verificar que sea este bot
-            if "@" in command_text:
-                # Formato: /comando@botusername
-                mentioned_bot = command_text.split("@")[1]
-                return mentioned_bot.lower() == bot_username.lower()
-
-            # Si no tiene @, acepta el comando (comportamiento por defecto)
-            return True
-
-    return True
 
 
 def abs_url(base: str, href: str) -> str:
     return href if href.startswith("http") else urljoin(base, href)
 
 
-def norm_string(s: Any, lowercase: bool = True) -> str:
-    if s is None:
-        return ""
-    text = str(s)
-    # Remove content in square brackets [Tags]
-    text = re.sub(r"\[.*?\]", "", text)
-    # Remove content in parentheses (Jap Name / Extra Info)
-    text = re.sub(r"\(.*?\)", "", text)
-    # Normalize spaces
-    res = " ".join(text.split()).strip()
-    return res.casefold() if lowercase else res
-
-
-def normalize_author_name(name: str) -> str:
-    """
-    Normaliza nombres de autores eliminando tags, limpiando espacios y estandarizando formato.
-    Maneja (Apellido, Nombre -> Nombre Apellido) y elimina roles comunes.
-    Preserva mayúsculas si existen, o aplica .title() si viene todo en minúsculas.
-    """
-    if not name:
-        return ""
-
-    # 1. Limpieza inicial SIN forzar minúsculas
-    clean_name = norm_string(name, lowercase=False)
-
-    # 2. Eliminar roles que a veces vienen sin paréntesis
-    roles_to_remove = [
-        "autor",
-        "writer",
-        "escritor",
-        "story",
-        "ilustrador",
-        "illustrator",
-        "art",
-        "dibujo",
-    ]
-    for role in roles_to_remove:
-        clean_name = re.sub(rf"\b{role}\b", "", clean_name, flags=re.IGNORECASE)
-
-    # 3. Si detecta formato "Apellido, Nombre", invertir
-    if "," in clean_name:
-        parts = [p.strip() for p in clean_name.split(",")]
-        if len(parts) == 2:
-            clean_name = f"{parts[1]} {parts[0]}"
-
-    # 4. Limpieza final de espacios múltiples
-    clean_name = " ".join(clean_name.split()).strip()
-
-    # 5. Si el nombre viene totalmente en minúsculas, aplicar Title Case
-    if clean_name and clean_name.islower():
-        clean_name = clean_name.title()
-
-    return clean_name
-
-
-def extract_spanish_series_from_filename(filename: str) -> str:
-    """
-    Extrae el nombre de la serie en español desde un nombre de archivo.
-    Elimina - VXX, [Tags], extensiones y caracteres especiales.
-    """
-    if not filename:
-        return ""
-
-    # 1. Quitar extensión
-    name = filename.rsplit(".", 1)[0]
-
-    # 2. Quitar tags entre corchetes [TAG] e inclusive paréntesis (TAG)
-    name = re.sub(r"\[.*?\]", "", name)
-    name = re.sub(r"\(.*?\)", "", name)
-
-    # 3. Quitar patrón de volumen - VXX, VXX, etc.
-    # Soportamos: Volumen, Vol, Tomo, Parte, v., V, #
-    vol_pattern = r"(?:\s*[\-\–\—\−\―\:\~～\|¦]?\s*(?:Volumen|Vol\.?|Tomo|v\.?|V|Parte|#)\s*\d+(?:\.\d+)?.*)"
-    name = re.sub(vol_pattern, "", name, flags=re.IGNORECASE).strip()
-
-    # 4. Quitar subtítulos tras ~ o | si los hay (Normalización de serie)
-    name = re.split(r"\s+[\~～\|¦]\s+", name)[0].strip()
-
-    # 5. Quitar guiones y símbolos al final/inicio que puedan haber quedado
-    name = re.sub(r"^[^\w\(\)\[\]]+", "", name).strip()
-    name = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\?\#]+$", "", name).strip()
-
-    # 6. Limpiar espacios múltiples
-    name = re.sub(r"\s+", " ", name).strip()
-
-    return name
-
-
-def process_book_identity_comprehensive(epub_path: str, original_filename: str | None = None) -> dict:
-    """
-    Lógica UNIFICADA para extraer componentes de identidad de un EPUB.
-    Usada tanto por el Scanner como por el Uploader para garantizar paridad de hashes.
-    """
-    from utils.epub_extractor import EpubMetadataExtractor
-
-    extractor = EpubMetadataExtractor(epub_path)
-    meta = extractor.extract()
-
-    if not meta:
-        return {}
-
-    title = meta.get("title") or original_filename or "Sin título"
-    author = normalize_author_name(meta.get("author"))
-    series_meta = meta.get("series")
-    romaji_from_series = None
-    # Si la serie viene con subtítulos en la metadata (ej: "Serie ~ Subtítulo"), limpiarla
-    if series_meta:
-        series_parsed_meta = parse_metadata_from_title(series_meta)
-        series = series_parsed_meta.get("series_clean") or series_parsed_meta.get("series") or series_meta
-        romaji_from_series = series_parsed_meta.get("romaji")
-    else:
-        series = None
-    volume = meta.get("volume")
-    translator = meta.get("translator")
-    layout_by = meta.get("layout_by")
-    language = meta.get("language") or "es"
-
-    # Extraer nombre de serie en español desde el nombre de archivo (Uploader o Scanner)
-    series_spanish = ""
-    if original_filename:
-        series_spanish = extract_spanish_series_from_filename(original_filename)
-    elif epub_path:
-        series_spanish = extract_spanish_series_from_filename(os.path.basename(epub_path))
-
-    # Categorización inteligente de tipos y extracción de metadata del título
-    parsed = parse_metadata_from_title(title)
-    all_found_tags = list(meta.get("tags", [])) + parsed.get("tags", [])
-
-    book_type = meta.get("book_type")
-    if not book_type:
-        for tag in all_found_tags:
-            t_lower = tag.lower().strip()
-            if t_lower in ["nl", "nw", "wn"]:
-                book_type = {
-                    "nl": "Novela Ligera",
-                    "nw": "Novela Web",
-                    "wn": "Novela Web",  # Normalizar a Novela Web
-                }[t_lower]
-                break
-            elif "novela" in t_lower:
-                # Si el tag dice "Novela Ligera" o "Novela Web" directamente
-                if "ligera" in t_lower:
-                    book_type = "Novela Ligera"
-                elif "web" in t_lower:
-                    book_type = "Novela Web"
-                else:
-                    book_type = tag
-                break
-
-    # Limpiar el título para la UI (eliminar tags residuales)
-    ui_title = parsed.get("clean_title") or clean_metadata_tags(title)
-    if not series and parsed.get("series"):
-        series = parsed["series"]
-
-    # Normalización final de la serie para asegurar que no queden espacios extra o símbolos
-    if series:
-        series = series.strip()
-    if volume is None and parsed.get("volume"):
-        try:
-            volume = float(parsed["volume"])
-        except Exception:
-            volume = None
-
-    # --- ENRICHMENT FROM FILENAME ---
-    # Detectar variantes de edición (Color, Censura) desde el nombre de archivo
-    # si no vinieron en la metadata interna.
-    filename_to_check = original_filename or (os.path.basename(epub_path) if epub_path else "")
-    if filename_to_check:
-        fname_lower = filename_to_check.lower()
-
-        # 1. Color Mode detection
-        if meta.get("color_mode", "bw") == "bw":  # Default in extractor is "bw", check if filename says otherwise
-            if any(x in fname_lower for x in ["[color]", "(color)", "[full color]", "color version"]):
-                meta["color_mode"] = "color"
-
-        # If explicitly marked as B&W in filename, ensure it stays B&W (redundant but safe)
-        if any(x in fname_lower for x in ["[b&n]", "[b&w]", "(b&n)", "(b&w)"]):
-            meta["color_mode"] = "bw"
-
-        # 2. Uncensored detection
-        if not meta.get("is_uncensored"):
-            if any(
-                x in fname_lower
-                for x in [
-                    "[sin censura]",
-                    "[uncensored]",
-                    "[no censura]",
-                    "(uncensored)",
-                ]
-            ):
-                meta["is_uncensored"] = 1
-
-    return {
-        "series": series,
-        "author": author,
-        "book_type": book_type,
-        "volume": volume,
-        "translator": translator,
-        "layout_by": layout_by,
-        "language": language,
-        "series_spanish": series_spanish,
-        "series_english": parsed.get("series_clean") or series or series_spanish,
-        "title": ui_title,
-        "published_at": meta.get("published_at"),
-        "edition": meta.get("edition"),
-        "is_uncensored": meta.get("is_uncensored", 0),
-        "color_mode": meta.get("color_mode", "bw"),
-        "romaji_title": romaji_from_series or parsed.get("romaji"),
-    }
-
-
-def generate_book_hash(
-    series: str | None = None,
-    author: str | None = None,
-    book_type: str | None = None,
-    volume: Any | None = None,
-    translator: str | None = None,
-    layout_by: str | None = None,
-    language: str | None = "es",
-    edition: str | None = None,
-    is_uncensored: int = 0,
-    color_mode: str = "bw",
-) -> str:
-    """
-    Genera un hash estable basado exclusivamente en: series + author + book_type + volume + translator + layout_by.
-    NO usar title.
-    """
-    from services.hash_service import hash_service
-
-    return hash_service.generate_book_hash(
-        series=series,
-        author=author,
-        book_type=book_type,
-        volume=volume,
-        translator=translator,
-        layout_by=layout_by,
-        language=language,
-        edition=edition,
-        is_uncensored=is_uncensored,
-        color_mode=color_mode,
-    )
-
-
-def generate_series_hash(series: str, author: str | None = None, book_type: str | None = None) -> str:
-    """
-    Genera un hash estable para la serie basado en: series + author + book_type.
-    """
-    from services.hash_service import hash_service
-
-    return hash_service.generate_series_hash(series=series, author=author, book_type=book_type)
-
-
-def limpiar_html_basico(texto_html: str) -> str:
-    if not texto_html:
-        return ""
-    texto_html = texto_html.replace("<br>", "\n").replace("<br/>", "\n")
-    texto_limpio = re.sub(r"<.*?>", "", texto_html)
-    return "\n".join([ln.rstrip() for ln in texto_limpio.strip().splitlines() if ln.strip()])
-
-
 def build_search_url(query: str, uid: int = None, role: str = None) -> str:
-    """DESACTIVADO."""
     return ""
 
 
 def find_zeepubs_destino(feed, prefer_libraries: bool = False):
-    """DESACTIVADO."""
     return None
 
 
-def generar_slug_from_meta(meta: dict) -> str:
-    titulo_serie = None
-    if isinstance(meta, dict):
-        # PRIORIDAD: series_name (de series_metadata), series_english, series
-        titulo_serie = (
-            meta.get("series_name")
-            or meta.get("series_english")
-            or meta.get("series")
-            or meta.get("series_spanish")
-            or meta.get("titulo_serie")
-            or meta.get("series_clean")
-            or meta.get("english_title")
-            or meta.get("title")
-        )
-    elif isinstance(meta, str):
-        titulo_serie = meta
-    if not titulo_serie:
-        return ""
-    base_titulo = titulo_serie.strip()
-    base_titulo = re.sub(r"\[.*?\]", "", base_titulo)
-    # Separar por guiones diversos, tildes, dos puntos o barras
-    base_titulo = re.split(r"[\-\–\—\−\―\:\~\～\|¦]", base_titulo)[0].strip()
-    base_titulo = base_titulo.replace("×", "x")
-    base_titulo = base_titulo.replace(",", " ")
-    for ch in (
-        "'",
-        "’",
-        "#",
-        "・",
-        "+",
-        ".",
-        "‘",
-        "’",
-        "“",
-        "”",
-        "（",
-        "）",
-        "、",
-        "：",
-        "？",
-        "！",
-        "；",
-        "?",
-        "-",
-        "_",
-        "―",
-        "—",
-        "–",
-    ):
-        base_titulo = base_titulo.replace(ch, "")
-    base_titulo = re.sub(r"\s+", " ", base_titulo).strip()
-    slug = base_titulo.replace(" ", "_")
-    return slug
-
-
-def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = False) -> dict:
-    """
-    Parsea un título completo de forma inteligente.
-    Retorna diccionario con: series, volume, clean_title, tags, romaji.
-
-    Args:
-        title_str: Título a parsear
-        preserve_special_chars: Si True, preserva caracteres especiales como :, !, ?
-    """
-    if not title_str or not isinstance(title_str, str):
-        return {"series": "", "volume": "", "clean_title": "", "tags": [], "romaji": ""}
-
-    # 1. Extraer tags en corchetes [Tag]
-    tags = re.findall(r"\[(.*?)\]", title_str)
-    # Limpiar título inicial de corchetes de forma global
-    clean = re.sub(r"\[.*?\]", " ", title_str).strip()
-    # Limpiar paréntesis residuales que a veces se usan como tags
-    clean = re.sub(r"\(.*?\)", " ", clean).strip()
-
-    # 2. Separar por guiones diversos, tildes, dos puntos o barras
-    parts = re.split(r"[\-\–\—\−\―\:\~～\|¦]", clean)
-
-    # 3. Identificar volumen (números, vol, v, etc.)
-    volume = ""
-    if len(parts) >= 2:
-        # Patrones de volumen comunes
-        volume_patterns = [
-            r"^vol\.?\s*\d+",
-            r"^v\s*\d+",
-            r"^volume\s*\d+",
-            r"^tomo\s*\d+",
-            r"^part\s*\d+",
-            r"^capítulo\s*\d+",
-            r"^chapter\s*\d+",
-            r"^\d+$",
-        ]
-
-        for i, part in enumerate(parts):
-            if i == len(parts) - 1 and any(
-                re.match(pattern, part.strip(), re.IGNORECASE) for pattern in volume_patterns
-            ):
-                volume = part.strip()
-                parts = parts[:i]  # Todo antes del volumen es la serie
-                break
-
-    # 4. Reconocer si hay subtítulo romaji (segunda parte en caracteres latinos/japoneses)
-    romaji = ""
-    if len(parts) >= 2 and not volume:
-        # Si no hay volumen pero hay 2+ partes, buscar romaji
-        # El romaji suele estar después del título principal
-        p1 = parts[0].strip()
-        p2 = parts[1].strip()
-
-        # Heurística: si la segunda parte parece romaji (mix de caracteres)
-        if re.search(r"[ひらがなカ]", p2) or re.search(r"[a-zA-Z\s]+[ひらがなカ]", p2):
-            romaji = p2
-            series = p1
-        elif len(p1) < len(p2) * 0.8:  # p1 es más corto, probable subtítulo
-            romaji = p2
-            series = p1
-        else:
-            # Si no hay romaji claro, priorizar el primer elemento como serie
-            series = p1
-
-    # 5. Si no hay romaji, unir todo lo que no es volumen
-    if not romaji:
-        series = " ".join(parts).strip()
-
-    # 6. Final cleaning of series title and romaji
-    if not preserve_special_chars:
-        # Limpiar caracteres especiales SOLO si no se deben preservar
-        series = re.sub(r"^[^\w\(\)\[\]]+", "", series).strip()
-        series = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\#]+$", "", series).strip()
-
-        if romaji:
-            romaji = re.sub(r"^[^\w\(\)\[\]]+", "", romaji).strip()
-            romaji = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\#]+$", "", romaji).strip()
-
-    # REMOVE metadata brackets from series name for the "English Title" display
-    series_clean = re.sub(r"\s*\[.*?\]\s*", " ", series).strip()
-    series_clean = re.sub(r"[\-\–\—\−\―\:\.\s]+$", "", series_clean).strip()
-
-    clean_title_result = series_clean if romaji else series_clean or clean
-    clean_title_result = re.sub(r"\s+", " ", clean_title_result).strip()
-
-    return {
-        "series": series,
-        "series_clean": series_clean,
-        "volume": volume,
-        "clean_title": clean_title_result,
-        "tags": tags,
-        "romaji": romaji,
-    }
-
-
-def parse_title_string(title_str: str) -> tuple[str, str]:
-    """
-    DEPRECATED: Use parse_metadata_from_title instead.
-    Mantener por compatibilidad inversa si algo lo usa.
-    """
+# Type aliases / compatibility
+def parse_title_string(title_str: str):
     res = parse_metadata_from_title(title_str)
     return res["series"], res["volume"]
 
 
-def escapar_html(texto: str) -> str:
-    return html.escape(texto) if texto else ""
+# Proxy to Hash Service
+def generate_book_hash(**kwargs):
+    from services.hash_service import hash_service
+
+    return hash_service.generate_book_hash(**kwargs)
 
 
-def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
-    """
-    Valida si las credenciales de Facebook están configuradas y no son placeholders.
-    Retorna (True, "") si todo está bien.
-    Retorna (False, mensaje_error) si falta algo o es inválido.
-    """
+def generate_series_hash(**kwargs):
+    from services.hash_service import hash_service
+
+    return hash_service.generate_series_hash(**kwargs)
+
+
+def validate_facebook_credentials(config_obj):
     missing = []
-
-    # Check Token
     token = config_obj.FACEBOOK_PAGE_ACCESS_TOKEN
     if not token or "your_token" in token or "token_falso" in token:
         missing.append("FACEBOOK_PAGE_ACCESS_TOKEN")
-
-    # Check Group ID
     group_id = config_obj.FACEBOOK_GROUP_ID
-    # "id_del_grupo" es el placeholder que causó el error 400
     if not group_id or "id_del_grupo" in group_id or "your_group_id" in group_id:
         missing.append("FACEBOOK_GROUP_ID")
-
     if missing:
         msg = (
             "⚠️ <b>Configuración inválida</b>\n\n"
@@ -593,68 +70,4 @@ def validate_facebook_credentials(config_obj) -> tuple[bool, str]:
             "Por favor, ponte en contacto con un admin para que active el envío a Facebook."
         )
         return False, msg
-
     return True, ""
-
-
-CURRENT_VERSION = "v7.1.1"
-
-
-def get_current_version() -> str:
-    return CURRENT_VERSION
-
-
-def get_commit_hash() -> str:
-    # 1. Try file (Watchtower/Production)
-    try:
-        import os
-
-        if os.path.exists("version_hash.txt"):
-            with open("version_hash.txt") as f:
-                return f.read().strip()[:7]
-    except Exception:
-        pass
-
-    # 2. Try Git
-    try:
-        import subprocess
-
-        result = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()
-    except Exception:
-        pass
-
-    return "unknown"
-
-
-def get_version_string() -> str:
-    v = get_current_version()
-    h = get_commit_hash()
-    if h and h != "unknown":
-        return f"{v} ({h})"
-    return v
-
-
-def get_last_commit_message() -> str:
-    """Obtiene el mensaje del último commit."""
-    try:
-        import subprocess
-
-        # git log -1 --pretty=%B
-        result = subprocess.run(
-            ["git", "log", "-1", "--pretty=%B"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        if result.returncode == 0:
-            return result.stdout.strip()
-    except Exception:
-        pass
-    return "Actualización desconocida"

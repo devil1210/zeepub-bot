@@ -1,9 +1,6 @@
 import html
 import logging
 
-import sqlalchemy as sa
-from sqlalchemy import BigInteger, Boolean, Column, String
-from sqlalchemy.orm import declarative_base, sessionmaker
 from telegram import ChatMember, ChatMemberUpdated, Update
 from telegram.ext import (
     ChatMemberHandler,
@@ -15,17 +12,11 @@ from telegram.ext import (
 
 from config.config_settings import config
 from plugins.base_plugin import BasePlugin
+from repositories.custom_messages_repository import custom_messages_repo
+from repositories.group_settings_repository import group_settings_repo
 from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
-Base = declarative_base()
-
-
-class GroupSettings(Base):
-    __tablename__ = "group_settings"
-    chat_id = Column(BigInteger, primary_key=True)
-    is_authorized = Column(Boolean, default=False)
-    welcome_msg_slug = Column(String(64), nullable=True)
 
 
 class GroupManagerPlugin(BasePlugin):
@@ -35,31 +26,15 @@ class GroupManagerPlugin(BasePlugin):
 
     @property
     def version(self) -> str:
-        return "1.0.2"
+        return "2.0.0"
 
     @property
     def description(self) -> str:
-        return "Gestión de grupos: Autorización y mensajes de bienvenida."
+        return "Gestión de grupos asíncrona: Autorización y mensajes de bienvenida."
 
     def __init__(self):
-        self.engine = None
-        self.Session = None
+        super().__init__()
         self.enabled = False
-        # We need access to CustomMessages DB to fetch welcome messages
-        self.custom_msg_engine = None
-        self.CustomMsgSession = None
-
-    def _get_sync_engine(self, db_url_in):
-        if "sqlite" in db_url_in:
-            return sa.create_engine(db_url_in, future=True)
-
-        db_url = db_url_in
-        if "postgresql" in db_url or "postgres" in db_url:
-            db_url = db_url.replace("postgres://", "postgresql://")
-            db_url = db_url.replace("+asyncpg", "")
-            if "+psycopg2" not in db_url:
-                db_url = db_url.replace("postgresql://", "postgresql+psycopg2://")
-        return sa.create_engine(db_url, future=True, pool_pre_ping=True)
 
     async def initialize(self, bot_instance) -> bool:
         self.enabled = config.ENABLE_GROUP_MANAGER
@@ -69,12 +44,6 @@ class GroupManagerPlugin(BasePlugin):
             return False
 
         try:
-            # Initialize Local DB for Group Settings
-            self._init_db()
-
-            # Initialize Connection to CustomMessages DB (read-only purpose)
-            self._init_custom_msg_db()
-
             app = bot_instance
             # Admin commands
             app.add_handler(CommandHandler("authorize_group", self.authorize_group))
@@ -95,34 +64,11 @@ class GroupManagerPlugin(BasePlugin):
                 )
             )
 
-            logger.info("Plugin GroupManager: Handlers registrados.")
+            logger.info("Plugin GroupManager (Async): Handlers registrados.")
             return True
         except Exception as e:
             logger.error(f"Error registrando handlers del plugin GroupManager: {e}")
             return False
-
-    def _init_db(self):
-        # Determine DB URL (Shared Postgres)
-        db_url = config.DATABASE_URL
-        if not db_url:
-            logger.error("DATABASE_URL no está configurada. Postgres es mandatorio para GroupManager.")
-            return
-
-        self.engine = self._get_sync_engine(db_url)
-        Base.metadata.create_all(self.engine)
-        self.Session = sessionmaker(bind=self.engine)
-
-    def _init_custom_msg_db(self):
-        # Same logic as CustomMessagesPlugin to find the DB
-        db_url = config.DATABASE_URL
-        if not db_url:
-            return
-
-        try:
-            self.custom_msg_engine = self._get_sync_engine(db_url)
-            self.CustomMsgSession = sessionmaker(bind=self.custom_msg_engine)
-        except Exception as e:
-            logger.warning(f"GroupManager no pudo conectar a CustomMessages DB: {e}")
 
     async def cleanup(self) -> None:
         pass
@@ -149,21 +95,11 @@ class GroupManagerPlugin(BasePlugin):
                 )
                 return
 
-        session = self.Session()
-        try:
-            group = session.query(GroupSettings).filter_by(chat_id=chat_id).first()
-            if not group:
-                group = GroupSettings(chat_id=chat_id)
-                session.add(group)
-
-            group.is_authorized = True
-            session.commit()
+        success = await group_settings_repo.set_authorized(chat_id, True)
+        if success:
             await update.message.reply_text(f"✅ Grupo {chat_id} autorizado. El bot ahora está activo allí.")
-        except Exception as e:
-            logger.error(f"Error authorizing group: {e}")
+        else:
             await update.message.reply_text("❌ Error al autorizar el grupo.")
-        finally:
-            session.close()
 
     async def revoke_group(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not self._is_admin(update.effective_user.id):
@@ -178,17 +114,11 @@ class GroupManagerPlugin(BasePlugin):
         else:
             chat_id = update.effective_chat.id
 
-        session = self.Session()
-        try:
-            group = session.query(GroupSettings).filter_by(chat_id=chat_id).first()
-            if group:
-                group.is_authorized = False
-                session.commit()
+        success = await group_settings_repo.set_authorized(chat_id, False)
+        if success:
             await update.message.reply_text(f"⛔ Grupo {chat_id} revocado. El bot dejará de actuar allí.")
-        except Exception as e:
-            logger.error(f"Error revoking group: {e}")
-        finally:
-            session.close()
+        else:
+            await update.message.reply_text("❌ Error al revocar el grupo.")
 
     async def set_group_welcome(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not self._is_admin(update.effective_user.id):
@@ -199,44 +129,32 @@ class GroupManagerPlugin(BasePlugin):
             return
 
         slug = context.args[0].lower()
-        # Default to current chat if no second arg (not implemented yet, stick to current chat)
         chat_id = update.effective_chat.id
 
         # Verify slug exists
-        if not self._slug_exists(slug):
+        msg_exists = await custom_messages_repo.get_message(slug)
+        if not msg_exists:
             await update.message.reply_text(f"❌ El mensaje '{slug}' no existe en la base de datos de mensajes.")
             return
 
-        session = self.Session()
-        try:
-            group = session.query(GroupSettings).filter_by(chat_id=chat_id).first()
-            if not group:
-                # Require explicit authorization first? Or auto-create?
-                # Let's auto-create but warn if not authorized.
-                group = GroupSettings(chat_id=chat_id)
-                session.add(group)
-                msg_extra = " (Nota: El grupo aún no está autorizado, usa /authorize_group)"
-            else:
-                msg_extra = ""
+        group = await group_settings_repo.get_by_chat_id(chat_id)
+        msg_extra = ""
+        if not group or not group.is_authorized:
+            msg_extra = " (Nota: El grupo aún no está autorizado, usa /authorize_group)"
 
-            group.welcome_msg_slug = slug
-            session.commit()
+        success = await group_settings_repo.set_welcome_slug(chat_id, slug)
+        if success:
             await update.message.reply_text(f"✅ Mensaje de bienvenida establecido a: {slug}{msg_extra}")
-        except Exception as e:
-            logger.error(f"Error setting welcome: {e}")
+        else:
             await update.message.reply_text("❌ Error guardando configuración.")
-        finally:
-            session.close()
 
     async def reglas(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Muestra las reglas del grupo (desde mensaje guardado 'reglas' o default)."""
         thread_id = get_thread_id(update)
         # Intentar cargar mensaje personalizado "reglas"
-        msg = self._get_stored_message("reglas")
+        msg = await custom_messages_repo.get_message("reglas")
 
         if msg:
-            # Si existe el mensaje, lo enviamos (copia o texto)
-            # Priorizamos texto si existe para permitir edición
             if msg.text_content:
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
@@ -252,7 +170,6 @@ class GroupManagerPlugin(BasePlugin):
                     message_thread_id=thread_id,
                 )
         else:
-            # Fallback
             await update.message.reply_text(
                 "📜 <b>Reglas del Grupo</b>\n\n"
                 "1. Respeto mutuo.\n"
@@ -263,34 +180,6 @@ class GroupManagerPlugin(BasePlugin):
                 message_thread_id=thread_id,
             )
 
-    def _slug_exists(self, slug):
-        if not self.CustomMsgSession:
-            return False
-
-        from plugins.custom_messages_plugin import StoredMessage
-
-        session = self.CustomMsgSession()
-        try:
-            exists = session.query(StoredMessage).filter_by(slug=slug).first() is not None
-            return exists
-        except Exception as e:
-            logger.error(f"Error checking slug: {e}")
-            return False
-        finally:
-            session.close()
-
-    def _get_stored_message(self, slug):
-        if not self.CustomMsgSession:
-            return None
-
-        from plugins.custom_messages_plugin import StoredMessage
-
-        session = self.CustomMsgSession()
-        try:
-            return session.query(StoredMessage).filter_by(slug=slug).first()
-        finally:
-            session.close()
-
     async def track_chats(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Track when bot is added/removed from groups and send introduction."""
         result = self._extract_status_change(update.my_chat_member)
@@ -300,17 +189,13 @@ class GroupManagerPlugin(BasePlugin):
         was_member, is_member = result
         chat_id = update.effective_chat.id
 
-        # Bot was just added to the group
         if not was_member and is_member:
             logger.info(f"Bot added to group {chat_id}")
-
-            # Try to fetch custom introduction message
-            msg_data = self._get_stored_message("bot_presentation")
+            msg_data = await custom_messages_repo.get_message("bot_presentation")
 
             if msg_data:
-                # Use custom message
                 try:
-                    if hasattr(msg_data, "text_content") and msg_data.text_content:
+                    if msg_data.text_content:
                         await context.bot.send_message(
                             chat_id=chat_id,
                             text=msg_data.text_content,
@@ -325,7 +210,6 @@ class GroupManagerPlugin(BasePlugin):
                 except Exception as e:
                     logger.error(f"Error sending custom introduction to {chat_id}: {e}")
             else:
-                # Fallback to default introduction message
                 intro_message = (
                     "👋 ¡Hola! Soy ZeepubBot.\n\n"
                     "📚 Ayudo a compartir y gestionar libros en formato EPUB.\n\n"
@@ -338,15 +222,10 @@ class GroupManagerPlugin(BasePlugin):
                     "¿Necesitas ayuda? Usa /help para ver todos los comandos disponibles.\n\n"
                     "<i>Tip: Puedes personalizar este mensaje usando /save_msge bot_presentation</i>"
                 )
-
                 try:
                     await context.bot.send_message(chat_id=chat_id, text=intro_message, parse_mode="HTML")
                 except Exception as e:
                     logger.error(f"Error sending default introduction to {chat_id}: {e}")
-
-        # Bot was removed from the group
-        elif was_member and not is_member:
-            logger.info(f"Bot removed from group {chat_id}")
 
     async def welcome_member(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Greet new members in authorized groups."""
@@ -355,23 +234,14 @@ class GroupManagerPlugin(BasePlugin):
             return
 
         was_member, is_member = result
-
-        # Check if it's a new member join
         if not was_member and is_member:
             chat_id = update.effective_chat.id
+            group = await group_settings_repo.get_by_chat_id(chat_id)
+            if not group or not group.is_authorized or not group.welcome_msg_slug:
+                return
 
-            # Check authorization
-            session = self.Session()
-            try:
-                group = session.query(GroupSettings).filter_by(chat_id=chat_id).first()
-                if not group or not group.is_authorized or not group.welcome_msg_slug:
-                    return
-                slug = group.welcome_msg_slug
-            finally:
-                session.close()
-
-            # Fetch message content
-            msg_data = self._get_stored_message(slug)
+            slug = group.welcome_msg_slug
+            msg_data = await custom_messages_repo.get_message(slug)
             if not msg_data:
                 return
 
@@ -407,23 +277,16 @@ class GroupManagerPlugin(BasePlugin):
             return
 
         chat_id = update.effective_chat.id
+        group = await group_settings_repo.get_by_chat_id(chat_id)
+        if not group or not group.is_authorized or not group.welcome_msg_slug:
+            return
 
-        # Check authorization strictly
-        session = self.Session()
-        try:
-            group = session.query(GroupSettings).filter_by(chat_id=chat_id).first()
-            if not group or not group.is_authorized or not group.welcome_msg_slug:
-                return
-            slug = group.welcome_msg_slug
-        finally:
-            session.close()
-
-        msg_data = self._get_stored_message(slug)
+        slug = group.welcome_msg_slug
+        msg_data = await custom_messages_repo.get_message(slug)
         if not msg_data:
             return
 
         reply_to = update.message.message_id
-
         for user in update.message.new_chat_members:
             if user.is_bot:
                 continue
@@ -434,7 +297,7 @@ class GroupManagerPlugin(BasePlugin):
         first_name = user.first_name
         safe_name = html.escape(first_name)
 
-        if hasattr(msg_data, "text_content") and msg_data.text_content:
+        if msg_data.text_content:
             text_to_send = msg_data.text_content.replace("[Nombre]", safe_name)
             try:
                 await context.bot.send_message(

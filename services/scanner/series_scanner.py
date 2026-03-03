@@ -1,7 +1,7 @@
 import re
 from typing import Any
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 
 from models.library_models import ArchivedSeries, LocalBook, MetadataProposal, SeriesMetadata
 from services.ai_service import AIService
@@ -26,17 +26,19 @@ class SeriesScanner:
     }
 
     @classmethod
-    def get_or_create_series(cls, session: Any, book: LocalBook) -> SeriesMetadata:
+    async def get_or_create_series(cls, session: Any, book: LocalBook) -> SeriesMetadata:
         """
         Obtiene o crea una entrada en SeriesMetadata para el libro.
         Normaliza campos comunes de la serie.
         """
         extracted = getattr(book, "extracted_data", {})
-        series = session.query(SeriesMetadata).filter_by(series_hash=book.series_hash).first()
+
+        stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == book.series_hash)
+        result = await session.execute(stmt)
+        series = result.scalar_one_or_none()
 
         if not series:
             # Para creación inicial, preservar caracteres especiales del título original
-            # Usar el título del libro como fallback si el extraído pierde caracteres importantes
             book_title = book.title or ""
             extracted_series = extracted.get("series") or book.series_english or ""
 
@@ -74,32 +76,20 @@ class SeriesScanner:
                 cover_url=book.cover_low or book.cover_medium,
                 book_count=0,
             )
-            # Generar slug usando el objeto recién creado (que ya tiene series_name)
+            # Generar slug usando el objeto recién creado
             generated_slug = generar_slug_from_meta(series.to_dict())
 
-            # Preservar slug manual vs auto-generado (aunque sea creación inicial)
-            should_preserve_slug, slug_reason = SeriesScanner._should_preserve_current_slug(
-                "", generated_slug, book.series_hash
-            )
-
-            if should_preserve_slug:
-                # Para creación inicial, no hay slug actual, así que usamos el generado
-                series.slug = generated_slug
-                logger.info(f"📝 Slug inicial generado: {generated_slug}")
-            else:
-                # Si hubiera existido un slug manual, se preservaría
-                series.slug = generated_slug
-                logger.info(f"📝 Slug inicial (sin previo): {generated_slug}")
+            series.slug = generated_slug
+            logger.info(f"📝 Slug inicial generado: {generated_slug}")
 
             session.add(series)
-            session.flush()
+            await session.flush()
             logger.info(f"🆕 Nueva serie detectada: {series.series_name}")
         else:
-            # Sincronizar campos PERO preservar modificaciones manuales del AI Hub
+            # Sincronizar campos PERO preservar modificaciones manuales
             current_name = series.series_name or ""
             extracted_name = extracted.get("series") or book.series_english or book.title
 
-            # Usar lógica inteligente para decidir si preservar
             should_preserve, preserve_reason = SeriesScanner._should_preserve_current_name(current_name, extracted_name)
             should_update_name = not should_preserve
 
@@ -131,78 +121,35 @@ class SeriesScanner:
             if book.series_english and series.series_english != book.series_english:
                 series.series_english = book.series_english
 
-            # DETECTAR Y COMPLETAR ROMAJI_TITLE VACÍOS
+            # COMPLETAR ROMAJI_TITLE VACÍOS
             if not book.romaji_title or book.romaji_title.strip() == "":
-                # Intentar extraer romaji del título principal
                 title_source = book.title or book.series_spanish or book.series_english or ""
                 extracted_romaji = SeriesScanner._extract_romaji_from_title(title_source)
-
                 if extracted_romaji:
                     book.romaji_title = extracted_romaji
                     logger.info(f"🔤 Auto-poblado romaji_title vacío: '{title_source}' -> '{extracted_romaji}'")
-                else:
-                    logger.warning(f"⚠️  No se pudo extraer romaji de: '{title_source}'")
 
             # Preservar slug manual vs auto-generado
             current_slug = series.slug or ""
             new_slug = generar_slug_from_meta(series.to_dict())
-
-            # LIMPIAR SLUG DE CARACTERES ESPECIALES
             cleaned_new_slug = SeriesScanner._clean_slug_special_chars(new_slug)
 
-            # Detectar si el slug actual tiene caracteres especiales
-            has_special_chars = any(
-                char in current_slug
-                for char in [
-                    "!",
-                    "?",
-                    "#",
-                    "$",
-                    "%",
-                    "^",
-                    "&",
-                    "*",
-                    "(",
-                    ")",
-                    "+",
-                    "=",
-                    "[",
-                    "]",
-                    "{",
-                    "}",
-                    "|",
-                    "\\",
-                    ":",
-                    ";",
-                    '"',
-                    "'",
-                    "<",
-                    ">",
-                    ",",
-                    "/",
-                    "`",
-                    "~",
-                ]
-            )
+            has_special_chars_slug = any(char in str(current_slug) for char in "!?#$%^&*()+=[]{}|\\:;\"'<>,/`~")
 
-            # Siempre actualizar si el slug actual tiene caracteres especiales
             should_update_slug = (
-                not current_slug  # Vacío
-                or len(str(current_slug)) > 40  # Hash residual muy largo
-                or current_slug == str(book.series_hash)[:40]  # Igual al hash (auto-gen)
-                or has_special_chars  # 🆕 Tiene caracteres especiales no permitidos
-                or current_slug != cleaned_new_slug  # 🆕 El nuevo slug está limpio y es diferente
+                not current_slug
+                or len(str(current_slug)) > 40
+                or current_slug == str(book.series_hash)[:40]
+                or has_special_chars_slug
+                or current_slug != cleaned_new_slug
             )
 
             if should_update_slug:
-                # Usar el slug limpio si se actualiza
-                final_slug = cleaned_new_slug if (has_special_chars or current_slug != cleaned_new_slug) else new_slug
+                final_slug = (
+                    cleaned_new_slug if (has_special_chars_slug or current_slug != cleaned_new_slug) else new_slug
+                )
                 series.slug = final_slug
-
-                if has_special_chars:
-                    logger.info(f"🧹 Corregido slug con caracteres especiales: '{current_slug}' → '{final_slug}'")
-                else:
-                    logger.info(f"📝 Actualizado slug (auto-generado): {current_slug} → {final_slug}")
+                logger.info(f"📝 Actualizado slug: {current_slug} → {final_slug}")
             else:
                 logger.info(f"🔒 Preservado slug manual: {current_slug}")
 
@@ -214,7 +161,7 @@ class SeriesScanner:
             if book_publisher and series.publisher != book_publisher:
                 series.publisher = book_publisher
 
-            # PORTADA: Usar la del volumen 1
+            # PORTADA: Usar la del volumen 1 o si no hay ninguna
             if book.cover_low or book.cover_medium:
                 if book.volume == 1 or not series.cover_url:
                     series.cover_url = book.cover_low or book.cover_medium
@@ -223,145 +170,55 @@ class SeriesScanner:
 
     @staticmethod
     def _should_preserve_current_name(current_name: str, extracted_name: str) -> tuple[bool, str]:
-        """
-        Determina si se debe preservar el nombre actual de la serie.
-        Retorna (should_preserve, reason).
-        """
         if not current_name:
             return False, "vacío"
-
         if current_name == extracted_name:
             return True, "idéntico"
-
-        # Preservar si el actual tiene caracteres especiales que el extraído no tiene
         special_chars = [":", "!", "?", "...", "—", "[", "]", "(", ")", "&", "%", "#", "@", "*", "+"]
         has_special_current = any(char in current_name for char in special_chars)
         has_special_extracted = any(char in extracted_name for char in special_chars)
-
         if has_special_current and not has_special_extracted:
-            return True, f"preservar carácter especial: {[c for c in special_chars if c in current_name][0]}"
-
-        # Preservar si el actual es significativamente más largo (edición manual)
+            return True, "preservar carácter especial"
         if len(current_name) > len(extracted_name) + 5:
             return True, "preservar título extendido manual"
-
-        # Preservar si el actual tiene formato complejo (mix de mayúsculas/minúsculas, números)
-        has_complex_format = (
-            any(c.isupper() for c in current_name if c.isalpha())
-            and any(c.islower() for c in current_name if c.isalpha())
-            and any(c.isdigit() for c in current_name)
-        )
-        if has_complex_format and not any(c.isupper() for c in extracted_name if c.isalpha()):
-            return True, "preservar formato complejo manual"
-
         return False, "auto-generado o mejorable"
 
     @staticmethod
     def _extract_romaji_from_title(title: str) -> str:
-        """
-        Extrae caracteres romaji (latinos) de un título mixto.
-        Usado para poblar automáticamente romaji_title vacíos.
-        """
         if not title:
             return ""
-
-        # Extraer solo caracteres latinos y espacios básicos
         latin_chars = re.sub(r"[^\w\s\-\:]", "", title)
         romaji = re.sub(r"\s+", " ", latin_chars).strip()
-
-        # Validar que sea romaji válido (mínimo 3 caracteres)
-        if len(romaji) >= 3:
-            return romaji
-
-        return ""
+        return romaji if len(romaji) >= 3 else ""
 
     @staticmethod
     def _clean_slug_special_chars(slug: str) -> str:
-        """
-        Limpia un slug eliminando caracteres especiales no permitidos.
-        Usado para corregir slugs con símbolos inválidos.
-        """
         if not slug:
             return ""
-
-        # Caracteres no permitidos en slugs (además de los que ya elimina generar_slug_from_meta)
-        invalid_chars = [
-            "!",
-            "?",
-            "#",
-            "$",
-            "%",
-            "^",
-            "&",
-            "*",
-            "(",
-            ")",
-            "+",
-            "=",
-            "[",
-            "]",
-            "{",
-            "}",
-            "|",
-            "\\",
-            ":",
-            ";",
-            '"',
-            "'",
-            "<",
-            ">",
-            ",",
-            "/",
-            "`",
-            "~",
-        ]
-
+        invalid_chars = "!?#$%^&*()+=[]{}|\\:;\"'<>,/`~"
         cleaned_slug = slug
         for char in invalid_chars:
             cleaned_slug = cleaned_slug.replace(char, "")
-
-        # Limpiar espacios múltiples y guiones consecutivos
         cleaned_slug = re.sub(r"\s+", "_", cleaned_slug)
         cleaned_slug = re.sub(r"_+", "_", cleaned_slug)
-        cleaned_slug = cleaned_slug.strip("_")
+        return cleaned_slug.strip("_")
 
-        return cleaned_slug
-
-    @staticmethod
-    def _should_preserve_current_slug(current_slug: str, new_slug: str, series_hash: str) -> tuple[bool, str]:
-        """
-        Determina si se debe preservar el slug actual.
-        Retorna (should_preserve, reason).
-        """
-        if not current_slug:
-            return False, "vacío"
-
-        if current_slug == new_slug:
-            return True, "idéntico"
-
-        # Preservar si el actual no parece auto-generado
-        # Los slugs auto-generados suelen ser hashes o muy simples
-        is_auto_generated = (
-            current_slug == str(series_hash)[:40]  # Igual al hash
-            or len(current_slug) > 40  # Hash residual muy largo
-            or (len(current_slug) < 5 and current_slug.replace("_", "").isalnum())  # Muy corto y solo alfanumérico
-        )
-
-        if not is_auto_generated:
-            return True, "slug manual detectado"
-
-        return False, "auto-generado o mejorable"
-
-    @staticmethod
-    def sync_series_metadata(session: Any, series_hash: str):
+    @classmethod
+    async def sync_series_metadata(cls, session: Any, series_hash: str):
         """
         Consolida la metadata de una serie basándose en todos sus volúmenes.
         """
-        series = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
+        stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == series_hash)
+        result = await session.execute(stmt)
+        series = result.scalar_one_or_none()
+
         if not series:
             return
 
-        books = session.query(LocalBook).filter_by(series_hash=series_hash).all()
+        stmt_books = select(LocalBook).where(LocalBook.series_hash == series_hash)
+        res_books = await session.execute(stmt_books)
+        books = res_books.scalars().all()
+
         if not books:
             logger.info(f"Archivando serie vacía: {series.series_name}")
             archived_s = ArchivedSeries(
@@ -378,24 +235,17 @@ class SeriesScanner:
                 original_series_id=series.id,
             )
             session.add(archived_s)
-            session.delete(series)
+            await session.delete(series)
+            await session.flush()
             return
 
-        if not series.series_spanish:
-            for b in books:
-                if hasattr(b, "series_spanish") and b.series_spanish:
-                    series.series_spanish = b.series_spanish
-                    break
+        for b in books:
+            if not series.series_spanish and hasattr(b, "series_spanish") and b.series_spanish:
+                series.series_spanish = b.series_spanish
+            if not series.series_english and hasattr(b, "series_english") and b.series_english:
+                series.series_english = b.series_english
 
-        if not series.series_english:
-            for b in books:
-                if hasattr(b, "series_english") and b.series_english:
-                    series.series_english = b.series_english
-                    break
-
-        # Completar o corregir SLUG solo si es nulo o es un hash largo (SHA256 de 64 chars)
-        # Una vez que tiene un slug humano (ej: "slayers"), no se toca más.
-        if books and (not series.slug or len(str(series.slug)) > 40):
+        if not series.slug or len(str(series.slug)) > 40:
             series.slug = generar_slug_from_meta(series.to_dict())
 
         if not series.cover_url or "_low.jpg" not in series.cover_url:
@@ -412,6 +262,7 @@ class SeriesScanner:
         if ratings:
             series.rating_average = sum(ratings) / len(ratings)
         series.rating_count = sum(b.rating_count for b in books)
+        await session.flush()
 
     @classmethod
     async def run_ai_gardener(cls, session: Any, touched_hashes: set):
@@ -439,7 +290,7 @@ class SeriesScanner:
                     HAVING COUNT(*) >= 2
                     LIMIT :limit
                 """)
-                res = session.execute(backlog_query, {"limit": needed})
+                res = await session.execute(backlog_query, {"limit": needed})
                 for row in res:
                     candidates.append(row[0])
 
@@ -448,16 +299,28 @@ class SeriesScanner:
                 if processed_count >= SCAN_LIMIT:
                     break
 
-                exists_pending = session.query(MetadataProposal).filter_by(series_hash=s_hash, status="pending").first()
-                reviewed = session.execute(
+                exists_pending_stmt = select(MetadataProposal).where(
+                    MetadataProposal.series_hash == s_hash, MetadataProposal.status == "pending"
+                )
+                exists_pending_res = await session.execute(exists_pending_stmt)
+                exists_pending = exists_pending_res.scalar_one_or_none()
+
+                reviewed_res = await session.execute(
                     text("SELECT 1 FROM ai_learning_feedback WHERE series_hash = :h LIMIT 1"),
                     {"h": s_hash},
-                ).first()
+                )
+                reviewed = reviewed_res.first()
 
                 if not exists_pending and not reviewed:
-                    current_s = session.query(SeriesMetadata).filter_by(series_hash=s_hash).first()
+                    stmt_s = select(SeriesMetadata).where(SeriesMetadata.series_hash == s_hash)
+                    res_s = await session.execute(stmt_s)
+                    current_s = res_s.scalar_one_or_none()
+
                     current_name = current_s.series_name if current_s else "Serie Desconocida"
-                    series_books = session.query(LocalBook).filter_by(series_hash=s_hash).all()
+
+                    stmt_books = select(LocalBook).where(LocalBook.series_hash == s_hash)
+                    res_books = await session.execute(stmt_books)
+                    series_books = res_books.scalars().all()
 
                     if series_books:
                         try:
@@ -474,7 +337,7 @@ class SeriesScanner:
                                     status="pending",
                                 )
                                 session.add(p_obj)
-                                session.commit()
+                                await session.commit()
                                 processed_count += 1
                         except Exception as ae:
                             logger.warning(f"Error IA para {s_hash}: {ae}")

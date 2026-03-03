@@ -53,7 +53,7 @@ def setup_test_db():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
-        loop.run_until_complete(pg_manager.close_all())
+        loop.run_until_complete(pg_manager.close())
     finally:
         loop.close()
 

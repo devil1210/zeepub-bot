@@ -3,10 +3,12 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from sqlalchemy import select
+
+from core.db_manager_pg import pg_manager
 from models.library_models import LocalBook
 from services.maintenance.base import MaintenanceTool
 from services.scanner.epub_scanner import EpubScanner
-from utils.library_db import get_session
 
 logger = logging.getLogger(__name__)
 
@@ -21,31 +23,31 @@ class MetadataEnrichmentTool(MaintenanceTool):
         return "Busca metadatos online (ISBN) para completar información faltante."
 
     async def run(self, progress_callback=None, delay_seconds=2.0, **kwargs) -> dict[str, Any]:
-        session = get_session()
         try:
-            books = (
-                session.query(LocalBook)
-                .filter(
+            async with pg_manager.get_session() as session:
+                stmt = select(LocalBook).where(
                     LocalBook.isbn.isnot(None),
                     LocalBook.isbn != "",
                     (LocalBook.spanish_title.is_(None)) | (LocalBook.description.is_(None)),
                 )
-                .all()
-            )
-            total = len(books)
-            updated = 0
+                result = await session.execute(stmt)
+                books = result.scalars().all()
+                total = len(books)
+                updated = 0
 
-            logger.info(f"Starting metadata enrichment for {total} books")
+                logger.info(f"Starting metadata enrichment for {total} books")
 
-            for i, book in enumerate(books):
-                if await EpubScanner.enrich_from_isbn(book):
-                    session.commit()
-                    updated += 1
+                for i, book in enumerate(books):
+                    if await EpubScanner.enrich_from_isbn(book):
+                        await session.commit()
+                        updated += 1
 
-                if progress_callback:
-                    await progress_callback(i + 1, total, f"Enriqueciendo {book.title}")
+                    if progress_callback:
+                        await progress_callback(i + 1, total, f"Enriqueciendo {book.title}")
 
-                await asyncio.sleep(delay_seconds)
+                    await asyncio.sleep(delay_seconds)
+
+                await session.commit()
 
             return {
                 "success": True,
@@ -56,5 +58,3 @@ class MetadataEnrichmentTool(MaintenanceTool):
         except Exception as e:
             logger.error(f"Error in MetadataEnrichmentTool: {e}")
             return {"success": False, "error": str(e)}
-        finally:
-            session.close()
