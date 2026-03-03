@@ -91,6 +91,7 @@ export interface Volume {
   english_title?: string;
   spanishTitle?: string;
   spanish_title?: string;
+  series_name?: string;
   bookType?: string;
   book_type?: string;
   series?: string;
@@ -132,6 +133,7 @@ export interface Series {
   englishTitle?: string;
   spanishTitle?: string;
   romajiTitle?: string;
+  seriesName?: string;
   illustrator?: string;
   translator?: string;
   group?: string;
