@@ -7,14 +7,35 @@ Centralizes re-exports for backward-compatible imports across the project.
 # Re-exports for backward compatibility
 from urllib.parse import urljoin
 
+# --- metadata_utils ---
 from utils.metadata_utils import (
-    parse_metadata_from_title,
+    generar_slug_from_meta,  # noqa: F401
+    parse_metadata_from_title,  # noqa: F401
+    process_book_identity_comprehensive,  # noqa: F401
 )
-from utils.string_utils import limpiar_html_basico  # noqa: F401 - re-export
-from utils.telegram_utils import (  # noqa: F401 - re-exports
+
+# --- string_utils ---
+from utils.string_utils import (
+    escapar_html,  # noqa: F401
+    get_translator_acronym,  # noqa: F401
+    limpiar_html_basico,  # noqa: F401
+)
+
+# --- system_utils ---
+from utils.system_utils import (
+    get_last_commit_message,  # noqa: F401
+    get_version_string,  # noqa: F401
+)
+
+# --- identity_utils ---
+from utils.identity_utils import generate_short_link  # noqa: F401
+
+# --- telegram_utils ---
+from utils.telegram_utils import (  # noqa: F401
     get_thread_id,
     is_command_for_bot,
 )
+
 
 # Legacy / Unused Proxies
 def extract_creators_by_role(entry, role_code: str):
