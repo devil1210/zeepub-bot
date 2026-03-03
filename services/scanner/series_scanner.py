@@ -147,16 +147,62 @@ class SeriesScanner:
             current_slug = series.slug or ""
             new_slug = generar_slug_from_meta(series.to_dict())
 
-            # Solo actualizar slug si parece auto-generado o está vacío
+            # LIMPIAR SLUG DE CARACTERES ESPECIALES
+            cleaned_new_slug = SeriesScanner._clean_slug_special_chars(new_slug)
+
+            # Detectar si el slug actual tiene caracteres especiales
+            has_special_chars = any(
+                char in current_slug
+                for char in [
+                    "!",
+                    "?",
+                    "#",
+                    "$",
+                    "%",
+                    "^",
+                    "&",
+                    "*",
+                    "(",
+                    ")",
+                    "+",
+                    "=",
+                    "[",
+                    "]",
+                    "{",
+                    "}",
+                    "|",
+                    "\\",
+                    ":",
+                    ";",
+                    '"',
+                    "'",
+                    "<",
+                    ">",
+                    ",",
+                    "/",
+                    "`",
+                    "~",
+                ]
+            )
+
+            # Siempre actualizar si el slug actual tiene caracteres especiales
             should_update_slug = (
                 not current_slug  # Vacío
                 or len(str(current_slug)) > 40  # Hash residual muy largo
                 or current_slug == str(book.series_hash)[:40]  # Igual al hash (auto-gen)
+                or has_special_chars  # 🆕 Tiene caracteres especiales no permitidos
+                or current_slug != cleaned_new_slug  # 🆕 El nuevo slug está limpio y es diferente
             )
 
             if should_update_slug:
-                series.slug = new_slug
-                logger.info(f"📝 Actualizado slug (auto-generado): {current_slug} → {new_slug}")
+                # Usar el slug limpio si se actualiza
+                final_slug = cleaned_new_slug if (has_special_chars or current_slug != cleaned_new_slug) else new_slug
+                series.slug = final_slug
+
+                if has_special_chars:
+                    logger.info(f"🧹 Corregido slug con caracteres especiales: '{current_slug}' → '{final_slug}'")
+                else:
+                    logger.info(f"📝 Actualizado slug (auto-generado): {current_slug} → {final_slug}")
             else:
                 logger.info(f"🔒 Preservado slug manual: {current_slug}")
 
@@ -228,6 +274,58 @@ class SeriesScanner:
             return romaji
 
         return ""
+
+    @staticmethod
+    def _clean_slug_special_chars(slug: str) -> str:
+        """
+        Limpia un slug eliminando caracteres especiales no permitidos.
+        Usado para corregir slugs con símbolos inválidos.
+        """
+        if not slug:
+            return ""
+
+        # Caracteres no permitidos en slugs (además de los que ya elimina generar_slug_from_meta)
+        invalid_chars = [
+            "!",
+            "?",
+            "#",
+            "$",
+            "%",
+            "^",
+            "&",
+            "*",
+            "(",
+            ")",
+            "+",
+            "=",
+            "[",
+            "]",
+            "{",
+            "}",
+            "|",
+            "\\",
+            ":",
+            ";",
+            '"',
+            "'",
+            "<",
+            ">",
+            ",",
+            "/",
+            "`",
+            "~",
+        ]
+
+        cleaned_slug = slug
+        for char in invalid_chars:
+            cleaned_slug = cleaned_slug.replace(char, "")
+
+        # Limpiar espacios múltiples y guiones consecutivos
+        cleaned_slug = re.sub(r"\s+", "_", cleaned_slug)
+        cleaned_slug = re.sub(r"_+", "_", cleaned_slug)
+        cleaned_slug = cleaned_slug.strip("_")
+
+        return cleaned_slug
 
     @staticmethod
     def _should_preserve_current_slug(current_slug: str, new_slug: str, series_hash: str) -> tuple[bool, str]:
