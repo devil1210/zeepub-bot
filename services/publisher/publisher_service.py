@@ -35,7 +35,8 @@ class TelegramPublisherProvider(PublisherProvider):
         "[?autor]\n✍️ <b>Autor:</b> {autor}[/?]"
         "[?illustrator]\n🎨 <b>Ilustrador:</b> {illustrator}[/?]"
         "[?published_at]\n📅 <b>Publicado:</b> {published_at}[/?]"
-        "[?traductor]\n🌐 <b>Traducción:</b> {traductor}[/?]"
+        "[?traductor]\n🌐 <b>Traductor:</b> {traductor}[/?]"
+        "[?editorial]\n🏢 <b>Grupo Traductor:</b> {editorial}[/?]"
     )
     SYNOPSIS_TEMPLATE = "📝 <b>Sinopsis:</b>\n\n<blockquote>{sinopsis}</blockquote>\n\n#{slug}"
     INFO_TEMPLATE = "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n\n#{slug}{archivo}"
@@ -53,7 +54,8 @@ class TelegramPublisherProvider(PublisherProvider):
         "[?autor]\n✍️ Autor: {autor}[/?]"
         "[?illustrator]\n🎨 Ilustrador: {illustrator}[/?]"
         "[?published_at]\n📅 Publicado: {published_at}[/?]"
-        "[?traductor]\n🌐 Traducción: {traductor}[/?]"
+        "[?traductor]\n🌐 Traductor: {traductor}[/?]"
+        "[?editorial]\n🏢 Grupo Traductor: {editorial}[/?]"
         "\n📝 Sinopsis: {sinopsis}{archivo}"
     )
 

@@ -12,6 +12,7 @@ from sqlalchemy import (
     String,
     Text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from utils.helpers import limpiar_html_basico
@@ -52,8 +53,8 @@ class SeriesMetadata(Base):
     illustrator_jap = Column(String(255))
 
     description = Column(String(5000))
-    tags = Column(JSON)  # Géneros consolidados
-    demographics = Column(JSON)  # Demografía (Seinen, Shonen, etc)
+    tags = Column(JSONB)  # Géneros consolidados
+    demographics = Column(JSONB)  # Demografía (Seinen, Shonen, etc)
 
     cover_url = Column(String(1024))  # Portada representativa de la serie
     book_count = Column(Integer, default=0)

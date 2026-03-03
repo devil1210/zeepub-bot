@@ -80,43 +80,7 @@ class LibraryService:
             results = []
             for s in series_list:
                 rep = rep_books_map.get(s.series_hash)
-                display_cover = s.cover_url or (rep.cover_low if rep else None) or (rep.cover_high if rep else None)
-
-                dto = SeriesDTO(
-                    id=f"series_{s.series_hash}",
-                    series_hash=s.series_hash,
-                    title=s.series_name,
-                    series=s.series_name,
-                    series_spanish=s.series_spanish,
-                    series_english=s.series_english,
-                    author=s.author,
-                    description=s.description,
-                    cover=display_cover,
-                    coverUrl=CoverUrlDTO(
-                        cover_low=display_cover,
-                        cover_medium=display_cover.replace("_low.jpg", "_medium.jpg")
-                        if display_cover and "_low.jpg" in display_cover
-                        else display_cover,
-                        cover_high=display_cover.replace("_low.jpg", "_high.jpg")
-                        if display_cover and "_low.jpg" in display_cover
-                        else display_cover,
-                        cover_original=display_cover.replace("_low.jpg", "_original.jpg")
-                        if display_cover and "_low.jpg" in display_cover
-                        else display_cover,
-                    ),
-                    numBooks=s.book_count,
-                    book_count=s.book_count,
-                    book_type=s.book_type,
-                    tag_list=s.tags if s.tags else [],
-                    rating_average=s.rating_average,
-                    rating_count=s.rating_count,
-                    download_count=getattr(s, "download_count", 0),
-                    illustrator=s.illustrator,
-                    translator=(rep.translator if rep else None),
-                    layout_by=(rep.layout_by if rep else None),
-                    lastUpdated=s.updated_at.isoformat() if s.updated_at else None,
-                )
-                results.append(dto.model_dump())
+                results.append(LibraryService._map_series_entity_to_dto(s, rep))
 
             return {
                 "results": results,
@@ -124,6 +88,62 @@ class LibraryService:
                 "totalPages": search_results.get("totalPages", 0),
                 "totalItems": search_results.get("totalItems", 0),
             }
+
+    @staticmethod
+    def _map_series_entity_to_dto(s: SeriesMetadata, rep: Any | None) -> dict[str, Any]:
+        """Mapea una entidad SeriesMetadata y un libro representativo a un DTO de serie."""
+        display_cover = s.cover_url or (rep.cover_low if rep else None) or (rep.cover_high if rep else None)
+
+        dto = SeriesDTO(
+            id=f"series_{s.series_hash}",
+            series_hash=s.series_hash,
+            title=s.series_name,
+            series=s.series_name,
+            series_spanish=s.series_spanish,
+            series_english=s.series_english,
+            author=s.author,
+            description=s.description,
+            cover=display_cover,
+            coverUrl=CoverUrlDTO(
+                cover_low=display_cover,
+                cover_medium=display_cover.replace("_low.jpg", "_medium.jpg")
+                if display_cover and "_low.jpg" in display_cover
+                else display_cover,
+                cover_high=display_cover.replace("_low.jpg", "_high.jpg")
+                if display_cover and "_low.jpg" in display_cover
+                else display_cover,
+                cover_original=display_cover.replace("_low.jpg", "_original.jpg")
+                if display_cover and "_low.jpg" in display_cover
+                else display_cover,
+            ),
+            numBooks=s.book_count,
+            book_count=s.book_count,
+            book_type=getattr(s, "book_type", "Novela"),
+            tag_list=s.tags if s.tags else [],
+            rating_average=s.rating_average,
+            rating_count=s.rating_count,
+            download_count=getattr(s, "download_count", 0),
+            illustrator=s.illustrator,
+            translator=(rep.translator if rep else None),
+            layout_by=(rep.layout_by if rep else None),
+            lastUpdated=s.updated_at.isoformat() if s.updated_at else None,
+        )
+        return dto.model_dump()
+
+    @staticmethod
+    async def get_series_by_hash_dto(series_hash: str) -> dict[str, Any] | None:
+        """Obtiene el DTO de una serie por su hash, incluyendo un libro representativo."""
+        async with pg_manager.get_session() as session:
+            s = await series_repo.get_by_hash(series_hash)
+            if not s:
+                return None
+
+            # Buscar libro representativo para la portada
+            rep_stmt = select(LocalBook).where(LocalBook.series_hash == series_hash).limit(1)
+            res = await session.execute(rep_stmt)
+            rep = res.scalars().first()
+
+            return LibraryService._map_series_entity_to_dto(s, rep)
 
     @staticmethod
     async def get_translator_siglas_map() -> dict[str, str]:
@@ -457,10 +477,10 @@ class LibraryService:
         """Obtiene la lista de géneros únicos (procedente de la columna tags)."""
         async with pg_manager.get_session() as session:
             try:
-                # tags es JSONB en Postgres y ahora vive en SeriesMetadata
-                stmt = select(
-                    func.distinct(func.jsonb_array_elements_text(cast(SeriesMetadata.tags, func.jsonb)))
-                ).order_by(text("1"))
+                # Usamos SQL puro con cast explícito para máxima compatibilidad
+                stmt = text(
+                    "SELECT DISTINCT jsonb_array_elements_text(tags::jsonb) FROM series_metadata WHERE tags IS NOT NULL ORDER BY 1"
+                )
                 res = await session.execute(stmt)
                 return [r[0] for r in res.all() if r[0]]
             except Exception as e:

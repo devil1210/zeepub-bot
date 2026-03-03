@@ -292,41 +292,6 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
 
     cleanup_tmp(epub_buffer)
 
-    if success:
-        # --- Interactive Feedback (v6.1.0) ---
-        # Mostrar botón de calificar si tenemos book_id local
-        if epub_url and ("local_library" in epub_url or os.path.exists(epub_url)):
-            try:
-                from models.library_models import LocalBook
-                from utils.library_db import get_session
-
-                # Simple path matching.
-                # Note: This session is sync, so we wrap or just use it quickly.
-                session = get_session()
-                book_db = session.query(LocalBook).filter_by(filepath=epub_url).first()
-                if book_db:
-                    kb_rate = [
-                        [
-                            InlineKeyboardButton(
-                                "⭐ Calificar Libro",
-                                callback_data=f"prompt_rate|{book_db.id}",
-                            )
-                        ]
-                    ]
-                    try:
-                        await bot.send_message(
-                            chat_id=destino,
-                            text="¿Qué te pareció este libro?",
-                            reply_markup=InlineKeyboardMarkup(kb_rate),
-                            message_thread_id=thread_id_destino,
-                        )
-                    except Exception:
-                        pass
-                session.close()
-            except Exception as e:
-                logger.error(f"Error finding local book for rating: {e}")
-        # -------------------------------------
-
     # --- Limpieza de mensajes antiguos de detalles (Opcional, si el usuario prefiere no borrarlos los dejamos) ---
     # Pero el usuario pidió: "sigues borrando los mensajes de portada y sinoposis innecesariamente"
     # Así que NO los borramos. Los identificadores están en st.get("last_detalles_msg_ids") si hiciera falta.

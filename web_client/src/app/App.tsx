@@ -74,48 +74,12 @@ const useLegacyNavigation = () => {
  * Handles Telegram Back Button integration with internal history stack
  */
 const TelegramNavigationHandler: React.FC = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const { webApp } = useTelegram();
-  const { state: navState, popHistory } = useNavigation();
 
   useEffect(() => {
     if (!webApp?.BackButton) return;
-
-    const handleBack = () => {
-      // Check internal stack length
-      if (navState.historyStack.length > 1) {
-        navigate(-1);
-        // popHistory is handled by the HistoryTracker via POP event,
-        // but if we trigger it programmatically, we should ensure consistency.
-        // Actually, let HistoryTracker handle state updates based on location changes.
-      } else {
-        // Fallback: If we are deep but stack is empty (reload), go home
-        if (location.pathname !== '/') {
-          navigate('/');
-        } else {
-          // Close app? Or do nothing?
-          // webApp.close();
-        }
-      }
-    };
-
-    const rootPaths = ['/', '/search', '/library', '/requests', '/settings', '/downloads', '/admin'];
-    // We consider it "root" if stack is 1 AND we are at a known root path.
-    // Or if stack is > 1 we definitely show Back button.
-    const isRoot = navState.historyStack.length <= 1 && rootPaths.includes(location.pathname);
-
-    if (isRoot) {
-      webApp.BackButton.hide();
-    } else {
-      webApp.BackButton.show();
-      webApp.BackButton.onClick(handleBack);
-    }
-
-    return () => {
-      webApp.BackButton.offClick(handleBack);
-    };
-  }, [webApp, location.pathname, navState.historyStack.length, navigate]);
+    webApp.BackButton.hide();
+  }, [webApp]);
 
   return null;
 };

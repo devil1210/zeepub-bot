@@ -492,15 +492,26 @@ class CommandHandlers:
 
             # 1. Búsqueda de Series (Agrupada)
             res_series = await LibraryService.search_series(termino, items_per_page=30)
-            series_list = res_series.get("items", [])
+            series_list = res_series.get("results", [])
             series_hashes = {s["series_hash"] for s in series_list}
 
             # 2. Búsqueda de Libros Individuales
             res_books = await LibraryService.search_books(termino)
             all_books = res_books.get("results", [])
 
-            # Filtramos libros que YA pertenecen a las series encontradas
-            books_standalone = [b for b in all_books if b.get("series_hash") not in series_hashes]
+            # 3. Consolidación: Si un libro pertenece a una serie, mostrar la serie
+            books_standalone = []
+            for b in all_books:
+                h = b.get("series_hash")
+                if h:
+                    if h not in series_hashes:
+                        # Buscamos la serie y la añadimos
+                        new_s = await LibraryService.get_series_by_hash_dto(h)
+                        if new_s:
+                            series_list.append(new_s)
+                            series_hashes.add(h)
+                else:
+                    books_standalone.append(b)
 
             await mostrar_resultados_locales(update, context, termino, series_list, books_standalone)
             return
