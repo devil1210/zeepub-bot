@@ -40,7 +40,7 @@ class SearchHandler(BaseCommandHandler):
         search_term = " ".join(args)
 
         # Try to find exact match first
-        await self._search_by_term(update, context, search_term, thread_id)
+        await self._search_by_term(update, context, search_term, get_thread_id(update))
 
     async def _show_search_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE, thread_id: int):
         """Show search help and options."""
