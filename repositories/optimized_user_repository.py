@@ -24,7 +24,9 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
         self.table_name = "users"
         self.supabase = supabase_manager
 
-    async def get_by_id(self, telegram_id: int) -> dict[str, Any] | None:
+    async def get_by_id(self, id: Any) -> dict[str, Any] | None:
+        # User defined as telegram_id in this context
+        telegram_id = id
         # 1. Cache-First
         cached_user = await cache_manager.get_user(telegram_id)
         if cached_user:

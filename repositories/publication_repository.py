@@ -27,34 +27,39 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
 
     # --- Publication Queue Methods ---
 
-    async def get_by_id(self, queue_id: int) -> PublicationQueue | None:
+    # --- Implementación de métodos abstractos de BaseRepository ---
+
+    async def get_by_id(self, id: Any) -> PublicationQueue | None:
+        """Obtiene un item de la cola por ID."""
         async with self.db_manager.get_session() as session:
             stmt = (
                 select(PublicationQueue)
                 .options(selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template))
-                .where(PublicationQueue.id == queue_id)
+                .where(PublicationQueue.id == id)
             )
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
-    async def create(self, item: PublicationQueue) -> PublicationQueue:
+    async def create(self, entity: PublicationQueue) -> PublicationQueue:
+        """Agrega un nuevo item a la cola."""
         async with self.db_manager.get_session() as session:
-            session.add(item)
+            session.add(entity)
             await session.commit()
-            await session.refresh(item)
-            return item
+            await session.refresh(entity)
+            return entity
 
-    async def update(self, item: PublicationQueue) -> PublicationQueue:
-        # Nota: BaseRepository pide 'entity', PublicationRepository usaba 'item'
+    async def update(self, entity: PublicationQueue) -> PublicationQueue:
+        """Actualiza un item de la cola."""
         async with self.db_manager.get_session() as session:
-            session.add(item)
+            merged = await session.merge(entity)
             await session.commit()
-            await session.refresh(item)
-            return item
+            await session.refresh(merged)
+            return merged
 
-    async def delete(self, queue_id: int) -> bool:
+    async def delete(self, id: Any) -> bool:
+        """Elimina un item de la cola (Publicación)."""
         async with self.db_manager.get_session() as session:
-            stmt = delete(PublicationQueue).where(PublicationQueue.id == queue_id)
+            stmt = delete(PublicationQueue).where(PublicationQueue.id == id)
             result = await session.execute(stmt)
             await session.commit()
             return result.rowcount > 0

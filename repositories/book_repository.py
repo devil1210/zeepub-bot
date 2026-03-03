@@ -22,12 +22,38 @@ class BookRepository(BaseRepository[LocalBook]):
     def __init__(self, db_manager=None):
         super().__init__(db_manager or pg_manager, "local_books")
 
-    async def get_by_id(self, book_id: int) -> LocalBook | None:
+    # --- Métodos abstractos de BaseRepository ---
+
+    async def get_by_id(self, id: Any) -> LocalBook | None:
         """Obtiene un libro por ID con su información de serie cargada."""
         async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.id == book_id)
+            stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.id == id)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
+
+    async def create(self, entity: LocalBook) -> LocalBook:
+        """Persiste un nuevo libro."""
+        async with pg_manager.get_session() as session:
+            session.add(entity)
+            await session.commit()
+            await session.refresh(entity)
+            return entity
+
+    async def update(self, entity: LocalBook) -> LocalBook:
+        """Actualiza un libro completo."""
+        async with pg_manager.get_session() as session:
+            merged = await session.merge(entity)
+            await session.commit()
+            await session.refresh(merged)
+            return merged
+
+    async def delete(self, id: Any) -> bool:
+        """Elimina un libro por ID."""
+        async with pg_manager.get_session() as session:
+            stmt = delete(LocalBook).where(LocalBook.id == id)
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount > 0
 
     async def get_by_hash(self, book_hash: str) -> LocalBook | None:
         """Busca un libro por su hash único."""

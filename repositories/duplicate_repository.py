@@ -17,6 +17,42 @@ class DuplicateRepository(BaseRepository[DuplicateBook]):
     def __init__(self, db_manager=None):
         super().__init__(db_manager or pg_manager, "duplicate_books")
 
+    # --- Métodos abstractos de BaseRepository ---
+
+    async def get_by_id(self, id: Any) -> DuplicateBook | None:
+        """Obtiene un registro de duplicado por ID."""
+        async with pg_manager.get_session() as session:
+            return await session.get(DuplicateBook, id)
+
+    async def create(self, entity: DuplicateBook) -> DuplicateBook:
+        """Crea un nuevo registro de duplicado."""
+        async with pg_manager.get_session() as session:
+            session.add(entity)
+            await session.commit()
+            await session.refresh(entity)
+            return entity
+
+    async def update(self, entity: DuplicateBook) -> DuplicateBook:
+        """Actualiza un registro de duplicado."""
+        async with pg_manager.get_session() as session:
+            merged = await session.merge(entity)
+            await session.commit()
+            await session.refresh(merged)
+            return merged
+
+    async def delete(self, id: Any) -> bool:
+        """Elimina un registro de duplicado por ID."""
+        async with pg_manager.get_session() as session:
+            try:
+                stmt = delete(DuplicateBook).where(DuplicateBook.id == id)
+                result = await session.execute(stmt)
+                await session.commit()
+                return result.rowcount > 0
+            except Exception as e:
+                logger.error(f"Error deleting duplicate {id}: {e}")
+                await session.rollback()
+                return False
+
     async def get_all_duplicates(self) -> list[DuplicateBook]:
         """Obtiene todos los registros de duplicados detectados."""
         async with pg_manager.get_session() as session:

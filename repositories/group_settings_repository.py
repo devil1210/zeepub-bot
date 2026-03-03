@@ -13,6 +13,43 @@ class GroupSettingsRepository(BaseRepository[GroupSettings]):
     def __init__(self, db_manager=None):
         super().__init__(db_manager or pg_manager, "group_settings")
 
+    # --- Métodos abstractos de BaseRepository ---
+
+    async def get_by_id(self, id: Any) -> GroupSettings | None:
+        """Obtiene una configuración de grupo por su ID primario."""
+        async with pg_manager.get_session() as session:
+            return await session.get(GroupSettings, id)
+
+    async def create(self, entity: GroupSettings) -> GroupSettings:
+        """Crea una nueva configuración de grupo."""
+        async with pg_manager.get_session() as session:
+            session.add(entity)
+            await session.commit()
+            await session.refresh(entity)
+            return entity
+
+    async def update(self, entity: GroupSettings) -> GroupSettings:
+        """Actualiza una configuración de grupo."""
+        async with pg_manager.get_session() as session:
+            merged = await session.merge(entity)
+            await session.commit()
+            await session.refresh(merged)
+            return merged
+
+    async def delete(self, id: Any) -> bool:
+        """Elimina una configuración de grupo por ID."""
+        from sqlalchemy import delete
+        async with pg_manager.get_session() as session:
+            try:
+                stmt = delete(GroupSettings).where(GroupSettings.id == id)
+                result = await session.execute(stmt)
+                await session.commit()
+                return result.rowcount > 0
+            except Exception as e:
+                logger.error(f"Error deleting group settings {id}: {e}")
+                await session.rollback()
+                return False
+
     async def get_by_chat_id(self, chat_id: int) -> GroupSettings | None:
         """Obtiene la configuración de un grupo por su chat_id."""
         async with self.db_manager.get_session() as session:

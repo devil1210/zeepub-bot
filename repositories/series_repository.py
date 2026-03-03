@@ -19,13 +19,36 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
     def __init__(self, db_manager=None):
         super().__init__(db_manager or pg_manager, "series_metadata")
 
-    async def get_by_id(self, series_id: int) -> SeriesMetadata | None:
+    async def get_by_id(self, id: Any) -> SeriesMetadata | None:
+        """Obtiene una serie por su ID de base de datos."""
         async with pg_manager.get_session() as session:
-            stmt = (
-                select(SeriesMetadata).options(selectinload(SeriesMetadata.books)).where(SeriesMetadata.id == series_id)
-            )
+            stmt = select(SeriesMetadata).options(selectinload(SeriesMetadata.books)).where(SeriesMetadata.id == id)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
+
+    async def create(self, entity: SeriesMetadata) -> SeriesMetadata:
+        """Persiste una nueva serie."""
+        async with pg_manager.get_session() as session:
+            session.add(entity)
+            await session.commit()
+            await session.refresh(entity)
+            return entity
+
+    async def update(self, entity: SeriesMetadata) -> SeriesMetadata:
+        """Actualiza una serie completa."""
+        async with pg_manager.get_session() as session:
+            merged = await session.merge(entity)
+            await session.commit()
+            await session.refresh(merged)
+            return merged
+
+    async def delete(self, id: Any) -> bool:
+        """Elimina una serie por ID."""
+        async with pg_manager.get_session() as session:
+            stmt = delete(SeriesMetadata).where(SeriesMetadata.id == id)
+            result = await session.execute(stmt)
+            await session.commit()
+            return result.rowcount > 0
 
     async def get_by_hash(self, series_hash: str) -> SeriesMetadata | None:
         """Busca una serie por su hash único."""
@@ -73,14 +96,8 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 logger.error(f"Error list_series: {e}")
                 return {"items": [], "totalItems": 0, "totalPages": 0}
 
-    async def create(self, series: SeriesMetadata) -> SeriesMetadata:
-        async with pg_manager.get_session() as session:
-            session.add(series)
-            await session.commit()
-            await session.refresh(series)
-            return series
-
-    async def update(self, series_id: int, data: dict[str, Any]) -> bool:
+    async def update_data(self, series_id: int, data: dict[str, Any]) -> bool:
+        """Actualiza campos específicos de una serie (Legacy/Helper)."""
         async with pg_manager.get_session() as session:
             series = await session.get(SeriesMetadata, series_id)
             if not series:
@@ -92,13 +109,6 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
 
             await session.commit()
             return True
-
-    async def delete(self, series_id: int) -> bool:
-        async with pg_manager.get_session() as session:
-            stmt = delete(SeriesMetadata).where(SeriesMetadata.id == series_id)
-            result = await session.execute(stmt)
-            await session.commit()
-            return result.rowcount > 0
 
     async def search_series(
         self,

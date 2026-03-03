@@ -26,6 +26,38 @@ class UserRepository(BaseRepository[User]):
     def __init__(self, db_manager=None):
         super().__init__(db_manager or pg_manager, "users")
 
+    # --- Implementación de métodos abstractos de BaseRepository ---
+
+    async def create(self, entity: User) -> User:
+        """Persiste un nuevo usuario en la base de datos."""
+        async with pg_manager.get_session() as session:
+            session.add(entity)
+            await session.commit()
+            await session.refresh(entity)
+            return entity
+
+    async def update(self, entity: User) -> User:
+        """Actualiza un usuario existente."""
+        async with pg_manager.get_session() as session:
+            merged = await session.merge(entity)
+            await session.commit()
+            await session.refresh(merged)
+            return merged
+
+    async def delete(self, id: Any) -> bool:
+        """Elimina un usuario por su Telegram ID."""
+        from sqlalchemy import delete
+        async with pg_manager.get_session() as session:
+            try:
+                stmt = delete(User).where(User.telegram_id == id)
+                result = await session.execute(stmt)
+                await session.commit()
+                return result.rowcount > 0
+            except Exception as e:
+                logger.error(f"Error deleting user {id}: {e}")
+                await session.rollback()
+                return False
+
     def _parse_datetime(self, dt_str: Any) -> datetime | None:
         if not dt_str:
             return None

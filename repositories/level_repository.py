@@ -129,10 +129,10 @@ class LevelRepository(BaseRepository[UserLevel]):
     def __init__(self, db_manager=None):
         super().__init__(db_manager or pg_manager, "user_levels")
 
-    async def get_by_id(self, level_id: int) -> UserLevel | None:
+    async def get_by_id(self, id: Any) -> UserLevel | None:
         """Obtiene un nivel por su ID."""
         async with self.db_manager.get_session() as session:
-            result = await session.execute(select(UserLevel).where(UserLevel.id == level_id))
+            result = await session.execute(select(UserLevel).where(UserLevel.id == id))
             return result.scalar_one_or_none()
 
     async def get_by_name(self, name: str) -> UserLevel | None:
@@ -160,11 +160,11 @@ class LevelRepository(BaseRepository[UserLevel]):
             await session.commit()
             return entity
 
-    async def delete(self, level_id: int) -> bool:
+    async def delete(self, id: Any) -> bool:
         from sqlalchemy import delete as sa_delete
 
         async with self.db_manager.get_session() as session:
-            result = await session.execute(sa_delete(UserLevel).where(UserLevel.id == level_id))
+            result = await session.execute(sa_delete(UserLevel).where(UserLevel.id == id))
             await session.commit()
             return result.rowcount > 0
 
