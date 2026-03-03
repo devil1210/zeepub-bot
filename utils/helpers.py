@@ -10,9 +10,11 @@ from urllib.parse import urljoin
 from utils.metadata_utils import (
     parse_metadata_from_title,
 )
-
-# Telegram utility re-exports (many modules import these from helpers)
-
+from utils.string_utils import limpiar_html_basico  # noqa: F401 - re-export
+from utils.telegram_utils import (  # noqa: F401 - re-exports
+    get_thread_id,
+    is_command_for_bot,
+)
 
 # Legacy / Unused Proxies
 def extract_creators_by_role(entry, role_code: str):
