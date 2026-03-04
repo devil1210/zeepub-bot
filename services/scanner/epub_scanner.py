@@ -57,8 +57,6 @@ class EpubScanner:
         """Copia campos de metadata de un objeto LocalBook a otro existente."""
         target_book.title = source_book.title
         target_book.romaji_title = source_book.romaji_title
-        target_book.english_title = source_book.english_title
-        target_book.spanish_title = source_book.spanish_title
         target_book.is_uncensored = source_book.is_uncensored
         target_book.color_mode = source_book.color_mode
         target_book.edition = source_book.edition
@@ -101,18 +99,13 @@ class EpubScanner:
                     api_lang = item.get("language", "en")
 
                     found_something = False
-                    if api_lang == "es":
-                        if not book.spanish_title:
-                            book.spanish_title = api_title
-                            found_something = True
-                    elif api_lang in ("ja", "jp"):
+                    if api_lang in ("ja", "jp"):
                         if not book.jap_title:
                             book.jap_title = api_title
                             found_something = True
                     else:
-                        if not book.english_title:
-                            book.english_title = api_title
-                            found_something = True
+                        # We don't save translated titles anymore, only Japanese/Romaji
+                        pass
 
                     if not book.description and item.get("description"):
                         book.description = item.get("description")
@@ -208,8 +201,8 @@ class EpubScanner:
             book.language = identity["language"]
             book.translator = identity["translator"]
             book.layout_by = identity["layout_by"]
-            book.english_title = identity.get("series")
             book.jap_title = identity.get("romaji_title")
+            book.romaji_title = identity.get("romaji_title") or meta.get("romaji_title")
             book.edition = identity["edition"]
             book.publisher = meta.get("publisher")
 
@@ -240,16 +233,18 @@ class EpubScanner:
             extracted_data = {
                 "series": identity["series"] or book.title,
                 "author": identity["author"],
-                "author_jap": meta.get("author_jap"),
-                "illustrator": meta.get("illustrator"),
-                "illustrator_jap": meta.get("illustrator_jap"),
                 "description": meta.get("description"),
                 "tags": final_genres,
-                "demographics": classified_demographics,
                 "book_type": identity["book_type"],
             }
             book.extracted_data = extracted_data
-            book.romaji_title = identity.get("romaji_title") or meta.get("romaji_title")
+
+            # Save the new attributes directly on the book model
+            book.series = identity["series"] or book.title
+            book.illustrator = meta.get("illustrator")
+            book.illustrator_jap = meta.get("illustrator_jap")
+            book.author_jap = meta.get("author_jap")
+            book.demographics = classified_demographics
 
             try:
                 with open(filepath, "rb") as f:

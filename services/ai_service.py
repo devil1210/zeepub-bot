@@ -146,8 +146,7 @@ class AIService:
 
         REGLAS DE IDIOMA:
         - Todas las EXPLICACIONES y campos de texto libre deben estar SIEMPRE en ESPAÑOL.
-        - **Series (English)**: El nombre de la serie oficial en INGLÉS.
-        - **Series (Spanish)**: El nombre oficial o más común en ESPAÑOL.
+        - **Series Name**: El nombre canónico de la serie (preferiblemente en INGLÉS o ROMAJI).
 
         Reglas de Extracción:
         1. **Volume (CRÍTICO)**: Extrae el número de volumen con total precisión.
@@ -161,7 +160,7 @@ class AIService:
              - Claridad Identificable: Si hay conflicto (mismas siglas), no uses números. Expande la sigla usando letras del nombre para que sea descriptiva (ej. Dark Translations = DARKT, Dragoon Translations = DRAGT).
              - Nombres como Siglas: Si el nombre del grupo tiene una sola palabra de 6 letras o menos (ej. "MiraiK"), la sigla puede ser el mismo nombre.
              - Consistencia: Si el nombre del grupo es casi idéntico (variaciones de espacios o mayúsculas), asígnales la misma sigla.
-        3. **Suggested Filename**: Genera el nombre EXACTO: "{{Prefix}}{{Series Spanish}} - {{Volumen}} [{{Siglas}}].epub".
+        3. **Suggested Filename**: Genera el nombre EXACTO: "{{Prefix}}{{Series Name}} - {{Volumen}} [{{Siglas}}].epub".
            - **Prefix (CRÍTICO)**:
              - Si el libro tiene "Ilustraciones a Color" en sus géneros: usa `[Color]`.
              - Si el libro tiene "Sin Censura" en sus géneros: usa `[SC]`.
@@ -170,9 +169,8 @@ class AIService:
            - Si el volumen es 0.0, usa "Volumen Único" para la parte de {{Volumen}}.
            - Si el volumen es > 0, usa "V{{XX}}" (ej: V01, V08.5).
 
-        SEGURIDAD DE ARCHIVOS:
         - El campo `suggested_filename` NUNCA debe incluir caracteres Prohibidos: \\ / : * ? " < > |
-        - Los campos de metadata (`series_english`, `series_spanish`) SÍ pueden incluirlos (ej: "Serie: Subtítulo").
+        - Los campos de metadata (`series_name`) SÍ pueden incluirlos (ej: "Serie: Subtítulo").
 
         Datos de Entrada:
         - Filename Original: "{filename}"
@@ -188,8 +186,7 @@ class AIService:
 
         Devuelve SOLO un JSON:
         {{
-            "series_english": "string",
-            "series_spanish": "string",
+            "series_name": "string",
             "volume": float,
             "group_full": "string",
             "group_siglas": "string",
@@ -230,15 +227,13 @@ class AIService:
 
         REGLAS:
         1. Elimina volúmenes, "Novela Ligera", etiquetas de formato.
-        2. proposed_english: Nombre oficial en INGLÉS o ROMAJI.
-        3. proposed_spanish: Nombre oficial en ESPAÑOL.
+        2. proposed_series: Nombre oficial en INGLÉS o ROMAJI.
 
         Input: "{current_name}"
 
         Responde SOLO con un JSON:
         {{
-            "proposed_english": "string",
-            "proposed_spanish": "string"
+            "proposed_series": "string"
         }}
         """
 
@@ -246,20 +241,18 @@ class AIService:
             response_text = await AIService._call_ai(prompt, json_mode=True)
             if not response_text:
                 return {
-                    "proposed_english": current_name,
-                    "proposed_spanish": current_name,
+                    "proposed_series": current_name,
                 }
             txt = AIService._extract_json_from_text(response_text)
             return json.loads(txt)
         except Exception:
-            return {"proposed_english": current_name, "proposed_spanish": current_name}
+            return {"proposed_series": current_name}
 
     @staticmethod
-    async def analyze_series_for_updates(
+    async def analyze_series(
         series_hash: str,
         current_series_name: str,
         books: list[dict[str, Any]],
-        current_spanish_name: str = None,
         target_model: str | None = None,
     ) -> dict[str, Any]:
         """
@@ -271,18 +264,15 @@ class AIService:
         prompt = f"""
         Actúa como un bibliotecario experto. Analiza este grupo de libros y propón una estandarización coherente.
 
-        REGLAS DE IDIOMA:
         - El campo 'reason' (explicación) debe estar SIEMPRE en ESPAÑOL.
 
-        Nombre Actual en DB (English): "{current_series_name}"
-        Nombre Actual en DB (Spanish): "{current_spanish_name or "No establecido"}"
+        Nombre Actual en DB: "{current_series_name}"
 
         Datos de libros (filename y publisher): {json.dumps([{"f": b.get("filename"), "p": b.get("publisher")} for b in books[:15]], indent=2)}
 
         Tareas:
-        1. **Proposed English Name**: El nombre canónico en INGLÉS/ROMAJI.
-        2. **Proposed Spanish Name**: El nombre oficial en ESPAÑOL.
-        3. **Proposed Slug**: Un identificador único para la URL. Debe ser 'series_name' en minúsculas con guiones bajos, sin caracteres especiales ni tildes. Ej: 'the_pet_girl_of_sakurasou'.
+        1. **Proposed Series Name**: El nombre canónico de la serie (Inglés/Romaji).
+        2. **Proposed Slug**: Un identificador único para la URL. Debe ser 'series_name' en minúsculas con guiones bajos, sin caracteres especiales ni tildes. Ej: 'the_pet_girl_of_sakurasou'.
         4. **Group Siglas & Name (PROPRIEDAD CRÍTICA)**:
            - **IMPORTANTE**: Usa el campo 'publisher' de cada libro para identificar al grupo.
            - Si el 'publisher' coincide con uno de los nombres en la 'LISTA DE GRUPOS' proporcionada, DEBES usar la sigla correspondiente de esa lista.
@@ -295,12 +285,11 @@ class AIService:
 
         SEGURIDAD DE ARCHIVOS:
         - La restricción de caracteres (\\ / : * ? " < > |) SOLO aplica a nombres de archivo en disco.
-        - Los campos `proposed_english`, `proposed_spanish` y `proposed_slug` PUEDEN contener ":" (ej: "Serie: Subtitulo").
+        - Los campos `proposed_series` y `proposed_slug` PUEDEN contener ":" (ej: "Serie: Subtitulo").
 
         Responde SOLO con este JSON:
         {{
-            "proposed_english": "string",
-            "proposed_spanish": "string",
+            "proposed_series": "string",
             "proposed_slug": "string",
             "group_full": "string",
             "group_siglas": "string",
@@ -323,18 +312,15 @@ class AIService:
 
         # 0. Get Learning Context (RAG-lite) and Current Series Info
         learning_context = ""
-        current_s = None
+
         try:
             from sqlalchemy import text
 
-            from models.library_models import SeriesMetadata
             from utils.library_db import get_session
 
             with get_session() as session:
-                # Get current series metadata for slug context
-                current_s = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
-
                 # Get valid siglas
+
                 res_siglas = session.execute(
                     text("SELECT siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 100")
                 )
@@ -365,14 +351,10 @@ class AIService:
             txt = AIService._extract_json_from_text(response_text)
             analysis = json.loads(txt)
 
-            # Construir propuesta detallada
             proposal = {
                 "series_hash": series_hash,
                 "current_series": current_series_name,
-                "current_spanish": current_spanish_name,
-                "current_slug": current_s.slug if current_s else None,
-                "proposed_series": analysis.get("proposed_english"),
-                "proposed_spanish": analysis.get("proposed_spanish"),
+                "proposed_series": analysis.get("proposed_series"),
                 "proposed_slug": analysis.get("proposed_slug"),
                 "group_full": analysis.get("group_full", "Unknown"),
                 "group_siglas": analysis.get("group_siglas", "Unknown"),
@@ -424,9 +406,9 @@ class AIService:
                 elif is_sc:
                     prefix = "[SC]"
 
-                # Generar nuevo nombre de archivo usando el nombre en ESPAÑOL y las SIGLAS INDIVIDUALES
-                spanish_name = proposal["proposed_spanish"] or proposal["proposed_series"]
-                raw_filename = f"{prefix}{spanish_name} - {vol_part} [{book_siglas}].epub"
+                # Generar nuevo nombre de archivo usando el nombre original
+                # This should be replaced with using proposed_series from analysis, or default name
+                raw_filename = f"{prefix}{proposal['proposed_series']} - {vol_part} [{book_siglas}].epub"
                 new_filename = AIService.sanitize_filename(raw_filename)
 
                 if book.get("filename") != new_filename:
@@ -441,10 +423,7 @@ class AIService:
                     )
 
             # Check if there is NO CHANGE at all (Series matches AND no files renamed)
-            # IMPORTANT: We compare both English and Spanish names
-            names_match = proposal["proposed_series"] == current_series_name and (
-                not current_spanish_name or proposal["proposed_spanish"] == current_spanish_name
-            )
+            names_match = proposal["proposed_series"] == current_series_name
 
             if names_match and not proposal["changes"]:
                 # Series is already perfect - keep the names as-is, just add a note
@@ -544,8 +523,6 @@ class AIService:
         original: str,
         proposed: str,
         final: str,
-        proposed_spanish: str = None,
-        final_spanish: str = None,
         status: str = "accepted",
         ai_reason: str = None,
     ):
@@ -558,16 +535,14 @@ class AIService:
 
             with get_session() as session:
                 query = text("""
-                    INSERT INTO ai_learning_feedback (series_hash, original_name, proposed_name, final_name, proposed_spanish, final_spanish, status, ai_reason)
-                    VALUES (:h, :o, :p, :f, :ps, :fs, :s, :r)
+                    INSERT INTO ai_learning_feedback (series_hash, original_name, proposed_name, final_name, status, ai_reason)
+                    VALUES (:h, :o, :p, :f, :s, :r)
                 """)
                 params = {
                     "h": series_hash,
                     "o": original or "Unknown",
                     "p": proposed or final or original or "Unknown",
                     "f": final or proposed or original or "Unknown",
-                    "ps": proposed_spanish,
-                    "fs": final_spanish,
                     "s": status,
                     "r": ai_reason,
                 }
@@ -586,8 +561,6 @@ class AIService:
                         "original_name": original or "Unknown",
                         "proposed_name": proposed or final or original or "Unknown",
                         "final_name": final or proposed or original or "Unknown",
-                        "proposed_spanish": proposed_spanish,
-                        "final_spanish": final_spanish,
                         "status": status,
                         "ai_reason": ai_reason,
                     }

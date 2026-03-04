@@ -17,7 +17,6 @@ class BookDTO(BaseModel):
     cleanTitle: str | None = None
     author: str | None = None
     series: str | None = None
-    series_english: str | None = None
     volume: float | None = None
     book_type: str | None = None
     cover: str | None = None
@@ -41,7 +40,6 @@ class BookDTO(BaseModel):
     # Enrichment
     romaji_title: str | None = None
     english_title: str | None = None
-    spanish_title: str | None = None
     translator: str | None = None
     illustrator: str | None = None
     layout_by: str | None = None
@@ -73,8 +71,6 @@ class SeriesDTO(BaseModel):
     series_hash: str
     title: str
     series: str
-    series_spanish: str | None = None
-    series_english: str | None = None
     author: str | None = None
     description: str | None = None
     cover: str | None = None

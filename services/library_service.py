@@ -99,8 +99,6 @@ class LibraryService:
             series_hash=s.series_hash,
             title=s.series_name,
             series=s.series_name,
-            series_spanish=s.series_spanish,
-            series_english=s.series_english,
             author=s.author,
             description=s.description,
             cover=display_cover,
@@ -448,8 +446,6 @@ class LibraryService:
                             "id": f"series_{s.series_hash}",
                             "title": s.series_name,
                             "series_name": s.series_name,
-                            "series_spanish": s.series_spanish,
-                            "series_english": s.series_english,
                             "is_folder": True,
                             "numBooks": s.book_count,
                             "book_count": s.book_count,
@@ -620,18 +616,10 @@ class LibraryService:
                             processed_pairs.add(pair_id)
 
                             # Heurística inicial (SequenceMatcher)
-                            n1_en = (s1.series_english or s1.series_name or "").lower()
-                            n1_es = (s1.series_spanish or "").lower()
-                            n2_en = (s2.series_english or s2.series_name or "").lower()
-                            n2_es = (s2.series_spanish or "").lower()
-
-                            similarities = [
-                                SequenceMatcher(None, n1_en, n2_en).ratio(),
-                                SequenceMatcher(None, n1_es, n2_es).ratio() if n1_es and n2_es else 0,
-                                SequenceMatcher(None, n1_en, n2_es).ratio() if n1_en and n2_es else 0,
-                                SequenceMatcher(None, n1_es, n2_en).ratio() if n1_es and n2_en else 0,
-                            ]
-                            max_sim = max(similarities)
+                            # Simplified comparison using actual series names
+                            n1 = (s1.series_name or "").lower()
+                            n2 = (s2.series_name or "").lower()
+                            max_sim = SequenceMatcher(None, n1, n2).ratio()
 
                             if max_sim > 0.7:
                                 candidates.append((s1, s2, max_sim))
@@ -669,16 +657,12 @@ class LibraryService:
                                     "series_a": {
                                         "hash": s1.series_hash,
                                         "name": s1.series_name,
-                                        "english": s1.series_english,
-                                        "spanish": s1.series_spanish,
                                         "author": s1.author,
                                         "count": s1.book_count,
                                     },
                                     "series_b": {
                                         "hash": s2.series_hash,
                                         "name": s2.series_name,
-                                        "english": s2.series_english,
-                                        "spanish": s2.series_spanish,
                                         "author": s2.author,
                                         "count": s2.book_count,
                                     },
@@ -711,7 +695,6 @@ class LibraryService:
                             "reason": sug["reason"],
                             "confidence": sug["confidence"],
                             "suggested_main_name": sug["suggested_name"],
-                            "suggested_spanish_name": sug["suggested_name"],  # Fallback
                         }
 
                         # Verificar si ya existe una propuesta pendiente para este par

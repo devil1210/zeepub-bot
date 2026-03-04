@@ -80,19 +80,11 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
                 (rep_book.series_info.series_name if rep_book.series_info else None) or series_name or rep_book.title
             )
 
-            # Obtener nombre español si ya existe
-            series_meta = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
-            current_spanish = (
-                series_meta.series_spanish
-                if series_meta
-                else (rep_book.series_info.series_spanish if rep_book.series_info else None)
-            )
-
+            books_dicts = [b.to_dict() for b in books]
             # --- DRY RUN MODE (PROPOSAL) ---
             if dry_run:
-                books_dicts = [b.to_dict() for b in books]
                 proposal = await AIService.analyze_series_for_updates(
-                    series_hash, current_name, books_dicts, current_spanish, target_model=target_model
+                    series_hash, current_name, books_dicts, target_model=target_model
                 )
 
                 if "error" in proposal:
@@ -141,9 +133,8 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
 
             # --- EXECUTE MODE (STAGING) ---
             # Ya NO aplicamos cambios directamente. Guardamos como propuesta.
-            books_dicts = [b.to_dict() for b in books]
             proposal = await AIService.analyze_series_for_updates(
-                series_hash, current_name, books_dicts, current_spanish, target_model=target_model
+                series_hash, current_name, books_dicts, target_model=target_model
             )
 
             if not proposal or "error" in proposal:
@@ -207,7 +198,6 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         approved_changes = data.get("approved_changes", [])
         # Global series metadata overrides
         proposed_series = data.get("proposed_series")
-        proposed_spanish = data.get("proposed_spanish")
         proposed_slug = data.get("proposed_slug")
 
         # Optional flags
@@ -222,15 +212,11 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             # Sync with SeriesMetadata table
             series = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
             # If not in data, fallback to proposal
-            if not proposed_spanish:
-                proposed_spanish = proposal.get("proposed_spanish")
             if not proposed_slug:
                 proposed_slug = proposal.get("proposed_slug")
 
             # Debug logging
-            logger.info(
-                f"📝 Applying AI changes - Series: {proposed_series}, Spanish: {proposed_spanish}, Slug: {proposed_slug}"
-            )
+            logger.info(f"📝 Applying AI changes - Series: {proposed_series}, Slug: {proposed_slug}")
 
             # --- HASH MIGRATION LOGIC ---
             # Si el nombre de la serie cambia, el hash DEBE cambiar para mantener la integridad.
@@ -256,7 +242,6 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                     # Merge tags/metadata logic implied: we keep target or mix
                     # Update target with proposed name/spanish if target matches proposed
                     existing_target_series.series_name = proposed_series
-                    existing_target_series.series_spanish = proposed_spanish or proposed_series
                     if proposal.get("description"):
                         existing_target_series.description = proposal["description"]
 
@@ -286,10 +271,6 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 # series_name sigue siendo el nombre visual principal corregido
                 if proposed_series:
                     series.series_name = proposed_series
-                    series.series_english = proposed_series  # Nueva columna específica para IA
-
-                if proposed_spanish:
-                    series.series_spanish = proposed_spanish
 
                 if proposed_slug:
                     series.slug = proposed_slug
@@ -332,8 +313,6 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                     s_data = {
                         "series_hash": series.series_hash,
                         "series_name": series.series_name,
-                        "series_spanish": series.series_spanish,
-                        "series_english": series.series_english,  # Sync new col to cloud
                         "description": series.description,
                         "tags": series.tags,
                         "author": series.author,
@@ -354,9 +333,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 # Si el hash cambió, ya lo actualizamos arriba vía SQL masivo por eficiencia,
                 # pero nos aseguramos de que el objeto en memoria esté sincronizado si se usa después.
                 book.series_hash = effective_hash
-                book.series_english = proposed_series  # Nueva columna visual (IA)
                 book.is_uncensored = proposal.get("is_uncensored_series", False)
-                book.series_spanish = proposed_spanish or series.series_spanish or proposed_series
 
                 # Aprovechar y actualizar volumen si está en la propuesta
                 orig_filename = book.filename or book.title
@@ -367,9 +344,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
             # Commit metadata changes immediately to ensure they're visible to subsequent AI analysis
             session.commit()
-            logger.info(
-                f"✅ Series metadata updated and committed: {proposed_series} (ES: {proposed_spanish}) Hash: {effective_hash}"
-            )
+            logger.info(f"✅ Series metadata updated and committed: {proposed_series} Hash: {effective_hash}")
 
         # 2. Apply File Renames
         if apply_renames and approved_changes:
@@ -429,7 +404,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
         status = "accepted"
         if proposal.get("is_perfect_match"):
             status = "accepted"  # IA was right that nothing was needed
-        elif proposed_series != proposal.get("proposed_series") or proposed_spanish != proposal.get("proposed_spanish"):
+        elif proposed_series != proposal.get("proposed_series"):
             status = "edited"
 
         await AIService.log_feedback(
@@ -437,8 +412,6 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             original=proposal.get("current_series"),
             proposed=proposal.get("proposed_series"),
             final=proposed_series,
-            proposed_spanish=proposal.get("proposed_spanish"),
-            final_spanish=proposed_spanish,
             status=status,
             ai_reason=proposal.get("reason"),
         )
@@ -483,20 +456,13 @@ async def handle_ai_apply_merge(data: dict[str, Any], user_data: dict[str, Any])
 
         # 2. Actualizar metadata de la serie A si el usuario aprobó un nombre específico
         main_name = proposal.get("suggested_main_name")
-        main_spanish = proposal.get("suggested_spanish_name")
         if main_name:
             series_a = session.query(SeriesMetadata).filter_by(series_hash=hash_a).first()
             if series_a:
                 series_a.series_name = main_name
-                if main_spanish:
-                    series_a.series_spanish = main_spanish
 
             # Sincronizar nombre en los libros movidos
-            session.execute(
-                update(LocalBook)
-                .where(LocalBook.series_hash == hash_a)
-                .values(series_english=main_name, series_spanish=main_spanish or main_name)
-            )
+            session.execute(update(LocalBook).where(LocalBook.series_hash == hash_a).values(series_hash=hash_a))
 
             # Cloud Sync A
             if config.ENABLE_SUPABASE:
@@ -509,7 +475,6 @@ async def handle_ai_apply_merge(data: dict[str, Any], user_data: dict[str, Any])
                             {
                                 "series_hash": series_a.series_hash,
                                 "series_name": series_a.series_name,
-                                "series_spanish": series_a.series_spanish,
                             },
                             on_conflict="series_hash",
                         ).execute()
@@ -590,12 +555,15 @@ async def handle_ai_reset_series(data: dict[str, Any], user_data: dict[str, Any]
 
     with get_session() as session:
         # 1. Resetear libros
-        session.execute(update(LocalBook).where(LocalBook.series_hash == series_hash).values(series_spanish=None))
+        session.execute(
+            update(LocalBook).where(LocalBook.series_hash == series_hash).values(volume=None)
+        )  # Volume is safer to reset as example
 
         # 2. Resetear Serie
         series = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
         if series:
-            series.series_spanish = None
+            # series_spanish was removed, nothing to reset here regarding spanish name
+            pass
 
         # 3. Eliminar propuestas pendientes/anteriores
         session.query(MetadataProposal).filter_by(series_hash=series_hash).delete()

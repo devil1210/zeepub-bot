@@ -143,8 +143,6 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                     series_filters.extend(
                         [
                             SeriesMetadata.series_name.ilike(pattern),
-                            SeriesMetadata.series_spanish.ilike(pattern),
-                            SeriesMetadata.series_english.ilike(pattern),
                         ]
                     )
 

@@ -25,7 +25,7 @@ class PublisherProvider(ABC):
 class TelegramPublisherProvider(PublisherProvider):
     # Plantillas por defecto para facilitar edición/copia
     COVER_TEMPLATE = (
-        "📚 {serie} ║ {series_spanish} ║ {titulo}"
+        "📚 {serie} ║ {romaji_title} ║ {titulo}"
         "[?volumen]\n📖 Volumen {volumen}[/?]"
         "\n#{slug}\n"
         "[?layout_by]\n🎨 <b>Maquetado por:</b> #{layout_by}[/?]"
@@ -45,7 +45,7 @@ class TelegramPublisherProvider(PublisherProvider):
 
     # Plantilla Facebook (texto plano, sin HTML - FB lo elimina en captions)
     FB_CAPTION_TEMPLATE = (
-        "📚 {serie} ║ {series_spanish} ║ {titulo}"
+        "📚 {serie} ║ {romaji_title} ║ {titulo}"
         "[?volumen]\n📖 Volumen {volumen}[/?]"
         "\n[?layout_by]🎨 Maquetado por: {layout_by}[/?]"
         "[?tipo]\n🏷️ Categoría: {tipo}[/?]"
@@ -327,7 +327,7 @@ class TelegramPublisherProvider(PublisherProvider):
 
         version = meta.get("epub_version") or meta.get("epubVersion") or "2.0"
         fecha = meta.get("fecha_modificacion") or meta.get("modified_at") or meta.get("modifiedAt") or "Desconocida"
-        titulo = meta.get("titulo_volumen") or meta.get("title") or meta.get("english_title") or "Desconocido"
+        titulo = meta.get("titulo_volumen") or meta.get("title") or "Desconocido"
 
         # Calcular tamaño en MB
         size_mb = meta.get("size_mb", 0.0)

@@ -116,11 +116,7 @@ class BookRepository(BaseRepository[LocalBook]):
                     LocalBook.title.ilike(pattern),
                     SeriesMetadata.author.ilike(pattern),
                     SeriesMetadata.series_name.ilike(pattern),
-                    SeriesMetadata.series_spanish.ilike(pattern),
-                    SeriesMetadata.series_english.ilike(pattern),
                     LocalBook.romaji_title.ilike(pattern),
-                    LocalBook.english_title.ilike(pattern),
-                    LocalBook.spanish_title.ilike(pattern),
                 ]
 
                 # Filtros extendidos según el tipo de búsqueda

@@ -40,7 +40,7 @@ class SeriesScanner:
         if not series:
             # Para creación inicial, preservar caracteres especiales del título original
             book_title = book.title or ""
-            extracted_series = extracted.get("series") or book.series_english or ""
+            extracted_series = extracted.get("series") or ""
 
             # Parsear con preservación de caracteres especiales
             parsed = parse_metadata_from_title(book_title, preserve_special_chars=True)
@@ -61,8 +61,6 @@ class SeriesScanner:
 
             series = SeriesMetadata(
                 series_name=final_series_name,
-                series_spanish=book.series_spanish,
-                series_english=book.series_english,
                 series_hash=book.series_hash,
                 author=extracted.get("author") or "",
                 author_jap=extracted.get("author_jap"),
@@ -88,7 +86,7 @@ class SeriesScanner:
         else:
             # Sincronizar campos PERO preservar modificaciones manuales
             current_name = series.series_name or ""
-            extracted_name = extracted.get("series") or book.series_english or book.title
+            extracted_name = extracted.get("series") or book.title
 
             should_preserve, preserve_reason = SeriesScanner._should_preserve_current_name(current_name, extracted_name)
             should_update_name = not should_preserve
@@ -115,15 +113,9 @@ class SeriesScanner:
                 if not new_tags.issubset(existing_tags):
                     series.tags = list(existing_tags | new_tags)
 
-            if book.series_spanish and series.series_spanish != book.series_spanish:
-                series.series_spanish = book.series_spanish
-
-            if book.series_english and series.series_english != book.series_english:
-                series.series_english = book.series_english
-
             # COMPLETAR ROMAJI_TITLE VACÍOS
             if not book.romaji_title or book.romaji_title.strip() == "":
-                title_source = book.title or book.series_spanish or book.series_english or ""
+                title_source = book.title or ""
                 extracted_romaji = SeriesScanner._extract_romaji_from_title(title_source)
                 if extracted_romaji:
                     book.romaji_title = extracted_romaji
@@ -222,8 +214,6 @@ class SeriesScanner:
             logger.info(f"Archivando serie vacía: {series.series_name}")
             archived_s = ArchivedSeries(
                 series_name=series.series_name,
-                series_spanish=series.series_spanish,
-                series_english=series.series_english,
                 series_hash=series.series_hash,
                 author=series.author,
                 description=series.description,
@@ -238,11 +228,19 @@ class SeriesScanner:
             await session.flush()
             return
 
-        for b in books:
-            if not series.series_spanish and hasattr(b, "series_spanish") and b.series_spanish:
-                series.series_spanish = b.series_spanish
-            if not series.series_english and hasattr(b, "series_english") and b.series_english:
-                series.series_english = b.series_english
+        # CONSOLIDAR DEMOGRAFÍA
+        if not series.demographics or len(series.demographics) == 0:
+            all_demographics = set()
+            for b in books:
+                if b.demographics:
+                    if isinstance(b.demographics, list):
+                        all_demographics.update(b.demographics)
+                    elif isinstance(b.demographics, str):
+                        # En caso de que venga como string simple
+                        all_demographics.add(b.demographics)
+            if all_demographics:
+                series.demographics = list(all_demographics)
+                logger.info(f"🧬 Auto-poblada demografía para {series.series_name}: {series.demographics}")
 
         if not series.slug or len(str(series.slug)) > 40:
             series.slug = generar_slug_from_meta(series.to_dict())
@@ -333,7 +331,6 @@ class SeriesScanner:
                                 s_hash,
                                 current_name,
                                 [b.to_dict() for b in series_books],
-                                current_s.series_spanish if current_s else None,
                             )
                             if proposal:
                                 p_obj = MetadataProposal(

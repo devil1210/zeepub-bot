@@ -108,7 +108,6 @@ def check_migrations():
                         CREATE TABLE series_metadata (
                             id SERIAL PRIMARY KEY,
                             series_name VARCHAR(255) NOT NULL,
-                            series_spanish VARCHAR(255),
                             series_hash VARCHAR(64) UNIQUE NOT NULL,
                             author VARCHAR(255),
                             description TEXT,
@@ -122,7 +121,6 @@ def check_migrations():
                     conn.commit()
 
                 # Check for additional columns in series_metadata
-                add_column_if_missing("series_metadata", "series_spanish", "VARCHAR(255)")
                 add_column_if_missing("series_metadata", "book_type", "VARCHAR(100)")
                 add_column_if_missing("series_metadata", "publisher", "VARCHAR(255)")
                 add_column_if_missing("series_metadata", "demographics", "JSONB")
@@ -150,15 +148,9 @@ def check_migrations():
                 add_column_if_missing("local_books", "spanish_title", "VARCHAR(512)")
                 add_column_if_missing("local_books", "english_title", "VARCHAR(512)")
                 add_column_if_missing("local_books", "jap_title", "VARCHAR(512)")
-                add_column_if_missing("local_books", "series_spanish", "VARCHAR(255)")
-                add_column_if_missing("local_books", "series_english", "VARCHAR(255)")
                 add_column_if_missing("local_books", "is_uncensored", "INTEGER DEFAULT 0")
                 add_column_if_missing("local_books", "color_mode", "VARCHAR(50)")
                 add_column_if_missing("local_books", "series_metadata_id", "INTEGER")
-                add_column_if_missing("local_books", "cover_original", "VARCHAR(1024)")
-                add_column_if_missing("local_books", "cover_high", "VARCHAR(1024)")
-                add_column_if_missing("local_books", "cover_medium", "VARCHAR(1024)")
-                add_column_if_missing("local_books", "cover_low", "VARCHAR(1024)")
                 add_column_if_missing("local_books", "summary", "VARCHAR(1024)")
                 add_column_if_missing("local_books", "demographics", "JSONB")
                 add_column_if_missing("local_books", "short_link", "VARCHAR(20) UNIQUE")
@@ -189,7 +181,6 @@ def check_migrations():
                     ("identity_match", "VARCHAR(10) DEFAULT 'False'"),
                     ("path_collision", "VARCHAR(10) DEFAULT 'False'"),
                     ("processed", "VARCHAR(10) DEFAULT 'False'"),
-                    ("series_spanish", "VARCHAR(255)"),
                     ("upload_metadata", "JSONB"),
                 ]
                 for col_name, col_type in cols:
@@ -216,7 +207,6 @@ def check_migrations():
 
             # 8. archived_series columns
             if table_exists("archived_series"):
-                add_column_if_missing("archived_series", "series_spanish", "VARCHAR(255)")
                 add_column_if_missing("archived_series", "author", "VARCHAR(255)")
                 add_column_if_missing("archived_series", "description", "TEXT")
                 add_column_if_missing("archived_series", "tags", "JSONB")

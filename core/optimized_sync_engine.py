@@ -462,8 +462,6 @@ class OptimizedSyncEngine:
                     mapped_data = {
                         "series_hash": s_data["series_hash"],
                         "series_name": s_data["series_name"],
-                        "series_spanish": s_data.get("series_spanish"),
-                        "series_english": s_data.get("series_english"),
                         "author": s_data.get("author"),
                         "description": s_data.get("description"),
                         "tags": s_data.get("tags", []),
@@ -505,20 +503,18 @@ class OptimizedSyncEngine:
                         await session.execute(
                             text("""
                                 INSERT INTO series_metadata (
-                                    series_hash, series_name, series_spanish, series_english,
+                                    series_hash, series_name,
                                     author, description, tags, demographics, cover_url,
                                     book_type, publisher, author_jap, rating_average,
                                     rating_count, book_count, slug
                                 ) VALUES (
-                                    :series_hash, :series_name, :series_spanish, :series_english,
+                                    :series_hash, :series_name,
                                     :author, :description, :tags, :demographics, :cover_url,
                                     :book_type, :publisher, :author_jap, :rating_average,
                                     :rating_count, :book_count, :slug
                                 )
                                 ON CONFLICT (series_hash) DO UPDATE SET
                                     series_name = EXCLUDED.series_name,
-                                    series_spanish = EXCLUDED.series_spanish,
-                                    series_english = EXCLUDED.series_english,
                                     author = EXCLUDED.author,
                                     description = EXCLUDED.description,
                                     tags = EXCLUDED.tags,

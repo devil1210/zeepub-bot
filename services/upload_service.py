@@ -67,7 +67,6 @@ class UploadService:
                     "volume": identity.get("volume"),
                     "book_hash": identity.get("book_hash"),
                     "series_hash": identity.get("series_hash"),
-                    "series_spanish": identity.get("series_spanish"),
                 }
             )
 
@@ -90,7 +89,6 @@ class UploadService:
                     "temp_filepath": str(epub_path),
                     "title": metadata["title"],
                     "series": metadata["series"],
-                    "series_spanish": metadata.get("series_spanish"),
                     "volume": self._parse_volume(metadata["volume"]),
                     "author": metadata["author"],
                     "book_type": metadata.get("book_type"),
@@ -150,10 +148,8 @@ class UploadService:
 
     def _apply_ai_enrichment(self, metadata: dict, ai_data: dict):
         """Aplica las mejoras detectadas por la IA."""
-        if ai_data.get("series_english"):
-            metadata["series"] = ai_data["series_english"]
-        if ai_data.get("series_spanish"):
-            metadata["series_spanish"] = ai_data["series_spanish"]
+        if ai_data.get("series_name"):
+            metadata["series"] = ai_data["series_name"]
         if ai_data.get("volume") is not None:
             metadata["volume"] = ai_data["volume"]
         if ai_data.get("group_full"):
@@ -188,7 +184,6 @@ class UploadService:
             "translator": metadata.get("translator") or identity.get("translator"),
             "layout_by": metadata.get("layout_by") or identity.get("layout_by"),
             "language": metadata.get("language") or identity.get("language"),
-            "series_spanish": metadata.get("series_spanish") or identity.get("series_spanish"),
             "is_uncensored": metadata.get("is_uncensored", 0),
             "color_mode": metadata.get("color_mode") or identity.get("color_mode", "bw"),
         }
@@ -267,7 +262,7 @@ class UploadService:
         group = re.sub(r"https?://\S+", "", group).strip()
 
         # Fallback de nombre de serie
-        base_series_name = metadata.get("series_spanish") or series_ok
+        base_series_name = series_ok
 
         # Si la carpeta existe, intentar imitar el patrón
         if target_dir.exists():
@@ -348,7 +343,6 @@ class UploadService:
             if scan_result and (scan_result.get("added") or scan_result.get("updated")):
                 # Forzar actualización de campos específicos confirmados que el scanner podría no ver bien
                 db_data = {
-                    "series_spanish": metadata.get("series_spanish"),
                     "book_type": metadata.get("book_type"),
                     "is_uncensored": metadata.get("is_uncensored", 0),
                     "color_mode": metadata.get("color_mode", "bw"),

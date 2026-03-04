@@ -83,10 +83,9 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         slug = data.get("slug")
         if not slug:
             slug_source = (
-                data.get("series_english")
+                data.get("series_name")
                 or data.get("series")
                 or data.get("serie")
-                or data.get("series_spanish")
                 or data.get("titulo_serie")
                 or data.get("clean_title")
                 or data.get("title")
@@ -150,8 +149,6 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "titulo": data.get("title") or data.get("titulo") or "",
                 "titulo_volumen": data.get("titulo_volumen") or data.get("title") or "",
                 "romaji_title": data.get("romaji_title") or "",
-                "english_title": data.get("english_title") or "",
-                "spanish_title": data.get("spanish_title") or "",
                 "jap_title": data.get("jap_title") or "",
                 "slug": slug,
                 "autor": data.get("author") or data.get("autor") or "",
@@ -159,8 +156,6 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "illustrator": data.get("illustrator") or data.get("ilustrador") or "",
                 "illustrator_jap": data.get("illustrator_jap") or "",
                 "serie": data.get("series") or data.get("titulo_serie") or "",
-                "series_spanish": data.get("series_spanish") or "",
-                "series_english": data.get("series_english") or "",
                 "volumen": volume_clean,
                 "sinopsis": sinopsis_raw,
                 "resumen": data.get("summary") or data.get("resumen") or "",

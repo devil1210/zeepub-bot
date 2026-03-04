@@ -26,12 +26,8 @@ export interface Book {
   cleanTitle?: string;
   is_uncensored?: boolean;
   romaji_title?: string;
-  english_title?: string;
-  spanish_title?: string;
   jap_title?: string;
   illustrator?: string;
-  series_spanish?: string;
-  series_english?: string;
   layout_by?: string;
   isbn?: string;
 }
@@ -87,10 +83,6 @@ export interface Volume {
   modified_at?: string;
   modifiedAtOpf?: string;
   modified_at_opf?: string;
-  englishTitle?: string;
-  english_title?: string;
-  spanishTitle?: string;
-  spanish_title?: string;
   series_name?: string;
   bookType?: string;
   book_type?: string;
@@ -119,8 +111,6 @@ export interface Series {
   genres?: string[]; // Full list
   format?: string; // e.g. "EPUB", "PDF"
   book_type?: string; // e.g. "NOVELA LIGERA", "WEB NOVEL"
-  series_spanish?: string;
-  spanish_title?: string;
   rating_average?: number;
   rating_count?: number;
   book_count?: number;
@@ -130,8 +120,6 @@ export interface Series {
   volumesCount: number;
   status: 'Ongoing' | 'Completed';
   lastUpdated: string;
-  englishTitle?: string;
-  spanishTitle?: string;
   romajiTitle?: string;
   seriesName?: string;
   illustrator?: string;

@@ -42,8 +42,6 @@ class SeriesMetadata(Base):
 
     id = Column(Integer, primary_key=True)
     series_name = Column(String(255), nullable=False)
-    series_spanish = Column(String(255))
-    series_english = Column(String(255))  # Nueva columna para visualización coherente (Modificable por IA)
     slug = Column(String(512), index=True)  # Slug persistente para URLs y referencias
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
@@ -74,8 +72,6 @@ class SeriesMetadata(Base):
         return {
             "id": f"series_{self.series_hash}",
             "series_name": self.series_name,
-            "series_spanish": self.series_spanish,
-            "series_english": self.series_english,
             "slug": self.slug,
             "series_hash": self.series_hash,
             "author": self.author,
@@ -114,9 +110,12 @@ class UploadBook(Base):
 
     # Metadata extraída (similar a LocalBook)
     title = Column(String(512), nullable=False)
-    series_spanish = Column(String(255))
-    series_english = Column(String(255))
     volume = Column(Float)
+    series = Column(String)
+    illustrator = Column(String)
+    illustrator_jap = Column(Text)
+    author_jap = Column(Text)
+    demographics = Column(JSON)
     translator = Column(String(255))
     layout_by = Column(String(255))
     language = Column(String(10), default="es")
@@ -189,13 +188,16 @@ class LocalBook(Base):
     # Metadata del EPUB
     title = Column(String(512), nullable=False)
     romaji_title = Column(String(512))
-    spanish_title = Column(String(512))  # Nueva columna
-    english_title = Column(String(512))
-    series_spanish = Column(String(255))  # Nueva columna (Denormalizada para scanner)
-    series_english = Column(String(255))  # Nueva columna (Denormalizada para scanner)
     jap_title = Column(String(512))
     volume = Column(Float)  # Soporta 1, 1.5, etc
     edition = Column(String(255))  # Ej: "Honorificos", "Colector", etc.
+
+    # Advanced Metadata
+    series = Column(String)
+    illustrator = Column(String)
+    illustrator_jap = Column(Text)
+    author_jap = Column(Text)
+    demographics = Column(JSON)
 
     # Personas
     translator = Column(String(255))
@@ -259,13 +261,9 @@ class LocalBook(Base):
             "short_link": self.short_link,
             "title": self.title,
             "romajiTitle": self.romaji_title,
-            "spanishTitle": self.spanish_title,
-            "englishTitle": self.english_title,
             "japTitle": self.jap_title,
             "series": self.series_info.series_name if getattr(self, "series_info", None) else None,
-            "series_spanish": self.series_info.series_spanish if getattr(self, "series_info", None) else None,
             "author": self.series_info.author if getattr(self, "series_info", None) else None,
-            "series_english": self.series_info.series_english if getattr(self, "series_info", None) else None,
             "slug": self.series_info.slug if getattr(self, "series_info", None) else None,
             "seriesHash": self.series_hash,
             "seriesIndex": self.volume,
@@ -332,8 +330,6 @@ class LocalBook(Base):
             "color_mode": self.color_mode,
             "volumeNumber": self.volume,
             "romaji_title": self.romaji_title,
-            "english_title": self.english_title,
-            "spanish_title": self.spanish_title,
             "readingTime": self.reading_time,
             "reading_time": self.reading_time,
             "book_hash": self.book_hash,
@@ -342,10 +338,8 @@ class LocalBook(Base):
             "rating_count": self.rating_count,
             "votes": self.rating_count,
             "clean_title": (self.series_info.series_name if getattr(self, "series_info", None) else None)
-            or self.english_title
             or (re.sub(r"\[.*?\]", "", self.title).strip() if self.title else ""),
             "cleanTitle": (self.series_info.series_name if getattr(self, "series_info", None) else None)
-            or self.english_title
             or (re.sub(r"\[.*?\]", "", self.title).strip() if self.title else ""),
         }
 
@@ -425,9 +419,6 @@ class AILearningFeedback(Base):
     series_hash = Column(String(64), index=True, nullable=False)
     original_name = Column(String, nullable=False)
     proposed_name = Column(String, nullable=False)
-    proposed_spanish = Column(String)
-    final_name = Column(String)
-    final_spanish = Column(String)
     status = Column(String(20), nullable=False)  # accepted, rejected, edited, manual
     ai_reason = Column(String)
     user_reason = Column(String)
@@ -464,8 +455,6 @@ class ArchivedSeries(Base):
 
     id = Column(Integer, primary_key=True)
     series_name = Column(String(255), nullable=False)
-    series_spanish = Column(String(255))
-    series_english = Column(String(255))
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
     cover_url = Column(String(1024))

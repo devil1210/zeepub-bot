@@ -6,38 +6,6 @@ from utils.epub_extractor import clean_metadata_tags
 from utils.string_utils import normalize_author_name
 
 
-def extract_spanish_series_from_filename(filename: str) -> str:
-    """
-    Extrae el nombre de la serie en español desde un nombre de archivo.
-    Elimina - VXX, [Tags], extensiones y caracteres especiales.
-    """
-    if not filename:
-        return ""
-
-    # 1. Quitar extensión
-    name = filename.rsplit(".", 1)[0]
-
-    # 2. Quitar tags entre corchetes [TAG] e inclusive paréntesis (TAG)
-    name = re.sub(r"\[.*?\]", "", name)
-    name = re.sub(r"\(.*?\)", "", name)
-
-    # 3. Quitar patrón de volumen - VXX, VXX, etc.
-    vol_pattern = r"(?:\s*[\-\–\—\−\―\:\~～\|¦]?\s*(?:Volumen|Vol\.?|Tomo|v\.?|V|Parte|#)\s*\d+(?:\.\d+)?.*)"
-    name = re.sub(vol_pattern, "", name, flags=re.IGNORECASE).strip()
-
-    # 4. Quitar subtítulos tras ~, |, ║ si los hay (requiere espacio alrededor para no dañar palabras)
-    name = re.split(r"\s+[\~～\|¦║]\s+", name)[0].strip()
-
-    # 5. Quitar guiones y símbolos al final/inicio
-    name = re.sub(r"^[^\w\(\)\[\]]+", "", name).strip()
-    name = re.sub(r"(?:\s+[\-\–\—\−\―\~～\|¦║]+\s*|[\:\.\?\x23]+)$", "", name).strip()
-
-    # 6. Limpiar espacios múltiples
-    name = re.sub(r"\s+", " ", name).strip()
-
-    return name
-
-
 def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = False) -> dict:
     """
     Parsea un título completo de forma inteligente.
@@ -119,12 +87,9 @@ def generar_slug_from_meta(meta: Any) -> str:
     if isinstance(meta, dict):
         titulo_serie = (
             meta.get("series_name")
-            or meta.get("series_english")
             or meta.get("series")
-            or meta.get("series_spanish")
             or meta.get("titulo_serie")
             or meta.get("series_clean")
-            or meta.get("english_title")
             or meta.get("title")
         )
     elif isinstance(meta, str):
@@ -184,12 +149,6 @@ def process_book_identity_comprehensive(epub_path: str, original_filename: str |
     layout_by = meta.get("layout_by")
     language = meta.get("language") or "es"
 
-    series_spanish = ""
-    if original_filename:
-        series_spanish = extract_spanish_series_from_filename(original_filename)
-    elif epub_path:
-        series_spanish = extract_spanish_series_from_filename(os.path.basename(epub_path))
-
     parsed = parse_metadata_from_title(title)
     all_found_tags = list(meta.get("tags", [])) + parsed.get("tags", [])
 
@@ -241,8 +200,6 @@ def process_book_identity_comprehensive(epub_path: str, original_filename: str |
         "translator": translator,
         "layout_by": layout_by,
         "language": language,
-        "series_spanish": series_spanish,
-        "series_english": parsed.get("series_clean") or series or series_spanish,
         "title": ui_title,
         "published_at": meta.get("published_at"),
         "edition": meta.get("edition"),

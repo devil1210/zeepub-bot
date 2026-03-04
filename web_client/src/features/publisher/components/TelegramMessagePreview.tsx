@@ -16,17 +16,13 @@ const DUMMY_DATA: Record<string, string> = {
     '{titulo}': 'Demon Slayer: Kimetsu no Yaiba',
     '{titulo_volumen}': 'Demon Slayer: Kimetsu no Yaiba - Volumen 01',
     '{romaji_title}': 'Kimetsu no Yaiba',
-    '{english_title}': 'Demon Slayer',
-    '{spanish_title}': 'Guardianes de la Noche',
-    '{jap_title}': '鬼滅の刃',
+    '{jap_title}': '鬼滅 de la Hoja',
     '{slug}': 'demon_slayer_kimetsu_no_yaiba',
     '{autor}': 'Koyoharu Gotouge',
     '{author_jap}': '吾峠 呼世晴',
     '{illustrator}': 'Koyoharu Gotouge',
     '{illustrator_jap}': '吾峠 呼世晴',
     '{serie}': 'Demon Slayer [NL]',
-    '{series_spanish}': 'Guardianes de la Noche [NL]',
-    '{series_english}': 'Demon Slayer [NL]',
     '{volumen}': 'Volumen 01',
     '{sinopsis}': 'Tanjiro Kamado es un chico inteligente y de buen corazón que vive con su familia y gana dinero vendiendo carbón. Todo cambia cuando su familia es atacada y asesinada por un demonio (oni).',
     '{resumen}': 'Una historia épica sobre un joven que se convierte en cazador de demonios para vengar a su familia.',
@@ -91,14 +87,11 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
                 ? sampleBook.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/[\s_]+/g, '_').substring(0, 50)
                 : mapping['{slug}'];
             mapping['{romaji_title}'] = sampleBook.romaji_title || mapping['{romaji_title}'];
-            mapping['{english_title}'] = sampleBook.english_title || mapping['{english_title}'];
-            mapping['{spanish_title}'] = sampleBook.spanish_title || mapping['{spanish_title}'];
             mapping['{jap_title}'] = sampleBook.jap_title || mapping['{jap_title}'];
             mapping['{autor}'] = sampleBook.author || mapping['{autor}'];
             mapping['{illustrator}'] = sampleBook.illustrator || mapping['{illustrator}'];
             mapping['{serie}'] = sampleBook.series || mapping['{serie}'];
-            mapping['{series_spanish}'] = sampleBook.series_spanish || mapping['{series_spanish}'];
-            mapping['{series_english}'] = sampleBook.series_english || mapping['{series_english}'];
+            mapping['{serie}'] = sampleBook.series || mapping['{serie}'];
 
             const volNum = sampleBook.volumeNumber || (sampleBook as any).volume || (sampleBook as any).series_index;
             mapping['{volumen}'] = volNum ? String(Math.floor(parseFloat(String(volNum)))) : mapping['{volumen}'];

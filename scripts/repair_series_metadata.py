@@ -42,9 +42,7 @@ async def repair_slugs():
             updates = 0
             for s in series_list:
                 # Intentar generar slug
-                new_slug = generar_slug_from_meta(
-                    {"series": s.series_name, "series_spanish": s.series_spanish, "series_english": s.series_english}
-                )
+                new_slug = generar_slug_from_meta({"series": s.series_name})
 
                 if new_slug:
                     s.slug = new_slug

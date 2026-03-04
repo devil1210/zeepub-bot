@@ -43,7 +43,6 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
                 book_info_map[b.book_hash] = {
                     "series": (b.series_info.series_name if b.series_info else b.title),
                     "volume": b.volume,
-                    "series_spanish": (b.series_info.series_spanish if b.series_info else None),
                 }
 
     return {
@@ -62,7 +61,6 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
                 "payload": i.payload,
                 "series": book_info_map.get(i.book_hash, {}).get("series"),
                 "volume": book_info_map.get(i.book_hash, {}).get("volume"),
-                "series_spanish": book_info_map.get(i.book_hash, {}).get("series_spanish"),
             }
             for i in items
         ]

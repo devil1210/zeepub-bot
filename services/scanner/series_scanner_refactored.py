@@ -83,8 +83,6 @@ class SeriesScannerRefactored:
         # Create series with processed metadata
         series = SeriesMetadata(
             series_name=book_metadata.get("series", ""),
-            series_spanish=book.series_spanish,
-            series_english=book.series_english,
             series_hash=book.series_hash,
             author=book_metadata.get("author", ""),
             author_jap=book_metadata.get("author_jap"),
