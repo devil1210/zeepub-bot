@@ -56,7 +56,7 @@ class PostgresManager:
             # Fallback 'db' to 'localhost' if running outside Docker (common for local agents on Windows)
             if "@db:" in db_url and os.name == "nt":
                 db_url = db_url.replace("@db:", "@localhost:", 1)
-                logger.info("Converting 'db' to 'localhost' for Windows local execution.")
+                logger.info(f"Converting 'db' to 'localhost' for Windows: {db_url}")
 
             try:
                 # Optimized async connection pool settings for production
@@ -66,11 +66,11 @@ class PostgresManager:
                     "pool_size": config.DB_POOL_SIZE or 10,  # Base pool size
                     "max_overflow": config.DB_MAX_OVERFLOW or 20,  # Additional connections
                     "pool_recycle": 3600,  # Recycle connections after 1 hour
-                    "pool_timeout": 30,  # Wait up to 30s for available connection
+                    "pool_timeout": 60,  # Wait up to 60s for available connection
                     "connect_args": {
                         "server_settings": {"jit": "off"},  # Disable JIT for faster simple queries
-                        "timeout": 10,  # Connection timeout (10s)
-                        "command_timeout": 30,  # Query timeout (30s)
+                        "timeout": 30,  # Connection timeout (30s)
+                        "command_timeout": 60,  # Query timeout (60s)
                     },
                 }
 

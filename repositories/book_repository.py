@@ -86,6 +86,15 @@ class BookRepository(BaseRepository[LocalBook]):
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
+    async def get_one_by_attr(self, attr: str, value: Any) -> LocalBook | None:
+        """Busca un libro por un atributo dinámico."""
+        async with pg_manager.get_session() as session:
+            if not hasattr(LocalBook, attr):
+                return None
+            stmt = select(LocalBook).where(getattr(LocalBook, attr) == value).limit(1)
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+
     async def search_books(
         self,
         query: str,
