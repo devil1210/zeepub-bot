@@ -207,11 +207,8 @@ class MaintenancePlugin(BasePlugin):
         from services.scanner_service import ScannerService
 
         libs_json = os.getenv("LOCAL_LIBRARIES")
-        if not libs_json:
-            await update.message.reply_text("LOCAL_LIBRARIES no configurada.")
-            return
+        msg = await update.effective_message.reply_text("🔍 Escaneando...")
 
-        msg = await update.message.reply_text("🔍 Escaneando...")
         scanner = ScannerService(libs_json)
         results = await scanner.sync_all(force_scan=True)
         if not results:

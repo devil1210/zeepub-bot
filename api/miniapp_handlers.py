@@ -21,6 +21,7 @@ from api.handlers.admin import (
     handle_admin_fix_integrity,
     handle_admin_force_sync,
     handle_admin_get_duplicates,
+    handle_admin_get_genre_audits,
     handle_admin_get_recent_audit_logs,
     handle_admin_get_sync_status,
     handle_admin_get_system_logs,
@@ -34,6 +35,7 @@ from api.handlers.admin import (
     handle_admin_recheck_duplicates,
     handle_admin_rename_themes,
     handle_admin_reset_library,
+    handle_admin_resolve_genre_audit,
     handle_admin_restart_docker,
     handle_admin_save_theme,
     handle_admin_save_tier,
@@ -217,4 +219,6 @@ __all__ = [
     "handle_bulk_update_metadata",
     "handle_bulk_get_job_status",
     "handle_admin_update_covers",
+    "handle_admin_get_genre_audits",
+    "handle_admin_resolve_genre_audit",
 ]

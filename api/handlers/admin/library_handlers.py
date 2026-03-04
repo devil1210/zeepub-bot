@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import os
 import shutil
@@ -484,3 +485,56 @@ async def handle_admin_fix_integrity(data: dict[str, Any], user_data: dict[str, 
     asyncio.create_task(MaintenanceOrchestrator.run_tool("db_integrity"))
 
     return {"success": True, "message": "Corrección de integridad iniciada en segundo plano."}
+
+
+async def handle_admin_get_genre_audits(data: dict[str, Any], user_data: dict[str, Any]):
+    """Returns all pending metadata audits (unresolved)."""
+    check_staff(user_data)
+    try:
+        async with pg_manager.get_session() as session:
+            stmt = text("""
+                SELECT id, series_hash, series_name, change_type, old_value, new_value, created_at
+                FROM metadata_audits
+                WHERE resolved = FALSE
+                ORDER BY created_at DESC
+            """)
+            result = await session.execute(stmt)
+            audits = []
+            for row in result:
+                audits.append(
+                    {
+                        "id": row.id,
+                        "series_hash": row.series_hash,
+                        "series_name": row.series_name,
+                        "change_type": row.change_type,
+                        "old_value": row.old_value
+                        if isinstance(row.old_value, dict)
+                        else json.loads(row.old_value or "{}"),
+                        "new_value": row.new_value
+                        if isinstance(row.new_value, dict)
+                        else json.loads(row.new_value or "{}"),
+                        "created_at": row.created_at.isoformat() if row.created_at else None,
+                    }
+                )
+            return {"success": True, "audits": audits}
+    except Exception as e:
+        logger.error(f"Error fetching genre audits: {e}", exc_info=True)
+        return {"success": False, "message": str(e)}
+
+
+async def handle_admin_resolve_genre_audit(data: dict[str, Any], user_data: dict[str, Any]):
+    """Marks an audit as resolved."""
+    check_staff(user_data)
+    audit_id = data.get("audit_id")
+    if not audit_id:
+        return {"success": False, "message": "audit_id es requerido."}
+
+    try:
+        async with pg_manager.get_session() as session:
+            stmt = text("UPDATE metadata_audits SET resolved = TRUE, resolved_at = NOW() WHERE id = :id")
+            await session.execute(stmt, {"id": audit_id})
+            await session.commit()
+            return {"success": True, "message": "Auditoría marcada como revisada."}
+    except Exception as e:
+        logger.error(f"Error resolving genre audit {audit_id}: {e}", exc_info=True)
+        return {"success": False, "message": str(e)}

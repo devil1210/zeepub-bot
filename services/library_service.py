@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import String, and_, cast, func, select, text
+from sqlalchemy import and_, func, select, text
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
@@ -517,7 +517,7 @@ class LibraryService:
         """Obtiene series filtradas por un tag específico."""
         async with pg_manager.get_session() as session:
             try:
-                stmt = select(SeriesMetadata).where(cast(SeriesMetadata.tags, String).ilike(f"%{tag}%"))
+                stmt = select(SeriesMetadata).where(SeriesMetadata.tags.contains([tag]))
 
                 count_stmt = select(func.count()).select_from(stmt.subquery())
                 total = (await session.execute(count_stmt)).scalar() or 0

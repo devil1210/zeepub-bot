@@ -32,12 +32,19 @@ class OptimizedSyncEngine:
             "users": datetime.min,
             "user_levels": datetime.min,
             "admins": datetime.min,
+            "series_metadata": datetime.min,
         }
-        self.pending_changes: dict[str, set[Any]] = {"users": set(), "user_levels": set(), "admins": set()}
+        self.pending_changes: dict[str, set[Any]] = {
+            "users": set(),
+            "user_levels": set(),
+            "admins": set(),
+            "series_metadata": set(),
+        }
         self.sync_intervals = {
-            "users": 86400,  # 24 hours (Default to minimize requests)
-            "user_levels": 86400,  # 24 hours
-            "admins": 86400,  # 24 hours
+            "users": 86400,
+            "user_levels": 86400,
+            "admins": 86400,
+            "series_metadata": 3600,  # 1 hour check
         }
         self.force_next_run = False
 
@@ -67,6 +74,7 @@ class OptimizedSyncEngine:
                     await self._sync_if_changed("users")
                     await self._sync_if_changed("user_levels")
                     await self._sync_if_changed("admins")
+                    await self._sync_if_changed("series_metadata")
 
             except Exception as e:
                 logger.error(f"[SYNC_ENGINE] Error in optimized sync loop: {e}", exc_info=True)
@@ -177,6 +185,8 @@ class OptimizedSyncEngine:
                 await self._sync_user_levels_optimized()
             elif table_name == "admins":
                 await self._sync_admins_optimized()
+            elif table_name == "series_metadata":
+                await self._sync_series_from_cloud()
 
             # Update last sync time and clear pending
             self.last_sync_times[table_name] = now_utc
@@ -433,6 +443,108 @@ class OptimizedSyncEngine:
         """Marks user levels as changed."""
         self.pending_changes["user_levels"].add("all")
 
+    async def _sync_series_from_cloud(self):
+        """Pulls series metadata from Supabase to local DB (Cloud -> Local)."""
+        if not supabase_manager.is_active:
+            return
+
+        try:
+            logger.info("[SYNC_ENGINE] Pulling series_metadata from Supabase...")
+            result = supabase_manager.get_client().table("series_metadata").select("*").execute()
+
+            if not result or not result.data:
+                return
+
+            async with pg_manager.get_session() as session:
+                for s_data in result.data:
+                    # Map Supabase data to local SeriesMetadata
+                    # Note: we use series_hash as key
+                    mapped_data = {
+                        "series_hash": s_data["series_hash"],
+                        "series_name": s_data["series_name"],
+                        "series_spanish": s_data.get("series_spanish"),
+                        "series_english": s_data.get("series_english"),
+                        "author": s_data.get("author"),
+                        "description": s_data.get("description"),
+                        "tags": s_data.get("tags", []),
+                        "demographics": s_data.get("demographics", []),
+                        "cover_url": s_data.get("cover_url"),
+                        "book_type": s_data.get("book_type"),
+                        "publisher": s_data.get("publisher"),
+                        "author_jap": s_data.get("author_jap"),
+                        "rating_average": s_data.get("rating_average", 0.0),
+                        "rating_count": s_data.get("rating_count", 0),
+                        "book_count": s_data.get("book_count", 0),
+                        "slug": s_data.get("slug"),
+                    }
+
+                    # JSONB fields handling - Ensure we pass a JSON string for text() queries
+                    tags_raw = s_data.get("tags", [])
+                    if isinstance(tags_raw, str):
+                        try:
+                            tags_list = json.loads(tags_raw)
+                        except Exception:
+                            tags_list = []
+                    else:
+                        tags_list = tags_raw if isinstance(tags_raw, list) else []
+
+                    mapped_data["tags"] = json.dumps(tags_list)
+
+                    demos_raw = s_data.get("demographics", [])
+                    if isinstance(demos_raw, str):
+                        try:
+                            demos_list = json.loads(demos_raw)
+                        except Exception:
+                            demos_list = []
+                    else:
+                        demos_list = demos_raw if isinstance(demos_raw, list) else []
+
+                    mapped_data["demographics"] = json.dumps(demos_list)
+
+                    try:
+                        await session.execute(
+                            text("""
+                                INSERT INTO series_metadata (
+                                    series_hash, series_name, series_spanish, series_english,
+                                    author, description, tags, demographics, cover_url,
+                                    book_type, publisher, author_jap, rating_average,
+                                    rating_count, book_count, slug
+                                ) VALUES (
+                                    :series_hash, :series_name, :series_spanish, :series_english,
+                                    :author, :description, :tags, :demographics, :cover_url,
+                                    :book_type, :publisher, :author_jap, :rating_average,
+                                    :rating_count, :book_count, :slug
+                                )
+                                ON CONFLICT (series_hash) DO UPDATE SET
+                                    series_name = EXCLUDED.series_name,
+                                    series_spanish = EXCLUDED.series_spanish,
+                                    series_english = EXCLUDED.series_english,
+                                    author = EXCLUDED.author,
+                                    description = EXCLUDED.description,
+                                    tags = EXCLUDED.tags,
+                                    demographics = EXCLUDED.demographics,
+                                    cover_url = EXCLUDED.cover_url,
+                                    book_type = EXCLUDED.book_type,
+                                    publisher = EXCLUDED.publisher,
+                                    author_jap = EXCLUDED.author_jap,
+                                    rating_average = EXCLUDED.rating_average,
+                                    rating_count = EXCLUDED.rating_count,
+                                    book_count = EXCLUDED.book_count,
+                                    slug = EXCLUDED.slug
+                            """),
+                            mapped_data,
+                        )
+                    except Exception as row_e:
+                        print(
+                            f"❌ Error syncing series {mapped_data['series_name']} ({mapped_data['series_hash']}): {row_e}"
+                        )
+                        # Continue with next series
+                await session.commit()
+            logger.info(f"[SYNC_ENGINE] Successfully pulled {len(result.data)} series from cloud")
+
+        except Exception as e:
+            logger.error(f"[SYNC_ENGINE] Error pulling series from cloud: {e}", exc_info=True)
+
     async def force_sync_all(self):
         """Triggers an immediate full synchronization."""
         logger.info("[SYNC_ENGINE] Force triggering immediate bidirectional sync...")
@@ -445,6 +557,7 @@ class OptimizedSyncEngine:
         await self._sync_users_optimized()
         await self._sync_user_levels_optimized()
         await self._sync_admins_optimized()
+        await self._sync_series_from_cloud()
 
         # Reset states
         now_utc = datetime.now(timezone.utc).replace(tzinfo=None)

@@ -59,23 +59,7 @@ class PostgresManager:
                 logger.info(f"Converting 'db' to 'localhost' for Windows: {db_url}")
 
             try:
-                # Optimized async connection pool settings for production
-                engine_args = {
-                    "echo": False,
-                    "pool_pre_ping": True,  # Verify connections before using
-                    "pool_size": config.DB_POOL_SIZE or 10,  # Base pool size
-                    "max_overflow": config.DB_MAX_OVERFLOW or 20,  # Additional connections
-                    "pool_recycle": 3600,  # Recycle connections after 1 hour
-                    "pool_timeout": 60,  # Wait up to 60s for available connection
-                    "connect_args": {
-                        "server_settings": {"jit": "off"},  # Disable JIT for faster simple queries
-                        "timeout": 30,  # Connection timeout (30s)
-                        "command_timeout": 60,  # Query timeout (60s)
-                    },
-                }
-
-                self.engine = create_async_engine(db_url, **engine_args)
-
+                self.engine = create_async_engine(db_url, pool_pre_ping=True, pool_recycle=3600)
                 self.session_maker = async_sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
 
                 # Verify connection

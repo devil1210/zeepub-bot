@@ -328,6 +328,9 @@ export const api = {
     getUploadHistory: (limit: number = 100, offset: number = 0) =>
         apiClient.get(`/api/admin/upload-history?limit=${limit}&offset=${offset}`).then(res => res.data),
 
+    getGenreAudits: () => rpc('admin_get_genre_audits'),
+    resolveGenreAudit: (auditId: number) => rpc('admin_resolve_genre_audit', { audit_id: auditId }),
+
     // Raw RPC Access
     rpc: rpc
 };

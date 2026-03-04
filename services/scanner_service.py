@@ -24,12 +24,19 @@ class ScannerService:
     Mantiene el estado global del progreso y coordina los sub-escáneres.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, libraries: str | dict | None = None, *args, **kwargs):
         """
         Inicializa el servicio.
-        Acepta argumentos por compatibilidad con versiones anteriores.
         """
-        pass
+        if isinstance(libraries, str):
+            try:
+                import json
+
+                self.libraries = json.loads(libraries)
+            except Exception:
+                self.libraries = None
+        else:
+            self.libraries = libraries
 
     _is_scanning = False
     _stop_requested = False
@@ -82,9 +89,22 @@ class ScannerService:
 
         try:
             async with pg_manager.get_session() as session:
-                local_libs_map = config.LOCAL_LIBRARIES
+                local_libs_map = getattr(self, "libraries", None)
+
+                # Si no se pasó mapa, intentar obtener de config (compatibilidad) o DB
                 if not local_libs_map:
-                    local_libs_map = {"Main": "data/library/downloads"}
+                    if hasattr(config, "LOCAL_LIBRARIES"):
+                        local_libs_map = config.LOCAL_LIBRARIES
+                    else:
+                        # Obtener de tabla LibrarySource (la fuente de verdad ahora)
+                        stmt_sources = select(LibrarySource)
+                        res_sources = await session.execute(stmt_sources)
+                        db_sources = res_sources.scalars().all()
+                        if db_sources:
+                            local_libs_map = {s.name: s.path for s in db_sources}
+                        else:
+                            # Fallback extremo
+                            local_libs_map = {"Main": "data/library/downloads"}
 
                 for name, path in local_libs_map.items():
                     if ScannerService._stop_requested:

@@ -215,6 +215,30 @@ async def fix_schema_if_needed():
                 text("CREATE INDEX IF NOT EXISTS idx_publication_queue_scheduled ON publication_queue(scheduled_for);")
             )
 
+            # --- TABLA DE AUDITORÍA DE METADATOS (MIGRACIÓN 2026) ---
+            await conn.execute(
+                text("""
+                CREATE TABLE IF NOT EXISTS metadata_audits (
+                    id SERIAL PRIMARY KEY,
+                    series_hash VARCHAR(64),
+                    series_name VARCHAR(255),
+                    change_type VARCHAR(50),
+                    old_value JSONB,
+                    new_value JSONB,
+                    status VARCHAR(20) DEFAULT 'pending',
+                    reviewed_at TIMESTAMP WITH TIME ZONE,
+                    reviewed_by BIGINT,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+                );
+            """)
+            )
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_metadata_audits_hash ON metadata_audits(series_hash);")
+            )
+            await conn.execute(
+                text("CREATE INDEX IF NOT EXISTS idx_metadata_audits_status ON metadata_audits(status);")
+            )
+
         await engine.dispose()
 
         logger.info("Database schema check completed successfully.")

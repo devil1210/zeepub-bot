@@ -11,9 +11,11 @@ from .library_handlers import (
     handle_admin_fix_integrity,
     handle_admin_get_ai_scan_status,
     handle_admin_get_duplicates,
+    handle_admin_get_genre_audits,
     handle_admin_merge_series,
     handle_admin_recheck_duplicates,
     handle_admin_reset_library,
+    handle_admin_resolve_genre_audit,
     handle_admin_scan_library,
     handle_admin_scan_series,
     handle_admin_scan_status,
@@ -102,4 +104,6 @@ __all__ = [
     "handle_admin_save_theme",
     "handle_admin_update_covers",
     "handle_admin_stop_scan",
+    "handle_admin_get_genre_audits",
+    "handle_admin_resolve_genre_audit",
 ]

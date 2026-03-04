@@ -13,7 +13,8 @@ import {
   Layers,
   Send,
   Activity,
-  Database
+  Database,
+  History
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { useNavigation } from '@shared/contexts/NavigationContext';
@@ -27,6 +28,7 @@ import { UploadHistoryDashboard } from '@features/upload/pages/UploadHistoryDash
 import { PublisherDashboard } from '@features/publisher/pages/PublisherDashboard';
 import { ObservatoryPage } from './ObservatoryPage';
 import { BulkReviewPage } from './BulkReviewPage';
+import { MetadataAuditPage } from './MetadataAuditPage';
 import { useTelegram } from '@shared/contexts/TelegramContext';
 
 interface AdminProps {
@@ -43,7 +45,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const setIsViewSelectorOpen = setMenuOpen;
 
   // Derived state from URL
-  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads' | 'publisher' | 'observatory' | 'bulk-review') || 'monitor';
+  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads' | 'publisher' | 'observatory' | 'bulk-review' | 'audit') || 'monitor';
   const selectedUserId = searchParams.get('userId');
   const tierName = searchParams.get('tierName');
   const tierColor = searchParams.get('tierColor');
@@ -107,6 +109,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       { id: 'duplicates', label: 'Duplicados', icon: FileWarning },
       { id: 'uploads', label: 'Subidas', icon: UploadCloud },
       { id: 'publisher', label: 'Publicador', icon: Send },
+      { id: 'audit', label: 'Auditoría', icon: History },
     ];
 
     setCustomActions({
@@ -205,6 +208,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       case 'publisher': return <PublisherDashboard />;
       case 'observatory': return <ObservatoryPage />;
       case 'bulk-review': return <BulkReviewPage />;
+      case 'audit': return <MetadataAuditPage />;
       default: return <MonitorDashboard />;
     }
   };
