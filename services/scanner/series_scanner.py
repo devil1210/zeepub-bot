@@ -187,8 +187,7 @@ class SeriesScanner:
     def _extract_romaji_from_title(title: str) -> str:
         if not title:
             return ""
-        latin_chars = re.sub(r"[^\w\s\-\:]", "", title)
-        romaji = re.sub(r"\s+", " ", latin_chars).strip()
+        romaji = re.sub(r"\s+", " ", title).strip()
         return romaji if len(romaji) >= 3 else ""
 
     @staticmethod
