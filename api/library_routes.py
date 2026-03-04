@@ -47,72 +47,9 @@ async def search_local_books(
     )
 
 
-@router.post("/api/library/upload")
-async def upload_epubs(
-    files: Annotated[list[UploadFile], File(...)],
-    source_id: Annotated[int | None, Query()] = None,
-    user_data: Annotated[dict, Depends(require_admin)] = None,
-):
-    """
-    Sube múltiples archivos EPUB y los escanea inmediatamente.
-    """
-    valid_files = [f for f in files if f.filename.lower().endswith(".epub")]
-    if not valid_files:
-        raise HTTPException(status_code=400, detail="No se recibieron archivos EPUB válidos")
-
-    saved_paths = []
-
-    async with pg_manager.get_session() as session:
-        # 1. Determinar Source
-        stmt = select(LibrarySource)
-        if source_id:
-            stmt = stmt.where(LibrarySource.id == source_id)
-        else:
-            stmt = stmt.limit(1)
-
-        result = await session.execute(stmt)
-        source = result.scalar_one_or_none()
-
-        if not source:
-            raise HTTPException(status_code=404, detail="No hay fuentes de librería configuradas")
-
-        target_dir = source.path
-        if not os.path.exists(target_dir):
-            try:
-                os.makedirs(target_dir, exist_ok=True)
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"No se pudo crear directorio destino: {e}") from e
-
-        # 2. Instanciar Scanner
-        # Pasamos config vacío ya que sync_path usa la sesión y source_id directo
-        scanner = ScannerService("{}")
-
-        for file in valid_files:
-            try:
-                # Sanitizar nombre de archivo si es necesario, por ahora confiamos en el filename original
-                # pero aseguramos que sea solo nombre base
-                safe_filename = os.path.basename(file.filename)
-                file_path = os.path.join(target_dir, safe_filename)
-
-                # Guardar archivo
-                with open(file_path, "wb") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-
-                # Escanear inmediatamente en thread separado para no bloquear loop
-                # sync_path(self, path: str, source_id: int = 1, force_scan: bool = True)
-                await scanner.sync_path(file_path, source.id, True)
-
-                saved_paths.append(safe_filename)
-            except Exception as e:
-                print(f"Error procesando {file.filename}: {e}")
-                # Continuamos con los demás
-
-    return {
-        "success": True,
-        "count": len(saved_paths),
-        "files": saved_paths,
-        "message": f"{len(saved_paths)} libros subidos y procesados correctamente",
-    }
+# Note: The original upload_epubs endpoint was removed from here because it shadowed 
+# the MiniApp upload workflow at /api/library/upload defined in miniapp_routes.py.
+# The MiniApp workflow is the preferred one as it includes metadata analysis and confirmation.
 
 
 @router.get("/api/library/books/{book_id}")

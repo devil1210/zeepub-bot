@@ -388,15 +388,54 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
             info = pending_uploads[disc_id]
             f_p = Path(info["file_path"])
             if f_p.exists():
-                f_p.unlink()
+                try:
+                    f_p.unlink()
+                except Exception:
+                    pass
             del pending_uploads[disc_id]
+        else:
+            # Limpiar desde la DB si no está en memoria
+            try:
+                db_id = int(str(disc_id)) if str(disc_id).isdigit() else None
+                if db_id:
+                    record = await upload_repo.get_upload_by_id(db_id)
+                    if record:
+                        temp_path = Path(record.temp_filepath)
+                        if temp_path.exists():
+                            try:
+                                temp_path.unlink()
+                            except Exception:
+                                pass
+                        await upload_repo.delete_upload_record(db_id)
+            except Exception as e:
+                logger.error(f"Error descartando bulk upload {disc_id} de DB: {e}")
 
     results = []
     for upload_id in selected_ids:
-        if upload_id not in pending_uploads:
+        info = None
+        if upload_id in pending_uploads:
+            info = pending_uploads[upload_id]
+        else:
+            # Fallback a DB
+            try:
+                db_id = int(str(upload_id)) if str(upload_id).isdigit() else None
+                if db_id:
+                    record = await upload_repo.get_upload_by_id(db_id)
+                    if record:
+                        info = {
+                            "file_path": record.temp_filepath,
+                            "metadata": record.upload_metadata,
+                            "user_id": record.telegram_id,
+                            "original_filename": record.original_filename,
+                        }
+            except Exception as e:
+                logger.error(f"Error recuperando bulk upload {upload_id} de DB: {e}")
+
+        if not info:
+            logger.warning(f"Upload ID {upload_id} no encontrado en memoria ni DB.")
+            results.append({"upload_id": upload_id, "success": False, "error": "No encontrado"})
             continue
 
-        info = pending_uploads[upload_id]
         f_path = Path(info["file_path"])
         meta = info["metadata"]
 
@@ -418,9 +457,15 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
             )
 
             if success:
+                # El archivo ya es borrado por finalize_upload, pero por si acaso
                 if f_path.exists():
-                    f_path.unlink()
-                del pending_uploads[upload_id]
+                    try:
+                        f_path.unlink()
+                    except:
+                        pass
+
+                if upload_id in pending_uploads:
+                    del pending_uploads[upload_id]
 
             results.append({"upload_id": upload_id, "success": success})
 
@@ -431,11 +476,7 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
     return {"success": True, "results": results}
 
 
-async def handle_get_upload_history(data: dict[str, Any], user_data: dict[str, Any]):
-    check_staff(user_data)
-    limit = data.get("limit", 100)
-    offset = data.get("offset", 0)
-
+async def handle_get_upload_history(limit: int = 100, offset: int = 0):
     history_entries = await upload_repo.get_history(limit=limit, offset=offset)
 
     return {

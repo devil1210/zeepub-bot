@@ -484,7 +484,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
 
                                 <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                     {bulkResults.map((res, i) => {
-                                        const isDuplicate = res.metadata?.identity_match;
+                                        const isDuplicate = !!res.metadata?.identity_match;
                                         const isSuccess = res.success;
                                         const isSelected = res.upload_id ? selectedIds.has(res.upload_id) : false;
 

@@ -143,14 +143,17 @@ class EpubScanner:
             force_metadata = False
             filename = os.path.basename(filepath)
 
-            # Verificar portadas
+            # Verificar portadas (y llenar si están vacías)
             missing_covers = False
-            if book and book.cover_low:
-                relative_path = book.cover_low.replace("/api/library/covers/", "")
-                local_cover_path = os.path.join(DB_DIR, "covers", relative_path)
-                if not os.path.exists(local_cover_path):
+            if book:
+                if not book.cover_low:
                     missing_covers = True
-                    logger.warning(f"Portada no encontrada para {filename}")
+                else:
+                    relative_path = book.cover_low.replace("/api/library/covers/", "")
+                    local_cover_path = os.path.join(DB_DIR, "covers", relative_path)
+                    if not os.path.exists(local_cover_path):
+                        missing_covers = True
+                        logger.warning(f"Portada física no encontrada para {filename}")
 
             if book and (not book.word_count or book.word_count == 0):
                 force_metadata = True

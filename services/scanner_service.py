@@ -285,10 +285,21 @@ class ScannerService:
 
     async def sync_path(self, path: str, source_id: int = 1, force_scan: bool = True):
         """Sincroniza una ruta específica."""
-        if ScannerService._is_scanning:
+        # Si ya se está escaneando, podemos intentar procesar esta ruta puntual de todos modos
+        # si no es un escaneo masivo. Pero para simplificar, usaremos un lock o permitiremos concurrencia
+        # mínima para uploads.
+        
+        abs_path = os.path.abspath(path).replace("\\", "/")
+        if not os.path.exists(abs_path):
+            logger.warning(f"Ruta no encontrada para sincronización: {abs_path}")
             return None
 
-        ScannerService._is_scanning = True
+        # Si ya hay un escaneo en curso, avisamos pero procedemos si es para un solo archivo puntual
+        # para no bloquear uploads críticos.
+        is_already_scanning = ScannerService._is_scanning
+        if not is_already_scanning:
+            ScannerService._is_scanning = True
+            
         try:
             async with pg_manager.get_session() as session:
                 stmt_source = select(LibrarySource).where(LibrarySource.id == source_id)
@@ -299,10 +310,7 @@ class ScannerService:
                 )
 
                 if not source:
-                    return None
-
-                abs_path = os.path.abspath(path)
-                if not os.path.exists(abs_path):
+                    logger.warning(f"No se encontró fuente de librería para id {source_id}")
                     return None
 
                 if os.path.isfile(abs_path) and abs_path.lower().endswith(".epub"):
@@ -318,15 +326,23 @@ class ScannerService:
                         stmt_book = select(LocalBook).where(LocalBook.filepath == abs_path)
                         res_book = await session.execute(stmt_book)
                         book = res_book.scalar_one_or_none()
+                        
                         if book and book.series_hash:
                             await SeriesScanner.sync_series_metadata(session, book.series_hash)
-                    await session.commit()
-                    return {"added": 1 if res == "added" else 0, "updated": 1 if res == "updated" else 0}
+                        
+                        await session.commit()
+                        
+                        if book:
+                            return {"added": res == "added", "updated": res == "updated", "book_id": book.id}
+                        return {"added": res == "added", "updated": res == "updated"}
+                    
+                    return {"added": False, "updated": False, "status": res}
                 else:
                     results, _ = await self._scan_directory(source, session, force_scan)
                     return results
         finally:
-            ScannerService._is_scanning = False
+            if not is_already_scanning:
+                ScannerService._is_scanning = False
 
     async def sync_series(self, series_hash, force_scan=False):
         """Sincroniza una serie específica."""

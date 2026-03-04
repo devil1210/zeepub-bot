@@ -225,13 +225,16 @@ class LibraryScanner:
                 archived_s = ArchivedSeries(
                     series_name=s.series_name,
                     series_spanish=s.series_spanish,
+                    series_english=s.series_english,
                     series_hash=s.series_hash,
                     author=s.author,
+                    author_jap=s.author_jap,
                     description=s.description,
                     tags=s.tags,
-                    cover_url=s.cover_url,
+                    demographics=s.demographics,
                     book_type=s.book_type,
                     publisher=s.publisher,
+                    slug=s.slug,
                     original_series_id=s.id,
                 )
                 session.add(archived_s)

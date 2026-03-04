@@ -573,12 +573,16 @@ async def upload_epub_miniapp(
                 temp_file.unlink()
 
             # Log failure
-            epub_uploader._log_history(
-                user_id=user_data["user_id"],
-                filename=file.filename,
-                book_hash=None,
-                status="error",
-                error_message="Analysis failed (corrupt or invalid EPUB)",
+            from repositories.upload_repository import upload_repo as _upload_repo
+
+            await _upload_repo.log_history(
+                {
+                    "user_id": user_data["user_id"],
+                    "filename": file.filename,
+                    "book_hash": "no_hash",
+                    "status": "error",
+                    "error_message": "Analysis failed (corrupt or invalid EPUB)",
+                }
             )
 
             raise HTTPException(
@@ -586,8 +590,11 @@ async def upload_epub_miniapp(
                 detail="No se pudo procesar el archivo EPUB. Puede que esté corrupto o no sea válido.",
             )
 
-        # Guardar en pendientes
-        upload_id = f"app_upload_{user_data['user_id']}_{datetime.now().timestamp()}"
+        # El ID de la base de datos ya está en metadata["upload_id"] gracias a analyze_epub
+        upload_id = str(metadata["upload_id"])
+
+        # Opcional: Mantener en dict para compatibilidad con Telegram si se requiere,
+        # pero la API usará la DB.
         pending_uploads[upload_id] = {
             "file_path": str(temp_file),
             "metadata": metadata,
@@ -614,11 +621,29 @@ async def confirm_epub_upload_miniapp(
     custom_path = data.get("path")
 
     from handlers.epub_upload_handler import epub_uploader, pending_uploads
+    from repositories.upload_repository import upload_repo
 
-    if upload_id not in pending_uploads:
+    upload_info = None
+    if upload_id in pending_uploads:
+        upload_info = pending_uploads[upload_id]
+    else:
+        # Buscar en la base de datos si no está en memoria (casos de multi-worker o reinicio)
+        try:
+            db_id = int(upload_id) if isinstance(upload_id, (int, str)) and str(upload_id).isdigit() else None
+            if db_id:
+                record = await upload_repo.get_upload_by_id(db_id)
+                if record:
+                    upload_info = {
+                        "file_path": record.temp_filepath,
+                        "metadata": record.upload_metadata,
+                        "user_id": record.telegram_id,
+                        "original_filename": record.original_filename,
+                    }
+        except Exception as e:
+            logger.error(f"Error recuperando upload de la DB: {e}")
+
+    if not upload_info:
         raise HTTPException(status_code=404, detail="Upload no encontrado o expirado")
-
-    upload_info = pending_uploads[upload_id]
 
     # Verificar que el usuario sea el mismo o admin
     is_admin = (
@@ -641,12 +666,14 @@ async def confirm_epub_upload_miniapp(
 
         if success:
             # Log success
-            epub_uploader._log_history(
-                user_id=upload_info["user_id"],
-                filename=upload_info["original_filename"],
-                book_hash=metadata.get("book_hash"),
-                status="success",
-                final_path=suggested_path,
+            await upload_repo.log_history(
+                {
+                    "user_id": upload_info["user_id"],
+                    "filename": upload_info["original_filename"],
+                    "book_hash": metadata.get("book_hash"),
+                    "status": "success",
+                    "final_path": suggested_path,
+                }
             )
 
             # Limpiar
@@ -654,12 +681,14 @@ async def confirm_epub_upload_miniapp(
             return {"success": True, "path": suggested_path}
         else:
             # Log error
-            epub_uploader._log_history(
-                user_id=upload_info["user_id"],
-                filename=upload_info["original_filename"],
-                book_hash=metadata.get("book_hash"),
-                status="error",
-                error_message="Failed to move file to library",
+            await upload_repo.log_history(
+                {
+                    "user_id": upload_info["user_id"],
+                    "filename": upload_info["original_filename"],
+                    "book_hash": metadata.get("book_hash"),
+                    "status": "error",
+                    "error_message": "Failed to move file to library",
+                }
             )
             raise HTTPException(status_code=500, detail="Error al mover el archivo a la librería")
 
@@ -711,7 +740,7 @@ async def upload_epub_bulk(
                 )
                 continue
 
-            upload_id = f"bulk_{user_data['user_id']}_{datetime.now().timestamp()}_{len(results)}"
+            upload_id = str(metadata["upload_id"])
             pending_uploads[upload_id] = {
                 "file_path": str(temp_file),
                 "metadata": metadata,

@@ -106,7 +106,7 @@ class UploadBook(Base):
     temp_filepath = Column(String(1024), nullable=False)  # Ruta temporal del archivo
 
     # Relaciones
-    user = relationship("User", foreign_keys=[telegram_id])
+    user = relationship("User", back_populates="uploads", foreign_keys=[telegram_id])
 
     # Metadata extraída (similar a LocalBook)
     title = Column(String(512), nullable=False)
@@ -137,6 +137,7 @@ class UploadBook(Base):
     upload_metadata = Column(JSON)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, onupdate=datetime.utcnow)
 
 
 class UploadHistory(Base):
@@ -459,15 +460,20 @@ class ArchivedSeries(Base):
     __tablename__ = "archived_series"
 
     id = Column(Integer, primary_key=True)
-    series_name = Column(String(255), nullable=False)
+    series_name = Column(String(512), nullable=False)
+    series_spanish = Column(String(512))
+    series_english = Column(String(512))
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
     cover_url = Column(String(1024))
     author = Column(String(255))
+    author_jap = Column(Text)
     description = Column(Text)
     tags = Column(JSON)
+    demographics = Column(JSON)
     book_type = Column(String(100))
     publisher = Column(String(255))
+    slug = Column(String(255))
 
     archived_at = Column(DateTime, default=datetime.utcnow)
     original_series_id = Column(Integer)  # ID original para referencia

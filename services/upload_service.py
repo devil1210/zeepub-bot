@@ -7,6 +7,10 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import select
+
+from core.db_manager_pg import pg_manager
+from models.library_models import LibrarySource
 from repositories.book_repository import book_repo
 from repositories.upload_repository import upload_repo
 from services.ai_service import AIService
@@ -27,8 +31,61 @@ class UploadService:
 
     def __init__(self):
         self.temp_dir = Path("/tmp/epub_uploads")
-        self.temp_dir.mkdir(exist_ok=True)
-        self.library_base = Path("/library")
+        self.temp_dir.mkdir(parents=True, exist_ok=True)
+        self._library_base_cache = None
+        self._active_source_id = None  # Initialize _active_source_id
+
+    async def _get_library_base(self) -> Path:
+        """Obtiene la ruta base de la librería dinámicamente, validando existencia."""
+        if self._library_base_cache:
+            return self._library_base_cache
+
+        try:
+            async with pg_manager.get_session() as session:
+                # Intentar obtener todas las fuentes y elegir la que exista físicamente
+                stmt = select(LibrarySource)
+                result = await session.execute(stmt)
+                sources = result.scalars().all()
+
+                # Priorizar fuentes que existan en el sistema de archivos actual
+                for source in sources:
+                    p = Path(source.path)
+                    if p.exists():
+                        logger.info(f"Usando fuente de librería activa: {source.name} ({source.path})")
+                        self._library_base_cache = p
+                        self._active_source_id = source.id
+                        return self._library_base_cache
+
+                # Si ninguna existe (ej: VPS nuevo), usar la primera como fallback
+                if sources:
+                    source = sources[0]
+                    self._library_base_cache = Path(source.path)
+                    self._active_source_id = source.id
+                    return self._library_base_cache
+
+        except Exception as e:
+            logger.warning(f"No se pudo obtener library_base de la DB: {e}")
+
+        # Fallback a variable de entorno o default
+        env_lib = os.getenv("LIBRARY_PATH") or os.getenv("LOCAL_LIBRARIES")
+        if env_lib:
+            try:
+                # Si LOCAL_LIBRARIES es un JSON, intentamos parsearlo
+                import json
+
+                libs = json.loads(env_lib)
+                if isinstance(libs, dict) and libs:
+                    self._library_base_cache = Path(list(libs.values())[0])
+                    self._active_source_id = 1
+                    return self._library_base_cache
+            except:
+                self._library_base_cache = Path(env_lib)
+                self._active_source_id = 1
+                return self._library_base_cache
+
+        self._library_base_cache = Path("/library")
+        self._active_source_id = 1
+        return self._library_base_cache
 
     async def analyze_epub(self, epub_path: Path, original_filename: str, user_id: int) -> dict[str, Any] | None:
         """Analiza el EPUB, aplica IA si está activa y determina identidad."""
@@ -44,6 +101,7 @@ class UploadService:
             )
 
             if not enriched_metadata:
+                logger.warning(f"No se pudo extraer metadata de {original_filename}")
                 return None
 
             # 2. Mapear a formato interno de metadata
@@ -72,17 +130,22 @@ class UploadService:
 
             # 5. Verificar duplicados
             existing_book = await book_repo.get_by_hash(metadata["book_hash"])
-            metadata["identity_match"] = {
-                "exists": existing_book is not None,
-                "path": existing_book.filepath if existing_book else None,
-                "id": existing_book.id if existing_book else None,
-            }
+            # identity_match es None si no hay duplicado, o un dict con info si existe.
+            # IMPORTANTE: el frontend evalúa truthiness de este campo para decidir si es duplicado.
+            if existing_book:
+                metadata["identity_match"] = {
+                    "exists": True,
+                    "path": existing_book.filepath,
+                    "id": existing_book.id,
+                }
+            else:
+                metadata["identity_match"] = None
 
             # 6. Determinar destino inteligente
             metadata["suggested_path"] = await self._get_smart_destination(metadata, original_filename)
 
-            # 7. Persistir registro temporal de upload
-            await upload_repo.create_upload_record(
+            # 7. Persistir registro temporal de upload y obtener ID
+            record = await upload_repo.create_upload_record(
                 {
                     "telegram_id": user_id,
                     "original_filename": original_filename,
@@ -104,6 +167,7 @@ class UploadService:
                 }
             )
 
+            metadata["upload_id"] = record.id
             return metadata
 
         except Exception as e:
@@ -215,15 +279,21 @@ class UploadService:
         series_hash = metadata.get("series_hash")
         target_dir = None
         series_folder_name = None
+        library_base = await self._get_library_base()
 
         # Buscar si la serie ya tiene carpeta
         if series_hash:
             existing_book = await book_repo.get_one_by_attr("series_hash", series_hash)
             if existing_book and existing_book.filepath:
-                rel_path = existing_book.filepath.replace("/library", "").lstrip("/")
+                filepath_norm = existing_book.filepath.replace("\\", "/")
+                lib_base_str = str(library_base).replace("\\", "/")
+
+                rel_path = filepath_norm.replace(lib_base_str, "").lstrip("/")
                 target_dir_rel = os.path.dirname(rel_path)
-                if (self.library_base / target_dir_rel).exists():
-                    target_dir = self.library_base / target_dir_rel
+
+                check_path = library_base / target_dir_rel
+                if check_path.exists():
+                    target_dir = check_path
                     series_folder_name = target_dir_rel
 
         if not target_dir:
@@ -234,7 +304,7 @@ class UploadService:
             series_ok = re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE) if series else ""
             series_clean = self._clean_fs_name(series_ok)
             series_folder_name = f"{series_clean} - {author} [{tag}]" if series_clean else f"{author} [{tag}]"
-            target_dir = self.library_base / series_folder_name
+            target_dir = library_base / series_folder_name
 
         # Nombre de archivo
         if metadata.get("ai_filename"):
@@ -266,10 +336,13 @@ class UploadService:
 
         # Si la carpeta existe, intentar imitar el patrón
         if target_dir.exists():
-            files = [f for f in os.listdir(target_dir) if f.lower().endswith(".epub")]
-            for f in files:
-                if " - V" in f and "[" in f and "].epub" in f:
-                    return f"{base_series_name} - V{vol_str} [{group}].epub"
+            try:
+                files = [f for f in os.listdir(target_dir) if f.lower().endswith(".epub")]
+                for f in files:
+                    if " - V" in f and "[" in f and "].epub" in f:
+                        return f"{base_series_name} - V{vol_str} [{group}].epub"
+            except:
+                pass
 
         if base_series_name:
             return f"{base_series_name} - V{vol_str} [{group}].epub"
@@ -328,37 +401,100 @@ class UploadService:
     async def finalize_upload(self, epub_path: Path, suggested_path: str, metadata: dict) -> bool:
         """Mueve el archivo a su ubicación final e indexa."""
         try:
-            full_path = self.library_base / suggested_path
-            full_path.parent.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Finalizando upload: sugiera path '{suggested_path}' para {epub_path.name}")
 
-            shutil.move(str(epub_path), str(full_path))
+            library_base = await self._get_library_base()
+            source_id = getattr(self, "_active_source_id", 1)
+
+            full_path = library_base / suggested_path
+
+            # Asegurar que el directorio existe
+            try:
+                full_path.parent.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                logger.error(f"No se pudo crear el directorio de destino {full_path.parent}: {e}")
+                return False
+
+            logger.info(f"Moviendo {epub_path} -> {full_path}")
+
+            # Mover con robustez ante fallos de cross-device
+            if not epub_path.exists():
+                logger.error(f"Archivo temporal no encontrado: {epub_path}")
+                # Si el archivo no existe pero el libro ya está en la DB, quizás ya se movió exitosamente antes
+                target_file_path = str(full_path).replace("\\", "/")
+                existing = await book_repo.get_by_filepath(target_file_path)
+                if existing:
+                    logger.info("El libro ya existe en la ubicación final, marcando como éxito.")
+                    return True
+                return False
+
+            try:
+                shutil.move(str(epub_path), str(full_path))
+            except OSError as e:
+                logger.warning(f"shutil.move falló, intentando copy+unlink: {e}")
+                try:
+                    shutil.copy2(str(epub_path), str(full_path))
+                    os.unlink(str(epub_path))
+                except Exception as e2:
+                    logger.error(f"Fallo crítico moviendo archivo: {e2}")
+                    return False
 
             # Escaneo proactivo
             from services.scanner_service import ScannerService
 
-            scanner = ScannerService(os.getenv("LOCAL_LIBRARIES", "{}"))
+            scanner = ScannerService()
             await asyncio.sleep(0.5)
-            scan_result = await scanner.sync_path(str(full_path), force_scan=True)
 
-            if scan_result and (scan_result.get("added") or scan_result.get("updated")):
-                # Forzar actualización de campos específicos confirmados que el scanner podría no ver bien
+            # Normalizar path para el scanner
+            target_file_path = str(full_path).replace("\\", "/")
+
+            # IMPORTANTE: Pasar el source_id detectado
+            try:
+                scan_result = await scanner.sync_path(target_file_path, source_id=source_id, force_scan=True)
+                logger.info(f"Scan result para {target_file_path}: {scan_result}")
+            except Exception as scan_err:
+                logger.warning(f"Error en scanner.sync_path (archivo ya fue movido): {scan_err}")
+                scan_result = None
+
+            # El archivo ya fue movido exitosamente al disco.
+            # Devolvemos True independientemente del resultado del scanner
+            # (consistente con comportamiento en db23d1e: el scanner indexará en el próximo ciclo).
+            book = await book_repo.get_by_filepath(target_file_path)
+
+            if book:
+                # Actualizar campos específicos confirmados
                 db_data = {
                     "book_type": metadata.get("book_type"),
-                    "is_uncensored": metadata.get("is_uncensored", 0),
+                    "is_uncensored": 1 if metadata.get("is_uncensored") in (1, True, "True") else 0,
                     "color_mode": metadata.get("color_mode", "bw"),
                     "description": metadata.get("description"),
                 }
-                # Buscar libro por filepath y actualizar
-                book = await book_repo.get_by_filepath(str(full_path))
-                if book:
+                try:
                     await book_repo.update(book.id, db_data)
-                    # Sincronizar serie
-                    from core.db_manager_pg import pg_manager
+                except Exception as upd_err:
+                    logger.warning(f"No se pudo actualizar metadata post-scan: {upd_err}")
 
+                # Sincronizar serie
+                try:
                     async with pg_manager.get_session() as session:
                         await SeriesScanner.sync_series_metadata(session, book.series_hash)
-                return True
-            return False
+                except Exception as ser_err:
+                    logger.warning(f"No se pudo sincronizar serie: {ser_err}")
+            else:
+                logger.info(f"Libro aún no indexado en DB (se indexará en próximo escaneo): {target_file_path}")
+
+            # LIMPIEZA DE UPLOAD_BOOKS
+            upload_id = metadata.get("upload_id")
+            if upload_id:
+                try:
+                    await upload_repo.delete_upload_record(int(upload_id))
+                    logger.info(f"Registro temporal de upload {upload_id} eliminado.")
+                except Exception as e:
+                    logger.warning(f"No se pudo eliminar el registro temporal {upload_id}: {e}")
+
+            logger.info(f"✅ finalize_upload exitoso: {target_file_path}")
+            return True
+
         except Exception as e:
             logger.error(f"Error in finalize_upload: {e}", exc_info=True)
             return False
