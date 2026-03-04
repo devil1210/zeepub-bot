@@ -172,22 +172,60 @@ class EPUBUploader:
                 f"📍 <code>{info['metadata']['suggested_path']}</code>",
                 parse_mode="HTML",
             )
-            # Log Historial via Repository (via service ideally but repo is fine)
-            await upload_repo.log_history(
-                {
-                    "user_id": info["user_id"],
-                    "filename": info["original_filename"],
-                    "book_hash": info["metadata"]["book_hash"],
-                    "status": "success",
-                    "final_path": info["metadata"]["suggested_path"],
-                }
+            # Log Historial
+            await self._log_history(
+                user_id=info["user_id"],
+                filename=info["original_filename"],
+                book_hash=info["metadata"]["book_hash"],
+                status="success",
+                final_path=info["metadata"]["suggested_path"],
             )
         else:
             await query.edit_message_text("❌ Falló la indexación final. Revisa los logs.")
 
-        if Path(info["file_path"]).exists():
-            Path(info["file_path"]).unlink()
-        del pending_uploads[upload_id]
+        self.cleanup_upload(upload_id, Path(info["file_path"]))
+
+    # --- Métodos para Mini App API ---
+
+    async def analyze_epub(self, epub_path: Path, filename: str, user_id: int):
+        """Proxy para el servicio de análisis usado por la API."""
+        return await upload_service.analyze_epub(epub_path, filename, user_id)
+
+    async def add_to_library(self, epub_path: Path, suggested_path: str, metadata: dict):
+        """Proxy para finalizar la subida usado por la API."""
+        return await upload_service.finalize_upload(epub_path, suggested_path, metadata)
+
+    async def _log_history(
+        self,
+        user_id: int,
+        filename: str,
+        book_hash: str,
+        status: str,
+        final_path: str = None,
+        error_message: str = None,
+    ):
+        """Registra el evento en el historial de subidas."""
+        await upload_repo.log_history(
+            {
+                "user_id": user_id,
+                "filename": filename,
+                "book_hash": book_hash,
+                "status": status,
+                "final_path": final_path,
+                "error_message": error_message,
+            }
+        )
+
+    def cleanup_upload(self, upload_id: str, file_path: Path):
+        """Limpia el estado y el archivo temporal."""
+        if file_path.exists():
+            try:
+                file_path.unlink()
+            except Exception as e:
+                logger.error(f"Error deleting temp file {file_path}: {e}")
+
+        if upload_id in pending_uploads:
+            del pending_uploads[upload_id]
 
 
 # Singleton

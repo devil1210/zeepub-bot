@@ -191,8 +191,9 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         except Exception as e:
             logger.debug("Could not delete msg_id %s: %s", msg_id, e)
 
-    # NO borrar mensaje de info (el usuario quiere que persista el contexto del catálogo)
-    # Anteriormente se borraba aquí si no era grupo.
+    # El borrado de los mensajes de detalles (portada, sinopsis, info) se hace
+    # proactivamente al final si success es True, para asegurar que no se pierda la info
+    # si falla la descarga.
 
     # Si eligió Volver, descartar buffer
     if update.callback_query.data == "volver_ultima":

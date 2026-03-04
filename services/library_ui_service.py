@@ -421,7 +421,11 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
             pass
 
     # 4. ENVIAR MENSAJES (Flujo solicitado: Portada -> Sinopsis -> Detalles)
-    st["last_detalles_msg_ids"] = []  # Ya no los vinculamos para borrado futuro
+    if "last_detalles_msg_ids" not in st:
+        st["last_detalles_msg_ids"] = []
+
+    # IMPORTANTE: No limpiamos la lista aquí para que los comandos /cancel o 'cerrar' puedan
+    # encontrar el mensaje con botones y quitarlos sin borrar la info.
     if update.callback_query:
         # Notificar que se queda en espera de forma sutil
         await update.callback_query.answer("📌 Ficha técnica fijada en el chat.", show_alert=False)

@@ -92,7 +92,8 @@ export const uploadFile = async <T = any>(url: string, file: File, onProgress?: 
     try {
         const response = await apiClient.post(url, formData, {
             headers: {
-                'Content-Type': 'multipart/form-data',
+                // Delete default Content-Type to allow axios to set it with boundary
+                'Content-Type': undefined,
             },
             signal,
             onUploadProgress: (progressEvent) => {
@@ -306,7 +307,7 @@ export const api = {
         files.forEach(file => formData.append('files', file));
         return apiClient.post('/api/library/upload/bulk', formData, {
             headers: {
-                'Content-Type': 'multipart/form-data',
+                'Content-Type': undefined,
             },
             onUploadProgress: (progressEvent) => {
                 if (onProgress && progressEvent.total) {
