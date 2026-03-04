@@ -317,7 +317,13 @@ class SeriesScanner:
 
                     current_name = current_s.series_name if current_s else "Serie Desconocida"
 
-                    stmt_books = select(LocalBook).where(LocalBook.series_hash == s_hash)
+                    from sqlalchemy.orm import selectinload
+
+                    stmt_books = (
+                        select(LocalBook)
+                        .where(LocalBook.series_hash == s_hash)
+                        .options(selectinload(LocalBook.series_info))
+                    )
                     res_books = await session.execute(stmt_books)
                     series_books = res_books.scalars().all()
 
