@@ -25,12 +25,12 @@ def extract_spanish_series_from_filename(filename: str) -> str:
     vol_pattern = r"(?:\s*[\-\–\—\−\―\:\~～\|¦]?\s*(?:Volumen|Vol\.?|Tomo|v\.?|V|Parte|#)\s*\d+(?:\.\d+)?.*)"
     name = re.sub(vol_pattern, "", name, flags=re.IGNORECASE).strip()
 
-    # 4. Quitar subtítulos tras ~ o | si los hay
-    name = re.split(r"\s+[\~～\|¦]\s+", name)[0].strip()
+    # 4. Quitar subtítulos tras ~, |, ║ si los hay (requiere espacio alrededor para no dañar palabras)
+    name = re.split(r"\s+[\~～\|¦║]\s+", name)[0].strip()
 
     # 5. Quitar guiones y símbolos al final/inicio
     name = re.sub(r"^[^\w\(\)\[\]]+", "", name).strip()
-    name = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\?\#]+$", "", name).strip()
+    name = re.sub(r"(?:\s+[\-\–\—\−\―\~～\|¦║]+\s*|[\:\.\?\x23]+)$", "", name).strip()
 
     # 6. Limpiar espacios múltiples
     name = re.sub(r"\s+", " ", name).strip()
@@ -49,7 +49,9 @@ def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = Fal
     clean = re.sub(r"\[.*?\]", " ", title_str).strip()
     clean = re.sub(r"\(.*?\)", " ", clean).strip()
 
-    parts = re.split(r"[\-\–\—\−\―\:\~～\|¦]", clean)
+    # Separar por guiones, tildes, pipes, etc., SOLO si tienen espacios alrededor (para evitar cortar Sato-san)
+    # Excepción para los dos puntos ': ' que a veces no tienen espacio antes.
+    parts = re.split(r"(?:\s+[\-\–\—\−\―\~～\|¦║]\s+)|(?:\s*:\s*)", clean)
 
     volume = ""
     if len(parts) >= 2:
@@ -90,14 +92,14 @@ def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = Fal
 
     if not preserve_special_chars:
         series = re.sub(r"^[^\w\(\)\[\]]+", "", series).strip()
-        series = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\#]+$", "", series).strip()
+        series = re.sub(r"(?:\s+[\-\–\—\−\―\~～\|¦║]+\s*|[\:\.\x23]+)$", "", series).strip()
 
         if romaji:
             romaji = re.sub(r"^[^\w\(\)\[\]]+", "", romaji).strip()
-            romaji = re.sub(r"[\-\–\—\−\―\:\.\s\~～\|¦\#]+$", "", romaji).strip()
+            romaji = re.sub(r"(?:\s+[\-\–\—\−\―\~～\|¦║]+\s*|[\:\.\x23]+)$", "", romaji).strip()
 
     series_clean = re.sub(r"\s*\[.*?\]\s*", " ", series).strip()
-    series_clean = re.sub(r"[\-\–\—\−\―\:\.\s]+$", "", series_clean).strip()
+    series_clean = re.sub(r"(?:\s+[\-\–\—\−\―\~～\|¦║]+\s*|[\:\.]+)$", "", series_clean).strip()
 
     clean_title_result = series_clean if romaji else series_clean or clean
     clean_title_result = re.sub(r"\s+", " ", clean_title_result).strip()
@@ -133,7 +135,7 @@ def generar_slug_from_meta(meta: Any) -> str:
 
     base_titulo = titulo_serie.strip()
     base_titulo = re.sub(r"\[.*?\]", "", base_titulo)
-    base_titulo = re.split(r"[\-\–\—\−\―\:\~\～\|¦]", base_titulo)[0].strip()
+    base_titulo = re.split(r"(?:\s+[\-\–\—\−\―\~～\|¦║]\s+)|(?:\s*:\s*)", base_titulo)[0].strip()
     base_titulo = base_titulo.replace("×", "x")
     base_titulo = base_titulo.replace(",", " ")
 
