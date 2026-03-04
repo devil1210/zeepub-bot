@@ -116,6 +116,8 @@ class UploadBook(Base):
     illustrator_jap = Column(Text)
     author_jap = Column(Text)
     demographics = Column(JSON)
+    author = Column(String)
+    book_type = Column(String(100))
     translator = Column(String(255))
     layout_by = Column(String(255))
     language = Column(String(10), default="es")
@@ -194,6 +196,7 @@ class LocalBook(Base):
 
     # Advanced Metadata
     series = Column(String)
+    author = Column(String)
     illustrator = Column(String)
     illustrator_jap = Column(Text)
     author_jap = Column(Text)
@@ -212,6 +215,7 @@ class LocalBook(Base):
     # Fechas y Tipo
     published_at = Column(String(100))
     modified_at_opf = Column(String(50))
+    book_type = Column(String(100))  # Ej: Novela Ligera, Manga
     epub_version = Column(String(20))  # Ej: 2.0, 3.0
 
     # Advanced metrics
@@ -224,7 +228,8 @@ class LocalBook(Base):
     rating_count = Column(Integer, default=0)
 
     # Contenido
-    summary = Column(String(1024))  # AI generated catchy summary
+    description = Column(Text)  # Renombrado de summary para coincidir con DB
+    tags = Column(JSON)  # Añadido tags faltantes
     language = Column(String(10), default="es")
 
     # Edition Characteristics

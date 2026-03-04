@@ -205,6 +205,10 @@ class EpubScanner:
             book.romaji_title = identity.get("romaji_title") or meta.get("romaji_title")
             book.edition = identity["edition"]
             book.publisher = meta.get("publisher")
+            book.author = identity["author"]
+            book.description = meta.get("description")
+            book.series = identity["series"] or book.title
+            book.book_type = identity["book_type"]
 
             # Tags clasificación
             raw_tags = meta.get("tags", [])
@@ -230,21 +234,12 @@ class EpubScanner:
                 else:
                     final_genres.append(tag)
 
-            extracted_data = {
-                "series": identity["series"] or book.title,
-                "author": identity["author"],
-                "description": meta.get("description"),
-                "tags": final_genres,
-                "book_type": identity["book_type"],
-            }
-            book.extracted_data = extracted_data
-
-            # Save the new attributes directly on the book model
-            book.series = identity["series"] or book.title
+            # Guardar atributos directamente en el modelo
             book.illustrator = meta.get("illustrator")
             book.illustrator_jap = meta.get("illustrator_jap")
             book.author_jap = meta.get("author_jap")
             book.demographics = classified_demographics
+            book.tags = final_genres
 
             try:
                 with open(filepath, "rb") as f:
@@ -265,9 +260,9 @@ class EpubScanner:
             book.color_mode = meta.get("color_mode")
 
             target_series_hash = hash_service.generate_series_hash(
-                series=extracted_data["series"],
-                author=extracted_data["author"],
-                book_type=extracted_data["book_type"],
+                series=book.series,
+                author=book.author,
+                book_type=book.book_type,
             )
             target_book_hash = hash_service.generate_book_hash(
                 series=identity.get("series"),
@@ -323,8 +318,7 @@ class EpubScanner:
                                 original_filepath=hash_conflict.filepath,
                                 duplicate_filepath=filepath,
                                 title=book.title,
-                                author=extracted_data.get("author")
-                                or (book.series_info.author if book.series_info else "Unknown"),
+                                author=book.author or (book.series_info.author if book.series_info else "Unknown"),
                             )
                             session.add(dup)
                         return "duplicate"
