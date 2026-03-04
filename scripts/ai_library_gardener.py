@@ -21,33 +21,30 @@ console = Console()
 async def get_series_for_proposal(limit: int = 20):
     """
     Obtiene series que necesitan revisión y NO tienen una propuesta pendiente.
-    Prioriza series con nombres "sucios" o sin series_spanish.
+    Prioriza series sin series_spanish o con nombres sucios.
     """
     async with pg_manager.get_session() as session:
         # Subquery para pendientes
         pending_subquery = select(MetadataProposal.series_hash).where(MetadataProposal.status == "pending")
 
-        # SQL crudo para el feedback de aprendizaje (más fácil para NOT IN por ahora)
+        # SQL crudo para el feedback de aprendizaje
         feedback_hashes_result = await session.execute(text("SELECT series_hash FROM ai_learning_feedback"))
         feedback_hashes = [r[0] for r in feedback_hashes_result.fetchall()]
 
-        # Series candidatas:
-        # - series_spanish nulo o vacío
-        # - O series_name contiene caracteres típicos de archivos (corchetes, paréntesis, "Vol")
+        # Filtrar series candidatas desde SeriesMetadata (donde realmente vive la info de serie)
         stmt = (
-            select(LocalBook.series_hash)
+            select(SeriesMetadata.series_hash)
             .where(
                 or_(
-                    LocalBook.series_spanish.is_(None),
-                    LocalBook.series_spanish == "",
-                    LocalBook.series.ilike("%[%"),
-                    LocalBook.series.ilike("%(%"),
-                    LocalBook.series.ilike("%Vol%"),
+                    SeriesMetadata.series_spanish.is_(None),
+                    SeriesMetadata.series_spanish == "",
+                    SeriesMetadata.series_name.ilike("%[%"),
+                    SeriesMetadata.series_name.ilike("%(%"),
+                    SeriesMetadata.series_name.ilike("%Vol%"),
                 )
             )
-            .where(LocalBook.series_hash.notin_(pending_subquery))
-            .where(LocalBook.series_hash.notin_(feedback_hashes))
-            .group_by(LocalBook.series_hash)
+            .where(SeriesMetadata.series_hash.notin_(pending_subquery))
+            .where(SeriesMetadata.series_hash.notin_(feedback_hashes))
             .limit(limit)
         )
 
@@ -61,8 +58,10 @@ async def get_series_for_proposal(limit: int = 20):
             books = (await session.execute(stmt_books)).scalars().all()
 
             if books:
-                # Nombre actual representativo
-                current_name = books[0].series or books[0].title
+                # Nombre desde series_metadata (fuente de verdad)
+                stmt_meta = select(SeriesMetadata).where(SeriesMetadata.series_hash == h)
+                meta = (await session.execute(stmt_meta)).scalar_one_or_none()
+                current_name = (meta.series_name if meta else None) or books[0].title
                 series_data.append(
                     {
                         "series_hash": h,

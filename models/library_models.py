@@ -196,7 +196,6 @@ class LocalBook(Base):
     edition = Column(String(255))  # Ej: "Honorificos", "Colector", etc.
 
     # Advanced Metadata
-    series = Column(String)
     author = Column(String)
     illustrator = Column(String)
     illustrator_jap = Column(Text)

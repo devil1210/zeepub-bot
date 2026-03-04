@@ -210,7 +210,7 @@ class EpubScanner:
             book.publisher = meta.get("publisher")
             book.author = identity["author"]
             book.description = meta.get("description")
-            book.series = identity["series"] or book.title
+
             book.book_type = identity["book_type"]
 
             # Tags clasificación

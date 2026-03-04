@@ -1,6 +1,6 @@
 ---
 trigger: always_on
-version: 3.6.0
+version: 3.6.1
 edition: Enterprise
 ---
 
@@ -25,6 +25,7 @@ Este archivo es la **Única Fuente de Verdad** para el comportamiento del asiste
 10. **Estructura de Skills**: Queda terminantemente PROHIBIDO anidar una carpeta `skills` dentro de `.agent/skills` (ej. `.agent/skills/skills/`). Las skills deben colgar directamente de `.agent/skills/nombre-skill/`. No se deben incluir todas las skills del repositorio global, solo aquellas explícitamente necesarias para el proyecto.
 11. **Configuración de IA**: Es REQUISITO del proyecto utilizar exclusivamente los modelos **gemini-3-flash-preview** and **gemini-2.5-flash** en `services/ai_service.py`.
 12. **Uso de Slugs**: El slug de la serie se utiliza única y exclusivamente para hashtags de Telegram. NO debe afectar ninguna otra funcionalidad del proyecto (como rutas de imágenes, IDs de descarga o integridad de la base de datos).
+13. **GitNexus MCP Obligatorio**: GitNexus debe estar activo como MCP server en TODA sesión. Está configurado en `.mcp.json` (raíz del proyecto) para cargarse automáticamente. Al ejecutar `/empezar`, verificar con `npx gitnexus status` y re-indexar si está desactualizado. Usar `gitnexus_impact` antes de eliminar cualquier campo, columna o función para detectar impacto real en el grafo de código.
 
 ## 🚀 Capacidades Core Activas (v3.5.0)
 
