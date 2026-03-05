@@ -97,8 +97,9 @@ class LibraryService:
         dto = SeriesDTO(
             id=f"series_{s.series_hash}",
             series_hash=s.series_hash,
-            title=s.series_name,
+            title=s.series_english or s.series_name,
             series=s.series_name,
+            series_english=s.series_english,
             author=s.author,
             description=s.description,
             cover=display_cover,
@@ -444,8 +445,9 @@ class LibraryService:
                     items.append(
                         {
                             "id": f"series_{s.series_hash}",
-                            "title": s.series_name,
+                            "title": s.series_english or s.series_name,
                             "series_name": s.series_name,
+                            "series_english": s.series_english,
                             "is_folder": True,
                             "numBooks": s.book_count,
                             "book_count": s.book_count,
@@ -527,7 +529,9 @@ class LibraryService:
                     items.append(
                         {
                             "id": f"series_{s.series_hash}",
-                            "title": s.series_name,
+                            "title": s.series_english or s.series_name,
+                            "series_name": s.series_name,
+                            "series_english": s.series_english,
                             "series_hash": s.series_hash,
                             "is_folder": True,
                             "cover": s.cover_url,
@@ -558,7 +562,9 @@ class LibraryService:
                     items.append(
                         {
                             "id": f"series_{s.series_hash}",
-                            "title": s.series_name,
+                            "title": s.series_english or s.series_name,
+                            "series_name": s.series_name,
+                            "series_english": s.series_english,
                             "series_hash": s.series_hash,
                             "is_folder": True,
                             "cover": s.cover_url,

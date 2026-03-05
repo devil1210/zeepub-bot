@@ -42,6 +42,7 @@ class SeriesMetadata(Base):
 
     id = Column(Integer, primary_key=True)
     series_name = Column(String(255), nullable=False)
+    series_english = Column(String(255))
     slug = Column(String(512), index=True)  # Slug persistente para URLs y referencias
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
@@ -72,6 +73,7 @@ class SeriesMetadata(Base):
         return {
             "id": f"series_{self.series_hash}",
             "series_name": self.series_name,
+            "series_english": self.series_english,
             "slug": self.slug,
             "series_hash": self.series_hash,
             "author": self.author,

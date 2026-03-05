@@ -61,6 +61,7 @@ class SeriesScanner:
 
             series = SeriesMetadata(
                 series_name=final_series_name,
+                series_english=final_series_name,
                 series_hash=book.series_hash,
                 author=extracted.get("author") or "",
                 author_jap=extracted.get("author_jap"),
@@ -84,18 +85,20 @@ class SeriesScanner:
             await session.flush()
             logger.info(f"🆕 Nueva serie detectada: {series.series_name}")
         else:
-            # Sincronizar campos PERO preservar modificaciones manuales
-            current_name = series.series_name or ""
+            # series_name es inamovible tras creación
+            current_english = series.series_english or series.series_name or ""
             extracted_name = extracted.get("series") or book.title
 
-            should_preserve, preserve_reason = SeriesScanner._should_preserve_current_name(current_name, extracted_name)
-            should_update_name = not should_preserve
+            should_preserve, preserve_reason = SeriesScanner._should_preserve_series_english(
+                current_english, extracted_name
+            )
+            should_update_english = not should_preserve
 
-            if should_update_name:
-                series.series_name = extracted_name
-                logger.info(f"📝 Actualizado series_name ({preserve_reason}): {current_name} → {extracted_name}")
+            if should_update_english:
+                series.series_english = extracted_name
+                logger.info(f"📝 Actualizado series_english ({preserve_reason}): {current_english} → {extracted_name}")
             else:
-                logger.info(f"🔒 Preservado series_name manual ({preserve_reason}): {current_name}")
+                logger.info(f"🔒 Preservado series_english manual ({preserve_reason}): {current_english}")
 
             book_author = extracted.get("author")
             if book_author and series.author != book_author:
@@ -161,7 +164,7 @@ class SeriesScanner:
         return series
 
     @staticmethod
-    def _should_preserve_current_name(current_name: str, extracted_name: str) -> tuple[bool, str]:
+    def _should_preserve_series_english(current_name: str, extracted_name: str) -> tuple[bool, str]:
         if not current_name:
             return False, "vacío"
         if current_name == extracted_name:

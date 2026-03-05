@@ -52,7 +52,9 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
         return {
             "id": f"series_{s_hash}",
             "series_hash": s_hash,
-            "title": series.series_name if series else (rep.get("series") or rep.get("title")),
+            "title": (series.series_english or series.series_name)
+            if series
+            else (rep.get("series") or rep.get("title")),
             "author": series.author if series else rep.get("author"),
             "summary": series.description if series else rep.get("description"),
             "cover": series.cover_url if series else rep.get("cover"),

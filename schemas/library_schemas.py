@@ -71,6 +71,7 @@ class SeriesDTO(BaseModel):
     series_hash: str
     title: str
     series: str
+    series_english: str | None = None
     author: str | None = None
     description: str | None = None
     cover: str | None = None

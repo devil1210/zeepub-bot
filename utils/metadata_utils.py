@@ -86,7 +86,8 @@ def generar_slug_from_meta(meta: Any) -> str:
     titulo_serie = None
     if isinstance(meta, dict):
         titulo_serie = (
-            meta.get("series_name")
+            meta.get("series_english")
+            or meta.get("series_name")
             or meta.get("series")
             or meta.get("titulo_serie")
             or meta.get("series_clean")
