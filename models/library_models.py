@@ -68,7 +68,7 @@ class SeriesMetadata(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    books = relationship("LocalBook", back_populates="series_info")
+    books = relationship("LocalBook", back_populates="series_info", lazy="noload")
 
     def to_dict(self):
         return {
@@ -173,7 +173,7 @@ class LibrarySource(Base):
     path = Column(String(500), nullable=False, unique=True)  # Ej: "/home/zeepubs/drive/02-Publicaciones"
     last_scanned = Column(DateTime, default=None)
 
-    books = relationship("LocalBook", back_populates="source", cascade="all, delete-orphan")
+    books = relationship("LocalBook", back_populates="source", cascade="all, delete-orphan", lazy="noload")
 
 
 class LocalBook(Base):
@@ -260,8 +260,8 @@ class LocalBook(Base):
     source = relationship("LibrarySource", back_populates="books")
     series_info = relationship("SeriesMetadata", back_populates="books")
 
-    ratings = relationship("UserRating", back_populates="book", cascade="all, delete-orphan")
-    downloads = relationship("UserDownload", back_populates="book", cascade="all, delete-orphan")
+    ratings = relationship("UserRating", back_populates="book", cascade="all, delete-orphan", lazy="noload")
+    downloads = relationship("UserDownload", back_populates="book", cascade="all, delete-orphan", lazy="noload")
 
     def to_dict(self):
         return {

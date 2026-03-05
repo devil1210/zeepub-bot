@@ -381,6 +381,9 @@ class EpubScanner:
             return outcome
         except Exception as e:
             logger.error(f"Error procesando libro {filepath}: {e}")
+            import traceback
+
+            traceback.print_exc()
             await session.rollback()
             return False
 
