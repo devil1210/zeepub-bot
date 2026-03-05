@@ -204,8 +204,11 @@ class EpubScanner:
             book.language = identity["language"]
             book.translator = identity["translator"]
             book.layout_by = identity["layout_by"]
-            book.jap_title = identity.get("romaji_title")
-            book.romaji_title = identity.get("romaji_title") or meta.get("romaji_title")
+            book.jap_title = identity.get("romaji_title") or book.jap_title
+            new_romaji = identity.get("romaji_title") or meta.get("romaji_title")
+            if new_romaji:  # Solo sobreescribir si el EPUB trae un valor real
+                book.romaji_title = new_romaji
+            # Si no hay nuevo valor, se preserva el que ya está guardado en DB
             book.edition = identity["edition"]
             book.publisher = meta.get("publisher")
             book.author = identity["author"]
