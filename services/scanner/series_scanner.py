@@ -147,8 +147,8 @@ class SeriesScanner:
                 # Intentamos enriquecer metadatos (Español, etc)
                 await cls.enrich_series_metadata(session, series, skip_ai=skip_ai)
 
-            await session.flush()
-            return series
+        await session.flush()
+        return series
 
     @classmethod
     async def enrich_series_metadata(cls, session: Any, series: SeriesMetadata, skip_ai: bool = False):
