@@ -83,7 +83,8 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
             books_dicts = [b.to_dict() for b in books]
             # --- DRY RUN MODE (PROPOSAL) ---
             if dry_run:
-                proposal = await AIService.analyze_series_for_updates(
+                ai_service = AIService()
+                proposal = await ai_service.analyze_series(
                     series_hash, current_name, books_dicts, target_model=target_model
                 )
 
@@ -133,7 +134,8 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
 
             # --- EXECUTE MODE (STAGING) ---
             # Ya NO aplicamos cambios directamente. Guardamos como propuesta.
-            proposal = await AIService.analyze_series_for_updates(
+            ai_service = AIService()
+            proposal = await ai_service.analyze_series(
                 series_hash, current_name, books_dicts, target_model=target_model
             )
 
