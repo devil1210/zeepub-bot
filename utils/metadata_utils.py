@@ -18,8 +18,9 @@ def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = Fal
     clean = re.sub(r"\(.*?\)", " ", clean).strip()
 
     # Separar por guiones, tildes, pipes, etc., SOLO si tienen espacios alrededor (para evitar cortar Sato-san)
-    # Excepción para los dos puntos ': ' que a veces no tienen espacio antes.
-    parts = re.split(r"(?:\s+[\-\–\—\−\―\~～\|¦║]\s+)|(?:\s*:\s*)", clean)
+    # Excepción para los dos puntos: solo separar si hay espacio alrededor o parece un subtítulo/volumen claro.
+    # Evitamos separar "Re:Zero" o "Fate/stay"
+    parts = re.split(r"(?:\s+[\-\–\—\−\―\~～\|¦║]\s+)|(?:\s+:\s+)", clean)
 
     volume = ""
     if len(parts) >= 2:
@@ -59,8 +60,10 @@ def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = Fal
         series = " ".join(parts).strip()
 
     if not preserve_special_chars:
-        series = re.sub(r"^[^\w\(\)\[\]]+", "", series).strip()
-        series = re.sub(r"(?:\s+[\-\–\—\−\―\~～\|¦║]+\s*|[\:\.\x23]+)$", "", series).strip()
+        # Solo limpiar caracteres basura al inicio/final que no sean parte del nombre.
+        # No eliminar el colon ':' si está en medio.
+        series = re.sub(r"^[^\w\(\)\[\]\:]+", "", series).strip()
+        series = re.sub(r"(?:\s+[\-\–\—\−\―\~～\|¦║]+\s*|[\.\x23]+)$", "", series).strip()
 
         if romaji:
             romaji = re.sub(r"^[^\w\(\)\[\]]+", "", romaji).strip()
@@ -85,6 +88,7 @@ def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = Fal
 def generar_slug_from_meta(meta: Any) -> str:
     titulo_serie = None
     if isinstance(meta, dict):
+        # El slug se calcula PRIORITARIAMENTE desde series_english según instrucciones del usuario
         titulo_serie = (
             meta.get("series_english")
             or meta.get("series_name")
@@ -208,3 +212,31 @@ def process_book_identity_comprehensive(epub_path: str, original_filename: str |
         "color_mode": meta.get("color_mode", "bw"),
         "romaji_title": romaji_from_series or parsed.get("romaji"),
     }
+
+
+async def get_series_spanish_from_api(series_name: str, author: str = None) -> str | None:
+    """
+    Busca el título en español de una serie usando Google Books API.
+    """
+    import httpx
+
+    try:
+        from urllib.parse import quote
+
+        query = quote(f'intitle:"{series_name}"')
+        if author:
+            query += quote(f' inauthor:"{author}"')
+
+        url = f"https://www.googleapis.com/books/v1/volumes?q={query}&langRestrict=es&maxResults=1"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=10.0)
+
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("totalItems", 0) > 0:
+                item = data["items"][0]["volumeInfo"]
+                return item.get("title")
+    except Exception:
+        pass
+    return None

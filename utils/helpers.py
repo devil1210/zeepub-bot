@@ -13,6 +13,7 @@ from utils.identity_utils import generate_short_link  # noqa: F401
 # --- metadata_utils ---
 from utils.metadata_utils import (
     generar_slug_from_meta,  # noqa: F401
+    get_series_spanish_from_api,  # noqa: F401
     parse_metadata_from_title,  # noqa: F401
     process_book_identity_comprehensive,  # noqa: F401
 )

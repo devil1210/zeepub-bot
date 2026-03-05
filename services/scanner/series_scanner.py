@@ -38,30 +38,22 @@ class SeriesScanner:
         series = result.scalar_one_or_none()
 
         if not series:
-            # Para creación inicial, preservar caracteres especiales del título original
-            book_title = book.title or ""
+            # Para creación inicial: El nombre de la serie en inglés (Identity) va a series_name.
             extracted_series = extracted.get("series") or ""
+            book_title = book.title or ""
 
-            # Parsear con preservación de caracteres especiales
-            parsed = parse_metadata_from_title(book_title, preserve_special_chars=True)
-            final_series_name = parsed.get("series") or extracted_series
-
-            # Detectar si el extraído pierde caracteres importantes
-            special_chars = [":", "!", "?", "...", "—", "[", "]", "(", ")", "&", "%", "#", "@", "*", "+"]
-            book_has_special = any(char in book_title for char in special_chars)
-            extracted_has_special = any(char in extracted_series for char in special_chars)
-
-            # Preferir el título original si el extraído pierde caracteres especiales
-            if book_has_special and not extracted_has_special:
-                final_series_name = book_title
-                logger.info(f"🔒 Preservando título original con caracteres especiales: {book_title}")
+            # Prioridad 1: Metadata directa del EPUB (English Name)
+            # Prioridad 2: Parsing del título del archivo (preservando caracteres especiales)
+            if not extracted_series:
+                parsed = parse_metadata_from_title(book_title, preserve_special_chars=True)
+                final_series_name = parsed.get("series") or book_title
             else:
                 final_series_name = extracted_series
-                logger.info(f"📝 Usando título extraído: {extracted_series}")
 
             series = SeriesMetadata(
                 series_name=final_series_name,
-                series_english=final_series_name,
+                series_english=final_series_name,  # Inicialmente es el mismo
+                series_spanish=None,  # Se poblará por AI o Google Books
                 series_hash=book.series_hash,
                 author=extracted.get("author") or "",
                 author_jap=extracted.get("author_jap"),
@@ -75,17 +67,32 @@ class SeriesScanner:
                 cover_url=book.cover_low or book.cover_medium,
                 book_count=0,
             )
-            # Generar slug usando el objeto recién creado
-            generated_slug = generar_slug_from_meta(series.to_dict())
 
+            # El slug se genera a partir de series_english (que acabamos de inicializar)
+            generated_slug = generar_slug_from_meta(series.to_dict())
             series.slug = generated_slug
-            logger.info(f"📝 Slug inicial generado: {generated_slug}")
+            logger.info(f"📝 Nueva serie: {series.series_name} | Slug: {generated_slug}")
 
             session.add(series)
             await session.flush()
-            logger.info(f"🆕 Nueva serie detectada: {series.series_name}")
         else:
-            # series_name es inamovible tras creación
+            # POBLADO AUTOMÁTICO DE CAMPOS VACÍOS (MANTENIMIENTO)
+            # series_english se llena desde series_name si es NULL
+            if not series.series_english:
+                series.series_english = series.series_name
+                logger.info(f"📝 Auto-poblado series_english: {series.series_name}")
+
+            # RE-CALCULO DE SLUG si es necesario o si series_english cambió (y no está bloqueado)
+            # El slug depende 100% de series_english
+            current_slug = series.slug or ""
+            new_slug = generar_slug_from_meta(series.to_dict())
+            cleaned_new_slug = SeriesScanner._clean_slug_special_chars(new_slug)
+
+            if not current_slug or current_slug == str(book.series_hash)[:40] or cleaned_new_slug != current_slug:
+                series.slug = cleaned_new_slug
+                logger.info(f"📝 Slug actualizado desde series_english: {cleaned_new_slug}")
+
+            # series_name es inamovible tras creación (según reglas de persistencia)
             current_english = series.series_english or series.series_name or ""
             extracted_name = extracted.get("series") or book.title
 
@@ -122,31 +129,11 @@ class SeriesScanner:
                 extracted_romaji = SeriesScanner._extract_romaji_from_title(title_source)
                 if extracted_romaji:
                     book.romaji_title = extracted_romaji
-                    logger.info(f"🔤 Auto-poblado romaji_title vacío: '{title_source}' -> '{extracted_romaji}'")
 
-            # Preservar slug manual vs auto-generado
-            current_slug = series.slug or ""
-            new_slug = generar_slug_from_meta(series.to_dict())
-            cleaned_new_slug = SeriesScanner._clean_slug_special_chars(new_slug)
-
-            has_special_chars_slug = any(char in str(current_slug) for char in "!?#$%^&*()+=[]{}|\\:;\"'<>,/`~")
-
-            should_update_slug = (
-                not current_slug
-                or len(str(current_slug)) > 40
-                or current_slug == str(book.series_hash)[:40]
-                or has_special_chars_slug
-                or current_slug != cleaned_new_slug
-            )
-
-            if should_update_slug:
-                final_slug = (
-                    cleaned_new_slug if (has_special_chars_slug or current_slug != cleaned_new_slug) else new_slug
-                )
-                series.slug = final_slug
-                logger.info(f"📝 Actualizado slug: {current_slug} → {final_slug}")
-            else:
-                logger.info(f"🔒 Preservado slug manual: {current_slug}")
+            # PORTADA: Usar la del volumen 1 o si no hay ninguna
+            if book.cover_low or book.cover_medium:
+                if book.volume == 1 or not series.cover_url:
+                    series.cover_url = book.cover_low or book.cover_medium
 
             book_type = extracted.get("book_type")
             if book_type and series.book_type != book_type:
@@ -156,12 +143,59 @@ class SeriesScanner:
             if book_publisher and series.publisher != book_publisher:
                 series.publisher = book_publisher
 
-            # PORTADA: Usar la del volumen 1 o si no hay ninguna
-            if book.cover_low or book.cover_medium:
-                if book.volume == 1 or not series.cover_url:
-                    series.cover_url = book.cover_low or book.cover_medium
+            if not series.series_spanish:
+                # Intentamos enriquecer metadatos (Español, etc)
+                await cls.enrich_series_metadata(session, series)
 
-        return series
+            await session.flush()
+            return series
+
+    @classmethod
+    async def enrich_series_metadata(cls, session: Any, series: SeriesMetadata):
+        """
+        Enriquece una serie buscando metadatos en español y otros campos.
+        Usa Google Books API y/o IA como fallback.
+        """
+        if series.series_spanish:
+            return
+
+        from utils.helpers import get_series_spanish_from_api
+
+        # 1. Intentar vía Google Books (Heurística rápida)
+        try:
+            spanish_title = await get_series_spanish_from_api(series.series_name, series.author)
+            if spanish_title:
+                series.series_spanish = spanish_title
+                logger.info(f"✨ Enriquecido (API): {series.series_name} -> {spanish_title}")
+                return
+        except Exception as e:
+            logger.debug(f"API Enrichment failed for {series.series_name}: {e}")
+
+        # 2. IA Fallback (Solo si lo anterior falla y tenemos API Key)
+        try:
+            from services.ai_service import AIService
+
+            ai_service = AIService()
+            prompt = f"""
+            Identifica el título oficial en español de esta serie de Novela Ligera/Manga.
+            Nombre: {series.series_name}
+            Autor: {series.author}
+
+            Si no hay un título oficial diferente al inglés, responde el mismo nombre.
+            Responde SOLO con el nombre en un JSON:
+            {{ "series_spanish": "string" }}
+            """
+            res = await ai_service._call_ai(prompt, json_mode=True)
+            if res:
+                import json
+
+                from services.ai_service import AIService as AI
+
+                data = json.loads(AI._extract_json_from_text(res))
+                series.series_spanish = data.get("series_spanish")
+                logger.info(f"🤖 Enriquecido (IA): {series.series_name} -> {series.series_spanish}")
+        except Exception:
+            pass
 
     @staticmethod
     def _should_preserve_series_english(current_name: str, extracted_name: str) -> tuple[bool, str]:
@@ -228,6 +262,8 @@ class SeriesScanner:
             logger.info(f"Archivando serie vacía: {series.series_name}")
             archived_s = ArchivedSeries(
                 series_name=series.series_name,
+                series_spanish=series.series_spanish,
+                series_english=series.series_english,
                 series_hash=series.series_hash,
                 author=series.author,
                 description=series.description,
@@ -236,6 +272,7 @@ class SeriesScanner:
                 book_type=series.book_type,
                 publisher=series.publisher,
                 original_series_id=series.id,
+                slug=series.slug,
             )
             session.add(archived_s)
             await session.delete(series)
