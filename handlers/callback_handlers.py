@@ -88,9 +88,6 @@ async def handle_manual_destino(update: Update, context: ContextTypes.DEFAULT_TY
     st["titulo"] = "📚 Categorías"
 
     # Redirigir siempre a menú principal local
-    # Redirigir siempre a menú principal local
-    # from services.library_ui_service import mostrar_menu_principal
-
     await mostrar_menu_principal(update, context)
 
 
