@@ -263,7 +263,7 @@ class EpubScanner:
             book.color_mode = meta.get("color_mode")
 
             target_series_hash = hash_service.generate_series_hash(
-                series=book.series,
+                series=identity.get("series"),
                 author=book.author,
                 book_type=book.book_type,
             )
