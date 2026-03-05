@@ -174,8 +174,10 @@ def process_book_identity_comprehensive(epub_path: str, original_filename: str |
                 break
 
     ui_title = parsed.get("clean_title") or clean_metadata_tags(title)
-    if not series and parsed.get("series"):
-        series = parsed["series"]
+    if not series and parsed.get("series_clean"):
+        series = parsed["series_clean"]
+    elif series:
+        series = clean_metadata_tags(series)
 
     if series:
         series = series.strip()

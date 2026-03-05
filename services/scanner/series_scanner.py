@@ -43,12 +43,16 @@ class SeriesScanner:
             book_title = book.title or ""
 
             # Prioridad 1: Metadata directa del EPUB (English Name)
-            # Prioridad 2: Parsing del título del archivo (preservando caracteres especiales)
+            # Prioridad 2: Parsing del título del archivo (limpiando tags)
+            from utils.epub_extractor import clean_metadata_tags
+
             if not extracted_series:
                 parsed = parse_metadata_from_title(book_title, preserve_special_chars=True)
-                final_series_name = parsed.get("series") or book_title
+                final_series_name = parsed.get("series_clean") or book_title
             else:
                 final_series_name = extracted_series
+
+            final_series_name = clean_metadata_tags(final_series_name)
 
             series = SeriesMetadata(
                 series_name=final_series_name,
@@ -71,7 +75,7 @@ class SeriesScanner:
             # El slug se genera a partir de series_english (que acabamos de inicializar)
             generated_slug = generar_slug_from_meta(series.to_dict())
             series.slug = generated_slug
-            logger.info(f"📝 Nueva serie: {series.series_name} | Slug: {generated_slug}")
+            logger.info(f"📝 Nueva serie [Identidad]: {series.series_name} | Slug: {generated_slug}")
 
             session.add(series)
             await session.flush()
@@ -103,9 +107,11 @@ class SeriesScanner:
 
             if should_update_english:
                 series.series_english = extracted_name
-                logger.info(f"📝 Actualizado series_english ({preserve_reason}): {current_english} → {extracted_name}")
+                logger.info(
+                    f"📝 Actualizado Título Inglés (vía {preserve_reason}): {current_english} → {extracted_name}"
+                )
             else:
-                logger.info(f"🔒 Preservado series_english manual ({preserve_reason}): {current_english}")
+                logger.info(f"🔒 Título Inglés preservado — {preserve_reason}: {current_english}")
 
             book_author = extracted.get("author")
             if book_author and series.author != book_author:
