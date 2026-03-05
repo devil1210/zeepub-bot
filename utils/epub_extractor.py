@@ -69,35 +69,46 @@ class EpubMetadataExtractor:
                             break
 
                     # 3.1 Mapear Roles de Creadores y Contribuidores
-                    # Guardamos IDs de creadores para asociar roles refinados
                     creators = {}  # id -> text
-                    creators_jap = {}  # id -> jap_text
-                    for node in metadata_node.findall("dc:creator", self.NAMESPACE):
-                        creators[node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")] = node.text
-
                     contributors = {}  # id -> text
-                    for node in metadata_node.findall("dc:contributor", self.NAMESPACE):
-                        contributors[node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")] = node.text
-
-                    # Roles y Scripts Alternativos
                     creators_jap = {}  # id -> jap_text
                     role_map = {}  # id -> role (aut, ill, trl, mrk)
 
-                    # Extraer toda la info de los meta tags en una sola pasada robusta
+                    def get_attr_agnostic(node, attr_name):
+                        """Obtiene un atributo sin importar si tiene namespace."""
+                        if node is None:
+                            return None
+                        for k, v in node.attrib.items():
+                            if k == attr_name or k.endswith("}" + attr_name):
+                                return v
+                        return None
+
+                    # Extraer toda la info de los meta tags en una sola pasada
                     meta_tags = []
                     for child in metadata_node:
                         tag_name = child.tag.split("}")[-1] if "}" in child.tag else child.tag
-                        if tag_name == "meta":
+
+                        if tag_name == "creator":
+                            cid = get_attr_agnostic(child, "id")
+                            if cid:
+                                creators[cid] = child.text
+                        elif tag_name == "contributor":
+                            cid = get_attr_agnostic(child, "id")
+                            if cid:
+                                contributors[cid] = child.text
+                        elif tag_name == "meta":
                             meta_tags.append(child)
-                            refines = child.get("refines")
-                            prop = child.get("property")
+                            refines = get_attr_agnostic(child, "refines")
+                            # EPUB3 uses 'property', EPUB2 uses 'name'
+                            prop = get_attr_agnostic(child, "property") or get_attr_agnostic(child, "name")
+
                             if refines:
                                 cid = refines.replace("#", "")
                                 if prop == "role":
                                     role_map[cid] = child.text
                                 elif prop == "alternate-script" and (
-                                    child.get("{http://www.w3.org/XML/1998/namespace}lang") in ("ja", "ja-JP")
-                                    or child.get("xml:lang") in ("ja", "ja-JP")
+                                    get_attr_agnostic(child, "lang") in ("ja", "ja-JP")
+                                    or child.get("{http://www.w3.org/XML/1998/namespace}lang") in ("ja", "ja-JP")
                                 ):
                                     creators_jap[cid] = child.text
 
@@ -134,7 +145,6 @@ class EpubMetadataExtractor:
                     # 3.2 Identificadores (ISBN, ASIN, URI)
                     for ident in metadata_node.findall("dc:identifier", self.NAMESPACE):
                         id_text = ident.text or ""
-                        # Limpiar prefijos comunes como urn:isbn:, urn:amazon:, urn:uri:
                         clean_id = re.sub(
                             r"^urn:(isbn|amazon|uri|uuid|asin):",
                             "",
@@ -143,16 +153,12 @@ class EpubMetadataExtractor:
                         ).strip()
 
                         lower_id = id_text.lower()
-                        if "isbn:978" in lower_id or "isbn" in lower_id:
-                            # Preferir ISBN13 si es posible
-                            if "978" in clean_id and not self.metadata.get("isbn"):
-                                self.metadata["isbn"] = clean_id
-                            elif not self.metadata.get("isbn"):
+                        if "isbn" in lower_id:
+                            if (not self.metadata.get("isbn")) or ("978" in clean_id):
                                 self.metadata["isbn"] = clean_id
                         elif "amazon" in lower_id or "asin" in lower_id:
                             self.metadata["asin"] = clean_id
                         elif "uri" in lower_id:
-                            # Limpiar también urn:uri: de blogspot, etc.
                             self.metadata["uri"] = clean_id
 
                     # 3.3 Etiquetas (Géneros)
@@ -162,41 +168,58 @@ class EpubMetadataExtractor:
                             tags.append(subject.text)
                     self.metadata["tags"] = tags
 
-                    # 3.4 Series y Volumen (Calibre / EPUB3 metadata)
-                    collection_ids = {}  # id -> title
+                    # 3.4 Series y Volumen (EPUB3 / Calibre)
+                    collection_ids = {}
+
+                    # PASADA 1: Buscar en belongs-to-collection (EPUB3)
                     for meta in meta_tags:
-                        prop = meta.get("property")
-                        meta_id = meta.get("id")
+                        prop = get_attr_agnostic(meta, "property")
+                        meta_id = get_attr_agnostic(meta, "id")
                         if prop == "belongs-to-collection":
-                            self.metadata["series"] = clean_metadata_tags(meta.text)
-                            if meta_id:
-                                collection_ids[meta_id] = self.metadata["series"]
+                            val = (meta.text or "").strip()
+                            if val:
+                                self.metadata["series"] = clean_metadata_tags(val)
+                                if meta_id:
+                                    collection_ids[meta_id] = self.metadata["series"]
 
-                    # Second pass: process remaining properties
+                    # PASADA 2: Buscar en calibre:series o simplemente 'series'
+                    if not self.metadata.get("series"):
+                        for meta in meta_tags:
+                            name = get_attr_agnostic(meta, "name")
+                            prop = get_attr_agnostic(meta, "property")
+                            content = get_attr_agnostic(meta, "content")
+
+                            # Intentar varios nombres comunes de series
+                            potential_props = ["calibre:series", "series", "collection", "belongs-to-collection"]
+                            if name in potential_props or prop in potential_props:
+                                val = content or meta.text
+                                if val:
+                                    self.metadata["series"] = clean_metadata_tags(val)
+                                    break
+
+                    # PASADA 3: Volumen / Indice
                     for meta in meta_tags:
-                        name = meta.get("name")
-                        prop = meta.get("property")
+                        name = get_attr_agnostic(meta, "name")
+                        prop = get_attr_agnostic(meta, "property")
+                        content = get_attr_agnostic(meta, "content")
 
-                        if name == "calibre:series" and not self.metadata.get("series"):
-                            self.metadata["series"] = clean_metadata_tags(meta.get("content"))
-
-                        # CALIBRE INDEX (Base priority)
-                        elif name == "calibre:series_index":
-                            if not self.metadata.get("volume"):  # Keep if already set by group-position
+                        # Indices de volumen
+                        if name in ("calibre:series_index", "series_index") or prop in (
+                            "calibre:series_index",
+                            "series_index",
+                        ):
+                            if not self.metadata.get("volume"):
                                 try:
-                                    self.metadata["volume"] = float(meta.get("content"))
-                                except Exception:
+                                    self.metadata["volume"] = float(content or meta.text)
+                                except (ValueError, TypeError, Exception):
                                     pass
 
-                        # EPUB3 GROUP POSITION (High priority / Overwrites Calibre)
                         elif prop == "group-position":
-                            ref = meta.get("refines", "").replace("#", "")
+                            ref = (get_attr_agnostic(meta, "refines") or "").replace("#", "")
                             if ref == "serie" or ref in collection_ids:
                                 try:
-                                    val = float(meta.text)
-                                    # Overwrite if new value is more precise or volume not set
-                                    self.metadata["volume"] = val
-                                except Exception:
+                                    self.metadata["volume"] = float(meta.text)
+                                except (ValueError, TypeError, Exception):
                                     pass
                         elif prop == "dcterms:modified":
                             self.metadata["modified_at_opf"] = meta.text
