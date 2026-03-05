@@ -133,7 +133,7 @@ class EpubScanner:
     async def process_book(
         cls,
         filepath: str,
-        source_id: int,
+        source: Any,
         session: Any,
         force_scan: bool = False,
         series_provider: Any = None,
@@ -212,7 +212,7 @@ class EpubScanner:
                 return False
 
             if not book:
-                book = LocalBook(filepath=filepath, source_id=source_id)
+                book = LocalBook(filepath=filepath, source=source)
 
             # Actualizar campos
             book.filename = filename
@@ -322,7 +322,7 @@ class EpubScanner:
                         hash_conflict.filename = filename
                         hash_conflict.file_size = size
                         hash_conflict.file_modified_at = mtime
-                        hash_conflict.source_id = source_id
+                        hash_conflict.source = source
                         hash_conflict.series_hash = target_series_hash
                         if book.id and book.id != hash_conflict.id:
                             await session.delete(book)

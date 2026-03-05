@@ -444,7 +444,7 @@ class MetadataProposal(Base):
     id = Column(Integer, primary_key=True)
     series_hash = Column(String(64), index=True, nullable=False)
 
-    # La propuesta completa en formato JSON (lo que devuelve AIService.analyze_series_for_updates)
+    # La propuesta completa en formato JSON (lo que devuelve AIService.analyze_series)
     proposal_data = Column(JSON, nullable=False)
 
     status = Column(String(20), default="pending", index=True)  # pending, approved, rejected

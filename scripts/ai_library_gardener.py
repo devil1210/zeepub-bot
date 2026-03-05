@@ -87,7 +87,8 @@ async def process_proposals(series_list: list[dict]):
 
         try:
             # Consultar IA (Usa el mismo método que la MiniApp para coherencia)
-            proposal = await AIService.analyze_series_for_updates(series_hash, current_name, books_dicts)
+            ai_service = AIService()
+            proposal = await ai_service.analyze_series(series_hash, current_name, books_dicts)
 
             if not proposal or proposal.get("proposed_series") == "sin propuesta":
                 console.print("  [yellow]IA no encontró cambios necesarios. Saltando.[/yellow]")
