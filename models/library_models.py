@@ -281,7 +281,7 @@ class LocalBook(Base):
             "description_clean": limpiar_html_basico(self.series_info.description)
             if getattr(self, "series_info", None) and self.series_info.description
             else "",
-            "summary": self.summary
+            "summary": self.description
             or (
                 limpiar_html_basico(self.series_info.description)
                 if getattr(self, "series_info", None) and self.series_info.description
