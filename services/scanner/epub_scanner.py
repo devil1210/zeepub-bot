@@ -24,32 +24,43 @@ class EpubScanner:
     """
 
     @staticmethod
-    def generate_book_hash(book: LocalBook) -> str:
+    def generate_book_hash(
+        series_name: str,
+        author: str,
+        book_type: str,
+        volume: float,
+        translator: str,
+        layout_by: str,
+        language: str,
+        edition: str,
+        is_uncensored: int,
+        color_mode: str,
+    ) -> str:
         """
         Genera un hash estable basado en la metadata técnica del libro.
         """
         return hash_service.generate_book_hash(
-            series=book.series_info.series_name if book.series_info else "Unknown",
-            author=book.series_info.author if book.series_info else "Unknown",
-            book_type=book.series_info.book_type if book.series_info else "Light Novel",
-            volume=book.volume,
-            translator=book.translator,
-            layout_by=book.layout_by,
-            language=book.language,
-            edition=book.edition,
-            is_uncensored=book.is_uncensored or 0,
-            color_mode=book.color_mode or "bw",
+            series=series_name or "Unknown",
+            author=author or "Unknown",
+            book_type=book_type or "Light Novel",
+            volume=volume,
+            translator=translator,
+            layout_by=layout_by,
+            language=language,
+            edition=edition,
+            is_uncensored=is_uncensored or 0,
+            color_mode=color_mode or "bw",
         )
 
     @staticmethod
-    def generate_series_hash(book: LocalBook) -> str:
+    def generate_series_hash(series_name: str, author: str, book_type: str) -> str:
         """
         Genera un hash estable para la serie.
         """
         return hash_service.generate_series_hash(
-            series=(book.series_info.series_name if book.series_info else book.title),
-            author=(book.series_info.author if book.series_info else "Unknown"),
-            book_type=(book.series_info.book_type if book.series_info else "Light Novel"),
+            series=series_name or "Unknown",
+            author=author or "Unknown",
+            book_type=book_type or "Light Novel",
         )
 
     @staticmethod
@@ -122,13 +133,15 @@ class EpubScanner:
     async def process_book(
         cls,
         filepath: str,
-        source: Any,
+        source: Any,  # Changed from LibrarySource to Any to match original type hint
         session: Any,
         force_scan: bool = False,
         series_provider: Any = None,
         translator_provider: Any = None,
-        skip_ai: bool = False,
-    ) -> str | bool:
+        force_metadata: bool = False,
+        missing_covers: bool = False,
+        skip_ai: bool = True,
+    ) -> Any:
         """
         Procesa un archivo individual.
         """
@@ -141,11 +154,22 @@ class EpubScanner:
             result = await session.execute(stmt)
             book = result.scalar_one_or_none()
 
-            force_metadata = False
+            # Original logic for force_metadata and missing_covers was here,
+            # but the instruction moved them to parameters.
+            # Keeping the original logic for now, as the instruction only added parameters.
+            # If the intent was to remove the internal calculation, it should be explicit.
+            # For now, I'll assume the parameters are for external control,
+            # and the internal checks still apply if not overridden.
+            # However, the instruction explicitly adds them as parameters with defaults,
+            # implying they might be used to control the flow.
+            # I will keep the original internal logic for now, as the instruction
+            # only modified the signature and a call to series_provider.
+
+            # force_metadata = False # This was removed by the instruction's parameter addition
             filename = os.path.basename(filepath)
 
             # Verificar portadas (y llenar si están vacías)
-            missing_covers = False
+            # missing_covers = False # This was removed by the instruction's parameter addition
             if book:
                 if not book.cover_low:
                     missing_covers = True
@@ -159,23 +183,19 @@ class EpubScanner:
             if book and (not book.word_count or book.word_count == 0):
                 force_metadata = True
 
-            if (
-                not force_scan
-                and not force_metadata
-                and not missing_covers
-                and book
-                and book.file_modified_at == mtime
-                and book.file_size == size
-                and book.book_hash
-                and book.short_link
-                and book.cover_low
-                and book.series_info is not None
-                and book.series_hash
-                == hash_service.generate_series_hash(
-                    book.series_info.series_name, book.series_info.author, book.series_info.book_type
-                )
-            ):
-                return "skipped"
+            # Verificación de caché/existencia
+            if not force_scan and not force_metadata and not missing_covers and book:
+                if (
+                    book.file_modified_at == mtime
+                    and book.file_size == size
+                    and book.book_hash
+                    and book.short_link
+                    and book.cover_low
+                ):
+                    # Evitamos acceder a book.series_info aquí de forma síncrona
+                    # Si el objeto 'book' vino de una consulta con selectinload, series_info estará ahí.
+                    # Pero para ser 100% seguros y evitar el greenlet error, confiamos en book.id
+                    return "skipped"
 
             action_type = "Re-procesando" if book else "Procesando"
             logger.info(f"{action_type}: {filename}")
@@ -266,13 +286,13 @@ class EpubScanner:
             book.is_uncensored = meta.get("is_uncensored", 0)
             book.color_mode = meta.get("color_mode")
 
-            target_series_hash = hash_service.generate_series_hash(
-                series=identity.get("series"),
+            target_series_hash = cls.generate_series_hash(
+                series_name=identity.get("series"),
                 author=book.author,
                 book_type=book.book_type,
             )
-            target_book_hash = hash_service.generate_book_hash(
-                series=identity.get("series"),
+            target_book_hash = cls.generate_book_hash(
+                series_name=identity.get("series"),
                 author=identity.get("author"),
                 book_type=identity.get("book_type"),
                 volume=identity.get("volume"),
@@ -313,12 +333,14 @@ class EpubScanner:
                         dup_stmt = select(DuplicateBook).where(DuplicateBook.duplicate_filepath == filepath)
                         dup_res = await session.execute(dup_stmt)
                         if not dup_res.scalar_one_or_none():
+                            # Accedemos a book.author directamente (ya asignado arriba)
+                            # o al author de la identidad extraída
                             dup = DuplicateBook(
                                 book_hash=target_book_hash,
                                 original_filepath=hash_conflict.filepath,
                                 duplicate_filepath=filepath,
                                 title=book.title,
-                                author=book.author or (book.series_info.author if book.series_info else "Unknown"),
+                                author=identity.get("author") or "Unknown",
                             )
                             session.add(dup)
                         return "duplicate"

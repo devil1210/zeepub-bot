@@ -47,7 +47,7 @@ async def search_local_books(
     )
 
 
-# Note: The original upload_epubs endpoint was removed from here because it shadowed 
+# Note: The original upload_epubs endpoint was removed from here because it shadowed
 # the MiniApp upload workflow at /api/library/upload defined in miniapp_routes.py.
 # The MiniApp workflow is the preferred one as it includes metadata analysis and confirmation.
 

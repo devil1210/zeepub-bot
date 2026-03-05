@@ -240,7 +240,11 @@ class ScannerService:
                     mtime = datetime.fromtimestamp(os.path.getmtime(full_path))
                     # Skip if older than 24h and already in DB
                     if (datetime.now() - mtime).total_seconds() > 86400:
-                        stmt_exists = select(LocalBook).where(LocalBook.filepath == full_path)
+                        stmt_exists = (
+                            select(LocalBook)
+                            .options(selectinload(LocalBook.series_info))
+                            .where(LocalBook.filepath == full_path)
+                        )
                         res_exists = await session.execute(stmt_exists)
                         if res_exists.scalar_one_or_none():
                             continue
@@ -270,13 +274,20 @@ class ScannerService:
                         if book_res == "added":
                             results["added"] += 1
 
-                            # Better use relation if available
+                            # Usamos una construcción segura para evitar accesos síncronos
+                            # Si book.series_info no está cargado, usamos "Unknown" o los datos que ya tenemos
+                            series_name = "Unknown"
+                            author_name = "Unknown"
+                            if book.series_info:
+                                series_name = book.series_info.series_name
+                                author_name = book.series_info.author
+
                             results["added_books_details"].append(
                                 {
                                     "title": book.title,
-                                    "series": book.series_info.series_name if book.series_info else "Unknown",
+                                    "series": series_name,
                                     "volume": book.volume,
-                                    "author": book.series_info.author if book.series_info else "Unknown",
+                                    "author": author_name,
                                 }
                             )
                         else:
