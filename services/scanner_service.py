@@ -245,15 +245,16 @@ class ScannerService:
                         if res_exists.scalar_one_or_none():
                             continue
 
-                # Procesar libro por EpubScanner (async)
-                book_res = await EpubScanner.process_book(
-                    full_path,
-                    source,
-                    session,
-                    force_scan,
-                    series_provider=SeriesScanner.get_or_create_series,
-                    translator_provider=LibraryScanner.sync_translator_group,
-                )
+                    # Procesar libro por EpubScanner (async)
+                    book_res = await EpubScanner.process_book(
+                        full_path,
+                        source,
+                        session,
+                        force_scan,
+                        series_provider=SeriesScanner.get_or_create_series,
+                        translator_provider=LibraryScanner.sync_translator_group,
+                        skip_ai=True,
+                    )
 
                 if book_res in ("added", "updated"):
                     stmt_book = (
@@ -336,6 +337,7 @@ class ScannerService:
                         force_scan,
                         series_provider=SeriesScanner.get_or_create_series,
                         translator_provider=LibraryScanner.sync_translator_group,
+                        skip_ai=True,
                     )
                     if res in ("added", "updated"):
                         stmt_book = (
@@ -400,6 +402,7 @@ class ScannerService:
                                     force_scan,
                                     series_provider=SeriesScanner.get_or_create_series,
                                     translator_provider=LibraryScanner.sync_translator_group,
+                                    skip_ai=True,
                                 )
                                 if res == "added":
                                     results["added"] += 1

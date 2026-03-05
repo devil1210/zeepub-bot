@@ -26,7 +26,7 @@ class SeriesScanner:
     }
 
     @classmethod
-    async def get_or_create_series(cls, session: Any, book: LocalBook) -> SeriesMetadata:
+    async def get_or_create_series(cls, session: Any, book: LocalBook, skip_ai: bool = False) -> SeriesMetadata:
         """
         Obtiene o crea una entrada en SeriesMetadata para el libro.
         Normaliza campos comunes de la serie.
@@ -143,15 +143,15 @@ class SeriesScanner:
             if book_publisher and series.publisher != book_publisher:
                 series.publisher = book_publisher
 
-            if not series.series_spanish:
+            if not series.series_spanish and not skip_ai:
                 # Intentamos enriquecer metadatos (Español, etc)
-                await cls.enrich_series_metadata(session, series)
+                await cls.enrich_series_metadata(session, series, skip_ai=skip_ai)
 
             await session.flush()
             return series
 
     @classmethod
-    async def enrich_series_metadata(cls, session: Any, series: SeriesMetadata):
+    async def enrich_series_metadata(cls, session: Any, series: SeriesMetadata, skip_ai: bool = False):
         """
         Enriquece una serie buscando metadatos en español y otros campos.
         Usa Google Books API y/o IA como fallback.
@@ -171,7 +171,10 @@ class SeriesScanner:
         except Exception as e:
             logger.debug(f"API Enrichment failed for {series.series_name}: {e}")
 
-        # 2. IA Fallback (Solo si lo anterior falla y tenemos API Key)
+        # 2. IA Fallback (Solo si lo anterior falla, tenemos API Key y NO saltamos IA)
+        if skip_ai:
+            return
+
         try:
             from services.ai_service import AIService
 

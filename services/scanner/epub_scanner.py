@@ -127,6 +127,7 @@ class EpubScanner:
         force_scan: bool = False,
         series_provider: Any = None,
         translator_provider: Any = None,
+        skip_ai: bool = False,
     ) -> str | bool:
         """
         Procesa un archivo individual.
@@ -332,7 +333,8 @@ class EpubScanner:
 
             # Vinculación
             if series_provider:
-                series = await series_provider(session, book)
+                # Pasar skip_ai si el provider es async (SeriesScanner.get_or_create_series)
+                series = await series_provider(session, book, skip_ai=skip_ai)
                 book.series_metadata_id = series.id
 
             if translator_provider:
