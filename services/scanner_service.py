@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select, text
+from sqlalchemy.orm import selectinload
 
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
@@ -53,7 +54,9 @@ class ScannerService:
     def get_status(cls):
         return cls._current_progress
 
-    async def sync_all(self, force_scan: bool = False, soft_scan: bool = False, max_files: int = 0) -> dict[str, Any] | None:
+    async def sync_all(
+        self, force_scan: bool = False, soft_scan: bool = False, max_files: int = 0
+    ) -> dict[str, Any] | None:
         """
         Escanea todas las rutas locales configuradas en busca de nuevos libros.
         max_files: si > 0, procesa solo ese número de EPUBs (modo diagnóstico rápido).
@@ -124,7 +127,9 @@ class ScannerService:
                         session.add(source)
                         await session.flush()
 
-                    source_results, found_files = await self._scan_directory(source, session, force_scan, soft_scan, max_files=max_files)
+                    source_results, found_files = await self._scan_directory(
+                        source, session, force_scan, soft_scan, max_files=max_files
+                    )
                     results["sources_scanned"] += 1
 
                     if "added_books_details" in source_results:
@@ -251,7 +256,11 @@ class ScannerService:
                 )
 
                 if book_res in ("added", "updated"):
-                    stmt_book = select(LocalBook).where(LocalBook.filepath == full_path)
+                    stmt_book = (
+                        select(LocalBook)
+                        .options(selectinload(LocalBook.series_info))
+                        .where(LocalBook.filepath == full_path)
+                    )
                     res_book = await session.execute(stmt_book)
                     book = res_book.scalar_one_or_none()
 
@@ -294,7 +303,7 @@ class ScannerService:
         # Si ya se está escaneando, podemos intentar procesar esta ruta puntual de todos modos
         # si no es un escaneo masivo. Pero para simplificar, usaremos un lock o permitiremos concurrencia
         # mínima para uploads.
-        
+
         abs_path = os.path.abspath(path).replace("\\", "/")
         if not os.path.exists(abs_path):
             logger.warning(f"Ruta no encontrada para sincronización: {abs_path}")
@@ -305,7 +314,7 @@ class ScannerService:
         is_already_scanning = ScannerService._is_scanning
         if not is_already_scanning:
             ScannerService._is_scanning = True
-            
+
         try:
             async with pg_manager.get_session() as session:
                 stmt_source = select(LibrarySource).where(LibrarySource.id == source_id)
@@ -329,19 +338,23 @@ class ScannerService:
                         translator_provider=LibraryScanner.sync_translator_group,
                     )
                     if res in ("added", "updated"):
-                        stmt_book = select(LocalBook).where(LocalBook.filepath == abs_path)
+                        stmt_book = (
+                            select(LocalBook)
+                            .options(selectinload(LocalBook.series_info))
+                            .where(LocalBook.filepath == abs_path)
+                        )
                         res_book = await session.execute(stmt_book)
                         book = res_book.scalar_one_or_none()
-                        
+
                         if book and book.series_hash:
                             await SeriesScanner.sync_series_metadata(session, book.series_hash)
-                        
+
                         await session.commit()
-                        
+
                         if book:
                             return {"added": res == "added", "updated": res == "updated", "book_id": book.id}
                         return {"added": res == "added", "updated": res == "updated"}
-                    
+
                     return {"added": False, "updated": False, "status": res}
                 else:
                     results, _ = await self._scan_directory(source, session, force_scan)
@@ -380,7 +393,14 @@ class ScannerService:
                         for file in files:
                             if file.lower().endswith(".epub"):
                                 full_path = os.path.join(root, file)
-                                res = await EpubScanner.process_book(full_path, source, session, force_scan)
+                                res = await EpubScanner.process_book(
+                                    full_path,
+                                    source,
+                                    session,
+                                    force_scan,
+                                    series_provider=SeriesScanner.get_or_create_series,
+                                    translator_provider=LibraryScanner.sync_translator_group,
+                                )
                                 if res == "added":
                                     results["added"] += 1
                                 elif res == "updated":
