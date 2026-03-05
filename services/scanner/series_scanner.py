@@ -166,13 +166,24 @@ class SeriesScanner:
             return False, "vacío"
         if current_name == extracted_name:
             return True, "idéntico"
+
+        # Preservar si tiene caracteres especiales que el extraído no tiene
         special_chars = [":", "!", "?", "...", "—", "[", "]", "(", ")", "&", "%", "#", "@", "*", "+"]
         has_special_current = any(char in current_name for char in special_chars)
         has_special_extracted = any(char in extracted_name for char in special_chars)
         if has_special_current and not has_special_extracted:
             return True, "preservar carácter especial"
+
+        # Preservar si el actual es más largo (nombre extendido manual)
         if len(current_name) > len(extracted_name) + 5:
             return True, "preservar título extendido manual"
+
+        # NUEVO: Política conservadora — si el nombre actual existe y tiene 4+ chars,
+        # se considera intencional. Solo reemplazar si parece un hash/ID crudo.
+        looks_like_hash = len(current_name) <= 12 and current_name.replace("-", "").replace("_", "").isalnum()
+        if not looks_like_hash:
+            return True, "preservado (nombre existente intencional)"
+
         return False, "auto-generado o mejorable"
 
     @staticmethod
