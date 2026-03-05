@@ -18,7 +18,6 @@ from services.library_ui_service import (
     mostrar_series,
     mostrar_volumenes_local,
 )
-from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
 

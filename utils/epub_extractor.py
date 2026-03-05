@@ -80,21 +80,26 @@ class EpubMetadataExtractor:
                         contributors[node.get("{http://www.w3.org/XML/1998/namespace}id") or node.get("id")] = node.text
 
                     # Roles y Scripts Alternativos
-                    meta_tags = metadata_node.findall("opf:meta", self.NAMESPACE)
+                    creators_jap = {}  # id -> jap_text
                     role_map = {}  # id -> role (aut, ill, trl, mrk)
 
-                    for meta in meta_tags:
-                        refines = meta.get("refines")
-                        prop = meta.get("property")
-                        if refines:
-                            cid = refines.replace("#", "")
-                            if prop == "role":
-                                role_map[cid] = meta.text
-                            elif prop == "alternate-script" and (
-                                meta.get("{http://www.w3.org/XML/1998/namespace}lang") in ("ja", "ja-JP")
-                                or meta.get("xml:lang") in ("ja", "ja-JP")
-                            ):
-                                creators_jap[cid] = meta.text
+                    # Extraer toda la info de los meta tags en una sola pasada robusta
+                    meta_tags = []
+                    for child in metadata_node:
+                        tag_name = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+                        if tag_name == "meta":
+                            meta_tags.append(child)
+                            refines = child.get("refines")
+                            prop = child.get("property")
+                            if refines:
+                                cid = refines.replace("#", "")
+                                if prop == "role":
+                                    role_map[cid] = child.text
+                                elif prop == "alternate-script" and (
+                                    child.get("{http://www.w3.org/XML/1998/namespace}lang") in ("ja", "ja-JP")
+                                    or child.get("xml:lang") in ("ja", "ja-JP")
+                                ):
+                                    creators_jap[cid] = child.text
 
                     # Asignar personas
                     self.metadata["author"] = self._get_dc_value(metadata_node, "creator")  # Fallback
@@ -159,7 +164,6 @@ class EpubMetadataExtractor:
 
                     # 3.4 Series y Volumen (Calibre / EPUB3 metadata)
                     collection_ids = {}  # id -> title
-                    # First pass: collect IDs
                     for meta in meta_tags:
                         prop = meta.get("property")
                         meta_id = meta.get("id")
@@ -250,7 +254,6 @@ class EpubMetadataExtractor:
                             elif val in ["bw", "b/n", "bn", "grayscale", "gray"]:
                                 self.metadata["color_mode"] = "bw"
 
-                    # 3.5 Content Check (Final fallback for title)
                     if not self.metadata.get("title"):
                         self.metadata["title"] = clean_metadata_tags(raw_title)
 
@@ -326,15 +329,13 @@ class EpubMetadataExtractor:
             cover_id = None
 
             # 1. Buscar en <meta name="cover" content="id_imagen">
-            # Intentamos buscar con y sin prefijo opf: por compatibilidad
-            meta_tags = metadata_node.findall("opf:meta", self.NAMESPACE)
-            if not meta_tags:
-                meta_tags = metadata_node.findall("meta")
-
-            for meta in meta_tags:
-                if meta.get("name") == "cover":
-                    cover_id = meta.get("content")
-                    break
+            # Pasada robusta sobre todos los hijos
+            for child in metadata_node:
+                tag_name = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+                if tag_name == "meta":
+                    if child.get("name") == "cover":
+                        cover_id = child.get("content")
+                        break
 
             manifest_node = opf_root.find("opf:manifest", self.NAMESPACE)
             cover_href = None

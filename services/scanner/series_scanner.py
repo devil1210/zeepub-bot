@@ -75,7 +75,7 @@ class SeriesScanner:
             # El slug se genera a partir de series_english (que acabamos de inicializar)
             generated_slug = generar_slug_from_meta(series.to_dict())
             series.slug = generated_slug
-            logger.info(f"📝 Nueva serie [Identidad]: {series.series_name} | Slug: {generated_slug}")
+            logger.info(f"📝 Nueva serie [ID]: {series.series_name} | Slug: {generated_slug}")
 
             session.add(series)
             await session.flush()
@@ -108,10 +108,10 @@ class SeriesScanner:
             if should_update_english:
                 series.series_english = extracted_name
                 logger.info(
-                    f"📝 Actualizado Título Inglés (vía {preserve_reason}): {current_english} → {extracted_name}"
+                    f"📝 Actualizado Nombre Serie Inglés (vía {preserve_reason}): {current_english} → {extracted_name}"
                 )
             else:
-                logger.info(f"🔒 Título Inglés preservado — {preserve_reason}: {current_english}")
+                logger.info(f"🔒 Nombre Serie Inglés preservado ({preserve_reason}): {current_english}")
 
             book_author = extracted.get("author")
             if book_author and series.author != book_author:
