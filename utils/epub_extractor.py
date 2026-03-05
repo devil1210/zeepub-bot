@@ -9,14 +9,21 @@ from PIL import Image
 
 
 def clean_metadata_tags(text):
-    """Remove tags like [NL], [NW], [ShinsengumiTL], etc. from metadata"""
+    """Remove tags like [NL], (Novela), - V01, [NW], etc. from metadata"""
     if not text:
         return text
-    # Remove all content within square brackets
+    # 1. Quitar corchetes [TAG], [NL], [NW], [Fan Translation], etc.
     cleaned = re.sub(r"\s*\[.*?\]\s*", " ", text)
-    # Remove multiple spaces
+    # 2. Quitar paréntesis comunes (Novela), (Manga), (Completo), etc.
+    cleaned = re.sub(r"\s*\(.*?\)\s*", " ", cleaned)
+    # 3. Quitar sufijos de volumen si se colaron (ej: - V01, : V01, - Vol. 1)
+    cleaned = re.sub(r"\s*[-:]\s*V(?:ol)?\.?\s*\d+\s*.*$", "", cleaned, flags=re.IGNORECASE)
+    # 4. Quitar indicadores de volumen sueltos al final (ej: "Serie V01")
+    cleaned = re.sub(r"\s+V\d+$", "", cleaned)
+    # 5. Limpiar espacios múltiples y caracteres sueltos al final
     cleaned = re.sub(r"\s+", " ", cleaned)
-    return cleaned.strip()
+    cleaned = cleaned.strip().strip("-").strip(":").strip()
+    return cleaned
 
 
 class EpubMetadataExtractor:
@@ -171,28 +178,22 @@ class EpubMetadataExtractor:
                     # 3.4 Series y Volumen (EPUB3 / Calibre)
                     collection_ids = {}
 
-                    # PASADA 1: Buscar en belongs-to-collection (EPUB3)
+                    # PASADA 1: Buscar en pertenece-a-colección (belongs-to-collection) - EPUB3
                     for meta in meta_tags:
                         prop = get_attr_agnostic(meta, "property")
-                        meta_id = get_attr_agnostic(meta, "id")
                         if prop == "belongs-to-collection":
                             val = (meta.text or "").strip()
                             if val:
                                 self.metadata["series"] = clean_metadata_tags(val)
-                                if meta_id:
-                                    collection_ids[meta_id] = self.metadata["series"]
+                                break
 
-                    # PASADA 2: Buscar en calibre:series o simplemente 'series'
+                    # PASADA 2: Buscar en calibre:series o etiquetas equivalentes (EPUB2)
                     if not self.metadata.get("series"):
                         for meta in meta_tags:
                             name = get_attr_agnostic(meta, "name")
                             prop = get_attr_agnostic(meta, "property")
-                            content = get_attr_agnostic(meta, "content")
-
-                            # Intentar varios nombres comunes de series
-                            potential_props = ["calibre:series", "series", "collection", "belongs-to-collection"]
-                            if name in potential_props or prop in potential_props:
-                                val = content or meta.text
+                            if name in ("calibre:series", "series") or prop in ("calibre:series", "series"):
+                                val = get_attr_agnostic(meta, "content") or meta.text
                                 if val:
                                     self.metadata["series"] = clean_metadata_tags(val)
                                     break

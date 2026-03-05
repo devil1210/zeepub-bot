@@ -75,7 +75,7 @@ class SeriesScanner:
             # El slug se genera a partir de series_english (que acabamos de inicializar)
             generated_slug = generar_slug_from_meta(series.to_dict())
             series.slug = generated_slug
-            logger.info(f"📝 Nueva serie [ID]: {series.series_name} | Slug: {generated_slug}")
+            logger.info(f"📝 Nueva serie: {series.series_name} | Slug: {generated_slug}")
 
             session.add(series)
             await session.flush()
@@ -96,22 +96,24 @@ class SeriesScanner:
                 series.slug = cleaned_new_slug
                 logger.info(f"📝 Slug actualizado desde series_english: {cleaned_new_slug}")
 
-            # series_name es inamovible tras creación (según reglas de persistencia)
-            current_english = series.series_english or series.series_name or ""
-            extracted_name = extracted.get("series") or book.title
+            # Lógica de actualización de serie (basada en metadata limpia)
+            current_id_name = series.series_english or series.series_name or ""
+            # IMPORTANTE: No mezclamos con book.title en logs de Serie
+            extracted_name = extracted.get("series") or current_id_name
 
             should_preserve, preserve_reason = SeriesScanner._should_preserve_series_english(
-                current_english, extracted_name
+                current_id_name, extracted_name
             )
-            should_update_english = not should_preserve
 
-            if should_update_english:
+            if not should_preserve:
                 series.series_english = extracted_name
                 logger.info(
-                    f"📝 Actualizado Nombre Serie Inglés (vía {preserve_reason}): {current_english} → {extracted_name}"
+                    f"📝 Actualizado Serie (Metadata) via {preserve_reason}: {current_id_name} → {extracted_name}"
                 )
             else:
-                logger.info(f"🔒 Nombre Serie Inglés preservado ({preserve_reason}): {current_english}")
+                # Solo logueamos si realmente hay algo que proteger o si el usuario necesita saber que se detectó lo mismo
+                if current_id_name != extracted_name:
+                    logger.info(f"🔒 Serie (Metadata) preservada ({preserve_reason}): {current_id_name}")
 
             book_author = extracted.get("author")
             if book_author and series.author != book_author:
@@ -210,27 +212,28 @@ class SeriesScanner:
     def _should_preserve_series_english(current_name: str, extracted_name: str) -> tuple[bool, str]:
         if not current_name:
             return False, "vacío"
+
         if current_name == extracted_name:
             return True, "idéntico"
 
-        # Preservar si tiene caracteres especiales que el extraído no tiene
-        special_chars = [":", "!", "?", "...", "—", "[", "]", "(", ")", "&", "%", "#", "@", "*", "+"]
+        # Preservar si tiene caracteres especiales (punto de identidad más fuerte)
+        special_chars = [":", "!", "?", "—", "&", "%", "#", "@", "*", "+"]
         has_special_current = any(char in current_name for char in special_chars)
         has_special_extracted = any(char in extracted_name for char in special_chars)
+
         if has_special_current and not has_special_extracted:
-            return True, "preservar carácter especial"
+            return True, "puntuación original"
 
-        # Preservar si el actual es más largo (nombre extendido manual)
+        # Si el nombre actual es significativamente más largo, asumimos que fue corregido a mano
         if len(current_name) > len(extracted_name) + 5:
-            return True, "preservar título extendido manual"
+            return True, "título extendido manual"
 
-        # NUEVO: Política conservadora — si el nombre actual existe y tiene 4+ chars,
-        # se considera intencional. Solo reemplazar si parece un hash/ID crudo.
+        # Si el actual no es un hash, lo respetamos como identidad
         looks_like_hash = len(current_name) <= 12 and current_name.replace("-", "").replace("_", "").isalnum()
         if not looks_like_hash:
-            return True, "preservado (nombre existente intencional)"
+            return True, "nombre persistente"
 
-        return False, "auto-generado o mejorable"
+        return False, "metadatos detectados"
 
     @staticmethod
     def _extract_romaji_from_title(title: str) -> str:
