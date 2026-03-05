@@ -331,7 +331,7 @@ class SeriesScanner:
         """
         from services.settings_service import get_setting
 
-        if get_setting("enable_background_ai_scan", "false").lower() != "true":
+        if get_setting("ai_background_maintenance", "false").lower() != "true":
             return
 
         try:
