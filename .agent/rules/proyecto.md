@@ -28,7 +28,7 @@ Este archivo es la **Única Fuente de Verdad** para el comportamiento del asiste
 13. **GitNexus MCP Obligatorio**: GitNexus debe estar activo como MCP server en TODA sesión. Está configurado en `.mcp.json` (raíz del proyecto) para cargarse automáticamente. Al ejecutar `/empezar`, verificar con `npx gitnexus status` y re-indexar si está desactualizado. Usar `gitnexus_impact` antes de eliminar cualquier campo, columna o función para detectar impacto real en el grafo de código.
 14. **Límite de Líneas y Modularidad**: Toda nueva implementación debe ser optimizada y refactorizada desde el inicio. **El rango aceptable es 500–1000 líneas por archivo; idealmente no se debe superar ese límite.** Si un archivo supera las 1000 líneas, DEBE dividirse en módulos especializados antes de agregar más código. Principios:
     - Una responsabilidad por archivo (Single Responsibility).
-    - Funciones pequeñas y reutilizables (máx. 50 líneas por función).
+    - Funciones concisas y enfocadas: evitar funciones que hagan demasiadas cosas. Si crece demasiado, extraer helpers.
     - Extraer helpers, mixins y utilities antes de que el archivo crezca.
     - Prohibido añadir nueva funcionalidad a un archivo que ya supere el límite sin refactorizar primero.
 
