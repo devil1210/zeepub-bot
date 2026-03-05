@@ -53,9 +53,10 @@ class ScannerService:
     def get_status(cls):
         return cls._current_progress
 
-    async def sync_all(self, force_scan: bool = False, soft_scan: bool = False) -> dict[str, Any] | None:
+    async def sync_all(self, force_scan: bool = False, soft_scan: bool = False, max_files: int = 0) -> dict[str, Any] | None:
         """
         Escanea todas las rutas locales configuradas en busca de nuevos libros.
+        max_files: si > 0, procesa solo ese número de EPUBs (modo diagnóstico rápido).
         """
         if ScannerService._is_scanning:
             logger.warning("Ya hay un escaneo en curso.")
@@ -123,7 +124,7 @@ class ScannerService:
                         session.add(source)
                         await session.flush()
 
-                    source_results, found_files = await self._scan_directory(source, session, force_scan, soft_scan)
+                    source_results, found_files = await self._scan_directory(source, session, force_scan, soft_scan, max_files=max_files)
                     results["sources_scanned"] += 1
 
                     if "added_books_details" in source_results:
@@ -198,7 +199,7 @@ class ScannerService:
         finally:
             ScannerService._is_scanning = False
 
-    async def _scan_directory(self, source, session, force_scan=False, soft_scan=False) -> tuple:
+    async def _scan_directory(self, source, session, force_scan=False, soft_scan=False, max_files: int = 0) -> tuple:
         results = {
             "total_scanned": 0,
             "added": 0,
@@ -224,6 +225,11 @@ class ScannerService:
                 full_path = os.path.abspath(os.path.join(root, file))
                 found_files.add(full_path)
                 results["total_scanned"] += 1
+
+                # Modo diagnóstico: cortar tras N archivos
+                if max_files > 0 and results["total_scanned"] > max_files:
+                    logger.info(f"[quick-scan] Límite de {max_files} archivos alcanzado.")
+                    break
 
                 if soft_scan:
                     mtime = datetime.fromtimestamp(os.path.getmtime(full_path))

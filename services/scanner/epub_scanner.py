@@ -281,11 +281,7 @@ class EpubScanner:
             )
 
             with session.no_autoflush:
-                # El book ya puede estar en la sesión si existía para ese filepath
-                book.series_hash = target_series_hash
-                book.book_hash = target_book_hash
-
-                # Buscar conflictos de hash con OTROS paths
+                # 1. Primero verificar conflicto SIN tocar el objeto book todavia
                 conflict_stmt = select(LocalBook).where(
                     LocalBook.book_hash == target_book_hash, LocalBook.filepath != filepath
                 )
@@ -295,9 +291,6 @@ class EpubScanner:
                 if hash_conflict:
                     if not os.path.exists(hash_conflict.filepath):
                         logger.info(f"🔄 Migración detectada: {hash_conflict.filepath} -> {filepath}")
-                        # En lugar de crear uno nuevo, tomamos el conflictivo y actualizamos su path
-                        # Pero ya tenemos un objeto 'book', así que es más fácil borrar el conflictivo
-                        # o actualizarlo. Hagamos lo segundo: borramos el 'book' (si es nuevo) y usamos el conflictivo.
                         cls.copy_metadata_to_existing(book, hash_conflict)
                         hash_conflict.filepath = filepath
                         hash_conflict.filename = filename
@@ -305,8 +298,6 @@ class EpubScanner:
                         hash_conflict.file_modified_at = mtime
                         hash_conflict.source_id = source.id
                         hash_conflict.series_hash = target_series_hash
-                        # Si 'book' es nuevo y no estaba en DB, no pasa nada.
-                        # Si estaba en DB (existing_same_file), borrarlo.
                         if book.id and book.id != hash_conflict.id:
                             await session.delete(book)
                         book = hash_conflict
@@ -325,6 +316,10 @@ class EpubScanner:
                             )
                             session.add(dup)
                         return "duplicate"
+                else:
+                    # 2. Sin conflicto: asignar hashes al book
+                    book.series_hash = target_series_hash
+                    book.book_hash = target_book_hash
 
                 if book not in session:
                     session.add(book)

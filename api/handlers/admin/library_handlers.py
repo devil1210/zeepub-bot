@@ -60,22 +60,31 @@ async def handle_admin_sync_library_cloud(data: dict[str, Any], user_data: dict[
 
 
 async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, Any]):
-    """Activates forced library scan."""
+    """Activates forced library scan.
+
+    Params:
+      force (bool): Re-procesa todos los EPUBs aunque ya esten en DB.
+      soft (bool): Solo procesa archivos modificados en 24h.
+      max_files (int): Limite de EPUBs a procesar. 0 = sin limite (diagnostico rapido).
+    """
     check_staff(user_data)
     force = data.get("force", False)
     soft = data.get("soft", False)
+    max_files = int(data.get("max_files", 0))
 
     if ScannerService._is_scanning:
-        return {"success": False, "message": "⚠️ Ya hay un escaneo de librería en progreso."}
+        return {"success": False, "message": "Ya hay un escaneo de libreria en progreso."}
 
     libs_json = os.getenv("LOCAL_LIBRARIES")
     if not libs_json:
         return {"success": False, "message": "LOCAL_LIBRARIES no configurada."}
 
     scanner = ScannerService(libs_json)
-    # 🛠️ CORRECCIÓN: Usar asyncio.create_task en el loop principal en lugar de nuevo thread+loop
-    asyncio.create_task(scanner.sync_all(force_scan=force, soft_scan=soft))
-    return {"success": True, "message": "Escaneo iniciado en segundo plano."}
+    if max_files > 0:
+        logger.info(f"[quick-scan] Modo diagnostico: maximo {max_files} EPUBs.")
+    asyncio.create_task(scanner.sync_all(force_scan=force, soft_scan=soft, max_files=max_files))
+    mode = f"diagnostico ({max_files} EPUBs)" if max_files > 0 else "completo"
+    return {"success": True, "message": f"Escaneo {mode} iniciado en segundo plano."}
 
 
 async def handle_admin_cleanup_library(data: dict[str, Any], user_data: dict[str, Any]):
