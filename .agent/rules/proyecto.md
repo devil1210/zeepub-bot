@@ -26,7 +26,7 @@ Este archivo es la **Única Fuente de Verdad** para el comportamiento del asiste
 11. **Configuración de IA**: Es REQUISITO del proyecto utilizar exclusivamente los modelos **gemini-3-flash-preview** and **gemini-2.5-flash** en `services/ai_service.py`.
 12. **Uso de Slugs**: El slug de la serie se utiliza única y exclusivamente para hashtags de Telegram. NO debe afectar ninguna otra funcionalidad del proyecto (como rutas de imágenes, IDs de descarga o integridad de la base de datos).
 13. **GitNexus MCP Obligatorio**: GitNexus debe estar activo como MCP server en TODA sesión. Está configurado en `.mcp.json` (raíz del proyecto) para cargarse automáticamente. Al ejecutar `/empezar`, verificar con `npx gitnexus status` y re-indexar si está desactualizado. Usar `gitnexus_impact` antes de eliminar cualquier campo, columna o función para detectar impacto real en el grafo de código.
-14. **Límite de Líneas y Modularidad**: Toda nueva implementación debe ser optimizada y refactorizada desde el inicio. **Límite estricto: máximo 500 líneas por archivo. Ideal: ≤1000 líneas.** Si un archivo supera ese límite, DEBE dividirse en módulos especializados antes de agregar más código. Principios:
+14. **Límite de Líneas y Modularidad**: Toda nueva implementación debe ser optimizada y refactorizada desde el inicio. **El rango aceptable es 500–1000 líneas por archivo; idealmente no se debe superar ese límite.** Si un archivo supera las 1000 líneas, DEBE dividirse en módulos especializados antes de agregar más código. Principios:
     - Una responsabilidad por archivo (Single Responsibility).
     - Funciones pequeñas y reutilizables (máx. 50 líneas por función).
     - Extraer helpers, mixins y utilities antes de que el archivo crezca.
