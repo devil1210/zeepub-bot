@@ -390,7 +390,8 @@ class SeriesScanner:
 
                     if series_books:
                         try:
-                            proposal = await AIService.analyze_series_for_updates(
+                            ai_service = AIService()
+                            proposal = await ai_service.analyze_series(
                                 s_hash,
                                 current_name,
                                 [b.to_dict() for b in series_books],
