@@ -25,9 +25,13 @@ async def migrate_local_books():
     logger.info(f"Procesando {len(books)} libros.")
 
     for book in books:
+        # book.series fue eliminado del modelo; la serie vive en series_metadata
+        # Para regenerar hashes usamos series_hash que ya está guardado
+        series_name = book.series_info.series_name if book.series_info else None
+
         # Refined Book Hash - NO usar title según nueva especificación
         bh = generate_book_hash(
-            series=book.series,
+            series=series_name,
             author=book.author,
             book_type=book.book_type,
             volume=book.volume,
@@ -41,7 +45,7 @@ async def migrate_local_books():
 
         # New Series Hash
         sh = generate_series_hash(
-            series=book.series,
+            series=series_name,
             author=book.author,
             book_type=book.book_type,
         )
