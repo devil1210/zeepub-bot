@@ -215,8 +215,10 @@ class ScannerService:
             "added_books_details": [],
         }
         found_files = set()
+        source_id = source.id
+        source_path = source.path
 
-        for root, _, files in os.walk(source.path):
+        for root, _, files in os.walk(source_path):
             if ScannerService._stop_requested:
                 break
 
@@ -252,7 +254,7 @@ class ScannerService:
                 # Procesar libro por EpubScanner (async)
                 book_res = await EpubScanner.process_book(
                     full_path,
-                    source,
+                    source_id,
                     session,
                     force_scan,
                     series_provider=SeriesScanner.get_or_create_series,
