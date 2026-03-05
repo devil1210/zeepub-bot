@@ -587,7 +587,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Si venimos de la vista de detalles de 3 mensajes, QUEDAR EN ESPERA
         ids = st.get("last_detalles_msg_ids", [])
         if ids and st.get("current_view") == "detalles_libro":
-            # Solo quitamos botones del mensaje de info (el último de los 3)
             mid = ids[-1]
             try:
                 await context.bot.edit_message_reply_markup(
@@ -595,42 +594,31 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
             except Exception:
                 pass
-            st["last_detalles_msg_ids"] = []  # Ya no los vinculamos para borrado futuro
-        elif ids:
-            # Fallback para otras vistas que usen last_detalles_msg_ids (si las hay): borrar todo
+            st["last_detalles_msg_ids"] = []
+            return
+
+        if ids:
             for mid in ids:
                 try:
                     await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=mid)
                 except Exception:
                     pass
             st["last_detalles_msg_ids"] = []
-
-        # Si ya procesamos el modo espera (quitando botones), salimos sin enviar despedida extra
-        if st.get("current_view") == "detalles_libro" and not st.get("last_detalles_msg_ids"):
             return
 
-        # Enviar mensaje de despedida o simplemente borrar el último si era de botones
+        # Mensaje actual: quitar botones si es documento (EPUB enviado), borrar si no
         try:
-            cms = context.application.plugin_manager.get_plugin("custom_messages")
-            base_closing = "👋 Gracias por usar el bot."
-            text_closing = base_closing
-            if cms and cms.enabled:
-                text_closing = await cms.get_text("bot_closing")
-
-            # Si no era el último de detalles, editamos, si no lo borramos
-            if getattr(query.message, "document", None):
+            if getattr(query.message, "document", None) or getattr(query.message, "caption", None):
+                # Mensaje con archivo/caption: solo quitamos los botones
                 await query.edit_message_reply_markup(reply_markup=None)
             else:
                 await query.message.delete()
-            # Enviar despedida efímera o mensaje nuevo
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=text_closing,
-                parse_mode="HTML",
-                message_thread_id=get_thread_id(update),
-            )
         except Exception:
-            pass
+            # Fallback: intentar borrar si el edit falló
+            try:
+                await query.message.delete()
+            except Exception:
+                pass
         return
 
     # Descargar EPUB pendiente
