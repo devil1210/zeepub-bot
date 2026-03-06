@@ -235,21 +235,25 @@ class SeriesScanner:
             return
 
         # CONSOLIDAR DEMOGRAFÍA
-        if not series.demographics_list or len(series.demographics_list) == 0:
-            all_demographics = set()
-            for b in books:
-                if b.demographics_list:
-                    if isinstance(b.demographics_list, list):
-                        all_demographics.update(b.demographics_list)
-                    elif isinstance(b.demographics_list, str):
-                        # En caso de que venga como string simple
-                        all_demographics.add(b.demographics_list)
-            if all_demographics:
-                series.demographics_json = list(all_demographics)
-                series.demographics_list = await ScannerHelpers.sync_taxonomy(
-                    session, Demographic, list(all_demographics)
-                )
-                logger.info(f"🧬 Auto-poblada demografía para {series.series_name}: {series.demographics_json}")
+        all_demographics = set()
+        all_genres = set()
+        for b in books:
+            if b.demographics_list:
+                for d in b.demographics_list:
+                    all_demographics.add(d.name)
+            if b.genres:
+                for g in b.genres:
+                    all_genres.add(g.name)
+
+        if all_demographics:
+            series.demographics_json = list(all_demographics)
+            series.demographics_list = await ScannerHelpers.sync_taxonomy(session, Demographic, list(all_demographics))
+            logger.info(f"🧬 Auto-poblada demografía para {series.series_name}: {series.demographics_json}")
+
+        if all_genres:
+            series.tags_json = list(all_genres)
+            series.genres = await ScannerHelpers.sync_taxonomy(session, Genre, list(all_genres))
+            logger.info(f"🏷️ Auto-poblados géneros para {series.series_name}: {series.tags_json}")
 
         if not series.slug or len(str(series.slug)) > 40:
             series.slug = generar_slug_from_meta(series.to_dict())
