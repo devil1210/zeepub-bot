@@ -3,13 +3,13 @@ import logging
 
 from sqlalchemy import text
 
+# Import custom models so they are registered in Base.metadata
+import models  # noqa: F401
 from core.db_manager_pg import pg_manager
 from models.base import Base
 from models.library_models import (
     LibrarySource,
 )
-
-# Import custom models so they are registered in Base.metadata
 from models.user_models import UserLevel
 
 logger = logging.getLogger(__name__)
@@ -100,6 +100,15 @@ class SchemaOrchestrator:
                     "TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())",
                 )
                 await SchemaOrchestrator._check_and_add_column("users", "created_at", "TIMESTAMP DEFAULT NOW()")
+
+                # Auto-Migration for SeriesMetadata (Fix missing columns reported in logs)
+                await SchemaOrchestrator._check_and_add_column("series_metadata", "series_spanish", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("series_metadata", "series_english", "VARCHAR(512)")
+
+                # Auto-Migration for Download History (Fix series_hash missing)
+                await SchemaOrchestrator._check_and_add_column("download_history", "series_hash", "VARCHAR(64)")
+                await SchemaOrchestrator._check_and_add_column("user_downloads", "series_hash", "VARCHAR(64)")
+                await SchemaOrchestrator._check_and_add_column("download_history", "clean_title", "VARCHAR(512)")
 
                 # IMPORTANT: Wait a bit for Postgres to stabilize metadata
                 await asyncio.sleep(1)
