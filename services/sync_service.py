@@ -392,7 +392,7 @@ class SyncService:
                 local_paths = {item["filepath"] for item in final_data}
 
                 # Pedimos a Supabase lo que tiene actualmente
-                remote_books_response = client.table("local_books").select("id, book_hash, filepath").execute()
+                remote_books_response = client.table("local_books").select("book_hash, filepath").execute()
                 remote_books = (
                     remote_books_response.data
                     if hasattr(remote_books_response, "data")
@@ -405,14 +405,14 @@ class SyncService:
                 for rb in remote_books:
                     # Si el hash cambió o si el filepath pertenece ahora a otro hash distinto
                     if rb.get("book_hash") not in local_hashes or rb.get("filepath") not in local_paths:
-                        to_delete.append(rb.get("id"))
+                        to_delete.append(rb.get("book_hash"))
 
                 if to_delete:
                     print(
                         f"🧹 Eliminando {len(to_delete)} registros obsoletos/conflictivos de Supabase para evitar colisiones..."
                     )
                     for i in range(0, len(to_delete), 100):
-                        client.table("local_books").delete().in_("id", to_delete[i : i + 100]).execute()
+                        client.table("local_books").delete().in_("book_hash", to_delete[i : i + 100]).execute()
             except Exception as e:
                 logger.warning(f"Error en fase de purga de libros: {e}")
 

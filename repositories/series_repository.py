@@ -155,10 +155,10 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                     series_filters.append(SeriesMetadata.author.ilike(pattern))
 
                 if search_type in ("todos", "all", "tags", "géneros", "genres"):
-                    series_filters.append(cast(SeriesMetadata.tags, String).ilike(pattern))
+                    series_filters.append(cast(SeriesMetadata.tags_json, String).ilike(pattern))
 
                 if search_type in ("todos", "all", "demographics", "demografía"):
-                    series_filters.append(cast(SeriesMetadata.demographics, String).ilike(pattern))
+                    series_filters.append(cast(SeriesMetadata.demographics_json, String).ilike(pattern))
 
                 if search_type in ("translator", "traductor", "group", "grupo"):
                     series_filters.append(SeriesMetadata.publisher.ilike(pattern))

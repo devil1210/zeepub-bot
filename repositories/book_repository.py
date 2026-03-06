@@ -130,9 +130,9 @@ class BookRepository(BaseRepository[LocalBook]):
 
                 # Filtros extendidos según el tipo de búsqueda
                 if search_type in ("all", "todos", "genres", "géneros", "tags"):
-                    filters.append(cast(SeriesMetadata.tags, String).ilike(pattern))
+                    filters.append(cast(SeriesMetadata.tags_json, String).ilike(pattern))
                 if search_type in ("all", "todos", "demographics", "demografía"):
-                    filters.append(cast(SeriesMetadata.demographics, String).ilike(pattern))
+                    filters.append(cast(SeriesMetadata.demographics_json, String).ilike(pattern))
                 if search_type in ("all", "todos", "translator", "traductor", "group", "grupo"):
                     filters.append(LocalBook.translator.ilike(pattern))
                 if search_type in ("all", "todos", "illustrator", "ilustrador"):

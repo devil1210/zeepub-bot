@@ -21,8 +21,8 @@ class DownloadHistory(Base):
 
     # Relaciones
     user = relationship("User", backref="download_history")
-    book_id = Column(Integer, ForeignKey("local_books.id"), nullable=True)  # Vinculación con libro local
     book_hash = Column(String(64), ForeignKey("local_books.book_hash"), index=True)
+    series_hash = Column(String(64), ForeignKey("series_metadata.series_hash"), index=True)
 
     title = Column(String(512), nullable=False)
     downloaded_at = Column(DateTime, default=datetime.utcnow)
