@@ -41,9 +41,9 @@ class SeriesMetadata(Base):
     __tablename__ = "series_metadata"
 
     id = Column(Integer, primary_key=True)
-    series_name = Column(String(255), nullable=False)
-    series_spanish = Column(String(255))
-    series_english = Column(String(255))
+    series_name = Column(String(512), nullable=False)
+    series_spanish = Column(String(512))
+    series_english = Column(String(512))
     slug = Column(String(512), index=True)  # Slug persistente para URLs y referencias
     series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
@@ -59,7 +59,7 @@ class SeriesMetadata(Base):
     cover_url = Column(String(1024))  # Portada representativa de la serie
     book_count = Column(Integer, default=0)
 
-    book_type = Column(String(100))  # Ej: Novela Ligera, Manga
+    book_type = Column(String(255))  # Ej: Novela Ligera, Manga
     publisher = Column(String(255))
 
     rating_average = Column(Float, default=0.0)
