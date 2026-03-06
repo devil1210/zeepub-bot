@@ -110,9 +110,9 @@ class LibraryMaintenanceService:
             unique_authors = session.query(func.count(func.distinct(SeriesMetadata.author))).scalar()
 
             book_types = (
-                session.query(SeriesMetadata.book_type, func.count(LocalBook.id))
+                session.query(SeriesMetadata.book_type, func.count(LocalBook.book_hash))
                 .select_from(LocalBook)
-                .join(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
+                .join(SeriesMetadata, LocalBook.series_hash == SeriesMetadata.series_hash)
                 .group_by(SeriesMetadata.book_type)
                 .all()
             )

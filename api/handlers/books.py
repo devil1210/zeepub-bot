@@ -90,11 +90,9 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
         }
 
     # 2. Local Book Handling
-    if str(book_id_raw).isdigit() or (
-        str(book_id_raw).startswith("local_") and not str(book_id_raw).startswith("series_")
-    ):
-        clean_id = int(str(book_id_raw).replace("local_", ""))
-        local_book = await LibraryService.get_book_by_id(clean_id)
+    if str(book_id_raw).startswith("local_") or not str(book_id_raw).startswith("series_"):
+        book_hash = str(book_id_raw).replace("local_", "")
+        local_book = await LibraryService.get_book_by_id(book_hash)
 
         if local_book:
             logger.info(
@@ -130,12 +128,8 @@ async def handle_rate_book(data: dict[str, Any], user_data: dict[str, Any]):
     if not book_id_raw or rating is None:
         raise HTTPException(status_code=400, detail="Faltan parámetros bookId o rating")
 
-    try:
-        book_id = int(str(book_id_raw).replace("local_", ""))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="ID de libro inválido para votación") from e
-
-    return await RatingService.rate_book(user_id, book_id, rating)
+    book_hash = str(book_id_raw).replace("local_", "")
+    return await RatingService.rate_book(user_id, book_hash, rating)
 
 
 async def handle_remove_rating(data: dict[str, Any], user_data: dict[str, Any]):
@@ -145,12 +139,8 @@ async def handle_remove_rating(data: dict[str, Any], user_data: dict[str, Any]):
     if not book_id_raw:
         raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
 
-    try:
-        book_id = int(str(book_id_raw).replace("local_", ""))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="ID de libro inválido") from e
-
-    return await RatingService.remove_rating(user_id, book_id)
+    book_hash = str(book_id_raw).replace("local_", "")
+    return await RatingService.remove_rating(user_id, book_hash)
 
 
 async def handle_rating_breakdown(data: dict[str, Any], user_data: dict[str, Any]):
@@ -159,12 +149,8 @@ async def handle_rating_breakdown(data: dict[str, Any], user_data: dict[str, Any
     if not book_id_raw:
         raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
 
-    try:
-        book_id = int(str(book_id_raw).replace("local_", ""))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="ID de libro inválido") from e
-
-    return {"breakdown": await RatingService.get_rating_breakdown(book_id)}
+    book_hash = str(book_id_raw).replace("local_", "")
+    return {"breakdown": await RatingService.get_rating_breakdown(book_hash)}
 
 
 async def handle_request_book(data: dict[str, Any], user_data: dict[str, Any]):
