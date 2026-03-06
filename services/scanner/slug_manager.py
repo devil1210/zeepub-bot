@@ -94,7 +94,7 @@ class SlugManager:
             return True, "vacío"
 
         if current_slug == new_slug:
-            return True, "idéntico"
+            return False, "idéntico"
 
         # Check if current slug has special characters
         has_special_chars = any(
