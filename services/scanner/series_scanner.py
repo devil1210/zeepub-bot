@@ -1,6 +1,7 @@
 from typing import Any
 
 from sqlalchemy import select, text
+from sqlalchemy.orm import selectinload
 
 from models.library_models import ArchivedSeries, Demographic, Genre, LocalBook, MetadataProposal, SeriesMetadata
 from services.ai_service import AIService
@@ -34,7 +35,14 @@ class SeriesScanner:
         identity = getattr(book, "extracted_data", {})
         series_hash = book.series_hash
 
-        stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == series_hash)
+        stmt = (
+            select(SeriesMetadata)
+            .options(
+                selectinload(SeriesMetadata.genres),
+                selectinload(SeriesMetadata.demographics),
+            )
+            .where(SeriesMetadata.series_hash == series_hash)
+        )
         result = await session.execute(stmt)
         series = result.scalar_one_or_none()
 
@@ -180,14 +188,28 @@ class SeriesScanner:
         """
         Consolida la metadata de una serie basándose en todos sus volúmenes.
         """
-        stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == series_hash)
+        stmt = (
+            select(SeriesMetadata)
+            .options(
+                selectinload(SeriesMetadata.genres),
+                selectinload(SeriesMetadata.demographics),
+            )
+            .where(SeriesMetadata.series_hash == series_hash)
+        )
         result = await session.execute(stmt)
         series = result.scalar_one_or_none()
 
         if not series:
             return
 
-        stmt_books = select(LocalBook).where(LocalBook.series_hash == series_hash)
+        stmt_books = (
+            select(LocalBook)
+            .options(
+                selectinload(LocalBook.genres),
+                selectinload(LocalBook.demographics),
+            )
+            .where(LocalBook.series_hash == series_hash)
+        )
         res_books = await session.execute(stmt_books)
         books = res_books.scalars().all()
 

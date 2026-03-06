@@ -153,7 +153,15 @@ class EpubScanner:
             size = stat.st_size
 
             # 1. Búsqueda rápida en DB
-            stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.filepath == filepath)
+            stmt = (
+                select(LocalBook)
+                .options(
+                    selectinload(LocalBook.series_info),
+                    selectinload(LocalBook.genres),
+                    selectinload(LocalBook.demographics),
+                )
+                .where(LocalBook.filepath == filepath)
+            )
             result = await session.execute(stmt)
             book = result.scalar_one_or_none()
 
@@ -222,7 +230,11 @@ class EpubScanner:
             with session.no_autoflush:
                 conflict_stmt = (
                     select(LocalBook)
-                    .options(selectinload(LocalBook.series_info))
+                    .options(
+                        selectinload(LocalBook.series_info),
+                        selectinload(LocalBook.genres),
+                        selectinload(LocalBook.demographics),
+                    )
                     .where(LocalBook.book_hash == target_book_hash, LocalBook.filepath != filepath)
                 )
                 conflict_res = await session.execute(conflict_stmt)
