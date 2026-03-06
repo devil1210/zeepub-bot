@@ -8,8 +8,9 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from models.library_models import LocalBook
+from models.library_models import Demographic, Genre, LocalBook
 from services.hash_service import hash_service
+from services.scanner.scanner_helpers import ScannerHelpers
 from utils.epub_extractor import EpubMetadataExtractor
 from utils.helpers import generate_short_link
 from utils.library_db import COVERS_DIR, DB_DIR
@@ -281,11 +282,18 @@ class EpubScanner:
                 book.reading_time = meta.get("reading_time") or book.reading_time
                 book.modified_at_opf = meta.get("modified_at_opf") or book.modified_at_opf
 
-                # Tags y Clasificación
+                # Tags y Clasificación (JSON - Legacy)
                 raw_tags = meta.get("tags", [])
                 known_demographics = ["shounen", "seinen", "shoujo", "josei", "kodomo", "seijin", "adultos", "mature"]
-                book.demographics = [t for t in raw_tags if any(d in t.lower() for d in known_demographics)]
-                book.tags = [t for t in raw_tags if t not in book.demographics]
+                book_demographics = [t for t in raw_tags if any(d in t.lower() for d in known_demographics)]
+                book_tags = [t for t in raw_tags if t not in book_demographics]
+
+                book.demographics_json = book_demographics
+                book.tags_json = book_tags
+
+                # Relaciones Normalizadas (NUEVO)
+                book.genres = await ScannerHelpers.sync_taxonomy(session, Genre, book_tags)
+                book.demographics = await ScannerHelpers.sync_taxonomy(session, Demographic, book_demographics)
 
                 # Hash MD5 físico (opcional para integridad extra)
                 try:

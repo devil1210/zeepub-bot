@@ -22,18 +22,7 @@ class DownloadHistory(Base):
     # Relaciones
     user = relationship("User", backref="download_history")
     book_id = Column(Integer, ForeignKey("local_books.id"), nullable=True)  # Vinculación con libro local
-    title = Column(String(512), nullable=False)
-    author = Column(String(255))
-    download_url = Column(String(1024))
-    file_size = Column(Integer)
-    downloaded_at = Column(DateTime, default=datetime.utcnow)
+    book_hash = Column(String(64), ForeignKey("local_books.book_hash"), index=True)
 
-    # Metadata adicional para tracking
-    romaji_title = Column(String(512))
-    series = Column(String(255))
-    volume = Column(String(50))
-    translator = Column(String(255))
-    clean_title = Column(String(512))
-    book_hash = Column(String(64), index=True)
-    is_uncensored = Column(Integer, default=0)
-    color_mode = Column(String(50))
+    title = Column(String(512), nullable=False)
+    downloaded_at = Column(DateTime, default=datetime.utcnow)

@@ -2,8 +2,11 @@ from .base import Base
 from .download_models import DownloadHistory
 from .library_models import (
     AILearningFeedback,
+    Demographic,
+    Genre,
     LibrarySource,
     LocalBook,
+    MediaAsset,
     MetadataProposal,
     SeriesMetadata,
     TranslatorsGroup,
@@ -32,4 +35,7 @@ __all__ = [
     "AILearningFeedback",
     "MetadataProposal",
     "DownloadHistory",
+    "Genre",
+    "Demographic",
+    "MediaAsset",
 ]

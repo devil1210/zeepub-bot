@@ -76,7 +76,7 @@ class PublicationQueue(Base):
     __tablename__ = "publication_queue"
 
     id = Column(Integer, primary_key=True)
-    book_hash = Column(String(64), nullable=False, index=True)
+    book_hash = Column(String(64), ForeignKey("local_books.book_hash"), nullable=False, index=True)
     channel_id = Column(Integer, ForeignKey("publication_channels.id"), nullable=False)
     template_id = Column(Integer, ForeignKey("publication_templates.id"), nullable=True)
 

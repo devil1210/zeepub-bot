@@ -2,8 +2,9 @@ from typing import Any
 
 from sqlalchemy import select, text
 
-from models.library_models import ArchivedSeries, LocalBook, MetadataProposal, SeriesMetadata
+from models.library_models import ArchivedSeries, Demographic, Genre, LocalBook, MetadataProposal, SeriesMetadata
 from services.ai_service import AIService
+from services.scanner.scanner_helpers import ScannerHelpers
 from utils.helpers import generar_slug_from_meta
 from utils.logger import logger
 
@@ -52,12 +53,18 @@ class SeriesScanner:
                 illustrator=identity.get("illustrator"),
                 illustrator_jap=identity.get("illustrator_jap"),
                 description=identity.get("description"),
-                tags=identity.get("tags") or [],
-                demographics=identity.get("demographics") or [],
+                tags_json=identity.get("tags") or [],
+                demographics_json=identity.get("demographics") or [],
                 book_type=identity.get("book_type") or "Light Novel",
                 publisher=identity.get("publisher") or book.publisher,
                 cover_url=book.cover_low or book.cover_medium,
                 book_count=0,
+            )
+
+            # Relaciones Normalizadas (NUEVO)
+            series.genres = await ScannerHelpers.sync_taxonomy(session, Genre, identity.get("tags") or [])
+            series.demographics = await ScannerHelpers.sync_taxonomy(
+                session, Demographic, identity.get("demographics") or []
             )
 
             series.slug = SlugManager.generate_valid_slug(series)
@@ -86,16 +93,22 @@ class SeriesScanner:
 
             # Fusión de Tags y Demographics
             if identity.get("tags"):
-                existing = set(series.tags or [])
+                existing = set(series.tags_json or [])
                 incoming = set(identity["tags"])
                 if not incoming.issubset(existing):
-                    series.tags = list(existing.union(incoming))
+                    series.tags_json = list(existing.union(incoming))
+                    # Actualizar Relación
+                    series.genres = await ScannerHelpers.sync_taxonomy(session, Genre, series.tags_json)
 
             if identity.get("demographics"):
-                existing_demo = set(series.demographics or [])
+                existing_demo = set(series.demographics_json or [])
                 incoming_demo = set(identity["demographics"])
                 if not incoming_demo.issubset(existing_demo):
-                    series.demographics = list(existing_demo.union(incoming_demo))
+                    series.demographics_json = list(existing_demo.union(incoming_demo))
+                    # Actualizar Relación
+                    series.demographics = await ScannerHelpers.sync_taxonomy(
+                        session, Demographic, series.demographics_json
+                    )
 
             # Gestión de Portada (Preferir Volumen 1)
             if book.volume == 1 and book.cover_low:
@@ -210,8 +223,9 @@ class SeriesScanner:
                         # En caso de que venga como string simple
                         all_demographics.add(b.demographics)
             if all_demographics:
-                series.demographics = list(all_demographics)
-                logger.info(f"🧬 Auto-poblada demografía para {series.series_name}: {series.demographics}")
+                series.demographics_json = list(all_demographics)
+                series.demographics = await ScannerHelpers.sync_taxonomy(session, Demographic, list(all_demographics))
+                logger.info(f"🧬 Auto-poblada demografía para {series.series_name}: {series.demographics_json}")
 
         if not series.slug or len(str(series.slug)) > 40:
             series.slug = generar_slug_from_meta(series.to_dict())

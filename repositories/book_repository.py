@@ -24,10 +24,12 @@ class BookRepository(BaseRepository[LocalBook]):
 
     # --- Métodos abstractos de BaseRepository ---
 
-    async def get_by_id(self, id: Any) -> LocalBook | None:
-        """Obtiene un libro por ID con su información de serie cargada."""
+    async def get_by_id(self, book_hash: str) -> LocalBook | None:
+        """Obtiene un libro por hash con su información de serie cargada."""
         async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.id == id)
+            stmt = (
+                select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.book_hash == book_hash)
+            )
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
@@ -52,21 +54,28 @@ class BookRepository(BaseRepository[LocalBook]):
             await session.refresh(merged)
             return merged
 
-    async def delete(self, id: Any) -> bool:
-        """Elimina un libro por ID manejando referencias en otras tablas."""
+    async def delete(self, book_hash: str) -> bool:
+        """Elimina un libro por hash manejando referencias en otras tablas."""
         async with pg_manager.get_session() as session:
             try:
-                # Actualizar referencias en otras tablas
-                await session.execute(update(DownloadHistory).where(DownloadHistory.book_id == id).values(book_id=None))
-                await session.execute(update(UserDownload).where(UserDownload.book_id == id).values(book_id=None))
-                await session.execute(update(UserRating).where(UserRating.book_id == id).values(book_id=None))
+                # Las FKS en la DB deberían manejar el ON DELETE SET NULL o CASCADE
+                # Pero lo hacemos explícito para seguridad en el código
+                await session.execute(
+                    update(DownloadHistory).where(DownloadHistory.book_hash == book_hash).values(book_hash=None)
+                )
+                await session.execute(
+                    update(UserDownload).where(UserDownload.book_hash == book_hash).values(book_hash=None)
+                )
+                await session.execute(
+                    update(UserRating).where(UserRating.book_hash == book_hash).values(book_hash=None)
+                )
 
-                stmt = delete(LocalBook).where(LocalBook.id == id)
+                stmt = delete(LocalBook).where(LocalBook.book_hash == book_hash)
                 result = await session.execute(stmt)
                 await session.commit()
                 return result.rowcount > 0
             except Exception as e:
-                logger.error(f"Error deleting book {id}: {e}")
+                logger.error(f"Error deleting book {book_hash}: {e}")
                 await session.rollback()
                 return False
 
@@ -136,15 +145,15 @@ class BookRepository(BaseRepository[LocalBook]):
 
                 # Subconsulta para conteo de descargas
                 dl_subquery = (
-                    select(func.count(UserDownload.id))
-                    .where(UserDownload.book_hash == LocalBook.book_hash)
+                    select(func.count(DownloadHistory.id))
+                    .where(DownloadHistory.book_hash == LocalBook.book_hash)
                     .correlate(LocalBook)
                     .scalar_subquery()
                 )
 
                 stmt = (
                     select(LocalBook, dl_subquery.label("download_count"))
-                    .join(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
+                    .join(SeriesMetadata, LocalBook.series_hash == SeriesMetadata.series_hash)
                     .options(selectinload(LocalBook.series_info))
                     .where(or_(*filters))
                 )
@@ -193,8 +202,8 @@ class BookRepository(BaseRepository[LocalBook]):
         async with pg_manager.get_session() as session:
             # Subquery for download count
             dl_subquery = (
-                select(func.count(UserDownload.id))
-                .where(UserDownload.book_hash == LocalBook.book_hash)
+                select(func.count(DownloadHistory.id))
+                .where(DownloadHistory.book_hash == LocalBook.book_hash)
                 .correlate(LocalBook)
                 .scalar_subquery()
             )
@@ -259,7 +268,7 @@ class BookRepository(BaseRepository[LocalBook]):
     async def get_total_downloads(self, book_hash: str) -> int:
         """Obtiene el conteo total de descargas para un hash de libro."""
         async with pg_manager.get_session() as session:
-            stmt = select(func.count(UserDownload.id)).where(UserDownload.book_hash == book_hash)
+            stmt = select(func.count(DownloadHistory.id)).where(DownloadHistory.book_hash == book_hash)
             result = await session.execute(stmt)
             return result.scalar() or 0
 

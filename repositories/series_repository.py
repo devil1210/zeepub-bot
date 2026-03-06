@@ -5,7 +5,8 @@ from sqlalchemy import String, and_, cast, delete, func, or_, select
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, SeriesMetadata, UserDownload
+from models.download_models import DownloadHistory
+from models.library_models import LocalBook, SeriesMetadata
 from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
@@ -19,10 +20,14 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
     def __init__(self, db_manager=None):
         super().__init__(db_manager or pg_manager, "series_metadata")
 
-    async def get_by_id(self, id: Any) -> SeriesMetadata | None:
-        """Obtiene una serie por su ID de base de datos."""
+    async def get_by_id(self, series_hash: str) -> SeriesMetadata | None:
+        """Obtiene una serie por su hash único."""
         async with pg_manager.get_session() as session:
-            stmt = select(SeriesMetadata).options(selectinload(SeriesMetadata.books)).where(SeriesMetadata.id == id)
+            stmt = (
+                select(SeriesMetadata)
+                .options(selectinload(SeriesMetadata.books))
+                .where(SeriesMetadata.series_hash == series_hash)
+            )
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
@@ -42,10 +47,10 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
             await session.refresh(merged)
             return merged
 
-    async def delete(self, id: Any) -> bool:
-        """Elimina una serie por ID."""
+    async def delete(self, series_hash: str) -> bool:
+        """Elimina una serie por hash."""
         async with pg_manager.get_session() as session:
-            stmt = delete(SeriesMetadata).where(SeriesMetadata.id == id)
+            stmt = delete(SeriesMetadata).where(SeriesMetadata.series_hash == series_hash)
             result = await session.execute(stmt)
             await session.commit()
             return result.rowcount > 0
@@ -71,7 +76,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 stmt = select(SeriesMetadata)
 
                 # Conteo total
-                count_stmt = select(func.count(SeriesMetadata.id))
+                count_stmt = select(func.count(SeriesMetadata.series_hash))
                 total_items = (await session.execute(count_stmt)).scalar() or 0
 
                 # Orden y Paginación
@@ -96,10 +101,10 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 logger.error(f"Error list_series: {e}")
                 return {"items": [], "totalItems": 0, "totalPages": 0}
 
-    async def update_data(self, series_id: int, data: dict[str, Any]) -> bool:
-        """Actualiza campos específicos de una serie (Legacy/Helper)."""
+    async def update_data(self, series_hash: str, data: dict[str, Any]) -> bool:
+        """Actualiza campos específicos de una serie."""
         async with pg_manager.get_session() as session:
-            series = await session.get(SeriesMetadata, series_id)
+            series = await session.get(SeriesMetadata, series_hash)
             if not series:
                 return False
 
@@ -129,8 +134,8 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
 
                 # Base query with download count subquery
                 dl_subquery = (
-                    select(func.count(UserDownload.id))
-                    .where(UserDownload.series_hash == SeriesMetadata.series_hash)
+                    select(func.count(DownloadHistory.id))
+                    .where(DownloadHistory.series_hash == SeriesMetadata.series_hash)
                     .correlate(SeriesMetadata)
                     .scalar_subquery()
                 )
@@ -184,10 +189,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
 
                         book_subq = sa_exists().where(
                             and_(
-                                or_(
-                                    LocalBook.series_metadata_id == SeriesMetadata.id,
-                                    LocalBook.series_hash == SeriesMetadata.series_hash,
-                                ),
+                                LocalBook.series_hash == SeriesMetadata.series_hash,
                                 or_(*book_filters),
                             )
                         )
@@ -204,10 +206,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                     stmt = (
                         stmt.join(
                             LocalBook,
-                            or_(
-                                LocalBook.series_metadata_id == SeriesMetadata.id,
-                                LocalBook.series_hash == SeriesMetadata.series_hash,
-                            ),
+                            LocalBook.series_hash == SeriesMetadata.series_hash,
                         )
                         .where(LocalBook.source_id == source_id)
                         .distinct()
@@ -215,7 +214,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
 
                 # 5. Ordenamiento
                 if sort_by == "newest":
-                    stmt = stmt.order_by(SeriesMetadata.id.desc())
+                    stmt = stmt.order_by(SeriesMetadata.series_hash.desc())  # O usar indexed_at si existe
                 elif sort_by in ("popular", "downloads"):
                     stmt = stmt.order_by(SeriesMetadata.rating_count.desc())
                 else:
@@ -253,7 +252,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
         """Actualiza el contador de libros de una serie basado en los libros reales en DB."""
         async with pg_manager.get_session() as session:
             # Contar libros reales
-            count_stmt = select(func.count(LocalBook.id)).where(LocalBook.series_hash == series_hash)
+            count_stmt = select(func.count(LocalBook.book_hash)).where(LocalBook.series_hash == series_hash)
             real_count = (await session.execute(count_stmt)).scalar() or 0
 
             # Actualizar metadata

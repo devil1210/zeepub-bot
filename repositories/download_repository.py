@@ -52,44 +52,24 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
         self,
         user_id: int,
         title: str,
-        author: str | None = None,
-        download_url: str | None = None,
-        file_size: int | None = None,
-        romaji_title: str | None = None,
-        series: str | None = None,
-        volume: str | None = None,
-        translator: str | None = None,
-        clean_title: str | None = None,
-        book_hash: str | None = None,
-        is_uncensored: int = 0,
-        color_mode: str | None = None,
-        book_id: int | None = None,
+        book_hash: str,
+        series_hash: str | None = None,
     ) -> int:
         try:
             async with pg_manager.get_session() as session:
                 query = text("""
                     INSERT INTO download_history
-                    (user_id, title, author, download_url, file_size, romaji_title, series, volume, translator, clean_title, book_hash, is_uncensored, color_mode, downloaded_at, book_id)
-                    VALUES (:user_id, :title, :author, :download_url, :file_size, :romaji_title, :series, :volume, :translator, :clean_title, :book_hash, :iu, :cm, CURRENT_TIMESTAMP, :bid)
+                    (user_id, book_hash, series_hash, title, downloaded_at)
+                    VALUES (:user_id, :book_hash, :series_hash, :title, CURRENT_TIMESTAMP)
                     RETURNING id
                 """)
                 result = await session.execute(
                     query,
                     {
                         "user_id": user_id,
-                        "title": title,
-                        "author": author,
-                        "download_url": download_url,
-                        "file_size": file_size,
-                        "romaji_title": romaji_title,
-                        "series": series,
-                        "volume": volume,
-                        "translator": translator,
-                        "clean_title": clean_title,
                         "book_hash": book_hash,
-                        "iu": is_uncensored,
-                        "cm": color_mode,
-                        "bid": book_id,
+                        "series_hash": series_hash,
+                        "title": title,
                     },
                 )
                 new_id = result.scalar()
@@ -100,14 +80,9 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                     try:
                         data = {
                             "user_id": user_id,
-                            "title": title,
-                            "author": author,
-                            "download_url": download_url,
-                            "file_size": file_size,
                             "book_hash": book_hash,
-                            "is_uncensored": is_uncensored,
-                            "color_mode": color_mode,
-                            "book_id": book_id,
+                            "series_hash": series_hash,
+                            "title": title,
                         }
                         self.supabase.get_client().table("download_history").insert(data).execute()
                     except Exception:
@@ -132,22 +107,17 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                 query = text("""
                     SELECT
                         dh.id,
-                        dh.book_id,
                         dh.book_hash,
+                        dh.series_hash,
                         dh.title,
-                        dh.author,
-                        dh.file_size,
                         dh.downloaded_at,
-                        dh.romaji_title,
-                        dh.series,
-                        dh.volume,
-                        dh.translator,
-                        dh.clean_title,
-                        lb.cover_medium,
-                        lb.cover_low,
-                        lb.cover_original
+                        lb.filepath,
+                        lb.volume,
+                        sm.series_name,
+                        sm.author
                     FROM download_history dh
-                    LEFT JOIN local_books lb ON dh.book_id = lb.id OR dh.book_hash = lb.book_hash
+                    JOIN local_books lb ON dh.book_hash = lb.book_hash
+                    JOIN series_metadata sm ON lb.series_hash = sm.series_hash
                     WHERE dh.user_id = :user_id
                     ORDER BY dh.downloaded_at DESC
                     LIMIT :limit

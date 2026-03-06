@@ -9,6 +9,8 @@ from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
 from models.library_models import (
     AILearningFeedback,
+    Demographic,
+    Genre,
     LibrarySource,
     LocalBook,
     MetadataProposal,
@@ -57,7 +59,10 @@ class SyncService:
 
         try:
             async with pg_manager.get_session() as session:
-                # 1. Sync SeriesMetadata (Local -> Cloud)
+                # 1. Sync Taxonomy Master Tables (Genres, Demographics)
+                await SyncService._sync_taxonomy_masters(session, client, stats)
+
+                # 2. Sync SeriesMetadata (Local -> Cloud)
                 await SyncService._sync_series(session, client, stats)
 
                 # 2. Sync AI Learning Feedback
@@ -160,6 +165,20 @@ class SyncService:
                     )
                 try:
                     client.table("series_metadata").upsert(data, on_conflict="series_hash").execute()
+
+                    # Sincronizar Relaciones (Many-to-Many)
+                    for s in chunk:
+                        if s.genres:
+                            genre_data = [{"series_hash": s.series_hash, "genre_id": g.id} for g in s.genres]
+                            client.table("series_genres").upsert(
+                                genre_data, on_conflict="series_hash,genre_id"
+                            ).execute()
+                        if s.demographics:
+                            demo_data = [{"series_hash": s.series_hash, "demographic_id": d.id} for d in s.demographics]
+                            client.table("series_demographics").upsert(
+                                demo_data, on_conflict="series_hash,demographic_id"
+                            ).execute()
+
                     stats["series"] += len(data)
                     print(f"📚 Series sincronizadas: {stats['series']}/{len(series_list)}")
                 except Exception as ex:
@@ -286,6 +305,25 @@ class SyncService:
             logger.error(f"Error en _sync_groups: {e}")
 
     @staticmethod
+    async def _sync_taxonomy_masters(session, client, stats):
+        try:
+            # Sync Genres
+            res_genres = await session.execute(select(Genre))
+            genres = res_genres.scalars().all()
+            if genres:
+                genre_data = [{"id": g.id, "name": g.name} for g in genres]
+                client.table("genres").upsert(genre_data).execute()
+
+            # Sync Demographics
+            res_demos = await session.execute(select(Demographic))
+            demos = res_demos.scalars().all()
+            if demos:
+                demo_data = [{"id": d.id, "name": d.name} for d in demos]
+                client.table("demographics_list").upsert(demo_data).execute()
+        except Exception as e:
+            logger.error(f"Error en _sync_taxonomy_masters: {e}")
+
+    @staticmethod
     async def _sync_books(session, client, stats):
         try:
             res = await session.execute(select(LocalBook))
@@ -385,6 +423,18 @@ class SyncService:
                     # Usamos book_hash como conflicto primario porque Supabase tiene restricción única ahí.
                     # Esto permite que si un archivo se mueve locally (nueva ruta), se actualice en la nube.
                     client.table("local_books").upsert(batch, on_conflict="book_hash").execute()
+
+                    # Sincronizar Relaciones (Many-to-Many Libros)
+                    for b in books[i : i + 50]:
+                        if b.genres:
+                            genre_data = [{"book_hash": b.book_hash, "genre_id": g.id} for g in b.genres]
+                            client.table("book_genres").upsert(genre_data, on_conflict="book_hash,genre_id").execute()
+                        if b.demographics:
+                            demo_data = [{"book_hash": b.book_hash, "demographic_id": d.id} for d in b.demographics]
+                            client.table("book_demographics").upsert(
+                                demo_data, on_conflict="book_hash,demographic_id"
+                            ).execute()
+
                     stats["books"] += len(batch)
                     if i % 250 == 0:
                         print(f"📦 Libros sincronizados: {stats['books']}/{len(final_data)}")

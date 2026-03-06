@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Table,
     Text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -18,6 +19,36 @@ from sqlalchemy.orm import relationship
 from utils.helpers import limpiar_html_basico
 
 from .base import Base
+
+# --- Tablas de Unión (Many-to-Many) ---
+
+book_genres = Table(
+    "book_genres",
+    Base.metadata,
+    Column("book_hash", String(64), ForeignKey("local_books.book_hash"), primary_key=True),
+    Column("genre_id", Integer, ForeignKey("genres.id"), primary_key=True),
+)
+
+series_genres = Table(
+    "series_genres",
+    Base.metadata,
+    Column("series_hash", String(64), ForeignKey("series_metadata.series_hash"), primary_key=True),
+    Column("genre_id", Integer, ForeignKey("genres.id"), primary_key=True),
+)
+
+book_demographics = Table(
+    "book_demographics",
+    Base.metadata,
+    Column("book_hash", String(64), ForeignKey("local_books.book_hash"), primary_key=True),
+    Column("demographic_id", Integer, ForeignKey("demographics_list.id"), primary_key=True),
+)
+
+series_demographics = Table(
+    "series_demographics",
+    Base.metadata,
+    Column("series_hash", String(64), ForeignKey("series_metadata.series_hash"), primary_key=True),
+    Column("demographic_id", Integer, ForeignKey("demographics_list.id"), primary_key=True),
+)
 
 
 class TranslatorsGroup(Base):
@@ -33,6 +64,46 @@ class TranslatorsGroup(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class Genre(Base):
+    """
+    Tabla maestra de géneros (Action, Fantasy, etc.)
+    """
+
+    __tablename__ = "genres"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), unique=True, nullable=False)
+
+
+class Demographic(Base):
+    """
+    Tabla maestra de demografías (Seinen, Shonen, etc.)
+    """
+
+    __tablename__ = "demographics_list"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), unique=True, nullable=False)
+
+
+class MediaAsset(Base):
+    """
+    Consolidación de assets multimedia (portadas, ilustraciones).
+    """
+
+    __tablename__ = "media_assets"
+
+    id = Column(Integer, primary_key=True)
+    asset_type = Column(String(50), nullable=False)  # original, high, medium, low
+    url = Column(String(1024), nullable=False)
+
+    book_hash = Column(String(64), ForeignKey("local_books.book_hash"), nullable=True)
+    series_hash = Column(String(64), ForeignKey("series_metadata.series_hash"), nullable=True)
+
+    book = relationship("LocalBook", back_populates="media")
+    series = relationship("SeriesMetadata", back_populates="media")
+
+
 class SeriesMetadata(Base):
     """
     Centraliza la metadata de una serie para evitar redundancia en LocalBook.
@@ -40,12 +111,11 @@ class SeriesMetadata(Base):
 
     __tablename__ = "series_metadata"
 
-    id = Column(Integer, primary_key=True)
+    series_hash = Column(String(64), primary_key=True)
     series_name = Column(String(512), nullable=False)
     series_spanish = Column(String(512))
     series_english = Column(String(512))
     slug = Column(String(512), index=True)  # Slug persistente para URLs y referencias
-    series_hash = Column(String(64), unique=True, index=True, nullable=False)
 
     author = Column(String(255))
     author_jap = Column(String(255))
@@ -53,8 +123,13 @@ class SeriesMetadata(Base):
     illustrator_jap = Column(String(255))
 
     description = Column(String(5000))
-    tags = Column(JSONB)  # Géneros consolidados
-    demographics = Column(JSONB)  # Demografía (Seinen, Shonen, etc)
+    tags_json = Column("tags", JSONB)  # Legacy/Cache
+    demographics_json = Column("demographics", JSONB)  # Legacy/Cache
+
+    # Relaciones Normalizadas
+    genres = relationship("Genre", secondary=series_genres, backref="series")
+    demographics = relationship("Demographic", secondary=series_demographics, backref="series")
+    media = relationship("MediaAsset", back_populates="series", cascade="all, delete-orphan")
 
     cover_url = Column(String(1024))  # Portada representativa de la serie
     book_count = Column(Integer, default=0)
@@ -183,7 +258,7 @@ class LocalBook(Base):
 
     __tablename__ = "local_books"
 
-    id = Column(Integer, primary_key=True)
+    book_hash = Column(String(64), primary_key=True)
     source_id = Column(Integer, ForeignKey("library_sources.id"), nullable=False)
 
     # Identificación de archivo
@@ -206,7 +281,12 @@ class LocalBook(Base):
     illustrator = Column(String)
     illustrator_jap = Column(Text)
     author_jap = Column(Text)
-    demographics = Column(JSON)
+    demographics_json = Column("demographics", JSONB)  # Legacy/Cache
+
+    # Relaciones Normalizadas
+    genres = relationship("Genre", secondary=book_genres, backref="books")
+    demographics = relationship("Demographic", secondary=book_demographics, backref="books")
+    media = relationship("MediaAsset", back_populates="book", cascade="all, delete-orphan")
 
     # Personas
     translator = Column(String(255))
@@ -235,7 +315,7 @@ class LocalBook(Base):
 
     # Contenido
     description = Column(Text)  # Renombrado de summary para coincidir con DB
-    tags = Column(JSON)  # Añadido tags faltantes
+    tags_json = Column("tags", JSON)  # Legacy/Cache
     language = Column(String(10), default="es")
 
     # Edition Characteristics
@@ -254,9 +334,7 @@ class LocalBook(Base):
     indexed_at = Column(DateTime, default=datetime.utcnow)
 
     # Identificadores estables basados en metadatos
-    series_metadata_id = Column(Integer, ForeignKey("series_metadata.id"), index=True)
-    series_hash = Column(String(64), index=True)  # Mantener por compatibilidad y búsqueda rápida
-    book_hash = Column(String(64), index=True, unique=True)  # Identificador único del libro (antes content_hash)
+    series_hash = Column(String(64), ForeignKey("series_metadata.series_hash"), index=True)
     short_link = Column(String(20), unique=True, index=True, nullable=True)  # Enlace corto descargas seguras
 
     source = relationship("LibrarySource", back_populates="books")
@@ -267,7 +345,7 @@ class LocalBook(Base):
 
     def to_dict(self):
         return {
-            "id": f"local_{self.id}",  # Prefijo para distinguir de Kavita IDs
+            "id": f"local_{self.book_hash}",  # Prefijo para distinguir de Kavita IDs
             "hash": self.book_hash,
             "short_link": self.short_link,
             "title": self.title,
@@ -364,8 +442,7 @@ class UserRating(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
-    book_id = Column(Integer, ForeignKey("local_books.id"), nullable=True)  # Opcional si el libro existe
-    book_hash = Column(String(64), index=True, nullable=False)
+    book_hash = Column(String(64), ForeignKey("local_books.book_hash"), index=True, nullable=False)
     rating = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -383,10 +460,9 @@ class UserDownload(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
 
-    # Relación flexible: Preferimos ID si existe, pero guardamos hashes por si el libro se borra
-    book_id = Column(Integer, ForeignKey("local_books.id"), nullable=True)
-    book_hash = Column(String(64), index=True)  # Persistencia histórica
-    series_hash = Column(String(64), index=True)
+    # Relación flexible: Usamos hashes como PKs
+    book_hash = Column(String(64), ForeignKey("local_books.book_hash"), index=True)  # Persistencia histórica
+    series_hash = Column(String(64), ForeignKey("series_metadata.series_hash"), index=True)
 
     title = Column(String(512))  # Snapshot del título
     downloaded_at = Column(DateTime, default=datetime.utcnow)
@@ -427,7 +503,7 @@ class AILearningFeedback(Base):
     __tablename__ = "ai_learning_feedback"
 
     id = Column(Integer, primary_key=True)
-    series_hash = Column(String(64), index=True, nullable=False)
+    series_hash = Column(String(64), ForeignKey("series_metadata.series_hash"), index=True, nullable=False)
     original_name = Column(String, nullable=False)
     proposed_name = Column(String, nullable=False)
     status = Column(String(20), nullable=False)  # accepted, rejected, edited, manual
@@ -444,7 +520,7 @@ class MetadataProposal(Base):
     __tablename__ = "metadata_proposals"
 
     id = Column(Integer, primary_key=True)
-    series_hash = Column(String(64), index=True, nullable=False)
+    series_hash = Column(String(64), ForeignKey("series_metadata.series_hash"), index=True, nullable=False)
 
     # La propuesta completa en formato JSON (lo que devuelve AIService.analyze_series)
     proposal_data = Column(JSON, nullable=False)

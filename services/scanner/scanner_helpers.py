@@ -4,6 +4,8 @@ import logging
 import re
 from typing import Any
 
+from sqlalchemy import select
+
 logger = logging.getLogger(__name__)
 
 
@@ -143,6 +145,38 @@ class ScannerHelpers:
             "char_count": len(found_chars),
             "clean_text": "".join([char for char in text if char not in special_chars]),
         }
+
+    @staticmethod
+    async def sync_taxonomy(session, model: Any, names: list[str]) -> list[Any]:
+        """
+        Sincroniza una lista de nombres con una tabla maestra (Genre o Demographic).
+        Retorna la lista de objetos de la base de datos.
+        """
+        if not names:
+            return []
+
+        # Normalizar nombres
+        clean_names = sorted(list(set(n.strip() for n in names if n and isinstance(n, str))))
+        if not clean_names:
+            return []
+
+        # 1. Buscar existentes
+        stmt = select(model).where(model.name.in_(clean_names))
+        result = await session.execute(stmt)
+        existing_objs = {obj.name: obj for obj in result.scalars().all()}
+
+        final_objs = []
+        for name in clean_names:
+            if name in existing_objs:
+                final_objs.append(existing_objs[name])
+            else:
+                # 2. Crear nuevos
+                new_obj = model(name=name)
+                session.add(new_obj)
+                final_objs.append(new_obj)
+
+        await session.flush()
+        return final_objs
 
     @staticmethod
     def calculate_complexity_score(text: str) -> dict[str, Any]:
