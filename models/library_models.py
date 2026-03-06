@@ -14,7 +14,7 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import backref, relationship
 
 from utils.helpers import limpiar_html_basico
 
@@ -127,8 +127,10 @@ class SeriesMetadata(Base):
     demographics_json = Column("demographics", JSONB)  # Legacy/Cache
 
     # Relaciones Normalizadas
-    genres = relationship("Genre", secondary=series_genres, backref="series")
-    demographics_list = relationship("Demographic", secondary=series_demographics, backref="series")
+    genres = relationship("Genre", secondary=series_genres, backref=backref("series", lazy="selectin"), lazy="selectin")
+    demographics_list = relationship(
+        "Demographic", secondary=series_demographics, backref=backref("series", lazy="selectin"), lazy="selectin"
+    )
     media = relationship("MediaAsset", back_populates="series", cascade="all, delete-orphan")
 
     cover_url = Column(String(1024))  # Portada representativa de la serie
@@ -284,8 +286,10 @@ class LocalBook(Base):
     demographics_json = Column("demographics", JSONB)  # Legacy/Cache
 
     # Relaciones Normalizadas
-    genres = relationship("Genre", secondary=book_genres, backref="books")
-    demographics_list = relationship("Demographic", secondary=book_demographics, backref="books")
+    genres = relationship("Genre", secondary=book_genres, backref=backref("books", lazy="selectin"), lazy="selectin")
+    demographics_list = relationship(
+        "Demographic", secondary=book_demographics, backref=backref("books", lazy="selectin"), lazy="selectin"
+    )
     media = relationship("MediaAsset", back_populates="book", cascade="all, delete-orphan")
 
     # Personas
