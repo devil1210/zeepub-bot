@@ -3,6 +3,7 @@ import logging
 from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
@@ -123,7 +124,12 @@ class SyncService:
     @staticmethod
     async def _sync_series(session, client, stats):
         try:
-            res = await session.execute(select(SeriesMetadata))
+            res = await session.execute(
+                select(SeriesMetadata).options(
+                    selectinload(SeriesMetadata.genres),
+                    selectinload(SeriesMetadata.demographics_list),
+                )
+            )
             series_list = res.scalars().all()
             if not series_list:
                 return
@@ -173,8 +179,10 @@ class SyncService:
                             client.table("series_genres").upsert(
                                 genre_data, on_conflict="series_hash,genre_id"
                             ).execute()
-                        if s.demographics:
-                            demo_data = [{"series_hash": s.series_hash, "demographic_id": d.id} for d in s.demographics]
+                        if s.demographics_list:
+                            demo_data = [
+                                {"series_hash": s.series_hash, "demographic_id": d.id} for d in s.demographics_list
+                            ]
                             client.table("series_demographics").upsert(
                                 demo_data, on_conflict="series_hash,demographic_id"
                             ).execute()
@@ -326,7 +334,12 @@ class SyncService:
     @staticmethod
     async def _sync_books(session, client, stats):
         try:
-            res = await session.execute(select(LocalBook))
+            res = await session.execute(
+                select(LocalBook).options(
+                    selectinload(LocalBook.genres),
+                    selectinload(LocalBook.demographics_list),
+                )
+            )
             books = res.scalars().all()
             if not books:
                 return
@@ -429,8 +442,10 @@ class SyncService:
                         if b.genres:
                             genre_data = [{"book_hash": b.book_hash, "genre_id": g.id} for g in b.genres]
                             client.table("book_genres").upsert(genre_data, on_conflict="book_hash,genre_id").execute()
-                        if b.demographics:
-                            demo_data = [{"book_hash": b.book_hash, "demographic_id": d.id} for d in b.demographics]
+                        if b.demographics_list:
+                            demo_data = [
+                                {"book_hash": b.book_hash, "demographic_id": d.id} for d in b.demographics_list
+                            ]
                             client.table("book_demographics").upsert(
                                 demo_data, on_conflict="book_hash,demographic_id"
                             ).execute()

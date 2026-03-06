@@ -128,7 +128,7 @@ class SeriesMetadata(Base):
 
     # Relaciones Normalizadas
     genres = relationship("Genre", secondary=series_genres, backref="series")
-    demographics = relationship("Demographic", secondary=series_demographics, backref="series")
+    demographics_list = relationship("Demographic", secondary=series_demographics, backref="series")
     media = relationship("MediaAsset", back_populates="series", cascade="all, delete-orphan")
 
     cover_url = Column(String(1024))  # Portada representativa de la serie
@@ -285,7 +285,7 @@ class LocalBook(Base):
 
     # Relaciones Normalizadas
     genres = relationship("Genre", secondary=book_genres, backref="books")
-    demographics = relationship("Demographic", secondary=book_demographics, backref="books")
+    demographics_list = relationship("Demographic", secondary=book_demographics, backref="books")
     media = relationship("MediaAsset", back_populates="book", cascade="all, delete-orphan")
 
     # Personas
