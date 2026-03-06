@@ -37,6 +37,8 @@ async def apply_local_migration():
     ALTER TABLE local_books ADD COLUMN IF NOT EXISTS is_uncensored integer;
     ALTER TABLE local_books ADD COLUMN IF NOT EXISTS color_mode text;
     ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS book_type text;
+    ALTER TABLE user_downloads ADD COLUMN IF NOT EXISTS series_hash text;
+    ALTER TABLE download_history ADD COLUMN IF NOT EXISTS series_hash text;
     """
 
     logger.info("Applying migration to local database (localhost:5432)...")

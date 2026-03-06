@@ -92,7 +92,7 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
     # 2. Local Book Handling
     if str(book_id_raw).startswith("local_") or not str(book_id_raw).startswith("series_"):
         book_hash = str(book_id_raw).replace("local_", "")
-        local_book = await LibraryService.get_book_by_id(book_hash)
+        local_book = await LibraryService.get_book_by_hash(book_hash)
 
         if local_book:
             logger.info(

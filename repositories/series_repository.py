@@ -5,8 +5,7 @@ from sqlalchemy import String, and_, cast, delete, func, or_, select
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
-from models.download_models import DownloadHistory
-from models.library_models import LocalBook, SeriesMetadata
+from models.library_models import LocalBook, SeriesMetadata, UserDownload
 from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
@@ -134,8 +133,8 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
 
                 # Base query with download count subquery
                 dl_subquery = (
-                    select(func.count(DownloadHistory.id))
-                    .where(DownloadHistory.series_hash == SeriesMetadata.series_hash)
+                    select(func.count(UserDownload.id))
+                    .where(UserDownload.series_hash == SeriesMetadata.series_hash)
                     .correlate(SeriesMetadata)
                     .scalar_subquery()
                 )
