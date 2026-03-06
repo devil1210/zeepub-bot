@@ -51,6 +51,10 @@ def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = Fal
         if re.search(r"[ひらがなカ]", p2) or re.search(r"[a-zA-Z\s]+[ひらがなカ]", p2):
             romaji = p2
             series = p1
+        elif any(part.lower() in ("no", "to", "ga", "wa", "ni", "de", "wo") for part in p2.split()):
+            # Detectar partículas Romaji comunes
+            romaji = p2
+            series = p1
         elif len(p1) < len(p2) * 0.8:
             romaji = p2
             series = p1
@@ -174,7 +178,64 @@ def process_book_identity_comprehensive(epub_path: str, original_filename: str |
                 break
 
     ui_title = parsed.get("clean_title") or clean_metadata_tags(title)
-    if not series and parsed.get("series_clean"):
+    romaji_from_title = parsed.get("romaji")
+
+    # LÓGICA DE PRIORIDAD DE SERIE (Heurística programática)
+    # Detectamos si el nombre del OPF (series_meta) es Romaji vs el del Título (Inglés/Español)
+
+    NON_ROMAJI_WORDS = {
+        "the",
+        "of",
+        "and",
+        "reincarnated",
+        "sword",
+        "world",
+        "death",
+        "game",
+        "hero",
+        "level",
+        "skill",
+        "el",
+        "la",
+        "de",
+        "en",
+        "mundo",
+        "muerte",
+        "espada",
+        "heroe",
+        "nivel",
+        "habilidad",
+        "juego",
+        "novela",
+        "ligera",
+        "web",
+        "tomo",
+        "volumen",
+        "parte",
+        "capitulo",
+    }
+
+    if series_meta and parsed.get("series_clean"):
+        s_meta_clean = clean_metadata_tags(series_meta).lower()
+        romaji_clean = (romaji_from_title or "").lower()
+        title_series = parsed["series_clean"].lower()
+
+        # Caso 1: El OPF coincide con el romaji detectado en el título
+        if romaji_clean and (s_meta_clean in romaji_clean or romaji_clean in s_meta_clean):
+            series = parsed["series_clean"]
+        # Caso 2: El nombre del título tiene palabras clave English/Spanish que el OPF no tiene
+        elif any(w in title_series.split() for w in NON_ROMAJI_WORDS) and not any(
+            w in s_meta_clean.split() for w in NON_ROMAJI_WORDS
+        ):
+            # No sobre-escribir "de" porque es común en ambos, pero si tiene "mundo" o "death", es preferible
+            rich_words = NON_ROMAJI_WORDS - {"de", "no"}  # 'de' is common in ES/Romaji, 'no' is common in Romaji/EN
+            if any(w in title_series.split() for w in rich_words):
+                series = parsed["series_clean"]
+            else:
+                series = clean_metadata_tags(series_meta)
+        else:
+            series = clean_metadata_tags(series_meta)
+    elif not series and parsed.get("series_clean"):
         series = parsed["series_clean"]
     elif series:
         series = clean_metadata_tags(series)
