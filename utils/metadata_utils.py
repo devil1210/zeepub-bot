@@ -2,7 +2,6 @@ import os
 import re
 from typing import Any
 
-from utils.epub_extractor import clean_metadata_tags
 from utils.string_utils import normalize_author_name
 
 
@@ -129,37 +128,47 @@ def generar_slug_from_meta(meta: Any) -> str:
     return slug
 
 
-def process_book_identity_comprehensive(epub_path: str, original_filename: str | None = None) -> dict:
+def process_book_identity_comprehensive(
+    epub_path: str = None, meta: dict | None = None, original_filename: str | None = None
+) -> dict:
     """
     Lógica UNIFICADA para extraer componentes de identidad de un EPUB.
+    Si se provee 'meta', se evita re-extraer del EPUB.
     """
-    from utils.epub_extractor import EpubMetadataExtractor
+    if not meta:
+        if not epub_path:
+            return {}
+        from utils.epub_extractor import EpubMetadataExtractor
 
-    extractor = EpubMetadataExtractor(epub_path)
-    meta = extractor.extract()
+        extractor = EpubMetadataExtractor(epub_path)
+        meta = extractor.extract()
 
     if not meta:
         return {}
 
-    title = meta.get("title") or original_filename or "Sin título"
+    # Metadata del EPUB: Origen sagrado de la Serie
+    series_meta = meta.get("series")  # Tag específico de serie (Calibre/EPUB3)
+
     author = normalize_author_name(meta.get("author"))
-    series_meta = meta.get("series")
     romaji_from_series = None
 
     if series_meta:
+        # Solo usamos el tag específico de serie del EPUB
         series_parsed_meta = parse_metadata_from_title(series_meta)
         series = series_parsed_meta.get("series_clean") or series_parsed_meta.get("series") or series_meta
         romaji_from_series = series_parsed_meta.get("romaji")
     else:
-        series = None
+        # Si no hay tag de serie en el metadato, NO usamos el título ni el nombre de archivo
+        series = "Unknown"
 
     volume = meta.get("volume")
     translator = meta.get("translator")
     layout_by = meta.get("layout_by")
     language = meta.get("language") or "es"
 
-    parsed = parse_metadata_from_title(title)
-    all_found_tags = list(meta.get("tags", [])) + parsed.get("tags", [])
+    # El filename parsing se usa SOLO para el título visual y tags complementarios
+    parsed_filename = parse_metadata_from_title(original_filename)
+    all_found_tags = list(meta.get("tags", [])) + parsed_filename.get("tags", [])
 
     book_type = meta.get("book_type")
     if not book_type:
@@ -177,76 +186,25 @@ def process_book_identity_comprehensive(epub_path: str, original_filename: str |
                     book_type = tag
                 break
 
-    ui_title = parsed.get("clean_title") or clean_metadata_tags(title)
-    romaji_from_title = parsed.get("romaji")
+    # Título de visualización: Filename limpio (título en español) > dc:title
+    ui_title = parsed_filename.get("clean_title") or meta.get("title") or original_filename or "Sin título"
+    romaji_from_title = parsed_filename.get("romaji")
 
-    # LÓGICA DE PRIORIDAD DE SERIE (Heurística programática)
-    # Detectamos si el nombre del OPF (series_meta) es Romaji vs el del Título (Inglés/Español)
-
-    NON_ROMAJI_WORDS = {
-        "the",
-        "of",
-        "and",
-        "reincarnated",
-        "sword",
-        "world",
-        "death",
-        "game",
-        "hero",
-        "level",
-        "skill",
-        "el",
-        "la",
-        "de",
-        "en",
-        "mundo",
-        "muerte",
-        "espada",
-        "heroe",
-        "nivel",
-        "habilidad",
-        "juego",
-        "novela",
-        "ligera",
-        "web",
-        "tomo",
-        "volumen",
-        "parte",
-        "capitulo",
-    }
-
-    if series_meta and parsed.get("series_clean"):
-        s_meta_clean = clean_metadata_tags(series_meta).lower()
-        romaji_clean = (romaji_from_title or "").lower()
-        title_series = parsed["series_clean"].lower()
-
-        # Caso 1: El OPF coincide con el romaji detectado en el título
-        if romaji_clean and (s_meta_clean in romaji_clean or romaji_clean in s_meta_clean):
-            series = parsed["series_clean"]
-        # Caso 2: El nombre del título tiene palabras clave English/Spanish que el OPF no tiene
-        elif any(w in title_series.split() for w in NON_ROMAJI_WORDS) and not any(
-            w in s_meta_clean.split() for w in NON_ROMAJI_WORDS
-        ):
-            # No sobre-escribir "de" porque es común en ambos, pero si tiene "mundo" o "death", es preferible
-            rich_words = NON_ROMAJI_WORDS - {"de", "no"}  # 'de' is common in ES/Romaji, 'no' is common in Romaji/EN
-            if any(w in title_series.split() for w in rich_words):
-                series = parsed["series_clean"]
-            else:
-                series = clean_metadata_tags(series_meta)
-        else:
-            series = clean_metadata_tags(series_meta)
-    elif not series and parsed.get("series_clean"):
-        series = parsed["series_clean"]
-    elif series:
-        series = clean_metadata_tags(series)
-
+    # Registro de Serie
     if series:
         series = series.strip()
-    if volume is None and parsed.get("volume"):
+
+    # Volumen: Preferir metadato, fallback al filename solo si el metadato es nulo
+    if volume is None and parsed_filename.get("volume"):
         try:
-            volume = float(parsed["volume"])
+            v_val = re.sub(r"[^\d.]", "", str(parsed_filename["volume"]))
+            if v_val:
+                volume = float(v_val)
         except Exception:
             volume = None
+
+    if not book_type:
+        book_type = "Light Novel"
 
     filename_to_check = original_filename or (os.path.basename(epub_path) if epub_path else "")
     if filename_to_check:
@@ -254,26 +212,24 @@ def process_book_identity_comprehensive(epub_path: str, original_filename: str |
         if meta.get("color_mode", "bw") == "bw":
             if any(x in fname_lower for x in ["[color]", "(color)", "[full color]", "color version"]):
                 meta["color_mode"] = "color"
-        if any(x in fname_lower for x in ["[b&n]", "[b&w]", "(b&n)", "(b&w)"]):
-            meta["color_mode"] = "bw"
         if not meta.get("is_uncensored"):
             if any(x in fname_lower for x in ["[sin censura]", "[uncensored]", "[no censura]", "(uncensored)"]):
                 meta["is_uncensored"] = 1
 
     return {
         "series": series,
-        "author": author,
+        "author": author or "Unknown",
         "book_type": book_type,
-        "volume": volume,
-        "translator": translator,
-        "layout_by": layout_by,
+        "volume": volume if volume is not None else 0.0,
+        "translator": translator or "Unknown",
+        "layout_by": layout_by or "Unknown",
         "language": language,
         "title": ui_title,
         "published_at": meta.get("published_at"),
         "edition": meta.get("edition"),
         "is_uncensored": meta.get("is_uncensored", 0),
         "color_mode": meta.get("color_mode", "bw"),
-        "romaji_title": romaji_from_series or parsed.get("romaji"),
+        "romaji_title": romaji_from_series or romaji_from_title or meta.get("romaji_title"),
     }
 
 

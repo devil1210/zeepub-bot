@@ -470,7 +470,7 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
                 if f_path.exists():
                     try:
                         f_path.unlink()
-                    except:
+                    except Exception:
                         pass
 
                 if upload_id in pending_uploads:

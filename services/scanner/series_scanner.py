@@ -1,11 +1,10 @@
-import re
 from typing import Any
 
 from sqlalchemy import select, text
 
 from models.library_models import ArchivedSeries, LocalBook, MetadataProposal, SeriesMetadata
 from services.ai_service import AIService
-from utils.helpers import generar_slug_from_meta, parse_metadata_from_title
+from utils.helpers import generar_slug_from_meta
 from utils.logger import logger
 
 
@@ -29,131 +28,86 @@ class SeriesScanner:
     async def get_or_create_series(cls, session: Any, book: LocalBook, skip_ai: bool = False) -> SeriesMetadata:
         """
         Obtiene o crea una entrada en SeriesMetadata para el libro.
-        Normaliza campos comunes de la serie.
+        Usa los datos pre-extraídos de 'book.extracted_data'.
         """
-        extracted = getattr(book, "extracted_data", {})
+        identity = getattr(book, "extracted_data", {})
+        series_hash = book.series_hash
 
-        stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == book.series_hash)
+        stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == series_hash)
         result = await session.execute(stmt)
         series = result.scalar_one_or_none()
 
+        from services.scanner.slug_manager import SlugManager
+
         if not series:
-            # Para creación inicial: El nombre de la serie en inglés (Identity) va a series_name.
-            extracted_series = extracted.get("series") or ""
-            book_title = book.title or ""
-
-            # Prioridad 1: Metadata directa del EPUB (English Name)
-            # Prioridad 2: Parsing del título del archivo (limpiando tags)
-            from utils.epub_extractor import clean_metadata_tags
-
-            if not extracted_series:
-                parsed = parse_metadata_from_title(book_title, preserve_special_chars=True)
-                final_series_name = parsed.get("series_clean") or book_title
-            else:
-                final_series_name = extracted_series
-
-            final_series_name = clean_metadata_tags(final_series_name)
+            series_name = identity.get("series") or "Unknown"
 
             series = SeriesMetadata(
-                series_name=final_series_name,
-                series_english=final_series_name,  # Inicialmente es el mismo
-                series_spanish=None,  # Se poblará por AI o Google Books
-                series_hash=book.series_hash,
-                author=extracted.get("author") or "",
-                author_jap=extracted.get("author_jap"),
-                illustrator=extracted.get("illustrator"),
-                illustrator_jap=extracted.get("illustrator_jap"),
-                description=extracted.get("description"),
-                tags=extracted.get("tags") or [],
-                demographics=extracted.get("demographics"),
-                book_type=extracted.get("book_type"),
-                publisher=extracted.get("publisher") or book.publisher,
+                series_name=series_name,
+                series_english=series_name,
+                series_spanish=None,
+                series_hash=series_hash,
+                author=identity.get("author") or "Unknown",
+                author_jap=identity.get("author_jap"),
+                illustrator=identity.get("illustrator"),
+                illustrator_jap=identity.get("illustrator_jap"),
+                description=identity.get("description"),
+                tags=identity.get("tags") or [],
+                demographics=identity.get("demographics") or [],
+                book_type=identity.get("book_type") or "Light Novel",
+                publisher=identity.get("publisher") or book.publisher,
                 cover_url=book.cover_low or book.cover_medium,
                 book_count=0,
             )
 
-            # El slug se genera a partir de series_english (que acabamos de inicializar)
-            generated_slug = generar_slug_from_meta(series.to_dict())
-            series.slug = generated_slug
-            logger.info(f"📝 Nueva serie: {series.series_name} | Slug: {generated_slug}")
-
+            series.slug = SlugManager.generate_valid_slug(series)
+            logger.info(f"🆕 Nueva serie detectada: {series.series_name} [{series.slug}]")
             session.add(series)
             await session.flush()
         else:
-            # POBLADO AUTOMÁTICO DE CAMPOS VACÍOS (MANTENIMIENTO)
-            # series_english se llena desde series_name si es NULL
+            # ACTUALIZACIÓN DE SERIE EXISTENTE
             if not series.series_english:
                 series.series_english = series.series_name
-                logger.info(f"📝 Auto-poblado series_english: {series.series_name}")
 
-            # RE-CALCULO DE SLUG si es necesario o si series_english cambió (y no está bloqueado)
-            # El slug depende 100% de series_english
-            current_slug = series.slug or ""
-            new_slug = generar_slug_from_meta(series.to_dict())
-            cleaned_new_slug = SeriesScanner._clean_slug_special_chars(new_slug)
+            # Mantenimiento de Slug
+            SlugManager.update_slug_safely(series, book)
 
-            if not current_slug or current_slug == str(book.series_hash)[:40] or cleaned_new_slug != current_slug:
-                series.slug = cleaned_new_slug
-                logger.info(f"📝 Slug actualizado desde series_english: {cleaned_new_slug}")
+            # Actualizar campos básicos si están vacíos
+            if not series.author or series.author == "Unknown":
+                series.author = identity.get("author") or series.author
 
-            # Lógica de actualización de serie (basada en metadata limpia)
-            current_id_name = series.series_english or series.series_name or ""
-            # IMPORTANTE: No mezclamos con book.title en logs de Serie
-            extracted_name = extracted.get("series") or current_id_name
+            if identity.get("author_jap") and not series.author_jap:
+                series.author_jap = identity.get("author_jap")
 
-            should_preserve, preserve_reason = SeriesScanner._should_preserve_series_english(
-                current_id_name, extracted_name
-            )
+            if identity.get("description") and (
+                not series.description or len(identity["description"]) > len(series.description)
+            ):
+                series.description = identity["description"]
 
-            if not should_preserve:
-                series.series_english = extracted_name
-                logger.info(
-                    f"📝 Actualizado Serie (Metadata) via {preserve_reason}: {current_id_name} → {extracted_name}"
-                )
-            else:
-                # Solo logueamos si realmente hay algo que proteger o si el usuario necesita saber que se detectó lo mismo
-                if current_id_name != extracted_name:
-                    logger.info(f"🔒 Serie (Metadata) preservada ({preserve_reason}): {current_id_name}")
+            # Fusión de Tags y Demographics
+            if identity.get("tags"):
+                existing = set(series.tags or [])
+                incoming = set(identity["tags"])
+                if not incoming.issubset(existing):
+                    series.tags = list(existing.union(incoming))
 
-            book_author = extracted.get("author")
-            if book_author and series.author != book_author:
-                series.author = book_author
+            if identity.get("demographics"):
+                existing_demo = set(series.demographics or [])
+                incoming_demo = set(identity["demographics"])
+                if not incoming_demo.issubset(existing_demo):
+                    series.demographics = list(existing_demo.union(incoming_demo))
 
-            book_desc = extracted.get("description")
-            if book_desc and (not series.description or len(book_desc) > len(series.description)):
-                series.description = book_desc
+            # Gestión de Portada (Preferir Volumen 1)
+            if book.volume == 1 and book.cover_low:
+                series.cover_url = book.cover_low
 
-            # UNIÓN DE TAGS
-            book_tags = extracted.get("tags")
-            if book_tags:
-                existing_tags = set(series.tags) if series.tags else set()
-                new_tags = set(book_tags)
-                if not new_tags.issubset(existing_tags):
-                    series.tags = list(existing_tags | new_tags)
+        # Romaji Title Preservation/Update
+        if identity.get("romaji_title") and (not book.romaji_title or book.romaji_title == "Unknown"):
+            book.romaji_title = identity["romaji_title"]
 
-            # COMPLETAR ROMAJI_TITLE VACÍOS
-            if not book.romaji_title or book.romaji_title.strip() == "":
-                title_source = book.title or ""
-                extracted_romaji = SeriesScanner._extract_romaji_from_title(title_source)
-                if extracted_romaji:
-                    book.romaji_title = extracted_romaji
-
-            # PORTADA: Usar la del volumen 1 o si no hay ninguna
-            if book.cover_low or book.cover_medium:
-                if book.volume == 1 or not series.cover_url:
-                    series.cover_url = book.cover_low or book.cover_medium
-
-            book_type = extracted.get("book_type")
-            if book_type and series.book_type != book_type:
-                series.book_type = book_type
-
-            book_publisher = extracted.get("publisher") or book.publisher
-            if book_publisher and series.publisher != book_publisher:
-                series.publisher = book_publisher
-
-            if not series.series_spanish and not skip_ai:
-                # Intentamos enriquecer metadatos (Español, etc)
-                await cls.enrich_series_metadata(session, series, skip_ai=skip_ai)
+        # Enriquecimiento (Spanish title, etc)
+        if not series.series_spanish and not skip_ai:
+            await cls.enrich_series_metadata(session, series, skip_ai=skip_ai)
 
         await session.flush()
         return series
@@ -207,52 +161,6 @@ class SeriesScanner:
                 logger.info(f"🤖 Enriquecido (IA): {series.series_name} -> {series.series_spanish}")
         except Exception:
             pass
-
-    @staticmethod
-    def _should_preserve_series_english(current_name: str, extracted_name: str) -> tuple[bool, str]:
-        if not current_name:
-            return False, "vacío"
-
-        if current_name == extracted_name:
-            return True, "idéntico"
-
-        # Preservar si tiene caracteres especiales (punto de identidad más fuerte)
-        special_chars = [":", "!", "?", "—", "&", "%", "#", "@", "*", "+"]
-        has_special_current = any(char in current_name for char in special_chars)
-        has_special_extracted = any(char in extracted_name for char in special_chars)
-
-        if has_special_current and not has_special_extracted:
-            return True, "puntuación original"
-
-        # Si el nombre actual es significativamente más largo, asumimos que fue corregido a mano
-        if len(current_name) > len(extracted_name) + 5:
-            return True, "título extendido manual"
-
-        # Si el actual no es un hash, lo respetamos como identidad
-        looks_like_hash = len(current_name) <= 12 and current_name.replace("-", "").replace("_", "").isalnum()
-        if not looks_like_hash:
-            return True, "nombre persistente"
-
-        return False, "metadatos detectados"
-
-    @staticmethod
-    def _extract_romaji_from_title(title: str) -> str:
-        if not title:
-            return ""
-        romaji = re.sub(r"\s+", " ", title).strip()
-        return romaji if len(romaji) >= 3 else ""
-
-    @staticmethod
-    def _clean_slug_special_chars(slug: str) -> str:
-        if not slug:
-            return ""
-        invalid_chars = "!?#$%^&*()+=[]{}|\\:;\"'<>,/`~"
-        cleaned_slug = slug
-        for char in invalid_chars:
-            cleaned_slug = cleaned_slug.replace(char, "")
-        cleaned_slug = re.sub(r"\s+", "_", cleaned_slug)
-        cleaned_slug = re.sub(r"_+", "_", cleaned_slug)
-        return cleaned_slug.strip("_")
 
     @classmethod
     async def sync_series_metadata(cls, session: Any, series_hash: str):

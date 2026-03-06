@@ -78,7 +78,7 @@ class UploadService:
                     self._library_base_cache = Path(list(libs.values())[0])
                     self._active_source_id = 1
                     return self._library_base_cache
-            except:
+            except Exception:
                 self._library_base_cache = Path(env_lib)
                 self._active_source_id = 1
                 return self._library_base_cache
@@ -341,7 +341,7 @@ class UploadService:
                 for f in files:
                     if " - V" in f and "[" in f and "].epub" in f:
                         return f"{base_series_name} - V{vol_str} [{group}].epub"
-            except:
+            except Exception:
                 pass
 
         if base_series_name:
