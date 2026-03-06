@@ -158,8 +158,8 @@ class SeriesMetadata(Base):
             "illustrator": self.illustrator,
             "illustrator_jap": self.illustrator_jap,
             "description": limpiar_html_basico(self.description) if self.description else "",
-            "tags": self.tags or [],
-            "demographics": self.demographics or [],
+            "tags": self.tags_json or [],
+            "demographics": self.demographics_json or [],
             "cover_url": self.cover_url,
             "book_count": self.book_count,
             "book_type": self.book_type,
@@ -357,8 +357,8 @@ class LocalBook(Base):
             "seriesHash": self.series_hash,
             "seriesIndex": self.volume,
             "volume": self.volume,
-            "tags": (self.series_info.tags if getattr(self, "series_info", None) else []),
-            "demographics": (self.series_info.demographics if getattr(self, "series_info", None) else []),
+            "tags": (self.series_info.tags_json if getattr(self, "series_info", None) else []),
+            "demographics": (self.series_info.demographics_json if getattr(self, "series_info", None) else []),
             "description": limpiar_html_basico(self.series_info.description)
             if getattr(self, "series_info", None) and self.series_info.description
             else "",

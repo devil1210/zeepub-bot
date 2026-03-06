@@ -333,7 +333,7 @@ class EpubScanner:
                     }
                 )
                 series = await series_provider(session, book, skip_ai=skip_ai)
-                book.series_metadata_id = series.id
+                book.series_hash = series.series_hash
 
             if translator_provider:
                 await translator_provider(session, book)
