@@ -37,7 +37,7 @@ class MetadataProcessor:
                 "publisher": book.publisher or "",
                 "book_type": book.book_type or "",
                 "description": book.description or "",
-                "demographics": book.demographics or [],
+                "demographics": book.demographics_json or [],
             }
 
             # Validate and clean metadata
@@ -98,10 +98,10 @@ class MetadataProcessor:
 
             # Handle demographics merge
             if book_metadata.get("demographics"):
-                existing_demos = set(series.demographics or [])
+                existing_demos = set(series.demographics_json or [])
                 new_demos = set(book_metadata["demographics"])
                 merged_demos = existing_demos.union(new_demos)
-                series.demographics = list(merged_demos)
+                series.demographics_json = list(merged_demos)
                 logger.info(f"📝 Actualizados demographics: {len(merged_demos)} géneros")
 
             return series

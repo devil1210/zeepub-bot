@@ -26,13 +26,10 @@ async def handle_ai_generate_summary(data: dict[str, Any], user_data: dict[str, 
     if not book_id_raw:
         raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
 
-    try:
-        book_id = int(str(book_id_raw).replace("local_", ""))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="ID de libro inválido") from e
+    book_hash = str(book_id_raw).replace("local_", "")
 
     async with pg_manager.get_session() as session:
-        stmt = select(LocalBook).where(LocalBook.id == book_id)
+        stmt = select(LocalBook).where(LocalBook.book_hash == book_hash)
         res = await session.execute(stmt)
         book = res.scalar()
 
@@ -282,9 +279,9 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
                 # Sincronizamos tags proactivamente si la IA propone nuevos géneros BASE
                 if proposal.get("genres"):
-                    current_tags = set(series.tags) if series.tags else set()
+                    current_tags = set(series.tags_json) if series.tags_json else set()
                     new_base_tags = set(proposal["genres"])
-                    series.tags = list(current_tags | new_base_tags)
+                    series.tags_json = list(current_tags | new_base_tags)
             else:
                 pass
 
@@ -316,7 +313,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                         "series_hash": series.series_hash,
                         "series_name": series.series_name,
                         "description": series.description,
-                        "tags": series.tags,
+                        "tags": series.tags_json,
                         "author": series.author,
                         "book_count": series.book_count,
                         "rating_average": series.rating_average,
@@ -357,15 +354,11 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 if not book_id_raw or not proposed_filename:
                     continue
 
-                try:
-                    book_id = int(str(book_id_raw).replace("local_", ""))
-                except ValueError:
-                    errors.append(f"ID de libro inválido: {book_id_raw}")
-                    continue
+                book_hash = str(book_id_raw).replace("local_", "")
 
-                book = session.query(LocalBook).filter(LocalBook.id == book_id).scalar()
+                book = session.query(LocalBook).filter(LocalBook.book_hash == book_hash).scalar()
                 if not book or not book.filepath or not os.path.exists(book.filepath):
-                    errors.append(f"Libro {book_id} no encontrado en disco")
+                    errors.append(f"Libro {book_hash} no encontrado en disco")
                     continue
 
                 old_path = book.filepath
@@ -375,8 +368,10 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
                 if old_path != new_path:
                     # Check for DB collision first
                     collision = session.query(LocalBook).filter_by(filepath=new_path).first()
-                    if collision and collision.id != book.id:
-                        errors.append(f"No se puede renombrar: El destino ya existe en la BD (ID: {collision.id})")
+                    if collision and collision.book_hash != book.book_hash:
+                        errors.append(
+                            f"No se puede renombrar: El destino ya existe en la BD (Hash: {collision.book_hash})"
+                        )
                         continue
 
                     if os.path.exists(new_path) and not os.path.samefile(old_path, new_path):

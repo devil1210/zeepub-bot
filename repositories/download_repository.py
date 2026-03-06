@@ -15,12 +15,12 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
 
     def __init__(self, db_manager=None):
         # db_manager is ignored, we use pg_manager directly
-        super().__init__(None, "download_history")
+        super().__init__(None, "user_downloads")
 
     async def get_by_id(self, id: Any) -> dict[str, Any] | None:
         try:
             async with pg_manager.get_session() as session:
-                query = text("SELECT * FROM download_history WHERE id = :id")
+                query = text("SELECT * FROM user_downloads WHERE id = :id")
                 result = await session.execute(query, {"id": id})
                 row = result.fetchone()
                 if not row:
@@ -41,7 +41,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
     async def delete(self, id: Any) -> bool:
         try:
             async with pg_manager.get_session() as session:
-                await session.execute(text("DELETE FROM download_history WHERE id = :id"), {"id": id})
+                await session.execute(text("DELETE FROM user_downloads WHERE id = :id"), {"id": id})
                 await session.commit()
                 return True
         except Exception as e:
@@ -58,7 +58,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
         try:
             async with pg_manager.get_session() as session:
                 query = text("""
-                    INSERT INTO download_history
+                    INSERT INTO user_downloads
                     (user_id, book_hash, series_hash, title, downloaded_at)
                     VALUES (:user_id, :book_hash, :series_hash, :title, CURRENT_TIMESTAMP)
                     RETURNING id
@@ -84,7 +84,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                             "series_hash": series_hash,
                             "title": title,
                         }
-                        self.supabase.get_client().table("download_history").insert(data).execute()
+                        self.supabase.get_client().table("user_downloads").insert(data).execute()
                     except Exception:
                         pass
 
@@ -115,7 +115,7 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                         lb.volume,
                         sm.series_name,
                         sm.author
-                    FROM download_history dh
+                    FROM user_downloads dh
                     JOIN local_books lb ON dh.book_hash = lb.book_hash
                     JOIN series_metadata sm ON lb.series_hash = sm.series_hash
                     WHERE dh.user_id = :user_id
@@ -143,12 +143,10 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
         try:
             async with pg_manager.get_session() as session:
                 if since:
-                    query = text(
-                        "SELECT COUNT(*) FROM download_history WHERE user_id = :uid AND downloaded_at >= :since"
-                    )
+                    query = text("SELECT COUNT(*) FROM user_downloads WHERE user_id = :uid AND downloaded_at >= :since")
                     params = {"uid": user_id, "since": since}
                 else:
-                    query = text("SELECT COUNT(*) FROM download_history WHERE user_id = :uid")
+                    query = text("SELECT COUNT(*) FROM user_downloads WHERE user_id = :uid")
                     params = {"uid": user_id}
 
                 result = await session.execute(query, params)
@@ -171,15 +169,15 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
 
             async with pg_manager.get_session() as session:
                 if book_hash:
-                    query = text("SELECT 1 FROM download_history WHERE user_id = :uid AND book_hash = :hash LIMIT 1")
+                    query = text("SELECT 1 FROM user_downloads WHERE user_id = :uid AND book_hash = :hash LIMIT 1")
                     if (await session.execute(query, {"uid": user_id, "hash": book_hash})).fetchone():
                         return True
 
-                query = text("""
-                    SELECT 1 FROM download_history
-                    WHERE user_id = :uid AND (title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t)
-                    LIMIT 1
-                """)
+                    query = text("""
+                        SELECT 1 FROM user_downloads
+                        WHERE user_id = :uid AND (title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t)
+                        LIMIT 1
+                    """)
                 if (await session.execute(query, {"uid": user_id, "t": title, "ct": search_clean})).fetchone():
                     return True
             return False
@@ -197,13 +195,13 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
 
             async with pg_manager.get_session() as session:
                 if book_hash:
-                    query = text("SELECT COUNT(*) FROM download_history WHERE book_hash = :hash")
+                    query = text("SELECT COUNT(*) FROM user_downloads WHERE book_hash = :hash")
                     count = (await session.execute(query, {"hash": book_hash})).scalar()
                     if count > 0:
                         return count
 
                 query = text(
-                    "SELECT COUNT(*) FROM download_history WHERE title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t"
+                    "SELECT COUNT(*) FROM user_downloads WHERE title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t"
                 )
                 return (await session.execute(query, {"t": title, "ct": search_clean})).scalar() or 0
         except Exception as e:

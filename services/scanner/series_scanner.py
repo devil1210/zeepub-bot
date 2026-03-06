@@ -222,7 +222,7 @@ class SeriesScanner:
                 series_hash=series.series_hash,
                 author=series.author,
                 description=series.description,
-                tags=series.tags,
+                tags=series.tags_json,
                 cover_url=series.cover_url,
                 book_type=series.book_type,
                 publisher=series.publisher,

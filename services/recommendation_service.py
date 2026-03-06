@@ -59,8 +59,8 @@ class RecommendationService:
                 for s in history_series:
                     if s.author and s.author != "Desconocido":
                         authors_freq[s.author] = authors_freq.get(s.author, 0) + 2
-                    if s.tags:
-                        for t in s.tags:
+                    if s.tags_json:
+                        for t in s.tags_json:
                             tags_freq[t] = tags_freq.get(t, 0) + 1
 
                 top_authors = sorted(authors_freq.items(), key=lambda x: x[1], reverse=True)[:3]
@@ -77,7 +77,7 @@ class RecommendationService:
                     filters.append(SeriesMetadata.author.in_(target_authors))
 
                 if target_tags:
-                    tag_filters = [cast(SeriesMetadata.tags, String).ilike(f"%{tag}%") for tag in target_tags]
+                    tag_filters = [cast(SeriesMetadata.tags_json, String).ilike(f"%{tag}%") for tag in target_tags]
                     filters.append(or_(*tag_filters))
 
                 if filters:
@@ -111,7 +111,7 @@ class RecommendationService:
                             "book_count": s.book_count,
                             "rating_average": s.rating_average,
                             "book_type": s.book_type,
-                            "tags": s.tags or [],
+                            "tags": s.tags_json or [],
                         }
                     )
 
@@ -167,7 +167,7 @@ class RecommendationService:
                         "book_count": s.book_count,
                         "rating_average": s.rating_average,
                         "book_type": s.book_type,
-                        "tags": s.tags or [],
+                        "tags": s.tags_json or [],
                     }
                 )
 

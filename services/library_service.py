@@ -67,12 +67,12 @@ class LibraryService:
             if series_hashes:
                 # Subconsulta para obtener el ID del primer libro por serie
                 subq = (
-                    select(LocalBook.series_hash, func.min(LocalBook.id).label("min_id"))
+                    select(LocalBook.series_hash, func.min(LocalBook.book_hash).label("min_hash"))
                     .where(LocalBook.series_hash.in_(series_hashes))
                     .group_by(LocalBook.series_hash)
                     .subquery()
                 )
-                rep_stmt = select(LocalBook).join(subq, LocalBook.id == subq.c.min_id)
+                rep_stmt = select(LocalBook).join(subq, LocalBook.book_hash == subq.c.min_hash)
                 rep_res = await session.execute(rep_stmt)
                 for b in rep_res.scalars().all():
                     rep_books_map[b.series_hash] = b
@@ -118,7 +118,7 @@ class LibraryService:
             numBooks=s.book_count,
             book_count=s.book_count,
             book_type=getattr(s, "book_type", "Novela"),
-            tag_list=s.tags if s.tags else [],
+            tag_list=s.tags_json if s.tags_json else [],
             rating_average=s.rating_average,
             rating_count=s.rating_count,
             download_count=getattr(s, "download_count", 0),
@@ -173,7 +173,7 @@ class LibraryService:
                     select(LocalBook, dl_subquery.label("download_count"))
                     .options(selectinload(LocalBook.series_info))
                     .where(LocalBook.series_hash == series_hash)
-                    .order_by(LocalBook.volume.asc(), LocalBook.id.asc())
+                    .order_by(LocalBook.volume.asc(), LocalBook.book_hash.asc())
                 )
 
                 if limit:
@@ -217,14 +217,14 @@ class LibraryService:
     async def get_series_total_downloads(series_hash: str) -> int:
         """Calcula el total de descargas de todos los libros de una serie."""
         async with pg_manager.get_session() as session:
-            stmt = select(func.count(UserDownload.id)).where(UserDownload.series_hash == series_hash)
+            stmt = select(func.count(UserDownload.book_hash)).where(UserDownload.series_hash == series_hash)
             res = await session.execute(stmt)
             return res.scalar() or 0
 
     @staticmethod
-    async def get_book_by_id(book_id: int) -> dict[str, Any] | None:
-        """Busca un libro por su ID delegando al repositorio."""
-        book = await book_repo.get_by_id(book_id)
+    async def get_book_by_hash(book_hash: str) -> dict[str, Any] | None:
+        """Busca un libro por su hash delegando al repositorio."""
+        book = await book_repo.get_by_hash(book_hash)
         if not book:
             return None
 
@@ -236,11 +236,15 @@ class LibraryService:
         return dto.model_dump()
 
     @staticmethod
-    async def update_book_metadata(book_id: int, updates: dict[str, Any]) -> bool:
+    async def update_book_metadata(book_hash: str, updates: dict[str, Any]) -> bool:
         """Actualiza metadatos de un libro y recalcula el hash de serie."""
         async with pg_manager.get_session() as session:
             try:
-                stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.id == book_id)
+                stmt = (
+                    select(LocalBook)
+                    .options(selectinload(LocalBook.series_info))
+                    .where(LocalBook.book_hash == book_hash)
+                )
                 result = await session.execute(stmt)
                 book = result.scalar_one_or_none()
 
@@ -294,8 +298,8 @@ class LibraryService:
                 stmt = (
                     select(LocalBook)
                     .options(selectinload(LocalBook.series_info))
-                    .outerjoin(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
-                    .where(LocalBook.series_metadata_id.is_(None))
+                    .outerjoin(SeriesMetadata, LocalBook.series_hash == SeriesMetadata.series_hash)
+                    .where(LocalBook.series_hash.is_(None))
                     .order_by(LocalBook.title)
                 )
 
@@ -309,14 +313,14 @@ class LibraryService:
                 used_ids = set()
 
                 for i, book_a in enumerate(books):
-                    if book_a.id in used_ids:
+                    if book_a.book_hash in used_ids:
                         continue
 
                     current_group = [book_a]
-                    used_ids.add(book_a.id)
+                    used_ids.add(book_a.book_hash)
 
                     for _j, book_b in enumerate(books[i + 1 :], start=i + 1):
-                        if book_b.id in used_ids:
+                        if book_b.book_hash in used_ids:
                             continue
 
                         # Mismo autor es un requisito fuerte
@@ -329,7 +333,7 @@ class LibraryService:
                         similarity = SequenceMatcher(None, book_a.title, book_b.title).ratio()
                         if similarity >= threshold:
                             current_group.append(book_b)
-                            used_ids.add(book_b.id)
+                            used_ids.add(book_b.book_hash)
 
                     if len(current_group) > 1:
                         # Sugerencia encontrada
@@ -366,7 +370,7 @@ class LibraryService:
                 stmt = (
                     select(LocalBook)
                     .options(selectinload(LocalBook.series_info))
-                    .where(LocalBook.series_metadata_id.is_(None))
+                    .where(LocalBook.series_hash.is_(None))
                     .order_by(LocalBook.indexed_at.desc())
                     .limit(limit)
                 )
@@ -515,7 +519,7 @@ class LibraryService:
         """Obtiene series filtradas por un tag específico."""
         async with pg_manager.get_session() as session:
             try:
-                stmt = select(SeriesMetadata).where(SeriesMetadata.tags.contains([tag]))
+                stmt = select(SeriesMetadata).where(SeriesMetadata.tags_json.contains([tag]))
 
                 count_stmt = select(func.count()).select_from(stmt.subquery())
                 total = (await session.execute(count_stmt)).scalar() or 0
