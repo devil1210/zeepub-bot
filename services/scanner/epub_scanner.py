@@ -244,7 +244,7 @@ class EpubScanner:
                     if not os.path.exists(hash_conflict.filepath):
                         logger.info(f"🔄 Migración detectada: {hash_conflict.filepath} -> {filepath}")
                         # Si 'book' ya existía pero con otro hash, lo eliminamos a favor del conflictivo que migramos
-                        if book and book.id != hash_conflict.id:
+                        if book and book.book_hash != hash_conflict.book_hash:
                             await session.delete(book)
 
                         hash_conflict.filepath = filepath
@@ -351,7 +351,7 @@ class EpubScanner:
                     book.cover_low = base_url + os.path.basename(cover_paths["low"])
 
             await session.flush()
-            return "added" if not book.id else "updated"
+            return "added" if not book.book_hash else "updated"
 
         except Exception as e:
             logger.error(f"Error procesando libro {filepath}: {e}")

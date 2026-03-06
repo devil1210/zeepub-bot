@@ -99,7 +99,7 @@ class LibraryScanner:
                         volume=b.volume,
                         author=b.series_info.author if b.series_info else "Unknown",
                         book_type=b.series_info.book_type if b.series_info else "Light Novel",
-                        original_book_id=b.id,
+                        original_book_id=None,
                         reason="physically_deleted",
                     )
                     session.add(archived)
@@ -107,10 +107,14 @@ class LibraryScanner:
 
                     # Desvincular - PostgreSQL async style
                     await session.execute(
-                        update(DownloadHistory).where(DownloadHistory.book_id == b.id).values(book_id=None)
+                        update(DownloadHistory).where(DownloadHistory.book_hash == b.book_hash).values(book_hash=None)
                     )
-                    await session.execute(update(UserDownload).where(UserDownload.book_id == b.id).values(book_id=None))
-                    await session.execute(update(UserRating).where(UserRating.book_id == b.id).values(book_id=None))
+                    await session.execute(
+                        update(UserDownload).where(UserDownload.book_hash == b.book_hash).values(book_hash=None)
+                    )
+                    await session.execute(
+                        update(UserRating).where(UserRating.book_hash == b.book_hash).values(book_hash=None)
+                    )
 
                     await session.delete(b)
                     removed_count += 1
@@ -198,10 +202,14 @@ class LibraryScanner:
                 session.add(archived)
 
                 await session.execute(
-                    update(DownloadHistory).where(DownloadHistory.book_id == book.id).values(book_id=None)
+                    update(DownloadHistory).where(DownloadHistory.book_hash == book.book_hash).values(book_hash=None)
                 )
-                await session.execute(update(UserDownload).where(UserDownload.book_id == book.id).values(book_id=None))
-                await session.execute(update(UserRating).where(UserRating.book_id == book.id).values(book_id=None))
+                await session.execute(
+                    update(UserDownload).where(UserDownload.book_hash == book.book_hash).values(book_hash=None)
+                )
+                await session.execute(
+                    update(UserRating).where(UserRating.book_hash == book.book_hash).values(book_hash=None)
+                )
 
                 await session.delete(book)
                 deleted_books += 1

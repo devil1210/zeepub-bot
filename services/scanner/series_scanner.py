@@ -226,7 +226,7 @@ class SeriesScanner:
                 cover_url=series.cover_url,
                 book_type=series.book_type,
                 publisher=series.publisher,
-                original_series_id=series.id,
+                original_series_id=None,
                 slug=series.slug,
             )
             session.add(archived_s)
