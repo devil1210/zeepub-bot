@@ -66,6 +66,11 @@ class RatingService:
 
                 await session.commit()
 
+                # Trigger sync to Cloud
+                from services.sync_service import SyncService
+
+                SyncService.trigger_auto_sync()
+
                 return {
                     "book_id": book_id,
                     "new_average": new_avg,
@@ -110,6 +115,11 @@ class RatingService:
                     book.rating_count = new_count
 
                 await session.commit()
+
+                # Trigger sync to Cloud
+                from services.sync_service import SyncService
+
+                SyncService.trigger_auto_sync()
 
                 return {
                     "success": True,

@@ -92,7 +92,7 @@ class OptimizedSyncEngine:
             except Exception as e:
                 logger.error(f"[SYNC_ENGINE] Error in change detector loop: {e}")
 
-            await asyncio.sleep(3600)  # Check for remote changes every hour
+            await asyncio.sleep(600)  # Check for remote changes every 10 minutes
 
     async def _detect_changes(self):
         """Detects changes in Supabase without constant polling."""
@@ -107,6 +107,9 @@ class OptimizedSyncEngine:
             now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
             if now_utc - self.last_sync_times["user_levels"] > timedelta(hours=1):
                 await self._detect_level_changes()
+
+            # Detect series changes
+            await self._detect_series_changes()
 
         except Exception as e:
             logger.error(f"[SYNC_ENGINE] Error detecting changes: {e}")
@@ -136,6 +139,38 @@ class OptimizedSyncEngine:
 
         except Exception as e:
             logger.error(f"[SYNC_ENGINE] Error detecting user changes: {e}")
+
+    async def _detect_series_changes(self):
+        """Detects changes in Supabase series_metadata."""
+        try:
+            last_check = self.last_sync_times["series_metadata"]
+
+            # Si no hay last_check (primera vez), forzamos uno
+            if last_check == datetime.min:
+                self.pending_changes["series_metadata"].add("all")
+                return
+
+            result = (
+                supabase_manager.get_client()
+                .table("series_metadata")
+                .select("series_hash, updated_at")
+                .gte("updated_at", last_check.isoformat())
+                .limit(50)
+                .execute()
+            )
+
+            if result and result.data:
+                changed_series = {item["series_hash"] for item in result.data}
+                if changed_series:
+                    self.pending_changes["series_metadata"].update(changed_series)
+                    logger.info(f"[SYNC] Detected {len(changed_series)} series changes in Supabase")
+
+        except Exception as e:
+            # Silently handle if column updated_at doesn't exist yet or other errors
+            if "column" in str(e).lower() and "updated_at" in str(e).lower():
+                pass
+            else:
+                logger.error(f"[SYNC_ENGINE] Error detecting series changes: {e}")
 
     async def _detect_level_changes(self):
         """Detects changes in user levels."""
@@ -474,6 +509,8 @@ class OptimizedSyncEngine:
                         "rating_count": s_data.get("rating_count", 0),
                         "book_count": s_data.get("book_count", 0),
                         "slug": s_data.get("slug"),
+                        "series_spanish": s_data.get("series_spanish"),
+                        "series_english": s_data.get("series_english"),
                     }
 
                     # JSONB fields handling - Ensure we pass a JSON string for text() queries
@@ -506,12 +543,12 @@ class OptimizedSyncEngine:
                                     series_hash, series_name,
                                     author, description, tags, demographics, cover_url,
                                     book_type, publisher, author_jap, rating_average,
-                                    rating_count, book_count, slug
+                                    rating_count, book_count, slug, series_spanish, series_english
                                 ) VALUES (
                                     :series_hash, :series_name,
                                     :author, :description, :tags, :demographics, :cover_url,
                                     :book_type, :publisher, :author_jap, :rating_average,
-                                    :rating_count, :book_count, :slug
+                                    :rating_count, :book_count, :slug, :series_spanish, :series_english
                                 )
                                 ON CONFLICT (series_hash) DO UPDATE SET
                                     series_name = EXCLUDED.series_name,
@@ -526,7 +563,9 @@ class OptimizedSyncEngine:
                                     rating_average = EXCLUDED.rating_average,
                                     rating_count = EXCLUDED.rating_count,
                                     book_count = EXCLUDED.book_count,
-                                    slug = EXCLUDED.slug
+                                    slug = EXCLUDED.slug,
+                                    series_spanish = EXCLUDED.series_spanish,
+                                    series_english = EXCLUDED.series_english
                             """),
                             mapped_data,
                         )

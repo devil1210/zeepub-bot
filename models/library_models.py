@@ -195,6 +195,8 @@ class LocalBook(Base):
     # Metadata del EPUB
     title = Column(String(512), nullable=False)
     romaji_title = Column(String(512))
+    spanish_title = Column(String(512))
+    english_title = Column(String(512))
     jap_title = Column(String(512))
     volume = Column(Float)  # Soporta 1, 1.5, etc
     edition = Column(String(255))  # Ej: "Honorificos", "Colector", etc.

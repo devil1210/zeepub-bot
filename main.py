@@ -67,7 +67,7 @@ async def fix_schema_if_needed():
                 text("""
                 CREATE TABLE IF NOT EXISTS series_metadata (
                     id SERIAL PRIMARY KEY,
-                    series_name VARCHAR(255) NOT NULL,
+                    series_name VARCHAR(512) NOT NULL,
                     series_hash VARCHAR(64) UNIQUE NOT NULL,
                     author VARCHAR(255),
                     author_jap VARCHAR(255),
@@ -135,12 +135,23 @@ async def fix_schema_if_needed():
             await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);"))
             await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS illustrator_jap VARCHAR(255);"))
             await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(512);"))
-            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS series_spanish VARCHAR(255);"))
-            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS series_english VARCHAR(255);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS romaji_title VARCHAR(512);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS english_title VARCHAR(512);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS series_spanish VARCHAR(512);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS series_english VARCHAR(512);"))
             await conn.execute(
                 text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS is_uncensored INTEGER DEFAULT 0;")
             )
             await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS color_mode VARCHAR(50);"))
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS short_link VARCHAR(255);"))
+
+            # Forzar tipos si ya existían con longitud menor
+            await conn.execute(text("ALTER TABLE local_books ALTER COLUMN series_spanish TYPE VARCHAR(512);"))
+            await conn.execute(text("ALTER TABLE local_books ALTER COLUMN series_english TYPE VARCHAR(512);"))
+            await conn.execute(text("ALTER TABLE local_books ALTER COLUMN title TYPE VARCHAR(512);"))
+            await conn.execute(text("ALTER TABLE series_metadata ALTER COLUMN series_name TYPE VARCHAR(512);"))
+            await conn.execute(text("ALTER TABLE series_metadata ALTER COLUMN series_spanish TYPE VARCHAR(512);"))
+            await conn.execute(text("ALTER TABLE series_metadata ALTER COLUMN series_english TYPE VARCHAR(512);"))
 
             # user_levels
             await conn.execute(
@@ -309,6 +320,39 @@ async def initialize_application():
     logger.info("Optimized sync engine started")
 
 
+async def run_bot():
+    """Main async entry point for the application."""
+    # Initialize application components
+    await initialize_application()
+
+    # Initialize and start bot
+    bot = ZeePubBot()
+
+    # We need to manually initialize the bot and then start polling
+    # to avoid creating multiple event loops
+    await bot.initialize()
+
+    logger.info("Bot y servicios inicializados. Entrando en polling...")
+    # NOTE: bot.app.initialize() is already called inside bot.initialize()
+    # We just need to start the updater
+    if bot.app.updater:
+        await bot.app.updater.start_polling()
+    else:
+        # If bot.start() usually calls run_polling, we follow that pattern
+        # but in our own loop. app.run_polling is blocking, so we use start_polling
+        await bot.app.start()
+        await bot.app.updater.start_polling()
+
+    # Keep the loop alive
+    try:
+        while True:
+            await asyncio.sleep(3600)
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        logger.info("Deteniendo bot...")
+    finally:
+        await bot.stop_async()
+
+
 def main():
     # Setup global logging to capture logs in memory for the admin panel
     from utils.log_manager import setup_global_logging
@@ -326,15 +370,13 @@ def main():
         logger.info(" Base de Datos: PostgreSQL (Activa - Mandatorio)")
     else:
         logger.error(" ERROR: DATABASE_URL no configurada. Postgres es requerido.")
-        # Opcionalmente salir si es mandatorio
-        # return
+        return
 
-    # Initialize application
-    asyncio.run(initialize_application())
-
-    bot = ZeePubBot()
-    bot.start()
-    logger.info("Bot detenido.")
+    # Run everything in a single persistent loop
+    try:
+        asyncio.run(run_bot())
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":

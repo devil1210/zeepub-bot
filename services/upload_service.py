@@ -492,6 +492,11 @@ class UploadService:
                 except Exception as e:
                     logger.warning(f"No se pudo eliminar el registro temporal {upload_id}: {e}")
 
+            # Sincronización automática a la nube tras upload
+            from services.sync_service import SyncService
+
+            SyncService.trigger_auto_sync()
+
             logger.info(f"✅ finalize_upload exitoso: {target_file_path}")
             return True
 

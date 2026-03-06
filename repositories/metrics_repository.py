@@ -50,6 +50,14 @@ class MetricsRepository:
                     self.supabase.get_client().table("user_downloads").insert(data).execute()
                 except Exception:
                     pass
+
+            # Trigger full bidirectional sync
+            try:
+                from services.sync_service import SyncService
+
+                SyncService.trigger_auto_sync()
+            except Exception:
+                pass
         except Exception as e:
             logger.error(f"Postgres metrics add_download error: {e}")
 
@@ -131,6 +139,14 @@ class MetricsRepository:
                     self.supabase.get_client().table("user_ratings").upsert(data).execute()
                 except Exception:
                     pass
+
+            # Trigger full bidirectional sync
+            try:
+                from services.sync_service import SyncService
+
+                SyncService.trigger_auto_sync()
+            except Exception:
+                pass
         except Exception as e:
             logger.error(f"Postgres metrics add_rating error: {e}")
 

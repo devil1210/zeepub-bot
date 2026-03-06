@@ -189,6 +189,12 @@ class ScannerService:
                     "last_run": datetime.utcnow().isoformat(),
                 }
             )
+
+            # Sync to Cloud if enabled
+            from services.sync_service import SyncService
+
+            SyncService.trigger_auto_sync()
+
             return results
 
         except Exception as e:
@@ -366,12 +372,25 @@ class ScannerService:
                         await session.commit()
 
                         if book:
+                            # Trigger auto-sync
+                            from services.sync_service import SyncService
+
+                            SyncService.trigger_auto_sync()
                             return {"added": res == "added", "updated": res == "updated", "book_id": book.id}
+
+                        # Trigger auto-sync even if book not found (it might be in DB but not returned as model)
+                        from services.sync_service import SyncService
+
+                        SyncService.trigger_auto_sync()
                         return {"added": res == "added", "updated": res == "updated"}
 
                     return {"added": False, "updated": False, "status": res}
                 else:
                     results, _ = await self._scan_directory(source, session, force_scan)
+                    # Trigger auto-sync
+                    from services.sync_service import SyncService
+
+                    SyncService.trigger_auto_sync()
                     return results
         finally:
             if not is_already_scanning:
@@ -424,6 +443,12 @@ class ScannerService:
 
                 await SeriesScanner.sync_series_metadata(session, series_hash)
                 await session.commit()
+
+                # Trigger auto-sync
+                from services.sync_service import SyncService
+
+                SyncService.trigger_auto_sync()
+
                 return results
         finally:
             ScannerService._is_scanning = False

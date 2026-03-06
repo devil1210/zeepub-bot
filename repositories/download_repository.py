@@ -113,6 +113,14 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
                     except Exception:
                         pass
 
+                # Trigger full bidirectional sync
+                try:
+                    from services.sync_service import SyncService
+
+                    SyncService.trigger_auto_sync()
+                except Exception:
+                    pass
+
                 return new_id
         except Exception as e:
             logger.error(f"Postgres add_download error: {e}")

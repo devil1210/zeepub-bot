@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Any
 
@@ -56,7 +57,7 @@ class SyncService:
 
         try:
             async with pg_manager.get_session() as session:
-                # 1. Sync SeriesMetadata
+                # 1. Sync SeriesMetadata (Local -> Cloud)
                 await SyncService._sync_series(session, client, stats)
 
                 # 2. Sync AI Learning Feedback
@@ -80,7 +81,7 @@ class SyncService:
                 # 8. Sync User Downloads
                 await SyncService._sync_downloads(session, client, stats)
 
-                # 9. Bidirectional Pull (Keep local up to date)
+                # 9. Bidirectional Pull (Keep local up to date - Cloud -> Local)
                 await SyncService._pull_updates(session)
 
             return {
@@ -95,6 +96,22 @@ class SyncService:
                 exc_info=True,
             )
             return {"success": False, "message": str(e)}
+
+    @staticmethod
+    def trigger_auto_sync():
+        """
+        Dispara la sincronización en segundo plano de manera segura.
+        Ideal para llamar después de escaneos o cambios locales.
+        """
+        if not config.ENABLE_SUPABASE:
+            return
+
+        async def _run_sync():
+            logger.info("Starting background auto-sync to Cloud...")
+            await SyncService.sync_library_to_cloud()
+            logger.info("Background auto-sync complete.")
+
+        asyncio.create_task(_run_sync())
 
     # --- Private Helper Methods per Table ---
 

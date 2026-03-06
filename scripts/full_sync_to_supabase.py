@@ -3,7 +3,7 @@ import os
 import sys
 
 # Add project root to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), ".")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from dotenv import load_dotenv
 
@@ -18,8 +18,8 @@ load_dotenv()
 async def run_sync_all():
     print("🚀 Iniciando Proceso de Sincronización Completa...")
 
-    # Asegurar conexión local
-    os.environ["DATABASE_URL"] = "postgresql+asyncpg://zeepub:zeepub@localhost:5432/zeepub"
+    # Asegurar que la DB esté inicializada
+    await pg_manager.initialize()
 
     try:
         # 1. Escaneo de libros

@@ -375,6 +375,8 @@ async def handle_admin_merge_series(data: dict[str, Any], user_data: dict[str, A
         success = await LibraryService.merge_series(
             data.get("target_hash"), data.get("source_hash"), data.get("new_name")
         )
+        if success:
+            SyncService.trigger_auto_sync()
         return {"success": success}
     except Exception as e:
         return {"success": False, "message": str(e)}
