@@ -323,8 +323,8 @@ class EpubScanner:
                 book.extracted_data = identity
                 book.extracted_data.update(
                     {
-                        "tags": book.tags,
-                        "demographics": book.demographics,
+                        "tags": book.tags_json,
+                        "demographics": book.demographics_json,
                         "description": book.description,
                         "publisher": book.publisher,
                         "illustrator": book.illustrator,
