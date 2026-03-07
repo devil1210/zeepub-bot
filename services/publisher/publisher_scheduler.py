@@ -2,8 +2,6 @@ import logging
 
 from telegram.ext import Application
 
-from services.publisher.publisher_service import publisher_service
-
 logger = logging.getLogger(__name__)
 
 
@@ -29,9 +27,14 @@ def start_publisher_scheduler(application: Application):
 
 async def process_queue_job(context):
     """
-    Job que invoca el procesamiento de la cola desde el context del bot.
+    Job que invoca el procesamiento de la cola usando una sesión de DB.
     """
+    from core.database import async_session
+    from services.publisher import PublisherService
+
     try:
-        await publisher_service.process_queue()
+        async with async_session() as session:
+            service = PublisherService(session)
+            await service.process_queue()
     except Exception as e:
         logger.error(f"❌ Error en job de cola de publicación: {e}", exc_info=True)

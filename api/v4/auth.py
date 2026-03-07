@@ -20,14 +20,14 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-async def get_user_service(session: AsyncSession = Depends(get_db)) -> UserService:
+async def get_user_service(session: Annotated[AsyncSession, Depends(get_db)]) -> UserService:
     """Inyecta el servicio de usuarios con la sesión actual."""
     return UserService(session)
 
 
 async def get_current_user(
     x_telegram_init_data: Annotated[str | None, Header(alias="x-telegram-init-data")] = None,
-    user_service: UserService = Depends(get_user_service),
+    user_service: Annotated[UserService, Depends(get_user_service)] = None,
 ) -> User:
     """
     Dependencia que valida la autenticación de Telegram y retorna el usuario de la BD.

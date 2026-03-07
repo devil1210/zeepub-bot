@@ -1,6 +1,12 @@
 from .agent_models import AgentExecution
 from .audit_models import MetadataAudit
 from .base import Base
+from .communications import (
+    DiscoveredChat,
+    PublicationChannel,
+    PublicationQueue,
+    PublicationTemplate,
+)
 from .custom_messages_models import GlobalVariable, PluginSettings, StoredMessage
 from .download_models import DownloadHistory
 from .group_models import GroupSettings
@@ -21,12 +27,6 @@ from .library import (
     UploadHistory,
     UserDownload,
     UserRating,
-)
-from .publication_models import (
-    DiscoveredChat,
-    PublicationChannel,
-    PublicationQueue,
-    PublicationTemplate,
 )
 from .theme_sync_models import ThemeSyncLog
 from .user_audit_models import UserAuditLog

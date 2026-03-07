@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,8 +32,8 @@ async def search_series(
     q: str = Query("", min_length=0),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user),
+    db: Annotated[AsyncSession, Depends(get_db)] = None,
+    user: Annotated[User, Depends(get_current_user)] = None,
 ):
     """
     Search endpoint compatible with the Mini App's gallery.
@@ -57,7 +59,11 @@ async def search_series(
 
 
 @router.get("/series/{series_id}", response_model=SeriesModel)
-async def get_series_detail(series_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def get_series_detail(
+    series_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+):
     """Obtiene los detalles de una serie específica."""
     library_service = LibraryService(db)
     series = await library_service.get_series_details(series_id)
@@ -70,7 +76,11 @@ async def get_series_detail(series_id: str, db: AsyncSession = Depends(get_db), 
 
 
 @router.get("/series/{series_id}/books", response_model=list[BookModel])
-async def get_series_books(series_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
+async def get_series_books(
+    series_id: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_user)],
+):
     """Retorna los libros/volúmenes pertenecientes a una serie."""
     library_service = LibraryService(db)
     books = await library_service.get_books_by_series(series_id)

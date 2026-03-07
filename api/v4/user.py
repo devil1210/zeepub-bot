@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -16,7 +18,7 @@ class UISettingsUpdate(BaseModel):
 
 
 @router.get("/access")
-async def get_user_access(user: User = Depends(get_current_user)):
+async def get_user_access(user: Annotated[User, Depends(get_current_user)]):
     """
     Retorna el estado de acceso y configuración del usuario.
     Mantiene paridad con el esquema esperado por el frontend.
@@ -41,8 +43,8 @@ async def get_user_access(user: User = Depends(get_current_user)):
 @router.post("/settings")
 async def update_settings(
     settings: UISettingsUpdate,
-    user: User = Depends(get_current_user),
-    user_service: UserService = Depends(get_user_service),
+    user: Annotated[User, Depends(get_current_user)],
+    user_service: Annotated[UserService, Depends(get_user_service)],
 ):
     """Actualiza las preferencias del usuario."""
     updated = await user_service.update_ui_settings(user.telegram_id, **settings.dict(exclude_unset=True))

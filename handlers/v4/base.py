@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 from core.database import async_session
 from core.state_manager import state_manager
 from services.library_service import LibraryService
-from services.publisher_service import PublisherService
+from services.publisher import PublisherService
 from services.user_service import UserService
 
 logger = logging.getLogger(__name__)
