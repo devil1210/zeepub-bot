@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from api.handlers.helpers import check_staff
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook
+from models.library import LocalBook
 
 logger = logging.getLogger(__name__)
 

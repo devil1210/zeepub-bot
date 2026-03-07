@@ -4,6 +4,7 @@ from .callbacks import CallbackHandlerV4
 from .catalog import CatalogHandlerV4
 from .search import SearchHandlerV4
 from .start import StartHandlerV4
+from .system import SystemHandlerV4
 
 
 class HandlerManagerV4:
@@ -18,6 +19,7 @@ class HandlerManagerV4:
         self.start_h = StartHandlerV4(app)
         self.catalog_h = CatalogHandlerV4(app)
         self.search_h = SearchHandlerV4(app)
+        self.system_h = SystemHandlerV4(app)
         self.callback_h = CallbackHandlerV4(app)
 
     def register(self):
@@ -27,6 +29,13 @@ class HandlerManagerV4:
         self.app.add_handler(CommandHandler("catalog", self.catalog_h.handle))
         self.app.add_handler(CommandHandler("catalogo", self.catalog_h.handle))
         self.app.add_handler(CommandHandler("search", self.search_h.handle))
+        self.app.add_handler(CommandHandler("status", self.system_h.handle_status))
+        self.app.add_handler(CommandHandler("cancel", self.system_h.handle_cancel))
+        self.app.add_handler(CommandHandler("evil", self.system_h.handle_evil))
+
+        from telegram.ext import MessageHandler, filters
+
+        self.app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), self.system_h.handle_message))
 
         # Callback Queries
         # Nota: En v4.0 usamos patrones específicos para evitar colisiones con legacy si conviven

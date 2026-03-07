@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 
 from core.db_manager_pg import pg_manager
 from models.download_models import DownloadHistory
-from models.library_models import LocalBook, UserRating
+from models.library import LocalBook, UserRating
 from models.user_models import User, UserLevel
 from repositories.download_repository import download_repo
 

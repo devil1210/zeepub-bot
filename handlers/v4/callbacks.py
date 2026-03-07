@@ -69,6 +69,35 @@ class CallbackHandlerV4(BaseHandlerV4):
                 text, markup = await UIServiceV4.render_book_details(book)
                 await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
 
+            elif data == "buscar":
+                # Delegar al search_handler pidiendo el término (activará el estado)
+                from handlers.v4.search import SearchHandlerV4
+
+                search_h = SearchHandlerV4(self.app)
+                await search_h.handle(update, context)
+
+            elif data.startswith("destino|"):
+                _, destino = data.split("|", 1)
+                uid = update.effective_user.id
+                st = self.get_user_state(uid)
+
+                # Manejar destino
+                if destino == "aqui":
+                    st["destino"] = update.effective_chat.id
+                elif destino == "otro":
+                    st["esperando_destino_manual"] = True
+                    await query.edit_message_text(
+                        "✏️ <b>Escribe el @usuario o ID del chat destino:</b>", parse_mode="HTML"
+                    )
+                    return
+                else:
+                    st["destino"] = destino  # @canal_id
+
+                await query.answer(f"✅ Destino establecido: {destino}")
+                # Volver al menú principal tras configurar
+                text, markup = await UIServiceV4.render_main_menu()
+                await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
+
             elif data == "close_menu":
                 await query.message.delete()
 

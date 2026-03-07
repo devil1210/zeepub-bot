@@ -4,7 +4,7 @@ from typing import Any
 from sqlalchemy import delete, func, select
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, UserRating
+from models.library import LocalBook, UserRating
 
 logger = logging.getLogger(__name__)
 

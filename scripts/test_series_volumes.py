@@ -13,7 +13,7 @@ from services.library_service import LibraryService
 
 async def main():
     # Attempt to find a series hash for Index or something with multiple volumes
-    from models.library_models import LocalBook
+    from models.library import LocalBook
     from utils.library_db import get_session
 
     session = get_session()

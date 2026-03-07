@@ -20,7 +20,7 @@ if db_url.startswith("postgresql://"):
 os.environ["DATABASE_URL"] = db_url
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook
+from models.library import LocalBook
 
 
 async def check_stats():

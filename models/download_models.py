@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 # Use the same Base as library_models if possible,
 # but for a new file we can define it or import it.
 # Usually, it's better to have a shared Base.
-from models.library_models import Base
+from models.library import Base
 
 
 class DownloadHistory(Base):

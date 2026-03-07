@@ -4,7 +4,7 @@ from pathlib import Path
 
 from sqlalchemy import func, text
 
-from models.library_models import LibrarySource, LocalBook, SeriesMetadata
+from models.library import LibrarySource, LocalBook, SeriesMetadata
 from utils.library_db import COVERS_DIR, engine, get_session
 
 logger = logging.getLogger(__name__)

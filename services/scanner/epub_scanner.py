@@ -8,7 +8,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from models.library_models import Demographic, Genre, LocalBook
+from models.library import Demographic, Genre, LocalBook
 from services.hash_service import hash_service
 from services.scanner.scanner_helpers import ScannerHelpers
 from utils.epub_extractor import EpubMetadataExtractor

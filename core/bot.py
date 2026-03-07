@@ -7,7 +7,6 @@ from telegram import Update
 from telegram.ext import (
     Application,
     ApplicationBuilder,
-    CallbackQueryHandler,
     ContextTypes,
     MessageHandler,
     TypeHandler,
@@ -19,13 +18,6 @@ from config.config_settings import config
 from core.bot_initializer import BotInitializer
 from core.error_handler import ErrorHandler
 from core.session_manager import session_manager
-from handlers.callback_handlers import (
-    buscar_epub,
-    button_handler,
-    set_destino,
-)
-from handlers.command_handlers import CommandHandlers
-from handlers.message_handlers import recibir_texto
 from handlers.v4.manager import HandlerManagerV4
 from plugins.plugin_manager import PluginManager
 from utils.metrics import metrics
@@ -72,20 +64,10 @@ class ZeePubBot:
         # Metrics Middleware (Group -1 to run first)
         self.app.add_handler(TypeHandler(Update, self._metrics_middleware), group=-1)
 
-        # Comandos
-        self.command_handlers = CommandHandlers(self.app)
-        # Handlers are registered in CommandHandlers.__init__
-
         # --- INICIO REFACTOR v4.0 ---
         self.handler_manager_v4 = HandlerManagerV4(self.app)
         self.handler_manager_v4.register()
         # --- FIN REFACTOR v4.0 ---
-
-        # Total pages
-        self.app.add_handler(CallbackQueryHandler(set_destino, pattern="^destino"))
-        self.app.add_handler(CallbackQueryHandler(buscar_epub, pattern="^buscar"))
-
-        self.app.add_handler(CallbackQueryHandler(button_handler), group=1)
 
         # Mensajes de texto movidos a initialize() para evitar conflictos con plugins
 
@@ -279,9 +261,8 @@ class ZeePubBot:
         # from core.sync_engine import sync_engine
         # await sync_engine.start()
 
-        # Registrar handler de texto de fallback DESPUÉS de los plugins
-        # para no interceptar los mensajes de texto de los ConversationHandlers
-        self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, recibir_texto))
+        # El manejo de mensajes de texto ahora se realiza vía HandlerManagerV4
+        # para asegurar compatibilidad con la arquitectura v4.0.
 
     async def start_async(self):
         """Inicia el bot y el polling de forma asíncrona (para uso con API)."""

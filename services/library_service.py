@@ -34,6 +34,10 @@ class LibraryService:
         """Obtiene los volúmenes de una serie específica."""
         return await self.book_repo.get_by_series(series_id)
 
+    async def get_book_by_short_link(self, short_link: str) -> Book | None:
+        """Busca un libro por su short_link."""
+        return await self.book_repo.get_by_short_link(short_link)
+
     async def create_or_update_series(self, series_data: dict) -> Series:
         """
         Crea o actualiza una serie basándose en su hash.

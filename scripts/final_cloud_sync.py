@@ -16,7 +16,7 @@ config.DATABASE_URL = "postgresql+asyncpg://zeepub:zeepub@localhost:5432/zeepub"
 # Importar modelos ANTES que el manager para resolver relaciones
 try:
     import models.agent_models  # noqa: F401
-    import models.library_models  # noqa: F401
+    import models.library  # noqa: F401
     import models.publication_models  # noqa: F401
     import models.user_models  # noqa: F401
 except ImportError:

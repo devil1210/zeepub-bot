@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import String, case, cast, desc, or_, select
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, SeriesMetadata, UserDownload, UserRating
+from models.library import LocalBook, SeriesMetadata, UserDownload, UserRating
 
 logger = logging.getLogger(__name__)
 

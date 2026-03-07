@@ -3,7 +3,7 @@
 import logging
 import re
 
-from models.library_models import LocalBook, SeriesMetadata
+from models.library import LocalBook, SeriesMetadata
 from utils.helpers import generar_slug_from_meta
 
 logger = logging.getLogger(__name__)

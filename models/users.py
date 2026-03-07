@@ -68,3 +68,38 @@ class UserUISettings(Base):
     glass_opacity: Mapped[int] = mapped_column(Integer, default=60)
 
     user: Mapped[User] = relationship(back_populates="ui_settings")
+
+
+class AppTheme(Base):
+    """
+    Temas globales de la aplicación (Presets).
+    """
+
+    __tablename__ = "app_themes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+    description: Mapped[str | None] = mapped_column(String(500))
+
+    # Visual Properties
+    theme_type: Mapped[str] = mapped_column(String(20), default="dark")
+    primary_color: Mapped[str | None] = mapped_column(String(20))
+    background_color: Mapped[str | None] = mapped_column(String(20))
+    card_color: Mapped[str | None] = mapped_column(String(20))
+
+    # Opacities & Effects
+    glass_opacity: Mapped[int | None] = mapped_column(Integer)
+    nav_opacity: Mapped[int | None] = mapped_column(Integer)
+    accent_opacity: Mapped[int | None] = mapped_column(Integer)
+    glass_blur: Mapped[int | None] = mapped_column(Integer)
+    card_glow_intensity: Mapped[int | None] = mapped_column(Integer)
+    border_radius: Mapped[int] = mapped_column(Integer, default=24)
+    border_width: Mapped[int] = mapped_column(Integer, default=1)
+
+    # Layout
+    font_size: Mapped[int | None] = mapped_column(Integer)
+    cover_width: Mapped[int | None] = mapped_column(Integer)
+    banner_content_offset: Mapped[int | None] = mapped_column(Integer)
+
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)

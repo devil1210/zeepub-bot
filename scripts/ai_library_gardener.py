@@ -7,7 +7,7 @@ from rich.console import Console
 from sqlalchemy import or_, select, text
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, MetadataProposal, SeriesMetadata
+from models.library import LocalBook, MetadataProposal, SeriesMetadata
 from services.ai_service import AIService
 
 # Configure logging

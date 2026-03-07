@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from config.config_settings import config
-from models.library_models import Base
+from models.library import Base
 
 _log = logging.getLogger(__name__)
 
@@ -239,7 +239,7 @@ def init_library_db():
         # Importar modelos para asegurar que se registren en metadata
         import models.user_audit_models  # noqa
         import models.user_models  # noqa
-        import models.library_models  # noqa
+        import models.library  # noqa
         import models.download_models  # noqa
         import models.publication_models  # noqa
         import models.agent_models  # noqa

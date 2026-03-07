@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from models.library_models import LocalBook, SeriesMetadata
+from models.library import LocalBook, SeriesMetadata
 from utils.helpers import parse_metadata_from_title
 
 logger = logging.getLogger(__name__)

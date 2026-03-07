@@ -30,7 +30,7 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
         from sqlalchemy.orm import selectinload
 
         from core.db_manager_pg import pg_manager
-        from models.library_models import LocalBook
+        from models.library import LocalBook
 
         async with pg_manager.get_session() as session:
             stmt = (

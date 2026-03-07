@@ -10,7 +10,7 @@ from typing import Any
 from sqlalchemy import select
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LibrarySource
+from models.library import LibrarySource
 from repositories.book_repository import book_repo
 from repositories.upload_repository import upload_repo
 from services.ai_service import AIService

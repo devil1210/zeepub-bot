@@ -10,14 +10,14 @@ from sqlalchemy import select
 # Import ALL models to ensure SQLAlchemy resolves all relationships
 try:
     import models.agent_models  # noqa: F401
-    import models.library_models  # noqa: F401
+    import models.library  # noqa: F401
     import models.publication_models  # noqa: F401
     import models.user_models  # noqa: F401
 except ImportError:
     pass
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook
+from models.library import LocalBook
 from utils.helpers import generate_short_link
 
 

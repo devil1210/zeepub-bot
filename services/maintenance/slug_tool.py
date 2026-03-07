@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import select
 
 from core.db_manager_pg import pg_manager
-from models.library_models import SeriesMetadata
+from models.library import SeriesMetadata
 from services.maintenance.base import MaintenanceTool
 from utils.helpers import generar_slug_from_meta
 

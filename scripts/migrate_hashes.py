@@ -9,7 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from sqlalchemy import text
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook
+from models.library import LocalBook
 from utils.helpers import generate_book_hash, generate_series_hash
 from utils.library_db import get_session, init_library_db
 

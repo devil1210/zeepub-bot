@@ -12,7 +12,7 @@ from api.handlers.helpers import check_staff
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
-from models.library_models import (
+from models.library import (
     ArchivedBook,
     DuplicateBook,
 )

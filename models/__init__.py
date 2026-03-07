@@ -4,7 +4,7 @@ from .base import Base
 from .custom_messages_models import GlobalVariable, PluginSettings, StoredMessage
 from .download_models import DownloadHistory
 from .group_models import GroupSettings
-from .library_models import (
+from .library import (
     AILearningFeedback,
     ArchivedBook,
     ArchivedSeries,
@@ -30,7 +30,7 @@ from .publication_models import (
 )
 from .theme_sync_models import ThemeSyncLog
 from .user_audit_models import UserAuditLog
-from .user_models import AppTheme, User, UserLevel, UserUISettings
+from .users import AppTheme, User, UserLevel, UserUISettings
 
 # This ensures that when we import 'models', all classes are registered with Base.metadata
 __all__ = [

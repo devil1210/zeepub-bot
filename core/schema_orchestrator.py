@@ -7,7 +7,7 @@ from sqlalchemy import text
 import models  # noqa: F401
 from core.db_manager_pg import pg_manager
 from models.base import Base
-from models.library_models import (
+from models.library import (
     LibrarySource,
 )
 from models.user_models import UserLevel

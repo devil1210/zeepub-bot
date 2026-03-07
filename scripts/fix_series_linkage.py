@@ -38,7 +38,7 @@ try:
 
     from sqlalchemy import func, select, update
 
-    import models.library_models
+    import models.library
     import models.publication_models
 
     # Import models to populate registry
@@ -46,7 +46,7 @@ try:
     from core.db_manager_pg import pg_manager
 
     # import models.user_audit_models # Just in case
-    from models.library_models import LocalBook, SeriesMetadata
+    from models.library import LocalBook, SeriesMetadata
 except ImportError as e:
     logger.error(f"Import error: {e}")
     sys.exit(1)

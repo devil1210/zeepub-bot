@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
 from models.download_models import DownloadHistory
-from models.library_models import LocalBook, SeriesMetadata, UserDownload, UserRating
+from models.library import LocalBook, SeriesMetadata, UserDownload, UserRating
 from repositories.base_repository import BaseRepository
 from schemas.library_schemas import BookDTO
 

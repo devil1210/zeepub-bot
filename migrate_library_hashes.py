@@ -5,7 +5,7 @@ import sys
 # Add current directory to path
 sys.path.append(os.getcwd())
 
-from models.library_models import LocalBook
+from models.library import LocalBook
 from utils.helpers import generate_book_hash, generate_series_hash
 from utils.library_db import get_session
 

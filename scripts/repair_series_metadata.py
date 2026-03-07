@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 # Import ALL models to ensure relationships are loaded
 try:
     import models.agent_models  # noqa: F401
-    import models.library_models  # noqa: F401
+    import models.library  # noqa: F401
     import models.publication_models  # noqa: F401
     import models.user_models  # noqa: F401
 except ImportError:
@@ -19,7 +19,7 @@ except ImportError:
 from sqlalchemy import select
 
 from core.db_manager_pg import pg_manager
-from models.library_models import SeriesMetadata
+from models.library import SeriesMetadata
 from utils.helpers import generar_slug_from_meta
 
 load_dotenv()

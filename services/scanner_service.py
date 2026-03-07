@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
-from models.library_models import LibrarySource, LocalBook
+from models.library import LibrarySource, LocalBook
 from services.maintenance.orchestrator import MaintenanceOrchestrator
 from services.notification_service import notification_service
 from services.scanner.epub_scanner import EpubScanner

@@ -4,7 +4,7 @@ from typing import Any
 
 from sqlalchemy.orm import selectinload
 
-from models.library_models import LibrarySource, LocalBook, SeriesMetadata
+from models.library import LibrarySource, LocalBook, SeriesMetadata
 from utils.library_db import get_session
 
 

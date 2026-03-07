@@ -5,7 +5,7 @@ from sqlalchemy import String, and_, cast, delete, func, or_, select
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, SeriesMetadata, UserDownload
+from models.library import LocalBook, SeriesMetadata, UserDownload
 from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)

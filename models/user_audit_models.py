@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import JSON, BigInteger, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
-from models.library_models import Base
+from models.library import Base
 
 
 class UserAuditLog(Base):

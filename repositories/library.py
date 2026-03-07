@@ -28,3 +28,9 @@ class BookRepository(BaseRepository[Book]):
         query = select(Book).where(Book.series_id == series_id).order_by(Book.volume)
         result = await self.session.execute(query)
         return result.scalars().all()
+
+    async def get_by_short_link(self, short_link: str) -> Book | None:
+        """Busca un libro por su short_link."""
+        query = select(Book).where(Book.short_link == short_link)
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()

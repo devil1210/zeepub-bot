@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, series_demographics, series_genres
@@ -56,6 +57,25 @@ class Series(Base):
     media: Mapped[list["MediaAsset"]] = relationship(back_populates="series", cascade="all, delete-orphan")
 
 
+# Alias para compatibilidad con código legacy
+SeriesMetadata = Series
+
+
+class LibrarySource(Base):
+    """
+    Representa una carpeta raíz de libros configurable por el usuario.
+    """
+
+    __tablename__ = "library_sources"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    path: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
+    last_scanned: Mapped[datetime | None] = mapped_column(default=None)
+
+    books: Mapped[list["Book"]] = relationship(back_populates="source", cascade="all, delete-orphan")
+
+
 class Book(Base):
     """
     Modelo unificado para Libros/Archivos individuales.
@@ -91,6 +111,13 @@ class Book(Base):
     # Relaciones
     series: Mapped[Series] = relationship(back_populates="books")
     media: Mapped[list["MediaAsset"]] = relationship(back_populates="book", cascade="all, delete-orphan")
+    source: Mapped[LibrarySource] = relationship(back_populates="books")
+    ratings: Mapped[list["UserRating"]] = relationship(back_populates="book", cascade="all, delete-orphan")
+    downloads: Mapped[list["UserDownload"]] = relationship(back_populates="book", cascade="all, delete-orphan")
+
+
+# Alias para compatibilidad con código legacy
+LocalBook = Book
 
 
 class MediaAsset(Base):
@@ -109,3 +136,189 @@ class MediaAsset(Base):
 
     series: Mapped[Series | None] = relationship(back_populates="media")
     book: Mapped[Book | None] = relationship(back_populates="media")
+
+
+class UserRating(Base):
+    """
+    Votos individuales de usuarios para libros.
+    """
+
+    __tablename__ = "user_ratings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)
+    book_id: Mapped[str] = mapped_column(String(64), ForeignKey("books.id"), index=True)
+    rating: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    book: Mapped[Book] = relationship(back_populates="ratings")
+
+
+class UserDownload(Base):
+    """
+    Historial de descargas de usuarios.
+    """
+
+    __tablename__ = "user_downloads"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)
+    book_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("books.id"), index=True)
+    series_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("series.id"), index=True)
+
+    title: Mapped[str | None] = mapped_column(String(512))
+    downloaded_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    book: Mapped[Book | None] = relationship(back_populates="downloads")
+    series: Mapped[Series | None] = relationship()
+
+
+class TranslatorsGroup(Base):
+    """
+    Grupos de traducción y sus siglas para normalización de nombres de archivo.
+    """
+
+    __tablename__ = "translators_groups"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    siglas: Mapped[str | None] = mapped_column(String(50))
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+
+class UploadBook(Base):
+    """
+    Tabla temporal para procesar uploads.
+    """
+
+    __tablename__ = "upload_books"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
+    original_filename: Mapped[str] = mapped_column(String(512))
+    temp_filepath: Mapped[str] = mapped_column(String(1024))
+
+    title: Mapped[str] = mapped_column(String(512))
+    volume: Mapped[float | None] = mapped_column(Float)
+    series_id: Mapped[str | None] = mapped_column(String(64))
+
+    book_hash: Mapped[str] = mapped_column(String(64))
+    processed: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+
+class UploadHistory(Base):
+    """
+    Historial permanente de uploads.
+    """
+
+    __tablename__ = "upload_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    filename: Mapped[str] = mapped_column(String(512))
+    book_hash: Mapped[str | None] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(50))  # success, error, duplicate_rejected
+    final_path: Mapped[str | None] = mapped_column(String(1024))
+    error_message: Mapped[str | None] = mapped_column(String(1024))
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+
+class DuplicateBook(Base):
+    """
+    Registra archivos EPUB duplicados.
+    """
+
+    __tablename__ = "duplicate_books"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    book_hash: Mapped[str] = mapped_column(String(64), index=True)
+    original_filepath: Mapped[str | None] = mapped_column(String(1024))
+    duplicate_filepath: Mapped[str] = mapped_column(String(1024))
+    title: Mapped[str | None] = mapped_column(String(512))
+    author: Mapped[str | None] = mapped_column(String(255))
+    detected_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+
+class AILearningFeedback(Base):
+    """
+    Feedback de la IA sobre normalización.
+    """
+
+    __tablename__ = "ai_learning_feedback"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    series_hash: Mapped[str] = mapped_column(String(64), ForeignKey("series.id"), index=True)
+    original_name: Mapped[str] = mapped_column(String)
+    proposed_name: Mapped[str] = mapped_column(String)
+    status: Mapped[str] = mapped_column(String(20))  # accepted, rejected, edited, manual
+    ai_reason: Mapped[str | None] = mapped_column(String)
+    user_reason: Mapped[str | None] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+
+class MetadataProposal(Base):
+    """
+    Propuestas de la IA que requieren aprobación.
+    """
+
+    __tablename__ = "metadata_proposals"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    series_hash: Mapped[str] = mapped_column(String(64), ForeignKey("series.id"), index=True)
+    proposal_data: Mapped[dict] = mapped_column(JSONB)
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+    type: Mapped[str] = mapped_column(String(20), default="enrich", index=True)
+    secondary_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class ArchivedSeries(Base):
+    """
+    Series eliminadas físicamente.
+    """
+
+    __tablename__ = "archived_series"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    series_name: Mapped[str] = mapped_column(String(512))
+    series_spanish: Mapped[str | None] = mapped_column(String(512))
+    series_english: Mapped[str | None] = mapped_column(String(512))
+    series_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+
+    cover_url: Mapped[str | None] = mapped_column(String(1024))
+    author: Mapped[str | None] = mapped_column(String(255))
+    archived_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+
+class ArchivedBook(Base):
+    """
+    Libros eliminados físicamente.
+    """
+
+    __tablename__ = "archived_books"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    book_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    title: Mapped[str] = mapped_column(String(512))
+    filename: Mapped[str | None] = mapped_column(String(512))
+    last_filepath: Mapped[str | None] = mapped_column(String(1024))
+    archived_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+
+class LibraryCleanupLog(Base):
+    """
+    Mantenimiento de la librería.
+    """
+
+    __tablename__ = "library_cleanup_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    performed_by: Mapped[int | None] = mapped_column(Integer)
+    total_books_checked: Mapped[int] = mapped_column(Integer, default=0)
+    missing_books_found: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str | None] = mapped_column(String(50))
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)

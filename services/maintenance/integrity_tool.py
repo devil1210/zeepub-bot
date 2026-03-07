@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import select
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, SeriesMetadata
+from models.library import LocalBook, SeriesMetadata
 from services.maintenance.base import MaintenanceTool
 
 logger = logging.getLogger(__name__)

@@ -1,6 +1,6 @@
 import logging
 
-from models.library_models import SeriesMetadata
+from models.library import SeriesMetadata
 from utils.library_db import get_session
 
 logging.basicConfig(level=logging.INFO)

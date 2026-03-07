@@ -19,7 +19,7 @@ os.environ["DATABASE_URL"] = db_url
 from sqlalchemy import select
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, SeriesMetadata
+from models.library import LocalBook, SeriesMetadata
 
 
 async def debug_linkage():

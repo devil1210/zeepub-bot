@@ -10,7 +10,7 @@ from sqlalchemy import desc, exists, func, select, update
 from api.handlers.helpers import check_staff
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
-from models.library_models import AILearningFeedback, LocalBook, MetadataProposal, SeriesMetadata
+from models.library import AILearningFeedback, LocalBook, MetadataProposal, SeriesMetadata
 from services.ai_service import AIService
 from services.settings_service import get_setting, set_setting
 from utils.helpers import generate_series_hash
@@ -289,7 +289,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             group_full = proposal.get("group_full")
             group_siglas = proposal.get("group_siglas")
             if group_full and group_siglas and group_full != "Unknown":
-                from models.library_models import TranslatorsGroup
+                from models.library import TranslatorsGroup
 
                 # Try to find by name (case insensitive)
                 existing_group = (

@@ -4,7 +4,7 @@ from typing import Any
 from sqlalchemy import delete, desc, select
 
 from core.db_manager_pg import pg_manager
-from models.library_models import UploadBook, UploadHistory
+from models.library import UploadBook, UploadHistory
 from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)

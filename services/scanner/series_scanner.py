@@ -3,7 +3,7 @@ from typing import Any
 from sqlalchemy import select, text
 from sqlalchemy.orm import selectinload
 
-from models.library_models import ArchivedSeries, Demographic, Genre, LocalBook, MetadataProposal, SeriesMetadata
+from models.library import ArchivedSeries, Demographic, Genre, LocalBook, MetadataProposal, SeriesMetadata
 from services.ai_service import AIService
 from services.scanner.scanner_helpers import ScannerHelpers
 from utils.helpers import generar_slug_from_meta

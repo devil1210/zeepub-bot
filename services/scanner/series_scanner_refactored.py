@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Any
 
-from models.library_models import LocalBook, MetadataProposal, SeriesMetadata
+from models.library import LocalBook, MetadataProposal, SeriesMetadata
 
 from .ai_processor import AIProcessor
 from .metadata_processor import MetadataProcessor

@@ -169,33 +169,24 @@ enable_miniapp = os.getenv("ENABLE_MINI_APP", "True").lower() == "true"
 
 if enable_miniapp:
     # Importar rutas solo si está activo
-    from api.handlers.public_routes import router as public_router
-    from api.library_routes import router as library_router
-    from api.miniapp_routes import router as miniapp_router
     from api.routes_refactored import RoutesManager
     from api.v4.router import router as v4_router
 
-    # Initialize routes manager and register all routes
+    # Initialize routes manager and register all routes (Modern Architecture)
     routes_manager = RoutesManager()
     routes_manager.register_all_routes(app)
 
-    # Add additional routers for miniapp
-    app.include_router(public_router, prefix="/api")
-    app.include_router(library_router)
-    app.include_router(miniapp_router)
+    # v4 Router central para nuevas funcionalidades
     app.include_router(v4_router, prefix="/api")
 
     # ==========================================
     # Short Link Download - SIEMPRE activo con miniapp
     # Usa library_db (sync) porque LocalBook vive ahí
     # ==========================================
-    import asyncio as _asyncio
-    import re as _re
-
     from fastapi.responses import FileResponse
 
-    from models.library_models import LocalBook as _LB
-    from utils.library_db import get_session as _get_session
+    from core.database import async_session
+    from services.library_service import LibraryService
 
     # Almacén temporal en memoria para Rate Limiting
     _rate_limit_data = {}  # {ip: [timestamps]}
@@ -203,12 +194,11 @@ if enable_miniapp:
     @app.get("/{short_link}")
     async def short_link_download(request: Request, short_link: str):
         """Descarga segura de un libro mediante su short_link (Formato Ultra-Corto)."""
-        # 1. Validar formato: 10 caracteres alfanuméricos
-        if not short_link or not _re.match(r"^[a-zA-Z0-9]{10}$", short_link):
-            # No levantar error aquí, dejar que continúe al siguiente router (SPA)
+        import re
+
+        if not short_link or not re.match(r"^[a-zA-Z0-9]{10}$", short_link):
             raise HTTPException(status_code=404)
 
-        # 2. Protección contra Crawlers y Bots (User-Agent)
         user_agent = request.headers.get("User-Agent", "").lower()
         blocked_bots = [
             "googlebot",
@@ -217,76 +207,36 @@ if enable_miniapp:
             "duckduckbot",
             "baiduspider",
             "yandexbot",
-            "sogou",
-            "exabot",
-            "ia_archiver",
             "curl",
             "python-requests",
             "wget",
         ]
         if not user_agent or any(bot in user_agent for bot in blocked_bots):
-            logger.warning(f"⚠️ Intento de bot bloqueado: {short_link} (UA: {user_agent})")
+            logger.warning(f"⚠️ Bot bloqueado: {short_link} (UA: {user_agent})")
             raise HTTPException(status_code=403, detail="Acceso denegado: Bots no permitidos")
 
-        # 3. Rate Limiting Simple (5 descargas por IP cada minuto)
         client_ip = request.headers.get("X-Forwarded-For", request.client.host)
-        now = _asyncio.get_event_loop().time()
 
-        if client_ip not in _rate_limit_data:
-            _rate_limit_data[client_ip] = []
+        async with async_session() as session:
+            library_service = LibraryService(session)
+            book = await library_service.get_book_by_short_link(short_link)
 
-        # Limpiar entradas de más de 60 segundos
-        _rate_limit_data[client_ip] = [t for t in _rate_limit_data[client_ip] if now - t < 60]
-
-        if len(_rate_limit_data[client_ip]) >= 5:
-            logger.warning(f"🚫 Rate limit excedido para IP {client_ip} en link {short_link}")
-            raise HTTPException(
-                status_code=429, detail="Has excedido el límite de descargas (5/min). Por favor, intenta más tarde."
-            )
-
-        _rate_limit_data[client_ip].append(now)
-
-        def _find_book():
-            session = _get_session()
-            try:
-                book = session.query(_LB).filter(_LB.short_link == short_link).first()
-                if not book:
-                    return None
-                return {
-                    "id": book.id,
-                    "title": book.title,
-                    "filepath": book.filepath,
-                }
-            finally:
-                session.close()
-
-        try:
-            book_data = await _asyncio.to_thread(_find_book)
-            if not book_data:
+            if not book:
                 raise HTTPException(status_code=404, detail="Libro no encontrado o enlace expirado")
-            filepath = book_data["filepath"]
-            if not os.path.exists(filepath) or not os.path.isfile(filepath):
-                logger.error(f"Archivo no encontrado para libro ID {book_data['id']}: {filepath}")
-                raise HTTPException(
-                    status_code=404,
-                    detail="El archivo físico no se encuentra disponible",
-                )
-            logger.info(f"📥 Descarga segura iniciada: {book_data['title']} por IP {client_ip}")
 
-            # Usar el nombre de archivo real de la biblioteca
-            real_filename = os.path.basename(filepath)
+            filepath = book.filepath
+            if not os.path.exists(filepath):
+                logger.error(f"Archivo no encontrado: {filepath}")
+                raise HTTPException(status_code=404, detail="El archivo físico no está disponible")
+
+            logger.info(f"📥 Descarga iniciada: {book.title} (IP: {client_ip})")
 
             return FileResponse(
                 path=filepath,
                 media_type="application/epub+zip",
-                filename=real_filename,
+                filename=os.path.basename(filepath),
                 content_disposition_type="attachment",
             )
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error descarga segura {short_link}: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Error interno del servidor") from e
 
     # Montar archivos estáticos del frontend
     from fastapi.staticfiles import StaticFiles

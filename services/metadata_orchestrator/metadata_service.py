@@ -20,7 +20,7 @@ class MetadataOrchestrator:
         from sqlalchemy import select
 
         from core.db_manager_pg import pg_manager
-        from models.library_models import LocalBook
+        from models.library import LocalBook
 
         try:
             async with pg_manager.get_session() as session:

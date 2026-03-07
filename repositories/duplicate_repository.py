@@ -4,7 +4,7 @@ from typing import Any
 from sqlalchemy import delete, select
 
 from core.db_manager_pg import pg_manager
-from models.library_models import DuplicateBook
+from models.library import DuplicateBook
 from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)

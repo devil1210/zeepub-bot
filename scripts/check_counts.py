@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
 from sqlalchemy import select
 
 from core.db_manager_pg import pg_manager
-from models.library_models import LocalBook, SeriesMetadata
+from models.library import LocalBook, SeriesMetadata
 
 
 async def check():
