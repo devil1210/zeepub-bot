@@ -172,6 +172,7 @@ if enable_miniapp:
     from api.handlers.public_routes import router as public_router
     from api.library_routes import router as library_router
     from api.miniapp_routes import router as miniapp_router
+    from api.v4.router import router as v4_router
     from api.routes_refactored import RoutesManager
 
     # Initialize routes manager and register all routes
@@ -182,6 +183,7 @@ if enable_miniapp:
     app.include_router(public_router, prefix="/api")
     app.include_router(library_router)
     app.include_router(miniapp_router)
+    app.include_router(v4_router, prefix="/api")
 
     # ==========================================
     # Short Link Download - SIEMPRE activo con miniapp

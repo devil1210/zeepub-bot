@@ -26,6 +26,7 @@ from handlers.callback_handlers import (
 )
 from handlers.command_handlers import CommandHandlers
 from handlers.message_handlers import recibir_texto
+from handlers.v4.manager import HandlerManagerV4
 from plugins.plugin_manager import PluginManager
 from utils.metrics import metrics
 
@@ -74,6 +75,12 @@ class ZeePubBot:
         # Comandos
         self.command_handlers = CommandHandlers(self.app)
         # Handlers are registered in CommandHandlers.__init__
+        
+        # --- INICIO REFACTOR v4.0 ---
+        self.handler_manager_v4 = HandlerManagerV4(self.app)
+        self.handler_manager_v4.register()
+        # --- FIN REFACTOR v4.0 ---
+
         # Total pages
         self.app.add_handler(CallbackQueryHandler(set_destino, pattern="^destino"))
         self.app.add_handler(CallbackQueryHandler(buscar_epub, pattern="^buscar"))
