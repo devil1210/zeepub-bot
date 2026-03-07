@@ -172,8 +172,8 @@ if enable_miniapp:
     from api.handlers.public_routes import router as public_router
     from api.library_routes import router as library_router
     from api.miniapp_routes import router as miniapp_router
-    from api.v4.router import router as v4_router
     from api.routes_refactored import RoutesManager
+    from api.v4.router import router as v4_router
 
     # Initialize routes manager and register all routes
     routes_manager = RoutesManager()

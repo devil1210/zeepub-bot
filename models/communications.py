@@ -1,7 +1,6 @@
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -35,11 +34,11 @@ class PublicationQueue(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     book_id: Mapped[str] = mapped_column(ForeignKey("books.id"), index=True)
     channel_id: Mapped[int] = mapped_column(ForeignKey("publication_channels.id"))
-    template_id: Mapped[Optional[int]] = mapped_column(ForeignKey("publication_templates.id"))
+    template_id: Mapped[int | None] = mapped_column(ForeignKey("publication_templates.id"))
 
     scheduled_for: Mapped[datetime] = mapped_column(index=True)
     status: Mapped[str] = mapped_column(String(20), default="pending")
-    published_at: Mapped[Optional[datetime]] = mapped_column()
+    published_at: Mapped[datetime | None] = mapped_column()
 
-    error_message: Mapped[Optional[str]] = mapped_column(Text)
+    error_message: Mapped[str | None] = mapped_column(Text)
     payload: Mapped[dict] = mapped_column(JSONB)

@@ -1,7 +1,6 @@
 from datetime import datetime
-from typing import List, Optional
 
-from sqlalchemy import BigInteger, Boolean, Float, ForeignKey, Integer, String
+from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,10 +15,10 @@ class User(Base):
     __tablename__ = "users"
 
     telegram_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
-    username: Mapped[Optional[str]] = mapped_column(String(255))
-    name: Mapped[Optional[str]] = mapped_column(String(255))
-    nickname: Mapped[Optional[str]] = mapped_column(String(255))
-    photo_url: Mapped[Optional[str]] = mapped_column(String(500))
+    username: Mapped[str | None] = mapped_column(String(255))
+    name: Mapped[str | None] = mapped_column(String(255))
+    nickname: Mapped[str | None] = mapped_column(String(255))
+    photo_url: Mapped[str | None] = mapped_column(String(500))
 
     level_id: Mapped[int] = mapped_column(ForeignKey("user_levels.id"), default=6)
     role: Mapped[str] = mapped_column(String(50), default="user")
@@ -34,7 +33,9 @@ class User(Base):
 
     # Relaciones
     level: Mapped["UserLevel"] = relationship(back_populates="users")
-    ui_settings: Mapped["UserUISettings"] = relationship(back_populates="user", cascade="all, delete-orphan", uselist=False)
+    ui_settings: Mapped["UserUISettings"] = relationship(
+        back_populates="user", cascade="all, delete-orphan", uselist=False
+    )
 
 
 class UserLevel(Base):
@@ -49,7 +50,7 @@ class UserLevel(Base):
     daily_limit: Mapped[int] = mapped_column(Integer, default=5)
     can_download: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    users: Mapped[List[User]] = relationship(back_populates="level")
+    users: Mapped[list[User]] = relationship(back_populates="level")
 
 
 class UserUISettings(Base):

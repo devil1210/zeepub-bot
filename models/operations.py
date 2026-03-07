@@ -1,7 +1,6 @@
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import BigInteger, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -14,7 +13,7 @@ class LibrarySource(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100))
     path: Mapped[str] = mapped_column(String(500), unique=True)
-    last_scanned: Mapped[Optional[datetime]] = mapped_column()
+    last_scanned: Mapped[datetime | None] = mapped_column()
 
 
 class DownloadHistory(Base):
@@ -40,4 +39,4 @@ class LibraryArchive(Base):
     metadata_json: Mapped[dict] = mapped_column(JSONB)
 
     archived_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    reason: Mapped[Optional[str]] = mapped_column(String(255))
+    reason: Mapped[str | None] = mapped_column(String(255))

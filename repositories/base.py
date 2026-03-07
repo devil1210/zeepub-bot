@@ -1,23 +1,27 @@
-from typing import Generic, TypeVar, Type, Optional, List, Any
+from typing import Any, Generic, TypeVar
+
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
+
 from models.base import Base
 
 T = TypeVar("T", bound=Base)
+
 
 class BaseRepository(Generic[T]):
     """
     Repositorio base con operaciones CRUD asíncronas estándar.
     """
-    def __init__(self, model: Type[T], session: AsyncSession):
+
+    def __init__(self, model: type[T], session: AsyncSession):
         self.model = model
         self.session = session
 
-    async def get_by_id(self, id: Any) -> Optional[T]:
+    async def get_by_id(self, id: Any) -> T | None:
         """Obtiene un registro por su clave primaria."""
         return await self.session.get(self.model, id)
 
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[T]:
+    async def get_all(self, skip: int = 0, limit: int = 100) -> list[T]:
         """Obtiene una lista de registros con paginación."""
         query = select(self.model).offset(skip).limit(limit)
         result = await self.session.execute(query)
@@ -30,7 +34,7 @@ class BaseRepository(Generic[T]):
         await self.session.flush()
         return instance
 
-    async def update(self, id: Any, **kwargs) -> Optional[T]:
+    async def update(self, id: Any, **kwargs) -> T | None:
         """Actualiza un registro existente."""
         query = update(self.model).where(self.model.id == id).values(**kwargs).returning(self.model)
         result = await self.session.execute(query)

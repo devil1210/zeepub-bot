@@ -1,27 +1,33 @@
 import logging
-from typing import Annotated, Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Annotated
+
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from core.database import async_session
+
 from config.config_settings import config
-from utils.security import validate_telegram_data
-from services.user_service import UserService
+from core.database import async_session
 from models.users import User
+from services.user_service import UserService
+from utils.security import validate_telegram_data
 
 logger = logging.getLogger(__name__)
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Generador de sesiones de base de datos asíncronas."""
     async with async_session() as session:
         yield session
 
+
 async def get_user_service(session: AsyncSession = Depends(get_db)) -> UserService:
     """Inyecta el servicio de usuarios con la sesión actual."""
     return UserService(session)
 
+
 async def get_current_user(
     x_telegram_init_data: Annotated[str | None, Header(alias="x-telegram-init-data")] = None,
-    user_service: UserService = Depends(get_user_service)
+    user_service: UserService = Depends(get_user_service),
 ) -> User:
     """
     Dependencia que valida la autenticación de Telegram y retorna el usuario de la BD.
@@ -44,17 +50,14 @@ async def get_current_user(
 
     tg_user = res.get("user", {})
     uid = tg_user.get("id")
-    
+
     if not uid:
         raise HTTPException(status_code=401, detail="Telegram ID not found in initData")
 
     # Obtener o crear usuario en nuestro esquema v4.0
     user = await user_service.get_or_create_user(
-        uid, 
-        username=tg_user.get("username"),
-        first_name=tg_user.get("first_name"),
-        last_name=tg_user.get("last_name")
+        uid, username=tg_user.get("username"), first_name=tg_user.get("first_name"), last_name=tg_user.get("last_name")
     )
     await user_service.commit_changes()
-    
+
     return user

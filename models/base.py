@@ -1,6 +1,6 @@
+from sqlalchemy import Column, ForeignKey, Integer, String, Table
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import Table, Column, String, ForeignKey, Integer
 
 
 class Base(AsyncAttrs, DeclarativeBase):

@@ -75,7 +75,7 @@ class ZeePubBot:
         # Comandos
         self.command_handlers = CommandHandlers(self.app)
         # Handlers are registered in CommandHandlers.__init__
-        
+
         # --- INICIO REFACTOR v4.0 ---
         self.handler_manager_v4 = HandlerManagerV4(self.app)
         self.handler_manager_v4.register()

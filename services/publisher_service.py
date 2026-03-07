@@ -1,31 +1,42 @@
-from typing import Any, List, Optional
+import logging
 from datetime import datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from models.communications import PublicationChannel, PublicationQueue, PublicationTemplate
 from repositories.base import BaseRepository
-import logging
 
 logger = logging.getLogger(__name__)
+
 
 class PublisherService:
     """
     Servicio v4.0 para gestión de publicaciones, canales y colas.
     Integrado con SQLAlchemy 2.0 Async.
     """
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.channel_repo = BaseRepository(PublicationChannel, session)
         self.template_repo = BaseRepository(PublicationTemplate, session)
         self.queue_repo = BaseRepository(PublicationQueue, session)
 
-    async def get_active_channels(self) -> List[PublicationChannel]:
+    async def get_active_channels(self) -> list[PublicationChannel]:
         """Obtiene la lista de canales activos."""
         from sqlalchemy import select
-        query = select(PublicationChannel).where(PublicationChannel.is_active == True)
+
+        query = select(PublicationChannel).where(PublicationChannel.is_active is True)
         result = await self.session.execute(query)
         return result.scalars().all()
 
-    async def schedule_publication(self, book_id: str, channel_id: int, scheduled_for: datetime, template_id: Optional[int] = None, payload: Optional[dict] = None) -> PublicationQueue:
+    async def schedule_publication(
+        self,
+        book_id: str,
+        channel_id: int,
+        scheduled_for: datetime,
+        template_id: int | None = None,
+        payload: dict | None = None,
+    ) -> PublicationQueue:
         """Programa una publicación en la cola."""
         return await self.queue_repo.create(
             book_id=book_id,
@@ -33,16 +44,16 @@ class PublisherService:
             template_id=template_id,
             scheduled_for=scheduled_for,
             payload=payload or {},
-            status="pending"
+            status="pending",
         )
 
-    async def get_pending_publications(self) -> List[PublicationQueue]:
+    async def get_pending_publications(self) -> list[PublicationQueue]:
         """Obtiene publicaciones pendientes que deben enviarse ya."""
         from sqlalchemy import select
+
         now = datetime.utcnow()
         query = select(PublicationQueue).where(
-            PublicationQueue.status == "pending",
-            PublicationQueue.scheduled_for <= now
+            PublicationQueue.status == "pending", PublicationQueue.scheduled_for <= now
         )
         result = await self.session.execute(query)
         return result.scalars().all()
