@@ -57,7 +57,7 @@ class Series(Base):
         return self.id
 
     # Relaciones
-    books: Mapped[list["Book"]] = relationship(back_populates="series", cascade="all, delete-orphan")
+    books: Mapped[list["Book"]] = relationship(back_populates="series_info", cascade="all, delete-orphan")
     genres: Mapped[list[Genre]] = relationship(secondary=series_genres)
     demographics: Mapped[list[Demographic]] = relationship(secondary=series_demographics)
     media: Mapped[list["MediaAsset"]] = relationship(back_populates="series", cascade="all, delete-orphan")
@@ -128,7 +128,9 @@ class Book(Base):
         return self.series_id
 
     # Relaciones
-    series: Mapped[Series] = relationship(back_populates="books")
+    series_info: Mapped[Series] = relationship(back_populates="books")
+    genres: Mapped[list[Genre]] = relationship(secondary="book_genres")
+    demographics_list: Mapped[list[Demographic]] = relationship(secondary="book_demographics")
     media: Mapped[list["MediaAsset"]] = relationship(back_populates="book", cascade="all, delete-orphan")
     source: Mapped[LibrarySource] = relationship(back_populates="books")
     ratings: Mapped[list["UserRating"]] = relationship(back_populates="book", cascade="all, delete-orphan")

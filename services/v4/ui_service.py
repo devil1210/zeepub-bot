@@ -80,3 +80,64 @@ class UIServiceV4:
             [InlineKeyboardButton("❌ Salir", callback_data="close_menu")],
         ]
         return text, InlineKeyboardMarkup(keyboard)
+
+    @classmethod
+    async def render_user_status(cls, user_data: dict) -> tuple[str, InlineKeyboardMarkup]:
+        """Genera el menú de estado del usuario."""
+        name = user_data.get("nickname") or user_data.get("name")
+        text = (
+            f"{cls.get_glass_header('Mi Perfil')}"
+            f"👤 <b>Usuario:</b> {name}\n"
+            f"🎭 <b>Rol:</b> <code>{user_data.get('role', 'user').upper()}</code>\n"
+            f"⭐ <b>Nivel:</b> {user_data.get('level', 'Free').capitalize()}\n"
+            f"🔑 <b>ID:</b> <code>{user_data.get('telegram_id')}</code>\n\n"
+            "<i>Usa el acceso web para configuraciones avanzadas.</i>"
+        )
+        keyboard = [
+            [InlineKeyboardButton("⚙️ Ajustes de Interfaz", callback_data="settings_menu")],
+            [InlineKeyboardButton("🌐 Acceso Web", callback_data="web_access")],
+            [InlineKeyboardButton("🏠 Menú Principal", callback_data="main_menu")],
+        ]
+        return text, InlineKeyboardMarkup(keyboard)
+
+    @classmethod
+    async def render_settings_menu(cls) -> tuple[str, InlineKeyboardMarkup]:
+        """Menú de configuración estética."""
+        text = (
+            f"{cls.get_glass_header('Ajustes de Interfaz')}"
+            "Personaliza tu experiencia visual en el bot y la Mini App.\n\n"
+            "🎨 <b>Temas y Colores:</b>"
+        )
+        keyboard = [
+            [InlineKeyboardButton("🌓 Cambiar Tema (Claro/Oscuro)", callback_data="toggle_theme")],
+            [InlineKeyboardButton("🎨 Seleccionar Color", callback_data="color_picker")],
+            [InlineKeyboardButton("🔙 Volver al Perfil", callback_data="user_status")],
+        ]
+        return text, InlineKeyboardMarkup(keyboard)
+
+    @classmethod
+    async def render_web_access(cls, webapp_url: str) -> tuple[str, InlineKeyboardMarkup]:
+        """Proporciona el botón de acceso a la Mini App."""
+        text = (
+            f"{cls.get_glass_header('Acceso Web')}"
+            "Accede a la experiencia completa de <b>ZeePub Enterprise</b> a través de nuestra Mini App.\n\n"
+            "🚀 Gestiona tu biblioteca, personaliza tu perfil y más."
+        )
+        keyboard = [
+            [InlineKeyboardButton("🚀 Abrir Mini App", url=webapp_url)],
+            [InlineKeyboardButton("🏠 Menú Principal", callback_data="main_menu")],
+        ]
+        return text, InlineKeyboardMarkup(keyboard)
+
+    @classmethod
+    async def render_search_init(cls) -> tuple[str, InlineKeyboardMarkup]:
+        """Inicia el flujo de búsqueda."""
+        text = (
+            f"{cls.get_glass_header('Buscador')}"
+            "🔍 <b>¿Qué estás buscando?</b>\n\n"
+            "Escribe el nombre del libro, autor o serie directamente en el chat para buscar en la biblioteca."
+        )
+        keyboard = [
+            [InlineKeyboardButton("❌ Cancelar", callback_data="main_menu")],
+        ]
+        return text, InlineKeyboardMarkup(keyboard)

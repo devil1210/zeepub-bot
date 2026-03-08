@@ -69,6 +69,26 @@ class CallbackHandlerV4(BaseHandlerV4):
                 text, markup = await UIServiceV4.render_book_details(book)
                 await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
 
+            elif data == "user_status":
+                user_service = services["user_service"]
+                user_data = await user_service.get_effective_user(update.effective_user.id)
+                text, markup = await UIServiceV4.render_user_status(user_data)
+                await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
+
+            elif data == "settings_menu":
+                text, markup = await UIServiceV4.render_settings_menu()
+                await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
+
+            elif data == "web_access":
+                from config.config_settings import config
+
+                text, markup = await UIServiceV4.render_web_access(config.WEBAPP_URL)
+                await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
+
+            elif data == "search_init":
+                text, markup = await UIServiceV4.render_search_init()
+                await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
+
             elif data == "buscar":
                 # Delegar al search_handler pidiendo el término (activará el estado)
                 from handlers.v4.search import SearchHandlerV4

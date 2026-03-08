@@ -26,3 +26,17 @@ series_demographics = Table(
     Column("series_id", String(64), ForeignKey("series.id"), primary_key=True),
     Column("demographic_id", Integer, ForeignKey("demographics.id"), primary_key=True),
 )
+
+book_genres = Table(
+    "book_genres",
+    Base.metadata,
+    Column("book_id", String(64), ForeignKey("books.id"), primary_key=True),
+    Column("genre_id", Integer, ForeignKey("genres.id"), primary_key=True),
+)
+
+book_demographics = Table(
+    "book_demographics",
+    Base.metadata,
+    Column("book_id", String(64), ForeignKey("books.id"), primary_key=True),
+    Column("demographic_id", Integer, ForeignKey("demographics.id"), primary_key=True),
+)
