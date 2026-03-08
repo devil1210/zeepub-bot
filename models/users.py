@@ -1,4 +1,8 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.download_models import DownloadHistory
 
 from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -38,6 +42,9 @@ class User(Base):
     level: Mapped["UserLevel"] = relationship(back_populates="users")
     ui_settings: Mapped["UserUISettings"] = relationship(
         back_populates="user", cascade="all, delete-orphan", uselist=False
+    )
+    download_history: Mapped[list["DownloadHistory"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )
 
 

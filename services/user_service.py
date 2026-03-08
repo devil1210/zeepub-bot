@@ -165,6 +165,42 @@ class UserService:
         # pero mantenemos la interfaz para plugins.
         pass
 
+    async def upsert_user(self, telegram_id: int, **data) -> User:
+        """Registro/Actualización masiva de usuario (RBAC compatible)."""
+        user = await self.user_repo.get_by_telegram_id(telegram_id)
+        
+        # Mapeo de niveles legacy a IDs (o nombres)
+        level_map = {
+            "admin": 1, "staff": 2, "premium": 3, "vip": 4, "user": 6, "free": 6, "white": 5
+        }
+        
+        level_val = data.pop("level", None)
+        if level_val:
+            if isinstance(level_val, str):
+                data["level_id"] = level_map.get(level_val.lower(), 6)
+            else:
+                data["level_id"] = level_val
+
+        if not user:
+            user = await self.user_repo.create(telegram_id=telegram_id, **data)
+            # Asegurar ui_settings
+            ui_settings = UserUISettings(user_id=telegram_id, primary_color="#3b82f6")
+            self.session.add(ui_settings)
+        else:
+            for k, v in data.items():
+                if hasattr(user, k):
+                    setattr(user, k, v)
+        
+        await self.session.flush()
+        return user
+
+    async def update_user_status_label(self, telegram_id: int, label: str | None):
+        """Actualiza el rol visual (nickname o campo específico si existiera)."""
+        user = await self.user_repo.get_by_telegram_id(telegram_id)
+        if user:
+            user.nickname = label
+            await self.session.flush()
+
     async def commit_changes(self):
         await self.session.commit()
 
@@ -243,6 +279,20 @@ async def get_users_by_level(level_id: int) -> list:
         # but most plugins expect ORM objects or dict with telegram_id
         return users
 
+
+async def upsert_user(telegram_id: int, **data):
+    from core.db_manager_pg import pg_manager
+    async with pg_manager.get_session() as session:
+        service = UserService(session)
+        await service.upsert_user(telegram_id, **data)
+        await session.commit()
+
+async def update_user_status_label(telegram_id: int, label: str | None):
+    from core.db_manager_pg import pg_manager
+    async with pg_manager.get_session() as session:
+        service = UserService(session)
+        await service.update_user_status_label(telegram_id, label)
+        await session.commit()
 
 async def invalidate_user_cache(telegram_id: int = None):
     # Standalone wrapper for cache invalidation

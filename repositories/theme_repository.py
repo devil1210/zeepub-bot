@@ -24,6 +24,14 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
         """Si no hay temas en la DB, crea unos por defecto."""
         try:
             async with pg_manager.get_session() as session:
+                # Verificar si la tabla existe antes de contar
+                table_check = await session.execute(text(
+                    "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'app_themes')"
+                ))
+                if not table_check.scalar():
+                    logger.debug("Table 'app_themes' does not exist yet. Skipping seeding.")
+                    return
+
                 result = await session.execute(text("SELECT count(*) FROM app_themes"))
                 count = result.scalar()
                 if count > 0:
