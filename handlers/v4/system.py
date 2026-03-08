@@ -3,7 +3,7 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
-from core.config import config
+from config.config_settings import config
 from handlers.v4.base import BaseHandlerV4, with_services
 from utils.helpers import get_version_string
 
@@ -121,7 +121,7 @@ class SystemHandlerV4(BaseHandlerV4):
         # 3. Esperando Password (Modo Evil)
         if st.get("esperando_password"):
             st.pop("esperando_password", None)
-            if text == config.SECRET_PASSWORD:  # Asumiendo que existe en config
+            if text == config.get_six_hour_password():
                 await self.send_glass_message(update, "🔓 <b>Acceso concedido al Modo Evil.</b>")
             else:
                 await self.send_glass_message(update, "❌ <b>Contraseña incorrecta.</b>")
