@@ -31,7 +31,7 @@ class SystemHandlerV4(BaseHandlerV4):
                 logger.info(f"Admin {update.effective_user.id} solicitó status para {uid}")
 
         user = await user_service.get_or_create_user(
-            telegram_id=uid, username=target_user.username, full_name=target_user.full_name
+            telegram_id=uid, username=target_user.username, name=target_user.full_name
         )
 
         level_name = user.level.name if user.level else "Desconocido"

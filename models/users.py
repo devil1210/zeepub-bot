@@ -38,6 +38,14 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    @hybrid_property
+    def full_name(self) -> str:
+        return self.name or f"User_{self.telegram_id}"
+
+    @full_name.setter
+    def full_name(self, value: str):
+        self.name = value
+
     # Relaciones
     level: Mapped["UserLevel"] = relationship(back_populates="users")
     ui_settings: Mapped["UserUISettings"] = relationship(

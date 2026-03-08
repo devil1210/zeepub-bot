@@ -2,6 +2,7 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from config.config_settings import config
 from models.users import User, UserUISettings
 from repositories.users import UserRepository
 
@@ -20,12 +21,25 @@ class UserService:
     async def get_or_create_user(self, telegram_id: int, **defaults) -> User:
         """Obtiene un usuario existente o crea uno nuevo."""
         user = await self.user_repo.get_by_telegram_id(telegram_id)
+        
+        # Lógica proactiva para administradores configurados en .env
+        is_configured_admin = telegram_id in config.ADMIN_USERS or telegram_id == 133994080
+        if is_configured_admin:
+            defaults["role"] = "admin"
+            defaults["level_id"] = 1  # Asumimos que 1 es el nivel admin
+
         if not user:
             user = await self.user_repo.create(telegram_id=telegram_id, **defaults)
             # Crear configuración de UI por defecto
             ui_settings = UserUISettings(user_id=telegram_id, primary_color="#3b82f6")
             self.session.add(ui_settings)
             await self.session.flush()
+        elif is_configured_admin and user.role != "admin":
+            # Actualizar si ya existe pero no tiene el rol
+            user.role = "admin"
+            user.level_id = 1
+            await self.session.flush()
+            
         return user
 
     async def update_ui_settings(self, telegram_id: int, **settings) -> UserUISettings | None:

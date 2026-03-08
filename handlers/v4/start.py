@@ -21,7 +21,7 @@ class StartHandlerV4(BaseHandlerV4):
 
         # 1. Obtener o crear usuario asíncronamente
         user = await user_service.get_or_create_user(
-            telegram_id=uid, username=update.effective_user.username, full_name=update.effective_user.full_name
+            telegram_id=uid, username=update.effective_user.username, name=update.effective_user.full_name
         )
 
         # 2. Inicializar estado
