@@ -123,9 +123,30 @@ class Book(Base):
     indexed_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     @hybrid_property
+    def book_hash(self) -> str:
+        """Alias para el hash del libro (id) para compatibilidad v3/Legacy."""
+        return self.id
+
+    @book_hash.setter
+    def book_hash(self, value: str):
+        self.id = value
+
+    @book_hash.expression
+    def book_hash(cls):
+        return cls.id
+
+    @hybrid_property
     def series_hash(self) -> str:
         """Alias semántico para el hash de la serie vinculada."""
         return self.series_id
+
+    @series_hash.setter
+    def series_hash(self, value: str):
+        self.series_id = value
+
+    @series_hash.expression
+    def series_hash(cls):
+        return cls.series_id
 
     # Relaciones
     series_info: Mapped[Series] = relationship(back_populates="books")
