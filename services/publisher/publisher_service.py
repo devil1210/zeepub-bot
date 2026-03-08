@@ -8,7 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.communications import (
     PublicationQueue,
 )
+from repositories.book_repository import BookRepository
 from repositories.publication_repository import PublicationRepository
+from utils.http_client import fetch_bytes
+from utils.template_engine import apply_publication_template
 
 logger = logging.getLogger(__name__)
 
@@ -70,8 +73,6 @@ class TelegramPublisherProvider(PublisherProvider):
         options: dict[str, Any] | None = None,
     ) -> bool:
         from services.cover_service import send_doc_bytes, send_photo_bytes
-        from utils.http_client import fetch_bytes
-        from utils.template_engine import apply_publication_template
 
         if not self.bot:
             from core.bot import telegram_bot
@@ -152,6 +153,7 @@ class PublisherService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repo = PublicationRepository(session)
+        self.book_repo = BookRepository(session)  # Inyectar sesión a BookRepository
         self.providers = {"telegram": TelegramPublisherProvider(), "facebook": FacebookPublisherProvider()}
 
     async def schedule_publication(
@@ -183,8 +185,24 @@ class PublisherService:
                 item.status = "publishing"
                 await self.session.flush()
 
-                # Datos del libro (simplificado para el ejemplo)
+                # Datos del libro: intentar cargar desde repositorio si no están completos
                 book_data = item.payload or {}
+                if item.book_hash and ("title" not in book_data or "author" not in book_data):
+                    book = await self.book_repo.get_by_hash(item.book_hash)
+                    if book:
+                        # Extraer metadatos para el template engine
+                        book_data.update(
+                            {
+                                "title": book.title,
+                                "author": book.author,
+                                "volume": book.volume,
+                                "portada": book.series.cover_medium if book.series else None,
+                                "series_spanish": book.series.series_spanish if book.series else book.title,
+                                "sinopsis": book.series.description if book.series else "",
+                                "generos": book.series.genres if book.series else [],
+                                "book_hash": book.book_hash,
+                            }
+                        )
 
                 # Obtener proveedor
                 platform = item.channel.platform if item.channel else "telegram"

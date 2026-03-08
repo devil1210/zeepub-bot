@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import HTTPException
 
 from api.handlers.helpers import check_admin, check_staff
-from models.publication_models import PublicationChannel, PublicationTemplate
+from models.communications import PublicationChannel, PublicationTemplate
 from repositories.publication_repository import pub_repo
 from services.publisher.publisher_service import publisher_service
 

@@ -191,7 +191,7 @@ class TemplatesPlugin(BasePlugin):
         name = self.user_states[user_id].get("name", "Sin Nombre")
         platform = self.user_states[user_id].get("platform", "telegram")
 
-        from models.publication_models import PublicationTemplate
+        from models.communications import PublicationTemplate
 
         template = PublicationTemplate(name=name, content=content, platform=platform, extra_config={})
         await self.pub_repo.create_template(template)

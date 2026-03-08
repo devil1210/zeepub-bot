@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 # Import ALL models to ensure relationships are loaded
 try:
     import models.agent_models  # noqa: F401
+    import models.communications  # noqa: F401
     import models.library  # noqa: F401
-    import models.publication_models  # noqa: F401
     import models.user_models  # noqa: F401
 except ImportError:
     pass

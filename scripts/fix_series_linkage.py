@@ -38,8 +38,8 @@ try:
 
     from sqlalchemy import func, select, update
 
+    import models.communications
     import models.library
-    import models.publication_models
 
     # Import models to populate registry
     import models.user_models  # noqa: F401
