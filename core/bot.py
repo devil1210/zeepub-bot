@@ -71,12 +71,10 @@ class ZeePubBot:
 
         # Mensajes de texto movidos a initialize() para evitar conflictos con plugins
 
-        # JSON Upload Handler
-        from handlers.message_handlers import handle_donation_proof, handle_json_upload
-
-        self.app.add_handler(MessageHandler(filters.Document.MimeType("application/json"), handle_json_upload))
-        # Donation Proof Handler (Photo or Document)
-        self.app.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, handle_donation_proof))
+        # JSON Upload Handler (Deprecated or moved to plugins/v4)
+        # from handlers.message_handlers import handle_donation_proof, handle_json_upload
+        # self.app.add_handler(MessageHandler(filters.Document.MimeType("application/json"), handle_json_upload))
+        # self.app.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, handle_donation_proof))
 
         try:
             from handlers.epub_upload_handler import setup_upload_handlers
