@@ -37,7 +37,12 @@ class PromptOptimizer:
         if test_cases is None:
             test_cases = self.test_suite
 
-        metrics = {"accuracy": [], "latency": [], "token_count": [], "success_rate": []}
+        metrics = {
+            "accuracy": [],
+            "latency": [],
+            "token_count": [],
+            "success_rate": []
+        }
 
         def process_test_case(test_case):
             start_time = time.time()
@@ -56,7 +61,12 @@ class PromptOptimizer:
             success = 1 if response else 0
             accuracy = self.calculate_accuracy(response, test_case.expected_output)
 
-            return {"latency": latency, "token_count": token_count, "success_rate": success, "accuracy": accuracy}
+            return {
+                "latency": latency,
+                "token_count": token_count,
+                "success_rate": success,
+                "accuracy": accuracy
+            }
 
         # Run test cases in parallel
         results = list(self.executor.map(process_test_case, test_cases))
@@ -73,7 +83,7 @@ class PromptOptimizer:
             "avg_latency": np.mean(metrics["latency"]),
             "p95_latency": np.percentile(metrics["latency"], 95),
             "avg_tokens": np.mean(metrics["token_count"]),
-            "success_rate": np.mean(metrics["success_rate"]),
+            "success_rate": np.mean(metrics["success_rate"])
         }
 
     def calculate_accuracy(self, response: str, expected: str) -> float:
@@ -112,7 +122,11 @@ class PromptOptimizer:
             print(f"Accuracy: {metrics['avg_accuracy']:.2f}, Latency: {metrics['avg_latency']:.2f}s")
 
             # Track results
-            self.results_history.append({"iteration": iteration, "prompt": current_prompt, "metrics": metrics})
+            self.results_history.append({
+                "iteration": iteration,
+                "prompt": current_prompt,
+                "metrics": metrics
+            })
 
             # Update best if improved
             if metrics["avg_accuracy"] > best_score:
@@ -142,7 +156,11 @@ class PromptOptimizer:
             current_prompt = best_variation
             current_metrics = best_variation_metrics
 
-        return {"best_prompt": best_prompt, "best_score": best_score, "history": self.results_history}
+        return {
+            "best_prompt": best_prompt,
+            "best_score": best_score,
+            "history": self.results_history
+        }
 
     def generate_variations(self, prompt: str, current_metrics: dict) -> list[str]:
         """Generate prompt variations to test."""
@@ -204,7 +222,7 @@ Output: Sample output
             "prompt_a_metrics": metrics_a,
             "prompt_b_metrics": metrics_b,
             "winner": "A" if metrics_a["avg_accuracy"] > metrics_b["avg_accuracy"] else "B",
-            "improvement": abs(metrics_a["avg_accuracy"] - metrics_b["avg_accuracy"]),
+            "improvement": abs(metrics_a["avg_accuracy"] - metrics_b["avg_accuracy"])
         }
 
     def export_results(self, filename: str):
@@ -216,9 +234,18 @@ Output: Sample output
 def main():
     # Example usage
     test_suite = [
-        TestCase(input={"text": "This movie was amazing!"}, expected_output="Positive"),
-        TestCase(input={"text": "Worst purchase ever."}, expected_output="Negative"),
-        TestCase(input={"text": "It was okay, nothing special."}, expected_output="Neutral"),
+        TestCase(
+            input={"text": "This movie was amazing!"},
+            expected_output="Positive"
+        ),
+        TestCase(
+            input={"text": "Worst purchase ever."},
+            expected_output="Negative"
+        ),
+        TestCase(
+            input={"text": "It was okay, nothing special."},
+            expected_output="Neutral"
+        )
     ]
 
     # Mock LLM client for demonstration
@@ -239,7 +266,7 @@ def main():
 
         results = optimizer.optimize(base_prompt)
 
-        print("\n" + "=" * 50)
+        print("\n" + "="*50)
         print("Optimization Complete!")
         print(f"Best Accuracy: {results['best_score']:.2f}")
         print(f"Best Prompt:\n{results['best_prompt']}")
