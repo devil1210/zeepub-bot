@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import select, text
 
 from core.db_manager_pg import pg_manager
-from models.user_models import AppTheme
+from models.users import AppTheme
 from repositories.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)

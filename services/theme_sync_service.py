@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
 from models.theme_sync_models import ThemeSyncLog
-from models.user_models import AppTheme
+from models.users import AppTheme
 
 logger = logging.getLogger(__name__)
 

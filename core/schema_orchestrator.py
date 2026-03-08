@@ -10,7 +10,7 @@ from models.base import Base
 from models.library import (
     LibrarySource,
 )
-from models.user_models import UserLevel
+from models.users import UserLevel
 
 logger = logging.getLogger(__name__)
 

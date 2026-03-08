@@ -78,7 +78,7 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
         return {"success": False, "message": "Supabase no está habilitado."}
 
     try:
-        from models.user_models import User, UserLevel
+        from models.users import User, UserLevel
 
         client = supabase_manager.get_client()
 
@@ -186,8 +186,7 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
 
 async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: dict[str, Any]):
     """Guarda los permisos de un usuario específico."""
-    check_staff(user_data)
-    from models.user_models import User
+    from models.users import User
 
     target_id = data.get("userId")
     if not target_id:
@@ -223,8 +222,7 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
 
 async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dict[str, Any]):
     """Obtiene los permisos de un usuario específico."""
-    check_staff(user_data)
-    from models.user_models import User
+    from models.users import User
 
     target_id = data.get("userId")
     if not target_id:

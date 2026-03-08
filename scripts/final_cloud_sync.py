@@ -18,7 +18,7 @@ try:
     import models.agent_models  # noqa: F401
     import models.communications  # noqa: F401
     import models.library  # noqa: F401
-    import models.user_models  # noqa: F401
+    import models.users  # noqa: F401
 except ImportError:
     pass
 

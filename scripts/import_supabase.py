@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker
 from supabase import create_client
 
 from models.base import Base
-from models.user_models import AppTheme, User, UserLevel
+from models.users import AppTheme, User, UserLevel
 
 # Force load .env
 load_dotenv()

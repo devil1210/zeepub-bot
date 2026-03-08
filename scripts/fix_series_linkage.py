@@ -42,7 +42,7 @@ try:
     import models.library
 
     # Import models to populate registry
-    import models.user_models  # noqa: F401
+    import models.users  # noqa: F401
     from core.db_manager_pg import pg_manager
 
     # import models.user_audit_models # Just in case

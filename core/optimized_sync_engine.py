@@ -9,7 +9,7 @@ from sqlalchemy import select, text
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
-from models.user_models import UserLevel
+from models.users import UserLevel
 from services.cache_service import cache_manager
 
 logger = logging.getLogger(__name__)

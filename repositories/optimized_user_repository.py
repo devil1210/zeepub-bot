@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
-from models.user_models import User
+from models.users import User
 from repositories.base_repository import BaseRepository
 from services.cache_service import cache_manager
 

@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
-from models.user_models import AppTheme, User, UserLevel, UserUISettings
+from models.users import AppTheme, User, UserLevel, UserUISettings
 
 logger = logging.getLogger(__name__)
 

@@ -5,7 +5,7 @@ from sqlalchemy import text
 
 from core.db_manager_pg import pg_manager
 from models.base import Base
-from models.user_models import UserLevel
+from models.users import UserLevel
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("DB_REPAIR")
