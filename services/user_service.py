@@ -21,7 +21,7 @@ class UserService:
     async def get_or_create_user(self, telegram_id: int, **defaults) -> User:
         """Obtiene un usuario existente o crea uno nuevo."""
         user = await self.user_repo.get_by_telegram_id(telegram_id)
-        
+
         # Lógica proactiva para administradores configurados en .env
         is_configured_admin = telegram_id in config.ADMIN_USERS or telegram_id == 133994080
         if is_configured_admin:
@@ -34,12 +34,14 @@ class UserService:
             ui_settings = UserUISettings(user_id=telegram_id, primary_color="#3b82f6")
             self.session.add(ui_settings)
             await self.session.flush()
+            # Refrescar para asegurar que level y ui_settings estén cargados
+            await self.session.refresh(user, ["level", "ui_settings"])
         elif is_configured_admin and user.role != "admin":
             # Actualizar si ya existe pero no tiene el rol
             user.role = "admin"
             user.level_id = 1
             await self.session.flush()
-            
+
         return user
 
     async def update_ui_settings(self, telegram_id: int, **settings) -> UserUISettings | None:
@@ -182,12 +184,10 @@ class UserService:
     async def upsert_user(self, telegram_id: int, **data) -> User:
         """Registro/Actualización masiva de usuario (RBAC compatible)."""
         user = await self.user_repo.get_by_telegram_id(telegram_id)
-        
+
         # Mapeo de niveles legacy a IDs (o nombres)
-        level_map = {
-            "admin": 1, "staff": 2, "premium": 3, "vip": 4, "user": 6, "free": 6, "white": 5
-        }
-        
+        level_map = {"admin": 1, "staff": 2, "premium": 3, "vip": 4, "user": 6, "free": 6, "white": 5}
+
         level_val = data.pop("level", None)
         if level_val:
             if isinstance(level_val, str):
@@ -204,7 +204,7 @@ class UserService:
             for k, v in data.items():
                 if hasattr(user, k):
                     setattr(user, k, v)
-        
+
         await self.session.flush()
         return user
 
@@ -296,17 +296,21 @@ async def get_users_by_level(level_id: int) -> list:
 
 async def upsert_user(telegram_id: int, **data):
     from core.db_manager_pg import pg_manager
+
     async with pg_manager.get_session() as session:
         service = UserService(session)
         await service.upsert_user(telegram_id, **data)
         await session.commit()
 
+
 async def update_user_status_label(telegram_id: int, label: str | None):
     from core.db_manager_pg import pg_manager
+
     async with pg_manager.get_session() as session:
         service = UserService(session)
         await service.update_user_status_label(telegram_id, label)
         await session.commit()
+
 
 async def invalidate_user_cache(telegram_id: int = None):
     # Standalone wrapper for cache invalidation

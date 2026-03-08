@@ -47,9 +47,9 @@ class User(Base):
         self.name = value
 
     # Relaciones
-    level: Mapped["UserLevel"] = relationship(back_populates="users")
+    level: Mapped["UserLevel"] = relationship(back_populates="users", lazy="selectin")
     ui_settings: Mapped["UserUISettings"] = relationship(
-        back_populates="user", cascade="all, delete-orphan", uselist=False
+        back_populates="user", cascade="all, delete-orphan", uselist=False, lazy="selectin"
     )
     download_history: Mapped[list["DownloadHistory"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
