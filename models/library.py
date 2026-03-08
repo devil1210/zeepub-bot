@@ -108,6 +108,11 @@ class Book(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     indexed_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
+    @property
+    def series_hash(self) -> str:
+        """Alias para compatibilidad legacy."""
+        return self.series_id
+
     # Relaciones
     series: Mapped[Series] = relationship(back_populates="books")
     media: Mapped[list["MediaAsset"]] = relationship(back_populates="book", cascade="all, delete-orphan")

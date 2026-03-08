@@ -46,14 +46,14 @@ class UserService:
         Integrated with RBAC for v4 architecture.
         """
         from services.rbac_service import rbac_service
-        
+
         user = await self.user_repo.get_by_telegram_id(telegram_id)
         if not user:
             # Create minimal user if not exists
             username = tg_user.get("username") if tg_user else None
             name = tg_user.get("first_name") if tg_user else f"User_{telegram_id}"
             user = await self.get_or_create_user(telegram_id, username=username, name=name)
-        
+
         # Prepare base data for RBAC
         user_data = {
             "user_id": telegram_id,
@@ -65,35 +65,35 @@ class UserService:
             "level": user.level.name if user.level else "free",
             "level_info": {
                 "name": user.level.name if user.level else "free",
-                "hasAccess": user.level.can_download if user.level else True, # Default perms
+                "hasAccess": user.level.can_download if user.level else True,  # Default perms
                 "canDownload": user.level.can_download if user.level else True,
                 "canRead": True,
                 "hasLibraryAccess": True,
                 "canRequestBooks": True,
-                "canUploadEpub": user.can_upload
+                "canUploadEpub": user.can_upload,
             },
             "is_real_admin": user.role == "admin" or telegram_id == 133994080,
             "can_upload_epub": user.can_upload,
-            "beta_tester": user.is_beta
+            "beta_tester": user.is_beta,
         }
-        
+
         # Apply simulated level if provided
         if simulated_level_id:
-             # In a real implementation we would fetch the level info by ID
-             pass
+            # In a real implementation we would fetch the level info by ID
+            pass
 
         # Flatten permissions
         user_data["permissions"] = list(await rbac_service.get_user_permissions(user_data))
-        
+
         # Add UI Settings
         if user.ui_settings:
             user_data["settings"] = {
                 "theme": user.ui_settings.theme,
                 "primaryColor": user.ui_settings.primary_color,
                 "glassBlur": user.ui_settings.glass_blur,
-                "glassOpacity": user.ui_settings.glass_opacity / 100.0
+                "glassOpacity": user.ui_settings.glass_opacity / 100.0,
             }
-            
+
         return user_data
 
     async def get_user_access_data(self, telegram_id: int) -> dict:
@@ -105,21 +105,65 @@ class UserService:
             "role": data.get("role"),
             "permissions": data.get("permissions", []),
             "isAdmin": data.get("is_real_admin"),
-            "isStaff": data.get("level") in ("admin", "staff")
+            "isStaff": data.get("level") in ("admin", "staff"),
         }
 
     async def get_user_by_email(self, email: str) -> dict | None:
         """Helper for Supabase auth fallback."""
         from sqlalchemy import select
         from sqlalchemy.orm import joinedload
-        
+
         query = select(User).where(User.email == email.lower()).options(joinedload(User.level))
         result = await self.session.execute(query)
         user = result.scalar_one_or_none()
-        
+
         if user:
             return {"telegram_id": user.telegram_id, "email": email}
         return None
+
+    async def get_user_settings(self, telegram_id: int) -> dict:
+        """Obtiene todas las configuraciones del usuario."""
+        user_data = await self.get_effective_user(telegram_id)
+        return user_data.get("settings", {})
+
+    async def update_user_setting(self, telegram_id: int, key: str, value: any):
+        """Actualiza una configuración específica del usuario."""
+        # Mapeo de nombres de frontend a backend
+        key_map = {
+            "primaryColor": "primary_color",
+            "glassBlur": "glass_blur",
+            "glassOpacity": "glass_opacity",
+            "theme": "theme",
+        }
+        db_key = key_map.get(key, key)
+
+        # Si es glassOpacity, convertir de 0.0-1.0 a 0-100
+        if db_key == "glass_opacity" and isinstance(value, (float, int)) and value <= 1.0:
+            value = int(value * 100)
+
+        await self.update_ui_settings(telegram_id, **{db_key: value})
+        await self.session.commit()
+
+    async def remove_user(self, telegram_id: int):
+        """Elimina un usuario y todas sus relaciones."""
+        user = await self.user_repo.get_by_telegram_id(telegram_id)
+        if user:
+            await self.session.delete(user)
+            await self.session.commit()
+
+    async def get_users_by_level(self, level_id: int) -> list[User]:
+        """Obtiene todos los usuarios de un nivel específico."""
+        from sqlalchemy import select
+
+        query = select(User).where(User.level_id == level_id)
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def invalidate_user_cache(self, telegram_id: int):
+        """Invalida el caché (placeholder para v4)."""
+        # En v4 la consistencia es directa via Postgres,
+        # pero mantenemos la interfaz para plugins.
+        pass
 
     async def commit_changes(self):
         await self.session.commit()
@@ -127,8 +171,10 @@ class UserService:
 
 # --- Funciones de Compatibilidad (Standalone) ---
 
+
 async def get_effective_user(telegram_id: int, tg_user: dict = None, simulated_level_id: int = None) -> dict:
     from core.db_manager_pg import pg_manager
+
     async with pg_manager.get_session() as session:
         service = UserService(session)
         return await service.get_effective_user(telegram_id, tg_user, simulated_level_id)
@@ -136,6 +182,7 @@ async def get_effective_user(telegram_id: int, tg_user: dict = None, simulated_l
 
 async def get_user_access_data(telegram_id: int) -> dict:
     from core.db_manager_pg import pg_manager
+
     async with pg_manager.get_session() as session:
         service = UserService(session)
         return await service.get_user_access_data(telegram_id)
@@ -143,6 +190,31 @@ async def get_user_access_data(telegram_id: int) -> dict:
 
 async def get_user_by_email(email: str) -> dict | None:
     from core.db_manager_pg import pg_manager
+
     async with pg_manager.get_session() as session:
         service = UserService(session)
         return await service.get_user_by_email(email)
+
+
+async def remove_user(telegram_id: int):
+    from core.db_manager_pg import pg_manager
+
+    async with pg_manager.get_session() as session:
+        service = UserService(session)
+        await service.remove_user(telegram_id)
+
+
+async def get_user_settings(telegram_id: int) -> dict:
+    from core.db_manager_pg import pg_manager
+
+    async with pg_manager.get_session() as session:
+        service = UserService(session)
+        return await service.get_user_settings(telegram_id)
+
+
+async def update_user_setting(telegram_id: int, key: str, value: any):
+    from core.db_manager_pg import pg_manager
+
+    async with pg_manager.get_session() as session:
+        service = UserService(session)
+        await service.update_user_setting(telegram_id, key, value)

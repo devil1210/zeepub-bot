@@ -72,7 +72,7 @@ class PublicationQueue(Base):
     __tablename__ = "publication_queue"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    book_hash: Mapped[str] = mapped_column(ForeignKey("local_books.book_hash"), index=True)
+    book_hash: Mapped[str] = mapped_column(ForeignKey("books.id"), index=True)
     channel_id: Mapped[int] = mapped_column(ForeignKey("publication_channels.id"))
     template_id: Mapped[int | None] = mapped_column(ForeignKey("publication_templates.id"), nullable=True)
 

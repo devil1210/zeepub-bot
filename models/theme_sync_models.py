@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer, String, Text
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import String, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
-Base = declarative_base()
+from models.base import Base
 
 
 class ThemeSyncLog(Base):
@@ -13,26 +13,28 @@ class ThemeSyncLog(Base):
 
     __tablename__ = "theme_sync_logs"
 
-    id = Column(Integer, primary_key=True)
-    sync_type = Column(String(20), nullable=False)  # 'initial', 'daily', 'manual'
-    direction = Column(String(20), nullable=False)  # 'supabase_to_local', 'local_to_supabase', 'bidirectional'
-    status = Column(String(20), nullable=False)  # 'success', 'error', 'partial'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sync_type: Mapped[str] = mapped_column(String(20), nullable=False)  # 'initial', 'daily', 'manual'
+    direction: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # 'supabase_to_local', 'local_to_supabase', 'bidirectional'
+    status: Mapped[str] = mapped_column(String(20), nullable=False)  # 'success', 'error', 'partial'
 
     # Estadísticas
-    local_themes_before = Column(Integer, default=0)
-    local_themes_after = Column(Integer, default=0)
-    supabase_themes_before = Column(Integer, default=0)
-    supabase_themes_after = Column(Integer, default=0)
+    local_themes_before: Mapped[int] = mapped_column(default=0)
+    local_themes_after: Mapped[int] = mapped_column(default=0)
+    supabase_themes_before: Mapped[int] = mapped_column(default=0)
+    supabase_themes_after: Mapped[int] = mapped_column(default=0)
 
     # Detalles
-    themes_added = Column(Integer, default=0)
-    themes_updated = Column(Integer, default=0)
-    themes_deleted = Column(Integer, default=0)
-    errors = Column(Text, nullable=True)
+    themes_added: Mapped[int] = mapped_column(default=0)
+    themes_updated: Mapped[int] = mapped_column(default=0)
+    themes_deleted: Mapped[int] = mapped_column(default=0)
+    errors: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Timestamps
-    started_at = Column(DateTime, default=datetime.utcnow)
-    completed_at = Column(DateTime, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    completed_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     def to_dict(self):
         return {
