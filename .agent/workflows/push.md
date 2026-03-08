@@ -12,3 +12,6 @@ description: Sincronizar cambios localmente y subir al repositorio remoto autom√
 
 3. Subir los cambios a la rama activa:
    `git push`
+
+4. Ejecutar analize de gitnexus
+   `npx gitnexus analyze`  
