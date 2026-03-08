@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base, series_demographics, series_genres
@@ -49,6 +50,11 @@ class Series(Base):
     cover_url: Mapped[str | None] = mapped_column(String(1024))
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @hybrid_property
+    def series_hash(self) -> str:
+        """Alias semántico para el ID de la serie (que es su hash)."""
+        return self.id
 
     # Relaciones
     books: Mapped[list["Book"]] = relationship(back_populates="series", cascade="all, delete-orphan")
@@ -99,18 +105,26 @@ class Book(Base):
     translator: Mapped[str | None] = mapped_column(String(255))
     layout_by: Mapped[str | None] = mapped_column(String(255))
 
+    author_jap: Mapped[str | None] = mapped_column(String(255))
+    illustrator_jap: Mapped[str | None] = mapped_column(String(255))
+    spanish_title: Mapped[str | None] = mapped_column(String(512))
+    romaji_title: Mapped[str | None] = mapped_column(String(512))
+    english_title: Mapped[str | None] = mapped_column(String(512))
+    series_spanish: Mapped[str | None] = mapped_column(String(512))
+    series_english: Mapped[str | None] = mapped_column(String(512))
+
     language: Mapped[str] = mapped_column(String(10), default="es")
     is_uncensored: Mapped[bool] = mapped_column(Boolean, default=False)
     color_mode: Mapped[str | None] = mapped_column(String(50))
 
-    short_link: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
+    short_link: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
 
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     indexed_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
-    @property
+    @hybrid_property
     def series_hash(self) -> str:
-        """Alias para compatibilidad legacy."""
+        """Alias semántico para el hash de la serie vinculada."""
         return self.series_id
 
     # Relaciones

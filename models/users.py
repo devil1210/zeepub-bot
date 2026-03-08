@@ -26,6 +26,7 @@ class User(Base):
 
     is_beta: Mapped[bool] = mapped_column(Boolean, default=False)
     can_upload: Mapped[bool] = mapped_column(Boolean, default=False)
+    can_upload_epub: Mapped[bool] = mapped_column(Boolean, default=False)
 
     extra_data: Mapped[dict] = mapped_column(JSONB, default=dict)
 
@@ -46,10 +47,42 @@ class UserLevel(Base):
     name: Mapped[str] = mapped_column(String(50), unique=True)
     priority: Mapped[int] = mapped_column(default=0)
     color: Mapped[str] = mapped_column(String(20), default="#607D8B")
+    price: Mapped[int] = mapped_column(Integer, default=0)
 
     # Permisos
     daily_limit: Mapped[int] = mapped_column(Integer, default=5)
+
+    @hybrid_property
+    def daily_downloads(self) -> int:
+        return self.daily_limit
+
+    @daily_downloads.setter
+    def daily_downloads(self, value: int):
+        self.daily_limit = value
+
     can_download: Mapped[bool] = mapped_column(Boolean, default=True)
+    can_read: Mapped[bool] = mapped_column(Boolean, default=True)
+    has_library_access: Mapped[bool] = mapped_column(Boolean, default=True)
+    can_request_books: Mapped[bool] = mapped_column(Boolean, default=True)
+    can_upload_epub: Mapped[bool] = mapped_column(Boolean, default=False)
+    early_access: Mapped[bool] = mapped_column(Boolean, default=False)
+    custom_themes: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_mini_app_access: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # UI Default Settings
+    ui_theme: Mapped[str] = mapped_column(String(20), default="dark")
+    ui_font_size: Mapped[int] = mapped_column(Integer, default=14)
+    ui_glass_blur: Mapped[int] = mapped_column(Integer, default=12)
+    ui_cover_width: Mapped[int] = mapped_column(Integer, default=120)
+    ui_accent_opacity: Mapped[int] = mapped_column(Integer, default=20)
+    panel_transparency: Mapped[int] = mapped_column(Integer, default=60)
+    background_color: Mapped[str] = mapped_column(String(20), default="#0f172a")
+    card_color: Mapped[str] = mapped_column(String(20), default="#1e293b")
+    banner_content_offset: Mapped[int] = mapped_column(Integer, default=0)
+    show_recommendations: Mapped[bool] = mapped_column(Boolean, default=True)
+    force_settings: Mapped[bool] = mapped_column(Boolean, default=False)
+    allow_theme_templates: Mapped[bool] = mapped_column(Boolean, default=False)
+    default_theme_id: Mapped[int | None] = mapped_column(Integer, default=None)
 
     users: Mapped[list[User]] = relationship(back_populates="level")
 

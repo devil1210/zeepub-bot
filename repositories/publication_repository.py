@@ -34,7 +34,7 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
     ) -> DiscoveredChat:
         """Guarda o actualiza un chat descubierto. Gestiona su propia sesión si no hay una activa."""
         from core.db_manager_pg import pg_manager
-        
+
         if self.session:
             return await self._save_chat_logic(chat_id, title, chat_type, username, member_count)
         else:

@@ -98,44 +98,11 @@ def check_migrations():
                         _log.warning(f"Could not add column {column} to {table}: {e}")
                         conn.rollback()
 
-            # 0. Table series_metadata
+            # 0. Table series_metadata (DEPRECATED in v4, uses 'series' table)
             try:
-                if not table_exists("series_metadata"):
-                    _log.info("Creating series_metadata table...")
-                    # Manual create to ensure structure if metadata.create_all missed it
-                    conn.execute(
-                        text("""
-                        CREATE TABLE series_metadata (
-                            id SERIAL PRIMARY KEY,
-                            series_name VARCHAR(255) NOT NULL,
-                            series_hash VARCHAR(64) UNIQUE NOT NULL,
-                            author VARCHAR(255),
-                            description TEXT,
-                            cover_url VARCHAR(1024),
-                            book_count INTEGER DEFAULT 0,
-                            created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
-                            updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-                        );
-                    """)
-                    )
-                    conn.commit()
-
-                # Check for additional columns in series_metadata
-                add_column_if_missing("series_metadata", "book_type", "VARCHAR(100)")
-                add_column_if_missing("series_metadata", "publisher", "VARCHAR(255)")
-                add_column_if_missing("series_metadata", "demographics", "JSONB")
-                add_column_if_missing("series_metadata", "slug", "VARCHAR(100)")
-                add_column_if_missing("series_metadata", "rating_average", "FLOAT DEFAULT 0.0")
-
-                # Check for publication_templates additions
-                add_column_if_missing("publication_templates", "is_default", "BOOLEAN DEFAULT FALSE")
-                add_column_if_missing("publication_templates", "extra_config", "JSONB")
-                add_column_if_missing("series_metadata", "rating_count", "INTEGER DEFAULT 0")
-
-                conn.execute(
-                    text("CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);")
-                )
-                conn.commit()
+                # We skip series_metadata manual creation as it's now managed by SchemaOrchestrator
+                # and consolidated into 'series' table in models/library.py
+                pass
             except Exception as e:
                 _log.warning(f"Error migrating series_metadata: {e}")
                 conn.rollback()

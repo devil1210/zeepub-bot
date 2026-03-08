@@ -1,11 +1,8 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import BigInteger, ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-# Use the same Base as library_models if possible,
-# but for a new file we can define it or import it.
-# Usually, it's better to have a shared Base.
 from models.library import Base
 
 
@@ -16,13 +13,25 @@ class DownloadHistory(Base):
 
     __tablename__ = "download_history"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
 
     # Relaciones
-    user = relationship("User", backref="download_history")
-    book_hash = Column(String(64), ForeignKey("local_books.book_hash"), index=True)
-    series_hash = Column(String(64), ForeignKey("series_metadata.series_hash"), index=True)
+    # Relaciones principales (v4 usa hashes como IDs)
+    book_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("books.id"), index=True)
+    series_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("series.id"), index=True)
 
-    title = Column(String(512), nullable=False)
-    downloaded_at = Column(DateTime, default=datetime.utcnow)
+    # Alias para compatibilidad legacy (apuntan a los mismos IDs/hashes)
+    @hybrid_property
+    def book_hash(self) -> str | None:
+        return self.book_id
+
+    @hybrid_property
+    def series_hash(self) -> str | None:
+        return self.series_id
+
+    title: Mapped[str] = mapped_column(String(512), nullable=False)
+    downloaded_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="download_history")

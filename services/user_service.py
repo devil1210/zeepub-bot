@@ -218,3 +218,32 @@ async def update_user_setting(telegram_id: int, key: str, value: any):
     async with pg_manager.get_session() as session:
         service = UserService(session)
         await service.update_user_setting(telegram_id, key, value)
+
+
+async def update_user_nickname(telegram_id: int, nickname: str):
+    from core.db_manager_pg import pg_manager
+
+    async with pg_manager.get_session() as session:
+        from sqlalchemy import update
+
+        from models.users import User
+
+        stmt = update(User).where(User.telegram_id == telegram_id).values(nickname=nickname)
+        await session.execute(stmt)
+        await session.commit()
+
+
+async def get_users_by_level(level_id: int) -> list:
+    from core.db_manager_pg import pg_manager
+
+    async with pg_manager.get_session() as session:
+        service = UserService(session)
+        users = await service.get_users_by_level(level_id)
+        # Convert to dict for legacy compatibility if needed,
+        # but most plugins expect ORM objects or dict with telegram_id
+        return users
+
+
+async def invalidate_user_cache(telegram_id: int = None):
+    # Standalone wrapper for cache invalidation
+    pass
