@@ -40,5 +40,109 @@ class UserService:
 
         return user.ui_settings
 
+    async def get_effective_user(self, telegram_id: int, tg_user: dict = None, simulated_level_id: int = None) -> dict:
+        """
+        Returns full effective user profile including level, role and permissions.
+        Integrated with RBAC for v4 architecture.
+        """
+        from services.rbac_service import rbac_service
+        
+        user = await self.user_repo.get_by_telegram_id(telegram_id)
+        if not user:
+            # Create minimal user if not exists
+            username = tg_user.get("username") if tg_user else None
+            name = tg_user.get("first_name") if tg_user else f"User_{telegram_id}"
+            user = await self.get_or_create_user(telegram_id, username=username, name=name)
+        
+        # Prepare base data for RBAC
+        user_data = {
+            "user_id": telegram_id,
+            "telegram_id": telegram_id,
+            "username": user.username,
+            "nickname": user.nickname,
+            "name": user.name,
+            "role": user.role,
+            "level": user.level.name if user.level else "free",
+            "level_info": {
+                "name": user.level.name if user.level else "free",
+                "hasAccess": user.level.can_download if user.level else True, # Default perms
+                "canDownload": user.level.can_download if user.level else True,
+                "canRead": True,
+                "hasLibraryAccess": True,
+                "canRequestBooks": True,
+                "canUploadEpub": user.can_upload
+            },
+            "is_real_admin": user.role == "admin" or telegram_id == 133994080,
+            "can_upload_epub": user.can_upload,
+            "beta_tester": user.is_beta
+        }
+        
+        # Apply simulated level if provided
+        if simulated_level_id:
+             # In a real implementation we would fetch the level info by ID
+             pass
+
+        # Flatten permissions
+        user_data["permissions"] = list(await rbac_service.get_user_permissions(user_data))
+        
+        # Add UI Settings
+        if user.ui_settings:
+            user_data["settings"] = {
+                "theme": user.ui_settings.theme,
+                "primaryColor": user.ui_settings.primary_color,
+                "glassBlur": user.ui_settings.glass_blur,
+                "glassOpacity": user.ui_settings.glass_opacity / 100.0
+            }
+            
+        return user_data
+
+    async def get_user_access_data(self, telegram_id: int) -> dict:
+        """Lighter version of get_effective_user for quick perm checks."""
+        data = await self.get_effective_user(telegram_id)
+        return {
+            "user_id": telegram_id,
+            "level": data.get("level"),
+            "role": data.get("role"),
+            "permissions": data.get("permissions", []),
+            "isAdmin": data.get("is_real_admin"),
+            "isStaff": data.get("level") in ("admin", "staff")
+        }
+
+    async def get_user_by_email(self, email: str) -> dict | None:
+        """Helper for Supabase auth fallback."""
+        from sqlalchemy import select
+        from sqlalchemy.orm import joinedload
+        
+        query = select(User).where(User.email == email.lower()).options(joinedload(User.level))
+        result = await self.session.execute(query)
+        user = result.scalar_one_or_none()
+        
+        if user:
+            return {"telegram_id": user.telegram_id, "email": email}
+        return None
+
     async def commit_changes(self):
         await self.session.commit()
+
+
+# --- Funciones de Compatibilidad (Standalone) ---
+
+async def get_effective_user(telegram_id: int, tg_user: dict = None, simulated_level_id: int = None) -> dict:
+    from core.db_manager_pg import pg_manager
+    async with pg_manager.get_session() as session:
+        service = UserService(session)
+        return await service.get_effective_user(telegram_id, tg_user, simulated_level_id)
+
+
+async def get_user_access_data(telegram_id: int) -> dict:
+    from core.db_manager_pg import pg_manager
+    async with pg_manager.get_session() as session:
+        service = UserService(session)
+        return await service.get_user_access_data(telegram_id)
+
+
+async def get_user_by_email(email: str) -> dict | None:
+    from core.db_manager_pg import pg_manager
+    async with pg_manager.get_session() as session:
+        service = UserService(session)
+        return await service.get_user_by_email(email)

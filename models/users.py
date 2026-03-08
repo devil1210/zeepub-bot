@@ -19,6 +19,7 @@ class User(Base):
     name: Mapped[str | None] = mapped_column(String(255))
     nickname: Mapped[str | None] = mapped_column(String(255))
     photo_url: Mapped[str | None] = mapped_column(String(500))
+    email: Mapped[str | None] = mapped_column(String(255), unique=True)
 
     level_id: Mapped[int] = mapped_column(ForeignKey("user_levels.id"), default=6)
     role: Mapped[str] = mapped_column(String(50), default="user")

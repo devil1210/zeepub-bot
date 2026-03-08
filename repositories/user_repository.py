@@ -9,8 +9,8 @@ from sqlalchemy.orm import selectinload
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from core.state_manager import state_manager
-from models.user_models import User, UserLevel, UserUISettings
-from repositories.base_repository import BaseRepository
+from models.users import User, UserLevel, UserUISettings
+from repositories.base import BaseRepository
 from repositories.level_repository import LEVEL_NAME_TO_ID, level_repo
 from services.cache_service import cache_manager
 

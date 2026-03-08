@@ -21,8 +21,53 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
     Repositorio v4.0 para la gestión de publicaciones, canales y plantillas.
     """
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession = None):
         super().__init__(PublicationQueue, session)
+
+    async def save_discovered_chat(
+        self,
+        chat_id: str,
+        title: str,
+        chat_type: str,
+        username: str = None,
+        member_count: int = 0,
+    ) -> DiscoveredChat:
+        """Guarda o actualiza un chat descubierto. Gestiona su propia sesión si no hay una activa."""
+        from core.db_manager_pg import pg_manager
+        
+        if self.session:
+            return await self._save_chat_logic(chat_id, title, chat_type, username, member_count)
+        else:
+            async with pg_manager.get_session() as session:
+                self.session = session
+                res = await self._save_chat_logic(chat_id, title, chat_type, username, member_count)
+                await session.commit()
+                self.session = None
+                return res
+
+    async def _save_chat_logic(self, chat_id, title, chat_type, username, member_count):
+        stmt = select(DiscoveredChat).where(DiscoveredChat.chat_id == str(chat_id))
+        result = await self.session.execute(stmt)
+        existing = result.scalar_one_or_none()
+
+        if existing:
+            existing.title = title
+            existing.type = chat_type
+            existing.username = username
+            if member_count > 0:
+                existing.member_count = member_count
+            existing.last_seen_at = datetime.utcnow()
+            return existing
+        else:
+            new_chat = DiscoveredChat(
+                chat_id=str(chat_id),
+                title=title,
+                type=chat_type,
+                username=username,
+                member_count=member_count,
+            )
+            self.session.add(new_chat)
+            return new_chat
 
     # --- Publication Queue Methods ---
 
@@ -92,34 +137,6 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def upsert_discovered_chat(
-        self,
-        chat_id: str,
-        title: str,
-        chat_type: str,
-        username: str = None,
-        member_count: int = 0,
-    ) -> DiscoveredChat:
-        """Guarda o actualiza un chat descubierto."""
-        stmt = select(DiscoveredChat).where(DiscoveredChat.chat_id == str(chat_id))
-        result = await self.session.execute(stmt)
-        existing = result.scalar_one_or_none()
 
-        if existing:
-            existing.title = title
-            existing.type = chat_type
-            existing.username = username
-            if member_count > 0:
-                existing.member_count = member_count
-            existing.last_seen_at = datetime.utcnow()
-            return existing
-        else:
-            new_chat = DiscoveredChat(
-                chat_id=str(chat_id),
-                title=title,
-                type=chat_type,
-                username=username,
-                member_count=member_count,
-            )
-            self.session.add(new_chat)
-            return new_chat
+# Singleton para compatibilidad con handlers globales
+pub_repo = PublicationRepository()
