@@ -208,11 +208,6 @@ class EpubScanner:
 
             # 5. GENERACIÓN DE HASHES SAGRADOS
             # El hash depende de la identidad extraída (normalizada)
-            target_series_hash = cls.generate_series_hash(
-                series_name=identity["series"],
-                author=identity["author"],
-                book_type=identity["book_type"],
-            )
             target_book_hash = cls.generate_book_hash(
                 series_name=identity["series"],
                 author=identity["author"],
@@ -274,7 +269,7 @@ class EpubScanner:
                 book.edition = identity["edition"] or meta.get("edition")
                 book.author = identity["author"]
                 book.book_type = identity["book_type"]
-                book.series_hash = target_series_hash
+                # Deferimos la asignación de series_hash hasta que el series_provider la valide
                 book.book_hash = target_book_hash
                 book.is_uncensored = identity["is_uncensored"]
                 book.color_mode = identity["color_mode"]
@@ -303,6 +298,25 @@ class EpubScanner:
                 book.demographics_json = book_demographics
                 book.tags_json = book_tags
 
+                # 7. VINCULACIÓN DE SERIE (Aislado de la identidad básica)
+                # Debe ocurrir ANTES de sync_taxonomy porque sync_taxonomy dispara un flush()
+                if series_provider:
+                    # Adjuntamos datos extraídos al objeto temporalmente para el provider
+                    book.extracted_data = identity
+                    book.extracted_data.update(
+                        {
+                            "tags": raw_tags,
+                            "demographics": book_demographics,
+                            "description": book.description,
+                            "publisher": book.publisher,
+                            "illustrator": book.illustrator,
+                            "author_jap": book.author_jap,
+                            "illustrator_jap": book.illustrator_jap,
+                        }
+                    )
+                    series = await series_provider(session, book, skip_ai=skip_ai)
+                    book.series_hash = series.series_hash
+
                 # Relaciones Normalizadas (NUEVO)
                 book.genres = await ScannerHelpers.sync_taxonomy(session, Genre, book_tags)
                 book.demographics_list = await ScannerHelpers.sync_taxonomy(session, Demographic, book_demographics)
@@ -316,24 +330,6 @@ class EpubScanner:
 
                 if book.book_hash:
                     book.short_link = generate_short_link(book.book_hash)
-
-            # 7. VINCULACIÓN DE SERIE (Aislado de la identidad básica)
-            if series_provider:
-                # Adjuntamos datos extraídos al objeto temporalmente para el provider
-                book.extracted_data = identity
-                book.extracted_data.update(
-                    {
-                        "tags": book.tags_json,
-                        "demographics": book.demographics_json,
-                        "description": book.description,
-                        "publisher": book.publisher,
-                        "illustrator": book.illustrator,
-                        "author_jap": book.author_jap,
-                        "illustrator_jap": book.illustrator_jap,
-                    }
-                )
-                series = await series_provider(session, book, skip_ai=skip_ai)
-                book.series_hash = series.series_hash
 
             if translator_provider:
                 await translator_provider(session, book)

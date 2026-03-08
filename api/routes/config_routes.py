@@ -48,8 +48,10 @@ class ConfigRoutes:
                     "roles": user_roles,
                     "permissions": user_permissions,
                     "level": user_data.get("level", "free"),
-                    "is_admin": user_data.get("is_admin", False),
-                    "is_publisher": user_data.get("is_publisher", False),
+                    "isAdmin": user_data.get("isAdmin", False),
+                    "is_admin": user_data.get("isAdmin", False),
+                    "is_real_admin": user_data.get("isAdmin", False),
+                    "isPublisher": user_data.get("is_publisher", False),
                 },
                 "features": {
                     "library_access": "library" in user_permissions,
