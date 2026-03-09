@@ -175,7 +175,6 @@ class ScannerHelpers:
                 session.add(new_obj)
                 final_objs.append(new_obj)
 
-        await session.flush()
         return final_objs
 
     @staticmethod

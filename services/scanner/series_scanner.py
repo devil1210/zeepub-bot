@@ -68,6 +68,7 @@ class SeriesScanner:
                 cover_url=book.cover_low or book.cover_medium,
                 book_count=0,
             )
+            session.add(series)
 
             # Relaciones Normalizadas (NUEVO)
             series.genres = await ScannerHelpers.sync_taxonomy(session, Genre, identity.get("tags") or [])
@@ -77,8 +78,6 @@ class SeriesScanner:
 
             series.slug = SlugManager.generate_valid_slug(series)
             logger.info(f"🆕 Nueva serie detectada: {series.series_name} [{series.slug}]")
-            session.add(series)
-            await session.flush()
         else:
             # ACTUALIZACIÓN DE SERIE EXISTENTE
             if not series.series_english:
