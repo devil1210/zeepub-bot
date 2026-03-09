@@ -151,7 +151,7 @@ class Book(Base):
     # Relaciones
     series_info: Mapped[Series] = relationship(back_populates="books")
     genres: Mapped[list[Genre]] = relationship(secondary="book_genres")
-    demographics_list: Mapped[list[Demographic]] = relationship(secondary="book_demographics")
+    demographics: Mapped[list[Demographic]] = relationship(secondary="book_demographics")
     media: Mapped[list["MediaAsset"]] = relationship(back_populates="book", cascade="all, delete-orphan")
     source: Mapped[LibrarySource] = relationship(back_populates="books")
     ratings: Mapped[list["UserRating"]] = relationship(back_populates="book", cascade="all, delete-orphan")

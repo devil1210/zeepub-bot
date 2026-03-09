@@ -127,7 +127,7 @@ class SyncService:
             res = await session.execute(
                 select(SeriesMetadata).options(
                     selectinload(SeriesMetadata.genres),
-                    selectinload(SeriesMetadata.demographics_list),
+                    selectinload(SeriesMetadata.demographics),
                 )
             )
             series_list = res.scalars().all()
@@ -179,10 +179,8 @@ class SyncService:
                             client.table("series_genres").upsert(
                                 genre_data, on_conflict="series_hash,genre_id"
                             ).execute()
-                        if s.demographics_list:
-                            demo_data = [
-                                {"series_hash": s.series_hash, "demographic_id": d.id} for d in s.demographics_list
-                            ]
+                        if s.demographics:
+                            demo_data = [{"series_hash": s.series_hash, "demographic_id": d.id} for d in s.demographics]
                             client.table("series_demographics").upsert(
                                 demo_data, on_conflict="series_hash,demographic_id"
                             ).execute()
@@ -327,7 +325,7 @@ class SyncService:
             demos = res_demos.scalars().all()
             if demos:
                 demo_data = [{"id": d.id, "name": d.name} for d in demos]
-                client.table("demographics_list").upsert(demo_data).execute()
+                client.table("demographics").upsert(demo_data).execute()
         except Exception as e:
             logger.error(f"Error en _sync_taxonomy_masters: {e}")
 
@@ -337,7 +335,7 @@ class SyncService:
             res = await session.execute(
                 select(LocalBook).options(
                     selectinload(LocalBook.genres),
-                    selectinload(LocalBook.demographics_list),
+                    selectinload(LocalBook.demographics),
                 )
             )
             books = res.scalars().all()
@@ -442,10 +440,8 @@ class SyncService:
                         if b.genres:
                             genre_data = [{"book_hash": b.book_hash, "genre_id": g.id} for g in b.genres]
                             client.table("book_genres").upsert(genre_data, on_conflict="book_hash,genre_id").execute()
-                        if b.demographics_list:
-                            demo_data = [
-                                {"book_hash": b.book_hash, "demographic_id": d.id} for d in b.demographics_list
-                            ]
+                        if b.demographics:
+                            demo_data = [{"book_hash": b.book_hash, "demographic_id": d.id} for d in b.demographics]
                             client.table("book_demographics").upsert(
                                 demo_data, on_conflict="book_hash,demographic_id"
                             ).execute()

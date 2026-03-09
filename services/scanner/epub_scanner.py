@@ -158,7 +158,7 @@ class EpubScanner:
                 .options(
                     selectinload(LocalBook.series_info),
                     selectinload(LocalBook.genres),
-                    selectinload(LocalBook.demographics_list),
+                    selectinload(LocalBook.demographics),
                 )
                 .where(LocalBook.filepath == filepath)
             )
@@ -228,7 +228,7 @@ class EpubScanner:
                     .options(
                         selectinload(LocalBook.series_info),
                         selectinload(LocalBook.genres),
-                        selectinload(LocalBook.demographics_list),
+                        selectinload(LocalBook.demographics),
                     )
                     .where(LocalBook.book_hash == target_book_hash, LocalBook.filepath != filepath)
                 )
@@ -317,9 +317,9 @@ class EpubScanner:
                     series = await series_provider(session, book, skip_ai=skip_ai)
                     book.series_hash = series.series_hash
 
-                # Relaciones Normalizadas (NUEVO)
+                # Relaciones (NUEVO)
                 book.genres = await ScannerHelpers.sync_taxonomy(session, Genre, book_tags)
-                book.demographics_list = await ScannerHelpers.sync_taxonomy(session, Demographic, book_demographics)
+                book.demographics = await ScannerHelpers.sync_taxonomy(session, Demographic, book_demographics)
 
                 # Hash MD5 físico (opcional para integridad extra)
                 try:

@@ -39,7 +39,7 @@ class SeriesScanner:
             select(SeriesMetadata)
             .options(
                 selectinload(SeriesMetadata.genres),
-                selectinload(SeriesMetadata.demographics_list),
+                selectinload(SeriesMetadata.demographics),
             )
             .where(SeriesMetadata.series_hash == series_hash)
         )
@@ -71,7 +71,7 @@ class SeriesScanner:
 
             # Relaciones Normalizadas (NUEVO)
             series.genres = await ScannerHelpers.sync_taxonomy(session, Genre, identity.get("tags") or [])
-            series.demographics_list = await ScannerHelpers.sync_taxonomy(
+            series.demographics = await ScannerHelpers.sync_taxonomy(
                 session, Demographic, identity.get("demographics") or []
             )
 
@@ -114,7 +114,7 @@ class SeriesScanner:
                 if not incoming_demo.issubset(existing_demo):
                     series.demographics_json = list(existing_demo.union(incoming_demo))
                     # Actualizar Relación
-                    series.demographics_list = await ScannerHelpers.sync_taxonomy(
+                    series.demographics = await ScannerHelpers.sync_taxonomy(
                         session, Demographic, series.demographics_json
                     )
 
@@ -192,7 +192,7 @@ class SeriesScanner:
             select(SeriesMetadata)
             .options(
                 selectinload(SeriesMetadata.genres),
-                selectinload(SeriesMetadata.demographics_list),
+                selectinload(SeriesMetadata.demographics),
             )
             .where(SeriesMetadata.series_hash == series_hash)
         )
@@ -206,7 +206,7 @@ class SeriesScanner:
             select(LocalBook)
             .options(
                 selectinload(LocalBook.genres),
-                selectinload(LocalBook.demographics_list),
+                selectinload(LocalBook.demographics),
             )
             .where(LocalBook.series_hash == series_hash)
         )
@@ -238,8 +238,8 @@ class SeriesScanner:
         all_demographics = set()
         all_genres = set()
         for b in books:
-            if b.demographics_list:
-                for d in b.demographics_list:
+            if b.demographics:
+                for d in b.demographics:
                     all_demographics.add(d.name)
             if b.genres:
                 for g in b.genres:
@@ -247,7 +247,8 @@ class SeriesScanner:
 
         if all_demographics:
             series.demographics_json = list(all_demographics)
-            series.demographics_list = await ScannerHelpers.sync_taxonomy(session, Demographic, list(all_demographics))
+            # Sincronizar (Flush incluido)
+            series.demographics = await ScannerHelpers.sync_taxonomy(session, Demographic, list(all_demographics))
             logger.info(f"🧬 Auto-poblada demografía para {series.series_name}: {series.demographics_json}")
 
         if all_genres:
