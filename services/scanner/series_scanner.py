@@ -52,10 +52,8 @@ class SeriesScanner:
             series_name = identity.get("series") or "Unknown"
 
             series = SeriesMetadata(
+                id=series_hash,
                 series_name=series_name,
-                series_english=series_name,
-                series_spanish=None,
-                series_hash=series_hash,
                 author=identity.get("author") or "Unknown",
                 author_jap=identity.get("author_jap"),
                 illustrator=identity.get("illustrator"),

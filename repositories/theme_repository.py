@@ -25,9 +25,9 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
         try:
             async with pg_manager.get_session() as session:
                 # Verificar si la tabla existe antes de contar
-                table_check = await session.execute(text(
-                    "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'app_themes')"
-                ))
+                table_check = await session.execute(
+                    text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'app_themes')")
+                )
                 if not table_check.scalar():
                     logger.debug("Table 'app_themes' does not exist yet. Skipping seeding.")
                     return

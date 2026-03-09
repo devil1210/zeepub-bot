@@ -254,7 +254,7 @@ class EpubScanner:
                         return "duplicate"
 
                 if not book:
-                    book = LocalBook(filepath=filepath, source=source)
+                    book = LocalBook(id=target_book_hash, filepath=filepath, source=source)
                     session.add(book)
 
                 # Sincronizar campos principales desde Identity y Meta
