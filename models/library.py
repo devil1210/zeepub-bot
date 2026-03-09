@@ -29,7 +29,9 @@ class Series(Base):
 
     __tablename__ = "series"
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, autoincrement=False)  # Hash de la serie
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, autoincrement=False, nullable=False
+    )  # Hash de la serie
     name: Mapped[str] = mapped_column(String(512), nullable=False)
     name_spanish: Mapped[str | None] = mapped_column(String(512))
     name_english: Mapped[str | None] = mapped_column(String(512))
@@ -137,7 +139,7 @@ class Book(Base):
 
     __tablename__ = "books"
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, autoincrement=False)  # Hash del libro
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, autoincrement=False, nullable=False)  # Hash del libro
     series_id: Mapped[str] = mapped_column(ForeignKey("series.id"), index=True)
     source_id: Mapped[int] = mapped_column(ForeignKey("library_sources.id"))
 

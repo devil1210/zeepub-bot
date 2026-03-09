@@ -127,6 +127,7 @@ class SeriesScanner:
         if not series.series_spanish and not skip_ai:
             await cls.enrich_series_metadata(session, series, skip_ai=skip_ai)
 
+        logger.debug(f"💾 Persistiendo serie: {series.series_name} (ID: {series.id})")
         await session.flush()
         return series
 
