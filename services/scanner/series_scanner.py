@@ -64,7 +64,9 @@ class SeriesScanner:
                 book_type=identity.get("book_type") or "Light Novel",
                 publisher=identity.get("publisher") or book.publisher,
                 cover_url=book.cover_low or book.cover_medium,
-                book_count=0,
+                book_cnt=0,
+                rating_avg=0.0,
+                rating_cnt=0,
             )
             session.add(series)
 
@@ -266,11 +268,11 @@ class SeriesScanner:
                     series.cover_url = b.cover_medium
                     break
 
-        series.book_count = len(books)
+        series.book_cnt = len(books)
         ratings = [b.rating_average for b in books if b.rating_count > 0]
         if ratings:
-            series.rating_average = sum(ratings) / len(ratings)
-        series.rating_count = sum(b.rating_count for b in books)
+            series.rating_avg = sum(ratings) / len(ratings)
+        series.rating_cnt = sum(b.rating_count for b in books)
         await session.flush()
 
     @classmethod
