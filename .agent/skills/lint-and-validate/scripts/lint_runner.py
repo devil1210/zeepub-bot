@@ -11,15 +11,15 @@ Supports:
     - Python: ruff check, mypy
 """
 
-import json
 import subprocess
 import sys
-from datetime import datetime
+import json
 from pathlib import Path
+from datetime import datetime
 
 # Fix Windows console encoding
 try:
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 except:
     pass
 
@@ -36,7 +36,7 @@ def detect_project_type(project_path: Path) -> dict:
     if package_json.exists():
         result["type"] = "node"
         try:
-            pkg = json.loads(package_json.read_text(encoding="utf-8"))
+            pkg = json.loads(package_json.read_text(encoding='utf-8'))
             scripts = pkg.get("scripts", {})
             deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
             
@@ -82,8 +82,8 @@ def run_linter(linter: dict, cwd: Path) -> dict:
             cwd=str(cwd),
             capture_output=True,
             text=True,
-            encoding="utf-8",
-            errors="replace",
+            encoding='utf-8',
+            errors='replace',
             timeout=120
         )
         
@@ -105,7 +105,7 @@ def main():
     project_path = Path(sys.argv[1] if len(sys.argv) > 1 else ".").resolve()
     
     print(f"\n{'='*60}")
-    print("[LINT RUNNER] Unified Linting")
+    print(f"[LINT RUNNER] Unified Linting")
     print(f"{'='*60}")
     print(f"Project: {project_path}")
     print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

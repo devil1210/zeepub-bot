@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Design System Generator - Aggregates search results and applies reasoning
 to generate comprehensive design system recommendations.
@@ -10,8 +11,9 @@ Usage:
 
 import csv
 import json
+from pathlib import Path
+from core import search, DATA_DIR
 
-from core import DATA_DIR, search
 
 # ============ CONFIGURATION ============
 REASONING_FILE = "ui-reasoning.csv"
@@ -37,7 +39,7 @@ class DesignSystemGenerator:
         filepath = DATA_DIR / REASONING_FILE
         if not filepath.exists():
             return []
-        with open(filepath, encoding="utf-8") as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             return list(csv.DictReader(f))
 
     def _multi_domain_search(self, query: str, style_priority: list = None) -> dict:
@@ -274,9 +276,9 @@ def format_ascii_box(design_system: dict) -> str:
 
     # Pattern section
     lines.append(f"|  PATTERN: {pattern.get('name', '')}".ljust(BOX_WIDTH) + "|")
-    if pattern.get("conversion"):
+    if pattern.get('conversion'):
         lines.append(f"|     Conversion: {pattern.get('conversion', '')}".ljust(BOX_WIDTH) + "|")
-    if pattern.get("cta_placement"):
+    if pattern.get('cta_placement'):
         lines.append(f"|     CTA: {pattern.get('cta_placement', '')}".ljust(BOX_WIDTH) + "|")
     lines.append("|     Sections:".ljust(BOX_WIDTH) + "|")
     for i, section in enumerate(sections, 1):
@@ -373,11 +375,11 @@ def format_markdown(design_system: dict) -> str:
     # Pattern section
     lines.append("### Pattern")
     lines.append(f"- **Name:** {pattern.get('name', '')}")
-    if pattern.get("conversion"):
+    if pattern.get('conversion'):
         lines.append(f"- **Conversion Focus:** {pattern.get('conversion', '')}")
-    if pattern.get("cta_placement"):
+    if pattern.get('cta_placement'):
         lines.append(f"- **CTA Placement:** {pattern.get('cta_placement', '')}")
-    if pattern.get("color_strategy"):
+    if pattern.get('color_strategy'):
         lines.append(f"- **Color Strategy:** {pattern.get('color_strategy', '')}")
     lines.append(f"- **Sections:** {pattern.get('sections', '')}")
     lines.append("")
@@ -385,18 +387,18 @@ def format_markdown(design_system: dict) -> str:
     # Style section
     lines.append("### Style")
     lines.append(f"- **Name:** {style.get('name', '')}")
-    if style.get("keywords"):
+    if style.get('keywords'):
         lines.append(f"- **Keywords:** {style.get('keywords', '')}")
-    if style.get("best_for"):
+    if style.get('best_for'):
         lines.append(f"- **Best For:** {style.get('best_for', '')}")
-    if style.get("performance") or style.get("accessibility"):
+    if style.get('performance') or style.get('accessibility'):
         lines.append(f"- **Performance:** {style.get('performance', '')} | **Accessibility:** {style.get('accessibility', '')}")
     lines.append("")
 
     # Colors section
     lines.append("### Colors")
-    lines.append("| Role | Hex |")
-    lines.append("|------|-----|")
+    lines.append(f"| Role | Hex |")
+    lines.append(f"|------|-----|")
     lines.append(f"| Primary | {colors.get('primary', '')} |")
     lines.append(f"| Secondary | {colors.get('secondary', '')} |")
     lines.append(f"| CTA | {colors.get('cta', '')} |")
@@ -417,10 +419,10 @@ def format_markdown(design_system: dict) -> str:
     if typography.get("google_fonts_url"):
         lines.append(f"- **Google Fonts:** {typography.get('google_fonts_url', '')}")
     if typography.get("css_import"):
-        lines.append("- **CSS Import:**")
-        lines.append("```css")
+        lines.append(f"- **CSS Import:**")
+        lines.append(f"```css")
         lines.append(f"{typography.get('css_import', '')}")
-        lines.append("```")
+        lines.append(f"```")
     lines.append("")
 
     # Key Effects section
@@ -432,8 +434,7 @@ def format_markdown(design_system: dict) -> str:
     # Anti-patterns section
     if anti_patterns:
         lines.append("### Avoid (Anti-patterns)")
-        formated_anti = anti_patterns.replace(" + ", "\n- ")
-        lines.append(f"- {formated_anti}")
+        lines.append(f"- {anti_patterns.replace(' + ', '\n- ')}")
         lines.append("")
 
     # Pre-Delivery Checklist section
