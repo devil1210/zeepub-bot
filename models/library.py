@@ -44,8 +44,12 @@ class Series(Base):
     publisher: Mapped[str | None] = mapped_column(String(255))
     book_type: Mapped[str | None] = mapped_column(String(100))
 
-    rating_avg: Mapped[float] = mapped_column(Float, default=0.0)
+    rating_average: Mapped[float] = mapped_column(Float, default=0.0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
+    book_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    tags_json: Mapped[list | None] = mapped_column(JSONB)
+    demographics_json: Mapped[list | None] = mapped_column(JSONB)
 
     cover_url: Mapped[str | None] = mapped_column(String(1024))
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
@@ -55,6 +59,50 @@ class Series(Base):
     def series_hash(self) -> str:
         """Alias semántico para el ID de la serie (que es su hash)."""
         return self.id
+
+    @series_hash.setter
+    def series_hash(self, value: str):
+        self.id = value
+
+    @series_hash.expression
+    def series_hash(cls):
+        return cls.id
+
+    @hybrid_property
+    def series_name(self) -> str:
+        return self.name
+
+    @series_name.setter
+    def series_name(self, value: str):
+        self.name = value
+
+    @series_name.expression
+    def series_name(cls):
+        return cls.name
+
+    @hybrid_property
+    def series_spanish(self) -> str | None:
+        return self.name_spanish
+
+    @series_spanish.setter
+    def series_spanish(self, value: str | None):
+        self.name_spanish = value
+
+    @series_spanish.expression
+    def series_spanish(cls):
+        return cls.name_spanish
+
+    @hybrid_property
+    def series_english(self) -> str | None:
+        return self.name_english
+
+    @series_english.setter
+    def series_english(self, value: str | None):
+        self.name_english = value
+
+    @series_english.expression
+    def series_english(cls):
+        return cls.name_english
 
     # Relaciones
     books: Mapped[list["Book"]] = relationship(back_populates="series_info", cascade="all, delete-orphan")
@@ -97,6 +145,7 @@ class Book(Base):
     filename: Mapped[str] = mapped_column(String(512))
     file_size: Mapped[int] = mapped_column(Integer)
     hash_md5: Mapped[str | None] = mapped_column(String(32))
+    file_modified_at: Mapped[datetime | None] = mapped_column(DateTime)
 
     title: Mapped[str] = mapped_column(String(512))
     volume: Mapped[float | None] = mapped_column(Float)
@@ -106,16 +155,37 @@ class Book(Base):
     layout_by: Mapped[str | None] = mapped_column(String(255))
 
     author_jap: Mapped[str | None] = mapped_column(String(255))
+    illustrator: Mapped[str | None] = mapped_column(String(255))
     illustrator_jap: Mapped[str | None] = mapped_column(String(255))
+    author: Mapped[str | None] = mapped_column(String(255))
+    publisher: Mapped[str | None] = mapped_column(String(255))
+    description: Mapped[str | None] = mapped_column(Text)
+
     spanish_title: Mapped[str | None] = mapped_column(String(512))
     romaji_title: Mapped[str | None] = mapped_column(String(512))
     english_title: Mapped[str | None] = mapped_column(String(512))
     series_spanish: Mapped[str | None] = mapped_column(String(512))
     series_english: Mapped[str | None] = mapped_column(String(512))
 
+    tags_json: Mapped[list | None] = mapped_column(JSONB)
+    demographics_json: Mapped[list | None] = mapped_column(JSONB)
+
     language: Mapped[str] = mapped_column(String(10), default="es")
     is_uncensored: Mapped[bool] = mapped_column(Boolean, default=False)
     color_mode: Mapped[str | None] = mapped_column(String(50))
+
+    isbn: Mapped[str | None] = mapped_column(String(50))
+    asin: Mapped[str | None] = mapped_column(String(50))
+    epub_version: Mapped[str | None] = mapped_column(String(20))
+    word_count: Mapped[int | None] = mapped_column(Integer)
+    page_count: Mapped[int | None] = mapped_column(Integer)
+    reading_time: Mapped[int | None] = mapped_column(Integer)
+    modified_at_opf: Mapped[datetime | None] = mapped_column(DateTime)
+
+    cover_low: Mapped[str | None] = mapped_column(String(1024))
+    cover_medium: Mapped[str | None] = mapped_column(String(1024))
+    cover_high: Mapped[str | None] = mapped_column(String(1024))
+    cover_original: Mapped[str | None] = mapped_column(String(1024))
 
     short_link: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
 
@@ -332,6 +402,14 @@ class ArchivedSeries(Base):
 
     cover_url: Mapped[str | None] = mapped_column(String(1024))
     author: Mapped[str | None] = mapped_column(String(255))
+
+    description: Mapped[str | None] = mapped_column(Text)
+    tags: Mapped[list | None] = mapped_column(JSONB)
+    book_type: Mapped[str | None] = mapped_column(String(100))
+    publisher: Mapped[str | None] = mapped_column(String(255))
+    original_series_id: Mapped[str | None] = mapped_column(String(64))
+    slug: Mapped[str | None] = mapped_column(String(512))
+
     archived_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
 
@@ -348,6 +426,9 @@ class ArchivedBook(Base):
     title: Mapped[str] = mapped_column(String(512))
     filename: Mapped[str | None] = mapped_column(String(512))
     last_filepath: Mapped[str | None] = mapped_column(String(1024))
+    file_size: Mapped[int | None] = mapped_column(Integer)
+    hash_md5: Mapped[str | None] = mapped_column(String(32))
+
     archived_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
 

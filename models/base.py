@@ -8,7 +8,19 @@ class Base(AsyncAttrs, DeclarativeBase):
     Clase base para todos los modelos de ZeePub v4.0.
     """
 
-    pass
+    def to_dict(self):
+        """Convierte el modelo a un diccionario para serialización."""
+        res = {column.name: getattr(self, column.name) for column in self.__table__.columns}
+        # Incluir hybrid properties si es necesario (ej. series_hash, book_hash)
+        for attr in dir(self.__class__):
+            if isinstance(getattr(self.__class__, attr), property) or attr.endswith("_hash"):
+                try:
+                    val = getattr(self, attr)
+                    if not callable(val) and not attr.startswith("_"):
+                        res[attr] = val
+                except Exception:
+                    pass
+        return res
 
 
 # --- Tablas de Unión Globales (Para evitar re-definición en imports) ---
