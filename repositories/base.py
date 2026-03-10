@@ -13,7 +13,7 @@ class BaseRepository(Generic[T]):
     Repositorio base con operaciones CRUD asíncronas estándar.
     """
 
-    def __init__(self, model: type[T], session: AsyncSession):
+    def __init__(self, model: type[T], session: AsyncSession = None):
         self.model = model
         self.session = session
 

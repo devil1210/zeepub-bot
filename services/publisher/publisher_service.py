@@ -228,6 +228,117 @@ class PublisherService:
     async def get_channels(self, active_only: bool = True):
         return await self.repo.get_channels(active_only)
 
+    async def get_channels_with_discovery(self, active_only: bool = True) -> dict:
+        """Obtiene canales oficiales y chats descubiertos (v3.x compat)."""
+        channels = await self.repo.get_channels(active_only)
+        discovered = await self.repo.get_discovered_chats(limit=50)
+
+        return {
+            "channels": [
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "platform": c.platform,
+                    "target_id": c.target_id,
+                    "is_active": c.is_active,
+                    "is_favorite": c.is_favorite,
+                }
+                for c in channels
+            ],
+            "discovered": [
+                {
+                    "chat_id": d.chat_id,
+                    "title": d.title,
+                    "type": d.type,
+                    "username": d.username,
+                    "member_count": d.member_count,
+                    "last_seen": d.last_seen_at.isoformat() if d.last_seen_at else None,
+                }
+                for d in discovered
+            ],
+        }
+
+    async def toggle_favorite(self, channel_id: int) -> bool:
+        """Alterna el estado favorito de un canal."""
+        channel = await self.repo.get_channel_by_id(channel_id)
+        if channel:
+            channel.is_favorite = not channel.is_favorite
+            await self.session.flush()
+            return True
+        return False
+
+    async def promote_discovered_to_channel(self, chat_id: str, name: str) -> bool:
+        """Convierte un chat descubierto en un canal oficial."""
+        from models.communications import PublicationChannel
+
+        # Verificar si ya existe el canal
+        channels = await self.repo.get_channels(active_only=False)
+        if any(c.target_id == str(chat_id) for c in channels):
+            return False
+
+        # Crear nuevo canal
+        new_channel = PublicationChannel(name=name, target_id=str(chat_id), platform="telegram", is_active=True)
+        self.session.add(new_channel)
+        await self.session.flush()
+        return True
+
     async def upsert_chat(self, chat_id: str, title: str, chat_type: str, **kwargs):
         """Descubrimiento de chats."""
-        return await self.repo.upsert_discovered_chat(chat_id, title, chat_type, **kwargs)
+        return await self.repo.save_discovered_chat(chat_id, title, chat_type, **kwargs)
+
+
+# --- Wrappers para compatibilidad global ---
+
+
+class PublisherServiceWrapper:
+    """Wrapper estático para PublisherService que gestiona sus propias sesiones."""
+
+    @classmethod
+    async def get_channels_with_discovery(cls, active_only: bool = True) -> dict:
+        from core.db_manager_pg import pg_manager
+
+        async with pg_manager.get_session() as session:
+            service = PublisherService(session)
+            return await service.get_channels_with_discovery(active_only)
+
+    @classmethod
+    async def toggle_favorite(cls, channel_id: int) -> bool:
+        from core.db_manager_pg import pg_manager
+
+        async with pg_manager.get_session() as session:
+            service = PublisherService(session)
+            res = await service.toggle_favorite(channel_id)
+            await session.commit()
+            return res
+
+    @classmethod
+    async def promote_discovered_to_channel(cls, chat_id: str, name: str) -> bool:
+        from core.db_manager_pg import pg_manager
+
+        async with pg_manager.get_session() as session:
+            service = PublisherService(session)
+            res = await service.promote_discovered_to_channel(chat_id, name)
+            await session.commit()
+            return res
+
+    @classmethod
+    async def schedule_publication(cls, **kwargs) -> Any:
+        from core.db_manager_pg import pg_manager
+
+        async with pg_manager.get_session() as session:
+            service = PublisherService(session)
+            res = await service.schedule_publication(**kwargs)
+            await session.commit()
+            return res
+
+    @classmethod
+    async def process_queue(cls):
+        from core.db_manager_pg import pg_manager
+
+        async with pg_manager.get_session() as session:
+            service = PublisherService(session)
+            await service.process_queue()
+
+
+# Instancia exportada para compatibilidad con handlers v3.x
+publisher_service = PublisherServiceWrapper

@@ -137,6 +137,121 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def get_full_queue(self, status: str = None, limit: int = 50) -> list[PublicationQueue]:
+        """Obtiene la cola completa con filtros."""
+        from core.db_manager_pg import pg_manager
+
+        # Si no hay sesión, usar una temporal (v3.x compat)
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                return await self._get_full_queue_logic(session, status, limit)
+        return await self._get_full_queue_logic(self.session, status, limit)
+
+    async def _get_full_queue_logic(self, session, status, limit):
+        stmt = select(PublicationQueue).options(
+            selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template)
+        )
+        if status:
+            stmt = stmt.where(PublicationQueue.status == status)
+        stmt = stmt.order_by(PublicationQueue.scheduled_for.desc()).limit(limit)
+        result = await session.execute(stmt)
+        return list(result.scalars().all())
+
+    # --- Channel Management ---
+
+    async def create_channel(self, channel: PublicationChannel) -> PublicationChannel:
+        from core.db_manager_pg import pg_manager
+
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                session.add(channel)
+                await session.commit()
+                return channel
+        self.session.add(channel)
+        await self.session.flush()
+        return channel
+
+    async def update_channel(self, channel_id: int, data: dict):
+        from core.db_manager_pg import pg_manager
+
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                stmt = select(PublicationChannel).where(PublicationChannel.id == channel_id)
+                res = await session.execute(stmt)
+                channel = res.scalar_one_or_none()
+                if channel:
+                    for k, v in data.items():
+                        setattr(channel, k, v)
+                    await session.commit()
+        else:
+            channel = await self.session.get(PublicationChannel, channel_id)
+            if channel:
+                for k, v in data.items():
+                    setattr(channel, k, v)
+                await self.session.flush()
+
+    async def delete_channel(self, channel_id: int):
+        from core.db_manager_pg import pg_manager
+
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                channel = await session.get(PublicationChannel, channel_id)
+                if channel:
+                    await session.delete(channel)
+                    await session.commit()
+        else:
+            channel = await self.session.get(PublicationChannel, channel_id)
+            if channel:
+                await self.session.delete(channel)
+                await self.session.flush()
+
+    # --- Template Management ---
+
+    async def create_template(self, template: PublicationTemplate) -> PublicationTemplate:
+        from core.db_manager_pg import pg_manager
+
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                session.add(template)
+                await session.commit()
+                await session.refresh(template)
+                return template
+        self.session.add(template)
+        await self.session.flush()
+        return template
+
+    async def update_template(self, template_id: int, data: dict):
+        from core.db_manager_pg import pg_manager
+
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                template = await session.get(PublicationTemplate, template_id)
+                if template:
+                    for k, v in data.items():
+                        setattr(template, k, v)
+                    await session.commit()
+        else:
+            template = await self.session.get(PublicationTemplate, template_id)
+            if template:
+                for k, v in data.items():
+                    setattr(template, k, v)
+                await self.session.flush()
+
+    async def delete_template(self, template_id: int):
+        from core.db_manager_pg import pg_manager
+
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                template = await session.get(PublicationTemplate, template_id)
+                if template:
+                    await session.delete(template)
+                    await session.commit()
+        else:
+            template = await self.session.get(PublicationTemplate, template_id)
+            if template:
+                await self.session.delete(template)
+                await self.session.flush()
+
 
 # Singleton para compatibilidad con handlers globales
 pub_repo = PublicationRepository()
