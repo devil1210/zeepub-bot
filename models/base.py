@@ -23,14 +23,14 @@ class TimestampedBase(Base):
     __abstract__ = True
 
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
         server_default=func.now(),
         doc="The timestamp when the record was created.",
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
         server_default=func.now(),
         server_onupdate=func.now(),
         doc="The timestamp when the record was last updated.",

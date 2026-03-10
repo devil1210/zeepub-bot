@@ -99,7 +99,7 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
             "font_size": data.get("font_size") or data.get("fontSize"),
             "cover_width": data.get("cover_width") or data.get("coverWidth"),
             "banner_content_offset": data.get("banner_content_offset") or data.get("bannerContentOffset"),
-            "updated_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc).replace(tzinfo=None),
         }
 
         try:
