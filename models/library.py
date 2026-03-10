@@ -50,6 +50,19 @@ class Series(Base):
     rating_count: Mapped[int] = mapped_column("rating_count", Integer, default=0, nullable=False)
     book_count: Mapped[int] = mapped_column("book_count", Integer, default=0, nullable=True)
 
+    @hybrid_property
+    def rating_avg(self) -> float:
+        """Alias de compatibilidad para rating_average."""
+        return self.rating_average
+
+    @rating_avg.setter
+    def rating_avg(self, value: float):
+        self.rating_average = value
+
+    @rating_avg.expression
+    def rating_avg(cls):
+        return cls.rating_average
+
     tags_json: Mapped[list | None] = mapped_column(JSONB)
     demographics_json: Mapped[list | None] = mapped_column(JSONB)
 

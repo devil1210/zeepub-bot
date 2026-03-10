@@ -25,6 +25,26 @@ class EpubScanner:
     """
 
     @staticmethod
+    def parse_opf_date(date_str: str) -> datetime | None:
+        """
+        Parse string date from OPF metadata into datetime object.
+        """
+        if not date_str or not isinstance(date_str, str):
+            return None
+        try:
+            # Eliminar la 'Z' final si existe y parsear como ISO
+            clean_date = date_str.replace("Z", "+00:00")
+            dt = datetime.fromisoformat(clean_date)
+            # Retornar como naive (UTC implicito por convención de este proyecto)
+            return dt.replace(tzinfo=None)
+        except Exception:
+            try:
+                # Fallback para fechas simples YYYY-MM-DD
+                return datetime.strptime(date_str[:10], "%Y-%m-%d")
+            except Exception:
+                return None
+
+    @staticmethod
     def generate_book_hash(
         series_name: str,
         author: str,
@@ -287,7 +307,11 @@ class EpubScanner:
                 book.word_count = meta.get("word_count") or book.word_count
                 book.page_count = meta.get("page_count") or book.page_count
                 book.reading_time = meta.get("reading_time") or book.reading_time
-                book.modified_at_opf = meta.get("modified_at_opf") or book.modified_at_opf
+
+                # Parsear fecha de modificación de metadatos (evitar DataError con asyncpg si es string)
+                opf_date_str = meta.get("modified_at_opf")
+                if opf_date_str:
+                    book.modified_at_opf = cls.parse_opf_date(opf_date_str) or book.modified_at_opf
 
                 # Tags y Clasificación (JSON - Legacy)
                 raw_tags = meta.get("tags", [])

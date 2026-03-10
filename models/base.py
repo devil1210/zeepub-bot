@@ -10,13 +10,23 @@ class Base(AsyncAttrs, DeclarativeBase):
 
     def to_dict(self):
         """Convierte el modelo a un diccionario para serialización."""
-        res = {column.name: getattr(self, column.name) for column in self.__table__.columns}
-        # Incluir hybrid properties si es necesario (ej. series_hash, book_hash)
+        res = {}
+        for prop in self.__class__.__mapper__.column_attrs:
+            res[prop.key] = getattr(self, prop.key)
+
+        # Incluir hybrid properties y properties standard
+        from sqlalchemy.ext.hybrid import hybrid_property
+
         for attr in dir(self.__class__):
-            if isinstance(getattr(self.__class__, attr), property) or attr.endswith("_hash"):
+            if attr.startswith("_"):
+                continue
+
+            # Obtener el descriptor de la clase
+            cls_attr = getattr(self.__class__, attr, None)
+            if isinstance(cls_attr, (property, hybrid_property)) or attr.endswith("_hash"):
                 try:
                     val = getattr(self, attr)
-                    if not callable(val) and not attr.startswith("_"):
+                    if not callable(val):
                         res[attr] = val
                 except Exception:
                     pass
