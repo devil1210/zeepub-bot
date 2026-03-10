@@ -57,9 +57,7 @@ class UIServiceV4:
         desc = (series.description or "Sin descripción disponible.").replace("<br/>", "\n").replace("<br>", "\n")
 
         text = (
-            f"{cls.get_glass_header(series.name)}"
-            f"📝 <b>Sinopsis:</b>\n<i>{desc}</i>\n\n"
-            "📦 <b>Volúmenes disponibles:</b>"
+            f"{cls.get_glass_header(series.name)}📝 <b>Sinopsis:</b>\n<i>{desc}</i>\n\n📦 <b>Volúmenes disponibles:</b>"
         )
         keyboard = []
         for b in books:

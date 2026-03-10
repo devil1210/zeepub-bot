@@ -2,6 +2,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler
 
 from .callbacks import CallbackHandlerV4
 from .catalog import CatalogHandlerV4
+from .publish import PublishHandlerV4
 from .search import SearchHandlerV4
 from .start import StartHandlerV4
 from .system import SystemHandlerV4
@@ -21,17 +22,18 @@ class HandlerManagerV4:
         self.search_h = SearchHandlerV4(app)
         self.system_h = SystemHandlerV4(app)
         self.callback_h = CallbackHandlerV4(app)
+        self.publish_h = PublishHandlerV4(app)
 
     def register(self):
         """Registra los comandos y callbacks v4.0."""
         # Comandos (Prioridad alta para el refactor)
         self.app.add_handler(CommandHandler("start", self.start_h.handle))
-        self.app.add_handler(CommandHandler("catalog", self.catalog_h.handle))
-        self.app.add_handler(CommandHandler("catalogo", self.catalog_h.handle))
-        self.app.add_handler(CommandHandler("search", self.search_h.handle))
+        self.app.add_handler(CommandHandler(["catalog", "menu", "inicio", "ayuda", "help"], self.start_h.handle))
+        self.app.add_handler(CommandHandler(["search", "buscar"], self.search_h.handle))
         self.app.add_handler(CommandHandler("status", self.system_h.handle_status))
         self.app.add_handler(CommandHandler("cancel", self.system_h.handle_cancel))
         self.app.add_handler(CommandHandler("evil", self.system_h.handle_evil))
+        self.app.add_handler(CommandHandler("upload", self.publish_h.handle_upload))
 
         from telegram.ext import MessageHandler, filters
 
