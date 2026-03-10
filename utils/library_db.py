@@ -10,16 +10,26 @@ from models.base import Base
 _log = logging.getLogger(__name__)
 
 # Carpetas para adjuntos
-DB_DIR = os.path.abspath("data/library")
+# Priorizar variables de entorno para facilitar despliegue en Docker/V4
+DATA_PATH_ENV = os.getenv("DATA_PATH", "data")
+DB_DIR = os.path.abspath(os.path.join(DATA_PATH_ENV, "library"))
 COVERS_DIR = os.path.join(DB_DIR, "covers")
 THUMBNAILS_DIR = os.path.join(DB_DIR, "thumbnails")
 PROFILES_DIR = os.path.join(DB_DIR, "profiles")
 
-# Crear carpetas si no existen
-os.makedirs(DB_DIR, exist_ok=True)
-os.makedirs(COVERS_DIR, exist_ok=True)
-os.makedirs(THUMBNAILS_DIR, exist_ok=True)
-os.makedirs(PROFILES_DIR, exist_ok=True)
+# Crear carpetas si no existen con manejo de errores de permisos
+try:
+    os.makedirs(DB_DIR, exist_ok=True)
+    os.makedirs(COVERS_DIR, exist_ok=True)
+    os.makedirs(THUMBNAILS_DIR, exist_ok=True)
+    os.makedirs(PROFILES_DIR, exist_ok=True)
+except PermissionError as e:
+    _log.error(f"❌ Error de permisos al crear directorios de datos en {DB_DIR}: {e}")
+    _log.error("Asegúrese de que el usuario del contenedor tenga permisos de escritura en el volumen montado.")
+    # No detenemos el proceso aquí para permitir que la DB PostgreSQL (que es externa)
+    # se inicialice, pero funcionalidades de imágenes fallarán.
+except Exception as e:
+    _log.error(f"⚠️ Error inesperado al crear directorios: {e}")
 
 
 def create_library_engine():

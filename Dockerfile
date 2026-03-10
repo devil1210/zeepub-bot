@@ -80,7 +80,7 @@ RUN printf '%s' "$GIT_COMMIT" > /app/version_hash.txt && \
 
 # ── Directorios de runtime ────────────────────────────────────────────────────
 # Creados aquí para que pertenezcan a un usuario no-root
-RUN mkdir -p /app/data /library /app/logs
+RUN mkdir -p /app/data/library /library /app/logs
 
 # ── Usuario no-root (seguridad) ───────────────────────────────────────────────
 RUN useradd --no-create-home --shell /bin/false -u 1000 zeepub && \
