@@ -4,6 +4,8 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from handlers.v4.base import BaseHandlerV4, with_services
+from repositories.download_repository import DownloadRepository
+from services.cover_service import send_doc_bytes
 from services.v4.ui_service import UIServiceV4
 
 logger = logging.getLogger(__name__)
@@ -71,9 +73,35 @@ class CallbackHandlerV4(BaseHandlerV4):
 
             elif data.startswith("bd|"):
                 book_id = data.split("|")[1]
+                user_id = update.effective_user.id
+
+                # Obtener libro
+                book = await library_service.book_repo.get_by_id_prefix(book_id)
+                if not book:
+                    await query.answer("⚠️ Libro no encontrado.", show_alert=True)
+                    return
+
                 await query.answer("⚡️ Iniciando descarga...", show_alert=False)
-                # Delegar a PublisherService o similar (pendiente implementar download_handler v4)
-                await query.answer("🚀 Funcionalidad de descarga en desarrollo para v4.0", show_alert=True)
+
+                # Registrar descarga
+                download_repo = DownloadRepository(session=services["library_service"].session)
+                await download_repo.add_download(
+                    user_id=user_id, title=book.title, book_hash=book.id, series_hash=book.series_id
+                )
+
+                # Enviar archivo (flujo v3)
+                caption = f"📕 <b>{book.title}</b>\n🏷️ Hash: <code>{book.id[:8]}</code>"
+                await send_doc_bytes(
+                    context.bot,
+                    update.effective_chat.id,
+                    caption,
+                    book.filepath,
+                    filename=book.filename or f"{book.title}.epub",
+                    parse_mode="HTML",
+                )
+
+                # Notificar éxito
+                await query.answer("🚀 ¡Archivo enviado con éxito!", show_alert=False)
 
             elif data == "user_status":
                 user_service = services["user_service"]

@@ -121,6 +121,7 @@ class UserService:
             "role": data.get("role"),
             "permissions": data.get("permissions", []),
             "isAdmin": data.get("is_real_admin"),
+            "is_real_admin": data.get("is_real_admin"),
             "isStaff": data.get("level") in ("admin", "staff"),
         }
 

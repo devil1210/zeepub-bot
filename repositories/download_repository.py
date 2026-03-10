@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.db_manager_pg import pg_manager
 from repositories.base_repository import BaseRepository
@@ -13,19 +14,24 @@ logger = logging.getLogger(__name__)
 class DownloadRepository(BaseRepository[dict[str, Any]]):
     """Repository for managing download history using PostgreSQL."""
 
-    def __init__(self, db_manager=None):
-        # db_manager is ignored, we use pg_manager directly
+    def __init__(self, session: AsyncSession | None = None, db_manager=None):
+        self.session = session
         super().__init__(None, "user_downloads")
 
     async def get_by_id(self, id: Any) -> dict[str, Any] | None:
+        async def _execute(session):
+            query = text("SELECT * FROM user_downloads WHERE id = :id")
+            result = await session.execute(query, {"id": id})
+            row = result.fetchone()
+            if not row:
+                return None
+            return dict(row._mapping)
+
         try:
+            if self.session:
+                return await _execute(self.session)
             async with pg_manager.get_session() as session:
-                query = text("SELECT * FROM user_downloads WHERE id = :id")
-                result = await session.execute(query, {"id": id})
-                row = result.fetchone()
-                if not row:
-                    return None
-                return dict(row._mapping)
+                return await _execute(session)
         except Exception as e:
             logger.error(f"Postgres get_by_id error: {e}")
             return None
@@ -55,86 +61,96 @@ class DownloadRepository(BaseRepository[dict[str, Any]]):
         book_hash: str,
         series_hash: str | None = None,
     ) -> int:
+        async def _execute(session):
+            query = text("""
+                INSERT INTO user_downloads
+                (user_id, book_hash, series_hash, title, downloaded_at)
+                VALUES (:user_id, :book_hash, :series_hash, :title, CURRENT_TIMESTAMP)
+                RETURNING id
+            """)
+            result = await session.execute(
+                query,
+                {
+                    "user_id": user_id,
+                    "book_hash": book_hash,
+                    "series_hash": series_hash,
+                    "title": title,
+                },
+            )
+            new_id = result.scalar()
+            await session.flush()
+            return new_id
+
         try:
-            async with pg_manager.get_session() as session:
-                query = text("""
-                    INSERT INTO user_downloads
-                    (user_id, book_hash, series_hash, title, downloaded_at)
-                    VALUES (:user_id, :book_hash, :series_hash, :title, CURRENT_TIMESTAMP)
-                    RETURNING id
-                """)
-                result = await session.execute(
-                    query,
-                    {
+            if self.session:
+                new_id = await _execute(self.session)
+            else:
+                async with pg_manager.get_session() as session:
+                    new_id = await _execute(session)
+                    await session.commit()
+
+            # Supabase Sync (Optional, if still needed for real-time)
+            if self.supabase.is_active:
+                try:
+                    data = {
                         "user_id": user_id,
                         "book_hash": book_hash,
                         "series_hash": series_hash,
                         "title": title,
-                    },
-                )
-                new_id = result.scalar()
-                await session.commit()
-
-                # Supabase Sync (Optional, if still needed for real-time)
-                if self.supabase.is_active:
-                    try:
-                        data = {
-                            "user_id": user_id,
-                            "book_hash": book_hash,
-                            "series_hash": series_hash,
-                            "title": title,
-                        }
-                        self.supabase.get_client().table("user_downloads").insert(data).execute()
-                    except Exception:
-                        pass
-
-                # Trigger full bidirectional sync
-                try:
-                    from services.sync_service import SyncService
-
-                    SyncService.trigger_auto_sync()
+                    }
+                    self.supabase.get_client().table("user_downloads").insert(data).execute()
                 except Exception:
                     pass
 
-                return new_id
+            # Trigger full bidirectional sync
+            try:
+                from services.sync_service import SyncService
+
+                SyncService.trigger_auto_sync()
+            except Exception:
+                pass
+
+            return new_id
         except Exception as e:
             logger.error(f"Postgres add_download error: {e}")
             return 0
 
     async def get_user_downloads(self, user_id: int, limit: int = 10) -> list[dict[str, Any]]:
-        try:
-            async with pg_manager.get_session() as session:
-                query = text("""
-                    SELECT
-                        dh.id,
-                        dh.book_hash,
-                        dh.series_hash,
-                        dh.title,
-                        dh.downloaded_at,
-                        lb.filepath,
-                        lb.volume,
-                        sm.series_name,
-                        sm.author
-                    FROM user_downloads dh
-                    JOIN local_books lb ON dh.book_hash = lb.book_hash
-                    JOIN series_metadata sm ON lb.series_hash = sm.series_hash
-                    WHERE dh.user_id = :user_id
-                    ORDER BY dh.downloaded_at DESC
-                    LIMIT :limit
-                """)
-                result = await session.execute(query, {"user_id": user_id, "limit": limit})
-                rows = result.fetchall()
-                results = []
-                for row in rows:
-                    item = dict(row._mapping)
-                    if item.get("downloaded_at"):
-                        # Ensure it's serializable
-                        item["downloaded_at"] = item["downloaded_at"].isoformat()
+        async def _execute(session):
+            query = text("""
+                SELECT
+                    dh.id,
+                    dh.book_hash,
+                    dh.series_hash,
+                    dh.title,
+                    dh.downloaded_at,
+                    lb.filepath,
+                    lb.volume,
+                    sm.name as series_name,
+                    sm.author
+                FROM user_downloads dh
+                LEFT JOIN books lb ON dh.book_hash = lb.id
+                LEFT JOIN series sm ON lb.series_id = sm.id
+                WHERE dh.user_id = :user_id
+                ORDER BY dh.downloaded_at DESC
+                LIMIT :limit
+            """)
+            result = await session.execute(query, {"user_id": user_id, "limit": limit})
+            rows = result.fetchall()
+            results = []
+            for row in rows:
+                item = dict(row._mapping)
+                if item.get("downloaded_at"):
+                    item["downloaded_at"] = item["downloaded_at"].isoformat()
+                item["cover"] = item.get("cover_medium") or item.get("cover_low") or item.get("cover_original")
+                results.append(item)
+            return results
 
-                    # Add compatibility cover field
-                    item["cover"] = item.get("cover_medium") or item.get("cover_low") or item.get("cover_original")
-                    results.append(item)
-                return results
+        try:
+            if self.session:
+                return await _execute(self.session)
+            async with pg_manager.get_session() as session:
+                return await _execute(session)
         except Exception as e:
             logger.error(f"Postgres get_user_downloads error: {e}")
             return []

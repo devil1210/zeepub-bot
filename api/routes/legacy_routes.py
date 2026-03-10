@@ -4,6 +4,7 @@ import logging
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from api import miniapp_handlers
@@ -73,7 +74,9 @@ class LegacyRoutes:
             else:
                 result = await handler(data, user_data)
 
-            return JSONResponse(content=result)
+            if result is not None:
+                return JSONResponse(content=jsonable_encoder(result))
+            return JSONResponse(content={"error": "No result from handler"}, status_code=500)
 
         except Exception as e:
             logger.error(
@@ -104,6 +107,8 @@ class LegacyRoutes:
                 "isBetaTester": user_data.get("beta_tester", False) or user_info.get("is_real_admin", False),
                 "isAdmin": user_info.get("is_real_admin", False),
                 "is_admin": user_info.get("is_real_admin", False),
+                "is_real_admin": user_info.get("is_real_admin", False),
+                "isStaff": user_info.get("level") in ("admin", "staff"),
                 "role": user_info.get("role"),
                 "status_label": user_info.get("status_label"),
                 "custom_themes": True,  # For admins/staff
