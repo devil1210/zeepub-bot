@@ -133,6 +133,15 @@ class ZeePubBot:
         except Exception as e:
             logger.error(f"Error registering chat discovery: {e}")
 
+        # ── V4 Handlers (incremental, grupo 10 para no solapar V3) ──────────
+        try:
+            from handlers.v4.router import register_v4_handlers
+
+            register_v4_handlers(self.app)
+            logger.info("✅ V4 handlers registered")
+        except Exception as e:
+            logger.error(f"Error registering V4 handlers: {e}", exc_info=True)
+
     def start(self):
         """Arranca el bot en polling (bloqueante, modo legacy)."""
         logger.info("Bot iniciado, entrando en polling...")
@@ -300,6 +309,15 @@ class ZeePubBot:
         # Inicializar schedulers y updates usando BotInitializer
         await BotInitializer.initialize_schedulers(self.app)
         await BotInitializer.check_update_state(self.app.bot)
+
+        # ── V4 Scheduler (PTB JobQueue: cola de publicación) ───────────────
+        try:
+            from services.v4.scheduler import register_jobs
+
+            register_jobs(self.app)
+            logger.info("✅ V4 publication scheduler registered")
+        except Exception as e:
+            logger.error(f"Error registering V4 scheduler: {e}")
 
     async def stop_async(self):
         """Detiene el bot de forma asíncrona."""

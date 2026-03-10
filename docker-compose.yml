@@ -1,71 +1,154 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose.yml — ZeePub Bot V4
+#
+# Servicios:
+#   bot       — ZeePub Bot (Python 3.12, PTB, FastAPI)
+#   db        — PostgreSQL 17 (motor principal)
+#   watchtower — Auto-actualización de contenedores
+#
+# Uso:
+#   docker compose up -d               # Producción
+#   docker compose up --build          # Rebuild de imagen
+#   docker compose logs -f bot         # Seguir logs del bot
+#   docker compose exec bot bash       # Shell en el contenedor
+# ─────────────────────────────────────────────────────────────────────────────
+name: zeepub
+
 services:
-  zeepubs_bot:
-    build: .
-    image: ghcr.io/devil1210/zeepub-bot:feat-integrate-web-client
-    container_name: zeepubs_bot_v6
+
+  # ── Bot Principal ────────────────────────────────────────────────────────
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+    image: ghcr.io/devil1210/zeepub-bot:v4
+    container_name: zeepub_bot_v4
     restart: unless-stopped
+
+    # Secretos y configuración del entorno
     env_file:
       - .env
+    environment:
+      # DATABASE_URL se construye automáticamente desde las vars de .env
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER:-zeepub}:${POSTGRES_PASSWORD:-zeepub}@db:5432/${POSTGRES_DB:-zeepub}"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      PYTHONPATH: /app
+      # Rutas internas del contenedor
+      LIBRARY_PATH: /library
+      DATA_PATH: /app/data
+      URL_CACHE_DB_PATH: /app/data/url_cache.db
+
     volumes:
-      - ./data:/app/data
-      # La ruta del host se define en el .env como HOST_LIB_PATH
-      - ${HOST_LIB_PATH}:/library:rw
+      # Datos persistentes del bot (caché, estado interno)
+      - bot_data:/app/data
+      # Logs persistentes
+      - bot_logs:/app/logs
+      # Biblioteca de EPUBs (HOST_LIB_PATH se define en .env)
+      # Ejemplo: HOST_LIB_PATH=/mnt/nas/library
+      - "${HOST_LIB_PATH:-./library}:/library:rw"
+
     dns:
       - 1.1.1.1
       - 8.8.8.8
-    environment:
-      # Construcción dinámica de la URL de DB usando las variables del .env
-      - ENABLE_POSTGRES_PLUGIN=true
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - URL_CACHE_DB_PATH=data/url_cache.db
 
-    # Dependencia de la DB
+    ports:
+      - "${API_PORT:-8000}:8000"
+
     depends_on:
       db:
         condition: service_healthy
 
-    ports:
-      - "${DEV_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
+
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
-        max-file: "3"
+        max-file: "5"
 
-  # Servicio de Base de Datos PostgreSQL
+  # ── PostgreSQL 17 ────────────────────────────────────────────────────────
   db:
     image: postgres:17-alpine
-    container_name: zeepub_db_v6
+    container_name: zeepub_db_v4
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-zeepub}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zeepub}
-      POSTGRES_DB: ${POSTGRES_DB:-zeepub}
+      POSTGRES_USER: "${POSTGRES_USER:-zeepub}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-zeepub}"
+      POSTGRES_DB: "${POSTGRES_DB:-zeepub}"
+      # Optimizaciones de performance para el workload del bot
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=768MB"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "maintenance_work_mem=128MB"
+      - "-c"
+      - "log_min_duration_statement=1000"
+      - "-c"
+      - "log_connections=off"
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
+      # Script de inicialización (se ejecuta solo si pgdata está vacío)
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/00_init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zeepub}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zeepub} -d ${POSTGRES_DB:-zeepub}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
     ports:
-      # Exponer puerto solo si es necesario (útil para debug remoto)
+      # Solo exposición local (quitar en producción si no se necesita acceso externo)
       - "${POSTGRES_PORT:-5432}:5432"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
+  # ── Watchtower (auto-update) ──────────────────────────────────────────────
   watchtower:
-    image: containrrr/watchtower
-    container_name: watchtower_v6
+    image: containrrr/watchtower:latest
+    container_name: zeepub_watchtower_v4
+    restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=30
-      - WATCHTOWER_HTTP_API_UPDATE=true
-      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_TOKEN}
-      - WATCHTOWER_MONITOR_ONLY=${WATCHTOWER_MONITOR_ONLY:-false}
-      - WATCHTOWER_DEBUG=false
-      - DOCKER_API_VERSION=1.52
-      - WATCHTOWER_LABEL_ENABLE=true
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_POLL_INTERVAL: "30"
+      WATCHTOWER_HTTP_API_UPDATE: "true"
+      WATCHTOWER_HTTP_API_TOKEN: "${WATCHTOWER_TOKEN:-secret}"
+      WATCHTOWER_MONITOR_ONLY: "${WATCHTOWER_MONITOR_ONLY:-false}"
+      WATCHTOWER_DEBUG: "false"
+      WATCHTOWER_LABEL_ENABLE: "true"
+      DOCKER_API_VERSION: "1.47"
     command: --interval 30 --label-enable
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2m"
+        max-file: "2"
+
+# ── Volúmenes persistentes ───────────────────────────────────────────────────
+volumes:
+  pgdata:
+    driver: local
+  bot_data:
+    driver: local
+  bot_logs:
+    driver: local

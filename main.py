@@ -241,6 +241,16 @@ async def fix_schema_if_needed():
 
         await engine.dispose()
 
+        # ── Schema V4 (tablas propias del stack V4) ──────────────────────
+        try:
+            from core.v4_db_manager import DBManagerV4
+
+            db_v4 = DBManagerV4()
+            await db_v4.create_all_tables()
+            logger.info("✅ Schema V4 verificado/creado correctamente")
+        except Exception as ve:
+            logger.warning(f"⚠️ Schema V4 no disponible (puede ser primera vez): {ve}")
+
         logger.info("Database schema check completed successfully.")
 
     except Exception as e:
@@ -307,6 +317,12 @@ async def initialize_application():
     # Start optimized sync engine
     await optimized_sync_engine.start()
     logger.info("Optimized sync engine started")
+
+    # ── V4 Scheduler PTB (se registra después del arranque del bot en start_async) ──
+    # El scheduler PTB requiere la Application inicializada.
+    # Se registra en ZeePubBot.start_async() para el modo API.
+    # Para polling bloqueante (bot.start()) se activa en ZeePubBot.initialize().
+    logger.info("✅ V4 initialization sequence completed")
 
 
 def main():

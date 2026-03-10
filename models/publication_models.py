@@ -1,96 +1,77 @@
 from datetime import datetime
+from typing import Optional
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import relationship
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base
+from .base import TimestampedBase
 
 
-class PublicationChannel(Base):
+class PublicationChannel(TimestampedBase):
     """
-    Canales o destinos de publicación (Telegram Channels, Facebook Groups, etc.)
+    V4 Publication Channels.
+    Destinations like Telegram Channels, Facebook Groups, Webhooks.
     """
 
     __tablename__ = "publication_channels"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
-    platform = Column(String(20), nullable=False)  # 'telegram', 'facebook'
-    target_id = Column(String(100), nullable=False)  # '@ZeePubs' o ID numérico
-    is_active = Column(Boolean, default=True)
-    is_favorite = Column(Boolean, default=False)
-    config = Column(JSON)  # Configuración extra (thread_id, tokens específicos, etc.)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    platform: Mapped[str] = mapped_column(String(50), nullable=False)  # 'telegram', 'discord', 'webhook'
+    target_id: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    @property
-    def chat_id_or_username(self) -> str:
-        """Retorna el target_id para compatibilidad con código existente."""
-        return self.target_id
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    config: Mapped[dict | None] = mapped_column(JSON)  # Extra configs (tokens, threads)
 
-    # Relación con la cola
-    queued_items = relationship("PublicationQueue", back_populates="channel", cascade="all, delete-orphan")
+    # Relationships
+    queued_items: Mapped[list["PublicationQueue"]] = relationship(
+        back_populates="channel", cascade="all, delete-orphan"
+    )
 
 
-class DiscoveredChat(Base):
+class PublicationTemplate(TimestampedBase):
     """
-    Chats descubiertos automáticamente por el bot (candidatos a canales).
-    """
-
-    __tablename__ = "discovered_chats"
-
-    id = Column(Integer, primary_key=True)
-    chat_id = Column(String(100), unique=True, nullable=False)  # ID de Telegram
-    title = Column(String(255), nullable=False)
-    type = Column(String(50))  # group, supergroup, channel
-    member_count = Column(Integer, default=0)
-    username = Column(String(100), nullable=True)
-
-    last_seen_at = Column(DateTime, default=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-
-class PublicationTemplate(Base):
-    """
-    Plantillas de texto para las publicaciones.
+    V4 Publication Templates.
+    Injectable HTML/Markdown templates for dynamic posting.
     """
 
     __tablename__ = "publication_templates"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
-    content = Column(Text, nullable=False)  # El template con placeholders {titulo}, {autor}, etc.
-    platform = Column(String(20), nullable=False)  # 'telegram', 'facebook'
-    extra_config = Column(JSON)  # Para guardar calidad de portada, hilos, etc.
-    is_default = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)  # The template string with {placeholders}
+    platform: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    # Relación con la cola
-    queued_items = relationship("PublicationQueue", back_populates="template")
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    extra_config: Mapped[dict | None] = mapped_column(JSON)  # Layout preferences
+
+    # Relationships
+    queued_items: Mapped[list["PublicationQueue"]] = relationship(back_populates="template")
 
 
-class PublicationQueue(Base):
+class PublicationQueue(TimestampedBase):
     """
-    Cola de publicaciones programadas o enviadas.
+    V4 Publication Queue for massive scheduling.
     """
 
     __tablename__ = "publication_queue"
 
-    id = Column(Integer, primary_key=True)
-    book_hash = Column(String(64), nullable=False, index=True)
-    channel_id = Column(Integer, ForeignKey("publication_channels.id"), nullable=False)
-    template_id = Column(Integer, ForeignKey("publication_templates.id"), nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    book_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
 
-    scheduled_for = Column(DateTime, nullable=False, index=True)
-    status = Column(String(20), default="pending", index=True)  # pending, publishing, sent, failed
+    channel_id: Mapped[int] = mapped_column(ForeignKey("publication_channels.id"), nullable=False)
+    template_id: Mapped[int | None] = mapped_column(ForeignKey("publication_templates.id"))
 
-    published_at = Column(DateTime)
-    error_message = Column(Text)
+    # Scheduling
+    scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)  # pending, publishing, sent, failed
 
-    # Metadata snapshot para evitar lecturas costosas si el libro cambia
-    payload = Column(JSON)  # Datos específicos que se enviarán
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_message: Mapped[str | None] = mapped_column(Text)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # Snapshot to avoid costly reads at publish time
+    payload: Mapped[dict | None] = mapped_column(JSON)
 
-    # Relaciones
-    channel = relationship("PublicationChannel", back_populates="queued_items")
-    template = relationship("PublicationTemplate", back_populates="queued_items")
+    # Relationships
+    channel: Mapped["PublicationChannel"] = relationship(back_populates="queued_items")
+    template: Mapped[Optional["PublicationTemplate"]] = relationship(back_populates="queued_items")
