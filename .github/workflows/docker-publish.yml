@@ -2,11 +2,11 @@ name: Docker
 
 on:
   push:
-    branches: ["main", "feat/*"]
+    branches: ["main", "feat/*", "v4-agency-rebuild"]
     # Publish semver tags as releases.
     tags: ["v*"]
   pull_request:
-    branches: ["main", "feat/*"]
+    branches: ["main", "feat/*", "v4-agency-rebuild"]
 
 env:
   # Use docker.io for Docker Hub if empty
