@@ -99,3 +99,36 @@ class DownloadLog(TimestampedBase):
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="downloads")
+
+
+class AppTheme(TimestampedBase):
+    """
+    Temas globales de la aplicación (Presets).
+    Tabla: app_themes
+    """
+
+    __tablename__ = "app_themes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    description: Mapped[str | None] = mapped_column(String(500))
+
+    # Visual Properties
+    theme_type: Mapped[str] = mapped_column(String(20), default="dark")  # 'theme' in frontend
+    primary_color: Mapped[str | None] = mapped_column(String(20))
+    background_color: Mapped[str | None] = mapped_column(String(20))
+    card_color: Mapped[str | None] = mapped_column(String(20))
+
+    # Opacities & Effects
+    glass_opacity: Mapped[int | None] = mapped_column(Integer)
+    nav_opacity: Mapped[int | None] = mapped_column(Integer)
+    accent_opacity: Mapped[int | None] = mapped_column(Integer)
+    glass_blur: Mapped[int | None] = mapped_column(Integer)
+    card_glow_intensity: Mapped[int | None] = mapped_column(Integer)
+    border_radius: Mapped[int | None] = mapped_column(Integer, default=24)
+    border_width: Mapped[int | None] = mapped_column(Integer, default=1)
+
+    # Layout
+    font_size: Mapped[int | None] = mapped_column(Integer)
+    cover_width: Mapped[int | None] = mapped_column(Integer)
+    banner_content_offset: Mapped[int | None] = mapped_column(Integer)

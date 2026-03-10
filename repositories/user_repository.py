@@ -15,7 +15,7 @@ from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
 from models.user_models import User, UserLevel
 from repositories.base_repository import BaseRepository
-from repositories.level_repository import level_repo
+from repositories.level_repository import LevelRepository, level_repo
 from services.cache_service import cache_manager
 
 logger = logging.getLogger(__name__)
@@ -334,3 +334,4 @@ class UserRepository(BaseRepository[User]):
 
 # Instancia singleton para compatibilidad
 user_repo = UserRepository()
+UserLevelRepository = LevelRepository  # V3/V4 Compatibility Alias
