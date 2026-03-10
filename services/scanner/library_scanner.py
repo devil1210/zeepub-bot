@@ -70,9 +70,7 @@ class LibraryScanner:
         removed_count = 0
 
         try:
-            stmt = (
-                select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.source_id == source.id)
-            )
+            stmt = select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.source_id == source.id)
             result = await session.execute(stmt)
             db_books = result.scalars().all()
 
@@ -97,8 +95,8 @@ class LibraryScanner:
                         filename=b.filename,
                         last_filepath=b.filepath,
                         volume=b.volume,
-                        author=b.series_info.author if b.series_info else "Unknown",
-                        book_type=b.series_info.book_type if b.series_info else "Light Novel",
+                        author=b.series.author if b.series else "Unknown",
+                        book_type=b.series.book_type if b.series else "Light Novel",
                         original_book_id=b.id,
                         reason="physically_deleted",
                     )

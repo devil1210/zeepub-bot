@@ -29,9 +29,9 @@ class EpubScanner:
         Genera un hash estable basado en la metadata técnica del libro.
         """
         return hash_service.generate_book_hash(
-            series=book.series_info.series_name if book.series_info else "Unknown",
-            author=book.series_info.author if book.series_info else "Unknown",
-            book_type=book.series_info.book_type if book.series_info else "Light Novel",
+            series=book.series.series_name if book.series else "Unknown",
+            author=book.series.author if book.series else "Unknown",
+            book_type=book.series.book_type if book.series else "Light Novel",
             volume=book.volume,
             translator=book.translator,
             layout_by=book.layout_by,
@@ -47,9 +47,9 @@ class EpubScanner:
         Genera un hash estable para la serie.
         """
         return hash_service.generate_series_hash(
-            series=(book.series_info.series_name if book.series_info else book.title),
-            author=(book.series_info.author if book.series_info else "Unknown"),
-            book_type=(book.series_info.book_type if book.series_info else "Light Novel"),
+            series=(book.series.series_name if book.series else book.title),
+            author=(book.series.author if book.series else "Unknown"),
+            book_type=(book.series.book_type if book.series else "Light Novel"),
         )
 
     @staticmethod
@@ -143,7 +143,7 @@ class EpubScanner:
             mtime = datetime.fromtimestamp(stat.st_mtime)
             size = stat.st_size
 
-            stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.filepath == filepath)
+            stmt = select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.filepath == filepath)
             result = await session.execute(stmt)
             book = result.scalar_one_or_none()
 
@@ -172,11 +172,9 @@ class EpubScanner:
                 and book.book_hash
                 and book.short_link
                 and book.cover_low
-                and book.series_info is not None
+                and book.series is not None
                 and book.series_hash
-                == hash_service.generate_series_hash(
-                    book.series_info.series_name, book.series_info.author, book.series_info.book_type
-                )
+                == hash_service.generate_series_hash(book.series.series_name, book.series.author, book.series.book_type)
             ):
                 return "skipped"
 
@@ -329,7 +327,7 @@ class EpubScanner:
                                 duplicate_filepath=filepath,
                                 title=book.title,
                                 author=extracted_data.get("author")
-                                or (book.series_info.author if book.series_info else "Unknown"),
+                                or (book.series.author if book.series else "Unknown"),
                             )
                             session.add(dup)
                         return "duplicate"

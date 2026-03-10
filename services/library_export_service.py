@@ -32,13 +32,13 @@ class LibraryExportService:
         """
         session = get_session()
         try:
-            query = session.query(LocalBook).options(selectinload(LocalBook.series_info))
+            query = session.query(LocalBook).options(selectinload(LocalBook.series))
 
             if source_id:
                 query = query.filter(LocalBook.source_id == source_id)
 
             if series:
-                query = query.join(LocalBook.series_info).filter(SeriesMetadata.series_name == series)
+                query = query.join(LocalBook.series).filter(SeriesMetadata.series_name == series)
 
             books = query.all()
 

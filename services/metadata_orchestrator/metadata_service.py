@@ -30,7 +30,7 @@ class MetadataOrchestrator:
 
                 # Check if it's a known hash
                 stmt_hash = (
-                    select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.book_hash == book_id)
+                    select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.book_hash == book_id)
                 )
                 res_hash = await session.execute(stmt_hash)
                 lb = res_hash.scalar_one_or_none()
@@ -43,7 +43,7 @@ class MetadataOrchestrator:
                         s_hash = id_str.replace("series_", "")
                         stmt_s = (
                             select(LocalBook)
-                            .options(selectinload(LocalBook.series_info))
+                            .options(selectinload(LocalBook.series))
                             .where(LocalBook.series_hash == s_hash)
                             .order_by(LocalBook.volume.asc())
                             .limit(1)
@@ -53,9 +53,7 @@ class MetadataOrchestrator:
                     elif id_str.startswith("local_") or id_str.isdigit():
                         clean_id = int(id_str.replace("local_", ""))
                         stmt_id = (
-                            select(LocalBook)
-                            .options(selectinload(LocalBook.series_info))
-                            .where(LocalBook.id == clean_id)
+                            select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.id == clean_id)
                         )
                         res_id = await session.execute(stmt_id)
                         lb = res_id.scalar_one_or_none()
@@ -63,9 +61,7 @@ class MetadataOrchestrator:
                 # Fallback: try by path
                 if not lb and ("/" in str(book_id) or "\\" in str(book_id)):
                     stmt_path = (
-                        select(LocalBook)
-                        .options(selectinload(LocalBook.series_info))
-                        .where(LocalBook.filepath == book_id)
+                        select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.filepath == book_id)
                     )
                     res_path = await session.execute(stmt_path)
                     lb = res_path.scalar_one_or_none()

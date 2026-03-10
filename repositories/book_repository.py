@@ -27,7 +27,7 @@ class BookRepository(BaseRepository[LocalBook]):
     async def get_by_id(self, id: Any) -> LocalBook | None:
         """Obtiene un libro por ID con su información de serie cargada."""
         async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.id == id)
+            stmt = select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.id == id)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
@@ -73,9 +73,7 @@ class BookRepository(BaseRepository[LocalBook]):
     async def get_by_hash(self, book_hash: str) -> LocalBook | None:
         """Busca un libro por su hash único."""
         async with pg_manager.get_session() as session:
-            stmt = (
-                select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.book_hash == book_hash)
-            )
+            stmt = select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.book_hash == book_hash)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
@@ -149,7 +147,7 @@ class BookRepository(BaseRepository[LocalBook]):
                 stmt = (
                     select(LocalBook, dl_subquery.label("download_count"))
                     .join(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
-                    .options(selectinload(LocalBook.series_info))
+                    .options(selectinload(LocalBook.series))
                     .where(or_(*filters))
                 )
 
@@ -203,7 +201,7 @@ class BookRepository(BaseRepository[LocalBook]):
                 .scalar_subquery()
             )
 
-            stmt = select(LocalBook, dl_subquery.label("download_count")).options(selectinload(LocalBook.series_info))
+            stmt = select(LocalBook, dl_subquery.label("download_count")).options(selectinload(LocalBook.series))
 
             # Contar total de resultados
             count_stmt = select(func.count()).select_from(stmt.subquery())

@@ -76,16 +76,14 @@ async def handle_ai_scan_series(data: dict[str, Any], user_data: dict[str, Any])
                 return {"success": False, "message": "Serie no encontrada"}
 
             rep_book = books[0]  # Usar cualquiera como representante base
-            current_name = (
-                (rep_book.series_info.series_name if rep_book.series_info else None) or series_name or rep_book.title
-            )
+            current_name = (rep_book.series.series_name if rep_book.series else None) or series_name or rep_book.title
 
             # Obtener nombre español si ya existe
             series_meta = session.query(SeriesMetadata).filter_by(series_hash=series_hash).first()
             current_spanish = (
                 series_meta.series_spanish
                 if series_meta
-                else (rep_book.series_info.series_spanish if rep_book.series_info else None)
+                else (rep_book.series.series_spanish if rep_book.series else None)
             )
 
             # --- DRY RUN MODE (PROPOSAL) ---

@@ -172,7 +172,7 @@ class LibraryService:
 
                 stmt = (
                     select(LocalBook, dl_subquery.label("download_count"))
-                    .options(selectinload(LocalBook.series_info))
+                    .options(selectinload(LocalBook.series))
                     .where(LocalBook.series_hash == series_hash)
                     .order_by(LocalBook.volume.asc(), LocalBook.id.asc())
                 )
@@ -241,7 +241,7 @@ class LibraryService:
         """Actualiza metadatos de un libro y recalcula el hash de serie."""
         async with pg_manager.get_session() as session:
             try:
-                stmt = select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.id == book_id)
+                stmt = select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.id == book_id)
                 result = await session.execute(stmt)
                 book = result.scalar_one_or_none()
 
@@ -268,11 +268,9 @@ class LibraryService:
                 # Recalculate Series Hash to regroup
                 from utils.helpers import generate_series_hash
 
-                series_name = updates.get("series") or (
-                    book.series_info.series_name if book.series_info else book.title
-                )
-                author_val = updates.get("author") or (book.series_info.author if book.series_info else "Unknown")
-                bt_val = updates.get("book_type") or (book.series_info.book_type if book.series_info else "Light Novel")
+                series_name = updates.get("series") or (book.series.series_name if book.series else book.title)
+                author_val = updates.get("author") or (book.series.author if book.series else "Unknown")
+                bt_val = updates.get("book_type") or (book.series.book_type if book.series else "Light Novel")
 
                 book.series_hash = generate_series_hash(series=series_name, author=author_val, book_type=bt_val)
 
@@ -294,7 +292,7 @@ class LibraryService:
                 # Esta consulta simplificada obtiene libros sin serie asignda explícitamente
                 stmt = (
                     select(LocalBook)
-                    .options(selectinload(LocalBook.series_info))
+                    .options(selectinload(LocalBook.series))
                     .outerjoin(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
                     .where(LocalBook.series_metadata_id.is_(None))
                     .order_by(LocalBook.title)
@@ -321,8 +319,8 @@ class LibraryService:
                             continue
 
                         # Mismo autor es un requisito fuerte
-                        author_a = book_a.series_info.author if book_a.series_info else None
-                        author_b = book_b.series_info.author if book_b.series_info else None
+                        author_a = book_a.series.author if book_a.series else None
+                        author_b = book_b.series.author if book_b.series else None
                         if author_a and author_b and author_a.lower() != author_b.lower():
                             continue
 
@@ -366,7 +364,7 @@ class LibraryService:
             try:
                 stmt = (
                     select(LocalBook)
-                    .options(selectinload(LocalBook.series_info))
+                    .options(selectinload(LocalBook.series))
                     .where(LocalBook.series_metadata_id.is_(None))
                     .order_by(LocalBook.indexed_at.desc())
                     .limit(limit)
@@ -404,7 +402,7 @@ class LibraryService:
                 if series_hash:
                     stmt = (
                         select(LocalBook)
-                        .options(selectinload(LocalBook.series_info))
+                        .options(selectinload(LocalBook.series))
                         .where(LocalBook.series_hash == series_hash)
                         .order_by(LocalBook.volume.asc())
                     )

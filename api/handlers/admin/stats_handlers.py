@@ -114,13 +114,13 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
                 }
                 stmt_lb = (
                     select(LocalBook)
-                    .options(selectinload(LocalBook.series_info))
+                    .options(selectinload(LocalBook.series))
                     .where(or_(LocalBook.book_hash == p_book_hash, LocalBook.title == p_title))
                 )
                 lb_res = await session.execute(stmt_lb)
                 lb = lb_res.scalars().first()
                 if lb:
-                    popular_book["author"] = lb.series_info.author if lb.series_info else "N/A"
+                    popular_book["author"] = lb.series.author if lb.series else "N/A"
                     popular_book["cover"] = lb.cover_low
     except Exception as e:
         logger.error(f"Error fetching popular book: {e}")

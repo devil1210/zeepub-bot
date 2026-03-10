@@ -320,9 +320,7 @@ class SeriesScanner:
                     from sqlalchemy.orm import selectinload
 
                     stmt_books = (
-                        select(LocalBook)
-                        .where(LocalBook.series_hash == s_hash)
-                        .options(selectinload(LocalBook.series_info))
+                        select(LocalBook).where(LocalBook.series_hash == s_hash).options(selectinload(LocalBook.series))
                     )
                     res_books = await session.execute(stmt_books)
                     series_books = res_books.scalars().all()
