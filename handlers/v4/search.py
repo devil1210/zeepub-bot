@@ -51,6 +51,7 @@ class SearchHandlerV4(BaseHandlerV4):
         text = f"🔎 <b>Resultados para:</b> <code>{term}</code>\n\nSelecciona una coincidencia:"
         keyboard = []
         for s in series:
-            keyboard.append([InlineKeyboardButton(f"📖 {s.name}", callback_data=f"series_view|{s.id}")])
+            # IMPORTANTE: Usar sv| (3 chars) + truncated ID para no exceder 64 bytes
+            keyboard.append([InlineKeyboardButton(f"📖 {s.name}", callback_data=f"sv|{s.id[:50]}")])
 
         await self.send_glass_message(update, text, reply_markup=InlineKeyboardMarkup(keyboard))

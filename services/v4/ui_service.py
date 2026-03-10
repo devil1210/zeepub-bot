@@ -53,9 +53,12 @@ class UIServiceV4:
     @classmethod
     async def render_series_details(cls, series: Series, books: list[Book]) -> tuple[str, InlineKeyboardMarkup]:
         """Genera la ficha de una serie y sus volúmenes."""
+        # Sanear descripción: Telegram HTML no soporta <br/>
+        desc = (series.description or "Sin descripción disponible.").replace("<br/>", "\n").replace("<br>", "\n")
+
         text = (
             f"{cls.get_glass_header(series.name)}"
-            f"📝 <b>Sinopsis:</b>\n<i>{series.description or 'Sin descripción disponible.'}</i>\n\n"
+            f"📝 <b>Sinopsis:</b>\n<i>{desc}</i>\n\n"
             "📦 <b>Volúmenes disponibles:</b>"
         )
         keyboard = []

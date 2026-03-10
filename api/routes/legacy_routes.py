@@ -63,10 +63,16 @@ class LegacyRoutes:
                 logger.warning(f"⚠️ Unknown RPC action requested: {action}")
                 return JSONResponse(content={"error": f"Unknown action: {action}"}, status_code=400)
 
-            logger.info(f"🤖 RPC Action: {action} (User: {user_data.get('user_id')})")
+            logger.info(f"🤖 RPC Action: {action} (User: {user_data.get('user_id') or user_data.get('id')})")
+            from inspect import signature
 
-            # Execute handler
-            result = await handler(data, user_data, request=request)
+            # Execute handler only with supported arguments
+            sig = signature(handler)
+            if "request" in sig.parameters:
+                result = await handler(data, user_data, request=request)
+            else:
+                result = await handler(data, user_data)
+
             return JSONResponse(content=result)
 
         except Exception as e:
