@@ -185,6 +185,31 @@ class _PubRepoCompat:
             await s.refresh(channel)
             return channel
 
+    async def get_templates(self, platform: str | None = None):
+        async with await self._session() as s:
+            repo = PublicationTemplateRepository(s)
+            return await repo.get_templates(platform=platform)
+
+    async def create_template(self, template: PublicationTemplate) -> PublicationTemplate:
+        async with await self._session() as s:
+            s.add(template)
+            await s.commit()
+            await s.refresh(template)
+            return template
+
+    async def delete_template(self, template_id: int) -> bool:
+        async with await self._session() as s:
+            repo = PublicationTemplateRepository(s)
+            template = await repo.get_by_id(template_id)
+            if not template:
+                return False
+            await s.delete(template)
+            await s.commit()
+            return True
+
 
 # Singleton de compatibilidad — importado por services/publisher/publisher_service.py
 pub_repo = _PubRepoCompat()
+
+# Alias para compatibilidad con código que intenta instanciar la clase
+PublicationRepository = _PubRepoCompat

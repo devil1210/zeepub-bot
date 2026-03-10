@@ -30,7 +30,6 @@ from telegram.constants import ParseMode
 from telegram.ext import ContextTypes
 
 from services.v4.ai.ceo_agent import CEOAgent
-from services.v4.library_service import LibraryService
 from services.v4.storage_service import StorageService
 
 from .base_handler import BaseHandlerV4
@@ -50,11 +49,24 @@ class UploadHandlerV4(BaseHandlerV4):
     También acepta el comando /upload si se reenvía un archivo.
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, user_service=None, library_service=None, **kwargs):
+        super().__init__(user_service=user_service, library_service=library_service, **kwargs)
         self.ceo = CEOAgent()
-        self.library_svc = LibraryService()
         self.storage_svc = StorageService()
+
+    async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """
+        Método obligatorio por BaseHandlerV4.
+        Redirige a handle_document si se recibe un archivo.
+        """
+        if update.message and update.message.document:
+            return await self.handle_document(update, context)
+
+        # Si no es documento, tal vez es un comando /upload sin archivo
+        await self.reply(
+            update,
+            "📖 <b>Upload Mode</b>\nEnvíame un archivo <code>.epub</code> para procesarlo con IA.",
+        )
 
     # ------------------------------------------------------------------ #
     #  Entry point: documento recibido                                     #

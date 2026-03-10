@@ -79,6 +79,7 @@ class Book(TimestampedBase):
 
     # Foreign Keys
     series_id: Mapped[int | None] = mapped_column(ForeignKey("series.id"), index=True)
+    series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
     rating_average: Mapped[float] = mapped_column(Float, default=0.0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
 

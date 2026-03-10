@@ -200,6 +200,7 @@ class LibraryService(BaseService):
                 volume=book_data.get("volume", 0.0),
                 language=book_data.get("language", "es"),
                 series_id=series.id,
+                series_hash=series_hash,
             )
             book = await book_repo.create(book)
             self.logger.info(f"[INGEST] Libro creado: '{book.title}' hash={book_hash}")

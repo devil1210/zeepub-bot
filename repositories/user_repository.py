@@ -95,6 +95,9 @@ class UserRepository(BaseRepository[User]):
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
+    # Alias para compatibilidad con UserService V4
+    get_by_telegram_id = get_by_id
+
     async def get_by_email(self, email: str) -> User | None:
         """Busca un usuario por su correo electrónico."""
         async with self.db_manager.get_session() as session:
