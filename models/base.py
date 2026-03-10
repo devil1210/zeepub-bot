@@ -18,7 +18,7 @@ class Base(AsyncAttrs, DeclarativeBase):
         from sqlalchemy.ext.hybrid import hybrid_property
 
         for attr in dir(self.__class__):
-            if attr.startswith("_"):
+            if attr.startswith("_") or attr == "awaitable_attrs":
                 continue
 
             # Obtener el descriptor de la clase

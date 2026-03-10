@@ -104,10 +104,12 @@ class LegacyRoutes:
             legacy_access = {
                 "user_id": user_info.get("id"),
                 "username": user_info.get("username"),
-                "isBetaTester": user_data.get("beta_tester", False) or user_info.get("is_real_admin", False),
-                "isAdmin": user_info.get("is_real_admin", False),
-                "is_admin": user_info.get("is_real_admin", False),
-                "is_real_admin": user_info.get("is_real_admin", False),
+                "isBetaTester": user_data.get("beta_tester", False)
+                or user_info.get("is_real_admin", False)
+                or user_info.get("level") == "admin",
+                "isAdmin": user_info.get("is_real_admin", False) or user_info.get("level") == "admin",
+                "is_admin": user_info.get("is_real_admin", False) or user_info.get("level") == "admin",
+                "is_real_admin": user_info.get("is_real_admin", False) or user_info.get("level") == "admin",
                 "isStaff": user_info.get("level") in ("admin", "staff"),
                 "role": user_info.get("role"),
                 "status_label": user_info.get("status_label"),
