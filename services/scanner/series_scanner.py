@@ -67,6 +67,8 @@ class SeriesScanner:
                 book_count=0,
                 rating_average=0.0,
                 rating_count=0,
+                genres=[],
+                demographics=[],
             )
             session.add(series)
 

@@ -274,7 +274,8 @@ class EpubScanner:
                         return "duplicate"
 
                 if not book:
-                    book = LocalBook(id=target_book_hash, filepath=filepath, source=source)
+                    # Inicializamos colecciones vacías para evitar lazy-load al asignar después del flush
+                    book = LocalBook(id=target_book_hash, filepath=filepath, source=source, genres=[], demographics=[])
                     session.add(book)
 
                 # Sincronizar campos principales desde Identity y Meta
@@ -347,8 +348,13 @@ class EpubScanner:
                     book.series_hash = series.series_hash
 
                 # Relaciones (NUEVO)
-                book.genres = await ScannerHelpers.sync_taxonomy(session, Genre, book_tags)
-                book.demographics = await ScannerHelpers.sync_taxonomy(session, Demographic, book_demographics)
+                # Obtenemos los objetos de taxonomía (esto hace E/S asíncrona permitida)
+                genres_objs = await ScannerHelpers.sync_taxonomy(session, Genre, book_tags)
+                demo_objs = await ScannerHelpers.sync_taxonomy(session, Demographic, book_demographics)
+
+                # Asignamos las colecciones (ya cargadas o inicializadas, evitando lazy-load)
+                book.genres = genres_objs
+                book.demographics = demo_objs
 
                 # Hash MD5 físico (opcional para integridad extra)
                 try:
