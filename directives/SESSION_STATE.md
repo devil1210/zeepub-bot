@@ -17,12 +17,15 @@
   - [x] Solución de `ImportError: Base` en `download_models.py` y `user_audit_models.py`.
   - [x] Actualización de ForeignKeys que apuntaban a `local_books` (ahora `books`).
   - [x] **Solución de `ImportError: user_repo`**: Restauración de `UserRepository` y singleton `user_repo` en `repositories/user_repository.py`.
+  - [x] **Solución de `PermissionError: /app/data/library`**: Se ha blindado el arranque con `try-except` y se corrigió el `Dockerfile` para asegurar la creación de rutas en el contenedor.
 
 ## ⚠️ Bloqueos / Problemas
 - GitNexus está fallando por dependencias de binarios (`tree-sitter`). Se ha migrado oficialmente a **CodeGraphContext (cgc)**.
 
 ## ✅ Próximos Pasos (Handover)
 1. Ejecutar **`/push`** para persistir los cambios en el servidor/VPS.
-2. Reiniciar el contenedor Docker en el VPS: `docker compose restart zeepubs_bot_v6`.
-3. Validar si el bot arranca sin errores de importación.
+2. Reconstruir la imagen en el VPS: `docker compose build --no-cache bot`.
+3. Reiniciar contenedores: `docker compose up -d`.
+4. Si el error de permisos persiste, ejecutar en el HOST: `sudo chown -R 1000:1000 ./data`.
+5. Validar logs: `docker compose logs -f zeepub_bot_v4`.
 4. Continuar con la migración de otros modelos híbridos que usen el estilo antiguo de SQLAlchemy (Column) a Mapped/mapped_column.
