@@ -6,7 +6,7 @@ from sqlalchemy.orm import relationship
 # Use the same Base as library_models if possible,
 # but for a new file we can define it or import it.
 # Usually, it's better to have a shared Base.
-from models.library_models import Base
+from .base import Base
 
 
 class DownloadHistory(Base):
@@ -21,7 +21,7 @@ class DownloadHistory(Base):
 
     # Relaciones
     user = relationship("User", backref="download_history")
-    book_id = Column(Integer, ForeignKey("local_books.id"), nullable=True)  # Vinculación con libro local
+    book_id = Column(Integer, ForeignKey("books.id"), nullable=True)  # Vinculación con libro local
     title = Column(String(512), nullable=False)
     author = Column(String(255))
     download_url = Column(String(1024))

@@ -14,12 +14,14 @@
   - [x] Actualización de nombres de tablas de V3 (`local_books`) a V4 (`books`).
 - [x] **Compatibilidad V3-V4**:
   - [x] Restauración de modelos (`MetadataProposal`, `TranslatorsGroup`, etc.) en `library_models.py`.
+  - [x] Solución de `ImportError: Base` en `download_models.py` y `user_audit_models.py`.
+  - [x] Actualización de ForeignKeys que apuntaban a `local_books` (ahora `books`).
 
 ## ⚠️ Bloqueos / Problemas
 - GitNexus está fallando por dependencias de binarios (`tree-sitter`). Se ha migrado oficialmente a **CodeGraphContext (cgc)**.
 
-## ✅ Próximos Pasos (Para la nueva conversación)
-1. Ejecutar **`/empezar`** para cargar el manifiesto, sincronizar skills e indexar el grafo con CGC.
-2. Ejecutar **`/audit`** para detectar errores de sintaxis y calidad de código.
-3. Consultar los logs del contenedor Docker (si se está ejecutando en VPS) para ver errores de runtime: `docker compose logs -f zeepubs_bot`.
-4. Usar **`cgc find class <Nombre>`** o **`cgc analyze deps <archivo>`** para investigar incoherencias entre modelos V3 y V4.
+## ✅ Próximos Pasos (Handover)
+1. Ejecutar **`/push`** para persistir los cambios en el servidor/VPS.
+2. Reiniciar el contenedor Docker en el VPS: `docker compose restart zeepubs_bot_v6`.
+3. Validar si el bot arranca sin errores de importación.
+4. Continuar con la migración de otros modelos híbridos que usen el estilo antiguo de SQLAlchemy (Column) a Mapped/mapped_column.

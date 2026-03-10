@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from config.config_settings import config
-from models.library_models import Base
+from models.base import Base
 
 _log = logging.getLogger(__name__)
 
