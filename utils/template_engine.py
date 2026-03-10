@@ -73,11 +73,11 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         except (ValueError, TypeError):
             size_mb_formatted = "0.00 MB"
 
-        rating_avg = data.get("rating_average") or 0.0
+        rating_average = data.get("rating_average") or 0.0
         rating_count = data.get("rating_count") or 0
         rating_txt = ""
-        if rating_avg and float(rating_avg) > 0:
-            rating_txt = f"\n⭐ {float(rating_avg):.1f} ({rating_count} votos)"
+        if rating_average and float(rating_average) > 0:
+            rating_txt = f"\n⭐ {float(rating_average):.1f} ({rating_count} votos)"
 
         # Prioridad para el slug: el persistente de la DB (series_metadata)
         slug = data.get("slug")
@@ -168,7 +168,7 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "tipo": data.get("book_type") or data.get("categoria") or "",
                 "tamaño": size_mb_formatted,
                 "size_mb": size_mb_formatted,
-                "rating": str(rating_avg),
+                "rating": str(rating_average),
                 "rating_txt": rating_txt,
                 "votes": str(rating_count),
                 "hash": data.get("book_hash") or data.get("hash") or "",

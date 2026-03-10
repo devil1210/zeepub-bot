@@ -46,9 +46,9 @@ class Series(Base):
     publisher: Mapped[str | None] = mapped_column(String(255))
     book_type: Mapped[str | None] = mapped_column(String(100))
 
-    rating_avg: Mapped[float] = mapped_column("rating_average", Float, default=0.0, nullable=False)
+    rating_average: Mapped[float] = mapped_column("rating_average", Float, default=0.0, nullable=False)
     rating_count: Mapped[int] = mapped_column("rating_count", Integer, default=0, nullable=False)
-    book_cnt: Mapped[int] = mapped_column("book_cnt", Integer, default=0, nullable=False)
+    book_count: Mapped[int] = mapped_column("book_count", Integer, default=0, nullable=False)
 
     tags_json: Mapped[list | None] = mapped_column(JSONB)
     demographics_json: Mapped[list | None] = mapped_column(JSONB)
