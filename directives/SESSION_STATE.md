@@ -16,6 +16,7 @@
   - [x] Restauración de modelos (`MetadataProposal`, `TranslatorsGroup`, etc.) en `library_models.py`.
   - [x] Solución de `ImportError: Base` en `download_models.py` y `user_audit_models.py`.
   - [x] Actualización de ForeignKeys que apuntaban a `local_books` (ahora `books`).
+  - [x] **Solución de `ImportError: user_repo`**: Restauración de `UserRepository` y singleton `user_repo` en `repositories/user_repository.py`.
 
 ## ⚠️ Bloqueos / Problemas
 - GitNexus está fallando por dependencias de binarios (`tree-sitter`). Se ha migrado oficialmente a **CodeGraphContext (cgc)**.
