@@ -1,25 +1,25 @@
-# Estado de la Sesión - ZeePub-bot
+# Estado de la Sesión - ZeePub-bot (V4 Startup Fix)
 
 ## 🎯 Objetivo Actual
-- Corregir el formato de los mensajes del bot (Telegram) unificando la lógica de plantillas.
-- Asegurar que las descargas desde la Mini App apliquen las plantillas correctamente.
-- Limpiar errores de sintaxis y referencias circulares en el backend.
+- Resolver errores de importación que impedían el arranque del bot ZeePub V4.
+- Asegurar la integridad de los modelos de base de datos en la arquitectura V4.
 
 ## 🛠️ Tareas Completadas
-- [x] Creación de `utils/template_engine.py` para lógica unificada de plantillas.
-- [x] Refactorización de `DeliveryService` para usar el motor de plantillas.
-- [x] Actualización de `enviar_libro_directo` en `telegram_service.py` para soportar `caption_template`.
-- [x] Hotfix: Restauración de `explicit_file_buffer` y `import re` en `telegram_service.py`.
-- [x] Integración de `DeliveryService` en el endpoint `/download`.
-- [x] **Unificación Total**: Refactorización de `enviar_libro_directo` para que el caso "sin plantilla" también use el motor de plantillas con los defaults del sistema.
-- [x] **Enriquecimiento**: Cálculo automático de `file_size` en `enviar_libro_directo` para alimentar las plantillas.
-- [x] **Limpieza**: Eliminación de `formatear_mensaje_portada` (legacy) y actualización de `api/routes.py` para usar el motor unificado.
+- [x] **Reparación de `models/library_models.py`**:
+  - [x] Corrección de la visibilidad e importación de `MetadataProposal`.
+  - [x] Restauración de modelos fundamentales desaparecidos (`LibrarySource`, `ArchivedBook`, `DuplicateBook`, `LibraryCleanupLog`).
+  - [x] Restauración de modelos de compatibilidad V3 (`TranslatorsGroup`, `AILearningFeedback`, `ArchivedSeries`).
+  - [x] Eliminación del hack `__getattr__` por importación explícita (PEP8 compliant).
+- [x] **Auditoría de Calidad**:
+  - [x] Ejecución de `ruff check` (100% aprobado).
+  - [x] Validación de importaciones mediante script de prueba `tmp/test_import_full.py`.
+- [x] **Mantenimiento**:
+  - [x] Limpieza de sintaxis en `library_models.py`.
 
 ## ⚠️ Bloqueos / Problemas
-- Ninguno identificado. El flujo de plantillas está centralizado y verificado sintácticamente.
+- El arranque del bot fallaba por un `ImportError: cannot import name 'MetadataProposal' from 'models.library_models'`. Esto ha sido corregido mediante la reestructuración del archivo de modelos.
 
 ## ✅ Próximos Pasos
-- [x] Pruebas sintácticas completadas (`py_compile`).
-- [x] Sincronizar cambios (`/push`).
-- [x] **Release Completo**: Workflow `/release` ejecutado exitosamente.
-- [x] Actualizar `SESSION_STATE.md` con nuevo estado post-release.
+- [ ] Ejecutar `/startup` para verificar el bot ZeePub V4 operativo.
+- [ ] Realizar una sincronización de base de datos (`/db-sync`) para aplicar los nuevos esquemas restaurados.
+- [ ] Mantenimiento preventivo: Supervisar logs de arranque del bot en el VPS.

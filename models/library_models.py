@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import TimestampedBase
+from .user_models import DownloadLog
 
 
 class Series(TimestampedBase):
@@ -99,6 +100,20 @@ class UserRating(TimestampedBase):
     rating: Mapped[int] = mapped_column(Integer)
 
 
+class LibrarySource(TimestampedBase):
+    """
+    V4 Library Source.
+    Represents a directory root where books are stored.
+    """
+
+    __tablename__ = "library_sources"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    path: Mapped[str] = mapped_column(String(1024), unique=True, nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=True)
+
+
 class MetadataProposal(TimestampedBase):
     """
     V3 Compat: Metadata merges/correction proposals.
@@ -111,6 +126,56 @@ class MetadataProposal(TimestampedBase):
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, approved, rejected
     type: Mapped[str] = mapped_column(String(20), default="merge")  # merge, update
     proposal_data: Mapped[dict | None] = mapped_column(JSONB)
+
+
+class ArchivedBook(TimestampedBase):
+    """
+    V4 Record of a physically deleted book.
+    """
+
+    __tablename__ = "archived_books"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    series_hash: Mapped[str] = mapped_column(String(64), index=True)
+    book_hash: Mapped[str] = mapped_column(String(64), index=True)
+    title: Mapped[str] = mapped_column(String(512))
+    filename: Mapped[str | None] = mapped_column(String(512))
+    last_filepath: Mapped[str | None] = mapped_column(String(1024))
+    volume: Mapped[float | None] = mapped_column(Float)
+    author: Mapped[str | None] = mapped_column(String(255))
+    book_type: Mapped[str | None] = mapped_column(String(100))
+    original_book_id: Mapped[int | None] = mapped_column(Integer)
+    reason: Mapped[str | None] = mapped_column(String(100))
+
+
+class DuplicateBook(TimestampedBase):
+    """
+    V4 Record of duplicate files found during scan.
+    """
+
+    __tablename__ = "duplicate_books"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    book_hash: Mapped[str] = mapped_column(String(64), index=True)
+    original_filepath: Mapped[str] = mapped_column(String(1024))
+    duplicate_filepath: Mapped[str] = mapped_column(String(1024))
+    title: Mapped[str | None] = mapped_column(String(512))
+    author: Mapped[str | None] = mapped_column(String(255))
+
+
+class LibraryCleanupLog(TimestampedBase):
+    """
+    V4 Audit log for library maintenance tasks.
+    """
+
+    __tablename__ = "library_cleanup_logs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    performed_by: Mapped[int | None] = mapped_column(BigInteger)
+    total_books_checked: Mapped[int] = mapped_column(Integer, default=0)
+    missing_books_found: Mapped[int] = mapped_column(Integer, default=0)
+    empty_series_removed: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
 
 
 class TranslatorsGroup(TimestampedBase):
@@ -164,11 +229,4 @@ class ArchivedSeries(TimestampedBase):
 # ─────────────────────────────────────────────────────────────────────────────
 LocalBook = Book
 SeriesMetadata = Series
-
-
-def __getattr__(name):
-    if name == "UserDownload":
-        from .user_models import DownloadLog
-
-        return DownloadLog
-    raise AttributeError(f"module {__name__} has no attribute {name}")
+UserDownload = DownloadLog

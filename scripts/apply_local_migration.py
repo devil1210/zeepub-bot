@@ -22,27 +22,27 @@ from core.db_manager_pg import pg_manager  # noqa: E402
 
 
 async def apply_local_migration():
-    sql = """
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS word_count integer;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS page_count integer;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS reading_time integer;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS epub_version text;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS isbn text;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS asin text;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS layout_by text;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS publisher text;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title text;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS romaji_title text;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS english_title text;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS is_uncensored integer;
-    ALTER TABLE local_books ADD COLUMN IF NOT EXISTS color_mode text;
-    ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS book_type text;
-    """
+    commands = [
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS word_count integer",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS page_count integer",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS reading_time integer",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS epub_version text",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS isbn text",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS asin text",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS layout_by text",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS publisher text",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS spanish_title text",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS romaji_title text",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS english_title text",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS is_uncensored integer",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS color_mode text",
+    ]
 
     logger.info("Applying migration to local database (localhost:5432)...")
     try:
         async with pg_manager.get_session() as session:
-            await session.execute(text(sql))
+            for cmd in commands:
+                await session.execute(text(cmd))
             await session.commit()
             logger.info("✅ Local migration successful.")
     except Exception as e:
