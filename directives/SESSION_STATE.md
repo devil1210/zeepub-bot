@@ -17,6 +17,8 @@
   - [x] Solución de `ImportError: Base` en `download_models.py` y `user_audit_models.py`.
   - [x] Actualización de ForeignKeys que apuntaban a `local_books` (ahora `books`).
   - [x] **Solución de `ImportError: user_repo`**: Restauración de `UserRepository` y singleton `user_repo` en `repositories/user_repository.py`.
+  - [x] **Solución de `ImportError: UploadBook/UploadHistory`**: Restauración de modelos de carga en `models/library_models.py`.
+  - [x] **Solución de `ImportError: download_repo`**: Refactorización de `repositories/download_repository.py` a patrón Singleton compatible con V4.
   - [x] **Solución de `PermissionError: /app/data/library`**: Se ha blindado el arranque con `try-except` y se corrigió el `Dockerfile` para asegurar la creación de rutas en el contenedor.
 
 ## ⚠️ Bloqueos / Problemas

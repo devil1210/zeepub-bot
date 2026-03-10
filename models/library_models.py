@@ -230,3 +230,53 @@ class ArchivedSeries(TimestampedBase):
 LocalBook = Book
 SeriesMetadata = Series
 UserDownload = DownloadLog
+
+
+class UploadBook(TimestampedBase):
+    """
+    V4 UploadBook Entity.
+    Temporary record of a book uploaded for processing or approval.
+    """
+
+    __tablename__ = "upload_books"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
+
+    original_filename: Mapped[str] = mapped_column(String(512))
+    temp_filepath: Mapped[str] = mapped_column(String(1024))
+
+    # Metadata snapshots
+    title: Mapped[str | None] = mapped_column(String(512))
+    series: Mapped[str | None] = mapped_column(String(255))
+    series_spanish: Mapped[str | None] = mapped_column(String(255))
+    volume: Mapped[float | None] = mapped_column(Float)
+    author: Mapped[str | None] = mapped_column(String(255))
+    book_type: Mapped[str | None] = mapped_column(String(100))
+    translator: Mapped[str | None] = mapped_column(String(255))
+    layout_by: Mapped[str | None] = mapped_column(String(255))
+    language: Mapped[str] = mapped_column(String(10), default="es")
+
+    is_uncensored: Mapped[int] = mapped_column(Integer, default=0)
+    color_mode: Mapped[str] = mapped_column(String(20), default="bw")
+
+    book_hash: Mapped[str] = mapped_column(String(64), index=True)
+    series_hash: Mapped[str] = mapped_column(String(64), index=True)
+
+    upload_metadata: Mapped[dict | None] = mapped_column(JSONB)
+    identity_match: Mapped[str | None] = mapped_column(String(20))  # True/False as string
+
+
+class UploadHistory(TimestampedBase):
+    """
+    V4 UploadHistory Entity.
+    Tracks historical metadata and status changes for uploads.
+    """
+
+    __tablename__ = "upload_history"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    upload_id: Mapped[int | None] = mapped_column(Integer, index=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    action: Mapped[str] = mapped_column(String(50))  # 'uploaded', 'approved', 'rejected'
+    details: Mapped[dict | None] = mapped_column(JSONB)
