@@ -139,6 +139,26 @@ class AILearningFeedback(TimestampedBase):
     ai_reason: Mapped[str | None] = mapped_column(Text)
 
 
+class ArchivedSeries(TimestampedBase):
+    """
+    V3 Compat: Archive for deleted series.
+    """
+
+    __tablename__ = "archived_series"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    series_name: Mapped[str | None] = mapped_column(String(255))
+    series_spanish: Mapped[str | None] = mapped_column(String(255))
+    series_english: Mapped[str | None] = mapped_column(String(255))
+    series_hash: Mapped[str] = mapped_column(String(64), index=True)
+    author: Mapped[str | None] = mapped_column(String(255))
+    description: Mapped[str | None] = mapped_column(Text)
+    tags: Mapped[list | None] = mapped_column(JSONB)
+    cover_url: Mapped[str | None] = mapped_column(String(512))
+    book_type: Mapped[str | None] = mapped_column(String(100))
+    publisher: Mapped[str | None] = mapped_column(String(255))
+    original_series_id: Mapped[int | None] = mapped_column(Integer)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Aliases de compatibilidad V3 → V4
 # ─────────────────────────────────────────────────────────────────────────────
