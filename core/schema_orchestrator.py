@@ -61,7 +61,6 @@ class SchemaOrchestrator:
                     "user_levels", "banner_content_offset", "INTEGER DEFAULT 0"
                 )
                 await SchemaOrchestrator._check_and_add_column("user_levels", "force_settings", "BOOLEAN DEFAULT FALSE")
-                await SchemaOrchestrator._check_and_add_column("user_levels", "price", "INTEGER DEFAULT 0")
                 await SchemaOrchestrator._check_and_add_column("user_levels", "can_read", "BOOLEAN DEFAULT TRUE")
                 await SchemaOrchestrator._check_and_add_column(
                     "user_levels", "has_library_access", "BOOLEAN DEFAULT TRUE"
@@ -101,6 +100,9 @@ class SchemaOrchestrator:
                 )
                 await SchemaOrchestrator._check_and_add_column("users", "created_at", "TIMESTAMP DEFAULT NOW()")
 
+                # Auto-Migration for Books
+                await SchemaOrchestrator._check_and_add_column("books", "series_hash", "VARCHAR(255)")
+
                 # IMPORTANT: Wait a bit for Postgres to stabilize metadata
                 await asyncio.sleep(1)
 
@@ -139,7 +141,6 @@ class SchemaOrchestrator:
                             name="Administrador",
                             priority=100,
                             color="#FF5252",
-                            price=0,
                             daily_downloads=999,
                             has_mini_app_access=True,
                             early_access=True,
@@ -155,7 +156,6 @@ class SchemaOrchestrator:
                             name="Staff",
                             priority=90,
                             color="#7C4DFF",
-                            price=0,
                             daily_downloads=999,
                             has_mini_app_access=True,
                             early_access=True,
@@ -171,7 +171,6 @@ class SchemaOrchestrator:
                             name="Premium",
                             priority=50,
                             color="#FFD740",
-                            price=499,
                             daily_downloads=50,
                             has_mini_app_access=True,
                             early_access=False,
@@ -187,7 +186,6 @@ class SchemaOrchestrator:
                             name="VIP",
                             priority=40,
                             color="#69F0AE",
-                            price=999,
                             daily_downloads=20,
                             has_mini_app_access=True,
                             early_access=False,
@@ -203,7 +201,6 @@ class SchemaOrchestrator:
                             name="Patrocinador",
                             priority=20,
                             color="#E0E0E0",
-                            price=0,
                             daily_downloads=10,
                             has_mini_app_access=True,
                             early_access=False,
@@ -219,7 +216,6 @@ class SchemaOrchestrator:
                             name="Lector",
                             priority=10,
                             color="#607D8B",
-                            price=0,
                             daily_downloads=5,
                             has_mini_app_access=True,
                             early_access=False,
