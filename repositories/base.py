@@ -21,11 +21,34 @@ class BaseRepository(Generic[T]):
         """Obtiene un registro por su clave primaria."""
         return await self.session.get(self.model, id)
 
+    async def get_by_id_prefix(self, id_prefix: str) -> T | None:
+        """Busca un registro cuyo ID comienza con el prefijo dado (útil para IDs truncados en botones)."""
+        query = select(self.model).where(self.model.id.like(f"{id_prefix}%"))
+        result = await self.session.execute(query)
+        return result.scalars().first()
+
     async def get_all(self, skip: int = 0, limit: int = 100) -> list[T]:
         """Obtiene una lista de registros con paginación."""
         query = select(self.model).offset(skip).limit(limit)
         result = await self.session.execute(query)
         return result.scalars().all()
+
+    async def get_all_paginated(self, skip: int = 0, limit: int = 100) -> tuple[list[T], int]:
+        """Obtiene una lista de registros y el total (para paginación)."""
+        from sqlalchemy import func
+
+        count_query = select(func.count()).select_from(self.model)
+        total = await self.session.execute(count_query)
+        total_count = total.scalar_one()
+
+        query = (
+            select(self.model)
+            .offset(skip)
+            .limit(limit)
+            .order_by(self.model.created_at.desc() if hasattr(self.model, "created_at") else None)
+        )
+        result = await self.session.execute(query)
+        return result.scalars().all(), total_count
 
     async def create(self, **kwargs) -> T:
         """Crea un nuevo registro."""

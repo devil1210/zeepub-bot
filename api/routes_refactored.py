@@ -2,7 +2,7 @@
 
 import logging
 
-from .routes import AdminRoutes, AuthRoutes, ConfigRoutes, LibraryRoutes, MediaRoutes
+from .routes import AdminRoutes, AuthRoutes, ConfigRoutes, LegacyRoutes, LibraryRoutes, MediaRoutes
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,15 @@ class RoutesManager:
         self.media_routes = MediaRoutes()
         self.auth_routes = AuthRoutes()
         self.config_routes = ConfigRoutes()
+        self.legacy_routes = LegacyRoutes()
+
+        # Register endpoint methods into routers
+        self.library_routes.register_routes()
+        self.admin_routes.register_routes()
+        self.media_routes.register_routes()
+        self.auth_routes.register_routes()
+        self.config_routes.register_routes()
+        self.legacy_routes.register_routes()
 
     def register_all_routes(self, app):
         """
@@ -34,6 +43,7 @@ class RoutesManager:
             app.include_router(self.media_routes.get_router())
             app.include_router(self.auth_routes.get_router())
             app.include_router(self.config_routes.get_router())
+            app.include_router(self.legacy_routes.get_router())
 
             logger.info("✅ All API routes registered successfully")
 

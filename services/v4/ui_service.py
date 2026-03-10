@@ -38,7 +38,7 @@ class UIServiceV4:
         for s in series_list:
             # Limitar longitud del nombre para botones
             display_name = s.name if len(s.name) < 30 else s.name[:27] + "..."
-            keyboard.append([InlineKeyboardButton(f"📖 {display_name}", callback_data=f"series_view|{s.id}")])
+            keyboard.append([InlineKeyboardButton(f"📖 {display_name}", callback_data=f"sv|{s.id[:50]}")])
 
         # Fila de navegación
         nav_row = [InlineKeyboardButton("🏠 Menú", callback_data="main_menu")]
@@ -60,7 +60,7 @@ class UIServiceV4:
         )
         keyboard = []
         for b in books:
-            keyboard.append([InlineKeyboardButton(f"📕 {b.title}", callback_data=f"book_view|{b.id}")])
+            keyboard.append([InlineKeyboardButton(f"📕 {b.title}", callback_data=f"bv|{b.id[:50]}")])
 
         keyboard.append([InlineKeyboardButton("🔙 Volver al Catálogo", callback_data="catalog|0")])
         return text, InlineKeyboardMarkup(keyboard)
@@ -75,8 +75,8 @@ class UIServiceV4:
             "¿Deseas descargar este ejemplar?"
         )
         keyboard = [
-            [InlineKeyboardButton("⚡️ Descargar Ahora", callback_data=f"book_download|{book.id}")],
-            [InlineKeyboardButton("🔙 Volver a la Serie", callback_data=f"series_view|{book.series_id}")],
+            [InlineKeyboardButton("⚡️ Descargar Ahora", callback_data=f"bd|{book.id[:50]}")],
+            [InlineKeyboardButton("🔙 Volver a la Serie", callback_data=f"sv|{book.series_id[:50]}")],
             [InlineKeyboardButton("❌ Salir", callback_data="close_menu")],
         ]
         return text, InlineKeyboardMarkup(keyboard)

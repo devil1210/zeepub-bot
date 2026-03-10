@@ -41,26 +41,26 @@ class CallbackHandlerV4(BaseHandlerV4):
                 text, markup = await UIServiceV4.render_series_list(series_list, page=page)
                 await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
 
-            elif data.startswith("series_view|"):
+            elif data.startswith("sv|"):
                 series_id = data.split("|")[1]
                 series = await library_service.get_series_details(series_id)
                 if not series:
                     await query.answer("⚠️ Serie no encontrada.", show_alert=True)
                     return
-                books = await library_service.get_books_by_series(series_id)
+                # El series_id real puede ser más largo si se buscó por prefijo
+                real_series_id = series.id
+                books = await library_service.get_books_by_series(real_series_id)
                 text, markup = await UIServiceV4.render_series_details(series, books)
                 await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
 
-            elif data.startswith("book_view|"):
+            elif data.startswith("bv|"):
                 book_id = data.split("|")[1]
-                # En el futuro, LibraryService tendrá get_book_details
-                from sqlalchemy import select
-
-                from models.library import Book
-
-                query_book = select(Book).where(Book.id == book_id)
-                res = await library_service.session.execute(query_book)
-                book = res.scalar_one_or_none()
+                # Usar repositorio vía library_service si es posible, o búsqueda por prefijo
+                book = (
+                    await library_service.book_repo.get_by_id_prefix(book_id)
+                    if len(book_id) < 64
+                    else await library_service.book_repo.get_by_id(book_id)
+                )
 
                 if not book:
                     await query.answer("⚠️ Libro no encontrado.", show_alert=True)
@@ -68,6 +68,12 @@ class CallbackHandlerV4(BaseHandlerV4):
 
                 text, markup = await UIServiceV4.render_book_details(book)
                 await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
+
+            elif data.startswith("bd|"):
+                book_id = data.split("|")[1]
+                await query.answer("⚡️ Iniciando descarga...", show_alert=False)
+                # Delegar a PublisherService o similar (pendiente implementar download_handler v4)
+                await query.answer("🚀 Funcionalidad de descarga en desarrollo para v4.0", show_alert=True)
 
             elif data == "user_status":
                 user_service = services["user_service"]
