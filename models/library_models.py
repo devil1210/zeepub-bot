@@ -99,6 +99,31 @@ class UserRating(TimestampedBase):
     rating: Mapped[int] = mapped_column(Integer)
 
 
+class MetadataProposal(TimestampedBase):
+    """
+    V3 Compat: Metadata merges/correction proposals.
+    """
+
+    __tablename__ = "metadata_proposals"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    series_hash: Mapped[str] = mapped_column(String(64), index=True)
+    secondary_hash: Mapped[str | None] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, approved, rejected
+    type: Mapped[str] = mapped_column(String(20), default="merge")  # merge, update
+    proposal_data: Mapped[dict | None] = mapped_column(JSONB)
+
+
+class TranslatorsGroup(TimestampedBase):
+    """
+    V3 Compat: Translators/Scan groups.
+    """
+
+    __tablename__ = "translators_groups"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True)
+    siglas: Mapped[str | None] = mapped_column(String(50))
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Aliases de compatibilidad V3 → V4
 # ─────────────────────────────────────────────────────────────────────────────
