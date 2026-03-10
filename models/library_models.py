@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import Float, ForeignKey, Integer, String
+from sqlalchemy import BigInteger, Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -39,8 +39,9 @@ class Series(TimestampedBase):
     cover_url: Mapped[str | None] = mapped_column(String(1024))
     book_type: Mapped[str | None] = mapped_column(String(100))
     publisher: Mapped[str | None] = mapped_column(String(255))
-    rating_avg: Mapped[float] = mapped_column(Float, default=0.0)
+    rating_average: Mapped[float] = mapped_column(Float, default=0.0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
+    book_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationships
     books: Mapped[list["Book"]] = relationship(back_populates="series", cascade="all, delete-orphan")
@@ -77,6 +78,37 @@ class Book(TimestampedBase):
 
     # Foreign Keys
     series_id: Mapped[int | None] = mapped_column(ForeignKey("series.id"), index=True)
+    rating_average: Mapped[float] = mapped_column(Float, default=0.0)
+    rating_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationships
     series: Mapped[Optional["Series"]] = relationship(back_populates="books")
+
+
+class UserRating(TimestampedBase):
+    """
+    V3 Compat: User ratings for books.
+    """
+
+    __tablename__ = "user_ratings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    book_id: Mapped[int] = mapped_column(Integer, index=True)
+    book_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    rating: Mapped[int] = mapped_column(Integer)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Aliases de compatibilidad V3 → V4
+# ─────────────────────────────────────────────────────────────────────────────
+LocalBook = Book
+SeriesMetadata = Series
+
+
+def __getattr__(name):
+    if name == "UserDownload":
+        from .user_models import DownloadLog
+
+        return DownloadLog
+    raise AttributeError(f"module {__name__} has no attribute {name}")

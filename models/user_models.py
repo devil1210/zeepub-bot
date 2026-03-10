@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from .base import TimestampedBase
 
@@ -83,6 +83,7 @@ class DownloadLog(TimestampedBase):
     telegram_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("users.telegram_id", ondelete="CASCADE"), index=True
     )
+    user_id = synonym("telegram_id")
 
     # What was downloaded (hash for immutability)
     book_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
