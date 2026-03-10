@@ -264,6 +264,7 @@ class UserRating(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)
     book_id: Mapped[str] = mapped_column(String(64), ForeignKey("books.id"), index=True)
+    book_hash: Mapped[str | None] = mapped_column(String(64), index=True)
     rating: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
@@ -281,6 +282,9 @@ class UserDownload(Base):
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)
     book_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("books.id"), index=True)
     series_id: Mapped[str | None] = mapped_column(String(64), ForeignKey("series.id"), index=True)
+
+    book_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
 
     title: Mapped[str | None] = mapped_column(String(512))
     downloaded_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)

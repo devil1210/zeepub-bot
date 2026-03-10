@@ -292,12 +292,12 @@ class SeriesScanner:
             if len(candidates) < SCAN_LIMIT:
                 needed = SCAN_LIMIT - len(candidates)
                 backlog_query = text("""
-                    SELECT lb.series_hash
-                    FROM local_books lb
-                    WHERE lb.series_hash NOT IN (SELECT series_hash FROM ai_learning_feedback)
-                      AND lb.series_hash NOT IN (SELECT series_hash FROM metadata_proposals WHERE status='pending')
-                      AND lb.series_hash IS NOT NULL
-                    GROUP BY lb.series_hash
+                    SELECT b.series_id
+                    FROM books b
+                    WHERE b.series_id NOT IN (SELECT series_hash FROM ai_learning_feedback)
+                      AND b.series_id NOT IN (SELECT series_hash FROM metadata_proposals WHERE status='pending')
+                      AND b.series_id IS NOT NULL
+                    GROUP BY b.series_id
                     HAVING COUNT(*) >= 2
                     LIMIT :limit
                 """)
