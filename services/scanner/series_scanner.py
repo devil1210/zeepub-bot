@@ -272,7 +272,7 @@ class SeriesScanner:
         ratings = [b.rating_average for b in books if b.rating_count > 0]
         if ratings:
             series.rating_avg = sum(ratings) / len(ratings)
-        series.rating_cnt = sum(b.rating_count for b in books)
+        series.rating_count = sum(b.rating_count for b in books)
         await session.flush()
 
     @classmethod

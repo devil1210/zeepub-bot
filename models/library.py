@@ -46,8 +46,8 @@ class Series(Base):
     publisher: Mapped[str | None] = mapped_column(String(255))
     book_type: Mapped[str | None] = mapped_column(String(100))
 
-    rating_avg: Mapped[float] = mapped_column("rating_avg", Float, default=0.0, nullable=False)
-    rating_cnt: Mapped[int] = mapped_column("rating_cnt", Integer, default=0, nullable=False)
+    rating_avg: Mapped[float] = mapped_column("rating_average", Float, default=0.0, nullable=False)
+    rating_count: Mapped[int] = mapped_column("rating_count", Integer, default=0, nullable=False)
     book_cnt: Mapped[int] = mapped_column("book_cnt", Integer, default=0, nullable=False)
 
     tags_json: Mapped[list | None] = mapped_column(JSONB)
@@ -181,6 +181,8 @@ class Book(Base):
     epub_version: Mapped[str | None] = mapped_column(String(20))
     word_count: Mapped[int | None] = mapped_column(Integer)
     page_count: Mapped[int | None] = mapped_column(Integer)
+    rating_average: Mapped[float] = mapped_column(Float, default=0.0)
+    rating_count: Mapped[int] = mapped_column(Integer, default=0)
     reading_time: Mapped[int | None] = mapped_column(Integer)
     modified_at_opf: Mapped[datetime | None] = mapped_column(DateTime)
 
