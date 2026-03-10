@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import BigInteger, Float, ForeignKey, Integer, String
+from sqlalchemy import BigInteger, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -122,6 +122,21 @@ class TranslatorsGroup(TimestampedBase):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), unique=True)
     siglas: Mapped[str | None] = mapped_column(String(50))
+
+
+class AILearningFeedback(TimestampedBase):
+    """
+    V3 Compat: Feedback for AI decisions.
+    """
+
+    __tablename__ = "ai_learning_feedback"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    original_name: Mapped[str | None] = mapped_column(String(255))
+    proposed_name: Mapped[str | None] = mapped_column(String(255))
+    final_name: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str | None] = mapped_column(String(50))
+    ai_reason: Mapped[str | None] = mapped_column(Text)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
