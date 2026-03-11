@@ -110,6 +110,8 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("users", "bypass_limits", "BOOLEAN DEFAULT FALSE")
                 await SchemaOrchestrator._check_and_add_column("users", "total_downloads", "INTEGER DEFAULT 0")
                 await SchemaOrchestrator._check_and_add_column("users", "photo_url", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("users", "nickname", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("users", "roles", "JSONB DEFAULT '[]'::jsonb")
                 await SchemaOrchestrator._check_and_add_column("users", "insignias", "JSONB DEFAULT '[]'::jsonb")
                 await SchemaOrchestrator._check_and_add_column("users", "expires_at", "TIMESTAMP WITH TIME ZONE")
                 await SchemaOrchestrator._check_and_add_column(
