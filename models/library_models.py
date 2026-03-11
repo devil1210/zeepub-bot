@@ -29,7 +29,9 @@ class Series(TimestampedBase):
 
     # People
     author: Mapped[str | None] = mapped_column(String(255))
+    author_jap: Mapped[str | None] = mapped_column(String(255))
     illustrator: Mapped[str | None] = mapped_column(String(255))
+    illustrator_jap: Mapped[str | None] = mapped_column(String(255))
 
     # Rich Metadata
     description: Mapped[str | None] = mapped_column(String(5000))

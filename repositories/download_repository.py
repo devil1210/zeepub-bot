@@ -75,5 +75,17 @@ class DownloadRepository(BaseRepository[DownloadLog]):
             result = await session.execute(stmt)
             return list(result.scalars().all())
 
+    async def get_user_downloads(self, telegram_id: int, limit: int = 20) -> list[DownloadLog]:
+        """Descargas del usuario (para historial). Alias usado por api/handlers/downloads."""
+        async with self.db_manager.get_session() as session:
+            stmt = (
+                select(DownloadLog)
+                .where(DownloadLog.telegram_id == telegram_id)
+                .order_by(DownloadLog.downloaded_at.desc())
+                .limit(limit)
+            )
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
 
 download_repo = DownloadRepository()

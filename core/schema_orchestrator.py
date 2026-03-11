@@ -73,6 +73,7 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column(
                     "user_levels", "show_recommendations", "BOOLEAN DEFAULT TRUE"
                 )
+                await SchemaOrchestrator._check_and_add_column("user_levels", "price", "DOUBLE PRECISION DEFAULT 0.0")
 
                 # Auto-Migration for UserUISettings
                 await SchemaOrchestrator._check_and_add_column("user_ui_settings", "font_size", "INTEGER")
@@ -102,6 +103,10 @@ class SchemaOrchestrator:
 
                 # Auto-Migration for Books
                 await SchemaOrchestrator._check_and_add_column("books", "series_hash", "VARCHAR(255)")
+
+                # Auto-Migration for Series (author_jap, illustrator_jap)
+                await SchemaOrchestrator._check_and_add_column("series", "author_jap", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("series", "illustrator_jap", "VARCHAR(255)")
 
                 # IMPORTANT: Wait a bit for Postgres to stabilize metadata
                 await asyncio.sleep(1)

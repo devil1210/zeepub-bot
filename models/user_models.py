@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String
+from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
@@ -21,9 +21,31 @@ class UserLevel(TimestampedBase):
     # Features
     daily_downloads: Mapped[int] = mapped_column(Integer, default=5)
     can_download: Mapped[bool] = mapped_column(default=True)
+    can_read: Mapped[bool] = mapped_column(default=True)
+    has_mini_app_access: Mapped[bool] = mapped_column(default=True)
+    has_library_access: Mapped[bool] = mapped_column(default=True)
+    can_request_books: Mapped[bool] = mapped_column(default=True)
+    can_upload_epub: Mapped[bool] = mapped_column(default=False)
+    early_access: Mapped[bool] = mapped_column(default=False)
+    custom_themes: Mapped[bool] = mapped_column(default=False)
+    allow_theme_templates: Mapped[bool] = mapped_column(default=False)
+    show_recommendations: Mapped[bool] = mapped_column(default=True)
+
+    # Pricing (para stats/revenue)
+    price: Mapped[float] = mapped_column(Float, default=0.0)
 
     # Visual
     color: Mapped[str | None] = mapped_column(String(20), default="#607D8B")
+    ui_theme: Mapped[str | None] = mapped_column(String(50), default="dark")
+    ui_font_size: Mapped[int | None] = mapped_column(Integer)
+    ui_glass_blur: Mapped[int | None] = mapped_column(Integer)
+    ui_cover_width: Mapped[int | None] = mapped_column(Integer)
+    ui_accent_opacity: Mapped[int | None] = mapped_column(Integer)
+    panel_transparency: Mapped[int | None] = mapped_column(Integer)
+    background_color: Mapped[str | None] = mapped_column(String(20))
+    card_color: Mapped[str | None] = mapped_column(String(20))
+    banner_content_offset: Mapped[int | None] = mapped_column(Integer)
+    force_settings: Mapped[bool] = mapped_column(default=False)
 
     users: Mapped[list["User"]] = relationship(back_populates="level_info")
 
