@@ -43,6 +43,9 @@ class SchemaOrchestrator:
                 logger.info("Base tables creation/verification completed.")
 
                 # Auto-Migration for UserLevel (Add missing columns to existing table)
+                await SchemaOrchestrator._check_and_add_column("user_levels", "daily_downloads", "INTEGER DEFAULT 5")
+                await SchemaOrchestrator._check_and_add_column("user_levels", "can_download", "BOOLEAN DEFAULT TRUE")
+                await SchemaOrchestrator._check_and_add_column("user_levels", "ui_theme", "VARCHAR(50) DEFAULT 'dark'")
                 await SchemaOrchestrator._check_and_add_column("user_levels", "color", "VARCHAR(20) DEFAULT '#607D8B'")
                 await SchemaOrchestrator._check_and_add_column("user_levels", "ui_font_size", "INTEGER DEFAULT 14")
                 await SchemaOrchestrator._check_and_add_column("user_levels", "ui_glass_blur", "INTEGER DEFAULT 12")
