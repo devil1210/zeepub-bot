@@ -127,7 +127,8 @@ class LevelRepository(BaseRepository[UserLevel]):
     """Repositorio para gestión de niveles de usuario (UserLevel)."""
 
     def __init__(self, db_manager=None):
-        super().__init__(db_manager or pg_manager, "user_levels")
+        self.db_manager = db_manager or pg_manager
+        super().__init__(UserLevel, None)  # BaseRepository espera (model_cls, session); usamos db_manager en métodos
 
     async def get_by_id(self, id: Any) -> UserLevel | None:
         """Obtiene un nivel por su ID."""

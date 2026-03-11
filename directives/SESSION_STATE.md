@@ -24,9 +24,7 @@
 - GitNexus está fallando por dependencias de binarios (`tree-sitter`). Se ha migrado oficialmente a **CodeGraphContext (cgc)**.
 
 ## ✅ Próximos Pasos (Handover)
-1. Ejecutar **`/push`** para persistir los cambios en el servidor/VPS.
-2. Reconstruir la imagen en el VPS: `docker compose build --no-cache bot`.
-3. Reiniciar contenedores: `docker compose up -d`.
-4. Si el error de permisos persiste, ejecutar en el HOST: `sudo chown -R 1000:1000 ./data`.
-5. Validar logs: `docker compose logs -f zeepub_bot_v4`.
-4. Continuar con la migración de otros modelos híbridos que usen el estilo antiguo de SQLAlchemy (Column) a Mapped/mapped_column.
+1. **Errores resueltos (sesión reciente)**:
+   - **`'Book' object has no attribute 'series_spanish'`**: Se añadieron `series_spanish` y `series_english` al modelo `Book` (V4/LocalBook), se rellenan en `epub_scanner` desde `identity` y se aseguran columnas en `schema_orchestrator`.
+   - **Cloudflared "no such host zeepubs_bot_v6"**: El túnel corre dentro del mismo contenedor; en el Dashboard de Cloudflare el origen debe ser **`http://localhost:8000`** (ver `directives/CLOUDFLARE_TUNNEL.md`).
+2. Ejecutar **`/push`** para persistir los cambios.

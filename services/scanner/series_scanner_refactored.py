@@ -80,11 +80,17 @@ class SeriesScannerRefactored:
         """
         logger.info(f"🆕 Creando nueva serie: {book_metadata.get('series', 'Sin título')}")
 
-        # Create series with processed metadata
+        # Create series with processed metadata (series_spanish/series_english viven en Series, no en Book)
+        series_spanish = getattr(book, "series_spanish", None) or book_metadata.get("series_spanish")
+        series_english = (
+            getattr(book, "series_english", None)
+            or book_metadata.get("series_english")
+            or getattr(book, "english_title", None)
+        )
         series = SeriesMetadata(
             series_name=book_metadata.get("series", ""),
-            series_spanish=book.series_spanish,
-            series_english=book.series_english,
+            series_spanish=series_spanish,
+            series_english=series_english,
             series_hash=book.series_hash,
             author=book_metadata.get("author", ""),
             author_jap=book_metadata.get("author_jap"),

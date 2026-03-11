@@ -160,8 +160,8 @@ class ScannerService:
                 # Sync Book Counts
                 await session.execute(
                     text("""
-                        UPDATE series_metadata sm
-                        SET book_count = (SELECT COUNT(*) FROM local_books lb WHERE lb.series_hash = sm.series_hash)
+                        UPDATE series sm
+                        SET book_count = (SELECT COUNT(*) FROM books lb WHERE lb.series_hash = sm.series_hash)
                     """)
                 )
                 await session.commit()

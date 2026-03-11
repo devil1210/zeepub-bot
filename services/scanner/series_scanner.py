@@ -26,12 +26,21 @@ class SeriesScanner:
     }
 
     @classmethod
-    async def get_or_create_series(cls, session: Any, book: LocalBook) -> SeriesMetadata:
+    async def get_or_create_series(
+        cls, session: Any, book: LocalBook, identity: dict[str, Any] | None = None
+    ) -> SeriesMetadata:
         """
         Obtiene o crea una entrada en SeriesMetadata para el libro.
-        Normaliza campos comunes de la serie.
+        series_spanish y series_english viven en la tabla series; se pasan vía identity
+        (extraído del EPUB/nombre de archivo) ya que Book no los almacena.
         """
         extracted = getattr(book, "extracted_data", {})
+
+        # series_spanish/series_english vienen de identity (tabla series), no del book
+        series_spanish = (identity or {}).get("series_spanish") if identity else None
+        series_english = (identity or {}).get("series_english") if identity else None
+        if series_english is None:
+            series_english = getattr(book, "english_title", None) or extracted.get("series")
 
         stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == book.series_hash)
         result = await session.execute(stmt)
@@ -40,7 +49,7 @@ class SeriesScanner:
         if not series:
             # Para creación inicial, preservar caracteres especiales del título original
             book_title = book.title or ""
-            extracted_series = extracted.get("series") or book.series_english or ""
+            extracted_series = extracted.get("series") or series_english or ""
 
             # Parsear con preservación de caracteres especiales
             parsed = parse_metadata_from_title(book_title, preserve_special_chars=True)
@@ -61,8 +70,8 @@ class SeriesScanner:
 
             series = SeriesMetadata(
                 series_name=final_series_name,
-                series_spanish=book.series_spanish,
-                series_english=book.series_english,
+                series_spanish=series_spanish,
+                series_english=series_english,
                 series_hash=book.series_hash,
                 author=extracted.get("author") or "",
                 author_jap=extracted.get("author_jap"),
@@ -88,7 +97,7 @@ class SeriesScanner:
         else:
             # Sincronizar campos PERO preservar modificaciones manuales
             current_name = series.series_name or ""
-            extracted_name = extracted.get("series") or book.series_english or book.title
+            extracted_name = extracted.get("series") or series_english or book.title
 
             should_preserve, preserve_reason = SeriesScanner._should_preserve_current_name(current_name, extracted_name)
             should_update_name = not should_preserve
@@ -115,15 +124,15 @@ class SeriesScanner:
                 if not new_tags.issubset(existing_tags):
                     series.tags = list(existing_tags | new_tags)
 
-            if book.series_spanish and series.series_spanish != book.series_spanish:
-                series.series_spanish = book.series_spanish
+            if series_spanish is not None and series_spanish and series.series_spanish != series_spanish:
+                series.series_spanish = series_spanish
 
-            if book.series_english and series.series_english != book.series_english:
-                series.series_english = book.series_english
+            if series_english is not None and series_english and series.series_english != series_english:
+                series.series_english = series_english
 
             # COMPLETAR ROMAJI_TITLE VACÍOS
             if not book.romaji_title or book.romaji_title.strip() == "":
-                title_source = book.title or book.series_spanish or book.series_english or ""
+                title_source = book.title or series_spanish or series_english or ""
                 extracted_romaji = SeriesScanner._extract_romaji_from_title(title_source)
                 if extracted_romaji:
                     book.romaji_title = extracted_romaji

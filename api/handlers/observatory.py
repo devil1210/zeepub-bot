@@ -24,7 +24,7 @@ async def handle_observatory_overview(data: dict[str, Any], user_data: dict[str,
 
     try:
         async with pg_manager.get_session() as session:
-            total_books = (await session.execute(text("SELECT COUNT(*) FROM local_books"))).scalar() or 0
+            total_books = (await session.execute(text("SELECT COUNT(*) FROM books"))).scalar() or 0
             total_users = (await session.execute(text("SELECT COUNT(*) FROM users"))).scalar() or 0
 
             downloads_today = (
@@ -268,7 +268,7 @@ async def handle_observatory_metrics(data: dict[str, Any], user_data: dict[str, 
 
     try:
         async with pg_manager.get_session() as session:
-            total_books = (await session.execute(text("SELECT COUNT(*) FROM local_books"))).scalar() or 0
+            total_books = (await session.execute(text("SELECT COUNT(*) FROM books"))).scalar() or 0
             total_series = (await session.execute(text("SELECT COUNT(*) FROM series_metadata"))).scalar() or 0
             total_ratings = (await session.execute(text("SELECT COUNT(*) FROM user_ratings"))).scalar() or 0
             avg_rating = (await session.execute(text("SELECT AVG(rating) FROM user_ratings"))).scalar() or 0
@@ -314,7 +314,7 @@ async def handle_observatory_metrics(data: dict[str, Any], user_data: dict[str, 
                         COALESCE(lb.title, dh.title, 'Desconocido') as titulo,
                         COUNT(*) as descargas
                     FROM download_history dh
-                    LEFT JOIN local_books lb ON dh.book_hash = lb.book_hash
+                    LEFT JOIN books lb ON dh.book_hash = lb.book_hash
                     GROUP BY COALESCE(lb.title, dh.title, 'Desconocido')
                     ORDER BY descargas DESC
                     LIMIT 10

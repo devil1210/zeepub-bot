@@ -127,10 +127,12 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 pattern = f"%{query}%"
                 search_type = search_type.lower() if search_type else "todos"
 
-                # Base query with download count subquery
+                # Base query with download count subquery (DownloadLog no tiene series_hash; unir por book_hash → books)
                 dl_subquery = (
                     select(func.count(UserDownload.id))
-                    .where(UserDownload.series_hash == SeriesMetadata.series_hash)
+                    .select_from(UserDownload)
+                    .join(LocalBook, LocalBook.book_hash == UserDownload.book_hash)
+                    .where(LocalBook.series_hash == SeriesMetadata.series_hash)
                     .correlate(SeriesMetadata)
                     .scalar_subquery()
                 )
