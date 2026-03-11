@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import BigInteger, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -221,6 +222,9 @@ class DuplicateBook(TimestampedBase):
     duplicate_filepath: Mapped[str] = mapped_column(String(1024))
     title: Mapped[str | None] = mapped_column(String(512))
     author: Mapped[str | None] = mapped_column(String(255))
+    detected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
 
 
 class LibraryCleanupLog(TimestampedBase):

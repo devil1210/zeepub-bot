@@ -75,6 +75,24 @@ class User(TimestampedBase):
 
     # Roles / Badges from the agent ecosystem
     roles: Mapped[list | None] = mapped_column(JSONB, default=list)
+    insignias: Mapped[list | None] = mapped_column(JSONB, default=list)
+
+    # Permissions overrides (User specific)
+    has_library_access: Mapped[bool] = mapped_column(default=True)
+    can_request_books: Mapped[bool] = mapped_column(default=True)
+    can_upload_epub: Mapped[bool] = mapped_column(default=False)
+    allow_theme_templates: Mapped[bool] = mapped_column(default=False)
+    beta_tester: Mapped[bool] = mapped_column(default=False)
+    bypass_limits: Mapped[bool] = mapped_column(default=False)
+
+    # Expiration and External
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    photo_url: Mapped[str | None] = mapped_column(String(512))
+    email: Mapped[str | None] = mapped_column(String(255))
+    total_downloads: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Compatibility synonyms/properties
+    settings = synonym("ui_settings")
 
     # Relationships
     level_info: Mapped["UserLevel"] = relationship(back_populates="users")

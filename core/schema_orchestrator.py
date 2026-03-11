@@ -101,6 +101,13 @@ class SchemaOrchestrator:
                 # Auto-Migration for Users (Ensure created_at and email exists)
                 await SchemaOrchestrator._check_and_add_column("users", "email", "VARCHAR(255) UNIQUE")
                 await SchemaOrchestrator._check_and_add_column("users", "can_upload_epub", "BOOLEAN DEFAULT FALSE")
+                await SchemaOrchestrator._check_and_add_column("users", "has_library_access", "BOOLEAN DEFAULT TRUE")
+                await SchemaOrchestrator._check_and_add_column("users", "can_request_books", "BOOLEAN DEFAULT TRUE")
+                await SchemaOrchestrator._check_and_add_column("users", "beta_tester", "BOOLEAN DEFAULT FALSE")
+                await SchemaOrchestrator._check_and_add_column("users", "total_downloads", "INTEGER DEFAULT 0")
+                await SchemaOrchestrator._check_and_add_column("users", "photo_url", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("users", "insignias", "JSONB DEFAULT '[]'::jsonb")
+                await SchemaOrchestrator._check_and_add_column("users", "expires_at", "TIMESTAMP WITH TIME ZONE")
                 await SchemaOrchestrator._check_and_add_column(
                     "users",
                     "updated_at",
@@ -163,6 +170,10 @@ class SchemaOrchestrator:
                             early_access=True,
                             custom_themes=True,
                             ui_theme="dark",
+                            ui_primary_color="#FF5252",
+                            ui_nav_opacity=80,
+                            ui_accent_opacity=30,
+                            panel_transparency=60,
                             can_read=True,
                             has_library_access=True,
                             can_request_books=True,
@@ -177,6 +188,10 @@ class SchemaOrchestrator:
                             early_access=True,
                             custom_themes=True,
                             ui_theme="dark",
+                            ui_primary_color="#7C4DFF",
+                            ui_nav_opacity=80,
+                            ui_accent_opacity=25,
+                            panel_transparency=60,
                             can_read=True,
                             has_library_access=True,
                             can_request_books=True,
@@ -191,6 +206,10 @@ class SchemaOrchestrator:
                             early_access=False,
                             custom_themes=True,
                             ui_theme="dark",
+                            ui_primary_color="#FFD740",
+                            ui_nav_opacity=85,
+                            ui_accent_opacity=20,
+                            panel_transparency=70,
                             can_read=True,
                             has_library_access=True,
                             can_request_books=True,
