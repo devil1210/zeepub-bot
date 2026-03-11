@@ -49,6 +49,29 @@ class Series(TimestampedBase):
     # Relationships
     books: Mapped[list["Book"]] = relationship(back_populates="series", cascade="all, delete-orphan")
 
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "series_name": self.series_name,
+            "series_hash": self.series_hash,
+            "series_spanish": self.series_spanish,
+            "series_english": self.series_english,
+            "author": self.author,
+            "author_jap": self.author_jap,
+            "illustrator": self.illustrator,
+            "illustrator_jap": self.illustrator_jap,
+            "description": self.description,
+            "cover_url": self.cover_url,
+            "book_type": self.book_type,
+            "publisher": self.publisher,
+            "rating_average": self.rating_average,
+            "rating_count": self.rating_count,
+            "book_count": self.book_count,
+            "tags": self.tags,
+            "demographics": self.demographics,
+            "slug": self.slug,
+        }
+
 
 class Book(TimestampedBase):
     """
@@ -73,6 +96,13 @@ class Book(TimestampedBase):
     volume: Mapped[float | None] = mapped_column(Float)
     language: Mapped[str] = mapped_column(String(10), default="es")
 
+    # Compatibility & Refined Metadata
+    series_spanish: Mapped[str | None] = mapped_column(String(255))
+    series_english: Mapped[str | None] = mapped_column(String(255))
+    layout_by: Mapped[str | None] = mapped_column(String(255))
+    translator: Mapped[str | None] = mapped_column(String(255))
+    isbn: Mapped[str | None] = mapped_column(String(50), index=True)
+
     # UI progressive covers
     cover_low: Mapped[str | None] = mapped_column(String(1024))
     cover_medium: Mapped[str | None] = mapped_column(String(1024))
@@ -82,11 +112,38 @@ class Book(TimestampedBase):
     # Foreign Keys
     series_id: Mapped[int | None] = mapped_column(ForeignKey("series.id"), index=True)
     series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    source_id: Mapped[int | None] = mapped_column(ForeignKey("library_sources.id"), index=True)
     rating_average: Mapped[float] = mapped_column(Float, default=0.0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationships
     series: Mapped[Optional["Series"]] = relationship(back_populates="books")
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "book_hash": self.book_hash,
+            "title": self.title,
+            "series_id": self.series_id,
+            "series_hash": self.series_hash,
+            "series_spanish": self.series_spanish,
+            "series_english": self.series_english,
+            "volume": self.volume,
+            "filepath": self.filepath,
+            "filename": self.filename,
+            "file_size": self.file_size,
+            "language": self.language,
+            "layout_by": self.layout_by,
+            "translator": self.translator,
+            "isbn": self.isbn,
+            "source_id": self.source_id,
+            "cover_low": self.cover_low,
+            "cover_medium": self.cover_medium,
+            "cover_high": self.cover_high,
+            "cover_original": self.cover_original,
+            "rating_average": self.rating_average,
+            "rating_count": self.rating_count,
+        }
 
 
 class UserRating(TimestampedBase):

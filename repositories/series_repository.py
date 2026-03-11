@@ -189,7 +189,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                         book_subq = sa_exists().where(
                             and_(
                                 or_(
-                                    LocalBook.series_metadata_id == SeriesMetadata.id,
+                                    LocalBook.series_id == SeriesMetadata.id,
                                     LocalBook.series_hash == SeriesMetadata.series_hash,
                                 ),
                                 or_(*book_filters),
@@ -209,7 +209,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                         stmt.join(
                             LocalBook,
                             or_(
-                                LocalBook.series_metadata_id == SeriesMetadata.id,
+                                LocalBook.series_id == SeriesMetadata.id,
                                 LocalBook.series_hash == SeriesMetadata.series_hash,
                             ),
                         )

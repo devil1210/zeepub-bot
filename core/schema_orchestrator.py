@@ -63,6 +63,9 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("user_levels", "force_settings", "BOOLEAN DEFAULT FALSE")
                 await SchemaOrchestrator._check_and_add_column("user_levels", "can_read", "BOOLEAN DEFAULT TRUE")
                 await SchemaOrchestrator._check_and_add_column(
+                    "user_levels", "has_mini_app_access", "BOOLEAN DEFAULT TRUE"
+                )
+                await SchemaOrchestrator._check_and_add_column(
                     "user_levels", "has_library_access", "BOOLEAN DEFAULT TRUE"
                 )
                 await SchemaOrchestrator._check_and_add_column(
@@ -103,6 +106,12 @@ class SchemaOrchestrator:
 
                 # Auto-Migration for Books
                 await SchemaOrchestrator._check_and_add_column("books", "series_hash", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "series_spanish", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "series_english", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "layout_by", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "translator", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "isbn", "VARCHAR(50)")
+                await SchemaOrchestrator._check_and_add_column("books", "source_id", "INTEGER")
 
                 # Auto-Migration for Series (author_jap, illustrator_jap)
                 await SchemaOrchestrator._check_and_add_column("series", "author_jap", "VARCHAR(255)")
