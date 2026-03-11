@@ -193,7 +193,7 @@ class EpubScanner:
                 return False
 
             if not book:
-                book = LocalBook(filepath=filepath, source_id=source.id)
+                book = LocalBook(filepath=filepath)
 
             # Actualizar campos
             book.filename = filename
@@ -308,7 +308,6 @@ class EpubScanner:
                         hash_conflict.filename = filename
                         hash_conflict.file_size = size
                         hash_conflict.file_modified_at = mtime
-                        hash_conflict.source_id = source.id
                         hash_conflict.series_hash = target_series_hash
                         # Si 'book' es nuevo y no estaba en DB, no pasa nada.
                         # Si estaba en DB (existing_same_file), borrarlo.
