@@ -21,11 +21,11 @@
 - [x] **Fix Scanner EPUB**: Adición de más de 20 campos faltantes al modelo `Book` (word_count, author, reader_time, etc.) y actualización de `to_dict`.
 - [x] **Fix "greenlet_spawn"**: Implementado `selectinload(LocalBook.series)` en `ScannerService` y `SeriesScanner` para evitar errores de carga asíncrona.
 - [x] **Consistencia de Identidad**: `Book` ahora almacena `author` y `book_type` directamente para búsquedas más rápidas y evitar errores en limpiezas de librería.
+- [x] **Deduplicación**: Se analizó el impacto y se añadió la columna `detected_at` faltante a la tabla `duplicate_books` para que el escaner no colapse por errores de modelo SQLAlchemy.
 
 ### Bloqueos:
-- Necesario ejecutar `/db-sync` para asegurar que las nuevas columnas de `Book` existen en la base de datos física.
+- Ninguno actual (Mantenimiento V4 ejecutado. Release).
 
 ### Siguiente Paso:
-- **Ejecutar `/db-sync`** para aplicar los cambios de columnas en la tabla `books` de Postgres.
-- Reiniciar el bot y probar un escaneo completo (`/sync_all`).
-- Verificar la publicación de una novela para confirmar que el `target_id` funciona correctamente.
+- **Verificar VPS**: Los cambios subidos por `/push` deben aplicarse en la BD de desarrollo del servidor (VPS), asegurando ejecutar `/db-sync` o la alteración manual probada (`patch_duplicate_books.py`) para `duplicate_books`.
+- Reiniciar el bot y probar un escaneo completo en el ambiente de pruebas.
