@@ -50,6 +50,17 @@ class PublicationQueueRepository(BaseRepository[PublicationQueue]):
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    async def get_full_queue(self, status: str | None = None, limit: int = 50) -> Sequence[PublicationQueue]:
+        stmt = select(PublicationQueue).options(
+            selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template)
+        )
+        if status:
+            stmt = stmt.where(PublicationQueue.status == status)
+
+        stmt = stmt.order_by(PublicationQueue.scheduled_for.desc()).limit(limit)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
 
 class PublicationChannelRepository(BaseRepository[PublicationChannel]):
     """
@@ -126,6 +137,12 @@ class _PubRepoCompat:
         async with await self._session() as s:
             repo = PublicationQueueRepository(s)
             return await repo.get_pending_queue(limit=limit, lookahead_seconds=lookahead_seconds)
+
+    async def get_full_queue(self, status: str | None = None, limit: int = 50):
+        """Obtiene la cola completa de publicaciones."""
+        async with await self._session() as s:
+            repo = PublicationQueueRepository(s)
+            return await repo.get_full_queue(status=status, limit=limit)
 
     async def get_template_by_id(self, template_id: int) -> PublicationTemplate | None:
         async with await self._session() as s:

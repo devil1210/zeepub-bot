@@ -316,7 +316,9 @@ class EpubScanner:
                         book = hash_conflict
                         outcome = "updated"
                     else:
-                        logger.warning(f"📕 Duplicado detectado: {book.title}")
+                        logger.warning(
+                            f"📕 [DEDUPLICATION] Duplicate detected for '{book.title}'. Conflict path: {filepath}"
+                        )
                         dup_stmt = select(DuplicateBook).where(DuplicateBook.duplicate_filepath == filepath)
                         dup_res = await session.execute(dup_stmt)
                         if not dup_res.scalar_one_or_none():

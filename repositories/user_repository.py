@@ -8,7 +8,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import String, delete, or_, select, update
 from sqlalchemy.orm import selectinload
 
 from core.db_manager_pg import pg_manager
@@ -317,6 +317,30 @@ class UserRepository(BaseRepository[User]):
             await session.commit()
             await cache_manager.invalidate_user(telegram_id)
             return True
+
+    async def list_users(self, limit: int = 20, offset: int = 0, search: str | None = None) -> list[dict[str, Any]]:
+        """
+        Lista usuarios paginados con búsqueda opcional.
+        Soporta búsqueda por nickname, name, username, email o telegram_id.
+        """
+        async with self.db_manager.get_session() as session:
+            stmt = select(User).options(selectinload(User.level_info))
+            if search:
+                search_term = f"%{search}%"
+                stmt = stmt.where(
+                    or_(
+                        User.nickname.ilike(search_term),
+                        User.name.ilike(search_term),
+                        User.username.ilike(search_term),
+                        User.email.ilike(search_term),
+                        User.telegram_id.cast(String).ilike(search_term) if hasattr(User, "telegram_id") else False,
+                    )
+                )
+
+            stmt = stmt.order_by(User.created_at.desc()).offset(offset).limit(limit)
+            result = await session.execute(stmt)
+            users = result.scalars().all()
+            return [self._to_dict(u) for u in users]
 
     async def get_by_level(self, level_name: str) -> list[dict[str, Any]]:
         """Obtiene usuarios por nivel."""

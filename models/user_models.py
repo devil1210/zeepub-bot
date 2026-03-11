@@ -109,6 +109,7 @@ class DownloadLog(TimestampedBase):
 
     # What was downloaded (hash for immutability)
     book_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
     book_title: Mapped[str | None] = mapped_column(String(512))
 
     # Context

@@ -60,6 +60,7 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column(
                     "user_levels", "card_color", "VARCHAR(20) DEFAULT '#1e293b'"
                 )
+                await SchemaOrchestrator._check_and_add_column("download_logs", "series_hash", "VARCHAR(64)")
                 await SchemaOrchestrator._check_and_add_column(
                     "user_levels", "banner_content_offset", "INTEGER DEFAULT 0"
                 )

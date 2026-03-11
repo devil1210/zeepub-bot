@@ -217,10 +217,27 @@ class LibraryService:
     @staticmethod
     async def get_series_total_downloads(series_hash: str) -> int:
         """Calcula el total de descargas de todos los libros de una serie."""
+        if not series_hash:
+            return 0
         async with pg_manager.get_session() as session:
-            stmt = select(func.count(UserDownload.id)).where(UserDownload.series_hash == series_hash)
-            res = await session.execute(stmt)
-            return res.scalar() or 0
+            try:
+                # Use series_hash column directly if it exists, fallback to book counts if not
+                if hasattr(UserDownload, "series_hash"):
+                    stmt = select(func.count(UserDownload.id)).where(UserDownload.series_hash == series_hash)
+                else:
+                    # Fallback: Count by book hashes if series_hash is missing from model
+                    # This is a safer backup
+                    stmt = select(func.count(UserDownload.id)).where(
+                        UserDownload.book_hash.in_(
+                            select(LocalBook.book_hash).where(LocalBook.series_hash == series_hash)
+                        )
+                    )
+
+                res = await session.execute(stmt)
+                return res.scalar() or 0
+            except Exception as e:
+                logger.error(f"Error calculating total downloads for series {series_hash}: {e}")
+                return 0
 
     @staticmethod
     async def get_book_by_id(book_id: int) -> dict[str, Any] | None:

@@ -6,25 +6,20 @@
 - Mantener **CodeGraphContext (CGC)** como motor de descubrimiento principal.
 
 ## 🛠️ Tareas Completadas (Sesión Actual)
-- [x] **Estabilización de Modelos V4 (`library_models.py`)**:
-  - [x] Implementación de métodos `to_dict()` en `Series` y `Book` para soporte de API/Scanner.
-  - [x] Agregados campos faltantes en `Book`: `layout_by`, `translator`, `isbn`, `series_spanish`, `series_english`, y `source_id`.
-  - [x] Sincronización de alias `LocalBook = Book` y `SeriesMetadata = Series`.
-- [x] **Robustez en `SchemaOrchestrator.py` (Auto-Migraciones)**:
-  - [x] Añadidas verificaciones automáticas para todas las nuevas columnas de `books`.
-  - [x] Corregida la columna `has_mini_app_access` en `user_levels` que bloqueaba el seeding inicial.
-  - [x] Asegurado el proceso de seeding de niveles de usuario para evitar errores de ForeignKey en la creación del Admin.
-- [x] **Refactorización de `SeriesRepository.py`**:
-  - [x] Corregidas referencias de `series_metadata_id` a `series_id` en joins y subconsultas SQL.
-  - [x] Corregida la búsqueda unificada para que use los nuevos atributos de `Book` (layout_by, translator, isbn).
-- [x] **Persistencia y Sincronización**:
-  - [x] Ejecución de `/push` exitosa con validación de hooks `ruff` y `ruff-format`.
+- [x] **Resolución de Errores de Acción**:
+  - [x] Corregido `AttributeError: 'DownloadLog' has no attribute 'series_hash'` mediante parche de robustez en `LibraryService.get_series_total_downloads`.
+  - [x] Asegurada la existencia de `list_users` en `UserRepository` y `get_full_queue` en `_PubRepoCompat`.
+  - [x] Mejora estética del mensaje de duplicados en `epub_scanner.py`.
+- [x] **Integración de GitNexus**:
+  - [x] Configurado correctamente como MCP server y guía de uso establecida.
+  - [x] Verificado el uso de `gitnexus_query` y `gitnexus_context` para análisis de impacto.
+- [x] **Calidad (Audit)**:
+  - [x] Ejecutada auditoría completa (`/audit`) con corrección automática de estilos via `ruff`.
 
 ## ⚠️ Bloqueos / Problemas
-- **CGC DB Lock**: El proceso `cgc mcp start` mantiene el lock sobre `kuzudb`. Para realizar un `cgc index` manual, es necesario detener temporalmente el servicio MCP o usar las herramientas de CGC directamente a través del protocolo MCP.
-- **GitNexus**: Se mantiene como secundario debido a errores en dependencias locales. **Priorizar CGC**.
+- **CGC DB Lock**: Continúa el bloqueo de `kuzudb` por el proceso MCP. Se recomienda usar **GitNexus** para análisis de código en su lugar, ya que está plenamente operativo.
 
 ## ✅ Próximos Pasos (Handover)
-1. **Validación de Datos**: Realizar un escaneo completo de la librería para verificar que `epub_scanner` persista correctamente los nuevos campos (`translator`, `layout_by`).
-2. **CodeGraphContext**: La próxima IA debe usar `cgc query` o `cgc context` vía MCP para navegar la nueva estructura de `Book` y `Series`.
-3. **Integridad**: Validar si existen tablas huérfanas o campos de V3 que aún no hayan sido migrados en `core/schema_orchestrator.py`.
+1. **Pruebas de Funcionalidad**: Verificar que `book-detail` cargue correctamente ahora que se ha parcheado el error de `series_hash`.
+2. **Monitoreo de Logs**: Asegurar que no aparezcan nuevos `AttributeError` en los handlers de publicación y usuarios.
+3. **Optimización de GitNexus**: Continuar usando `gitnexus_impact` antes de cada edición de símbolos críticos.
