@@ -349,7 +349,7 @@ class SeriesScanner:
                                     status="pending",
                                 )
                                 session.add(p_obj)
-                                await session.commit()
+                                await session.flush()
                                 processed_count += 1
                         except Exception as ae:
                             logger.warning(f"Error IA para {s_hash}: {ae}")

@@ -140,7 +140,7 @@ class EpubScanner:
         """
         try:
             stat = os.stat(filepath)
-            mtime = stat.st_mtime
+            mtime = float(stat.st_mtime)
             size = stat.st_size
 
             stmt = select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.filepath == filepath)
@@ -293,8 +293,10 @@ class EpubScanner:
                 book.book_hash = target_book_hash
 
                 # Buscar conflictos de hash con OTROS paths
-                conflict_stmt = select(LocalBook).where(
-                    LocalBook.book_hash == target_book_hash, LocalBook.filepath != filepath
+                conflict_stmt = (
+                    select(LocalBook)
+                    .options(selectinload(LocalBook.series))
+                    .where(LocalBook.book_hash == target_book_hash, LocalBook.filepath != filepath)
                 )
                 conflict_res = await session.execute(conflict_stmt)
                 hash_conflict = conflict_res.scalar_one_or_none()
@@ -366,7 +368,6 @@ class EpubScanner:
             return outcome
         except Exception as e:
             logger.error(f"Error procesando libro {filepath}: {e}")
-            await session.rollback()
             return False
 
     @classmethod
