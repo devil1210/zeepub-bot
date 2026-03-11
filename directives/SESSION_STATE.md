@@ -3,7 +3,7 @@
 ## 🎯 Objetivo Actual
 - Resolver inconsistencias estructurales en modelos V4 y sincronizar la base de datos local.
 - Asegurar la interoperabilidad entre el Scanner, Repositorios y la UI de V4.
-- Mantener **CodeGraphContext (CGC)** como motor de descubrimiento principal.
+- Mantener **GitNexus** como motor de descubrimiento principal.
 
 ### Tareas Completadas:
 - [x] Corrección de `handle_download`: Casting de `book_id` a string para evitar `AttributeError`.
