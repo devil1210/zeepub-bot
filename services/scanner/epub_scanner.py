@@ -206,9 +206,11 @@ class EpubScanner:
             book.language = identity["language"]
             book.translator = identity["translator"]
             book.layout_by = identity["layout_by"]
+            book.author = identity["author"]
             book.english_title = identity.get("series")
             book.jap_title = identity.get("romaji_title")
             book.edition = identity["edition"]
+            book.book_type = identity.get("book_type", "Novela Ligera")
             book.publisher = meta.get("publisher")
 
             # Tags clasificación

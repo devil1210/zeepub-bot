@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import select, text
+from sqlalchemy.orm import selectinload
 
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
@@ -245,7 +246,9 @@ class ScannerService:
                 )
 
                 if book_res in ("added", "updated"):
-                    stmt_book = select(LocalBook).where(LocalBook.filepath == full_path)
+                    stmt_book = (
+                        select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.filepath == full_path)
+                    )
                     res_book = await session.execute(stmt_book)
                     book = res_book.scalar_one_or_none()
 
@@ -315,7 +318,11 @@ class ScannerService:
                         translator_provider=LibraryScanner.sync_translator_group,
                     )
                     if res in ("added", "updated"):
-                        stmt_book = select(LocalBook).where(LocalBook.filepath == abs_path)
+                        stmt_book = (
+                            select(LocalBook)
+                            .options(selectinload(LocalBook.series))
+                            .where(LocalBook.filepath == abs_path)
+                        )
                         res_book = await session.execute(stmt_book)
                         book = res_book.scalar_one_or_none()
                         if book and book.series_hash:

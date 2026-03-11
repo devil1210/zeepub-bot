@@ -162,7 +162,7 @@ class CommandHandlers:
             for ch in active_channels:
                 prefix = "📣 " if ch.platform == "telegram" else "📘 " if ch.platform == "facebook" else "🌐 "
                 btn_text = f"{prefix}{ch.name}"
-                keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"destino|{ch.chat_id_or_username}")])
+                keyboard.append([InlineKeyboardButton(btn_text, callback_data=f"destino|{ch.target_id}")])
 
             keyboard.append([InlineKeyboardButton("✏️ Otro", callback_data="destino|otro")])
 

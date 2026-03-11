@@ -71,6 +71,8 @@ class Series(TimestampedBase):
             "tags": self.tags,
             "demographics": self.demographics,
             "slug": self.slug,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
 
@@ -102,6 +104,7 @@ class Book(TimestampedBase):
     series_english: Mapped[str | None] = mapped_column(String(255))
     layout_by: Mapped[str | None] = mapped_column(String(255))
     translator: Mapped[str | None] = mapped_column(String(255))
+    author: Mapped[str | None] = mapped_column(String(255))
     isbn: Mapped[str | None] = mapped_column(String(50), index=True)
 
     # UI progressive covers
@@ -110,10 +113,33 @@ class Book(TimestampedBase):
     cover_high: Mapped[str | None] = mapped_column(String(1024))
     cover_original: Mapped[str | None] = mapped_column(String(1024))
 
+    # Extended Metadata
+    english_title: Mapped[str | None] = mapped_column(String(512))
+    jap_title: Mapped[str | None] = mapped_column(String(512))
+    romaji_title: Mapped[str | None] = mapped_column(String(512))
+    edition: Mapped[str | None] = mapped_column(String(100))
+    publisher: Mapped[str | None] = mapped_column(String(255))
+    extracted_data: Mapped[dict | None] = mapped_column(JSONB)
+    hash_md5: Mapped[str | None] = mapped_column(String(64))
+    asin: Mapped[str | None] = mapped_column(String(50))
+    uri_id: Mapped[str | None] = mapped_column(String(255))
+    published_at: Mapped[str | None] = mapped_column(String(100))
+    modified_at_opf: Mapped[str | None] = mapped_column(String(100))
+    epub_version: Mapped[str | None] = mapped_column(String(20))
+    word_count: Mapped[int | None] = mapped_column(Integer)
+    page_count: Mapped[int | None] = mapped_column(Integer)
+    reading_time: Mapped[int | None] = mapped_column(Integer)
+    is_uncensored: Mapped[int] = mapped_column(Integer, default=0)
+    color_mode: Mapped[str | None] = mapped_column(String(20), default="bw")
+    short_link: Mapped[str | None] = mapped_column(String(100))
+    file_modified_at: Mapped[float | None] = mapped_column(Float)
+    file_created_at: Mapped[datetime | None] = mapped_column(DateTime)
+
     # Foreign Keys
     series_id: Mapped[int | None] = mapped_column(ForeignKey("series.id"), index=True)
     series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
     source_id: Mapped[int | None] = mapped_column(ForeignKey("library_sources.id"), index=True)
+    book_type: Mapped[str | None] = mapped_column(String(100))
     rating_average: Mapped[float] = mapped_column(Float, default=0.0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
 
@@ -130,6 +156,7 @@ class Book(TimestampedBase):
             "series_spanish": self.series_spanish,
             "series_english": self.series_english,
             "volume": self.volume,
+            "author": self.author,
             "filepath": self.filepath,
             "filename": self.filename,
             "file_size": self.file_size,
@@ -144,6 +171,19 @@ class Book(TimestampedBase):
             "cover_original": self.cover_original,
             "rating_average": self.rating_average,
             "rating_count": self.rating_count,
+            "english_title": self.english_title,
+            "jap_title": self.jap_title,
+            "romaji_title": self.romaji_title,
+            "edition": self.edition,
+            "publisher": self.publisher,
+            "book_type": self.book_type,
+            "word_count": self.word_count,
+            "page_count": self.page_count,
+            "is_uncensored": self.is_uncensored,
+            "color_mode": self.color_mode,
+            "short_link": self.short_link,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
 
