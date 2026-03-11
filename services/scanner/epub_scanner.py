@@ -140,7 +140,7 @@ class EpubScanner:
         """
         try:
             stat = os.stat(filepath)
-            mtime = datetime.fromtimestamp(stat.st_mtime)
+            mtime = stat.st_mtime
             size = stat.st_size
 
             stmt = select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.filepath == filepath)
