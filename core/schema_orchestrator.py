@@ -103,7 +103,11 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("users", "can_upload_epub", "BOOLEAN DEFAULT FALSE")
                 await SchemaOrchestrator._check_and_add_column("users", "has_library_access", "BOOLEAN DEFAULT TRUE")
                 await SchemaOrchestrator._check_and_add_column("users", "can_request_books", "BOOLEAN DEFAULT TRUE")
+                await SchemaOrchestrator._check_and_add_column(
+                    "users", "allow_theme_templates", "BOOLEAN DEFAULT FALSE"
+                )
                 await SchemaOrchestrator._check_and_add_column("users", "beta_tester", "BOOLEAN DEFAULT FALSE")
+                await SchemaOrchestrator._check_and_add_column("users", "bypass_limits", "BOOLEAN DEFAULT FALSE")
                 await SchemaOrchestrator._check_and_add_column("users", "total_downloads", "INTEGER DEFAULT 0")
                 await SchemaOrchestrator._check_and_add_column("users", "photo_url", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("users", "insignias", "JSONB DEFAULT '[]'::jsonb")
