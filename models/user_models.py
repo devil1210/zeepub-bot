@@ -37,6 +37,8 @@ class UserLevel(TimestampedBase):
     # Visual
     color: Mapped[str | None] = mapped_column(String(20), default="#607D8B")
     ui_theme: Mapped[str | None] = mapped_column(String(50), default="dark")
+    ui_primary_color: Mapped[str | None] = mapped_column(String(20))
+    ui_nav_opacity: Mapped[int | None] = mapped_column(Integer)
     ui_font_size: Mapped[int | None] = mapped_column(Integer)
     ui_glass_blur: Mapped[int | None] = mapped_column(Integer)
     ui_cover_width: Mapped[int | None] = mapped_column(Integer)

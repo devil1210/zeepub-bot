@@ -62,7 +62,7 @@ async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
     if not book_metadata:
         # Fallback for books not in local library but available via URL
         book_metadata = {"title": title, "url": book_id}
-        if not book_id.startswith("http"):
+        if not str(book_id).startswith("http"):
             logger.warning(f"Book not found in library and not a URL: {book_id}")
 
     # 3. Deliver Book

@@ -29,8 +29,13 @@ class MetadataOrchestrator:
                 lb = None
 
                 # Check if it's a known hash
+                from sqlalchemy import String as AlchemyString
+                from sqlalchemy import cast
+
                 stmt_hash = (
-                    select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.book_hash == book_id)
+                    select(LocalBook)
+                    .options(selectinload(LocalBook.series))
+                    .where(cast(LocalBook.book_hash, AlchemyString) == str(book_id))
                 )
                 res_hash = await session.execute(stmt_hash)
                 lb = res_hash.scalar_one_or_none()
