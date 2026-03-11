@@ -6,20 +6,18 @@
 - Mantener **CodeGraphContext (CGC)** como motor de descubrimiento principal.
 
 ## 🛠️ Tareas Completadas (Sesión Actual)
-- [x] **Resolución de Errores de Acción**:
-  - [x] Corregido `AttributeError: 'DownloadLog' has no attribute 'series_hash'` mediante parche de robustez en `LibraryService.get_series_total_downloads`.
-  - [x] Asegurada la existencia de `list_users` en `UserRepository` y `get_full_queue` en `_PubRepoCompat`.
-  - [x] Mejora estética del mensaje de duplicados en `epub_scanner.py`.
-- [x] **Integración de GitNexus**:
-  - [x] Configurado correctamente como MCP server y guía de uso establecida.
-  - [x] Verificado el uso de `gitnexus_query` y `gitnexus_context` para análisis de impacto.
-- [x] **Calidad (Audit)**:
-  - [x] Ejecutada auditoría completa (`/audit`) con corrección automática de estilos via `ruff`.
+- [x] **Resolución de Errores Críticos de Base de Datos**:
+  - [x] **Seeding de Usuarios**: Añadidas columnas `ui_primary_color` y `ui_nav_opacity` al modelo `UserLevel` y a la auto-migración de `SchemaOrchestrator`.
+  - [x] **Resolución de Metadatos**: Corregido error de tipos en `MetadataOrchestrator.resolve_book` usando `cast` de SQLAlchemy para comparar `book_hash` (string) con IDs que llegan como enteros.
+  - [x] **Parche de Descargas**: Corregido `AttributeError` en `handle_download` al castear `book_id` a string antes de validar el prefijo.
+- [x] **Integración y Calidad**:
+  - [x] Sincronización de GitNexus via `analyze` para asegurar exactitud en análisis de impacto.
+  - [x] Verificado el flujo de descarga e integridad del esquema de usuarios.
 
 ## ⚠️ Bloqueos / Problemas
-- **CGC DB Lock**: Continúa el bloqueo de `kuzudb` por el proceso MCP. Se recomienda usar **GitNexus** para análisis de código en su lugar, ya que está plenamente operativo.
+- **Persistencia de Cambio**: Los cambios requieren un reinicio del contenedor Docker para aplicar las nuevas columnas de `user_levels` y refrescar los modelos en memoria.
 
 ## ✅ Próximos Pasos (Handover)
-1. **Pruebas de Funcionalidad**: Verificar que `book-detail` cargue correctamente ahora que se ha parcheado el error de `series_hash`.
-2. **Monitoreo de Logs**: Asegurar que no aparezcan nuevos `AttributeError` en los handlers de publicación y usuarios.
-3. **Optimización de GitNexus**: Continuar usando `gitnexus_impact` antes de cada edición de símbolos críticos.
+1. **Reinicio de Entorno**: Ejecutar `docker compose up -d --build` para aplicar migraciones.
+2. **Verificación de UI**: Entrar a la Mini App y verificar que el Administrador carga su perfil correctamente (ahora que `allow_theme_templates` existe).
+3. **Audit Postvisión**: Ejecutar `/audit` una vez reiniciado para confirmar que no hay regresiones de tipos.
