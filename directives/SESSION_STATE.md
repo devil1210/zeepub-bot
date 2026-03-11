@@ -5,19 +5,18 @@
 - Asegurar la interoperabilidad entre el Scanner, Repositorios y la UI de V4.
 - Mantener **CodeGraphContext (CGC)** como motor de descubrimiento principal.
 
-## 🛠️ Tareas Completadas (Sesión Actual)
-- [x] **Resolución de Errores Críticos de Base de Datos**:
-  - [x] **Seeding de Usuarios**: Añadidas columnas `ui_primary_color` y `ui_nav_opacity` al modelo `UserLevel` y a la auto-migración de `SchemaOrchestrator`.
-  - [x] **Resolución de Metadatos**: Corregido error de tipos en `MetadataOrchestrator.resolve_book` usando `cast` de SQLAlchemy para comparar `book_hash` (string) con IDs que llegan como enteros.
-  - [x] **Parche de Descargas**: Corregido `AttributeError` en `handle_download` al castear `book_id` a string antes de validar el prefijo.
-- [x] **Integración y Calidad**:
-  - [x] Sincronización de GitNexus via `analyze` para asegurar exactitud en análisis de impacto.
-  - [x] Verificado el flujo de descarga e integridad del esquema de usuarios.
+### Tareas Completadas:
+- [x] Corrección de `handle_download`: Casting de `book_id` a string para evitar `AttributeError`.
+- [x] Corrección de `MetadataOrchestrator`: Uso de `cast(LocalBook.book_hash, String)` y `str(book_id)` para comparación segura.
+- [x] Esquema DB: Adición de columnas faltantes en `users` y `user_levels` (`ui_primary_color`, `ui_nav_opacity`, etc.).
+- [x] Modelos: Sincronización de `UserLevel`, `Book` y `DownloadLog` con el esquema real.
+- [x] **Canales de Publicación**: Implementación de `DiscoveredChat` y soporte para descubrimiento de chats en el repositorio.
+- [x] **Migration**: Creación de la tabla `discovered_chats` y adición de `is_favorite` a `publication_channels`.
 
-## ⚠️ Bloqueos / Problemas
-- **Persistencia de Cambio**: Los cambios requieren un reinicio del contenedor Docker para aplicar las nuevas columnas de `user_levels` y refrescar los modelos en memoria.
+### Bloqueos:
+- Ninguno crítico actualmente.
 
-## ✅ Próximos Pasos (Handover)
-1. **Reinicio de Entorno**: Ejecutar `docker compose up -d --build` para aplicar migraciones.
-2. **Verificación de UI**: Entrar a la Mini App y verificar que el Administrador carga su perfil correctamente (ahora que `allow_theme_templates` existe).
-3. **Audit Postvisión**: Ejecutar `/audit` una vez reiniciado para confirmar que no hay regresiones de tipos.
+### Siguiente Paso:
+- **Reiniciar el bot** (`docker compose up -d --build`) para aplicar los cambios de código y validar el descubrimiento de canales en tiempo real.
+- Verificar si los canales antiguos reaparecen (si existían en la tabla `publication_channels`). Si la tabla sigue vacía, podría ser necesario re-asociarlos.
+- Ejecutar `/audit` para asegurar que no hay regresiones de tipos.

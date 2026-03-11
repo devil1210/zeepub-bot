@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from models.publication_models import (
+    DiscoveredChat,
     PublicationChannel,
     PublicationQueue,
     PublicationTemplate,
@@ -173,11 +174,40 @@ class _PubRepoCompat:
             return await repo.get_channels(active_only=active_only)
 
     async def get_discovered_chats(self, limit: int = 50):
-        """
-        Compatibilidad: el V3 pedía chats descubiertos.
-        Retorna lista vacía si no existe la tabla (V4 no la implementa aún).
-        """
-        return []
+        """Retorna los chats descubiertos."""
+        async with await self._session() as s:
+            stmt = select(DiscoveredChat).order_by(DiscoveredChat.last_seen_at.desc()).limit(limit)
+            result = await s.execute(stmt)
+            return result.scalars().all()
+
+    async def save_discovered_chat(
+        self, chat_id: str, title: str, chat_type: str, username: str = None, member_count: int = 0
+    ):
+        """Guarda o actualiza un chat descubierto."""
+        async with await self._session() as s:
+            stmt = select(DiscoveredChat).where(DiscoveredChat.chat_id == chat_id)
+            result = await s.execute(stmt)
+            chat = result.scalar_one_or_none()
+
+            if not chat:
+                chat = DiscoveredChat(
+                    chat_id=chat_id,
+                    title=title,
+                    type=chat_type,
+                    username=username,
+                    member_count=member_count,
+                    last_seen_at=datetime.utcnow(),
+                )
+                s.add(chat)
+            else:
+                chat.title = title
+                chat.type = chat_type
+                chat.username = username
+                chat.member_count = member_count
+                chat.last_seen_at = datetime.utcnow()
+
+            await s.commit()
+            return chat
 
     async def get_channel_by_id(self, channel_id: int) -> PublicationChannel | None:
         async with await self._session() as s:

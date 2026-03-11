@@ -21,12 +21,30 @@ class PublicationChannel(TimestampedBase):
     target_id: Mapped[str] = mapped_column(String(255), nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_favorite: Mapped[bool] = mapped_column(Boolean, default=False)
     config: Mapped[dict | None] = mapped_column(JSON)  # Extra configs (tokens, threads)
 
     # Relationships
     queued_items: Mapped[list["PublicationQueue"]] = relationship(
         back_populates="channel", cascade="all, delete-orphan"
     )
+
+
+class DiscoveredChat(TimestampedBase):
+    """
+    Temporary storage for chats where the bot is present.
+    Admins can promote these to PublicationChannel.
+    """
+
+    __tablename__ = "discovered_chats"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    type: Mapped[str | None] = mapped_column(String(50))
+    member_count: Mapped[int] = mapped_column(default=0)
+    username: Mapped[str | None] = mapped_column(String(100))
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
 
 class PublicationTemplate(TimestampedBase):

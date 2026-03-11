@@ -132,6 +132,11 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("books", "isbn", "VARCHAR(50)")
                 await SchemaOrchestrator._check_and_add_column("books", "source_id", "INTEGER")
 
+                # Auto-Migration for PublicationChannels
+                await SchemaOrchestrator._check_and_add_column(
+                    "publication_channels", "is_favorite", "BOOLEAN DEFAULT FALSE"
+                )
+
                 # Auto-Migration for Series (author_jap, illustrator_jap)
                 await SchemaOrchestrator._check_and_add_column("series", "author_jap", "VARCHAR(255)")
                 await SchemaOrchestrator._check_and_add_column("series", "illustrator_jap", "VARCHAR(255)")
