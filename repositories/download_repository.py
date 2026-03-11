@@ -45,6 +45,7 @@ class DownloadRepository(BaseRepository[DownloadLog]):
         book_hash: str,
         book_title: str | None = None,
         chat_id: int | None = None,
+        series_hash: str | None = None,
     ) -> DownloadLog:
         """Registra una nueva descarga."""
         async with self.db_manager.get_session() as session:
@@ -53,12 +54,36 @@ class DownloadRepository(BaseRepository[DownloadLog]):
                 book_hash=book_hash,
                 book_title=book_title,
                 chat_id=chat_id,
-                downloaded_at=datetime.now(UTC),
+                series_hash=series_hash,
             )
             session.add(entry)
             await session.commit()
             await session.refresh(entry)
             return entry
+
+    async def add_download(self, **kwargs) -> DownloadLog:
+        """
+        Alias para log_download compatible con V3.
+        Mapea campos extendidos a los campos del modelo V4.
+        """
+        # Extraer campos que sí existen en V4
+        telegram_id = kwargs.get("user_id") or kwargs.get("telegram_id")
+        if not telegram_id:
+            raise ValueError("telegram_id/user_id is required")
+
+        book_hash = kwargs.get("book_hash")
+        book_title = kwargs.get("title") or kwargs.get("book_title")
+        chat_id = kwargs.get("chat_id")
+        series_hash = kwargs.get("series_hash")
+
+        # El modelo V4/TimestampedBase usa default para created_at/downloaded_at
+        return await self.log_download(
+            telegram_id=telegram_id,
+            book_hash=book_hash,
+            book_title=book_title,
+            chat_id=chat_id,
+            series_hash=series_hash,
+        )
 
     async def get_recent(self, telegram_id: int, days: int = 7) -> list[DownloadLog]:
         """Devuelve las descargas recientes de un usuario."""

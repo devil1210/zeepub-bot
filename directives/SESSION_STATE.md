@@ -11,7 +11,9 @@
 - [x] Esquema DB: Adición de columnas faltantes en `users` y `user_levels` (`ui_primary_color`, `ui_nav_opacity`, etc.).
 - [x] Modelos: Sincronización de `UserLevel`, `Book` y `DownloadLog` con el esquema real.
 - [x] **Canales de Publicación**: Implementación de `DiscoveredChat` y soporte para descubrimiento de chats en el repositorio.
-- [x] **Migration**: Creación de la tabla `discovered_chats` y adición de `is_favorite` a `publication_channels`.
+- [x] **Database Fixes**: Creación de tabla `user_downloads` y corrección de columnas `updated_at` en `discovered_chats`.
+- [x] **Compatibilidad V3/V4**: Re-implementación de `DownloadRepository.add_download` para evitar errores en `download_history.py`.
+- [x] **Metadata Resolution**: Casting explícito en `MetadataOrchestrator` para evitar errores de tipo `varchar = integer`.
 
 ### Bloqueos:
 - Ninguno crítico actualmente.

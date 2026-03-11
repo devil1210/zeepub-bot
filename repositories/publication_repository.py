@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -181,11 +182,12 @@ class _PubRepoCompat:
             return result.scalars().all()
 
     async def save_discovered_chat(
-        self, chat_id: str, title: str, chat_type: str, username: str = None, member_count: int = 0
+        self, chat_id: Any, title: str, chat_type: str, username: str = None, member_count: int = 0
     ):
         """Guarda o actualiza un chat descubierto."""
         async with await self._session() as s:
-            stmt = select(DiscoveredChat).where(DiscoveredChat.chat_id == chat_id)
+            chat_id_str = str(chat_id)
+            stmt = select(DiscoveredChat).where(DiscoveredChat.chat_id == chat_id_str)
             result = await s.execute(stmt)
             chat = result.scalar_one_or_none()
 

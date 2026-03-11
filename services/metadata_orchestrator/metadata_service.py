@@ -32,10 +32,12 @@ class MetadataOrchestrator:
                 from sqlalchemy import String as AlchemyString
                 from sqlalchemy import cast
 
+                # Resolve book_id to string and cast both sides to be extremely safe with PG types
+                book_id_str = str(book_id)
                 stmt_hash = (
                     select(LocalBook)
                     .options(selectinload(LocalBook.series))
-                    .where(cast(LocalBook.book_hash, AlchemyString) == str(book_id))
+                    .where(cast(LocalBook.book_hash, AlchemyString) == cast(book_id_str, AlchemyString))
                 )
                 res_hash = await session.execute(stmt_hash)
                 lb = res_hash.scalar_one_or_none()
