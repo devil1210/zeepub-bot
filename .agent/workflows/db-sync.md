@@ -8,7 +8,8 @@ description: Sincroniza y valida la integridad de los esquemas entre PostgreSQL 
    `python scripts/schema_validator.py`
 
 2. Verificar diferencias en tablas y columnas clave:
-   `python check_supabase_schema.py`
+   `python scripts/sync_supabase_schema.py`
+
 
 3. Listar tablas para confirmar sincronización:
    `python list_tables.py`

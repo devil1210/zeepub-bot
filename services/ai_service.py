@@ -52,8 +52,12 @@ class AIService:
         if not client:
             return None
 
-        # Modelos: gemini-2.5-flash (estable/por defecto según usuario), gemini-3-flash-preview
-        models_to_try = [target_model] if target_model else ["gemini-2.5-flash", "gemini-3-flash-preview"]
+        # Modelos: gemini-3.1-flash-lite (preferido), gemini-2.0-flash
+        if target_model:
+            models_to_try = [target_model]
+        else:
+            models_to_try = ["gemini-3.1-flash-lite", "gemini-2.0-flash", "gemini-1.5-flash"]
+
         now = time.time()
 
         for model_name in models_to_try:

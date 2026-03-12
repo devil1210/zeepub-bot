@@ -27,5 +27,5 @@
 - Ninguno actual (Mantenimiento V4 ejecutado. Release).
 
 ### Siguiente Paso:
-- **Verificar VPS**: Los cambios subidos por `/push` deben aplicarse en la BD de desarrollo del servidor (VPS), asegurando ejecutar `/db-sync` o la alteración manual probada (`patch_duplicate_books.py`) para `duplicate_books`.
-- Reiniciar el bot y probar un escaneo completo en el ambiente de pruebas.
+- **Verificar VPS**: Los cambios subidos por `/push` deben aplicarse en la BD de desarrollo del servidor (VPS). El fix de `duplicate_books` se incluyó en `scripts/sync_supabase_schema.py`.
+- Ejecutar `/release` completo para validar todo el pipeline y el nuevo modelo de IA.

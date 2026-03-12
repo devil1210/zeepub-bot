@@ -63,7 +63,14 @@ async def sync_supabase_schema():
             await conn.execute(text("ALTER TABLE series_metadata ADD COLUMN IF NOT EXISTS slug VARCHAR(512);"))
             await conn.execute(text("ALTER TABLE series_metadata ALTER COLUMN slug TYPE VARCHAR(512);"))
             await conn.execute(text("ALTER TABLE series_metadata ALTER COLUMN series_english TYPE VARCHAR(512);"))
+            # Sincronizar fix de duplicados
+            await conn.execute(
+                text(
+                    "ALTER TABLE duplicate_books ADD COLUMN IF NOT EXISTS detected_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();"
+                )
+            )
             print("✅ Supabase sincronizado correctamente.")
+
         await engine.dispose()
     except Exception as e:
         print(f"❌ Error al sincronizar Supabase: {e}")
