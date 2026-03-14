@@ -14,7 +14,7 @@ class UserLevel(TimestampedBase):
 
     __tablename__ = "user_levels"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=0)
 
@@ -69,7 +69,7 @@ class User(TimestampedBase):
     nickname: Mapped[str | None] = mapped_column(String(255))
 
     # Access and UI configuration
-    level_id: Mapped[int] = mapped_column(ForeignKey("user_levels.id"), default=6, index=True)
+    level_id: Mapped[int] = mapped_column(ForeignKey("user_levels.id", ondelete="SET DEFAULT"), default=6, index=True)
     role: Mapped[str] = mapped_column(String(50), default="user")  # admin, mod, user
 
     # Flexible structured settings
@@ -119,7 +119,7 @@ class DownloadLog(TimestampedBase):
 
     __tablename__ = "download_logs"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
 
     # Who downloaded
     telegram_id: Mapped[int] = mapped_column(
@@ -152,7 +152,7 @@ class AppTheme(TimestampedBase):
 
     __tablename__ = "app_themes"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     description: Mapped[str | None] = mapped_column(String(500))
 

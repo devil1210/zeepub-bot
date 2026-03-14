@@ -3,7 +3,6 @@ from typing import Any
 
 from sqlalchemy import delete, select
 
-from core.db_manager_pg import pg_manager
 from models.custom_messages_models import GlobalVariable, PluginSettings, StoredMessage
 from repositories.base_repository import BaseRepository
 
@@ -16,7 +15,7 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
     """
 
     def __init__(self, db_manager=None):
-        self.db_manager = db_manager or pg_manager
+        super().__init__(StoredMessage, db_manager)
 
     async def save_message(
         self, slug: str, chat_id: int, message_id: int, description: str = None, text_content: str = None

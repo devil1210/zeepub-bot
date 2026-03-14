@@ -3,7 +3,6 @@ from collections.abc import Sequence
 from typing import Any
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.agent_models import AgentExecution
 
@@ -15,8 +14,8 @@ class AgentRepository(BaseRepository[AgentExecution]):
     CRUD for AI Agent Execution Logs.
     """
 
-    def __init__(self, session: AsyncSession):
-        super().__init__(AgentExecution, session)
+    def __init__(self, db_manager=None):
+        super().__init__(AgentExecution, db_manager)
 
     async def log_execution(
         self,
@@ -33,10 +32,11 @@ class AgentRepository(BaseRepository[AgentExecution]):
         execution = AgentExecution(
             func_name=func_name, status=status, duration=duration, error=error, metadata_json=metadata_str
         )
-        self.session.add(execution)
-        await self.session.commit()
-        await self.session.refresh(execution)
-        return execution
+        async with self.db_manager.get_session() as session:
+            session.add(execution)
+            await session.commit()
+            await session.refresh(execution)
+            return execution
 
     async def get_recent_executions(self, func_name: str, limit: int = 10) -> Sequence[AgentExecution]:
         stmt = (
@@ -45,5 +45,6 @@ class AgentRepository(BaseRepository[AgentExecution]):
             .order_by(AgentExecution.created_at.desc())
             .limit(limit)
         )
-        result = await self.session.execute(stmt)
-        return result.scalars().all()
+        async with self.db_manager.get_session() as session:
+            result = await session.execute(stmt)
+            return result.scalars().all()

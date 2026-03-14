@@ -5,7 +5,6 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import selectinload
 
-from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
 from models.user_models import User
 from repositories.base_repository import BaseRepository
@@ -20,9 +19,10 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
     SQLite eliminado.
     """
 
-    def __init__(self, db=None):
-        self.table_name = "users"
+    def __init__(self, db_manager=None):
+        super().__init__(User, db_manager)
         self.supabase = supabase_manager
+        self.table_name = "users"
 
     async def get_by_id(self, id: Any) -> dict[str, Any] | None:
         # User defined as telegram_id in this context
@@ -34,7 +34,7 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
 
         # 2. Postgres ORM
         try:
-            async with pg_manager.get_session() as session:
+            async with self.db_manager.get_session() as session:
                 stmt = (
                     select(User)
                     .options(selectinload(User.ui_settings), selectinload(User.level_info))
@@ -102,7 +102,7 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
 
         # Postgres
         try:
-            async with pg_manager.get_session() as session:
+            async with self.db_manager.get_session() as session:
                 stmt = select(User).where(User.telegram_id == telegram_id)
                 result = await session.execute(stmt)
                 user = result.scalar_one_or_none()
@@ -126,7 +126,7 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
     async def increment_download_count(self, telegram_id: int):
         await cache_manager.invalidate_user(telegram_id)
         try:
-            async with pg_manager.get_session() as session:
+            async with self.db_manager.get_session() as session:
                 stmt = select(User).where(User.telegram_id == telegram_id)
                 result = await session.execute(stmt)
                 user = result.scalar_one_or_none()
@@ -145,7 +145,7 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
     async def delete(self, id: int) -> bool:
         await cache_manager.invalidate_user(id)
         try:
-            async with pg_manager.get_session() as session:
+            async with self.db_manager.get_session() as session:
                 stmt = select(User).where(User.telegram_id == id)
                 result = await session.execute(stmt)
                 user = result.scalar_one_or_none()
@@ -164,7 +164,7 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
         await cache_manager.invalidate_user(telegram_id)
 
         try:
-            async with pg_manager.get_session() as session:
+            async with self.db_manager.get_session() as session:
                 stmt = (
                     pg_insert(User)
                     .values(**data)

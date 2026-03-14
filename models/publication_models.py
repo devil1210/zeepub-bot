@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import TimestampedBase
@@ -15,7 +15,7 @@ class PublicationChannel(TimestampedBase):
 
     __tablename__ = "publication_channels"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     platform: Mapped[str] = mapped_column(String(50), nullable=False)  # 'telegram', 'discord', 'webhook'
     target_id: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -38,7 +38,7 @@ class DiscoveredChat(TimestampedBase):
 
     __tablename__ = "discovered_chats"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     chat_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     type: Mapped[str | None] = mapped_column(String(50))
@@ -55,7 +55,7 @@ class PublicationTemplate(TimestampedBase):
 
     __tablename__ = "publication_templates"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)  # The template string with {placeholders}
     platform: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -74,11 +74,11 @@ class PublicationQueue(TimestampedBase):
 
     __tablename__ = "publication_queue"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     book_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
 
-    channel_id: Mapped[int] = mapped_column(ForeignKey("publication_channels.id"), nullable=False)
-    template_id: Mapped[int | None] = mapped_column(ForeignKey("publication_templates.id"))
+    channel_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("publication_channels.id"), nullable=False)
+    template_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("publication_templates.id"))
 
     # Scheduling
     scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)

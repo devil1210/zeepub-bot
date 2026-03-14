@@ -110,7 +110,7 @@ class SchemaOrchestrator:
                 )
                 await SchemaOrchestrator._check_and_add_column("users", "beta_tester", "BOOLEAN DEFAULT FALSE")
                 await SchemaOrchestrator._check_and_add_column("users", "bypass_limits", "BOOLEAN DEFAULT FALSE")
-                await SchemaOrchestrator._check_and_add_column("users", "total_downloads", "INTEGER DEFAULT 0")
+                await SchemaOrchestrator._check_and_add_column("users", "total_downloads", "BIGINT DEFAULT 0")
                 await SchemaOrchestrator._check_and_add_column("users", "photo_url", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("users", "nickname", "VARCHAR(255)")
                 await SchemaOrchestrator._check_and_add_column("users", "roles", "JSONB DEFAULT '[]'::jsonb")
@@ -130,7 +130,7 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("books", "layout_by", "VARCHAR(255)")
                 await SchemaOrchestrator._check_and_add_column("books", "translator", "VARCHAR(255)")
                 await SchemaOrchestrator._check_and_add_column("books", "isbn", "VARCHAR(50)")
-                await SchemaOrchestrator._check_and_add_column("books", "source_id", "INTEGER")
+                await SchemaOrchestrator._check_and_add_column("books", "source_id", "BIGINT")
 
                 # Auto-Migration for PublicationChannels
                 await SchemaOrchestrator._check_and_add_column(

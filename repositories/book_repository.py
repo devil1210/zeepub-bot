@@ -4,49 +4,48 @@ from typing import Any
 from sqlalchemy import String, cast, delete, func, or_, select, update
 from sqlalchemy.orm import selectinload
 
-from core.db_manager_pg import pg_manager
 from models.download_models import DownloadHistory
-from models.library_models import LocalBook, SeriesMetadata, UserDownload, UserRating
+from models.library_models import Book, Series, UserDownload, UserRating
 from repositories.base_repository import BaseRepository
 from schemas.library_schemas import BookDTO
 
 logger = logging.getLogger(__name__)
 
 
-class BookRepository(BaseRepository[LocalBook]):
+class BookRepository(BaseRepository[Book]):
     """
-    Repositorio para la gestión de libros (LocalBook) en PostgreSQL.
+    Repositorio para la gestión de libros (Book) en PostgreSQL.
     Implementa búsquedas optimizadas y acceso a metadatos.
     """
 
     def __init__(self, db_manager=None):
-        super().__init__(db_manager or pg_manager, "local_books")
+        super().__init__(Book, db_manager)
 
     # --- Métodos abstractos de BaseRepository ---
 
-    async def get_by_id(self, id: Any) -> LocalBook | None:
+    async def get_by_id(self, id: Any) -> Book | None:
         """Obtiene un libro por ID con su información de serie cargada."""
-        async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.id == id)
+        async with self.db_manager.get_session() as session:
+            stmt = select(Book).options(selectinload(Book.series)).where(Book.id == id)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
-    async def create(self, entity: LocalBook) -> LocalBook:
+    async def create(self, entity: Book) -> Book:
         """Persiste un nuevo libro con generación de short_link si es necesario."""
         from utils.helpers import generate_short_link
 
         if not entity.short_link:
             entity.short_link = generate_short_link()
 
-        async with pg_manager.get_session() as session:
+        async with self.db_manager.get_session() as session:
             session.add(entity)
             await session.commit()
             await session.refresh(entity)
             return entity
 
-    async def update(self, entity: LocalBook) -> LocalBook:
+    async def update(self, entity: Book) -> Book:
         """Actualiza un libro completo."""
-        async with pg_manager.get_session() as session:
+        async with self.db_manager.get_session() as session:
             merged = await session.merge(entity)
             await session.commit()
             await session.refresh(merged)
@@ -54,14 +53,14 @@ class BookRepository(BaseRepository[LocalBook]):
 
     async def delete(self, id: Any) -> bool:
         """Elimina un libro por ID manejando referencias en otras tablas."""
-        async with pg_manager.get_session() as session:
+        async with self.db_manager.get_session() as session:
             try:
                 # Actualizar referencias en otras tablas
                 await session.execute(update(DownloadHistory).where(DownloadHistory.book_id == id).values(book_id=None))
                 await session.execute(update(UserDownload).where(UserDownload.book_id == id).values(book_id=None))
                 await session.execute(update(UserRating).where(UserRating.book_id == id).values(book_id=None))
 
-                stmt = delete(LocalBook).where(LocalBook.id == id)
+                stmt = delete(Book).where(Book.id == id)
                 result = await session.execute(stmt)
                 await session.commit()
                 return result.rowcount > 0
@@ -70,26 +69,26 @@ class BookRepository(BaseRepository[LocalBook]):
                 await session.rollback()
                 return False
 
-    async def get_by_hash(self, book_hash: str) -> LocalBook | None:
+    async def get_by_hash(self, book_hash: str) -> Book | None:
         """Busca un libro por su hash único."""
-        async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).options(selectinload(LocalBook.series)).where(LocalBook.book_hash == book_hash)
+        async with self.db_manager.get_session() as session:
+            stmt = select(Book).options(selectinload(Book.series)).where(Book.book_hash == book_hash)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
-    async def get_by_filepath(self, filepath: str) -> LocalBook | None:
+    async def get_by_filepath(self, filepath: str) -> Book | None:
         """Busca un libro por su ruta de archivo."""
-        async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).where(LocalBook.filepath == filepath)
+        async with self.db_manager.get_session() as session:
+            stmt = select(Book).where(Book.filepath == filepath)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
-    async def get_one_by_attr(self, attr: str, value: Any) -> LocalBook | None:
+    async def get_one_by_attr(self, attr: str, value: Any) -> Book | None:
         """Busca un libro por un atributo dinámico."""
-        async with pg_manager.get_session() as session:
-            if not hasattr(LocalBook, attr):
+        async with self.db_manager.get_session() as session:
+            if not hasattr(Book, attr):
                 return None
-            stmt = select(LocalBook).where(getattr(LocalBook, attr) == value).limit(1)
+            stmt = select(Book).where(getattr(Book, attr) == value).limit(1)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
@@ -105,54 +104,54 @@ class BookRepository(BaseRepository[LocalBook]):
         Realiza una búsqueda de libros utilizando PostgreSQL ILIKE (Async).
         Optimizado con subconsulta para conteo de descargas.
         """
-        async with pg_manager.get_session() as session:
+        async with self.db_manager.get_session() as session:
             try:
                 pattern = f"%{query}%"
 
                 # Filtros base
                 filters = [
-                    LocalBook.title.ilike(pattern),
-                    SeriesMetadata.author.ilike(pattern),
-                    SeriesMetadata.series_name.ilike(pattern),
-                    SeriesMetadata.series_spanish.ilike(pattern),
-                    SeriesMetadata.series_english.ilike(pattern),
-                    LocalBook.romaji_title.ilike(pattern),
-                    LocalBook.english_title.ilike(pattern),
-                    LocalBook.spanish_title.ilike(pattern),
+                    Book.title.ilike(pattern),
+                    Series.author.ilike(pattern),
+                    Series.series_name.ilike(pattern),
+                    Series.series_spanish.ilike(pattern),
+                    Series.series_english.ilike(pattern),
+                    Book.romaji_title.ilike(pattern),
+                    Book.english_title.ilike(pattern),
+                    Book.spanish_title.ilike(pattern),
                 ]
 
                 # Filtros extendidos según el tipo de búsqueda
                 if search_type in ("all", "todos", "genres", "géneros", "tags"):
-                    filters.append(cast(SeriesMetadata.tags, String).ilike(pattern))
+                    filters.append(cast(Series.tags, String).ilike(pattern))
                 if search_type in ("all", "todos", "demographics", "demografía"):
-                    filters.append(cast(SeriesMetadata.demographics, String).ilike(pattern))
+                    filters.append(cast(Series.demographics, String).ilike(pattern))
                 if search_type in ("all", "todos", "translator", "traductor", "group", "grupo"):
-                    filters.append(LocalBook.translator.ilike(pattern))
+                    filters.append(Book.translator.ilike(pattern))
                 if search_type in ("all", "todos", "illustrator", "ilustrador"):
-                    # Fallback to checking author or related since illustrator was removed from LocalBook
-                    filters.append(SeriesMetadata.author.ilike(pattern))
+                    # Fallback to checking author or related since illustrator was removed from Book
+                    filters.append(Series.author.ilike(pattern))
                 if search_type in ("all", "todos", "layout", "maquetador", "typesetter"):
-                    filters.append(LocalBook.layout_by.ilike(pattern))
+                    filters.append(Book.layout_by.ilike(pattern))
                 if search_type in ("all", "todos", "isbn"):
-                    filters.append(LocalBook.isbn.ilike(pattern))
+                    filters.append(Book.isbn.ilike(pattern))
 
                 # Subconsulta para conteo de descargas
                 dl_subquery = (
                     select(func.count(UserDownload.id))
-                    .where(UserDownload.book_hash == LocalBook.book_hash)
-                    .correlate(LocalBook)
+                    .where(UserDownload.book_hash == Book.book_hash)
+                    .correlate(Book)
                     .scalar_subquery()
                 )
 
                 stmt = (
-                    select(LocalBook, dl_subquery.label("download_count"))
-                    .join(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
-                    .options(selectinload(LocalBook.series))
+                    select(Book, dl_subquery.label("download_count"))
+                    .join(Series, Book.series_metadata_id == Series.id)
+                    .options(selectinload(Book.series))
                     .where(or_(*filters))
                 )
 
                 if source_id:
-                    stmt = stmt.where(LocalBook.source_id == source_id)
+                    stmt = stmt.where(Book.source_id == source_id)
 
                 # Contar total de resultados
                 count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -160,7 +159,7 @@ class BookRepository(BaseRepository[LocalBook]):
 
                 # Paginación y Orden
                 start = (page - 1) * items_per_page
-                stmt = stmt.order_by(LocalBook.title.asc()).offset(start).limit(items_per_page)
+                stmt = stmt.order_by(Book.title.asc()).offset(start).limit(items_per_page)
 
                 result = await session.execute(stmt)
                 rows = result.all()  # [(book, dl_count), ...]
@@ -192,16 +191,16 @@ class BookRepository(BaseRepository[LocalBook]):
 
     async def get_recent_books(self, page: int = 1, items_per_page: int = 10) -> dict[str, Any]:
         """Obtiene los libros añadidos recientemente con soporte de paginación."""
-        async with pg_manager.get_session() as session:
+        async with self.db_manager.get_session() as session:
             # Subquery for download count
             dl_subquery = (
                 select(func.count(UserDownload.id))
-                .where(UserDownload.book_hash == LocalBook.book_hash)
-                .correlate(LocalBook)
+                .where(UserDownload.book_hash == Book.book_hash)
+                .correlate(Book)
                 .scalar_subquery()
             )
 
-            stmt = select(LocalBook, dl_subquery.label("download_count")).options(selectinload(LocalBook.series))
+            stmt = select(Book, dl_subquery.label("download_count")).options(selectinload(Book.series))
 
             # Contar total de resultados
             count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -209,7 +208,7 @@ class BookRepository(BaseRepository[LocalBook]):
 
             # Paginación y Orden
             start = (page - 1) * items_per_page
-            stmt = stmt.order_by(LocalBook.indexed_at.desc()).offset(start).limit(items_per_page)
+            stmt = stmt.order_by(Book.indexed_at.desc()).offset(start).limit(items_per_page)
 
             result = await session.execute(stmt)
             rows = result.all()
@@ -233,12 +232,12 @@ class BookRepository(BaseRepository[LocalBook]):
 
     async def get_duplicate_hashes(self) -> list[tuple[str, int]]:
         """Obtiene hashes duplicados y su conteo."""
-        async with pg_manager.get_session() as session:
+        async with self.db_manager.get_session() as session:
             try:
                 stmt = (
-                    select(LocalBook.book_hash, func.count().label("count"))
-                    .where(LocalBook.book_hash.isnot(None))
-                    .group_by(LocalBook.book_hash)
+                    select(Book.book_hash, func.count().label("count"))
+                    .where(Book.book_hash.isnot(None))
+                    .group_by(Book.book_hash)
                     .having(func.count() > 1)
                 )
                 result = await session.execute(stmt)
@@ -247,11 +246,11 @@ class BookRepository(BaseRepository[LocalBook]):
                 logger.error(f"Error getting duplicate hashes: {e}")
                 return []
 
-    async def get_books_by_hash(self, book_hash: str) -> list[LocalBook]:
+    async def get_books_by_hash(self, book_hash: str) -> list[Book]:
         """Obtiene todos los libros que comparten un hash."""
-        async with pg_manager.get_session() as session:
+        async with self.db_manager.get_session() as session:
             try:
-                stmt = select(LocalBook).where(LocalBook.book_hash == book_hash).order_by(LocalBook.indexed_at.asc())
+                stmt = select(Book).where(Book.book_hash == book_hash).order_by(Book.indexed_at.asc())
                 result = await session.execute(stmt)
                 return result.scalars().all()
             except Exception as e:
@@ -260,7 +259,7 @@ class BookRepository(BaseRepository[LocalBook]):
 
     async def get_total_downloads(self, book_hash: str) -> int:
         """Obtiene el conteo total de descargas para un hash de libro."""
-        async with pg_manager.get_session() as session:
+        async with self.db_manager.get_session() as session:
             stmt = select(func.count(UserDownload.id)).where(UserDownload.book_hash == book_hash)
             result = await session.execute(stmt)
             return result.scalar() or 0

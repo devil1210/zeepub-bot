@@ -22,10 +22,13 @@
 - [x] **Fix "greenlet_spawn"**: Implementado `selectinload(LocalBook.series)` en `ScannerService` y `SeriesScanner` para evitar errores de carga asíncrona.
 - [x] **Consistencia de Identidad**: `Book` ahora almacena `author` y `book_type` directamente para búsquedas más rápidas y evitar errores en limpiezas de librería.
 - [x] **Deduplicación**: Se analizó el impacto y se añadió la columna `detected_at` faltante a la tabla `duplicate_books` para que el escaner no colapse por errores de modelo SQLAlchemy.
+- [x] **Normalización de Repositorios V4**: Refactorización completa de `PublicationRepository`, `BookRepository`, `SeriesRepository` y otros núcleos para usar el patrón de inyección de `db_manager` (V4) y eliminar gestores de sesión manuales.
+- [x] **Cleanup de Adaptadores**: Eliminación del singleton `_PubRepoCompat` en favor de una clase `PublicationRepository` unificada y profesional.
+- [x] **Audit y Calidad**: Limpieza de importaciones obsoletas (`pg_manager` no usado) y corrección de SyntaxErrors en `theme_repository.py`.
 
 ### Bloqueos:
-- Ninguno actual (Mantenimiento V4 ejecutado. Release).
+- Ninguno. El sistema es ahora 100% consistente con el patrón V4 en la capa de persistencia.
 
 ### Siguiente Paso:
-- **Verificar VPS**: Los cambios subidos por `/push` deben aplicarse en la BD de desarrollo del servidor (VPS). El fix de `duplicate_books` se incluyó en `scripts/sync_supabase_schema.py`.
-- Ejecutar `/release` completo para validar todo el pipeline y el nuevo modelo de IA.
+- **Pruebas de Integración**: Validar que el `PublisherService` opera correctamente con el nuevo `PublicationRepository` refactorizado.
+- **Despliegue**: Ejecutar un ciclo `/release` para subir los cambios al VPS y validar la estabilidad en producción.

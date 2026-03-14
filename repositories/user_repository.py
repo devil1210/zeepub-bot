@@ -11,7 +11,6 @@ from typing import Any
 from sqlalchemy import String, delete, or_, select, update
 from sqlalchemy.orm import selectinload
 
-from core.db_manager_pg import pg_manager
 from core.supabase_manager import supabase_manager
 from models.user_models import User, UserLevel
 from repositories.base_repository import BaseRepository
@@ -28,11 +27,7 @@ class UserRepository(BaseRepository[User]):
     """
 
     def __init__(self, db_manager=None):
-        # We don't call super().__init__ because BaseRepository V4 expects (model, session)
-        # which doesn't fit the singleton pattern used in this project.
-        # Instead, we manage sessions internally via db_manager.
-        self.db_manager = db_manager or pg_manager
-        self.model_cls = User
+        super().__init__(User, db_manager)
         self.supabase = supabase_manager
         self.table_name = "users"
 

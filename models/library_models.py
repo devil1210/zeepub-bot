@@ -17,7 +17,7 @@ class Series(TimestampedBase):
 
     __tablename__ = "series"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
 
     # Core Identity
     series_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -84,7 +84,7 @@ class Book(TimestampedBase):
 
     __tablename__ = "books"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
 
     # The absolute truth of a book identity
     book_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
@@ -92,7 +92,7 @@ class Book(TimestampedBase):
     # File traceability
     filepath: Mapped[str] = mapped_column(String(1024), nullable=False, unique=True)
     filename: Mapped[str] = mapped_column(String(512), nullable=False)
-    file_size: Mapped[int | None] = mapped_column(Integer)
+    file_size: Mapped[int | None] = mapped_column(BigInteger)
 
     # Extracted Info
     title: Mapped[str] = mapped_column(String(512), nullable=False)
@@ -136,9 +136,11 @@ class Book(TimestampedBase):
     file_created_at: Mapped[datetime | None] = mapped_column(DateTime)
 
     # Foreign Keys
-    series_id: Mapped[int | None] = mapped_column(ForeignKey("series.id"), index=True)
+    series_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("series.id", ondelete="CASCADE"), index=True)
     series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
-    source_id: Mapped[int | None] = mapped_column(ForeignKey("library_sources.id"), index=True)
+    source_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("library_sources.id", ondelete="SET NULL"), index=True
+    )
     book_type: Mapped[str | None] = mapped_column(String(100))
     rating_average: Mapped[float] = mapped_column(Float, default=0.0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
@@ -194,7 +196,7 @@ class UserRating(TimestampedBase):
 
     __tablename__ = "user_ratings"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     user_id: Mapped[int] = mapped_column(BigInteger, index=True)
     book_id: Mapped[int] = mapped_column(Integer, index=True)
     book_hash: Mapped[str | None] = mapped_column(String(64), index=True)
@@ -209,7 +211,7 @@ class LibrarySource(TimestampedBase):
 
     __tablename__ = "library_sources"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     path: Mapped[str] = mapped_column(String(1024), unique=True, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True)
@@ -221,7 +223,7 @@ class MetadataProposal(TimestampedBase):
     """
 
     __tablename__ = "metadata_proposals"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     series_hash: Mapped[str] = mapped_column(String(64), index=True)
     secondary_hash: Mapped[str | None] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, approved, rejected
@@ -236,7 +238,7 @@ class ArchivedBook(TimestampedBase):
 
     __tablename__ = "archived_books"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     series_hash: Mapped[str] = mapped_column(String(64), index=True)
     book_hash: Mapped[str] = mapped_column(String(64), index=True)
     title: Mapped[str] = mapped_column(String(512))
@@ -256,7 +258,7 @@ class DuplicateBook(TimestampedBase):
 
     __tablename__ = "duplicate_books"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     book_hash: Mapped[str] = mapped_column(String(64), index=True)
     original_filepath: Mapped[str] = mapped_column(String(1024))
     duplicate_filepath: Mapped[str] = mapped_column(String(1024))
@@ -274,7 +276,7 @@ class LibraryCleanupLog(TimestampedBase):
 
     __tablename__ = "library_cleanup_logs"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     performed_by: Mapped[int | None] = mapped_column(BigInteger)
     total_books_checked: Mapped[int] = mapped_column(Integer, default=0)
     missing_books_found: Mapped[int] = mapped_column(Integer, default=0)
@@ -288,7 +290,7 @@ class TranslatorsGroup(TimestampedBase):
     """
 
     __tablename__ = "translators_groups"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     name: Mapped[str] = mapped_column(String(255), unique=True)
     siglas: Mapped[str | None] = mapped_column(String(50))
 
@@ -299,7 +301,7 @@ class AILearningFeedback(TimestampedBase):
     """
 
     __tablename__ = "ai_learning_feedback"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
     original_name: Mapped[str | None] = mapped_column(String(255))
     proposed_name: Mapped[str | None] = mapped_column(String(255))
@@ -314,7 +316,7 @@ class ArchivedSeries(TimestampedBase):
     """
 
     __tablename__ = "archived_series"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     series_name: Mapped[str | None] = mapped_column(String(255))
     series_spanish: Mapped[str | None] = mapped_column(String(255))
     series_english: Mapped[str | None] = mapped_column(String(255))
@@ -344,7 +346,7 @@ class UploadBook(TimestampedBase):
 
     __tablename__ = "upload_books"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
 
     original_filename: Mapped[str] = mapped_column(String(512))
@@ -379,7 +381,7 @@ class UploadHistory(TimestampedBase):
 
     __tablename__ = "upload_history"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     upload_id: Mapped[int | None] = mapped_column(Integer, index=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
     action: Mapped[str] = mapped_column(String(50))  # 'uploaded', 'approved', 'rejected'

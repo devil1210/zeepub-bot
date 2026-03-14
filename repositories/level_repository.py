@@ -9,7 +9,6 @@ from typing import Any
 
 from sqlalchemy import select, text
 
-from core.db_manager_pg import pg_manager
 from models.user_models import UserLevel
 from repositories.base_repository import BaseRepository
 
@@ -127,8 +126,7 @@ class LevelRepository(BaseRepository[UserLevel]):
     """Repositorio para gestión de niveles de usuario (UserLevel)."""
 
     def __init__(self, db_manager=None):
-        self.db_manager = db_manager or pg_manager
-        super().__init__(UserLevel, None)  # BaseRepository espera (model_cls, session); usamos db_manager en métodos
+        super().__init__(UserLevel, db_manager)
 
     async def get_by_id(self, id: Any) -> UserLevel | None:
         """Obtiene un nivel por su ID."""

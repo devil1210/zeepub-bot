@@ -4,7 +4,6 @@ from typing import Any
 
 from sqlalchemy import select, text
 
-from core.db_manager_pg import pg_manager
 from models.user_models import AppTheme
 from repositories.base_repository import BaseRepository
 
@@ -17,13 +16,13 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
     SQLite eliminado.
     """
 
-    def __init__(self, db=None):
-        self.table_name = "app_themes"
+    def __init__(self, db_manager=None):
+        super().__init__(AppTheme, db_manager)
 
     async def ensure_default_themes(self):
         """Si no hay temas en la DB, crea unos por defecto."""
         try:
-            async with pg_manager.get_session() as session:
+            async with self.db_manager.get_session() as session:
                 result = await session.execute(text("SELECT count(*) FROM app_themes"))
                 count = result.scalar()
                 if count > 0:
@@ -70,7 +69,7 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
     async def get_all_themes(self) -> list[dict[str, Any]]:
         await self.ensure_default_themes()
         try:
-            async with pg_manager.get_session() as session:
+            async with self.db_manager.get_session() as session:
                 stmt = select(AppTheme).order_by(AppTheme.name)
                 result = await session.execute(stmt)
                 themes = result.scalars().all()
@@ -103,7 +102,7 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
         }
 
         try:
-            async with pg_manager.get_session() as session:
+            async with self.db_manager.get_session() as session:
                 stmt = select(AppTheme).where(AppTheme.name == name)
                 result = await session.execute(stmt)
                 existing = result.scalar_one_or_none()
@@ -143,7 +142,7 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
 
     async def get_by_id(self, id: int) -> dict[str, Any] | None:
         try:
-            async with pg_manager.get_session() as session:
+            async with self.db_manager.get_session() as session:
                 theme = await session.get(AppTheme, id)
                 return self._to_dict(theme) if theme else None
         except Exception:
@@ -157,7 +156,7 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
 
     async def delete(self, id: int) -> bool:
         try:
-            async with pg_manager.get_session() as session:
+            async with self.db_manager.get_session() as session:
                 theme = await session.get(AppTheme, id)
                 if theme:
                     await session.delete(theme)

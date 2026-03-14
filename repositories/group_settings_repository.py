@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class GroupSettingsRepository(BaseRepository[GroupSettings]):
     def __init__(self, db_manager=None):
-        super().__init__(db_manager or pg_manager, "group_settings")
+        super().__init__(GroupSettings, db_manager)
 
     # --- Métodos abstractos de BaseRepository ---
 

@@ -16,16 +16,16 @@ class DownloadHistory(Base):
 
     __tablename__ = "download_history"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     user_id = Column(BigInteger, ForeignKey("users.telegram_id"), nullable=False, index=True)
 
     # Relaciones
     user = relationship("User", backref="download_history")
-    book_id = Column(Integer, ForeignKey("books.id"), nullable=True)  # Vinculación con libro local
+    book_id = Column(BigInteger, ForeignKey("books.id"), nullable=True)  # Vinculación con libro local
     title = Column(String(512), nullable=False)
     author = Column(String(255))
     download_url = Column(String(1024))
-    file_size = Column(Integer)
+    file_size = Column(BigInteger)
     downloaded_at = Column(DateTime, default=datetime.utcnow)
 
     # Metadata adicional para tracking

@@ -8,7 +8,6 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 
-from core.db_manager_pg import pg_manager
 from models.user_models import DownloadLog
 
 from .base_repository import BaseRepository
@@ -21,8 +20,7 @@ class DownloadRepository(BaseRepository[DownloadLog]):
     """
 
     def __init__(self, db_manager=None):
-        self.db_manager = db_manager or pg_manager
-        self.model_cls = DownloadLog
+        super().__init__(DownloadLog, db_manager)
 
     async def count_today(self, telegram_id: int) -> int:
         """Cuenta las descargas del usuario desde las 00:00 UTC de hoy."""
