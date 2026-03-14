@@ -29,12 +29,13 @@ async def run_tests():
 
     # ── 2. Repositorios ────────────────────────────────────────────────
     print("[2/10] Repositorios...")
-    from repositories.library_repository import BookRepository, SeriesRepository
+    from repositories.book_repository import BookRepository
     from repositories.publication_repository import (
         PublicationChannelRepository,
         PublicationQueueRepository,
         PublicationTemplateRepository,
     )
+    from repositories.series_repository import SeriesRepository
     from repositories.user_repository import UserLevelRepository, UserRepository
 
     print("   ✅ OK")

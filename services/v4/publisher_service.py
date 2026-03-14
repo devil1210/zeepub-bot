@@ -24,11 +24,12 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from repositories.library_repository import BookRepository, SeriesRepository
+from repositories.book_repository import BookRepository
 from repositories.publication_repository import (
     PublicationChannelRepository,
     PublicationQueueRepository,
 )
+from repositories.series_repository import SeriesRepository
 
 from .base_service import BaseService
 

@@ -3,7 +3,8 @@ from typing import Any
 from sqlalchemy import func, or_, select
 
 from models.library_models import Book, Series
-from repositories.library_repository import BookRepository, SeriesRepository
+from repositories.book_repository import BookRepository
+from repositories.series_repository import SeriesRepository
 
 from .base_service import BaseService
 
