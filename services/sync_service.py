@@ -142,7 +142,7 @@ class SyncService:
                         }
                     )
                 try:
-                    client.table("series_metadata").upsert(data, on_conflict="series_hash").execute()
+                    client.table("series").upsert(data, on_conflict="series_hash").execute()
                     stats["series"] += len(data)
                     print(f"📚 Series sincronizadas: {stats['series']}/{len(series_list)}")
                 except Exception as ex:
@@ -337,7 +337,7 @@ class SyncService:
                 local_paths = {item["filepath"] for item in final_data}
 
                 # Pedimos a Supabase lo que tiene actualmente
-                remote_books_response = client.table("local_books").select("id, book_hash, filepath").execute()
+                remote_books_response = client.table("books").select("id, book_hash, filepath").execute()
                 remote_books = (
                     remote_books_response.data
                     if hasattr(remote_books_response, "data")
@@ -357,7 +357,7 @@ class SyncService:
                         f"🧹 Eliminando {len(to_delete)} registros obsoletos/conflictivos de Supabase para evitar colisiones..."
                     )
                     for i in range(0, len(to_delete), 100):
-                        client.table("local_books").delete().in_("id", to_delete[i : i + 100]).execute()
+                        client.table("books").delete().in_("id", to_delete[i : i + 100]).execute()
             except Exception as e:
                 logger.warning(f"Error en fase de purga de libros: {e}")
 
@@ -367,7 +367,7 @@ class SyncService:
                 try:
                     # Usamos book_hash como conflicto primario porque Supabase tiene restricción única ahí.
                     # Esto permite que si un archivo se mueve locally (nueva ruta), se actualice en la nube.
-                    client.table("local_books").upsert(batch, on_conflict="book_hash").execute()
+                    client.table("books").upsert(batch, on_conflict="book_hash").execute()
                     stats["books"] += len(batch)
                     if i % 250 == 0:
                         print(f"📦 Libros sincronizados: {stats['books']}/{len(final_data)}")

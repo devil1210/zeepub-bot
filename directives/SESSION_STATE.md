@@ -23,17 +23,14 @@
 - [x] **Consistencia de Identidad**: `Book` ahora almacena `author` y `book_type` directamente para búsquedas más rápidas y evitar errores en limpiezas de librería.
 - [x] **Deduplicación**: Se analizó el impacto y se añadió la columna `detected_at` faltante a la tabla `duplicate_books` para que el escaner no colapse por errores de modelo SQLAlchemy.
 - [x] **Normalización de Repositorios V4**: Refactorización completa de `PublicationRepository`, `BookRepository`, `SeriesRepository` y otros núcleos para usar el patrón de inyección de `db_manager` (V4) y eliminar gestores de sesión manuales.
-- [x] **Cleanup de Adaptadores**: Eliminación del singleton `_PubRepoCompat` en favor de### Tareas Completadas
-- Normalización de Repositorios a V4 (Book, Series, Download, Duplicate, Publication, Theme, etc.).
-- Eliminación de modelos obsoletos (`LocalBook`, `SeriesMetadata`).
-- Consolidación de `PublicationRepository` y limpieza de adaptadores V3.
-- **[HOTFIX]** Resolución de `ModuleNotFoundError: No module named 'repositories.library_repository'` mediante la actualización de importaciones en servicios v4 y tests.
+- [x] **Cleanup de Adaptadores**: Eliminación del singleton `_PubRepoCompat` en favor de la arquitectura V4.
+- [x] **Fix de AsyncSession**: Refactorizado `BaseRepository` para manejar correctamente sesiones inyectadas y evitar el error `'AsyncSession' object has no attribute 'get_session'`.
+- [x] **Unificación de Modelos**: Añadido `last_scanned` a `LibrarySource`, sinónimos de compatibilidad en `Book` y `DownloadLog`, y aliases globales (`LocalBook`, `SeriesMetadata`).
+- [x] **SyncService Stability**: Corregidos nombres de tablas en Supabase (`series`, `books`) y optimizada la lógica de resincronización de libros.
+- [x] **Schema Supabase**: Aplicada migración SQL para la columna `last_scanned`.
 
 ### Bloqueos
-- Ninguno detectado en esta sesión.
+- Ninguno.
 
 ### Siguiente Paso
-- Ejecución completa del workflow `/audit` para asegurar calidad total.
-- Despliegue mediante `/release` al entorno de pruebas VPS.
-r que el `PublisherService` opera correctamente con el nuevo `PublicationRepository` refactorizado.
-- **Despliegue**: Ejecutar un ciclo `/release` para subir los cambios al VPS y validar la estabilidad en producción.
+- Monitorear logs del VPS tras el `/push` para confirmar la estabilidad del Scheduler.

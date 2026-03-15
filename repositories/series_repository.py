@@ -15,50 +15,37 @@ class SeriesRepository(BaseRepository[Series]):
     Repositorio para la gestión de metadatos de series (Series).
     """
 
-    def __init__(self, db_manager=None):
-        super().__init__(Series, db_manager)
+    def __init__(self, session=None, db_manager=None):
+        super().__init__(Series, session, db_manager)
 
     async def get_by_id(self, id: Any) -> Series | None:
         """Obtiene una serie por su ID de base de datos."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(Series).options(selectinload(Series.books)).where(Series.id == id)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
-    async def create(self, entity: Series) -> Series:
-        """Persiste una nueva serie."""
-        async with self.db_manager.get_session() as session:
-            session.add(entity)
-            await session.commit()
-            await session.refresh(entity)
-            return entity
-
-    async def update(self, entity: Series) -> Series:
-        """Actualiza una serie completa."""
-        async with self.db_manager.get_session() as session:
-            merged = await session.merge(entity)
-            await session.commit()
-            await session.refresh(merged)
-            return merged
+    # create(), update() heredados son suficientes
 
     async def delete(self, id: Any) -> bool:
         """Elimina una serie por ID."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = delete(Series).where(Series.id == id)
             result = await session.execute(stmt)
-            await session.commit()
+            if not self.injected_session:
+                await session.commit()
             return result.rowcount > 0
 
     async def get_by_hash(self, series_hash: str) -> Series | None:
         """Busca una serie por su hash único."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(Series).where(Series.series_hash == series_hash)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
     async def get_by_name(self, series_name: str) -> Series | None:
         """Busca una serie por su nombre original."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(Series).where(Series.series_name == series_name)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()

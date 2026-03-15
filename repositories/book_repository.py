@@ -4,8 +4,7 @@ from typing import Any
 from sqlalchemy import String, cast, delete, func, or_, select, update
 from sqlalchemy.orm import selectinload
 
-from models.download_models import DownloadHistory
-from models.library_models import Book, Series, UserDownload, UserRating
+from models.library_models import Book, Series, UserDownload
 from repositories.base_repository import BaseRepository
 from schemas.library_schemas import BookDTO
 
@@ -18,14 +17,14 @@ class BookRepository(BaseRepository[Book]):
     Implementa búsquedas optimizadas y acceso a metadatos.
     """
 
-    def __init__(self, db_manager=None):
-        super().__init__(Book, db_manager)
+    def __init__(self, session=None, db_manager=None):
+        super().__init__(Book, session, db_manager)
 
-    # --- Métodos abstractos de BaseRepository ---
+    # --- Métodos extendidos de BaseRepository ---
 
     async def get_by_id(self, id: Any) -> Book | None:
         """Obtiene un libro por ID con su información de serie cargada."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(Book).options(selectinload(Book.series)).where(Book.id == id)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
@@ -37,55 +36,50 @@ class BookRepository(BaseRepository[Book]):
         if not entity.short_link:
             entity.short_link = generate_short_link()
 
-        async with self.db_manager.get_session() as session:
-            session.add(entity)
-            await session.commit()
-            await session.refresh(entity)
-            return entity
+        return await super().create(entity)
 
-    async def update(self, entity: Book) -> Book:
-        """Actualiza un libro completo."""
-        async with self.db_manager.get_session() as session:
-            merged = await session.merge(entity)
-            await session.commit()
-            await session.refresh(merged)
-            return merged
+    # update() heredado es suficiente
 
     async def delete(self, id: Any) -> bool:
         """Elimina un libro por ID manejando referencias en otras tablas."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
-                # Actualizar referencias en otras tablas
+                # Actualizar referencias en otras tablas (UserDownload es alias de DownloadLog)
+                from models.download_models import DownloadHistory
+                from models.library_models import UserDownload, UserRating
+
                 await session.execute(update(DownloadHistory).where(DownloadHistory.book_id == id).values(book_id=None))
                 await session.execute(update(UserDownload).where(UserDownload.book_id == id).values(book_id=None))
                 await session.execute(update(UserRating).where(UserRating.book_id == id).values(book_id=None))
 
                 stmt = delete(Book).where(Book.id == id)
                 result = await session.execute(stmt)
-                await session.commit()
+                if not self.injected_session:
+                    await session.commit()
                 return result.rowcount > 0
             except Exception as e:
                 logger.error(f"Error deleting book {id}: {e}")
-                await session.rollback()
+                if not self.injected_session:
+                    await session.rollback()
                 return False
 
     async def get_by_hash(self, book_hash: str) -> Book | None:
         """Busca un libro por su hash único."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(Book).options(selectinload(Book.series)).where(Book.book_hash == book_hash)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
     async def get_by_filepath(self, filepath: str) -> Book | None:
         """Busca un libro por su ruta de archivo."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(Book).where(Book.filepath == filepath)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
     async def get_one_by_attr(self, attr: str, value: Any) -> Book | None:
         """Busca un libro por un atributo dinámico."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             if not hasattr(Book, attr):
                 return None
             stmt = select(Book).where(getattr(Book, attr) == value).limit(1)

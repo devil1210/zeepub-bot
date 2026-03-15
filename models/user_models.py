@@ -131,6 +131,7 @@ class DownloadLog(TimestampedBase):
     book_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
     book_title: Mapped[str | None] = mapped_column(String(512))
+    title = synonym("book_title")
 
     # Context
     chat_id: Mapped[int | None] = mapped_column(BigInteger)

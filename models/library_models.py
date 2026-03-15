@@ -3,7 +3,7 @@ from typing import Optional
 
 from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from .base import TimestampedBase
 from .user_models import DownloadLog
@@ -148,6 +148,9 @@ class Book(TimestampedBase):
     # Relationships
     series: Mapped[Optional["Series"]] = relationship(back_populates="books")
 
+    # Compatibility synonyms
+    spanish_title = synonym("series_spanish")
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
@@ -215,6 +218,13 @@ class LibrarySource(TimestampedBase):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     path: Mapped[str] = mapped_column(String(1024), unique=True, nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True)
+    last_scanned: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+# Compatibility Aliases for older services (SyncService, etc.)
+LocalBook = Book
+SeriesMetadata = Series
+UserDownload = DownloadLog
 
 
 class MetadataProposal(TimestampedBase):
