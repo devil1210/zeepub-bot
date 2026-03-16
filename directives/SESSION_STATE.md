@@ -50,24 +50,19 @@
 - [x] Corregir error de imagen `pgvector` en `docker-compose.yml`
 - [x] Implementar capa de compatibilidad en `models/library_models.py` para V3.
 - [x] Corregir script de migración `scripts/migrate_users_v3_v4.py` (id vs telegram_id).
+- [x] Corregir `SyntaxError` en `models/publication_models.py`.
+- [x] Restaurar re-exportaciones y metadata en `models/library_models.py`.
+- [x] Implementar `hybrid_property.expression` para compatibilidad SQL en `Book`.
+- [x] Actualizar queries legacy en `services/library_service.py`.
 - [x] Ejecutar `/push` para desplegar cambios al VPS.
-- [/] Resolver `ImportError` de `LocalBook` y `SeriesMetadata`
-    - [ ] Añadir alias en `models/library_models.py`
-    - [ ] Mapear campos legacy (`filepath`, `volume`, etc.) via properties
-- [ ] Verificar despliegue en VPS
-- [ ] Validar funcionamiento del bot y RAG
 
 ### Tareas en Progreso:
-- [/] Despliegue en VPS (Segundo intento de Build iniciado).
-- [/] Resolver `ImportError` de `LocalBook` y `SeriesMetadata`
-    - [ ] Añadir alias en `models/library_models.py`
-    - [ ] Mapear campos legacy (`filepath`, `volume`, etc.) via properties
+- [/] Despliegue en VPS (Preparado para despliegue limpio).
 
 ### Siguiente Paso
-- Despliegue y validación en VPS (Staging).
-- Pruebas E2E en entorno real de Telegram.
-- Verificar despliegue en VPS
-- Validar funcionamiento del bot y RAG
+- Realizar despliegue limpio en VPS (Reset DB y Data).
+- Verificar logs de inicio y migraciones automáticas.
+- Validar funcionamiento del bot y RAG en entorno real.
 
 ### Notas del Handover
-> El sistema está auditado y refinado estéticamente. Se ha corregido el error en `StatsWidget` y `SemanticService`. Listo para despliegue mediante GitHub Actions (Docker).
+> El sistema ha sido saneado de errores críticos de inicio (`SyntaxError`, `ImportError`). La capa de compatibilidad en `library_models.py` asegura que los servicios legacy sigan funcionando sobre el esquema V4. Listo para un despliegue limpio en el VPS. Una vez iniciado, se recomienda monitorear con `docker compose logs -f`.

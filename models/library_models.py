@@ -2,10 +2,14 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Numeric, String, Text, select
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from models.rating_models import UserRating  # noqa: F401
+from models.translators_models import TranslatorsGroup  # noqa: F401
+from models.user_models import DownloadLog as UserDownload  # noqa: F401
 
 from .base import TimestampedBase
 
@@ -30,6 +34,13 @@ class Series(TimestampedBase):
     title_spanish: Mapped[str | None] = mapped_column(String(512))
     description: Mapped[str | None] = mapped_column(Text)
     cover_url: Mapped[str | None] = mapped_column(String(512))
+    author: Mapped[str | None] = mapped_column(String(512))
+    tags: Mapped[list[str] | None] = mapped_column(JSONB)
+    rating_average: Mapped[float] = mapped_column(Numeric(3, 2), default=0.0)
+    rating_count: Mapped[int] = mapped_column(default=0)
+    book_count: Mapped[int] = mapped_column(default=0)
+    book_type: Mapped[str | None] = mapped_column(String(50))
+    publisher: Mapped[str | None] = mapped_column(String(255))
     slug: Mapped[str | None] = mapped_column(String(100), index=True)
     status: Mapped[str] = mapped_column(String(20), default="reading")
     embedding: Mapped[list[float] | None] = mapped_column(Vector(768))
@@ -98,9 +109,33 @@ class Book(TimestampedBase):
     def series_hash(self) -> str | None:
         return self.series.hash if self.series else None
 
+    @series_hash.expression
+    def series_hash(cls):
+        return select(Series.hash).where(Series.id == cls.series_id).label("series_hash")
+
     @hybrid_property
     def source_id(self) -> uuid.UUID | None:
         return self.series.source_id if self.series else None
+
+    @source_id.expression
+    def source_id(cls):
+        return select(Series.source_id).where(Series.id == cls.series_id).label("source_id")
+
+    @hybrid_property
+    def author(self) -> str:
+        return self.series.author if self.series else "Unknown"
+
+    @author.expression
+    def author(cls):
+        return select(Series.author).where(Series.id == cls.series_id).label("author")
+
+    @hybrid_property
+    def book_type(self) -> str:
+        return self.series.book_type if self.series else "Light Novel"
+
+    @book_type.expression
+    def book_type(cls):
+        return select(Series.book_type).where(Series.id == cls.series_id).label("book_type")
 
 
 # Mapping legacy class names

@@ -494,7 +494,7 @@ class LibraryService:
             try:
                 # Usamos SQL puro con cast explícito para máxima compatibilidad
                 stmt = text(
-                    "SELECT DISTINCT jsonb_array_elements_text(tags::jsonb) FROM series_metadata WHERE tags IS NOT NULL ORDER BY 1"
+                    "SELECT DISTINCT jsonb_array_elements_text(tags::jsonb) FROM series WHERE tags IS NOT NULL ORDER BY 1"
                 )
                 res = await session.execute(stmt)
                 return [r[0] for r in res.all() if r[0]]
@@ -766,18 +766,16 @@ class LibraryService:
         async with pg_manager.get_session() as session:
             try:
                 # 1. Actualizar libros
-                stmt_books = text(
-                    "UPDATE local_books SET series_hash = :t, series = COALESCE(:n, series) WHERE series_hash = :s"
-                )
+                stmt_books = text("UPDATE books SET series_hash = :t WHERE series_hash = :s")
                 await session.execute(stmt_books, {"t": target_hash, "s": source_hash, "n": new_name})
 
                 # 2. Borrar metadata vieja de source
-                stmt_del = text("DELETE FROM series_metadata WHERE series_hash = :s")
+                stmt_del = text("DELETE FROM series WHERE series_hash = :s")
                 await session.execute(stmt_del, {"s": source_hash})
 
                 # 3. Actualizar nombre de target
                 if new_name:
-                    stmt_upd = text("UPDATE series_metadata SET series_name = :n WHERE series_hash = :h")
+                    stmt_upd = text("UPDATE series SET title_raw = :n WHERE series_hash = :h")
                     await session.execute(stmt_upd, {"n": new_name, "h": target_hash})
 
                 await session.commit()
