@@ -11,11 +11,19 @@ logger = logging.getLogger(__name__)
 class MetricsRepository:
     """Repositorio centralizado para descargas y valoraciones basadas en PostgreSQL."""
 
-    def __init__(self, db_manager=None):
+    def __init__(self, session=None, db_manager=None):
         from core.supabase_manager import supabase_manager
 
+        self.injected_session = session
         self.db_manager = db_manager or pg_manager
         self.supabase = supabase_manager
+
+    async def _get_session(self):
+        if self.injected_session:
+            yield self.injected_session
+        else:
+            async with self.db_manager.get_session() as session:
+                yield session
 
     async def add_download(
         self,
@@ -38,7 +46,8 @@ class MetricsRepository:
                         "title": title,
                     },
                 )
-                await session.commit()
+                if self.injected_session is None:
+                    await session.commit()
 
             if self.supabase.is_active:
                 try:
@@ -120,7 +129,8 @@ class MetricsRepository:
                     query,
                     {"user_id": user_id, "book_hash": book_hash, "rating": rating},
                 )
-                await session.commit()
+                if self.injected_session is None:
+                    await session.commit()
 
             if self.supabase.is_active:
                 try:

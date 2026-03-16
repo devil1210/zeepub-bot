@@ -26,8 +26,8 @@ class UserRepository(BaseRepository[User]):
     Implementa el patrón Singleton compatible con servicios V3 y V4.
     """
 
-    def __init__(self, db_manager=None):
-        super().__init__(User, db_manager)
+    def __init__(self, session=None, db_manager=None):
+        super().__init__(User, session=session, db_manager=db_manager)
         self.supabase = supabase_manager
         self.table_name = "users"
 
@@ -85,7 +85,7 @@ class UserRepository(BaseRepository[User]):
 
     async def get_by_id(self, telegram_id: int) -> User | None:
         """Obtiene un usuario por su ID de Telegram cargando relaciones."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(User).options(selectinload(User.level_info)).where(User.telegram_id == telegram_id)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
@@ -95,7 +95,7 @@ class UserRepository(BaseRepository[User]):
 
     async def get_by_email(self, email: str) -> User | None:
         """Busca un usuario por su correo electrónico."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(User).options(selectinload(User.level_info)).where(User.email == email.lower())
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
@@ -118,7 +118,7 @@ class UserRepository(BaseRepository[User]):
         level_map = {"admin": 1, "staff": 2, "premium": 3, "vip": 4, "white": 5, "free": 6}
         final_level_id = level_id or level_map.get(level.lower(), 6)
 
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(User).where(User.telegram_id == telegram_id)
             res = await session.execute(stmt)
             user = res.scalar_one_or_none()
@@ -145,8 +145,10 @@ class UserRepository(BaseRepository[User]):
                 if hasattr(user, key):
                     setattr(user, key, value)
 
-            await session.commit()
-            await session.refresh(user)
+            if self.injected_session is None:
+                await session.commit()
+                await session.refresh(user)
+
             await cache_manager.invalidate_user(telegram_id)
 
             # Sync to Supabase if requested
@@ -160,34 +162,37 @@ class UserRepository(BaseRepository[User]):
 
     async def delete(self, telegram_id: int) -> bool:
         """Elimina un usuario por ID."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = delete(User).where(User.telegram_id == telegram_id)
             result = await session.execute(stmt)
-            await session.commit()
+            if self.injected_session is None:
+                await session.commit()
             await cache_manager.invalidate_user(telegram_id)
             return result.rowcount > 0
 
     async def update_status(self, telegram_id: int, new_role: str | None) -> bool:
         """Actualiza el rol funcional del usuario."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = update(User).where(User.telegram_id == telegram_id).values(role=new_role)
             await session.execute(stmt)
-            await session.commit()
+            if self.injected_session is None:
+                await session.commit()
             await cache_manager.invalidate_user(telegram_id)
             return True
 
     async def update_nickname(self, telegram_id: int, new_nickname: str | None) -> bool:
         """Actualiza el nickname del usuario."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = update(User).where(User.telegram_id == telegram_id).values(nickname=new_nickname)
             await session.execute(stmt)
-            await session.commit()
+            if self.injected_session is None:
+                await session.commit()
             await cache_manager.invalidate_user(telegram_id)
             return True
 
     async def update_user_level(self, telegram_id: int, level_ref: str | int, days: int = 30) -> bool:
         """Actualiza el nivel y expiración de un usuario."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             # Buscar nivel
             if isinstance(level_ref, int) or (isinstance(level_ref, str) and level_ref.isdigit()):
                 stmt_lvl = select(UserLevel).where(UserLevel.id == int(level_ref))
@@ -206,7 +211,8 @@ class UserRepository(BaseRepository[User]):
                 update(User).where(User.telegram_id == telegram_id).values(level_id=level_obj.id, expires_at=expires)
             )
             await session.execute(stmt_user)
-            await session.commit()
+            if self.injected_session is None:
+                await session.commit()
             await cache_manager.invalidate_user(telegram_id)
             return True
 
@@ -228,10 +234,11 @@ class UserRepository(BaseRepository[User]):
 
     async def update_telegram_profile(self, telegram_id: int, name: str | None, username: str | None) -> bool:
         """Actualiza datos de perfil de Telegram."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = update(User).where(User.telegram_id == telegram_id).values(name=name, username=username)
             await session.execute(stmt)
-            await session.commit()
+            if self.injected_session is None:
+                await session.commit()
             await cache_manager.invalidate_user(telegram_id)
             return True
 
@@ -292,24 +299,26 @@ class UserRepository(BaseRepository[User]):
 
     async def increment_download_count(self, telegram_id: int) -> int:
         """Incrementa el contador total de descargas."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(User).where(User.telegram_id == telegram_id)
             res = await session.execute(stmt)
             user = res.scalar_one_or_none()
             if user:
                 user.total_downloads = (getattr(user, "total_downloads", 0) or 0) + 1
                 count = user.total_downloads
-                await session.commit()
+                if self.injected_session is None:
+                    await session.commit()
                 await cache_manager.invalidate_user(telegram_id)
                 return count
             return 0
 
     async def update_user_settings(self, telegram_id: int, settings: dict[str, Any]) -> bool:
         """Actualiza la configuración de UI (JSONB)."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = update(User).where(User.telegram_id == telegram_id).values(ui_settings=settings)
             await session.execute(stmt)
-            await session.commit()
+            if self.injected_session is None:
+                await session.commit()
             await cache_manager.invalidate_user(telegram_id)
             return True
 
@@ -318,7 +327,7 @@ class UserRepository(BaseRepository[User]):
         Lista usuarios paginados con búsqueda opcional.
         Soporta búsqueda por nickname, name, username, email o telegram_id.
         """
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(User).options(selectinload(User.level_info))
             if search:
                 search_term = f"%{search}%"
@@ -339,7 +348,7 @@ class UserRepository(BaseRepository[User]):
 
     async def get_by_level(self, level_name: str) -> list[dict[str, Any]]:
         """Obtiene usuarios por nivel."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             # Buscar ID del nivel
             stmt_lvl = select(UserLevel).where(UserLevel.name.ilike(level_name))
             res_lvl = await session.execute(stmt_lvl)

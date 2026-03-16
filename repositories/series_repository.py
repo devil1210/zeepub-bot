@@ -16,7 +16,7 @@ class SeriesRepository(BaseRepository[Series]):
     """
 
     def __init__(self, session=None, db_manager=None):
-        super().__init__(Series, session, db_manager)
+        super().__init__(Series, session=session, db_manager=db_manager)
 
     async def get_by_id(self, id: Any) -> Series | None:
         """Obtiene una serie por su ID de base de datos."""

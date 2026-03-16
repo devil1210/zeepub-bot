@@ -19,8 +19,8 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
     SQLite eliminado.
     """
 
-    def __init__(self, db_manager=None):
-        super().__init__(User, db_manager)
+    def __init__(self, session=None, db_manager=None):
+        super().__init__(User, session=session, db_manager=db_manager)
         self.supabase = supabase_manager
         self.table_name = "users"
 
@@ -34,7 +34,7 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
 
         # 2. Postgres ORM
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = (
                     select(User)
                     .options(selectinload(User.ui_settings), selectinload(User.level_info))
@@ -102,7 +102,7 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
 
         # Postgres
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(User).where(User.telegram_id == telegram_id)
                 result = await session.execute(stmt)
                 user = result.scalar_one_or_none()
@@ -110,7 +110,8 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
                     user.level_id = level_id
                     if level_key == "admin":
                         user.role = "admin"
-                    await session.commit()
+                    if self.injected_session is None:
+                        await session.commit()
         except Exception as e:
             logger.error(f"Postgres update_user_level error: {e}")
 
@@ -126,13 +127,14 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
     async def increment_download_count(self, telegram_id: int):
         await cache_manager.invalidate_user(telegram_id)
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(User).where(User.telegram_id == telegram_id)
                 result = await session.execute(stmt)
                 user = result.scalar_one_or_none()
                 if user:
                     user.total_downloads = (user.total_downloads or 0) + 1
-                    await session.commit()
+                    if self.injected_session is None:
+                        await session.commit()
         except Exception as e:
             logger.error(f"Postgres increment_download_count error: {e}")
 
@@ -145,13 +147,14 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
     async def delete(self, id: int) -> bool:
         await cache_manager.invalidate_user(id)
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(User).where(User.telegram_id == id)
                 result = await session.execute(stmt)
                 user = result.scalar_one_or_none()
                 if user:
                     await session.delete(user)
-                    await session.commit()
+                    if self.injected_session is None:
+                        await session.commit()
                     return True
             return False
         except Exception:
@@ -164,7 +167,7 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
         await cache_manager.invalidate_user(telegram_id)
 
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = (
                     pg_insert(User)
                     .values(**data)
@@ -172,7 +175,8 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
                     .returning(User)
                 )
                 await session.execute(stmt)
-                await session.commit()
+                if self.injected_session is None:
+                    await session.commit()
                 # ... same mapping as get_by_id ...
                 return data
         except Exception as e:

@@ -20,7 +20,7 @@ class DownloadRepository(BaseRepository[DownloadLog]):
     """
 
     def __init__(self, db_manager=None):
-        super().__init__(DownloadLog, db_manager)
+        super().__init__(DownloadLog, db_manager=db_manager)
 
     async def count_today(self, telegram_id: int) -> int:
         """Cuenta las descargas del usuario desde las 00:00 UTC de hoy."""

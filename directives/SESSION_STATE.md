@@ -55,14 +55,18 @@
 - [x] Implementar `hybrid_property.expression` para compatibilidad SQL en `Book`.
 - [x] Actualizar queries legacy en `services/library_service.py`.
 - [x] Ejecutar `/push` para desplegar cambios al VPS.
+- [x] Actualizar GitNexus a **v1.4.1** y regenerar índice con `--embeddings`.
+- [x] Estandarizar `user_repository.py` con `_get_session()` y commits condicionales.
+- [x] Estandarizar `agent_repository.py` (Previamente realizado en esta sesión).
+- [x] Fortalecer reglas en `AGENTS.md` contra `CodeGraphContext`.
 
 ### Tareas en Progreso:
 - [/] Despliegue en VPS (Preparado para despliegue limpio).
 
 ### Siguiente Paso
-- Realizar despliegue limpio en VPS (Reset DB y Data).
-- Verificar logs de inicio y migraciones automáticas.
-- Validar funcionamiento del bot y RAG en entorno real.
+- Continuar con la estandarización de repositorios restantes (Book, Series, etc.) si es necesario.
+- Verificar el despliegue limpio en VPS con las nuevas lógicas de sesión.
+- Validar el funcionamiento del bot y RAG en entorno real.
 
 ### Notas del Handover
 > El sistema ha sido saneado de errores críticos de inicio (`SyntaxError`, `ImportError`). La capa de compatibilidad en `library_models.py` asegura que los servicios legacy sigan funcionando sobre el esquema V4. Listo para un despliegue limpio en el VPS. Una vez iniciado, se recomienda monitorear con `docker compose logs -f`.

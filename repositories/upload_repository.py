@@ -15,18 +15,19 @@ class UploadRepository(BaseRepository[UploadBook]):
     y el historial de cargas (UploadHistory).
     """
 
-    def __init__(self, db_manager=None):
-        super().__init__(UploadBook, db_manager)
+    def __init__(self, session=None, db_manager=None):
+        super().__init__(UploadBook, session=session, db_manager=db_manager)
 
     # --- Métodos adicionales para UploadBook y UploadHistory ---
 
     async def log_history(self, history_data: dict[str, Any]) -> UploadHistory:
         """Registra una entrada en el historial de cargas."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 history_entry = UploadHistory(**history_data)
                 session.add(history_entry)
-                await session.commit()
+                if self.injected_session is None:
+                    await session.commit()
                 await session.refresh(history_entry)
                 return history_entry
             except Exception as e:
@@ -36,7 +37,7 @@ class UploadRepository(BaseRepository[UploadBook]):
 
     async def get_history(self, limit: int = 100, offset: int = 0) -> list[UploadHistory]:
         """Obtiene el historial de cargas paginado."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 stmt = select(UploadHistory).order_by(desc(UploadHistory.created_at)).limit(limit).offset(offset)
                 result = await session.execute(stmt)
@@ -47,7 +48,7 @@ class UploadRepository(BaseRepository[UploadBook]):
 
     async def get_pending_uploads(self) -> list[UploadBook]:
         """Obtiene todos los libros pendientes de aprobación."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 stmt = select(UploadBook).order_by(desc(UploadBook.created_at))
                 result = await session.execute(stmt)

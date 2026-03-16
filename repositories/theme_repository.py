@@ -16,13 +16,13 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
     SQLite eliminado.
     """
 
-    def __init__(self, db_manager=None):
-        super().__init__(AppTheme, db_manager)
+    def __init__(self, session=None, db_manager=None):
+        super().__init__(AppTheme, session=session, db_manager=db_manager)
 
     async def ensure_default_themes(self):
         """Si no hay temas en la DB, crea unos por defecto."""
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 result = await session.execute(text("SELECT count(*) FROM app_themes"))
                 count = result.scalar()
                 if count > 0:
@@ -69,7 +69,7 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
     async def get_all_themes(self) -> list[dict[str, Any]]:
         await self.ensure_default_themes()
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(AppTheme).order_by(AppTheme.name)
                 result = await session.execute(stmt)
                 themes = result.scalars().all()
@@ -102,7 +102,7 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
         }
 
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(AppTheme).where(AppTheme.name == name)
                 result = await session.execute(stmt)
                 existing = result.scalar_one_or_none()
@@ -115,7 +115,8 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
                     existing = AppTheme(**theme_data)
                     session.add(existing)
 
-                await session.commit()
+                if self.injected_session is None:
+                    await session.commit()
                 return self._to_dict(existing)
         except Exception as e:
             logger.error(f"Postgres upsert theme error: {e}")
@@ -142,7 +143,7 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
 
     async def get_by_id(self, id: int) -> dict[str, Any] | None:
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 theme = await session.get(AppTheme, id)
                 return self._to_dict(theme) if theme else None
         except Exception:
@@ -156,11 +157,12 @@ class ThemeRepository(BaseRepository[dict[str, Any]]):
 
     async def delete(self, id: int) -> bool:
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 theme = await session.get(AppTheme, id)
                 if theme:
                     await session.delete(theme)
-                    await session.commit()
+                    if self.injected_session is None:
+                        await session.commit()
                     return True
             return False
         except Exception:

@@ -15,7 +15,7 @@ class DuplicateRepository(BaseRepository[DuplicateBook]):
     """
 
     def __init__(self, db_manager=None):
-        super().__init__(DuplicateBook, db_manager)
+        super().__init__(DuplicateBook, db_manager=db_manager)
 
     # --- Métodos abstractos de BaseRepository ---
 

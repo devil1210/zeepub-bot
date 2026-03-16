@@ -14,8 +14,8 @@ class AgentRepository(BaseRepository[AgentExecution]):
     CRUD for AI Agent Execution Logs.
     """
 
-    def __init__(self, db_manager=None):
-        super().__init__(AgentExecution, db_manager)
+    def __init__(self, session=None, db_manager=None):
+        super().__init__(AgentExecution, session=session, db_manager=db_manager)
 
     async def log_execution(
         self,
@@ -32,10 +32,11 @@ class AgentRepository(BaseRepository[AgentExecution]):
         execution = AgentExecution(
             func_name=func_name, status=status, duration=duration, error=error, metadata_json=metadata_str
         )
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             session.add(execution)
-            await session.commit()
-            await session.refresh(execution)
+            if self.injected_session is None:
+                await session.commit()
+                await session.refresh(execution)
             return execution
 
     async def get_recent_executions(self, func_name: str, limit: int = 10) -> Sequence[AgentExecution]:
@@ -45,6 +46,6 @@ class AgentRepository(BaseRepository[AgentExecution]):
             .order_by(AgentExecution.created_at.desc())
             .limit(limit)
         )
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             result = await session.execute(stmt)
             return result.scalars().all()

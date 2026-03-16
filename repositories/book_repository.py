@@ -18,7 +18,7 @@ class BookRepository(BaseRepository[Book]):
     """
 
     def __init__(self, session=None, db_manager=None):
-        super().__init__(Book, session, db_manager)
+        super().__init__(Book, session=session, db_manager=db_manager)
 
     # --- Métodos extendidos de BaseRepository ---
 

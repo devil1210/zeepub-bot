@@ -9,17 +9,19 @@ class SeriesRepository(BaseRepository[Series]):
     V4 Series Repository.
     """
 
-    def __init__(self, session):
-        super().__init__(Series, session)
+    def __init__(self, session=None, db_manager=None):
+        super().__init__(Series, session=session, db_manager=db_manager)
 
     async def get_by_hash(self, series_hash: str) -> Series | None:
         """Busca una serie por su hash único."""
         stmt = select(Series).where(Series.hash == series_hash)
-        result = await self.session.execute(stmt)
-        return result.scalar_one_or_none()
+        async with self._get_session() as session:
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
 
     async def get_by_title(self, title: str) -> Series | None:
         """Busca una serie por su título raw."""
         stmt = select(Series).where(Series.title_raw == title)
-        result = await self.session.execute(stmt)
-        return result.scalar_one_or_none()
+        async with self._get_session() as session:
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
