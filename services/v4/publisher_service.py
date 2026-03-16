@@ -120,7 +120,7 @@ class FacebookPublisherProvider(BasePublisherProvider):
 # -----------------------------------------------------------------------------
 
 
-class PublisherServiceV4(BaseService):
+class PublisherService(BaseService):
     def __init__(self, db_manager):
         super().__init__(db_manager)
         self.providers = {"telegram": TelegramPublisherProvider(), "facebook": FacebookPublisherProvider()}

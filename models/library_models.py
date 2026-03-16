@@ -143,13 +143,20 @@ LocalBook = Book
 SeriesMetadata = Series
 
 
-class MetadataProposal(TimestampedBase):
-    __tablename__ = "metadata_proposals"
+class ArchivedSeries(TimestampedBase):
+    __tablename__ = "archived_series"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    series_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
-    proposed_title_spanish: Mapped[str | None] = mapped_column(String(512))
-    proposed_description: Mapped[str | None] = mapped_column(Text)
-    proposed_slug: Mapped[str | None] = mapped_column(String(100))
-    status: Mapped[str] = mapped_column(String(20), default="pending")
-    ai_confidence: Mapped[float | None] = mapped_column(Numeric)
-    raw_response: Mapped[dict | None] = mapped_column(JSONB, default=dict)
+    hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    title_raw: Mapped[str] = mapped_column(String(512), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    author: Mapped[str | None] = mapped_column(String(512))
+    archived_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
+
+
+class UploadBook(TimestampedBase):
+    __tablename__ = "upload_books"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
+    file_path: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, processed, failed
+    metadata_json: Mapped[dict | None] = mapped_column(JSONB, default=dict)
