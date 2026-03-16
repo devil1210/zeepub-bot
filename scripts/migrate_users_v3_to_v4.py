@@ -61,7 +61,7 @@ async def migrate(dry_run: bool = False, force: bool = False) -> int:
             result = await conn.execute(
                 text("""
                     SELECT
-                        u.telegram_id,
+                        u.id AS telegram_id,
                         u.username,
                         u.first_name,
                         u.last_name,
@@ -101,18 +101,12 @@ async def migrate(dry_run: bool = False, force: bool = False) -> int:
                 telegram_id: int = row["telegram_id"]
                 try:
                     # Verificar si ya existe en V4
-                    existing = await session.execute(select(User).where(User.telegram_id == telegram_id))
+                    existing = await session.execute(select(User).where(User.id == telegram_id))
                     existing = existing.scalars().first()
 
                     if existing and not force:
                         skipped += 1
                         continue
-
-                    name = (
-                        " ".join(filter(None, [row.get("first_name"), row.get("last_name")]))
-                        or row.get("username")
-                        or f"user_{telegram_id}"
-                    )
 
                     # Mapear nivel V3 → V4
                     v3_level_name = (row.get("level_name") or "free").lower()
@@ -125,20 +119,18 @@ async def migrate(dry_run: bool = False, force: bool = False) -> int:
                     level = level_map.get(v3_level_name, free_level)
 
                     if existing and force:
-                        existing.name = name
                         existing.username = row.get("username")
                         existing.level_id = level.id
                         logger.debug(f"  🔄 Actualizado t_id={telegram_id}")
                     else:
                         user_v4 = User(
-                            telegram_id=telegram_id,
-                            name=name,
+                            id=telegram_id,
                             username=row.get("username"),
                             role="user",
                             level_id=level.id,
                         )
                         session.add(user_v4)
-                        logger.debug(f"  ➕ Migrado t_id={telegram_id} name='{name}'")
+                        logger.debug(f"  ➕ Migrado t_id={telegram_id}")
 
                     migrated += 1
 

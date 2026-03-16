@@ -46,14 +46,28 @@
 - [x] Verificación de configuración `.env` y Docker.
 - [x] Auditoría estética global finalizada.
 - [x] **Fix CI/CD**: Se agregó la rama `team-project-restart` al workflow de Docker.
-- [x] **Fix Git Index**: Se corrigió el error de submódulo fatal en `.agent/skills/gitnexus`.
+- [x] Corregir workflow de Docker (`docker-publish.yml`)
+- [x] Corregir error de imagen `pgvector` en `docker-compose.yml`
+- [x] Implementar capa de compatibilidad en `models/library_models.py` para V3.
+- [x] Corregir script de migración `scripts/migrate_users_v3_v4.py` (id vs telegram_id).
+- [/] Ejecutar `/push` para desplegar cambios al VPS.
+- [/] Resolver `ImportError` de `LocalBook` y `SeriesMetadata`
+    - [ ] Añadir alias en `models/library_models.py`
+    - [ ] Mapear campos legacy (`filepath`, `volume`, etc.) via properties
+- [ ] Verificar despliegue en VPS
+- [ ] Validar funcionamiento del bot y RAG
 
 ### Tareas en Progreso:
 - [/] Despliegue en VPS (Segundo intento de Build iniciado).
+- [/] Resolver `ImportError` de `LocalBook` y `SeriesMetadata`
+    - [ ] Añadir alias en `models/library_models.py`
+    - [ ] Mapear campos legacy (`filepath`, `volume`, etc.) via properties
 
 ### Siguiente Paso
 - Despliegue y validación en VPS (Staging).
 - Pruebas E2E en entorno real de Telegram.
+- Verificar despliegue en VPS
+- Validar funcionamiento del bot y RAG
 
 ### Notas del Handover
 > El sistema está auditado y refinado estéticamente. Se ha corregido el error en `StatsWidget` y `SemanticService`. Listo para despliegue mediante GitHub Actions (Docker).

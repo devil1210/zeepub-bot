@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import BigInteger, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import TimestampedBase
@@ -59,6 +60,23 @@ class Series(TimestampedBase):
     source: Mapped["LibrarySource"] = relationship(back_populates="series")
     books: Mapped[list["Book"]] = relationship(back_populates="series", cascade="all, delete-orphan")
 
+    # Compatibility Aliases (V3 legacy support)
+    @hybrid_property
+    def series_name(self) -> str:
+        return self.title_raw
+
+    @series_name.setter
+    def series_name(self, value: str):
+        self.title_raw = value
+
+    @hybrid_property
+    def series_hash(self) -> str:
+        return self.hash
+
+    @series_hash.setter
+    def series_hash(self, value: str):
+        self.hash = value
+
 
 class Book(TimestampedBase):
     """
@@ -90,6 +108,44 @@ class Book(TimestampedBase):
 
     # Relationships
     series: Mapped["Series"] = relationship(back_populates="books")
+
+    # Compatibility Aliases (V3 legacy support)
+    @hybrid_property
+    def filepath(self) -> str:
+        return self.file_path
+
+    @filepath.setter
+    def filepath(self, value: str):
+        self.file_path = value
+
+    @hybrid_property
+    def volume(self) -> float:
+        return self.volume_number
+
+    @volume.setter
+    def volume(self, value: float):
+        self.volume_number = value
+
+    @hybrid_property
+    def book_hash(self) -> str:
+        return self.hash
+
+    @book_hash.setter
+    def book_hash(self, value: str):
+        self.hash = value
+
+    @hybrid_property
+    def series_hash(self) -> str | None:
+        return self.series.hash if self.series else None
+
+    @hybrid_property
+    def source_id(self) -> uuid.UUID | None:
+        return self.series.source_id if self.series else None
+
+
+# Mapping legacy class names
+LocalBook = Book
+SeriesMetadata = Series
 
 
 class MetadataProposal(TimestampedBase):
