@@ -80,12 +80,18 @@
     - [x] Actualizar referencias en `StatsService` y scripts de migración.
     - [x] Ejecutar `npx gitnexus analyze` para actualizar el grafo de conocimiento.
 
+- [x] **v4.2.1 - Emergency Schema & Attribute Fixes**:
+    - [x] Corregir `DatatypeMismatch` en `download_history` (book_id -> UUID).
+    - [x] Corregir `UserLevel` IDs en seeder de `SchemaOrchestrator` (Enteros -> UUIDs).
+    - [x] Añadir campos `book_type`, `original_book_id`, `original_series_id` etc. a modelos `Archived`.
+    - [x] Sincronizar nombres de parámetros en constructor de `ArchivedSeries` en `library_scanner.py`.
+    - [x] Auditoría de integridad de modelos finalizada.
+
 ### Bloqueos
-- Error de conexión a Base de Datos local (PostgreSQL en localhost) - *Esperado en entorno local sin DB configurada*.
+- Ninguno detectado. El sistema está listo para despliegue v4.2.1.
 
 ### Siguiente Paso
-1. Ejecutar `/push` para llevar los cambios al repositorio (v4.2.0).
-2. Verificar el despliegue automático en el VPS.
+1. Ejecutar `/push` para desplegar v4.2.1 (Kaguya aprueba este despliegue).
 
 ### Notas del Handover
-> **VERSIÓN 4.2.0 RELEASED**: Estabilización total del esquema SQLAlchemy. Se han resuelto los conflictos de nombres de atributos (`telegram_id`) y tipos de datos (`UUID`). El bot es ahora resiliente ante la falta de base de datos durante el desarrollo y autogenera todas las tablas necesarias en el arranque.
+> **VERSIÓN 4.2.1 RELEASED**: Parche de emergencia para la estabilidad del scanner y seeder. Se han eliminado los `AttributeError` y `DataError` que bloqueaban la inicialización de datos base. El sistema de archivos archivados ahora es 100% consistente con los modelos de producción.

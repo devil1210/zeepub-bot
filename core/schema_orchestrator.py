@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from uuid import UUID
 
 from sqlalchemy import text
 
@@ -183,7 +184,7 @@ class SchemaOrchestrator:
 
                     levels = [
                         UserLevel(
-                            id=1,
+                            id=UUID("00000000-0000-0000-0000-000000000001"),
                             name="Administrador",
                             priority=100,
                             color="#FF5252",
@@ -201,7 +202,7 @@ class SchemaOrchestrator:
                             show_recommendations=True,
                         ),
                         UserLevel(
-                            id=2,
+                            id=UUID("00000000-0000-0000-0000-000000000002"),
                             name="Staff",
                             priority=90,
                             color="#7C4DFF",
@@ -219,7 +220,7 @@ class SchemaOrchestrator:
                             show_recommendations=True,
                         ),
                         UserLevel(
-                            id=3,
+                            id=UUID("00000000-0000-0000-0000-000000000003"),
                             name="Premium",
                             priority=50,
                             color="#FFD740",
@@ -237,7 +238,7 @@ class SchemaOrchestrator:
                             show_recommendations=True,
                         ),
                         UserLevel(
-                            id=4,
+                            id=UUID("00000000-0000-0000-0000-000000000004"),
                             name="VIP",
                             priority=40,
                             color="#69F0AE",
@@ -251,7 +252,7 @@ class SchemaOrchestrator:
                             show_recommendations=True,
                         ),
                         UserLevel(
-                            id=5,
+                            id=UUID("00000000-0000-0000-0000-000000000005"),
                             name="Patrocinador",
                             priority=20,
                             color="#E0E0E0",
@@ -265,7 +266,7 @@ class SchemaOrchestrator:
                             show_recommendations=True,
                         ),
                         UserLevel(
-                            id=6,
+                            id=UUID("00000000-0000-0000-0000-000000000006"),
                             name="Lector",
                             priority=10,
                             color="#607D8B",

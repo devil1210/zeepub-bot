@@ -150,6 +150,12 @@ class ArchivedSeries(TimestampedBase):
     title_raw: Mapped[str] = mapped_column(String(512), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     author: Mapped[str | None] = mapped_column(String(512))
+    title_spanish: Mapped[str | None] = mapped_column(String(512))
+    tags: Mapped[list[str] | None] = mapped_column(JSONB)
+    cover_url: Mapped[str | None] = mapped_column(String(512))
+    book_type: Mapped[str | None] = mapped_column(String(50))
+    publisher: Mapped[str | None] = mapped_column(String(255))
+    original_series_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     archived_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
 
 
@@ -163,6 +169,8 @@ class ArchivedBook(TimestampedBase):
     last_filepath: Mapped[str | None] = mapped_column(Text)
     volume: Mapped[float | None] = mapped_column(Numeric)
     author: Mapped[str | None] = mapped_column(String(255))
+    book_type: Mapped[str | None] = mapped_column(String(50))
+    original_book_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
     reason: Mapped[str | None] = mapped_column(String(100))
     archived_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
 

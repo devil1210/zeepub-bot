@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 # Use the same Base as library_models if possible,
@@ -21,7 +22,7 @@ class DownloadHistory(Base):
 
     # Relaciones
     user = relationship("User", backref="download_history")
-    book_id = Column(BigInteger, ForeignKey("books.id"), nullable=True)  # Vinculación con libro local
+    book_id = Column(UUID(as_uuid=True), ForeignKey("books.id"), nullable=True)  # Vinculación con libro local
     title = Column(String(512), nullable=False)
     author = Column(String(255))
     download_url = Column(String(1024))

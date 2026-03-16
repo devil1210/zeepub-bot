@@ -221,9 +221,9 @@ class LibraryScanner:
 
             if not existing:
                 archived_s = ArchivedSeries(
-                    series_name=s.series_name,
-                    series_spanish=s.series_spanish,
-                    series_hash=s.series_hash,
+                    title_raw=s.series_name,
+                    title_spanish=s.series_spanish,
+                    hash=s.series_hash,
                     author=s.author,
                     description=s.description,
                     tags=s.tags,
