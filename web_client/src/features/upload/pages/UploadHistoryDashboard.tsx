@@ -38,26 +38,26 @@ export const UploadHistoryDashboard: React.FC = () => {
         switch (status) {
             case 'success':
                 return (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-500/10 text-green-400 border border-green-500/10 text-[10px] font-black uppercase tracking-widest">
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-premium-sm bg-green-500/10 text-green-400 border border-green-500/10 text-[10px] font-black uppercase tracking-widest">
                         <CheckCircle className="w-3.5 h-3.5" /> Success
                     </span>
                 );
             case 'error':
                 return (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-500/10 text-red-400 border border-red-500/10 text-[10px] font-black uppercase tracking-widest">
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-premium-sm bg-red-500/10 text-red-400 border border-red-500/10 text-[10px] font-black uppercase tracking-widest">
                         <XCircle className="w-3.5 h-3.5" /> Error
                     </span>
                 );
             case 'duplicate_rejected':
             case 'rejected':
                 return (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-yellow-500/10 text-yellow-400 border border-yellow-500/10 text-[10px] font-black uppercase tracking-widest">
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-premium-sm bg-yellow-500/10 text-yellow-400 border border-yellow-500/10 text-[10px] font-black uppercase tracking-widest">
                         <AlertTriangle className="w-3.5 h-3.5" /> Duplicate
                     </span>
                 );
             default:
                 return (
-                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-500/10 text-gray-400 border border-gray-500/10 text-[10px] font-black uppercase tracking-widest">
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-premium-sm bg-gray-500/10 text-gray-400 border border-gray-500/10 text-[10px] font-black uppercase tracking-widest">
                         {status}
                     </span>
                 );
@@ -78,7 +78,7 @@ export const UploadHistoryDashboard: React.FC = () => {
                     </h3>
                     <button
                         onClick={fetchHistory}
-                        className="p-2 hover:bg-white/5 rounded-full transition-colors"
+                        className="p-2 hover:bg-white/5 rounded-premium-full transition-colors"
                     >
                         <RefreshCw className={`w-4 h-4 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
                     </button>

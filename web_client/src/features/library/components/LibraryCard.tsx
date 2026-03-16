@@ -44,18 +44,18 @@ export const LibraryCard = memo<LibraryCardProps>(({ book, onClick }) => {
     return (
         <div
             onClick={onClick}
-            className={`group relative flex flex-col rounded-[2.5rem] transition-all duration-500 glass-panel hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 overflow-hidden cursor-pointer bg-slate-900/50 ${book.isNew ? 'border-primary/30 ring-1 ring-primary/20' : 'border-white/5'} ${hasChannel ? 'ring-2 ring-primary/40 shadow-2xl shadow-primary/20' : ''}`}
+            className={`group relative flex flex-col rounded-premium-lg transition-all duration-500 glass-panel hover:border-primary/50 hover:shadow-premium overflow-hidden cursor-pointer bg-white/5 border-white/5 ${book.isNew ? 'ring-1 ring-primary/30' : ''} ${hasChannel ? 'ring-2 ring-primary/40 shadow-premium' : 'shadow-premium'}`}
         >
             {/* Image Container */}
-            <div className="relative aspect-[2/3] w-full shrink-0 overflow-hidden bg-black/80">
+            <div className="relative aspect-[2/3] w-full shrink-0 overflow-hidden bg-black/40">
                 <div className="absolute top-3 right-3 z-20 flex flex-col gap-2 items-end">
                     {book.isNew && (
-                        <div className="bg-primary text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-xl animate-pulse">
+                        <div className="bg-primary text-white px-3 py-1 rounded-premium-sm text-[9px] font-black uppercase tracking-widest shadow-lg animate-pulse backdrop-blur-[var(--glass-blur)]">
                             Nuevo
                         </div>
                     )}
                     {book.updated && (
-                        <div className="bg-emerald-500 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-xl">
+                        <div className="bg-emerald-500/80 text-white px-3 py-1 rounded-premium-sm text-[9px] font-black uppercase tracking-widest shadow-lg backdrop-blur-[var(--glass-blur)] border border-white/10">
                             Upd
                         </div>
                     )}
@@ -64,7 +64,7 @@ export const LibraryCard = memo<LibraryCardProps>(({ book, onClick }) => {
                 <ProgressiveImage
                     src={book.cover}
                     alt={book.title}
-                    className="w-full h-full object-contain transition-all duration-1000 group-hover:scale-110 grayscale-[30%] group-hover:grayscale-0"
+                    className="w-full h-full object-contain transition-all duration-1000 group-hover:scale-105"
                     containerClassName="w-full h-full"
                 />
 
@@ -93,19 +93,19 @@ export const LibraryCard = memo<LibraryCardProps>(({ book, onClick }) => {
                     </div>
                 )}
 
-                {/* Subtle Gradient for depth only, no text overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-40 transition-opacity duration-500 pointer-events-none"></div>
+                {/* Subtle Gradient for depth */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500 pointer-events-none"></div>
 
                 {/* Glow Effect */}
-                <div className="absolute -inset-full bg-primary/20 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                <div className="absolute -inset-full bg-primary/10 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
             </div>
 
             {/* Content */}
-            <div className={`flex flex-col gap-2 p-5 relative z-10 flex-1 backdrop-blur-sm transition-colors ${hasChannel ? 'bg-primary/10' : 'bg-white/5'}`}>
+            <div className={`flex flex-col gap-2 p-5 relative z-10 flex-1 transition-colors ${hasChannel ? 'bg-primary/5' : 'bg-white/[0.02]'}`}>
                 <h3 className="line-clamp-2 text-[15px] font-black text-white group-hover:text-primary transition-colors tracking-tight leading-tight min-h-[2.5em]">{book.title}</h3>
 
                 <div className="mt-auto pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    <span className="bg-white/5 px-2 py-1 rounded border border-white/5">Vol {book.vol}</span>
+                    <span className="bg-white/5 px-2 py-1 rounded-premium-sm border border-white/5">Vol {book.vol}</span>
                     <span className="opacity-50">{book.time}</span>
                 </div>
             </div>

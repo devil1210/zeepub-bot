@@ -43,7 +43,7 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
             <header className="flex items-center gap-4 mb-8">
                 <button
                     onClick={() => onNavigate && onNavigate('settings')}
-                    className="p-2 -ml-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                    className="p-2 -ml-2 rounded-premium-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
                 >
                     <ArrowLeft className="w-6 h-6" />
                 </button>
@@ -55,7 +55,7 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                    <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-premium-full animate-spin"></div>
                     <p className="text-gray-500 font-medium">Cargando historial...</p>
                 </div>
             ) : downloadHistory.length > 0 ? (
@@ -63,12 +63,7 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
                     {downloadHistory.map((item) => (
                         <div
                             key={item.id}
-                            className="glass-panel group rounded-premium overflow-hidden border border-white/5 hover:border-primary/30 transition-all duration-300 flex flex-col"
-                            style={{
-                                background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
-                                backdropFilter: `blur(${settings.glassBlur}px)`,
-                                WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-                            }}
+                            className="glass-panel group rounded-premium-lg overflow-hidden border border-white/5 hover:border-primary/30 transition-all duration-300 flex flex-col shadow-premium"
                         >
                             <div className="relative aspect-[16/9] overflow-hidden">
                                 <img
@@ -78,7 +73,7 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                                 <div className="absolute top-4 left-4">
-                                    <span className="px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-white border border-white/10 flex items-center gap-1.5 shadow-xl">
+                                    <span className="px-2.5 py-1 rounded-premium-sm bg-black/60 backdrop-blur-[var(--glass-blur)] text-[10px] font-black uppercase tracking-widest text-white border border-white/5 flex items-center gap-1.5 shadow-xl">
                                         <Download className="w-3 h-3 text-primary" />
                                         Descargado
                                     </span>
@@ -116,8 +111,8 @@ export const Downloads: React.FC<DownloadsProps> = ({ onNavigate, onBookClick })
                     ))}
                 </div>
             ) : (
-                <div className="glass-panel rounded-premium p-12 text-center border border-white/5 flex flex-col items-center justify-center gap-6">
-                    <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-gray-500">
+                <div className="glass-panel rounded-premium-lg p-12 text-center border border-white/5 flex flex-col items-center justify-center gap-6 shadow-premium">
+                    <div className="w-20 h-20 rounded-premium-full bg-white/5 flex items-center justify-center text-gray-500">
                         <Download className="w-10 h-10" />
                     </div>
                     <div>

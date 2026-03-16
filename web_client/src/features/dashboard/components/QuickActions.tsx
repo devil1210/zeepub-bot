@@ -33,7 +33,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ actions, onNavigate,
                         className="group relative h-36 md:h-44 flex flex-col items-center justify-center text-center gap-3 md:gap-4 cursor-pointer active:scale-95 transition-transform duration-300 will-change-transform"
                         aria-label={`Acceder a ${item.label}`}
                     >
-                        <div className="absolute inset-0 glass-panel rounded-[2rem] md:rounded-[2.8rem] transition-all duration-500 border border-[var(--panel-border)] shadow-premium backdrop-blur-3xl group-hover:bg-white/[0.05] group-hover:border-[var(--panel-border-hover)] group-hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)]"
+                        <div className="absolute inset-0 glass-panel rounded-premium-lg transition-all duration-500 border border-[var(--panel-border)] shadow-premium group-hover:bg-white/[0.05] group-hover:border-[var(--panel-border-hover)] group-hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.5)]"
                             style={{
                                 background: `rgba(var(--glass-rgb), ${settings.glassOpacity * 0.5})`,
                                 backdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
@@ -43,16 +43,16 @@ export const QuickActions: React.FC<QuickActionsProps> = ({ actions, onNavigate,
 
                         {/* Dynamic Corner Glow */}
                         <div
-                            className={`absolute -top-4 -right-4 w-32 h-32 rounded-full ${item.bg} blur-[40px] pointer-events-none opacity-0 group-hover:opacity-10 transition-opacity duration-500`}
+                            className={`absolute -top-4 -right-4 w-32 h-32 rounded-premium-full ${item.bg} blur-[40px] pointer-events-none opacity-0 group-hover:opacity-10 transition-opacity duration-500`}
                             style={{
                                 filter: `blur(${30 + (settings.cardGlowIntensity * 20)}px)`
                             }}
                         ></div>
                         <div
-                            className={`absolute -top-4 -right-4 w-16 h-16 rounded-full ${item.bg} blur-[20px] opacity-0 group-hover:opacity-60 transition-opacity duration-500 pointer-events-none`}
+                            className={`absolute -top-4 -right-4 w-16 h-16 rounded-premium-full ${item.bg} blur-[20px] opacity-0 group-hover:opacity-60 transition-opacity duration-500 pointer-events-none`}
                         ></div>
 
-                        <div className={`relative z-10 p-3 md:p-5 rounded-2xl md:rounded-[1.6rem] ${item.bg} ${item.color} border border-white/5 shadow-inner transition-transform duration-500 group-hover:-translate-y-2 group-hover:shadow-xl group-hover:shadow-primary/10 will-change-transform`}>
+                        <div className={`relative z-10 p-3 md:p-5 rounded-premium-lg ${item.bg} ${item.color} border border-white/5 shadow-inner transition-transform duration-500 group-hover:-translate-y-2 group-hover:shadow-xl group-hover:shadow-primary/10 will-change-transform`}>
                             <item.icon className="w-6 h-6 md:w-8 md:h-8" strokeWidth={2.5} />
                         </div>
                         <div className="relative z-10 px-2">

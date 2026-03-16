@@ -71,9 +71,7 @@ DEFAULT_TEMPLATES = {
         "✍️ <b>Hashtag:</b> #{slug}\n\n"
         "#ZeePubBot #V4"
     ),
-    "facebook": (
-        "📚 {series_name} - {title}\n\n" "{description}\n\n" "Descarga disponible en ZeePub Bot.\n" "#{slug} #ZeePub"
-    ),
+    "facebook": ("📚 {series_name} - {title}\n\n{description}\n\nDescarga disponible en ZeePub Bot.\n#{slug} #ZeePub"),
 }
 
 # -----------------------------------------------------------------------------

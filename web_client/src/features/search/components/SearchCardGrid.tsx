@@ -14,7 +14,7 @@ export const SearchCardGrid: React.FC<SearchCardGridProps> = React.memo(({ serie
     return (
         <div
             onClick={onClick}
-            className="group relative bg-[#0f1115] rounded-[2.5rem] overflow-hidden border border-white/5 hover:border-primary/40 shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"
+            className="group relative glass-panel rounded-premium-lg overflow-hidden border border-white/5 hover:border-primary/40 shadow-premium hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"
         >
             {/* Image Container */}
             <div className="relative aspect-[2/3] overflow-hidden bg-black/80">
@@ -26,14 +26,14 @@ export const SearchCardGrid: React.FC<SearchCardGridProps> = React.memo(({ serie
 
                 {/* Floating Badges */}
                 <div className="absolute top-4 right-4 flex flex-col gap-2 scale-90 origin-top-right">
-                    <span className="bg-black/80 backdrop-blur-xl text-white text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-[0.2em] border border-white/10">
+                    <span className="bg-black/60 backdrop-blur-xl text-white text-[9px] font-black px-3 py-1.5 rounded-premium-sm uppercase tracking-[0.2em] border border-white/10 shadow-premium">
                         {series.book_type || 'NOVELA'}
                     </span>
                     {series.color_mode === 'color' && (
-                        <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest shadow-xl">COLOR</span>
+                        <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[8px] font-black px-2.5 py-1 rounded-premium-sm uppercase tracking-widest shadow-premium">COLOR</span>
                     )}
                     {series.is_uncensored && (
-                        <span className="bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest shadow-xl">S/C</span>
+                        <span className="bg-red-600/80 backdrop-blur-md text-white text-[8px] font-black px-2.5 py-1 rounded-premium-sm uppercase tracking-widest shadow-premium border border-red-500/30">S/C</span>
                     )}
                 </div>
 
@@ -52,11 +52,11 @@ export const SearchCardGrid: React.FC<SearchCardGridProps> = React.memo(({ serie
                     <h3 className="text-white font-black text-base leading-tight line-clamp-2 drop-shadow-xl group-hover:text-primary transition-colors">
                         {series.title}
                     </h3>
-                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1.5 truncate">
+                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-2 truncate">
                         {series.author}
                     </p>
                     {series.genre && (
-                        <p className="text-[9px] text-gray-500 italic opacity-60 truncate">
+                        <p className="text-[10px] text-gray-500 font-medium italic opacity-60 truncate mt-0.5">
                             {series.genre}
                         </p>
                     )}

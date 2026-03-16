@@ -35,12 +35,12 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
     };
 
     return (
-        <div className="glass-panel p-10 rounded-premium-lg flex flex-col gap-12 border border-white/5 shadow-2xl relative overflow-hidden group">
+        <div className="glass-panel p-10 rounded-premium-lg flex flex-col gap-12 border border-white/5 shadow-premium relative overflow-hidden group">
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[100px] pointer-events-none group-hover:bg-primary/20 transition-all duration-1000"></div>
 
             <div className="flex border-b border-white/5 pb-8">
                 <div className="flex items-center gap-5">
-                    <div className="p-3 rounded-[1.25rem] bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 shadow-lg">
+                    <div className="p-3 rounded-premium-sm bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 shadow-lg">
                         <Palette className="w-6 h-6" strokeWidth={2.5} />
                     </div>
                     <div>
@@ -55,7 +55,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                 <div className="space-y-6">
                     <div className="flex items-center justify-between px-1">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Templates de Autor</label>
-                        <span className="text-[9px] font-black text-primary bg-primary/10 px-3 py-1 rounded-full uppercase tracking-widest">{availableThemes.length} Curados</span>
+                        <span className="text-[9px] font-black text-primary bg-primary/10 px-3 py-1 rounded-premium-full uppercase tracking-widest">{availableThemes.length} Curados</span>
                     </div>
                     <div className="flex gap-5 overflow-x-auto pb-6 custom-scrollbar px-1">
                         {availableThemes.map((theme) => {
@@ -77,7 +77,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                             cardGlowIntensity: theme.cardGlowIntensity || theme.card_glow_intensity || 0.5,
                                         });
                                     }}
-                                    className={`flex-shrink-0 w-44 p-5 rounded-[2rem] border-2 transition-all duration-500 flex flex-col gap-4 group/theme relative overflow-hidden ${isCurrent ? 'border-primary bg-primary/10 shadow-[0_20px_40px_-10px_rgba(var(--color-primary-rgb),0.3)]' : 'border-white/5 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]'}`}
+                                    className={`flex-shrink-0 w-44 p-5 rounded-premium-lg border-2 transition-all duration-500 flex flex-col gap-4 group/theme relative overflow-hidden ${isCurrent ? 'border-primary bg-primary/10 shadow-premium' : 'border-white/5 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]'}`}
                                 >
                                     <div className="absolute top-0 right-0 p-3 opacity-5 group-hover/theme:rotate-12 transition-transform">
                                         <Palette className="w-10 h-10" />
@@ -89,8 +89,8 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                     </div>
 
                                     <div className="flex gap-2 mt-auto">
-                                        <div className="size-5 rounded-full shadow-2xl border-2 border-[#0a0a0c]" style={{ backgroundColor: theme.primary_color || theme.primaryColor }}></div>
-                                        <div className="size-5 rounded-full shadow-2xl border-2 border-[#0a0a0c]" style={{ backgroundColor: theme.background_color || theme.backgroundColor }}></div>
+                                        <div className="size-5 rounded-premium-full shadow-2xl border-2 border-[#0a0a0c]" style={{ backgroundColor: theme.primary_color || theme.primaryColor }}></div>
+                                        <div className="size-5 rounded-premium-full shadow-2xl border-2 border-[#0a0a0c]" style={{ backgroundColor: theme.background_color || theme.backgroundColor }}></div>
                                     </div>
 
                                     {isCurrent && (
@@ -119,8 +119,8 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                 <button
                                     key={t.id}
                                     onClick={() => updateSettings({ theme: t.id as any })}
-                                    className={`flex items-center gap-5 p-5 rounded-[1.75rem] border-2 transition-all duration-500 group/item relative overflow-hidden ${settings.theme === t.id
-                                        ? 'bg-primary/10 border-primary text-primary shadow-[0_0_25px_rgba(var(--color-primary-rgb),0.1)]'
+                                    className={`flex items-center gap-5 p-5 rounded-premium-lg border-2 transition-all duration-500 group/item relative overflow-hidden ${settings.theme === t.id
+                                        ? 'bg-primary/10 border-primary text-primary shadow-premium'
                                         : 'bg-white/[0.03] border-white/5 text-gray-500 hover:border-white/20'
                                         }`}
                                 >
@@ -131,7 +131,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                         <span className={`text-[13px] font-black uppercase tracking-tight block ${settings.theme === t.id ? 'text-white' : 'text-gray-400'}`}>{t.label}</span>
                                         <span className="text-[9px] font-bold uppercase tracking-widest opacity-40">{t.desc}</span>
                                     </div>
-                                    {settings.theme === t.id && <div className="ml-auto pr-2"><div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--color-primary-rgb),0.8)]"></div></div>}
+                                    {settings.theme === t.id && <div className="ml-auto pr-2"><div className="w-2 h-2 rounded-premium-full bg-primary shadow-[0_0_10px_rgba(var(--color-primary-rgb),0.8)]"></div></div>}
                                 </button>
                             ))}
                         </div>
@@ -142,7 +142,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                 {isVisible('primaryColor') && (
                     <div className="space-y-6">
                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">Firma de Color (Énfasis)</label>
-                        <div className="p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] flex flex-col gap-8">
+                        <div className="p-6 bg-white/[0.03] border border-white/5 rounded-premium-lg flex flex-col gap-8 shadow-premium">
                             <div className="flex flex-wrap gap-4">
                                 {['#FB7185', '#38BDF8', '#4ADE80', '#FBBF24', '#818CF8', '#F472B6', '#A78BFA'].map((color) => (
                                     <button
@@ -183,7 +183,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                 <div className="space-y-5">
                                     <div className="flex justify-between items-center px-1">
                                         <span className="text-[11px] font-black text-white uppercase tracking-widest">Difusión (Gaussian Blur)</span>
-                                        <span className="text-[11px] font-black text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-lg">{settings.glassBlur}px</span>
+                                        <span className="text-[11px] font-black text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-premium-sm border border-primary/10">{settings.glassBlur}px</span>
                                     </div>
                                     <div className="bg-white/[0.03] p-5 rounded-premium-sm border border-white/5">
                                         <input
@@ -192,7 +192,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                             max="40"
                                             value={settings.glassBlur}
                                             onChange={(e) => updateSettings({ glassBlur: parseInt(e.target.value) })}
-                                            className="w-full accent-primary h-1 bg-gray-800 rounded-full appearance-none cursor-pointer"
+                                            className="w-full accent-primary h-1 bg-gray-800 rounded-premium-full appearance-none cursor-pointer"
                                         />
                                     </div>
                                 </div>
@@ -211,7 +211,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                                 <button
                                                     key={elem.id}
                                                     onClick={() => setSelectedElement(elem.id as any)}
-                                                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${selectedElement === elem.id ? 'bg-primary text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                                                    className={`px-3 py-1.5 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all ${selectedElement === elem.id ? 'bg-primary text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                                                 >
                                                     {elem.label}
                                                 </button>
@@ -219,7 +219,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="bg-white/[0.03] p-6 rounded-premium border border-white/5 space-y-6">
+                                    <div className="bg-white/[0.03] p-6 rounded-premium-lg border border-white/5 space-y-6 shadow-premium">
                                         <div className="flex justify-between items-center">
                                             <div className="flex flex-col">
                                                 <span className="text-[13px] font-black text-white uppercase tracking-tight">
@@ -230,7 +230,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                                 </span>
                                                 <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">Control de densidad alpha</span>
                                             </div>
-                                            <span className="text-[12px] font-black text-primary font-mono bg-primary/10 px-3 py-1 rounded-lg">
+                                            <span className="text-[12px] font-black text-primary font-mono bg-primary/10 px-3 py-1 rounded-premium-sm border border-primary/10">
                                                 {Math.round((
                                                     selectedElement === 'glass' ? settings.glassOpacity :
                                                         selectedElement === 'nav' ? settings.navOpacity :
@@ -257,7 +257,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                                 else if (selectedElement === 'header') updateSettings({ headerOpacity: val });
                                                 else updateSettings({ searchBarOpacity: val });
                                             }}
-                                            className="w-full accent-primary h-1 bg-gray-800 rounded-full appearance-none cursor-pointer"
+                                            className="w-full accent-primary h-1 bg-gray-800 rounded-premium-full appearance-none cursor-pointer"
                                         />
 
                                         <p className="text-[10px] text-gray-600 font-medium leading-relaxed italic">
@@ -273,7 +273,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                             <div className="space-y-5">
                                 <div className="flex justify-between items-center px-1">
                                     <span className="text-[11px] font-black text-white uppercase tracking-widest">Curvatura (Border Radius)</span>
-                                    <span className="text-[11px] font-black text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-lg">{settings.borderRadius}px</span>
+                                    <span className="text-[11px] font-black text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-premium-sm">{settings.borderRadius}px</span>
                                 </div>
                                 <div className="bg-white/[0.03] p-5 rounded-premium-sm border border-white/5">
                                     <input
@@ -282,7 +282,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                         max="48"
                                         value={settings.borderRadius}
                                         onChange={(e) => updateSettings({ borderRadius: parseInt(e.target.value) })}
-                                        className="w-full accent-primary h-1 bg-gray-800 rounded-full appearance-none cursor-pointer"
+                                        className="w-full accent-primary h-1 bg-gray-800 rounded-premium-full appearance-none cursor-pointer"
                                     />
                                 </div>
                             </div>
@@ -290,7 +290,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                             <div className="space-y-5">
                                 <div className="flex justify-between items-center px-1">
                                     <span className="text-[11px] font-black text-white uppercase tracking-widest">Grosor de Línea (Border)</span>
-                                    <span className="text-[11px] font-black text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-lg">{settings.borderWidth}px</span>
+                                    <span className="text-[11px] font-black text-primary font-mono bg-primary/10 px-2 py-0.5 rounded-premium-sm">{settings.borderWidth}px</span>
                                 </div>
                                 <div className="bg-white/[0.03] p-5 rounded-premium-sm border border-white/5">
                                     <input
@@ -300,7 +300,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                                         step="1"
                                         value={settings.borderWidth}
                                         onChange={(e) => updateSettings({ borderWidth: parseInt(e.target.value) })}
-                                        className="w-full accent-primary h-1 bg-gray-800 rounded-full appearance-none cursor-pointer"
+                                        className="w-full accent-primary h-1 bg-gray-800 rounded-premium-full appearance-none cursor-pointer"
                                     />
                                 </div>
                             </div>
@@ -312,7 +312,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
             <div className="flex items-center justify-between gap-6 pt-10 border-t border-white/5">
                 <button
                     onClick={resetSettings}
-                    className="px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white border border-white/10 hover:bg-white/5 transition-all flex items-center gap-3"
+                    className="px-8 py-4 rounded-premium-lg text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 hover:text-white border border-white/10 hover:bg-white/5 transition-all flex items-center gap-3 shadow-premium"
                 >
                     <RotateCcw className="w-4 h-4" />
                     Resetear Perfil
@@ -320,7 +320,7 @@ export const AestheticSettings: React.FC<AestheticSettingsProps> = ({
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className={`px-12 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.3em] text-white shadow-2xl flex items-center gap-4 transition-all hover:scale-105 active:scale-95 ${isSaving ? 'bg-gray-800 cursor-not-allowed opacity-50 border-white/5' : 'bg-primary border border-white/20 shadow-primary/30'
+                    className={`px-12 py-4 rounded-premium-lg text-[10px] font-black uppercase tracking-[0.3em] text-white shadow-premium flex items-center gap-4 transition-all hover:scale-105 active:scale-95 ${isSaving ? 'bg-gray-800 cursor-not-allowed opacity-50 border-white/5' : 'bg-primary border border-white/20 shadow-primary/30'
                         }`}
                 >
                     {isSaving ? <RotateCcw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}

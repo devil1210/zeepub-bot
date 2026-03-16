@@ -27,17 +27,17 @@ export const SettingsNavigation: React.FC<SettingsNavigationProps> = ({
     ].filter(i => i.visible);
 
     return (
-        <div className="glass-panel rounded-premium-lg overflow-hidden shadow-2xl border-white/5">
+        <div className="glass-panel rounded-premium-lg overflow-hidden shadow-premium border border-white/5">
             <div className="p-8 border-b border-white/5 flex items-center justify-between">
                 <h3 className="text-[11px] font-black text-gray-500 uppercase tracking-[0.4em]">Panel de Control</h3>
-                <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                <div className="w-2 h-2 rounded-premium-full bg-primary animate-pulse"></div>
             </div>
             <div className="p-3 space-y-2">
                 {navItems.map((item) => (
                     <button
                         key={item.id}
                         onClick={() => item.action ? item.action() : onNavigate(item.id)}
-                        className="w-full flex items-center justify-between p-5 rounded-premium text-gray-400 hover:bg-white/[0.04] transition-all duration-500 group"
+                        className="w-full flex items-center justify-between p-5 rounded-premium-sm text-gray-400 hover:bg-white/[0.04] transition-all duration-500 group"
                     >
                         <div className="flex items-center gap-5">
                             <div className={`p-3.5 rounded-premium-sm ${item.bg} ${item.color} border border-white/10 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>

@@ -59,7 +59,7 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
             >
                 <button
                     onClick={onBack}
-                    className="p-3 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white border border-white/10 transition-all active:scale-95 shadow-lg group"
+                    className="p-3 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-premium-full text-white border border-white/10 transition-all active:scale-95 shadow-lg group"
                 >
                     <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 </button>
@@ -69,7 +69,7 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
                         <button
                             onClick={onSync}
                             disabled={isSyncing}
-                            className={`px-4 py-2.5 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white border border-white/10 transition-all active:scale-95 shadow-lg group flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`px-4 py-2.5 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-premium-full text-white border border-white/10 transition-all active:scale-95 shadow-lg group flex items-center gap-2 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
                             title="Sincronizar esta serie"
                         >
                             <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
@@ -77,7 +77,7 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
                         </button>
                     )}
 
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20 pointer-events-auto">
+                    <div className="w-8 h-8 rounded-premium-lg bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center shadow-lg shadow-primary/20 pointer-events-auto">
                         <BookOpen className="text-white w-5 h-5" />
                     </div>
                 </div>
@@ -88,7 +88,7 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
                 style={{ paddingTop: '2rem' }}
             >
                 <div className="max-w-[1800px] mx-auto flex flex-col sm:flex-row gap-6 items-end sm:items-end">
-                    <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 shadow-premium border border-white/10 rounded-lg overflow-hidden transition-transform duration-500 hover:scale-105">
+                    <div className="hidden sm:block relative shrink-0 w-32 h-48 sm:w-40 sm:h-60 shadow-premium border border-white/10 rounded-premium-lg overflow-hidden transition-transform duration-500 hover:scale-105">
                         <img alt={`${series.title} Cover`} className="w-full h-full object-cover" src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality)} />
                     </div>
 
@@ -98,7 +98,7 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
                                 <button
                                     key={`demo-${idx}`}
                                     onClick={() => onSearch?.(demo)}
-                                    className="px-4 py-1.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-[0.2em] hover:bg-emerald-500/30 transition-all shadow-lg shadow-emerald-500/10"
+                                    className="px-4 py-1.5 rounded-premium-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-[0.2em] hover:bg-emerald-500/30 transition-all shadow-lg shadow-emerald-500/10"
                                 >
                                     {demo}
                                 </button>
@@ -111,7 +111,7 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
                                     <button
                                         key={`tag-${idx}`}
                                         onClick={() => onSearch?.(tag)}
-                                        className="px-4 py-1.5 rounded-full text-[10px] font-black bg-primary/20 text-primary border border-primary/30 uppercase tracking-[0.2em] hover:bg-primary/30 transition-all shadow-lg shadow-primary/10"
+                                        className="px-4 py-1.5 rounded-premium-full text-[10px] font-black bg-primary/20 text-primary border border-primary/30 uppercase tracking-[0.2em] hover:bg-primary/30 transition-all shadow-lg shadow-primary/10"
                                     >
                                         {tag}
                                     </button>
@@ -120,12 +120,12 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
                             {!series.tags?.length && series.genre && (
                                 <button
                                     onClick={() => onSearch?.(series.genre || '')}
-                                    className="px-4 py-1.5 rounded-full text-[10px] font-black bg-primary/20 text-primary border border-primary/30 uppercase tracking-[0.2em] hover:bg-primary/30 transition-all shadow-lg shadow-primary/10"
+                                    className="px-4 py-1.5 rounded-premium-full text-[10px] font-black bg-primary/20 text-primary border border-primary/30 uppercase tracking-[0.2em] hover:bg-primary/30 transition-all shadow-lg shadow-primary/10"
                                 >
                                     {series.genre}
                                 </button>
                             )}
-                            <div className="flex items-center gap-2 text-yellow-500 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 shadow-xl">
+                            <div className="flex items-center gap-2 text-yellow-500 bg-white/5 px-3 py-1.5 rounded-premium-full border border-white/10 shadow-xl">
                                 <Star className="w-4 h-4 fill-current" />
                                 <span className="text-[13px] font-black">{series.rating > 0 ? series.rating.toFixed(1) : '—'}</span>
                             </div>
@@ -145,7 +145,7 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
                             onClick={() => onSearch?.(series.author || '')}
                             className="group flex items-center gap-3 text-white/70 text-sm font-bold uppercase tracking-[0.1em] mb-8 hover:text-primary transition-all duration-300"
                         >
-                            <div className="w-1 h-4 bg-primary rounded-full group-hover:h-6 transition-all duration-300"></div>
+                            <div className="w-1 h-4 bg-primary rounded-premium-full group-hover:h-6 transition-all duration-300"></div>
                             Por <span className="text-white group-hover:text-primary">{series.author}</span>
                         </button>
 
@@ -156,7 +156,7 @@ export const SeriesHero: React.FC<SeriesHeroProps> = ({
                                         e.preventDefault();
                                         onOpenSynopsis();
                                     }}
-                                    className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 text-violet-300 border border-violet-500/30 text-[10px] font-black uppercase tracking-wider hover:bg-violet-500/30 transition-all shadow-lg shadow-violet-500/10 backdrop-blur-md"
+                                    className="flex items-center gap-1.5 px-3 py-1 rounded-premium-full bg-gradient-to-r from-violet-500/20 to-fuchsia-500/20 text-violet-300 border border-violet-500/30 text-[10px] font-black uppercase tracking-wider hover:bg-violet-500/30 transition-all shadow-lg shadow-violet-500/10 backdrop-blur-md"
                                 >
                                     <Sparkles className="w-3 h-3 text-fuchsia-400" />
                                     Resumen IA

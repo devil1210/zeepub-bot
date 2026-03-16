@@ -33,16 +33,20 @@
 - [x] Refactorización de `TelegramMessagePreview.tsx` (Previsualización premium).
 - [x] Auditoría estética de los componentes del Publisher.
 - [x] Refactorización de `UniversalFloatingNav.tsx`.
+- [x] Estandarización estética (Aesthetic Tokens) en `Settings` y `Dashboard`.
+- [x] Corrección estructural de `StatsWidget.tsx`.
 
-### Tareas Completadas (Fase 4 - Hito 1):
-- [x] Configuración de logs a DEBUG para visibilidad de tokens.
-- [x] Normalización de títulos en `generar_slug_from_meta` para tolerancia a typos.
-- [x] Creación de Workflow de GitHub Actions (`docker-publish.yml`) para CI/CD automatizado.
-- [x] Corrección de tipos en `metadata_utils.py`.
+### Tareas Completadas (Fase 4 - Auditoría & Readiness):
+- [x] Corrección de errores de linting en `SemanticService.py`.
+- [x] Verificación de configuración `.env` y Docker.
+- [x] Auditoría estética global finalizada.
+
+### Tareas en Progreso:
+- [/] Despliegue en VPS (Push iniciado).
 
 ### Siguiente Paso
-- Implementación de la Fase 4: Búsqueda Semántica y RAG (Próximo hito principal).
-- Resolver conectividad de la BD en local (uso de Docker recomendado).
+- Despliegue y validación en VPS (Staging).
+- Pruebas E2E en entorno real de Telegram.
 
 ### Notas del Handover
-> El sistema se encuentra en un estado funcional respecto a CI/CD e infraestructura. La conectividad BD en local está pendiente de configuración mediante Docker. Persistencia completada mediante `/push`.
+> El sistema está auditado y refinado estéticamente. Se ha corregido el error en `StatsWidget` y `SemanticService`. Listo para despliegue mediante GitHub Actions (Docker).

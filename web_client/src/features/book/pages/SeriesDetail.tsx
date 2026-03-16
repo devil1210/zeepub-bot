@@ -128,7 +128,7 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
 
       {loading && (
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-premium-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
       )}
 
@@ -142,13 +142,13 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             <div className="flex gap-2 glass-panel p-1 rounded-premium-sm border border-white/10 shadow-lg">
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                className={`p-2 rounded-premium-sm transition-all ${viewMode === 'list' ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
               >
                 <List className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                className={`p-2 rounded-premium-sm transition-all ${viewMode === 'grid' ? 'bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/30' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>

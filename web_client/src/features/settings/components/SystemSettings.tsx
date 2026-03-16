@@ -8,7 +8,7 @@ interface SystemSettingsProps {
 
 export const SystemSettings: React.FC<SystemSettingsProps> = ({ settings, updateSettings }) => {
     return (
-        <div className="glass-panel p-10 rounded-premium-lg shadow-2xl border-white/5 relative overflow-hidden group">
+        <div className="glass-panel p-10 rounded-premium-lg shadow-premium border border-white/5 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-1000">
                 <Wrench className="w-32 h-32" />
             </div>
@@ -25,7 +25,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ settings, update
                     <div className="space-y-4">
                         <div className="flex justify-between items-center px-1">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Escala de Texto</label>
-                            <span className="text-[11px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-lg font-mono">{settings.fontSize}px</span>
+                            <span className="text-[11px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-premium-sm font-mono border border-primary/10">{settings.fontSize}px</span>
                         </div>
                         <div className="flex items-center gap-4 bg-white/[0.03] p-4 rounded-premium-sm border border-white/5 group/slider hover:bg-white/[0.05] transition-all">
                             <span className="text-[10px] text-gray-600 font-black">A</span>
@@ -35,7 +35,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ settings, update
                                 max="20"
                                 value={settings.fontSize}
                                 onChange={(e) => updateSettings({ fontSize: parseInt(e.target.value) })}
-                                className="w-full h-1 bg-gray-800 rounded-full appearance-none cursor-pointer accent-primary"
+                                className="w-full h-1 bg-gray-800 rounded-premium-full appearance-none cursor-pointer accent-primary"
                             />
                             <span className="text-lg text-gray-400 font-black">A</span>
                         </div>
@@ -78,7 +78,7 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ settings, update
                         checked={settings.performanceMode || false}
                         onChange={(e) => updateSettings({ performanceMode: e.target.checked })}
                     />
-                    <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary transition-colors"></div>
+                    <div className="w-11 h-6 bg-gray-700/50 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary/50 rounded-premium-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-premium-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary transition-all shadow-inner"></div>
                     <span className="ml-3 text-[10px] font-black text-gray-500 uppercase tracking-widest peer-checked:text-primary transition-colors">
                         {settings.performanceMode ? 'ACTIVO' : 'NO'}
                     </span>

@@ -3,7 +3,7 @@
 import logging
 import re
 
-from models.library_models import LocalBook, SeriesMetadata
+from models.library_models import Book, Series
 from utils.helpers import generar_slug_from_meta
 
 logger = logging.getLogger(__name__)
@@ -67,13 +67,15 @@ class SlugManager:
         return cleaned_slug
 
     @staticmethod
-    def generate_valid_slug(series_metadata: SeriesMetadata) -> str:
+    def generate_valid_slug(series: Series) -> str:
         """
         Generate a valid slug from series metadata.
         """
         try:
             # Generate slug using existing utility
-            new_slug = generar_slug_from_meta(series_metadata.to_dict())
+            # V4 Series doesn't have a to_dict() by default in TimestampedBase, using manual dict
+            series_data = {"title_raw": series.title_raw, "title_spanish": series.title_spanish}
+            new_slug = generar_slug_from_meta(series_data)
 
             # Clean special characters
             cleaned_slug = SlugManager.clean_slug_special_chars(new_slug)
@@ -146,7 +148,7 @@ class SlugManager:
         return False, "manual preservado"
 
     @staticmethod
-    def update_slug_safely(series: SeriesMetadata, book: LocalBook) -> str | None:
+    def update_slug_safely(series: Series, book: Book) -> str | None:
         """
         Update slug safely with validation and logging.
         """
@@ -154,7 +156,7 @@ class SlugManager:
             current_slug = series.slug or ""
             new_slug = SlugManager.generate_valid_slug(series)
 
-            should_update, reason = SlugManager.should_update_slug(current_slug, new_slug, book.series_hash)
+            should_update, reason = SlugManager.should_update_slug(current_slug, new_slug, book.hash)
 
             if should_update:
                 series.slug = new_slug

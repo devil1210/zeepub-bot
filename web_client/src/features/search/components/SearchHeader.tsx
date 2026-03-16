@@ -56,11 +56,11 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
 
     return (
         <div
-            className="z-30 px-4 md:px-8 py-3 md:py-4 border-b border-white/5"
+            className="z-30 px-4 md:px-8 py-3 md:py-4 border-b border-white/5 shadow-premium"
             style={{
-                background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-                backdropFilter: `blur(${settings.glassBlur}px)`,
-                WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+                background: `linear-gradient(to bottom, rgba(var(--glass-rgb), ${settings.navOpacity}), rgba(var(--glass-rgb), ${settings.navOpacity * 0.8}))`,
+                backdropFilter: `blur(var(--glass-blur))`,
+                WebkitBackdropFilter: `blur(var(--glass-blur))`
             }}
         >
             <div className="w-full max-w-7xl mx-auto">
@@ -70,7 +70,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                             <SearchIcon className="text-gray-400 w-5 h-5 group-focus-within:text-[var(--color-primary)] transition-colors" />
                         </div>
                         <input
-                            className="block w-full pl-12 pr-28 py-3.5 rounded-premium-sm border border-white/10 bg-white/5 text-white placeholder-gray-500 focus:ring-2 focus:ring-primary/50 focus:border-primary focus:bg-white/10 text-sm transition-all shadow-inner"
+                            className="block w-full pl-12 pr-28 py-3.5 rounded-premium-lg border border-white/10 bg-white/5 text-white placeholder-gray-500 focus:ring-2 focus:ring-primary/40 focus:border-primary/40 focus:bg-white/10 text-sm transition-all shadow-inner"
                             placeholder="Busca por título, autor, género o ISBN..."
                             type="text"
                             value={localTerm}
@@ -84,7 +84,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                         <div className="absolute inset-y-0 right-1.5 flex items-center">
                             <button
                                 onClick={onScopeClick}
-                                className="px-4 py-2 rounded-premium-sm bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
+                                className="px-5 py-2.5 rounded-premium-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-premium active:scale-95"
                             >
                                 {selectedScope}
                             </button>
@@ -97,7 +97,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                             {/* Toggle View: List <-> Grid */}
                             <button
                                 onClick={() => onViewModeChange(viewMode === 'grid' ? 'list' : 'grid')}
-                                className="p-2.5 rounded-premium-sm bg-white/5 border border-white/5 hover:border-primary/50 text-gray-400 hover:text-primary transition-all shadow-lg active:scale-90"
+                                className="p-3 rounded-premium-lg bg-white/5 border border-white/5 hover:border-primary/40 text-gray-400 hover:text-primary transition-all shadow-premium active:scale-90"
                                 title={viewMode === 'grid' ? "Cambiar a Lista" : "Cambiar a Cuadrícula"}
                             >
                                 {viewMode === 'grid' ? <List className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
@@ -106,7 +106,7 @@ export const SearchHeader: React.FC<SearchHeaderProps> = ({
                             {/* Toggle Mode: Infinite <-> Paginated */}
                             <button
                                 onClick={() => updateSettings({ listMode: settings.listMode === 'infinite' ? 'paginated' : 'infinite' })}
-                                className="p-2.5 rounded-premium-sm bg-white/5 border border-white/5 hover:border-primary/50 text-gray-400 hover:text-primary transition-all shadow-lg active:scale-90"
+                                className="p-3 rounded-premium-lg bg-white/5 border border-white/5 hover:border-primary/40 text-gray-400 hover:text-primary transition-all shadow-premium active:scale-90"
                                 title={settings.listMode === 'infinite' ? "Cambiar a Paginado" : "Cambiar a Infinito"}
                             >
                                 {settings.listMode === 'infinite' ? <InfinityIcon className="w-5 h-5 text-primary" /> : <Layers className="w-5 h-5" />}

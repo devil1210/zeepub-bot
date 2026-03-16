@@ -16,7 +16,7 @@ interface ActivityFeedProps {
 
 export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {
     return (
-        <div className="glass-panel p-8 rounded-[2.5rem] relative overflow-hidden group">
+        <div className="glass-panel p-8 rounded-premium-lg relative overflow-hidden group shadow-premium">
             <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-6 flex items-center justify-between">
                 Actividad Reciente
                 <Clock className="w-3.5 h-3.5 opacity-40" />

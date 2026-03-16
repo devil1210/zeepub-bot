@@ -24,7 +24,7 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
         <>
             {/* Admin Level Simulation Banner */}
             {isRealAdmin && (
-                <div className="glass-panel p-4 rounded-premium-sm border border-purple-500/30 bg-purple-500/10 mb-6 animate-in slide-in-from-top-4 duration-300">
+                <div className="glass-panel p-5 rounded-premium-lg border border-purple-500/30 bg-purple-500/10 mb-8 animate-in slide-in-from-top-4 duration-300 shadow-premium">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="p-2 rounded-premium-sm bg-purple-500/20 text-purple-400 border border-purple-500/20">
@@ -51,7 +51,7 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
                             {simulatedLevel && (
                                 <button
                                     onClick={() => setSimulatedLevel(null)}
-                                    className="px-3 py-2 text-xs font-bold bg-red-500/20 text-red-400 rounded-lg border border-red-500/20 hover:bg-red-500/30 transition-colors"
+                                    className="px-3 py-2 text-xs font-bold bg-red-500/20 text-red-400 rounded-premium-sm border border-red-500/20 hover:bg-red-500/30 transition-colors"
                                 >
                                     Desactivar
                                 </button>
@@ -76,10 +76,10 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
                             <div className="relative">
                                 <img
                                     alt="Avatar"
-                                    className="h-32 w-32 rounded-full ring-[6px] ring-[#0a0a0c] shadow-[0_0_50px_rgba(0,0,0,0.5)] object-cover z-10 scale-100 group-hover:scale-105 transition-transform duration-700"
+                                    className="h-32 w-32 rounded-premium-full ring-[6px] ring-[#0a0a0c] shadow-[0_0_50px_rgba(0,0,0,0.5)] object-cover z-10 scale-100 group-hover:scale-105 transition-transform duration-700"
                                     src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"}
                                 />
-                                <div className="absolute inset-0 rounded-full border border-white/20 z-20 pointer-events-none"></div>
+                                <div className="absolute inset-0 rounded-premium-full border border-white/20 z-20 pointer-events-none"></div>
                             </div>
                             <button className="absolute bottom-1 right-1 z-30 p-2.5 bg-primary rounded-premium-sm text-white shadow-2xl border-4 border-[#0a0a0c] hover:scale-110 active:scale-90 transition-all">
                                 <PenTool className="w-4 h-4" />
@@ -96,17 +96,17 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
                         </div>
 
                         <div className="flex flex-wrap justify-center gap-2 mb-10">
-                            <div className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.25em] bg-white/[0.03] text-gray-400 border border-white/10 group-hover:border-primary/40 group-hover:text-primary transition-all duration-500">
+                            <div className="px-4 py-1.5 rounded-premium-full text-[10px] font-black uppercase tracking-[0.25em] bg-white/[0.03] text-gray-400 border border-white/10 group-hover:border-primary/40 group-hover:text-primary transition-all duration-500">
                                 {status?.user?.status_label || 'MIEMBRO'}
                             </div>
                             {isAdmin && (
-                                <div className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.25em] bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse">
+                                <div className="px-4 py-1.5 rounded-premium-full text-[10px] font-black uppercase tracking-[0.25em] bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse">
                                     ADMIN
                                 </div>
                             )}
                         </div>
 
-                        <button className="w-full py-5 px-8 bg-white/[0.03] hover:bg-white/5 border border-white/10 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.4em] text-gray-500 hover:text-white transition-all flex items-center justify-center gap-4 group/logout">
+                        <button className="w-full py-5 px-8 bg-white/[0.03] hover:bg-white/5 border border-white/10 rounded-premium-lg text-[11px] font-black uppercase tracking-[0.4em] text-gray-500 hover:text-white transition-all flex items-center justify-center gap-4 group/logout shadow-premium">
                             <LogOut className="w-4 h-4 group-hover/logout:-translate-x-1 transition-transform" />
                             Cerrar Sesión
                         </button>

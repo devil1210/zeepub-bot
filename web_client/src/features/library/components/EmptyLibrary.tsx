@@ -7,8 +7,8 @@ interface EmptyLibraryProps {
 
 export const EmptyLibrary: React.FC<EmptyLibraryProps> = ({ onGoToCatalog }) => {
     return (
-        <div className="glass-panel rounded-[2.5rem] p-12 text-center border border-white/5 flex flex-col items-center justify-center gap-6 mb-12">
-            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-gray-500">
+        <div className="glass-panel rounded-premium-lg p-12 text-center border border-white/5 flex flex-col items-center justify-center gap-6 mb-12 shadow-premium">
+            <div className="w-20 h-20 rounded-premium-full bg-white/5 flex items-center justify-center text-gray-500">
                 <Download className="w-10 h-10" />
             </div>
             <div>

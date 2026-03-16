@@ -16,7 +16,7 @@ export const Reader: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       {/* HUD Header */}
       <header className="fixed top-0 w-full z-50 px-6 h-16 flex items-center justify-between glass-panel border-b border-white/10 transition-transform duration-300">
         <div className="flex items-center gap-4">
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10">
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors p-2 rounded-premium-sm hover:bg-white/10">
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="hidden sm:block">
@@ -25,10 +25,10 @@ export const Reader: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><List className="w-5 h-5" /></button>
-          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><Settings className="w-5 h-5" /></button>
-          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><Search className="w-5 h-5" /></button>
-          <button className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-white/10"><Bookmark className="w-5 h-5" /></button>
+          <button className="text-gray-400 hover:text-white p-2 rounded-premium-sm hover:bg-white/10"><List className="w-5 h-5" /></button>
+          <button className="text-gray-400 hover:text-white p-2 rounded-premium-sm hover:bg-white/10"><Settings className="w-5 h-5" /></button>
+          <button className="text-gray-400 hover:text-white p-2 rounded-premium-sm hover:bg-white/10"><Search className="w-5 h-5" /></button>
+          <button className="text-gray-400 hover:text-white p-2 rounded-premium-sm hover:bg-white/10"><Bookmark className="w-5 h-5" /></button>
         </div>
       </header>
 
@@ -64,8 +64,8 @@ export const Reader: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <div className="max-w-4xl mx-auto flex flex-col gap-4">
           <div className="w-full flex items-center gap-4 text-xs font-medium text-gray-400">
             <span>0%</span>
-            <div className="relative flex-1 h-1.5 bg-gray-700/50 rounded-full cursor-pointer group">
-              <div className="absolute top-0 left-0 h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }}></div>
+            <div className="relative flex-1 h-1.5 bg-gray-700/50 rounded-premium-full cursor-pointer group">
+              <div className="absolute top-0 left-0 h-full bg-primary rounded-premium-full transition-all" style={{ width: `${progress}%` }}></div>
               <input
                 type="range"
                 min="0"

@@ -262,7 +262,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
         <div className="flex flex-col gap-8 pb-32 animate-in fade-in duration-500">
             {/* Header: Selector de Nivel */}
             {/* Header: Selector de Nivel */}
-            <div className="flex flex-col gap-6 glass-panel p-6 rounded-[2rem] border-white/5 shadow-2xl overflow-hidden relative">
+            <div className="flex flex-col gap-6 glass-panel p-6 rounded-premium-lg border border-white/5 shadow-premium overflow-hidden relative">
                 <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
                     <Palette className="w-32 h-32" />
                 </div>
@@ -365,11 +365,11 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Left Column: Configuration Sliders and Colors */}
                 <div className="lg:col-span-8 space-y-8">
-                    <div className="glass-panel p-8 rounded-[2.5rem] border-white/5 space-y-10 shadow-xl">
+                    <div className="glass-panel p-8 rounded-premium-lg border border-white/5 space-y-10 shadow-premium">
                         <div className="flex items-center gap-3 border-b border-white/5 pb-6">
                             <Palette className="w-5 h-5 text-primary" />
                             <h3 className="text-lg font-black text-white uppercase tracking-tight">
-                                Personalización Visual: <span className="text-primary">{selectedLevelId === 'global' ? 'Global' : config.name}</span>
+                                Personalización Visual: <span className="text-primary italic">{selectedLevelId === 'global' ? 'Global' : config.name}</span>
                             </h3>
                         </div>
 
@@ -409,7 +409,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                             className={`w-10 h-10 rounded-premium-sm transition-all border-2 flex items-center justify-center group ${config.primaryColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
                                             style={{ backgroundColor: color }}
                                         >
-                                            {config.primaryColor === color && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-lg" />}
+                                            {config.primaryColor === color && <div className="w-1.5 h-1.5 bg-white rounded-premium-full shadow-lg" />}
                                         </button>
                                     ))}
                                     <div className="w-px h-8 bg-white/5 mx-1" />
@@ -436,7 +436,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                             className={`w-10 h-10 rounded-premium-sm transition-all border-2 flex items-center justify-center group ${config.backgroundColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
                                             style={{ backgroundColor: color }}
                                         >
-                                            {config.backgroundColor === color && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-lg" />}
+                                            {config.backgroundColor === color && <div className="w-1.5 h-1.5 bg-white rounded-premium-full shadow-lg" />}
                                         </button>
                                     ))}
                                     <div className="w-px h-8 bg-white/5 mx-1" />
@@ -463,7 +463,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                             className={`w-10 h-10 rounded-premium-sm transition-all border-2 flex items-center justify-center group ${config.cardColor === color ? 'border-white scale-110 shadow-lg' : 'border-transparent hover:scale-105'}`}
                                             style={{ backgroundColor: color }}
                                         >
-                                            {config.cardColor === color && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-lg" />}
+                                            {config.cardColor === color && <div className="w-1.5 h-1.5 bg-white rounded-premium-full shadow-lg" />}
                                         </button>
                                     ))}
                                     <div className="w-px h-8 bg-white/5 mx-1" />
@@ -494,7 +494,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                             max="40"
                                             value={config.glassBlur}
                                             onChange={(e) => setConfig({ ...config, glassBlur: parseInt(e.target.value) })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-premium-full appearance-none cursor-pointer"
                                         />
                                     </div>
                                     <div className="space-y-4">
@@ -508,7 +508,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                             max="100"
                                             value={config.glassOpacity * 100}
                                             onChange={(e) => setConfig({ ...config, glassOpacity: parseInt(e.target.value) / 100 })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-premium-full appearance-none cursor-pointer"
                                         />
                                     </div>
                                 </div>
@@ -529,7 +529,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                             max="240"
                                             value={config.coverWidth}
                                             onChange={(e) => setConfig({ ...config, coverWidth: parseInt(e.target.value) })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-premium-full appearance-none cursor-pointer"
                                         />
                                     </div>
                                     <div className="space-y-4">
@@ -543,7 +543,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                             max="100"
                                             value={config.cardGlowIntensity * 100}
                                             onChange={(e) => setConfig({ ...config, cardGlowIntensity: parseInt(e.target.value) / 100 })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-premium-full appearance-none cursor-pointer"
                                         />
                                     </div>
                                     <div className="space-y-4">
@@ -557,7 +557,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                             max="100"
                                             value={config.navOpacity * 100}
                                             onChange={(e) => setConfig({ ...config, navOpacity: parseInt(e.target.value) / 100 })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-premium-full appearance-none cursor-pointer"
                                         />
                                     </div>
                                     <div className="space-y-4">
@@ -571,7 +571,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                             max="100"
                                             value={config.accentOpacity * 100}
                                             onChange={(e) => setConfig({ ...config, accentOpacity: parseInt(e.target.value) / 100 })}
-                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+                                            className="w-full accent-primary h-1.5 bg-white/10 rounded-premium-full appearance-none cursor-pointer"
                                         />
                                     </div>
                                 </div>
@@ -585,7 +585,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                     <div className="flex justify-between items-center mb-3">
                                         <div className="flex items-center gap-2">
                                             <label className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Offset Banner Serie (PX)</label>
-                                            <span className="px-2 py-0.5 rounded-full bg-amber-500 text-black text-[8px] font-black uppercase">Global-Only</span>
+                                            <span className="px-2 py-0.5 rounded-premium-sm bg-amber-500 text-black text-[8px] font-black uppercase">Global-Only</span>
                                         </div>
                                         <span className="text-xs font-black text-amber-500 font-mono">{config.bannerContentOffset}px</span>
                                     </div>
@@ -596,7 +596,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                         step="5"
                                         value={config.bannerContentOffset}
                                         onChange={(e) => setConfig({ ...config, bannerContentOffset: parseInt(e.target.value) })}
-                                        className="w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                                        className="w-full h-1.5 bg-white/5 rounded-premium-full appearance-none cursor-pointer accent-amber-500"
                                     />
                                     <p className="mt-3 text-[9px] text-amber-500/60 italic font-medium">Ajusta la posición vertical del título y sinopsis en el banner.</p>
                                 </div>
@@ -607,7 +607,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
 
                 {/* Right Column: Visibility / Exported Settings */}
                 <div className="lg:col-span-4 space-y-8">
-                    <div className="glass-panel p-8 rounded-[2.5rem] border-primary/20 bg-primary/5 space-y-6 shadow-2xl relative overflow-hidden backdrop-blur-xl">
+                    <div className="glass-panel p-8 rounded-premium-lg border border-primary/20 bg-primary/5 space-y-6 shadow-premium relative overflow-hidden backdrop-blur-xl">
                         <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                             <Sliders className="w-24 h-24" />
                         </div>
@@ -638,7 +638,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                             </div>
                                             <span className={`text-xs font-black uppercase tracking-tight transition-colors ${isChecked ? 'text-white' : 'text-gray-500'}`}>{opt.label}</span>
                                         </div>
-                                        <div className={`size-5 rounded-md border-2 transition-all flex items-center justify-center ${isChecked ? 'bg-primary border-primary' : 'bg-transparent border-white/10'}`}>
+                                        <div className={`size-5 rounded-premium-sm border-2 transition-all flex items-center justify-center ${isChecked ? 'bg-primary border-primary' : 'bg-transparent border-white/10'}`}>
                                             {isChecked && <CheckCircle2 className="size-3.5 text-white" strokeWidth={3} />}
                                         </div>
                                     </div>
@@ -661,8 +661,8 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                         onChange={(e) => setConfig({ ...config, allowThemeTemplates: e.target.checked })}
                                         className="sr-only"
                                     />
-                                    <div className={`w-10 h-5 rounded-full transition-all duration-300 ${config.allowThemeTemplates ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-white/10'}`}></div>
-                                    <div className={`absolute top-1 left-1 w-3 h-3 rounded-full bg-white transition-all duration-300 ${config.allowThemeTemplates ? 'translate-x-5' : ''}`}></div>
+                                    <div className={`w-10 h-5 rounded-premium-full transition-all duration-300 ${config.allowThemeTemplates ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-white/10'}`}></div>
+                                    <div className={`absolute top-1 left-1 w-3 h-3 rounded-premium-full bg-white transition-all duration-300 ${config.allowThemeTemplates ? 'translate-x-5' : ''}`}></div>
                                 </div>
                             </label>
 
@@ -675,9 +675,9 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                                     <span className="text-[9px] text-gray-500 font-bold uppercase w-2/3 leading-relaxed">Sobreescribir ajustes personales</span>
                                     <button
                                         onClick={() => setConfig({ ...config, forceSettings: !config.forceSettings })}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${config.forceSettings ? 'bg-primary' : 'bg-white/10'}`}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-premium-full transition-colors focus:outline-none ${config.forceSettings ? 'bg-primary' : 'bg-white/10'}`}
                                     >
-                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config.forceSettings ? 'translate-x-6' : 'translate-x-1'}`} />
+                                        <span className={`inline-block h-4 w-4 transform rounded-premium-full bg-white transition-transform ${config.forceSettings ? 'translate-x-6' : 'translate-x-1'}`} />
                                     </button>
                                 </div>
                             </div>
@@ -696,9 +696,9 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
                     </div>
 
                     {/* Quick Preview Badge */}
-                    <div className="p-8 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-black border border-white/5 shadow-xl flex flex-col items-center justify-center text-center gap-4 group hover:border-primary/30 transition-all duration-500">
-                        <div className="size-20 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-500">
-                            <div className="size-14 rounded-full bg-primary shadow-[0_0_30px_rgba(var(--color-primary-rgb),0.5)] flex items-center justify-center text-white">
+                    <div className="p-8 rounded-premium-lg bg-gradient-to-br from-slate-900 to-black border border-white/5 shadow-premium flex flex-col items-center justify-center text-center gap-4 group hover:border-primary/30 transition-all duration-500">
+                        <div className="size-20 rounded-premium-full bg-primary/10 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-500">
+                            <div className="size-14 rounded-premium-full bg-primary shadow-premium flex items-center justify-center text-white">
                                 <Eye className="w-8 h-8" />
                             </div>
                         </div>
@@ -714,7 +714,7 @@ export const AppearanceDashboard: React.FC<AppearanceDashboardProps> = ({
             {/* Save Theme Modal */}
             {showSaveThemeModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-[#121212] border border-white/10 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl space-y-6">
+                    <div className="bg-[#121212] border border-white/10 rounded-premium-lg p-8 max-w-md w-full shadow-premium space-y-6">
                         <div className="flex items-center gap-3">
                             <div className="p-3 bg-purple-500/20 rounded-premium-sm border border-purple-500/20">
                                 <Palette className="w-6 h-6 text-purple-400" />

@@ -516,8 +516,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               />
 
               {/* Stats Block (Sidebar - Desktop) */}
-              <div className="hidden md:block glass-panel p-4 rounded-premium-sm border border-black/5 dark:border-white/5 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
+              <div className="hidden md:block glass-panel p-4 rounded-premium-lg border border-white/5 space-y-4 shadow-premium">
+                <div className="flex items-center justify-between pb-3 border-b border-white/5">
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Valoración</span>
                   <div className="flex flex-col items-end">
                     <div className="flex items-center gap-1.5 text-yellow-500">
@@ -530,7 +530,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
+                <div className="flex items-center justify-between pb-3 border-b border-white/5">
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Descargas Totales</span>
                   <div className="flex items-center gap-1.5 text-primary">
                     <Download className="w-4 h-4" />
@@ -573,7 +573,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                   <button
                     key={tag}
                     onClick={() => handleSearch(tag, 'demography')}
-                    className="px-3 py-1.5 rounded-lg bg-[#004d40] text-[#4db6ac] border border-[#00695c] text-[10px] font-black uppercase tracking-wider shadow-sm hover:bg-[#00695c] hover:text-white transition-colors"
+                    className="px-3 py-1.5 rounded-premium-sm bg-[#004d40] text-[#4db6ac] border border-[#00695c] text-[10px] font-black uppercase tracking-wider shadow-sm hover:bg-[#00695c] hover:text-white transition-colors"
                   >
                     {tag}
                   </button>
@@ -582,7 +582,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                   <button
                     key={genre}
                     onClick={() => handleSearch(genre, 'genre')}
-                    className="px-3 py-1.5 rounded-lg bg-gray-200 dark:bg-[#1f2937] text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-[#374151] text-[10px] font-bold uppercase tracking-wider hover:bg-gray-300 dark:hover:bg-[#374151] hover:text-black dark:hover:text-white hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-premium-sm bg-gray-200 dark:bg-[#1f2937] text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-[#374151] text-[10px] font-bold uppercase tracking-wider hover:bg-gray-300 dark:hover:bg-[#374151] hover:text-black dark:hover:text-white hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-pointer"
                   >
                     {genre}
                   </button>
@@ -590,7 +590,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               </div>
 
               {/* Synopsis */}
-              <div className="glass-panel border border-black/5 dark:border-white/5 rounded-premium-sm p-6 lg:p-8 shadow-sm dark:shadow-xl">
+              <div className="glass-panel border border-white/5 rounded-premium-lg p-6 lg:p-8 shadow-premium">
                 <div className="flex items-center gap-2 mb-4 text-primary">
                   <FileText className="w-5 h-5" />
                   <h3 className="text-xs font-black uppercase tracking-widest">Sinopsis</h3>
@@ -602,16 +602,16 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
               {/* Details and Specs Grids */}
               {/* Specs Collapsible Glass Card */}
-              <div className="glass-panel border border-white/10 rounded-premium-sm overflow-hidden transition-all duration-500 hover:border-white/20 hover:shadow-2xl group/specs">
+              <div className="glass-panel border border-white/5 rounded-premium-lg overflow-hidden transition-all duration-500 hover:border-primary/20 hover:shadow-premium group/specs shadow-premium">
                 <details className="group/details">
                   <summary className="flex items-center justify-between p-6 cursor-pointer list-none select-none">
                     <div className="flex items-center gap-3 text-primary">
-                      <div className="p-2 bg-primary/10 rounded-lg group-hover/specs:bg-primary group-hover/specs:text-white transition-colors">
+                      <div className="p-2 bg-primary/10 rounded-premium-md group-hover/specs:bg-primary group-hover/specs:text-white transition-colors">
                         <FileText className="w-5 h-5" />
                       </div>
                       <h3 className="text-sm font-black uppercase tracking-widest text-white">Ficha Técnica</h3>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover/specs:bg-white/10 transition-colors">
+                    <div className="w-8 h-8 rounded-premium-full bg-white/5 flex items-center justify-center group-hover/specs:bg-white/10 transition-colors">
                       <span className="text-white text-xl font-bold transition-transform duration-300 group-open/details:rotate-180">↓</span>
                     </div>
                   </summary>

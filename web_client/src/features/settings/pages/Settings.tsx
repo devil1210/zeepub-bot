@@ -139,10 +139,10 @@ export const Settings: React.FC<SettingsProps> = ({ onNavigate }) => {
 
       {/* Save Message Notification */}
       {saveMessage && (
-        <div className={`fixed top-20 right-4 z-[100] p-4 rounded-premium-sm border animate-in slide-in-from-right-4 duration-300 ${saveMessage.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
+        <div className={`fixed top-20 right-4 z-[100] p-5 rounded-premium-lg border border-white/10 shadow-premium backdrop-blur-xl animate-in slide-in-from-right-4 duration-500 ${saveMessage.type === 'success' ? 'bg-green-500/20 text-white' : 'bg-red-500/20 text-white'
           }`}>
           <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-lg ${saveMessage.type === 'success' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+            <div className={`p-1.5 rounded-premium-sm ${saveMessage.type === 'success' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
               <Save className="w-4 h-4" />
             </div>
             <p className="text-sm font-bold">{saveMessage.text}</p>

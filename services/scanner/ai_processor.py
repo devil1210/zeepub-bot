@@ -3,6 +3,9 @@
 import logging
 from typing import Any
 
+from sqlalchemy.orm import Session
+
+from models.library_models import MetadataProposal
 from services.ai_service import AIService
 
 logger = logging.getLogger(__name__)
@@ -250,22 +253,58 @@ class AIProcessor:
             logger.error(f"❌ Error generando propuesta de demografía: {e}")
             return None
 
-    async def save_proposals(self, series_hash: str, proposals: list[dict[str, Any]]) -> bool:
+    async def save_proposals(self, db: Session, series_hash: str, proposals: list[dict[str, Any]]) -> bool:
         """
-        Save AI proposals to database.
+        Save AI proposals to database using the MetadataProposal model.
         """
         try:
-            # This would integrate with the actual database save logic
-            # For now, just logging the proposals
-            for proposal in proposals:
-                proposal_type = proposal.get("type", "unknown")
-                confidence = proposal.get("confidence", 0.5)
-                reasoning = proposal.get("reasoning", "")
+            # Aggregate proposals into a single MetadataProposal for the series
+            # Or handle multiple. Given the model schema, it's better to have one pending proposal per series.
 
-                logger.info(f"💾 Propuesta IA guardada: {proposal_type} (conf: {confidence}) - {reasoning}")
+            # Find existing pending proposal
+            existing = (
+                db.query(MetadataProposal)
+                .filter(MetadataProposal.series_hash == series_hash, MetadataProposal.status == "pending")
+                .first()
+            )
 
+            if existing:
+                proposal_item = existing
+            else:
+                proposal_item = MetadataProposal(series_hash=series_hash)
+                db.add(proposal_item)
+
+            # Map proposals to model fields
+            confidence_sum = 0
+            count = 0
+
+            raw_data = {}
+            for p in proposals:
+                p_type = p.get("type")
+                val = p.get("proposed_value")
+                conf = p.get("confidence", 0.5)
+
+                confidence_sum += conf
+                count += 1
+                raw_data[p_type] = p
+
+                if p_type == "description":
+                    proposal_item.proposed_description = val
+                elif p_type == "slug":
+                    proposal_item.proposed_slug = val
+                # Add more mappings as needed (e.g., title_spanish if we add a generator for it)
+
+            if count > 0:
+                proposal_item.ai_confidence = confidence_sum / count
+
+            proposal_item.raw_response = raw_data
+            proposal_item.status = "pending"
+
+            db.commit()
+            logger.info(f"💾 Propuesta IA guardada en DB para {series_hash}")
             return True
 
         except Exception as e:
-            logger.error(f"❌ Error guardando propuestas: {e}")
+            db.rollback()
+            logger.error(f"❌ Error guardando propuestas en DB: {e}")
             return False

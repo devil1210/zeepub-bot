@@ -38,7 +38,7 @@ export const RecommendationsGrid: React.FC<RecommendationsGridProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:gap-8">
                 {loading ? (
                     Array(4).fill(0).map((_, i) => (
-                        <div key={i} className="aspect-[2/3] rounded-[1.5rem] bg-[var(--panel-bg-subtle)] animate-shimmer border border-[var(--panel-border)] bg-gradient-to-r from-transparent via-white/5 to-transparent bg-[length:200%_100%] shadow-inner"></div>
+                        <div key={i} className="aspect-[2/3] rounded-premium-lg bg-[var(--panel-bg-subtle)] animate-shimmer border border-[var(--panel-border)] bg-gradient-to-r from-transparent via-white/5 to-transparent bg-[length:200%_100%] shadow-inner"></div>
                     ))
                 ) : (
                     recommendations.map((book, i) => (

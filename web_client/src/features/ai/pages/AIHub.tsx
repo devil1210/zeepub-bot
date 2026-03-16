@@ -312,7 +312,7 @@ export const AIHub: React.FC = () => {
 
             {/* Error Banner */}
             {statsError && (
-                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
+                <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-premium-lg flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
                     <div>
                         <p className="text-red-400 font-black text-sm uppercase tracking-wider">Error al conectar con el módulo IA</p>
@@ -328,7 +328,7 @@ export const AIHub: React.FC = () => {
             )}
 
             {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 bg-white/5 p-2 rounded-[2rem] border border-white/5 w-fit mb-12 overflow-x-auto max-w-full no-scrollbar shadow-inner">
+            <div className="flex items-center gap-2 bg-white/5 p-2 rounded-premium-full border border-white/5 w-fit mb-12 overflow-x-auto max-w-full no-scrollbar shadow-premium">
                 {[
                     { id: 'control', label: 'Monitor', icon: BrainCircuit },
                     { id: 'proposals', label: 'Propuestas', icon: Sparkles },
@@ -339,9 +339,9 @@ export const AIHub: React.FC = () => {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`
-                            flex items-center gap-3 px-8 py-4 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap
+                            flex items-center gap-3 px-8 py-4 rounded-premium-full text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap
                             ${activeTab === tab.id
-                                ? 'bg-primary text-white shadow-2xl shadow-primary/40 scale-100 ring-4 ring-primary/10'
+                                ? 'bg-primary text-white shadow-premium scale-100 ring-4 ring-primary/10'
                                 : 'text-gray-500 hover:text-gray-300 hover:bg-white/5 scale-95 opacity-70'}
                         `}
                     >
@@ -392,13 +392,13 @@ export const AIHub: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
                     {/* Manual Scan */}
                     <div className="lg:col-span-8">
-                        <div className="glass-panel p-10 rounded-[3rem] border border-white/5 bg-gradient-to-b from-white/5 to-transparent relative overflow-hidden shadow-2xl">
+                        <div className="glass-panel p-10 rounded-premium-lg border border-white/5 bg-gradient-to-b from-white/5 to-transparent relative overflow-hidden shadow-premium">
                             <div className="flex items-center justify-between mb-10">
                                 <h3 className="text-2xl font-black text-white flex items-center gap-4">
                                     <Activity className="w-8 h-8 text-primary" />
                                     <span className="uppercase tracking-[0.3em] text-lg">Escaner Inteligente</span>
                                 </h3>
-                                <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-premium-sm border border-white/10">
+                                <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-premium-md border border-white/10">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Modelo:</span>
                                     <select
                                         value={targetModel}
@@ -421,11 +421,11 @@ export const AIHub: React.FC = () => {
                                         placeholder="HASH DE SERIE O NOMBRE PARA ANALIZAR..."
                                         value={scanHash}
                                         onChange={(e) => setScanHash(e.target.value)}
-                                        className="w-full bg-black/40 border-2 border-white/5 rounded-[2rem] py-6 pl-16 pr-32 text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 focus:ring-8 focus:ring-primary/5 transition-all font-mono text-sm tracking-widest shadow-inner"
+                                        className="w-full bg-black/40 border-2 border-white/5 rounded-premium-lg py-6 pl-16 pr-32 text-white placeholder-gray-600 focus:outline-none focus:border-primary/50 focus:ring-8 focus:ring-primary/5 transition-all font-mono text-sm tracking-widest shadow-inner shadow-black/50"
                                     />
                                     <button
                                         onClick={() => setShowSearch(true)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 min-h-[44px] px-6 py-3 rounded-premium-sm bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] border border-white/5 active:scale-95 flex items-center justify-center"
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 min-h-[44px] px-6 py-3 rounded-premium-md bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all text-[11px] font-black uppercase tracking-[0.2em] border border-white/5 active:scale-95 flex items-center justify-center"
                                     >
                                         BUSCAR
                                     </button>
@@ -433,7 +433,7 @@ export const AIHub: React.FC = () => {
                                 <button
                                     onClick={handleScan}
                                     disabled={!scanHash || scanning || !aiActive}
-                                    className="min-h-[44px] px-12 py-6 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs transition-all shadow-2xl shadow-primary/30 flex items-center justify-center gap-4 active:scale-95 group"
+                                    className="min-h-[44px] px-12 py-6 bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-premium-lg font-black uppercase tracking-[0.3em] text-xs transition-all shadow-premium hover:shadow-primary/40 flex items-center justify-center gap-4 active:scale-95 group"
                                 >
                                     {scanning ? (
                                         <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -443,7 +443,7 @@ export const AIHub: React.FC = () => {
                             </div>
 
                             {scanResult && (
-                                <div className={`p-6 rounded-[2rem] border-2 mb-8 ${scanResult.success ? 'bg-green-500/10 border-green-500/20 text-green-200' : 'bg-red-500/10 border-red-500/20 text-red-200'} animate-in slide-in-from-top-4 duration-500`}>
+                                <div className={`p-6 rounded-premium-lg border-2 mb-8 ${scanResult.success ? 'bg-green-500/10 border-green-500/20 text-green-200' : 'bg-red-500/10 border-red-500/20 text-red-200'} animate-in slide-in-from-top-4 duration-500`}>
                                     <div className="flex items-center gap-3 font-black uppercase tracking-widest mb-2 text-xs">
                                         {scanResult.success ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
                                         {scanResult.success ? "Resultado de Optimización" : "Fallo en el Análisis"}
@@ -453,7 +453,7 @@ export const AIHub: React.FC = () => {
                                     </p>
                                     {scanResult.updated_count !== undefined && (
                                         <div className="mt-4 flex items-center gap-3">
-                                            <div className="px-3 py-1 bg-black/40 rounded-lg text-[10px] font-black text-primary border border-primary/20 uppercase tracking-widest">
+                                            <div className="px-3 py-1 bg-black/40 rounded-premium-sm text-[10px] font-black text-primary border border-primary/20 uppercase tracking-widest">
                                                 {scanResult.updated_count} Libros Actualizados
                                             </div>
                                         </div>
@@ -461,7 +461,7 @@ export const AIHub: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="bg-white/5 rounded-[2rem] p-8 border border-white/5 ring-1 ring-white/5">
+                            <div className="bg-white/5 rounded-premium-lg p-8 border border-white/5 shadow-premium">
                                 <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
                                     <Database className="w-4 h-4" />
                                     Protocolo de Inteligencia
@@ -477,12 +477,12 @@ export const AIHub: React.FC = () => {
 
                     {/* Info Side */}
                     <div className="lg:col-span-4">
-                        <div className="glass-panel p-8 rounded-[3rem] border border-white/5 relative h-full flex flex-col shadow-xl">
+                        <div className="glass-panel p-8 rounded-premium-lg border border-white/5 relative h-full flex flex-col shadow-premium">
                             <h3 className="text-xl font-black text-white mb-8 uppercase tracking-widest">Configuración</h3>
 
                             {/* Toggle */}
                             <div className="flex flex-col gap-4">
-                                <label className="flex items-center justify-between p-6 rounded-[2rem] bg-white/5 border border-white/10 cursor-pointer hover:bg-primary/5 hover:border-primary/20 transition-all group">
+                                <label className="flex items-center justify-between p-6 rounded-premium-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-primary/5 hover:border-primary/20 transition-all group shadow-premium">
                                     <div className="flex flex-col">
                                         <h4 className="text-sm font-black text-white uppercase tracking-wider">Escaneo en Background</h4>
                                         <p className="text-[9px] text-gray-500 uppercase tracking-widest font-black mt-1">PROCESAMIENTO DINÁMICO</p>
@@ -537,7 +537,7 @@ export const AIHub: React.FC = () => {
 
             {activeTab === 'proposals' && (
                 <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-                    <div className="glass-panel p-10 rounded-[3rem] border border-white/5 bg-gradient-to-b from-white/5 to-transparent shadow-2xl">
+                    <div className="glass-panel p-10 rounded-premium-lg border border-white/5 bg-gradient-to-b from-white/5 to-transparent shadow-premium">
                         <div className="flex items-center justify-between mb-10">
                             <h3 className="text-2xl font-black text-white flex items-center gap-4">
                                 <Sparkles className="w-8 h-8 text-purple-400" />
@@ -545,7 +545,7 @@ export const AIHub: React.FC = () => {
                             </h3>
                             <button
                                 onClick={loadProposals}
-                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-full border border-white/10 transition-all active:scale-95"
+                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-premium-full border border-white/10 transition-all active:scale-95"
                                 title="Refrescar propuestas"
                             >
                                 <Activity className={`w-5 h-5 text-gray-400 ${loadingLists ? 'animate-spin text-primary' : ''}`} />
@@ -561,17 +561,17 @@ export const AIHub: React.FC = () => {
                                 proposals.map(p => (
                                     <div
                                         key={p.id}
-                                        className="relative p-8 bg-white/5 border-2 border-white/5 rounded-[2.5rem] hover:border-primary/20 transition-all flex flex-col group overflow-hidden"
+                                        className="relative p-8 bg-white/5 border-2 border-white/5 rounded-premium-lg hover:border-primary/20 transition-all flex flex-col group overflow-hidden shadow-premium"
                                     >
                                         {/* Type Badge */}
-                                        <div className={`absolute top-0 right-10 px-4 py-1.5 rounded-b-xl text-[9px] font-black uppercase tracking-widest ${p.type === 'merge' ? 'bg-amber-500/20 text-amber-400' : 'bg-primary/20 text-primary'
+                                        <div className={`absolute top-0 right-10 px-4 py-1.5 rounded-b-premium-sm text-[9px] font-black uppercase tracking-widest ${p.type === 'merge' ? 'bg-amber-500/20 text-amber-400' : 'bg-primary/20 text-primary'
                                             }`}>
                                             {p.type === 'merge' ? 'FUSIÓN DETECTADA' : 'ENRIQUECIMIENTO'}
                                         </div>
 
                                         <div className="flex-1">
                                             <div className="flex items-start gap-4 mb-6">
-                                                <div className={`p-4 rounded-2xl ${p.type === 'merge' ? 'bg-amber-500/10' : 'bg-primary/10'} shrink-0`}>
+                                                <div className={`p-4 rounded-premium-lg ${p.type === 'merge' ? 'bg-amber-500/10' : 'bg-primary/10'} shrink-0`}>
                                                     {p.type === 'merge' ? <Trash2 className="w-6 h-6 text-amber-400" /> : <Sparkles className="w-6 h-6 text-primary" />}
                                                 </div>
                                                 <div>
@@ -585,17 +585,17 @@ export const AIHub: React.FC = () => {
                                             </div>
 
                                             {p.type === 'merge' && (
-                                                <div className="bg-black/20 rounded-2xl p-4 border border-white/5 mb-6">
+                                                <div className="bg-black/20 rounded-premium-lg p-4 border border-white/5 mb-6">
                                                     <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3">
                                                         <span>Series a unificar</span>
                                                         <span className="text-amber-500/50">Probabilidad: {(p.proposal.confidence * 100).toFixed(0)}%</span>
                                                     </div>
                                                     <div className="flex items-center gap-3">
-                                                        <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/5">
+                                                        <div className="flex-1 p-3 bg-white/5 rounded-premium-md border border-white/5">
                                                             <p className="text-[11px] text-white font-bold truncate">{p.proposal.series_a?.name || p.series_hash.substring(0, 8)}</p>
                                                         </div>
                                                         <ArrowRight className="w-4 h-4 text-gray-600" />
-                                                        <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/5">
+                                                        <div className="flex-1 p-3 bg-white/5 rounded-premium-md border border-white/5">
                                                             <p className="text-[11px] text-white font-bold truncate">{p.proposal.series_b?.name || p.secondary_hash?.substring(0, 8)}</p>
                                                         </div>
                                                     </div>
@@ -605,12 +605,12 @@ export const AIHub: React.FC = () => {
                                             {p.type === 'enrich' && (
                                                 <div className="flex items-center gap-2 mb-6">
                                                     {p.proposal.global_tags?.slice(0, 3).map((t: string) => (
-                                                        <span key={t} className="px-3 py-1 bg-white/5 rounded-lg text-[10px] font-bold text-gray-400 border border-white/5">
+                                                        <span key={t} className="px-3 py-1 bg-white/5 rounded-premium-sm text-[10px] font-bold text-gray-400 border border-white/5">
                                                             {t}
                                                         </span>
                                                     ))}
                                                     {p.proposal.changes?.length > 0 && (
-                                                        <span className="px-3 py-1 bg-primary/10 rounded-lg text-[10px] font-bold text-primary border border-primary/20">
+                                                        <span className="px-3 py-1 bg-primary/10 rounded-premium-sm text-[10px] font-bold text-primary border border-primary/20">
                                                             {p.proposal.changes.length} RENOMBRADOS
                                                         </span>
                                                     )}
@@ -626,7 +626,7 @@ export const AIHub: React.FC = () => {
                                                         loadProposals();
                                                     }
                                                 }}
-                                                className="py-3 rounded-2xl bg-white/5 hover:bg-red-500/10 text-gray-500 hover:text-red-400 text-[10px] font-black uppercase tracking-widest border border-white/5 hover:border-red-500/20 transition-all active:scale-95"
+                                                className="py-3 rounded-premium-lg bg-white/5 hover:bg-red-500/10 text-gray-500 hover:text-red-400 text-[10px] font-black uppercase tracking-widest border border-white/5 hover:border-red-500/20 transition-all active:scale-95"
                                             >
                                                 DESCARTAR
                                             </button>
@@ -653,7 +653,7 @@ export const AIHub: React.FC = () => {
                                                         setShowProposal(true);
                                                     }
                                                 }}
-                                                className={`py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg ${p.type === 'merge'
+                                                className={`py-3 rounded-premium-lg text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg ${p.type === 'merge'
                                                     ? 'bg-amber-500 hover:bg-amber-600 text-black shadow-amber-500/20'
                                                     : 'bg-primary hover:bg-primary-dark text-white shadow-primary/20'
                                                     }`}
@@ -665,7 +665,7 @@ export const AIHub: React.FC = () => {
                                 ))
                             ) : (
                                 <div className="col-span-full py-40 text-center flex flex-col items-center gap-6">
-                                    <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                                    <div className="w-20 h-20 rounded-premium-full bg-white/5 flex items-center justify-center border border-white/10">
                                         <Sparkles className="w-10 h-10 text-gray-600" />
                                     </div>
                                     <p className="text-gray-500 font-black uppercase tracking-[0.5em] text-xs">No hay propuestas automáticas todavía</p>
@@ -681,7 +681,7 @@ export const AIHub: React.FC = () => {
 
             {activeTab === 'pending' && (
                 <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-                    <div className="glass-panel p-10 rounded-[3rem] border border-white/5 bg-gradient-to-b from-white/5 to-transparent shadow-2xl">
+                    <div className="glass-panel p-10 rounded-premium-lg border border-white/5 bg-gradient-to-b from-white/5 to-transparent shadow-premium">
                         <h3 className="text-2xl font-black text-white mb-8 flex items-center gap-4">
                             <Clock className="w-8 h-8 text-amber-400" />
                             <span className="uppercase tracking-[0.3em] text-lg">Series por Optimizar</span>
@@ -698,7 +698,7 @@ export const AIHub: React.FC = () => {
                                             setScanHash(item.series_hash);
                                             setActiveTab('control');
                                         }}
-                                        className="flex flex-col justify-between p-8 bg-white/5 border-2 border-white/5 rounded-[2.5rem] hover:bg-white/10 hover:border-primary/40 transition-all cursor-pointer group shadow-sm hover:shadow-primary/5 h-full"
+                                        className="flex flex-col justify-between p-8 bg-white/5 border-2 border-white/5 rounded-premium-lg hover:bg-white/10 hover:border-primary/40 transition-all cursor-pointer group shadow-premium hover:shadow-primary/5 h-full"
                                     >
                                         <div className="min-w-0 mb-6">
                                             <h4 className="font-black text-white text-lg group-hover:text-primary transition-colors truncate mb-2">{item.name || 'Sin nombre'}</h4>
@@ -716,7 +716,7 @@ export const AIHub: React.FC = () => {
                                 ))
                             ) : (
                                 <div className="col-span-full py-40 text-center flex flex-col items-center gap-6">
-                                    <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                                    <div className="w-20 h-20 rounded-premium-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
                                         <CheckCircle className="w-10 h-10 text-emerald-500" />
                                     </div>
                                     <p className="text-gray-500 font-black uppercase tracking-[0.5em] text-xs">Cerebro al día - 0 Pendientes</p>
@@ -729,7 +729,7 @@ export const AIHub: React.FC = () => {
 
             {activeTab === 'reviewed' && (
                 <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-                    <div className="glass-panel p-10 rounded-[3rem] border border-white/5 bg-gradient-to-b from-white/5 to-transparent shadow-2xl">
+                    <div className="glass-panel p-10 rounded-premium-lg border border-white/5 bg-gradient-to-b from-white/5 to-transparent shadow-premium">
                         <h3 className="text-2xl font-black text-white mb-8 flex items-center gap-4">
                             <CheckCircle className="w-8 h-8 text-emerald-400" />
                             <span className="uppercase tracking-[0.3em] text-lg">Historial de Auditoría</span>
@@ -742,13 +742,13 @@ export const AIHub: React.FC = () => {
                                 reviewedList.map(item => (
                                     <div
                                         key={item.series_hash}
-                                        className="p-8 bg-white/5 border-2 border-white/5 rounded-[3rem] hover:bg-white/10 transition-all shadow-sm relative overflow-hidden group"
+                                        className="p-8 bg-white/5 border-2 border-white/5 rounded-premium-lg hover:bg-white/10 transition-all shadow-premium relative overflow-hidden group"
                                     >
                                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
                                             <div className="flex-1">
                                                 <div className="flex flex-wrap items-center gap-4 mb-3">
                                                     <h4 className="font-black text-white text-xl tracking-tight">{item.final_name || item.proposed_name}</h4>
-                                                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm ${item.status === 'accepted' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                    <span className={`px-4 py-1.5 rounded-premium-full text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm ${item.status === 'accepted' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                         item.status === 'edited' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                                                             'bg-gray-500/10 text-gray-400 border-white/10'
                                                         }`}>
@@ -779,7 +779,7 @@ export const AIHub: React.FC = () => {
                                             </div>
                                         </div>
                                         {/* Corner Decoration */}
-                                        <div className={`absolute -right-10 -bottom-10 w-40 h-40 blur-[100px] opacity-10 rounded-full ${item.status === 'accepted' ? 'bg-emerald-500' : 'bg-primary'}`}></div>
+                                        <div className={`absolute -right-10 -bottom-10 w-40 h-40 blur-[100px] opacity-10 rounded-premium-full ${item.status === 'accepted' ? 'bg-emerald-500' : 'bg-primary'}`}></div>
                                     </div>
                                 ))
                             ) : (
@@ -798,7 +798,7 @@ export const AIHub: React.FC = () => {
             {/* Proposal Modal (New) */}
             {showProposal && proposal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-4xl bg-[#0a0a0c] border border-white/10 rounded-premium overflow-hidden flex flex-col max-h-[90vh] shadow-2xl">
+                    <div className="w-full max-w-4xl bg-[#0a0a0c] border border-white/10 rounded-premium-lg overflow-hidden flex flex-col max-h-[90vh] shadow-premium">
                         {/* Modal Header */}
                         <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
                             <div>
@@ -812,7 +812,7 @@ export const AIHub: React.FC = () => {
                             </div>
                             <button
                                 onClick={() => setShowProposal(false)}
-                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all"
+                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-white/10 rounded-premium-sm text-gray-400 hover:text-white transition-all"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -859,7 +859,7 @@ export const AIHub: React.FC = () => {
                                                 {!isEditingSeries ? (
                                                     <button
                                                         onClick={() => setIsEditingSeries(true)}
-                                                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-premium-sm bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all opacity-0 group-hover:opacity-100"
                                                         title="Editar propuesta"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
@@ -867,7 +867,7 @@ export const AIHub: React.FC = () => {
                                                 ) : (
                                                     <button
                                                         onClick={() => setIsEditingSeries(false)}
-                                                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-primary/20 text-primary border border-primary/30"
+                                                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-premium-sm bg-primary/20 text-primary border border-primary/30"
                                                     >
                                                         <Save className="w-4 h-4" />
                                                     </button>
@@ -876,8 +876,8 @@ export const AIHub: React.FC = () => {
 
                                             {isEditingSeries ? (
                                                 <div className="space-y-4 animate-in fade-in duration-300">
-                                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
-                                                        <div className="p-3 rounded-lg bg-blue-500/10">
+                                                    <div className="flex items-center gap-4 p-4 rounded-premium-md bg-white/5 border border-white/10">
+                                                        <div className="p-3 rounded-premium-sm bg-blue-500/10">
                                                             <BrainCircuit className="w-6 h-6 text-blue-400" />
                                                         </div>
                                                         <div>
@@ -891,7 +891,7 @@ export const AIHub: React.FC = () => {
                                                             type="text"
                                                             value={editedSeries}
                                                             onChange={(e) => setEditedSeries(e.target.value)}
-                                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none"
+                                                            className="w-full bg-black/40 border border-white/10 rounded-premium-sm px-3 py-2 text-white text-sm focus:border-primary outline-none"
                                                         />
                                                     </div>
                                                     <div>
@@ -900,7 +900,7 @@ export const AIHub: React.FC = () => {
                                                             type="text"
                                                             value={editedSpanish}
                                                             onChange={(e) => setEditedSpanish(e.target.value)}
-                                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none"
+                                                            className="w-full bg-black/40 border border-white/10 rounded-premium-sm px-3 py-2 text-white text-sm focus:border-primary outline-none"
                                                         />
                                                     </div>
                                                 </div>
@@ -940,12 +940,12 @@ export const AIHub: React.FC = () => {
                                     <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide mb-3">Tags Detectados</h4>
                                     <div className="flex gap-2">
                                         {proposal.global_tags?.map((tag: string) => (
-                                            <span key={tag} className="px-3 py-1 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-bold">
+                                            <span key={tag} className="px-3 py-1 rounded-premium-sm bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-bold">
                                                 {tag}
                                             </span>
                                         ))}
                                         {proposal.is_uncensored_series && (
-                                            <span className="px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-bold">
+                                            <span key="uncensored" className="px-3 py-1 rounded-premium-sm bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-bold">
                                                 Uncensored
                                             </span>
                                         )}
@@ -986,7 +986,7 @@ export const AIHub: React.FC = () => {
                                                     checked={isSelected}
                                                     onChange={() => toggleChange(change.book_id)}
                                                     disabled={!applyRenames}
-                                                    className="w-5 h-5 rounded-lg border-white/20 bg-white/5 cursor-pointer accent-primary"
+                                                    className="w-5 h-5 rounded-premium-sm border-white/20 bg-white/5 cursor-pointer accent-primary"
                                                 />
                                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                                                     <div className="text-red-300/50 break-words line-through decoration-red-500/30 text-[11px] leading-tight">
@@ -1071,7 +1071,7 @@ export const AIHub: React.FC = () => {
             {/* Search Modal */}
             {showSearch && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-2xl bg-[#0a0a0c] border border-white/10 rounded-premium p-6 shadow-2xl relative">
+                    <div className="w-full max-w-2xl bg-[#0a0a0c] border border-white/10 rounded-premium-lg p-6 shadow-premium relative">
                         <button
                             onClick={() => setShowSearch(false)}
                             className="absolute top-4 right-4 p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-500 hover:text-white"
@@ -1180,7 +1180,7 @@ const DiffHighlighter: React.FC<DiffHighlighterProps> = ({ oldText, newText }) =
 };
 
 const StatCard = ({ label, value, icon: Icon, color, bg, delta }: any) => (
-    <div className="glass-panel p-6 rounded-[2rem] border border-white/5 bg-gradient-to-br from-white/5 to-transparent hover:scale-[1.02] transition-all duration-500 group relative overflow-hidden">
+    <div className="glass-panel p-6 rounded-premium-lg border border-white/5 bg-gradient-to-br from-white/5 to-transparent hover:scale-[1.02] transition-all duration-500 group relative overflow-hidden shadow-premium">
         <div className="flex justify-between items-start relative z-10">
             <div className="space-y-1">
                 <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">{label}</p>

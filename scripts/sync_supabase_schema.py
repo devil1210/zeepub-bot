@@ -16,9 +16,9 @@ load_dotenv()
 
 
 async def sync_supabase_v4():
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print("🚀 [SUPABASE V4 SYNC] Iniciando sincronización de esquema...")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     supabase_url = os.environ.get("SUPABASE_URL")
     db_pass = os.environ.get("SUPABASE_DB_PASSWORD")

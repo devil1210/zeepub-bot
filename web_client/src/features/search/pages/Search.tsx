@@ -371,15 +371,19 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
             />
           ) : loadingMore ? (
             <div className="flex justify-center py-8">
-              <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-premium-full animate-spin"></div>
             </div>
           ) : currentPage < totalPages ? (
-            <div className="text-center py-6 text-gray-500 text-sm">
-              Desplázate para cargar más...
+            <div className="flex justify-center py-6">
+                <div className="px-6 py-2.5 rounded-premium-full glass-panel border border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 shadow-premium">
+                    Desplázate para cargar más...
+                </div>
             </div>
           ) : series.length > 0 ? (
-            <div className="text-center py-6 text-gray-500 text-sm">
-              ✓ Fin de los resultados
+            <div className="flex justify-center py-8">
+                <div className="px-8 py-3 rounded-premium-full glass-panel border border-white/5 text-[11px] font-black uppercase tracking-[0.25em] text-gray-400 shadow-premium">
+                    <span className="text-primary mr-2">✓</span> Fin de los resultados
+                </div>
             </div>
           ) : null}
         </div>

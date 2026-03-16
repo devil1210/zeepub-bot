@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from models.library_models import LocalBook, SeriesMetadata
+from models.library_models import Book, Series
 from utils.helpers import parse_metadata_from_title
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class MetadataProcessor:
     """
 
     @staticmethod
-    def extract_and_normalize_metadata(book: LocalBook) -> dict[str, Any]:
+    def extract_and_normalize_metadata(book: Book) -> dict[str, Any]:
         """
         Extract and normalize metadata from book data.
         """
@@ -32,12 +32,12 @@ class MetadataProcessor:
                 "clean_title": parsed.get("clean_title", ""),
                 "tags": parsed.get("tags", []),
                 "romaji": parsed.get("romaji", ""),
-                "author": book.author or "",
-                "illustrator": book.illustrator or "",
-                "publisher": book.publisher or "",
-                "book_type": book.book_type or "",
-                "description": book.description or "",
-                "demographics": book.demographics or [],
+                "author": "",  # V4 Series entity holds metadata, Book is file-centric
+                "illustrator": "",
+                "publisher": "",
+                "book_type": "",
+                "description": "",
+                "demographics": [],
             }
 
             # Validate and clean metadata
@@ -70,7 +70,7 @@ class MetadataProcessor:
         return validated
 
     @staticmethod
-    def merge_series_metadata(series: SeriesMetadata, book_metadata: dict[str, Any]) -> SeriesMetadata:
+    def merge_series_metadata(series: Series, book_metadata: dict[str, Any]) -> Series:
         """
         Merge book metadata into series metadata with conflict resolution.
         """

@@ -324,7 +324,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
             <header className="flex items-center gap-4 mb-8">
                 <button
                     onClick={() => onNavigate && onNavigate('dashboard')}
-                    className="p-2 -ml-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                    className="p-2 -ml-2 rounded-premium-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
                 >
                     <ArrowLeft className="w-6 h-6" />
                 </button>
@@ -343,7 +343,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
-                        className={`glass-panel group rounded-[2.5rem] p-12 border-2 border-dashed transition-all duration-500 cursor-pointer flex flex-col items-center justify-center gap-8 relative overflow-hidden
+                        className={`glass-panel group rounded-premium-lg p-12 border-2 border-dashed transition-all duration-500 cursor-pointer flex flex-col items-center justify-center gap-8 relative overflow-hidden
                             ${isDragging ? 'border-primary bg-primary/5 scale-[1.02] shadow-2xl shadow-primary/20' : 'border-white/10 hover:border-primary/50'}
                         `}
                         style={glassStyle}
@@ -352,11 +352,11 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
 
                         <div className="relative">
-                            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-500 relative z-10">
+                            <div className="w-24 h-24 rounded-premium-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform duration-500 relative z-10">
                                 <Upload className="w-10 h-10" />
                             </div>
                             {/* Animated Pulse Ring */}
-                            <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping opacity-20"></div>
+                            <div className="absolute inset-0 bg-primary/20 rounded-premium-full animate-ping opacity-20"></div>
                         </div>
 
                         <div className="text-center relative z-10">
@@ -376,14 +376,14 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                         />
 
                         <div className="flex gap-4 relative z-10">
-                            <span className="px-4 py-2 rounded-full bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-400">EPUB 3.0+</span>
-                            <span className="px-4 py-2 rounded-full bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-400">Soporte Masivo</span>
+                            <span className="px-4 py-2 rounded-premium-full bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-400">EPUB 3.0+</span>
+                            <span className="px-4 py-2 rounded-premium-full bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-gray-400">Soporte Masivo</span>
                         </div>
                     </div>
                 )}
 
                 {(status === 'uploading' || status === 'analyzing') && (
-                    <div className="glass-panel rounded-[2.5rem] p-16 text-center border border-white/5 flex flex-col items-center justify-center gap-12 relative overflow-hidden" style={glassStyle}>
+                    <div className="glass-panel rounded-premium-lg p-16 text-center border border-white/5 flex flex-col items-center justify-center gap-12 relative overflow-hidden" style={glassStyle}>
                         {/* Progressive Background Glow */}
                         <div
                             className="absolute -top-24 -left-24 w-64 h-64 bg-primary/20 blur-[100px] transition-all duration-1000"
@@ -392,7 +392,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
 
                         <div className="relative group">
                             {/* Outer Glow Ring */}
-                            <div className="absolute inset-[-12px] bg-primary/10 rounded-full blur-xl animate-pulse"></div>
+                            <div className="absolute inset-[-12px] bg-primary/10 rounded-premium-full blur-xl animate-pulse"></div>
 
                             <svg className="w-40 h-40 transform -rotate-90 relative z-10" viewBox="0 0 140 140">
                                 {/* Track */}
@@ -443,7 +443,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                 {status === 'uploading' ? 'Transfiriendo archivos...' : 'Procesando Inteligencia...'}
                             </h2>
                             <div className="flex flex-col items-center gap-2">
-                                <div className="px-6 py-2 rounded-full bg-white/5 border border-white/5 backdrop-blur-md">
+                                <div className="px-6 py-2 rounded-premium-full bg-white/5 border border-white/5 backdrop-blur-md">
                                     <p className="text-gray-300 text-xs font-bold uppercase tracking-wider">
                                         {isBulk ? `Archivo ${currentFilesIndex} de ${pendingFilesCount}` : file?.name}
                                     </p>
@@ -477,7 +477,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                             {selectedIds.size} Seleccionados
                                         </span>
                                     </div>
-                                    <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase">
+                                    <span className="px-3 py-1 rounded-premium-full bg-primary/10 text-primary text-[10px] font-black uppercase">
                                         {bulkResults.filter(r => r.success).length} Listos / {bulkResults.length} Total
                                     </span>
                                 </div>
@@ -502,7 +502,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                                 {/* Selection Checkbox */}
                                                 {isSuccess && (
                                                     <div className={`
-                                                        w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0
+                                                        w-5 h-5 rounded-premium-full border-2 flex items-center justify-center transition-all flex-shrink-0
                                                         ${isSelected
                                                             ? (isDuplicate ? 'bg-amber-500 border-amber-500 text-black' : 'bg-primary border-primary text-white')
                                                             : 'border-gray-600 bg-black/20 group-hover:border-gray-400'}
@@ -584,7 +584,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                 )}
 
                                 {/* Metadata Review Card */}
-                                <div className="glass-panel rounded-[2.5rem] overflow-hidden border border-white/5" style={glassStyle}>
+                                <div className="glass-panel rounded-premium-lg overflow-hidden border border-white/5" style={glassStyle}>
                                     <div className="p-8 border-b border-white/5 bg-white/[0.02]">
                                         <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">Revisión de Metadatos</h3>
                                         <div className="flex flex-col md:flex-row gap-6 md:items-center">
@@ -596,12 +596,12 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                                 <p className="text-primary font-bold text-sm tracking-tight">{metadata!.author}</p>
                                                 <div className="flex flex-wrap gap-2 mt-4">
                                                     {metadata!.series && (
-                                                        <span className="px-2.5 py-1 rounded-lg bg-white/5 text-[10px] font-black uppercase text-gray-400 border border-white/10">
+                                                        <span className="px-2.5 py-1 rounded-premium-sm bg-white/5 text-[10px] font-black uppercase text-gray-400 border border-white/10">
                                                             Serie: {metadata!.series} {metadata!.volume ? `v${metadata!.volume}` : ''}
                                                         </span>
                                                     )}
                                                     {metadata!.language && (
-                                                        <span className="px-2.5 py-1 rounded-lg bg-white/5 text-[10px] font-black uppercase text-gray-400 border border-white/10 flex items-center gap-1.5">
+                                                        <span className="px-2.5 py-1 rounded-premium-sm bg-white/5 text-[10px] font-black uppercase text-gray-400 border border-white/10 flex items-center gap-1.5">
                                                             <Globe className="w-3 h-3" /> {metadata!.language.toUpperCase()}
                                                         </span>
                                                     )}
@@ -613,7 +613,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                     <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-6">
                                             <div className="flex items-start gap-4">
-                                                <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                                <div className="p-2 rounded-premium-sm bg-white/5 text-gray-500">
                                                     <Building className="w-4 h-4" />
                                                 </div>
                                                 <div>
@@ -622,7 +622,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-4">
-                                                <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                                <div className="p-2 rounded-premium-sm bg-white/5 text-gray-500">
                                                     <Calendar className="w-4 h-4" />
                                                 </div>
                                                 <div>
@@ -631,7 +631,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-4">
-                                                <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                                <div className="p-2 rounded-premium-sm bg-white/5 text-gray-500">
                                                     <Hash className="w-4 h-4" />
                                                 </div>
                                                 <div>
@@ -643,7 +643,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
 
                                         <div className="space-y-6">
                                             <div className="flex items-start gap-4">
-                                                <div className="p-2 rounded-lg bg-white/5 text-gray-500">
+                                                <div className="p-2 rounded-premium-sm bg-white/5 text-gray-500">
                                                     <Tag className="w-4 h-4" />
                                                 </div>
                                                 <div>
@@ -673,7 +673,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                                     )}
                                                     <button
                                                         onClick={() => setEditingPath(!editingPath)}
-                                                        className="p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-all"
+                                                        className="p-1.5 rounded-premium-sm hover:bg-white/10 text-gray-500 hover:text-white transition-all"
                                                     >
                                                         {editingPath ? <Check className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
                                                     </button>
@@ -690,7 +690,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                         <div className="flex gap-4">
                             <button
                                 onClick={resetUpload}
-                                className="flex-1 py-4 rounded-[1.5rem] bg-white/5 hover:bg-white/10 text-white text-xs font-black uppercase tracking-widest transition-all border border-white/5 flex items-center justify-center gap-2"
+                                className="flex-1 py-4 rounded-premium-md bg-white/5 hover:bg-white/10 text-white text-xs font-black uppercase tracking-widest transition-all border border-white/5 flex items-center justify-center gap-2"
                             >
                                 <X className="w-4 h-4" />
                                 Cancelar
@@ -698,7 +698,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                             <button
                                 onClick={handleConfirm}
                                 disabled={status === 'confirming' || (isBulk && selectedIds.size === 0)}
-                                className="flex-[2] py-4 rounded-[1.5rem] bg-primary hover:bg-primary-dark text-white text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex-[2] py-4 rounded-premium-md bg-primary hover:bg-primary-dark text-white text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {status === 'confirming' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                                 {isBulk ? `Confirmar ${selectedIds.size} libros` : 'Finalizar y Guardar'}
@@ -708,12 +708,12 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                 )}
 
                 {status === 'success' && (
-                    <div className="glass-panel rounded-[2.5rem] p-16 text-center border border-green-500/20 bg-green-500/5 flex flex-col items-center justify-center gap-10" style={glassStyle}>
+                    <div className="glass-panel rounded-premium-lg p-16 text-center border border-green-500/20 bg-green-500/5 flex flex-col items-center justify-center gap-10" style={glassStyle}>
                         <div className="relative">
-                            <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 relative z-10">
+                            <div className="w-24 h-24 rounded-premium-full bg-green-500/20 flex items-center justify-center text-green-400 relative z-10">
                                 <CheckCircle2 className="w-12 h-12" />
                             </div>
-                            <div className="absolute inset-0 bg-green-500/20 rounded-full animate-ping opacity-20"></div>
+                            <div className="absolute inset-0 bg-green-500/20 rounded-premium-full animate-ping opacity-20"></div>
                         </div>
 
                         <div className="max-w-xs mx-auto">
@@ -735,8 +735,8 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                 )}
 
                 {status === 'error' && (
-                    <div className="glass-panel rounded-[2.5rem] p-16 text-center border border-red-500/20 bg-red-500/5 flex flex-col items-center justify-center gap-10" style={glassStyle}>
-                        <div className="w-24 h-24 rounded-full bg-red-500/20 flex items-center justify-center text-red-500">
+                    <div className="glass-panel rounded-premium-lg p-16 text-center border border-red-500/20 bg-red-500/5 flex flex-col items-center justify-center gap-10" style={glassStyle}>
+                        <div className="w-24 h-24 rounded-premium-full bg-red-500/20 flex items-center justify-center text-red-500">
                             <AlertCircle className="w-12 h-12" />
                         </div>
 
@@ -766,7 +766,7 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
             </div>
 
             {/* Hint Footer */}
-            <footer className="mt-12 p-6 glass-panel rounded-[2rem] border border-white/5 flex gap-4 items-center" style={glassStyle}>
+            <footer className="mt-12 p-6 glass-panel rounded-premium-md border border-white/5 flex gap-4 items-center" style={glassStyle}>
                 <div className="p-3 rounded-premium-sm bg-primary/10 text-primary">
                     <Info className="w-5 h-5" />
                 </div>

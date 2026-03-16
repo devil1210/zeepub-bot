@@ -42,7 +42,7 @@ export const BookHeader: React.FC<BookHeaderProps> = ({
         <div className="relative">
             {/* Mobile: Stats Liquid Card */}
             <div className="md:hidden mb-6">
-                <div className="glass-panel p-4 rounded-premium-sm border border-white/10 shadow-lg flex items-center justify-between">
+                <div className="glass-panel p-4 rounded-premium-lg border border-white/5 shadow-premium flex items-center justify-between">
                     <div className="flex flex-col items-center gap-1">
                         <span className="text-[10px] uppercase font-black text-gray-400 tracking-wider">Rating</span>
                         <div className="flex items-center gap-1.5 text-yellow-400">
@@ -73,17 +73,17 @@ export const BookHeader: React.FC<BookHeaderProps> = ({
             <div className="mb-4 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-wider">
                 <button
                     onClick={() => onSearch(group, 'group')}
-                    className="bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                    className="bg-primary/10 text-primary border border-primary/20 px-3 py-1.5 rounded-premium-full hover:bg-primary hover:text-white transition-colors cursor-pointer"
                 >
                     {group}
                 </button>
                 {color_mode === 'color' && (
-                    <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white px-3 py-1.5 rounded-full shadow-lg shadow-orange-500/20">
+                    <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white px-3 py-1.5 rounded-premium-full shadow-lg shadow-orange-500/20">
                         A Color
                     </span>
                 )}
                 {is_uncensored && (
-                    <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-3 py-1.5 rounded-full shadow-lg shadow-red-500/10">
+                    <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-3 py-1.5 rounded-premium-full shadow-lg shadow-red-500/10">
                         Sin Censura
                     </span>
                 )}

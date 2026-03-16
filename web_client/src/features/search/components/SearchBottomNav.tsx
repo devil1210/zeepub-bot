@@ -47,11 +47,11 @@ export const SearchBottomNav: React.FC<SearchBottomNavProps> = ({
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-col gap-3 w-[90%] max-w-xl md:w-auto md:min-w-[600px] px-0">
             {isSortMenuOpen && (
                 <div
-                    className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    className="glass-panel rounded-premium-lg p-3 border border-white/10 shadow-premium animate-in slide-in-from-bottom-2 fade-in duration-200"
                     style={{
                         background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-                        backdropFilter: `blur(${settings.glassBlur}px)`,
-                        WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+                        backdropFilter: `blur(var(--glass-blur))`,
+                        WebkitBackdropFilter: `blur(var(--glass-blur))`
                     }}
                 >
                     <div className="grid grid-cols-3 gap-2">
@@ -64,9 +64,9 @@ export const SearchBottomNav: React.FC<SearchBottomNavProps> = ({
                                         onSortChange(option.id);
                                         setIsSortMenuOpen(false);
                                     }}
-                                    className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${isActive
-                                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-lg shadow-blue-500/20'
-                                        : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
+                                    className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-premium-sm text-[9px] font-black uppercase tracking-[0.15em] transition-all border ${isActive
+                                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-premium shadow-blue-500/20'
+                                        : 'bg-white/5 text-gray-400 border-white/5 hover:bg-white/10 hover:text-white'
                                         }`}
                                 >
                                     {option.icon && <option.icon className={`w-4 h-4 ${option.id === 'z-a' ? 'rotate-180' : ''}`} />}
@@ -79,11 +79,11 @@ export const SearchBottomNav: React.FC<SearchBottomNavProps> = ({
             )}
 
             <div
-                className="glass-panel rounded-premium p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+                className="glass-panel rounded-premium-lg p-1.5 border border-white/5 shadow-premium flex items-center justify-between overflow-hidden"
                 style={{
                     background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-                    backdropFilter: `blur(${settings.glassBlur}px)`,
-                    WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+                    backdropFilter: `blur(var(--glass-blur))`,
+                    WebkitBackdropFilter: `blur(var(--glass-blur))`
                 }}
             >
                 <button
@@ -91,7 +91,7 @@ export const SearchBottomNav: React.FC<SearchBottomNavProps> = ({
                     disabled={currentPage === 1}
                     className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === 1 ? 'opacity-30 cursor-not-allowed' : ''}`}
                 >
-                    <div className="p-1.5 rounded-full transition-all duration-300">
+                    <div className="p-1.5 rounded-premium-full transition-all duration-300">
                         <ChevronLeft className="w-4 h-4" strokeWidth={2} />
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest mt-1">Anterior</span>
@@ -101,12 +101,12 @@ export const SearchBottomNav: React.FC<SearchBottomNavProps> = ({
 
                 <button
                     onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                    className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
+                    className={`flex-1 flex flex-col items-center justify-center py-2.5 rounded-premium-sm transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
                 >
-                    <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-[var(--color-primary)] shadow-[0_0_15px_rgba(43,108,238,0.5)] translate-y-[-2px]' : ''}`}>
+                    <div className={`p-1.5 rounded-premium-full transition-all duration-300 ${isSortMenuOpen ? 'bg-[var(--color-primary)] shadow-[0_0_20px_rgba(43,108,238,0.4)] translate-y-[-2px]' : ''}`}>
                         <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'text-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
                     </div>
-                    <span className={`text-[9px] font-black uppercase tracking-widest mt-1`}>Ordenar</span>
+                    <span className={`text-[9px] font-black uppercase tracking-[0.15em] mt-1.5`}>Ordenar</span>
                 </button>
 
                 <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>
@@ -115,7 +115,7 @@ export const SearchBottomNav: React.FC<SearchBottomNavProps> = ({
                     onClick={onHome}
                     className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white`}
                 >
-                    <div className="p-1.5 rounded-full transition-all duration-300">
+                    <div className="p-1.5 rounded-premium-full transition-all duration-300">
                         <Home className="w-4 h-4" strokeWidth={2} />
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest mt-1">Inicio</span>
@@ -128,7 +128,7 @@ export const SearchBottomNav: React.FC<SearchBottomNavProps> = ({
                     disabled={currentPage === totalPages}
                     className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 text-gray-500 hover:text-black dark:hover:text-white ${currentPage === totalPages ? 'opacity-30 cursor-not-allowed' : ''}`}
                 >
-                    <div className="p-1.5 rounded-full transition-all duration-300">
+                    <div className="p-1.5 rounded-premium-full transition-all duration-300">
                         <ChevronRight className="w-4 h-4" strokeWidth={2} />
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest mt-1">Siguiente</span>

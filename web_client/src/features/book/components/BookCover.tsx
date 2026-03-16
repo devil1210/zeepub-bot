@@ -19,9 +19,9 @@ export const BookCover: React.FC<BookCoverProps> = ({ title, coverUrl, coverThum
                 onClick={() => setIsFullscreen(true)}
             >
                 {/* Outer Glow */}
-                <div className="absolute -inset-4 bg-primary/20 rounded-[2.5rem] blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                <div className="absolute -inset-4 bg-primary/20 rounded-premium-lg blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
 
-                <div className="relative aspect-[2/3] rounded-[2.2rem] overflow-hidden shadow-premium border border-white/10 group-hover:border-white/30 group-hover:-translate-y-2 transition-all duration-700 bg-white/5">
+                <div className="relative aspect-[2/3] rounded-premium-lg overflow-hidden shadow-premium border border-white/5 group-hover:border-primary/30 group-hover:-translate-y-2 transition-all duration-700 bg-white/5">
                     <img
                         src={getCoverUrl(coverUrl, coverThumbUrl, 'mediana')}
                         alt={title}
@@ -34,7 +34,7 @@ export const BookCover: React.FC<BookCoverProps> = ({ title, coverUrl, coverThum
 
                     {/* Floating Zoom Badge */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-black/20 z-20">
-                        <div className="p-4 bg-white/10 backdrop-blur-md rounded-full border border-white/20 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <div className="p-4 bg-white/10 backdrop-blur-[var(--glass-blur)] rounded-full border border-white/5 shadow-lg group-hover:scale-110 transition-transform duration-300">
                             <BookOpen className="w-8 h-8 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
                         </div>
                     </div>
@@ -56,7 +56,7 @@ export const BookCover: React.FC<BookCoverProps> = ({ title, coverUrl, coverThum
                     <img
                         src={getCoverUrl(coverUrl, coverThumbUrl, 'original')}
                         alt={title}
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
+                        className="max-w-full max-h-full object-contain rounded-premium-lg shadow-2xl animate-in zoom-in-95 duration-300"
                         onClick={(e) => e.stopPropagation()}
                     />
                 </div>

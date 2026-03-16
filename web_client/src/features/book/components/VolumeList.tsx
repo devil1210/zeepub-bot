@@ -21,13 +21,13 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                         onClick={() => {
                             onSelectVolume(vol, series);
                         }}
-                        className="group relative flex gap-5 p-4 rounded-[2rem] glass-panel hover:bg-white/[0.07] hover:border-white/20 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] transition-all duration-500 cursor-pointer overflow-hidden mb-4"
+                        className="group relative flex gap-5 p-4 rounded-premium-2xl glass-panel hover:bg-white/[0.07] hover:border-white/20 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] transition-all duration-500 cursor-pointer overflow-hidden mb-4"
                     >
                         {/* Premium Backdrop Glow */}
                         <div className="absolute -inset-20 bg-primary/5 blur-[100px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
 
                         {/* Left Section: Image with Space-Saving Badges */}
-                        <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] rounded-premium-sm overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
+                        <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] rounded-premium-md overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
                             <img
                                 alt={vol.title}
                                 loading="lazy"
@@ -39,12 +39,12 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                             {/* Floating Quality Badges on Cover */}
                             <div className="absolute bottom-2 right-2 flex flex-col items-end gap-1.5">
                                 {vol.color_mode === 'color' && (
-                                    <div className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
+                                    <div className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[7px] font-black px-1.5 py-0.5 rounded-premium-sm shadow-2xl border border-white/20 uppercase tracking-widest">
                                         COLOR
                                     </div>
                                 )}
                                 {vol.is_uncensored && (
-                                    <div className="bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
+                                    <div className="bg-red-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded-premium-sm shadow-2xl border border-white/20 uppercase tracking-widest">
                                         S/C
                                     </div>
                                 )}
@@ -58,7 +58,7 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                                 <span className="text-primary opacity-90">{vol.volumeNumber === 0 ? 'VOLUMEN ÚNICO' : `VOLUMEN ${vol.volumeNumber}`}</span>
                                 {vol.group && (
                                     <>
-                                        <span className="w-1 h-1 rounded-full bg-white/10"></span>
+                                        <span className="w-1 h-1 rounded-premium-full bg-white/10"></span>
                                         <span className="text-emerald-400 opacity-80 truncate max-w-[150px]">{vol.group}</span>
                                     </>
                                 )}
@@ -100,7 +100,7 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                         onClick={() => {
                             onSelectVolume(vol, series);
                         }}
-                        className="group relative glass-panel rounded-[2.5rem] overflow-hidden hover:border-primary/40 shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"
+                        className="group relative glass-panel rounded-premium-3xl overflow-hidden hover:border-primary/40 shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 transition-all duration-700 flex flex-col h-full cursor-pointer"
                     >
                         <div className="relative aspect-[2/3] w-full overflow-hidden bg-white/5 shadow-2xl">
                             <img

@@ -14,7 +14,7 @@ export const SearchCardList: React.FC<SearchCardListProps> = React.memo(({ serie
     return (
         <div
             onClick={onClick}
-            className="group flex gap-5 p-4 rounded-[2rem] glass-panel hover:bg-white/[0.07] hover:border-white/20 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.4)] transition-all duration-500 cursor-pointer relative overflow-hidden mb-4"
+            className="group flex gap-5 p-4 rounded-premium-lg glass-panel hover:bg-white/[0.07] hover:border-white/20 shadow-premium hover:shadow-[#0c0d10] transition-all duration-500 cursor-pointer relative overflow-hidden mb-4"
         >
             {/* Left: Cover Image */}
             <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] shadow-2xl rounded-premium-sm overflow-hidden bg-white/5 border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
@@ -35,9 +35,9 @@ export const SearchCardList: React.FC<SearchCardListProps> = React.memo(({ serie
                     </h3>
                     <button
                         onClick={(e) => { e.stopPropagation(); }}
-                        className="p-2.5 rounded-premium-sm bg-white/5 hover:bg-primary text-gray-400 hover:text-white transition-all duration-300 transform group-hover:scale-110 shadow-lg active:scale-90 shrink-0"
+                        className="p-3 rounded-premium-lg bg-white/5 border border-white/10 hover:bg-primary hover:border-primary text-gray-400 hover:text-white transition-all duration-300 transform group-hover:scale-110 shadow-premium active:scale-95 shrink-0"
                     >
-                        <PlusCircle className="w-4 h-4" />
+                        <PlusCircle className="w-4.5 h-4.5" />
                     </button>
                 </div>
 
@@ -73,22 +73,22 @@ export const SearchCardList: React.FC<SearchCardListProps> = React.memo(({ serie
                 {/* Metadata Tags */}
                 <div className="flex flex-wrap items-center gap-2 mt-auto">
                     {series.book_type && (
-                        <span className="px-2.5 py-1 rounded-lg text-[8px] sm:text-[9px] font-black bg-white/5 text-gray-400 uppercase tracking-widest border border-white/10 group-hover:border-primary/40 group-hover:text-white transition-all">
+                        <span className="px-3 py-1.5 rounded-premium-sm text-[8px] sm:text-[9px] font-black bg-white/5 text-gray-400 uppercase tracking-widest border border-white/10 group-hover:border-primary/40 group-hover:text-white transition-all">
                             {series.book_type}
                         </span>
                     )}
                     {series.format && (
-                        <span className="px-2.5 py-1 rounded-lg text-[8px] sm:text-[9px] font-black bg-emerald-500/10 text-emerald-400 uppercase tracking-widest border border-emerald-500/20">
+                        <span className="px-3 py-1.5 rounded-premium-sm text-[8px] sm:text-[9px] font-black bg-emerald-500/10 text-emerald-400 uppercase tracking-widest border border-emerald-500/20">
                             {series.format}
                         </span>
                     )}
                     {series.color_mode === 'color' && (
-                        <span className="px-2.5 py-1 rounded-lg text-[8px] sm:text-[9px] font-black bg-gradient-to-r from-orange-400 to-pink-500 text-white uppercase tracking-widest shadow-lg">
+                        <span className="px-3 py-1.5 rounded-premium-sm text-[8px] sm:text-[9px] font-black bg-gradient-to-r from-orange-400 to-pink-500 text-white uppercase tracking-widest shadow-premium">
                             Color
                         </span>
                     )}
                     {series.is_uncensored && (
-                        <span className="px-2.5 py-1 rounded-lg text-[8px] sm:text-[9px] font-black bg-red-500/10 text-red-500 uppercase tracking-widest border border-red-500/20">
+                        <span className="px-3 py-1.5 rounded-premium-sm text-[8px] sm:text-[9px] font-black bg-red-500/10 text-red-500 uppercase tracking-widest border border-red-500/20">
                             S/C
                         </span>
                     )}

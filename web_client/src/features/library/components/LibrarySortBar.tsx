@@ -30,7 +30,7 @@ export const LibrarySortBar: React.FC<LibrarySortBarProps> = ({
         <div className="md:hidden fixed bottom-6 left-8 right-8 z-40 animate-in slide-in-from-bottom-4 duration-300 flex flex-col gap-3 max-w-5xl mx-auto">
             {isSortMenuOpen && (
                 <div
-                    className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
+                    className="glass-panel rounded-premium p-3 border border-white/5 shadow-premium animate-in slide-in-from-bottom-2 fade-in duration-200"
                     style={{
                         background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
                         backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -62,7 +62,7 @@ export const LibrarySortBar: React.FC<LibrarySortBarProps> = ({
             )}
 
             <div
-                className="glass-panel rounded-premium p-1 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+                className="glass-panel rounded-premium-lg p-1 border border-white/5 shadow-premium flex items-center justify-between overflow-hidden"
                 style={{
                     background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
                     backdropFilter: `blur(${settings.glassBlur}px)`,
@@ -73,7 +73,7 @@ export const LibrarySortBar: React.FC<LibrarySortBarProps> = ({
                     onClick={() => onNavigate('dashboard')}
                     className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-500 hover:text-black dark:hover:text-white"
                 >
-                    <div className="p-1.5 rounded-full transition-all duration-300">
+                    <div className="p-1.5 rounded-premium-full transition-all duration-300">
                         <Home className="w-4 h-4" strokeWidth={2} />
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest mt-1">Inicio</span>
@@ -85,7 +85,7 @@ export const LibrarySortBar: React.FC<LibrarySortBarProps> = ({
                     onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
                     className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 relative z-10 ${isSortMenuOpen ? 'text-black dark:text-white' : 'text-gray-500 hover:text-black dark:hover:text-white'}`}
                 >
-                    <div className={`p-1.5 rounded-full transition-all duration-300 ${isSortMenuOpen ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
+                    <div className={`p-1.5 rounded-premium-full transition-all duration-300 ${isSortMenuOpen ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}>
                         <ArrowDownUp className={`w-4 h-4 ${isSortMenuOpen ? 'text-white' : ''}`} strokeWidth={isSortMenuOpen ? 2.5 : 2} />
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest mt-1">Ordenar</span>
@@ -96,7 +96,7 @@ export const LibrarySortBar: React.FC<LibrarySortBarProps> = ({
                 <button
                     className="flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-300 text-gray-500 hover:text-black dark:hover:text-white"
                 >
-                    <div className="p-1.5 rounded-full transition-all duration-300">
+                    <div className="p-1.5 rounded-premium-full transition-all duration-300">
                         <Filter className="w-4 h-4" strokeWidth={2} />
                     </div>
                     <span className="text-[9px] font-black uppercase tracking-widest mt-1">Filtrar</span>

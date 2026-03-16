@@ -441,7 +441,7 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                                     : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
                                     }`}
                             >
-                                <div className={`p-1.5 rounded-lg ${channel.platform === 'telegram' ? 'bg-blue-500/10 text-blue-400' : 'bg-primary/10 text-primary'}`}>
+                                <div className={`p-1.5 rounded-premium-sm ${channel.platform === 'telegram' ? 'bg-blue-500/10 text-blue-400' : 'bg-primary/10 text-primary'}`}>
                                     <Send className="w-3.5 h-3.5" />
                                 </div>
                                 <div className="flex flex-col items-start min-w-0">
@@ -505,13 +505,13 @@ const NavButton: React.FC<{
             className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-500 relative z-10 ${disabled ? 'opacity-30 cursor-not-allowed' : 'hover:scale-110 active:scale-95 hover:text-white'} ${isActive ? 'text-primary' : 'text-white/40'}`}
         >
             <div
-                className={`p-1.5 rounded-full transition-all duration-500 animate-in zoom-in-75 fade-in ${isActive && highlightOnActive ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}
+                className={`p-1.5 rounded-premium-full transition-all duration-500 animate-in zoom-in-75 fade-in ${isActive && highlightOnActive ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}
             >
                 <Icon className={`w-4 h-4 ${(isActive && highlightOnActive) ? 'text-white' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
             </div>
             <span className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-80 group-hover:opacity-100 transition-opacity duration-500">{label}</span>
             {isActive && !highlightOnActive && (
-                <div className="absolute bottom-1 w-1 h-1 bg-primary rounded-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.8)] animate-in fade-in zoom-in duration-500"></div>
+                <div className="absolute bottom-1 w-1 h-1 bg-primary rounded-premium-full shadow-[0_0_8px_rgba(var(--primary-rgb),0.8)] animate-in fade-in zoom-in duration-500"></div>
             )}
         </button>
     );

@@ -90,6 +90,27 @@ class AIService:
         return None
 
     @classmethod
+    async def get_embedding(cls, text: str) -> list[float] | None:
+        """Genera un embedding de un texto usando Gemini."""
+        client = cls._get_client()
+        if not client:
+            return None
+
+        try:
+            # Usar el modelo de embeddings más reciente
+            model_name = "text-embedding-004"
+            response = client.models.embed_content(
+                model=model_name, contents=text, config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT")
+            )
+
+            if hasattr(response, "embeddings") and response.embeddings:
+                return response.embeddings[0].values
+            return None
+        except Exception as e:
+            logger.error(f"❌ Error generando embedding: {e}")
+            return None
+
+    @classmethod
     async def _call_perplexity(
         cls,
         prompt: str,

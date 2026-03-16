@@ -9,7 +9,7 @@ export const DashboardSearch: React.FC<DashboardSearchProps> = ({ onSearchClick 
     return (
         <div className="relative group w-full pt-4">
             <div className="absolute -inset-2 bg-gradient-to-r from-primary/30 via-purple-600/20 to-blue-500/30 rounded-[3rem] blur-3xl opacity-30 group-hover:opacity-60 transition duration-1000 group-hover:duration-500 animate-pulse-slow"></div>
-            <div className="relative glass-panel rounded-[2.5rem] p-4 flex items-center shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] backdrop-blur-3xl border border-[var(--panel-border)] ring-1 ring-white/5 transition-all duration-500 group-focus-within:ring-primary/40 group-focus-within:border-primary/40">
+            <div className="relative glass-panel rounded-premium-lg p-4 flex items-center shadow-premium border border-[var(--panel-border)] ring-1 ring-white/5 transition-all duration-500 group-focus-within:ring-primary/40 group-focus-within:border-primary/40">
                 <div className="pl-6 text-primary group-focus-within:scale-110 transition-transform duration-500">
                     <Search className="w-8 h-8" strokeWidth={3} />
                 </div>

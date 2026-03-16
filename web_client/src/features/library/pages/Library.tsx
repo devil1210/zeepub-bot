@@ -64,14 +64,14 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
 
             {/* Filter Chips (Quick Filters) */}
             <div className="flex flex-wrap gap-2 mb-2">
-               <button className="h-10 px-6 rounded-full bg-primary text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_10px_20px_-5px_rgba(var(--color-primary-rgb),0.5)] active:scale-95 transition-all">
+               <button className="h-10 px-6 rounded-premium-full bg-primary text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-premium active:scale-95 transition-all">
                   Todas
                </button>
-               <button className="h-10 px-6 rounded-full bg-white/[0.03] border border-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3">
+               <button className="h-10 px-6 rounded-premium-full bg-white/5 border border-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3">
                   Actualizadas
-                  <span className="flex h-5 w-5 items-center justify-center rounded-lg bg-primary text-[9px] font-black text-white shadow-lg">1</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-premium-sm bg-primary text-[9px] font-black text-white shadow-lg">1</span>
                </button>
-               <button className="h-10 px-6 rounded-full bg-white/[0.03] border border-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] font-black uppercase tracking-[0.2em] transition-all">
+               <button className="h-10 px-6 rounded-premium-full bg-white/5 border border-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] font-black uppercase tracking-[0.2em] transition-all">
                   Completadas
                </button>
             </div>
@@ -100,7 +100,7 @@ export const Library: React.FC<LibraryProps> = ({ onNavigate, onSelectBook }) =>
                <EmptyLibrary onGoToCatalog={() => onNavigate && onNavigate('search')} />
             ) : (
                <div className="flex justify-center py-20">
-                  <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                  <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-premium-full animate-spin"></div>
                </div>
             )}
          </div>
