@@ -187,6 +187,24 @@ class DuplicateBook(TimestampedBase):
     detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
 
 
+class UploadHistory(TimestampedBase):
+    """
+    V4 Book Upload History Log.
+    Tracks all upload attempts via MiniApp or Bot.
+    """
+
+    __tablename__ = "upload_history"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    filename: Mapped[str] = mapped_column(String(512), nullable=False)
+    book_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(String(50), default="success")  # success, error
+    final_path: Mapped[str | None] = mapped_column(Text)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
+
+
 class LibraryCleanupLog(TimestampedBase):
     __tablename__ = "library_cleanup_logs"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

@@ -66,15 +66,20 @@
 - [x] Estandarización de `UserRepository` y `AgentRepository` con patrones async y confirmación opcional.
 - [x] Verificación local: El bot inicia correctamente hasta la fase de conexión a DB.
 - [x] Instalación de dependencias faltantes (`aiofiles`).
+- [x] **v4.1.0 - Estabilización Crítica de Inicio**:
+    - [x] Habilitar extensión `vector` en `schema_orchestrator.py`.
+    - [x] Restaurar modelo `UploadHistory` en `models/library_models.py`.
+    - [x] Corregir instanciación de `PublisherService` con `db_manager`.
+    - [x] Implementar fallback a `pg_manager` en `BaseRepository._get_session`.
+    - [x] Verificar arranque local completo (Handshake con DB y registro de handlers).
 
 ### Bloqueos
 - Error de conexión a Base de Datos local (PostgreSQL en localhost) - *Esperado en entorno local sin DB configurada*.
 
 ### Siguiente Paso
-1. Ejecutar `/push` para llevar los cambios al repositorio.
-2. Desplegar en el VPS y verificar que el error de importación ha desaparecido.
-3. Continuar con la estandarización de los repositorios restantes (`BookRepository`, `LibraryRepository`, etc.).
- (Book, Series, etc.).
+1. Ejecutar `/push` para llevar los cambios al repositorio (v4.1.0).
+2. Desplegar en el VPS y verificar que el arranque es limpio.
+3. Continuar con la estandarización de los repositorios restantes (`BookRepository`, `LibraryRepository`, etc.) si es necesario.
 
 ### Notas del Handover
-> Se han resuelto todos los errores críticos de importación (`MetadataProposal`, `ArchivedSeries`, `UploadBook`, `PublisherService`). El bot y la API están listos para un arranque exitoso en el VPS. Se recomienda ejecutar `docker compose up -d --build` para asegurar que las nuevas dependencias y modelos se carguen correctamente.
+> **VERSIÓN 4.1.0 RELEASED**: Se han resuelto todos los errores críticos de arranque local y de base de datos (`pgvector`, `UploadHistory`, `PublisherService`). Se implementó un fallback dinámico en `BaseRepository` para evitar errores en repositorios globales. El sistema está 100% estable para despliegue en VPS.

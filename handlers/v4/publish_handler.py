@@ -22,7 +22,9 @@ class PublishHandlerV4(BaseHandlerV4):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.publisher_svc = PublisherService()
+        from core.db_manager_pg import pg_manager
+
+        self.publisher_svc = PublisherService(db_manager=pg_manager)
 
     # ------------------------------------------------------------------ #
     #  /publish <book_hash> [channel_id]                                  #

@@ -21,9 +21,12 @@ async def _process_publication_queue(context) -> None:
     """Job que procesa la cola de publicación pendiente."""
     from services.v4.publisher_service import PublisherService
 
-    publisher = PublisherService()
+    logger.info("Starting publication queue processor...")
     try:
-        results = await publisher.process_pending_queue(context.application)
+        from core.db_manager_pg import pg_manager
+
+        publisher = PublisherService(db_manager=pg_manager)
+        results = await publisher.process_queue(bot_app=context.application)
         if results:
             sent = sum(1 for r in results if r.success)
             failed = sum(1 for r in results if not r.success)

@@ -39,7 +39,14 @@ class BaseRepository(Generic[T]):
             async with self.db_manager.get_session() as session:
                 yield session
         else:
-            raise RuntimeError(f"Repositorio {self.__class__.__name__} sin sesión ni db_manager.")
+            # Fallback to global pg_manager to avoid RuntimeError in global repo instances
+            try:
+                from core.db_manager_pg import pg_manager
+
+                async with pg_manager.get_session() as session:
+                    yield session
+            except ImportError:
+                raise RuntimeError(f"Repositorio {self.__class__.__name__} sin sesión ni db_manager.")
 
     async def get_by_id(self, id_val: Any) -> T | None:
         """Obtiene una entidad por su ID primario."""

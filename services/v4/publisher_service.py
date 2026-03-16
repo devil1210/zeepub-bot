@@ -127,7 +127,8 @@ class PublisherService(BaseService):
 
     async def enqueue_book(
         self,
-        book_id: uuid.UUID,
+        book_id: uuid.UUID | None = None,
+        book_hash: str | None = None,
         channel_ids: list[uuid.UUID] | None = None,
         scheduled_for: datetime | None = None,
         template_id: uuid.UUID | None = None,
@@ -139,7 +140,13 @@ class PublisherService(BaseService):
 
         async with self.db.get_session() as session:
             book_repo = BookRepository(session)
-            book = await book_repo.get_by_id(book_id)
+            if book_hash:
+                book = await book_repo.get_by_hash(book_hash)
+            elif book_id:
+                book = await book_repo.get_by_id(book_id)
+            else:
+                return EnqueueResult(success=False, reason="no_book_identifier_provided")
+
             if not book:
                 return EnqueueResult(success=False, reason="book_not_found")
 
@@ -200,6 +207,12 @@ class PublisherService(BaseService):
             await session.commit()
 
         return results
+
+    async def get_queue_status(self) -> dict[str, int]:
+        """Returns count of items grouped by status."""
+        async with self.db.get_session() as session:
+            queue_repo = PublicationQueueRepository(session)
+            return await queue_repo.get_status_counts()
 
     async def _process_item(self, item: PublicationQueue, repo: PublicationQueueRepository, **kwargs) -> PublishResult:
         item.status = "publishing"
