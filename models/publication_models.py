@@ -8,7 +8,10 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import TimestampedBase
-from .library_models import Book
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .library_models import Book
 
 
 class PublicationChannel(TimestampedBase):
@@ -102,4 +105,4 @@ class PublicationQueue(TimestampedBase):
     # Relationships
     channel: Mapped[PublicationChannel] = relationship(back_populates="queued_items")
     template: Mapped[PublicationTemplate | None] = relationship(back_populates="queued_items")
-    book: Mapped[Book] = relationship()
+    book: Mapped["Book"] = relationship("Book")
