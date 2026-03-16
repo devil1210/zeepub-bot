@@ -14,6 +14,11 @@
 ### Tareas Completadas (Fase 0):
 - [x] Creación de rama `team-project-restart`.
 - [x] Definición de skill `EvilTeams` (Inclusiva de todas las habilidades de Alejabot + Persona de Kaguya).
+- [x] VPS Deployment & Testing
+    - [x] Push changes to repository
+    - [x] Fix CI/CD workflow for `team-project-restart` branch
+    - [/] Build Docker image (In progress on GitHub)
+    - [ ] Deploy and verify on VPS
 - [x] Implementar `BaseRepository` asíncrono con SQLAlchemy 2.0 y logging persistente.
 - [x] Generar script de migración inicial de Alembic para el esquema V4.
 - [x] Ejecutar `/db-sync` para aplicar el esquema a Postgres y Supabase.
@@ -40,9 +45,11 @@
 - [x] Corrección de errores de linting en `SemanticService.py`.
 - [x] Verificación de configuración `.env` y Docker.
 - [x] Auditoría estética global finalizada.
+- [x] **Fix CI/CD**: Se agregó la rama `team-project-restart` al workflow de Docker.
+- [x] **Fix Git Index**: Se corrigió el error de submódulo fatal en `.agent/skills/gitnexus`.
 
 ### Tareas en Progreso:
-- [/] Despliegue en VPS (Push iniciado).
+- [/] Despliegue en VPS (Segundo intento de Build iniciado).
 
 ### Siguiente Paso
 - Despliegue y validación en VPS (Staging).
