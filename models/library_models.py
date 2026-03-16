@@ -9,6 +9,8 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import TimestampedBase
+from models.user_models import DownloadLog as UserDownload
+from models.rating_models import UserRating
 
 if TYPE_CHECKING:
     pass
