@@ -58,7 +58,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
             # 4. Revenue Estimation (Real from levels)
             cursor = await session.execute(
                 text("""
-                SELECT ul.price, COUNT(u.telegram_id)
+                SELECT ul.price, COUNT(u.id)
                 FROM user_levels ul
                 LEFT JOIN users u ON u.level_id = ul.id
                 GROUP BY ul.id, ul.price

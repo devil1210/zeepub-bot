@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # Niveles por defecto del sistema (fuente de verdad)
 DEFAULT_LEVELS: list[dict[str, Any]] = [
     {
-        "id": "1",
+        "id": "00000000-0000-0000-0000-000000000001",
         "name": "Administrador",
         "priority": 100,
         "color": "#FF4B4B",
@@ -32,7 +32,7 @@ DEFAULT_LEVELS: list[dict[str, Any]] = [
         "canUploadEpub": True,
     },
     {
-        "id": "2",
+        "id": "00000000-0000-0000-0000-000000000002",
         "name": "Staff",
         "priority": 90,
         "color": "#4ECDC4",
@@ -47,59 +47,59 @@ DEFAULT_LEVELS: list[dict[str, Any]] = [
         "canUploadEpub": False,
     },
     {
-        "id": "3",
+        "id": "00000000-0000-0000-0000-000000000003",
         "name": "Premium",
         "priority": 80,
         "color": "#FFD93D",
-        "price": 0.0,
+        "price": 1.99,
         "dailyDownloads": 50,
         "canDownload": True,
-        "canRead": False,
+        "canRead": True,
         "hasAccess": True,
         "allowThemeTemplates": True,
         "earlyAccess": False,
-        "customThemes": False,
+        "customThemes": True,
         "canUploadEpub": False,
     },
     {
-        "id": "4",
+        "id": "00000000-0000-0000-0000-000000000004",
         "name": "VIP",
         "priority": 70,
         "color": "#1A5F7A",
-        "price": 0.0,
+        "price": 0.99,
         "dailyDownloads": 20,
         "canDownload": True,
-        "canRead": False,
+        "canRead": True,
         "hasAccess": True,
         "allowThemeTemplates": True,
         "earlyAccess": False,
-        "customThemes": False,
+        "customThemes": True,
         "canUploadEpub": False,
     },
     {
-        "id": "5",
+        "id": "00000000-0000-0000-0000-000000000005",
         "name": "Patrocinador",
         "priority": 60,
         "color": "#FFFFFF",
         "price": 0.0,
         "dailyDownloads": 10,
         "canDownload": True,
-        "canRead": False,
+        "canRead": True,
         "hasAccess": True,
         "allowThemeTemplates": True,
         "earlyAccess": True,
-        "customThemes": False,
+        "customThemes": True,
         "canUploadEpub": False,
     },
     {
-        "id": "6",
-        "name": "Gratis",
+        "id": "00000000-0000-0000-0000-000000000006",
+        "name": "Patrocinador",
         "priority": 0,
         "color": "#888888",
         "price": 0.0,
-        "dailyDownloads": 2,
+        "dailyDownloads": 5,
         "canDownload": True,
-        "canRead": False,
+        "canRead": True,
         "hasAccess": True,
         "allowThemeTemplates": True,
         "earlyAccess": False,
@@ -265,40 +265,28 @@ class LevelRepository(BaseRepository[UserLevel]):
                     return
 
                 logger.info("[LevelRepository] Seeding default user levels...")
+                from uuid import UUID
+
                 for lvl in DEFAULT_LEVELS:
-                    await session.execute(
-                        text("""
-                            INSERT INTO user_levels (
-                                id, name, priority, color, price, daily_downloads,
-                                can_download, can_read, has_mini_app_access,
-                                has_library_access, can_request_books, can_upload_epub,
-                                early_access, custom_themes, allow_theme_templates, show_recommendations
-                            ) VALUES (
-                                :id, :name, :priority, :color, :price, :dailyDownloads,
-                                :canDownload, :canRead, :hasAccess,
-                                :has_library_access, :can_request_books, :canUploadEpub,
-                                :earlyAccess, :customThemes, :allowThemeTemplates, :show_recommendations
-                            )
-                        """),
-                        {
-                            "id": int(lvl["id"]),
-                            "name": lvl["name"],
-                            "priority": lvl["priority"],
-                            "color": lvl["color"],
-                            "price": lvl["price"],
-                            "dailyDownloads": lvl["dailyDownloads"],
-                            "canDownload": lvl["canDownload"],
-                            "canRead": lvl["canRead"],
-                            "hasAccess": lvl["hasAccess"],
-                            "has_library_access": lvl.get("has_library_access", True),
-                            "can_request_books": lvl.get("can_request_books", True),
-                            "canUploadEpub": lvl.get("canUploadEpub", False),
-                            "earlyAccess": lvl["earlyAccess"],
-                            "customThemes": lvl["customThemes"],
-                            "allowThemeTemplates": lvl["allowThemeTemplates"],
-                            "show_recommendations": lvl.get("show_recommendations", True),
-                        },
+                    new_lvl = UserLevel(
+                        id=UUID(lvl["id"]),
+                        name=lvl["name"],
+                        priority=lvl["priority"],
+                        color=lvl["color"],
+                        price=lvl["price"],
+                        daily_downloads=lvl["dailyDownloads"],
+                        can_download=lvl["canDownload"],
+                        can_read=lvl["canRead"],
+                        has_mini_app_access=lvl["hasAccess"],
+                        has_library_access=lvl.get("has_library_access", True),
+                        can_request_books=lvl.get("can_request_books", True),
+                        can_upload_epub=lvl.get("canUploadEpub", False),
+                        early_access=lvl["earlyAccess"],
+                        custom_themes=lvl["customThemes"],
+                        allow_theme_templates=lvl["allowThemeTemplates"],
+                        show_recommendations=lvl.get("show_recommendations", True),
                     )
+                    session.add(new_lvl)
                 await session.commit()
                 logger.info("[LevelRepository] Default levels seeded successfully.")
         except Exception as e:
