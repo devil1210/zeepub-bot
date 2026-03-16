@@ -59,14 +59,16 @@
 - [x] Estandarizar `user_repository.py` con `_get_session()` y commits condicionales.
 - [x] Estandarizar `agent_repository.py` (Previamente realizado en esta sesión).
 - [x] Fortalecer reglas en `AGENTS.md` contra `CodeGraphContext`.
+- [x] Restaurar `ArchivedSeries` y `UploadBook` en `library_models.py`.
+- [x] Restaurar `MetadataProposal` en `library_models.py` (corregido borrado accidental).
+- [x] Renombrar `PublisherServiceV4` a `PublisherService` para compatibilidad global.
 
 ### Tareas en Progreso:
 - [/] Despliegue en VPS (Preparado para despliegue limpio).
 
 ### Siguiente Paso
-- Continuar con la estandarización de repositorios restantes (Book, Series, etc.) si es necesario.
-- Verificar el despliegue limpio en VPS con las nuevas lógicas de sesión.
-- Validar el funcionamiento del bot y RAG en entorno real.
+- Verificar el despliegue limpio en VPS.
+- Continuar con la estandarización de repositorios restantes (Book, Series, etc.).
 
 ### Notas del Handover
-> El sistema ha sido saneado de errores críticos de inicio (`SyntaxError`, `ImportError`). La capa de compatibilidad en `library_models.py` asegura que los servicios legacy sigan funcionando sobre el esquema V4. Listo para un despliegue limpio en el VPS. Una vez iniciado, se recomienda monitorear con `docker compose logs -f`.
+> Se han resuelto todos los errores críticos de importación (`MetadataProposal`, `ArchivedSeries`, `UploadBook`, `PublisherService`). El bot y la API están listos para un arranque exitoso en el VPS. Se recomienda ejecutar `docker compose up -d --build` para asegurar que las nuevas dependencias y modelos se carguen correctamente.
