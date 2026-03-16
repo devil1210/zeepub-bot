@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import TimestampedBase
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .library_models import Book
@@ -32,9 +32,7 @@ class PublicationChannel(TimestampedBase):
     config: Mapped[dict | None] = mapped_column(JSONB)  # Extra configs (tokens, threads)
 
     # Relationships
-    queued_items: Mapped[list["PublicationQueue"]] = relationship(
-        back_populates="channel", cascade="all, delete-orphan"
-    )
+    queued_items: Mapped[list[PublicationQueue]] = relationship(back_populates="channel", cascade="all, delete-orphan")
 
 
 class DiscoveredChat(TimestampedBase):
@@ -71,7 +69,7 @@ class PublicationTemplate(TimestampedBase):
     extra_config: Mapped[dict | None] = mapped_column(JSONB)  # Layout preferences
 
     # Relationships
-    queued_items: Mapped[list["PublicationQueue"]] = relationship(back_populates="template")
+    queued_items: Mapped[list[PublicationQueue]] = relationship(back_populates="template")
 
 
 class PublicationQueue(TimestampedBase):
@@ -105,6 +103,6 @@ class PublicationQueue(TimestampedBase):
     payload: Mapped[dict | None] = mapped_column(JSONB)
 
     # Relationships
-    channel: Mapped["PublicationChannel"] = relationship(back_populates="queued_items")
-    template: Mapped["PublicationTemplate" | None] = relationship(back_populates="queued_items")
-    book: Mapped["Book"] = relationship("Book")
+    channel: Mapped[PublicationChannel] = relationship(back_populates="queued_items")
+    template: Mapped[PublicationTemplate | None] = relationship(back_populates="queued_items")
+    book: Mapped[Book] = relationship("Book")

@@ -8,12 +8,6 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import TimestampedBase
-from models.user_models import DownloadLog as UserDownload
-from models.rating_models import UserRating
-from models.translators_models import TranslatorsGroup
-from models.user_models import DownloadLog as UserDownload
-from models.rating_models import UserRating
-from models.translators_models import TranslatorsGroup
 
 
 class LibrarySource(TimestampedBase):
