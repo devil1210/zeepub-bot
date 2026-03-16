@@ -149,6 +149,8 @@ class Book(TimestampedBase):
 # Mapping legacy class names
 LocalBook = Book
 SeriesMetadata = Series
+from models.user_models import DownloadLog as UserDownload
+from models.rating_models import UserRating
 
 
 class MetadataProposal(TimestampedBase):
