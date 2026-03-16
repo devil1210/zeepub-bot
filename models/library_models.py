@@ -153,6 +153,20 @@ class ArchivedSeries(TimestampedBase):
     archived_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
 
 
+class ArchivedBook(TimestampedBase):
+    __tablename__ = "archived_books"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    series_hash: Mapped[str] = mapped_column(String(64), index=True)
+    book_hash: Mapped[str] = mapped_column(String(64), index=True)
+    title: Mapped[str] = mapped_column(String(512))
+    filename: Mapped[str | None] = mapped_column(String(512))
+    last_filepath: Mapped[str | None] = mapped_column(Text)
+    volume: Mapped[float | None] = mapped_column(Numeric)
+    author: Mapped[str | None] = mapped_column(String(255))
+    reason: Mapped[str | None] = mapped_column(String(100))
+    archived_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
+
+
 class UploadBook(TimestampedBase):
     __tablename__ = "upload_books"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -160,6 +174,38 @@ class UploadBook(TimestampedBase):
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, processed, failed
     metadata_json: Mapped[dict | None] = mapped_column(JSONB, default=dict)
+
+
+class DuplicateBook(TimestampedBase):
+    __tablename__ = "duplicate_books"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    book_hash: Mapped[str] = mapped_column(String(64), index=True)
+    original_filepath: Mapped[str] = mapped_column(Text)
+    duplicate_filepath: Mapped[str] = mapped_column(Text)
+    title: Mapped[str | None] = mapped_column(String(512))
+    author: Mapped[str | None] = mapped_column(String(255))
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
+
+
+class LibraryCleanupLog(TimestampedBase):
+    __tablename__ = "library_cleanup_logs"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    performed_by: Mapped[int | None] = mapped_column(BigInteger)
+    total_books_checked: Mapped[int] = mapped_column(default=0)
+    missing_books_found: Mapped[int] = mapped_column(default=0)
+    empty_series_removed: Mapped[int] = mapped_column(default=0)
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+
+
+class AILearningFeedback(TimestampedBase):
+    __tablename__ = "ai_learning_feedback"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    original_name: Mapped[str | None] = mapped_column(String(255))
+    proposed_name: Mapped[str | None] = mapped_column(String(255))
+    final_name: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str | None] = mapped_column(String(50))
+    ai_reason: Mapped[str | None] = mapped_column(Text)
 
 
 class MetadataProposal(TimestampedBase):

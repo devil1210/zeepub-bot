@@ -60,15 +60,21 @@
 - [x] Estandarizar `agent_repository.py` (Previamente realizado en esta sesión).
 - [x] Fortalecer reglas en `AGENTS.md` contra `CodeGraphContext`.
 - [x] Restaurar `ArchivedSeries` y `UploadBook` en `library_models.py`.
-- [x] Restaurar `MetadataProposal` en `library_models.py` (corregido borrado accidental).
-- [x] Renombrar `PublisherServiceV4` a `PublisherService` para compatibilidad global.
+- [x] Corrección de `ImportError` en `library_scanner.py` y `upload_repository.py`.
+- [x] Restauración de modelos faltantes: `ArchivedSeries`, `UploadBook`, `DuplicateBook`, `ArchivedBook`, `LibraryCleanupLog`, `AILearningFeedback`, `MetadataProposal`.
+- [x] Renombramiento de `PublisherServiceV4` a `PublisherService`.
+- [x] Estandarización de `UserRepository` y `AgentRepository` con patrones async y confirmación opcional.
+- [x] Verificación local: El bot inicia correctamente hasta la fase de conexión a DB.
+- [x] Instalación de dependencias faltantes (`aiofiles`).
 
-### Tareas en Progreso:
-- [/] Despliegue en VPS (Preparado para despliegue limpio).
+### Bloqueos
+- Error de conexión a Base de Datos local (PostgreSQL en localhost) - *Esperado en entorno local sin DB configurada*.
 
 ### Siguiente Paso
-- Verificar el despliegue limpio en VPS.
-- Continuar con la estandarización de repositorios restantes (Book, Series, etc.).
+1. Ejecutar `/push` para llevar los cambios al repositorio.
+2. Desplegar en el VPS y verificar que el error de importación ha desaparecido.
+3. Continuar con la estandarización de los repositorios restantes (`BookRepository`, `LibraryRepository`, etc.).
+ (Book, Series, etc.).
 
 ### Notas del Handover
 > Se han resuelto todos los errores críticos de importación (`MetadataProposal`, `ArchivedSeries`, `UploadBook`, `PublisherService`). El bot y la API están listos para un arranque exitoso en el VPS. Se recomienda ejecutar `docker compose up -d --build` para asegurar que las nuevas dependencias y modelos se carguen correctamente.

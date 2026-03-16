@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String
+from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -74,3 +74,33 @@ class DownloadLog(TimestampedBase):
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="downloads")
+
+
+class AppTheme(TimestampedBase):
+    """
+    V4 Application Themes (Presets).
+    """
+
+    __tablename__ = "app_themes"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    description: Mapped[str | None] = mapped_column(String(255))
+
+    theme_type: Mapped[str] = mapped_column(String(20), default="dark")  # dark, light
+    primary_color: Mapped[str] = mapped_column(String(20), default="#3b82f6")
+    background_color: Mapped[str | None] = mapped_column(String(20))
+    card_color: Mapped[str | None] = mapped_column(String(20))
+
+    # Glassmorphism tokens
+    glass_opacity: Mapped[float | None] = mapped_column(Float, default=0.6)
+    nav_opacity: Mapped[float | None] = mapped_column(Float, default=0.8)
+    accent_opacity: Mapped[float | None] = mapped_column(Float, default=1.0)
+    glass_blur: Mapped[int | None] = mapped_column(Integer, default=12)
+    card_glow_intensity: Mapped[float | None] = mapped_column(Float, default=0.5)
+
+    # Layout configuration
+    font_size: Mapped[int | None] = mapped_column(Integer, default=14)
+    cover_width: Mapped[int | None] = mapped_column(Integer, default=120)
+    banner_content_offset: Mapped[int | None] = mapped_column(Integer, default=0)
+    border_width: Mapped[int | None] = mapped_column(Integer, default=1)
