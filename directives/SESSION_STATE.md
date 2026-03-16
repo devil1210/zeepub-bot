@@ -72,14 +72,20 @@
     - [x] Corregir instanciación de `PublisherService` con `db_manager`.
     - [x] Implementar fallback a `pg_manager` en `BaseRepository._get_session`.
     - [x] Verificar arranque local completo (Handshake con DB y registro de handlers).
+- [x] **v4.2.0 - Estabilización Crítica de Esquema y Modelos**:
+    - [x] Corregir `AttributeError: User.telegram_id` renombrando el atributo en el modelo y manteniendo compatibilidad de columna.
+    - [x] Corregir desajuste de tipo `UUID` en `UserRating.book_id`.
+    - [x] Automatizar creación de todas las tablas importando todos los módulos de modelos en `SchemaOrchestrator`.
+    - [x] Robustecer `PublisherService` con soporte para inicialización por defecto.
+    - [x] Actualizar referencias en `StatsService` y scripts de migración.
+    - [x] Ejecutar `npx gitnexus analyze` para actualizar el grafo de conocimiento.
 
 ### Bloqueos
 - Error de conexión a Base de Datos local (PostgreSQL en localhost) - *Esperado en entorno local sin DB configurada*.
 
 ### Siguiente Paso
-1. Ejecutar `/push` para llevar los cambios al repositorio (v4.1.0).
-2. Desplegar en el VPS y verificar que el arranque es limpio.
-3. Continuar con la estandarización de los repositorios restantes (`BookRepository`, `LibraryRepository`, etc.) si es necesario.
+1. Ejecutar `/push` para llevar los cambios al repositorio (v4.2.0).
+2. Verificar el despliegue automático en el VPS.
 
 ### Notas del Handover
-> **VERSIÓN 4.1.0 RELEASED**: Se han resuelto todos los errores críticos de arranque local y de base de datos (`pgvector`, `UploadHistory`, `PublisherService`). Se implementó un fallback dinámico en `BaseRepository` para evitar errores en repositorios globales. El sistema está 100% estable para despliegue en VPS.
+> **VERSIÓN 4.2.0 RELEASED**: Estabilización total del esquema SQLAlchemy. Se han resuelto los conflictos de nombres de atributos (`telegram_id`) y tipos de datos (`UUID`). El bot es ahora resiliente ante la falta de base de datos durante el desarrollo y autogenera todas las tablas necesarias en el arranque.

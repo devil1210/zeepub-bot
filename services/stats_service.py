@@ -25,7 +25,7 @@ class StatsService:
         async with pg_manager.get_session() as session:
             try:
                 # 1. User Stats
-                user_count = (await session.execute(select(func.count(User.id)))).scalar() or 0
+                user_count = (await session.execute(select(func.count(User.telegram_id)))).scalar() or 0
 
                 # 2. Book Stats
                 book_count = (await session.execute(select(func.count(LocalBook.id)))).scalar() or 0
@@ -38,7 +38,7 @@ class StatsService:
 
                 # 5. User Distribution by Level
                 level_dist_stmt = (
-                    select(UserLevel.name, func.count(User.id))
+                    select(UserLevel.name, func.count(User.telegram_id))
                     .join(User, User.level_id == UserLevel.id)
                     .group_by(UserLevel.name)
                 )

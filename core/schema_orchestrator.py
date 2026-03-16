@@ -4,12 +4,16 @@ import logging
 from sqlalchemy import text
 
 from core.db_manager_pg import pg_manager
-from models.base import Base
-from models.library_models import (
-    LibrarySource,
-)
 
 # Import custom models so they are registered in Base.metadata
+from models import (  # noqa: F401
+    publication_models,
+    rating_models,
+    translators_models,
+    user_models,
+)
+from models.base import Base
+from models.library_models import LibrarySource
 from models.user_models import UserLevel
 
 logger = logging.getLogger(__name__)

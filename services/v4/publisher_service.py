@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
+from core.db_manager_pg import PostgresManager
 from repositories.v4.book_repository import BookRepository
 from repositories.v4.publication_repository import (
     PublicationChannelRepository,
@@ -121,7 +122,7 @@ class FacebookPublisherProvider(BasePublisherProvider):
 
 
 class PublisherService(BaseService):
-    def __init__(self, db_manager):
+    def __init__(self, db_manager: PostgresManager | None = None):
         super().__init__(db_manager)
         self.providers = {"telegram": TelegramPublisherProvider(), "facebook": FacebookPublisherProvider()}
 

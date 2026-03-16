@@ -40,7 +40,7 @@ class User(TimestampedBase):
     __tablename__ = "users"
 
     # Telegram ID is the PK (BigInteger to support Telegram IDs)
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+    telegram_id: Mapped[int] = mapped_column("id", BigInteger, primary_key=True, autoincrement=False)
 
     # Profile
     username: Mapped[str | None] = mapped_column(String(255))

@@ -101,7 +101,7 @@ async def migrate(dry_run: bool = False, force: bool = False) -> int:
                 telegram_id: int = row["telegram_id"]
                 try:
                     # Verificar si ya existe en V4
-                    existing = await session.execute(select(User).where(User.id == telegram_id))
+                    existing = await session.execute(select(User).where(User.telegram_id == telegram_id))
                     existing = existing.scalars().first()
 
                     if existing and not force:
