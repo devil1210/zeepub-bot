@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from pgvector.sqlalchemy import Vector
@@ -24,7 +25,7 @@ class LibrarySource(TimestampedBase):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     path: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
-    last_scanned: Mapped[any] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_scanned: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     series: Mapped[list["Series"]] = relationship(back_populates="source", cascade="all, delete-orphan")
 
@@ -103,7 +104,7 @@ class Book(TimestampedBase):
     metadata_json: Mapped[dict | None] = mapped_column(JSONB, default=dict)
 
     # Status
-    detected_at: Mapped[any] = mapped_column(DateTime(timezone=True), server_default="now()")
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
     is_published: Mapped[bool] = mapped_column(default=False)
 
     # Relationships

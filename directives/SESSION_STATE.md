@@ -50,7 +50,7 @@
 - [x] Corregir error de imagen `pgvector` en `docker-compose.yml`
 - [x] Implementar capa de compatibilidad en `models/library_models.py` para V3.
 - [x] Corregir script de migración `scripts/migrate_users_v3_v4.py` (id vs telegram_id).
-- [/] Ejecutar `/push` para desplegar cambios al VPS.
+- [x] Ejecutar `/push` para desplegar cambios al VPS.
 - [/] Resolver `ImportError` de `LocalBook` y `SeriesMetadata`
     - [ ] Añadir alias en `models/library_models.py`
     - [ ] Mapear campos legacy (`filepath`, `volume`, etc.) via properties
