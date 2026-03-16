@@ -28,9 +28,11 @@ class BaseRepository(Generic[T]):
         self.db_manager = db_manager
 
     @property
-    def session(self) -> AsyncSession | None:
+    def session(self) -> AsyncSession:
         """Propiedad para compatibilidad con subclases que acceden directamente a self.session."""
-        return self.injected_session
+        if self.injected_session:
+            return self.injected_session
+        raise RuntimeError("Session no inyectada en el repositorio.")
 
     @contextlib.asynccontextmanager
     async def _get_session(self) -> AsyncIterator[AsyncSession]:

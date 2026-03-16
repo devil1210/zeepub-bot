@@ -71,42 +71,10 @@ class SchemaOrchestrator:
                 )
                 await SchemaOrchestrator._check_and_add_column("user_levels", "ui_primary_color", "VARCHAR(20)")
                 await SchemaOrchestrator._check_and_add_column("user_levels", "ui_nav_opacity", "INTEGER")
-                await SchemaOrchestrator._check_and_add_column("download_logs", "series_hash", "VARCHAR(64)")
+                await SchemaOrchestrator._check_and_add_column("user_levels", "border_radius", "INTEGER DEFAULT 16")
+                await SchemaOrchestrator._check_and_add_column("user_levels", "border_width", "INTEGER DEFAULT 1")
                 await SchemaOrchestrator._check_and_add_column(
                     "user_levels", "banner_content_offset", "INTEGER DEFAULT 0"
-                )
-                await SchemaOrchestrator._check_and_add_column("user_levels", "force_settings", "BOOLEAN DEFAULT FALSE")
-                await SchemaOrchestrator._check_and_add_column("user_levels", "can_read", "BOOLEAN DEFAULT TRUE")
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "has_mini_app_access", "BOOLEAN DEFAULT TRUE"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "has_library_access", "BOOLEAN DEFAULT TRUE"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "can_request_books", "BOOLEAN DEFAULT TRUE"
-                )
-                await SchemaOrchestrator._check_and_add_column("user_levels", "early_access", "BOOLEAN DEFAULT FALSE")
-                await SchemaOrchestrator._check_and_add_column("user_levels", "custom_themes", "BOOLEAN DEFAULT FALSE")
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "show_recommendations", "BOOLEAN DEFAULT TRUE"
-                )
-                await SchemaOrchestrator._check_and_add_column("user_levels", "price", "DOUBLE PRECISION DEFAULT 0.0")
-
-                # Auto-Migration for UserUISettings
-                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "font_size", "INTEGER")
-                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "nav_opacity", "INTEGER")
-                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "accent_opacity", "INTEGER")
-                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "show_recommendations", "BOOLEAN")
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_ui_settings", "title_language", "VARCHAR(20) DEFAULT 'romaji'"
-                )
-
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "allow_theme_templates", "BOOLEAN DEFAULT FALSE"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "can_upload_epub", "BOOLEAN DEFAULT FALSE"
                 )
 
                 # Auto-Migration for Users (Ensure created_at and email exists)
@@ -132,14 +100,40 @@ class SchemaOrchestrator:
                 )
                 await SchemaOrchestrator._check_and_add_column("users", "created_at", "TIMESTAMP DEFAULT NOW()")
 
-                # Auto-Migration for Books
-                await SchemaOrchestrator._check_and_add_column("books", "series_hash", "VARCHAR(255)")
-                await SchemaOrchestrator._check_and_add_column("books", "series_spanish", "VARCHAR(255)")
-                await SchemaOrchestrator._check_and_add_column("books", "series_english", "VARCHAR(255)")
-                await SchemaOrchestrator._check_and_add_column("books", "layout_by", "VARCHAR(255)")
+                # Auto-Migration for Books (Full Scanner Support)
+                await SchemaOrchestrator._check_and_add_column("books", "series_id", "UUID")
+                await SchemaOrchestrator._check_and_add_column("books", "filename", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "file_modified_at", "NUMERIC")
+                await SchemaOrchestrator._check_and_add_column("books", "file_created_at", "TIMESTAMP WITH TIME ZONE")
+                await SchemaOrchestrator._check_and_add_column("books", "language", "VARCHAR(10) DEFAULT 'es'")
                 await SchemaOrchestrator._check_and_add_column("books", "translator", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "layout_by", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "author", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "english_title", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "jap_title", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "romaji_title", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "book_type", "VARCHAR(50)")
+                await SchemaOrchestrator._check_and_add_column("books", "edition", "VARCHAR(100)")
+                await SchemaOrchestrator._check_and_add_column("books", "publisher", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "extracted_data", "JSONB DEFAULT '{}'::jsonb")
+                await SchemaOrchestrator._check_and_add_column("books", "hash_md5", "VARCHAR(64)")
                 await SchemaOrchestrator._check_and_add_column("books", "isbn", "VARCHAR(50)")
-                await SchemaOrchestrator._check_and_add_column("books", "source_id", "BIGINT")
+                await SchemaOrchestrator._check_and_add_column("books", "asin", "VARCHAR(50)")
+                await SchemaOrchestrator._check_and_add_column("books", "uri_id", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "published_at", "VARCHAR(100)")
+                await SchemaOrchestrator._check_and_add_column("books", "modified_at_opf", "VARCHAR(100)")
+                await SchemaOrchestrator._check_and_add_column("books", "epub_version", "VARCHAR(20)")
+                await SchemaOrchestrator._check_and_add_column("books", "word_count", "INTEGER")
+                await SchemaOrchestrator._check_and_add_column("books", "page_count", "INTEGER")
+                await SchemaOrchestrator._check_and_add_column("books", "reading_time", "INTEGER")
+                await SchemaOrchestrator._check_and_add_column("books", "is_uncensored", "BOOLEAN DEFAULT FALSE")
+                await SchemaOrchestrator._check_and_add_column("books", "color_mode", "VARCHAR(20) DEFAULT 'bw'")
+                await SchemaOrchestrator._check_and_add_column("books", "series_hash", "VARCHAR(64)")
+                await SchemaOrchestrator._check_and_add_column("books", "short_link", "VARCHAR(100)")
+                await SchemaOrchestrator._check_and_add_column("books", "cover_original", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "cover_high", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "cover_medium", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "cover_low", "VARCHAR(512)")
 
                 # Auto-Migration for PublicationChannels
                 await SchemaOrchestrator._check_and_add_column(

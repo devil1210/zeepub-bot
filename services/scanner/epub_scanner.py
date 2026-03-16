@@ -344,7 +344,7 @@ class EpubScanner:
             # Vinculación
             if series_provider:
                 series = await series_provider(session, book, identity=identity)
-                book.series_metadata_id = series.id
+                book.series_id = series.id
 
             if translator_provider:
                 await translator_provider(session, book)

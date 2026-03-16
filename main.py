@@ -117,21 +117,18 @@ async def fix_schema_if_needed():
                 text("CREATE INDEX IF NOT EXISTS idx_user_levels_default_theme_id ON user_levels(default_theme_id);")
             )
 
-            # Relación de series optimizada (Integer) - Debe ir después de crear series_metadata
+            # Relación de series optimizada (Integer)
             await conn.execute(
-                text("""
-                ALTER TABLE local_books
-                ADD COLUMN IF NOT EXISTS series_metadata_id INTEGER REFERENCES series_metadata(id);
-            """)
+                text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS series_id INTEGER REFERENCES series(id);")
             )
-            await conn.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS idx_local_books_series_metadata_id ON local_books(series_metadata_id);"
-                )
-            )
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS idx_local_books_series_id ON local_books(series_id);"))
 
             # --- COLUMNAS DE METADATA EXTENDIDA (MIGRACIÓN 2025) ---
-            # local_books
+            # Tabla local_books v4
+            await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS series_hash VARCHAR(64);"))
+            await conn.execute(
+                text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS summary_processed BOOLEAN DEFAULT FALSE;")
+            )
             await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS author_jap VARCHAR(255);"))
             await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS illustrator_jap VARCHAR(255);"))
             await conn.execute(text("ALTER TABLE local_books ADD COLUMN IF NOT EXISTS spanish_title VARCHAR(512);"))

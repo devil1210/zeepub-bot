@@ -164,7 +164,7 @@ def check_migrations():
                 add_column_if_missing("local_books", "series_english", "VARCHAR(255)")
                 add_column_if_missing("local_books", "is_uncensored", "INTEGER DEFAULT 0")
                 add_column_if_missing("local_books", "color_mode", "VARCHAR(50)")
-                add_column_if_missing("local_books", "series_metadata_id", "INTEGER")
+                add_column_if_missing("local_books", "series_id", "INTEGER")
                 add_column_if_missing("local_books", "cover_original", "VARCHAR(1024)")
                 add_column_if_missing("local_books", "cover_high", "VARCHAR(1024)")
                 add_column_if_missing("local_books", "cover_medium", "VARCHAR(1024)")

@@ -32,7 +32,7 @@ async def debug_linkage():
 
         print(f"--- Libros ({len(books)}) ---")
         for b in books:
-            print(f"ID: {b.id}, Series: {b.series}, Hash: {b.series_hash}, MetadataID: {b.series_metadata_id}")
+            print(f"ID: {b.id}, Series: {b.series}, Hash: {b.series_hash}, SeriesID: {b.series_id}")
 
         # Check SeriesMetadata
         stmt2 = select(SeriesMetadata).limit(5)

@@ -112,7 +112,7 @@ class LibraryMaintenanceService:
             book_types = (
                 session.query(SeriesMetadata.book_type, func.count(LocalBook.id))
                 .select_from(LocalBook)
-                .join(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
+                .outerjoin(SeriesMetadata, LocalBook.series_id == SeriesMetadata.id)
                 .group_by(SeriesMetadata.book_type)
                 .all()
             )

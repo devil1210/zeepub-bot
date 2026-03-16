@@ -32,14 +32,14 @@ async def check_stats():
         total = res_total.scalar()
 
         # Linked books
-        stmt_linked = select(func.count(LocalBook.id)).where(LocalBook.series_metadata_id.is_not(None))
+        stmt_linked = select(func.count(LocalBook.id)).where(LocalBook.series_id.is_not(None))
         res_linked = await session.execute(stmt_linked)
         linked = res_linked.scalar()
 
         # Books with series_hash but no metadata_id
         stmt_unlinked = (
             select(func.count(LocalBook.id))
-            .where(LocalBook.series_metadata_id.is_(None))
+            .where(LocalBook.series_id.is_(None))
             .where(LocalBook.series_hash.is_not(None))
         )
         res_unlinked = await session.execute(stmt_unlinked)

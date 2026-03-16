@@ -59,7 +59,7 @@ async def run_fix():
             # 1. Stats before
             stmt_unlinked = (
                 select(func.count(LocalBook.id))
-                .where(LocalBook.series_metadata_id.is_(None))
+                .where(LocalBook.series_id.is_(None))
                 .where(LocalBook.series_hash.is_not(None))
             )
             res_unlinked = await session.execute(stmt_unlinked)
@@ -74,7 +74,7 @@ async def run_fix():
             # 2. Perform fix
             stmt_hashes = (
                 select(LocalBook.series_hash)
-                .where(LocalBook.series_metadata_id.is_(None))
+                .where(LocalBook.series_id.is_(None))
                 .where(LocalBook.series_hash.is_not(None))
                 .distinct()
             )
@@ -93,8 +93,8 @@ async def run_fix():
                     update_stmt = (
                         update(LocalBook)
                         .where(LocalBook.series_hash == s_hash)
-                        .where(LocalBook.series_metadata_id.is_(None))
-                        .values(series_metadata_id=series_id)
+                        .where(LocalBook.series_id.is_(None))
+                        .values(series_id=series_id)
                     )
                     upd_res = await session.execute(update_stmt)
                     updated_books += upd_res.rowcount

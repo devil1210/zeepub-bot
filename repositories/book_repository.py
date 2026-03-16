@@ -139,7 +139,7 @@ class BookRepository(BaseRepository[Book]):
 
                 stmt = (
                     select(Book, dl_subquery.label("download_count"))
-                    .join(Series, Book.series_metadata_id == Series.id)
+                    .join(Series, Book.series_id == Series.id)
                     .options(selectinload(Book.series))
                     .where(or_(*filters))
                 )

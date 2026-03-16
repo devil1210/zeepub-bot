@@ -348,7 +348,7 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
             books = session.execute(stmt).scalars().all()
 
             for book in books:
-                book.series_metadata_id = series.id if series else None
+                book.series_id = series.id if series else None
                 # Si el hash cambió, ya lo actualizamos arriba vía SQL masivo por eficiencia,
                 # pero nos aseguramos de que el objeto en memoria esté sincronizado si se usa después.
                 book.series_hash = effective_hash

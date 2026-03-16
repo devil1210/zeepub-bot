@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Numeric, String, Text, select
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -78,7 +78,40 @@ class Book(TimestampedBase):
     title: Mapped[str | None] = mapped_column(String(512))
     metadata_json: Mapped[dict | None] = mapped_column(JSONB, default=dict)
     detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
-    is_published: Mapped[bool] = mapped_column(default=False)
+    # V4 Library Extension
+    filename: Mapped[str | None] = mapped_column(String(512))
+    file_modified_at: Mapped[float | None] = mapped_column(Numeric)
+    file_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    language: Mapped[str | None] = mapped_column(String(10), default="es")
+    translator: Mapped[str | None] = mapped_column(String(255))
+    layout_by: Mapped[str | None] = mapped_column(String(255))
+    author_col: Mapped[str | None] = mapped_column("author", String(512))
+    english_title: Mapped[str | None] = mapped_column(String(512))
+    jap_title: Mapped[str | None] = mapped_column(String(512))
+    romaji_title: Mapped[str | None] = mapped_column(String(512))
+    book_type_col: Mapped[str | None] = mapped_column("book_type", String(50))
+    edition: Mapped[str | None] = mapped_column(String(100))
+    publisher: Mapped[str | None] = mapped_column(String(255))
+    extracted_data: Mapped[dict | None] = mapped_column(JSONB, default=dict)
+    hash_md5: Mapped[str | None] = mapped_column(String(64))
+    isbn: Mapped[str | None] = mapped_column(String(50))
+    asin: Mapped[str | None] = mapped_column(String(50))
+    uri_id: Mapped[str | None] = mapped_column(String(255))
+    published_at: Mapped[str | None] = mapped_column(String(100))
+    modified_at_opf: Mapped[str | None] = mapped_column(String(100))
+    epub_version: Mapped[str | None] = mapped_column(String(20))
+    word_count: Mapped[int | None] = mapped_column(Integer)
+    page_count: Mapped[int | None] = mapped_column(Integer)
+    reading_time: Mapped[int | None] = mapped_column(Integer)
+    is_uncensored: Mapped[bool] = mapped_column(default=False)
+    color_mode: Mapped[str | None] = mapped_column(String(20), default="bw")
+    series_hash_col: Mapped[str | None] = mapped_column("series_hash", String(64))
+    short_link: Mapped[str | None] = mapped_column(String(100))
+    cover_original: Mapped[str | None] = mapped_column(String(512))
+    cover_high: Mapped[str | None] = mapped_column(String(512))
+    cover_medium: Mapped[str | None] = mapped_column(String(512))
+    cover_low: Mapped[str | None] = mapped_column(String(512))
+
     series: Mapped["Series"] = relationship(back_populates="books")
 
     @hybrid_property
@@ -95,7 +128,7 @@ class Book(TimestampedBase):
 
     @volume.setter
     def volume(self, value: float):
-        self.volume_number = value
+        self.volume_number = float(value) if value is not None else 0.0
 
     @hybrid_property
     def book_hash(self) -> str:
@@ -107,35 +140,31 @@ class Book(TimestampedBase):
 
     @hybrid_property
     def series_hash(self) -> str | None:
-        return self.series.hash if self.series else None
+        return self.series_hash_col or (self.series.hash if self.series else None)
 
-    @series_hash.expression
-    def series_hash(cls):
-        return select(Series.hash).where(Series.id == cls.series_id).label("series_hash")
+    @series_hash.setter
+    def series_hash(self, value: str):
+        self.series_hash_col = value
+
+    @hybrid_property
+    def author(self) -> str:
+        return self.author_col or (self.series.author if self.series else "Unknown")
+
+    @author.setter
+    def author(self, value: str):
+        self.author_col = value
+
+    @hybrid_property
+    def book_type(self) -> str:
+        return self.book_type_col or (self.series.book_type if self.series else "Light Novel")
+
+    @book_type.setter
+    def book_type(self, value: str):
+        self.book_type_col = value
 
     @hybrid_property
     def source_id(self) -> uuid.UUID | None:
         return self.series.source_id if self.series else None
-
-    @source_id.expression
-    def source_id(cls):
-        return select(Series.source_id).where(Series.id == cls.series_id).label("source_id")
-
-    @hybrid_property
-    def author(self) -> str:
-        return self.series.author if self.series else "Unknown"
-
-    @author.expression
-    def author(cls):
-        return select(Series.author).where(Series.id == cls.series_id).label("author")
-
-    @hybrid_property
-    def book_type(self) -> str:
-        return self.series.book_type if self.series else "Light Novel"
-
-    @book_type.expression
-    def book_type(cls):
-        return select(Series.book_type).where(Series.id == cls.series_id).label("book_type")
 
 
 # Mapping legacy class names

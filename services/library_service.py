@@ -310,8 +310,8 @@ class LibraryService:
                 stmt = (
                     select(LocalBook)
                     .options(selectinload(LocalBook.series))
-                    .outerjoin(SeriesMetadata, LocalBook.series_metadata_id == SeriesMetadata.id)
-                    .where(LocalBook.series_metadata_id.is_(None))
+                    .outerjoin(SeriesMetadata, LocalBook.series_id == SeriesMetadata.id)
+                    .where(LocalBook.series_id.is_(None))
                     .order_by(LocalBook.title)
                 )
 
@@ -382,7 +382,7 @@ class LibraryService:
                 stmt = (
                     select(LocalBook)
                     .options(selectinload(LocalBook.series))
-                    .where(LocalBook.series_metadata_id.is_(None))
+                    .where(LocalBook.series_id.is_(None))
                     .order_by(LocalBook.indexed_at.desc())
                     .limit(limit)
                 )
