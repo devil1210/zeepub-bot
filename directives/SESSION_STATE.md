@@ -87,11 +87,17 @@
     - [x] Sincronizar nombres de parámetros en constructor de `ArchivedSeries` en `library_scanner.py`.
     - [x] Auditoría de integridad de modelos finalizada.
 
+- [x] **v4.2.1-fix - Production Stability Patch**:
+    - [x] Implementar `@property session` en `BaseRepository` para compatibilidad universal de repositorios.
+    - [x] Sincronizar esquema de `users` en Supabase añadiendo 13 columnas faltantes (`name`, `nickname`, `roles`, etc.).
+    - [x] Verificar acceso a sesión inyectada en `PublicationQueueRepository`.
+    - [x] Resolver `UndefinedColumnError` en consultas de usuarios.
+
 ### Bloqueos
-- Ninguno detectado. El sistema está listo para despliegue v4.2.1.
+- Ninguno detectado. El sistema es estable y operativo.
 
 ### Siguiente Paso
-1. Ejecutar `/push` para desplegar v4.2.1 (Kaguya aprueba este despliegue).
+1. Ejecutar `/push` para persistir los cambios de estabilidad en el repositorio.
 
 ### Notas del Handover
-> **VERSIÓN 4.2.1 RELEASED**: Parche de emergencia para la estabilidad del scanner y seeder. Se han eliminado los `AttributeError` y `DataError` que bloqueaban la inicialización de datos base. El sistema de archivos archivados ahora es 100% consistente con los modelos de producción.
+> **VERSIÓN 4.2.1-fix ESTABLE**: Se han resuelto los errores de atributo de sesión que bloqueaban el procesamiento de colas y las discrepancias de esquema en la tabla de usuarios. El sistema ahora soporta plenamente el modelo de datos V4 en producción.

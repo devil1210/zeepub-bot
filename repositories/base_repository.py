@@ -27,6 +27,11 @@ class BaseRepository(Generic[T]):
         self.injected_session = session
         self.db_manager = db_manager
 
+    @property
+    def session(self) -> AsyncSession | None:
+        """Propiedad para compatibilidad con subclases que acceden directamente a self.session."""
+        return self.injected_session
+
     @contextlib.asynccontextmanager
     async def _get_session(self) -> AsyncIterator[AsyncSession]:
         """
@@ -46,7 +51,7 @@ class BaseRepository(Generic[T]):
                 async with pg_manager.get_session() as session:
                     yield session
             except ImportError:
-                raise RuntimeError(f"Repositorio {self.__class__.__name__} sin sesión ni db_manager.")
+                raise RuntimeError(f"Repositorio {self.__class__.__name__} sin sesión ni db_manager.") from None
 
     async def get_by_id(self, id_val: Any) -> T | None:
         """Obtiene una entidad por su ID primario."""
