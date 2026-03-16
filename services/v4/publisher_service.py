@@ -68,7 +68,7 @@ DEFAULT_TEMPLATES = {
         "🔖 <i>{title}</i>\n\n"
         "{description}\n\n"
         "📂 <b>Volumen:</b> {volume}\n"
-        "✍️ <b>Hashtag:</b> #{slug}\n\n"
+        "✍️ #{slug}\n\n"
         "#ZeePubBot #V4"
     ),
     "facebook": ("📚 {series_name} - {title}\n\n{description}\n\nDescarga disponible en ZeePub Bot.\n#{slug} #ZeePub"),
