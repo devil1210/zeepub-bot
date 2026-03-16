@@ -99,10 +99,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   ];
 
   return (
-    <div className="max-w-[1800px] mx-auto px-4 md:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-8">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div className="max-w-[1800px] mx-auto px-4 md:px-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 relative">
+      {/* Dynamic Background Glow */}
+      <div className="fixed top-0 left-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none -z-10 animate-pulse-slow"></div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* LEFT COLUMN */}
-        <div className="lg:col-span-8 space-y-8">
+        <div className="lg:col-span-8 space-y-12">
           <DashboardHero
             userName={userName}
             customStatus={extendedInfo?.customStatus}
@@ -135,7 +138,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
 
         {/* RIGHT COLUMN */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4 space-y-8">
           <StatsWidget
             userLevel={userLevel}
             role={status?.user?.role || "Free Member"}
@@ -149,7 +152,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             settings={settings}
           />
 
-          <ActivityFeed activities={recentActivities} />
+          <ActivityFeed
+            activities={recentActivities}
+            settings={settings}
+          />
 
           <QuoteWidget
             quote="Un lector vive mil vidas antes de morir. Aquel que nunca lee vive solo una."

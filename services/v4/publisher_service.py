@@ -1,138 +1,179 @@
 """
 services/v4/publisher_service.py
 ----------------------------------
-PublisherService: orquesta el flujo completo de publicación de EPUBs.
+PublisherServiceV4: Orquestador central de publicaciones ZeePub.
 
-Responsabilidades:
-  1. Encolar un libro para publicación en uno o varios canales
-  2. Procesar la cola pendiente (llamado por un scheduler/tarea en background)
-  3. Renderizar el template con datos reales del libro
-  4. Despachar el mensaje al canal Telegram correspondiente
-  5. Actualizar el estado del item de la cola (sent / failed)
-
-Diseño deliberado:
-  - El `bot` (Application de PTB) se recibe como parámetro en los métodos
-    de despacho — el servicio NO lo almacena para evitar acoplamiento global.
-  - Los errores son capturados por item, no colapsan toda la cola.
-  - El renderizado de templates usa str.format_map() con un dict de contexto
-    construido dinámicamente desde el modelo de libro.
+V4 Architecture:
+- UUID based entities.
+- Full async compliance.
+- Repository pattern (V4).
+- Provider-based announcement system.
 """
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
-from repositories.book_repository import BookRepository
-from repositories.publication_repository import (
+from repositories.v4.book_repository import BookRepository
+from repositories.v4.publication_repository import (
     PublicationChannelRepository,
     PublicationQueueRepository,
 )
-from repositories.series_repository import SeriesRepository
+from repositories.v4.series_repository import SeriesRepository
 
 from .base_service import BaseService
 
 if TYPE_CHECKING:
     from telegram.ext import Application
 
+    from models.library_models import Book, Series
+    from models.publication_models import PublicationQueue
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DTOs
-# ─────────────────────────────────────────────────────────────────────────────
+# -----------------------------------------------------------------------------
+# DTOs & Exceptions
+# -----------------------------------------------------------------------------
 
 
 @dataclass
 class EnqueueResult:
-    """Resultado de encolar un libro para publicar."""
-
     success: bool
-    queue_ids: list[int] = field(default_factory=list)
+    queue_ids: list[uuid.UUID] = field(default_factory=list)
     reason: str | None = None
 
 
 @dataclass
 class PublishResult:
-    """Resultado del procesamiento de un item de la cola."""
-
-    queue_id: int
+    queue_id: uuid.UUID
     success: bool
     channel_name: str = ""
     error: str | None = None
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Servicio
-# ─────────────────────────────────────────────────────────────────────────────
+class PublisherError(Exception):
+    """Base error for publishing operations."""
 
-# Template por defecto para Telegram si no hay uno configurado en BD
-_DEFAULT_TELEGRAM_TEMPLATE = (
-    "📚 <b>{series_name}</b>\n"
-    "🔖 <i>{title}</i>\n\n"
-    "{description}\n\n"
-    "📂 <b>Tipo:</b> {book_type}\n"
-    "✍️ <b>Autor:</b> {author}\n"
-    "📖 <b>Volumen:</b> {volume}\n\n"
-    "#ZeePub #{slug}"
-)
+    pass
 
 
-class PublisherService(BaseService):
-    """
-    Orquesta el flujo completo de publicación: encolar → procesar → despachar.
-    """
+# -----------------------------------------------------------------------------
+# Default Templates
+# -----------------------------------------------------------------------------
 
-    # ------------------------------------------------------------------ #
-    #  Encolar                                                             #
-    # ------------------------------------------------------------------ #
+DEFAULT_TEMPLATES = {
+    "telegram": (
+        "📚 <b>{series_name}</b>\n"
+        "🔖 <i>{title}</i>\n\n"
+        "{description}\n\n"
+        "📂 <b>Volumen:</b> {volume}\n"
+        "✍️ <b>Hashtag:</b> #{slug}\n\n"
+        "#ZeePubBot #V4"
+    ),
+    "facebook": (
+        "📚 {series_name} - {title}\n\n" "{description}\n\n" "Descarga disponible en ZeePub Bot.\n" "#{slug} #ZeePub"
+    ),
+}
+
+# -----------------------------------------------------------------------------
+# Providers
+# -----------------------------------------------------------------------------
+
+
+class BasePublisherProvider:
+    """Interface for publishing providers."""
+
+    async def announce_book(self, target_id: str, text: str, payload: dict, **kwargs) -> bool:
+        raise NotImplementedError
+
+
+class TelegramPublisherProvider(BasePublisherProvider):
+    async def announce_book(self, target_id: str, text: str, payload: dict, **kwargs) -> bool:
+        bot_app: Application = kwargs.get("bot_app")
+        if not bot_app:
+            return False
+
+        cover_url = payload.get("cover_url")
+        try:
+            if cover_url:
+                await bot_app.bot.send_photo(chat_id=target_id, photo=cover_url, caption=text, parse_mode="HTML")
+            else:
+                await bot_app.bot.send_message(chat_id=target_id, text=text, parse_mode="HTML")
+            return True
+        except Exception:
+            # Fallback to text if photo fails
+            try:
+                await bot_app.bot.send_message(chat_id=target_id, text=text, parse_mode="HTML")
+                return True
+            except Exception:
+                return False
+
+
+class FacebookPublisherProvider(BasePublisherProvider):
+    async def announce_book(self, target_id: str, text: str, payload: dict, **kwargs) -> bool:
+        # Mocking FB for now as per V4 current state
+        print(f"[MOCK FB] Posted to {target_id}: {text[:50]}...")
+        return True
+
+
+# -----------------------------------------------------------------------------
+# Main Service
+# -----------------------------------------------------------------------------
+
+
+class PublisherServiceV4(BaseService):
+    def __init__(self, db_manager):
+        super().__init__(db_manager)
+        self.providers = {"telegram": TelegramPublisherProvider(), "facebook": FacebookPublisherProvider()}
 
     async def enqueue_book(
         self,
-        book_hash: str,
-        channel_ids: list[int] | None = None,
+        book_id: uuid.UUID,
+        channel_ids: list[uuid.UUID] | None = None,
         scheduled_for: datetime | None = None,
-        template_id: int | None = None,
+        template_id: uuid.UUID | None = None,
     ) -> EnqueueResult:
-        """
-        Añade un libro a la cola de publicación para uno o más canales.
-        Si channel_ids es None, usa todos los canales activos.
-        Si scheduled_for es None, programa para ahora + 30 segundos.
-        """
+        """Enqueues a book for publication in one or more channels."""
         from models.publication_models import PublicationQueue
 
         scheduled_for = scheduled_for or (datetime.now(UTC) + timedelta(seconds=30))
 
         async with self.db.get_session() as session:
-            # Obtener libro + serie para el snapshot del payload
             book_repo = BookRepository(session)
-            book = await book_repo.get_by_hash(book_hash)
+            book = await book_repo.get_by_id(book_id)
             if not book:
                 return EnqueueResult(success=False, reason="book_not_found")
 
+            # Load series for payload building
             series_repo = SeriesRepository(session)
-            series = None
-            if book.series_id:
-                series = await series_repo.get_by_id(book.series_id)
+            series = await series_repo.get_by_id(book.series_id)
+            if not series:
+                return EnqueueResult(success=False, reason="series_not_found")
 
             payload = self._build_payload(book, series)
 
-            # Resolver canales
+            # Resolve channels
             channel_repo = PublicationChannelRepository(session)
             if channel_ids:
-                channels = [await channel_repo.get_by_id(cid) for cid in channel_ids]
-                channels = [c for c in channels if c and c.is_active]
+                channels = []
+                for cid in channel_ids:
+                    c = await channel_repo.get_by_id(cid)
+                    if c and c.is_active:
+                        channels.append(c)
             else:
-                channels = list(await channel_repo.get_channels(active_only=True))
+                channels = await channel_repo.get_active_channels()
 
             if not channels:
                 return EnqueueResult(success=False, reason="no_active_channels")
 
             queue_repo = PublicationQueueRepository(session)
-            queue_ids: list[int] = []
+            queue_ids = []
 
             for channel in channels:
                 item = PublicationQueue(
-                    book_hash=book_hash,
+                    book_id=book_id,
+                    book_hash=book.hash,
                     channel_id=channel.id,
                     template_id=template_id,
                     scheduled_for=scheduled_for,
@@ -141,164 +182,93 @@ class PublisherService(BaseService):
                 )
                 created = await queue_repo.create(item)
                 queue_ids.append(created.id)
-                self.logger.info(
-                    f"[ENQUEUE] book={book_hash} → canal={channel.name} scheduled={scheduled_for.isoformat()}"
-                )
+                self.logger.info(f"[ENQUEUE V4] book={book.hash} -> channel={channel.name}")
 
+            await session.commit()
             return EnqueueResult(success=True, queue_ids=queue_ids)
 
-    # ------------------------------------------------------------------ #
-    #  Procesar la cola                                                    #
-    # ------------------------------------------------------------------ #
-
-    async def process_pending_queue(self, bot_app: Application) -> list[PublishResult]:
-        """
-        Procesa todos los items pendientes cuyo scheduled_for <= ahora.
-        Devuelve una lista de PublishResult.
-        Llamar desde un scheduler (APScheduler / PTB JobQueue).
-        """
-        results: list[PublishResult] = []
-
+    async def process_queue(self, **kwargs) -> list[PublishResult]:
+        """Processes pending queue items."""
+        results = []
         async with self.db.get_session() as session:
             queue_repo = PublicationQueueRepository(session)
-            pending = await queue_repo.get_pending_queue(limit=50, lookahead_seconds=5)
+            pending = await queue_repo.get_pending_queue(limit=20)
 
             for item in pending:
-                result = await self._process_item(item, bot_app, queue_repo)
+                result = await self._process_item(item, queue_repo, **kwargs)
+                await queue_repo.update(item)  # Ensure item status changes are persisted
                 results.append(result)
+
+            await session.commit()
 
         return results
 
-    # ------------------------------------------------------------------ #
-    #  Despacho individual                                                 #
-    # ------------------------------------------------------------------ #
+    async def _process_item(self, item: PublicationQueue, repo: PublicationQueueRepository, **kwargs) -> PublishResult:
+        item.status = "publishing"
+        await repo.session.flush()
 
-    async def _process_item(
-        self,
-        item_obj,
-        bot_app: Application,
-        queue_repo: PublicationQueueRepository,
-    ) -> PublishResult:
-        """Procesa un único item de la cola."""
-        channel = item_obj.channel
-        channel_name = channel.name if channel else str(item_obj.channel_id)
+        channel = item.channel
+        if not channel:
+            item.status = "failed"
+            item.error_message = "Channel details missing"
+            return PublishResult(queue_id=item.id, success=False, error=item.error_message)
 
-        # Marcar como "publishing" para evitar doble proceso
-        item_obj.status = "publishing"
-        await queue_repo.session.flush()
+        platform = channel.platform.lower()
+        provider = self.providers.get(platform)
+
+        if not provider:
+            item.status = "failed"
+            item.error_message = f"Unsupported platform: {platform}"
+            return PublishResult(queue_id=item.id, success=False, error=item.error_message)
 
         try:
-            text = self._render_template(item_obj)
-            await self._dispatch_telegram(bot_app, channel.target_id, text, item_obj.payload)
+            text = self._render_template(item)
+            success = await provider.announce_book(channel.target_id, text, item.payload, **kwargs)
 
-            item_obj.status = "sent"
-            item_obj.published_at = datetime.now(UTC)
-            self.logger.info(f"[PUB OK] queue_id={item_obj.id} canal={channel_name}")
-            return PublishResult(queue_id=item_obj.id, success=True, channel_name=channel_name)
+            if success:
+                item.status = "sent"
+                item.published_at = datetime.now(UTC)
+                self.logger.info(f"[PUB V4 OK] queue_id={item.id} -> {channel.name}")
+            else:
+                item.status = "failed"
+                item.error_message = f"Provider announcement failed for {platform}"
+
+            return PublishResult(queue_id=item.id, success=success, channel_name=channel.name)
 
         except Exception as e:
-            err = str(e)
-            item_obj.status = "failed"
-            item_obj.error_message = err[:500]
-            self.logger.error(f"[PUB FAIL] queue_id={item_obj.id} error={err}")
-            return PublishResult(queue_id=item_obj.id, success=False, channel_name=channel_name, error=err)
+            item.status = "failed"
+            item.error_message = str(e)
+            self.logger.error(f"[PUB V4 ERROR] queue_id={item.id}: {e}")
+            return PublishResult(queue_id=item.id, success=False, error=str(e))
 
-    # ------------------------------------------------------------------ #
-    #  Telegram dispatch                                                   #
-    # ------------------------------------------------------------------ #
+    def _render_template(self, item: PublicationQueue) -> str:
+        payload = item.payload or {}
+        platform = item.channel.platform.lower()
 
-    async def _dispatch_telegram(
-        self,
-        bot_app: Application,
-        target_id: str,
-        text: str,
-        payload: dict | None,
-    ) -> None:
-        """Envía el mensaje (y opcionalmente la portada) al canal Telegram."""
-        cover_url: str | None = payload.get("cover_url") if payload else None
+        template_content = DEFAULT_TEMPLATES.get(platform, DEFAULT_TEMPLATES["telegram"])
+        if item.template and item.template.content:
+            template_content = item.template.content
 
-        if cover_url and cover_url.startswith(("/", "http")):
-            try:
-                await bot_app.bot.send_photo(
-                    chat_id=target_id,
-                    photo=cover_url,
-                    caption=text,
-                    parse_mode="HTML",
-                )
-                return
-            except Exception:
-                pass  # Si falla la foto, despachar solo texto
-
-        await bot_app.bot.send_message(
-            chat_id=target_id,
-            text=text,
-            parse_mode="HTML",
-            disable_web_page_preview=False,
-        )
-
-    # ------------------------------------------------------------------ #
-    #  Template rendering                                                  #
-    # ------------------------------------------------------------------ #
-
-    def _render_template(self, item_obj) -> str:
-        """Renderiza el template del item con el payload almacenado."""
-        payload = item_obj.payload or {}
-        template_content = _DEFAULT_TELEGRAM_TEMPLATE
-
-        if item_obj.template and item_obj.template.content:
-            template_content = item_obj.template.content
-
-        # str.format_map con SafeDict para evitar KeyError en templates incompletos
         try:
-            return template_content.format_map(_SafeDict(payload))
-        except Exception as e:
-            self.logger.warning(f"Template render error: {e}. Usando fallback.")
-            return f"📚 <b>{payload.get('title', 'Nuevo libro')}</b>"
-
-    # ------------------------------------------------------------------ #
-    #  Helpers                                                             #
-    # ------------------------------------------------------------------ #
+            return template_content.format_map(SafeDict(payload))
+        except Exception:
+            return f"📚 New Book: {payload.get('title', 'Untitled')}"
 
     @staticmethod
-    def _build_payload(book, series) -> dict[str, Any]:
-        """Construye el snapshot del payload del libro para la cola."""
+    def _build_payload(book: Book, series: Series) -> dict[str, Any]:
+        """Snapshot of metadata for publication."""
         return {
-            "book_hash": book.book_hash,
-            "title": book.title or "",
-            "volume": str(book.volume) if book.volume else "",
-            "language": book.language or "es",
-            "filename": book.filename or "",
-            "file_size": book.file_size or 0,
-            "cover_url": getattr(book, "cover_medium", None) or getattr(book, "cover_url", None) or "",
-            # Serie
-            "series_name": series.series_name if series else "",
-            "series_hash": series.series_hash if series else "",
-            "series_spanish": (series.series_spanish if series else "") or "",
-            "series_english": (series.series_english if series else "") or "",
-            "author": (series.author if series else "") or "Desconocido",
-            "book_type": (series.book_type if series else "") or "novel",
-            "description": (series.description if series else "") or "",
-            "slug": (series.slug if series else "") or "",
+            "title": book.title or series.title_raw,
+            "series_name": series.title_spanish or series.title_raw,
+            "description": series.description or "",
+            "volume": str(book.volume_number),
+            "slug": series.slug or "",
+            "cover_url": series.cover_url or "",
+            "hash": book.hash,
+            "book_id": str(book.id),
         }
 
-    async def get_queue_status(self) -> dict[str, int]:
-        """Devuelve un resumen del estado actual de la cola."""
-        from sqlalchemy import func, select
 
-        from models.publication_models import PublicationQueue
-
-        async with self.db.get_session() as session:
-            stmt = select(
-                PublicationQueue.status,
-                func.count().label("total"),
-            ).group_by(PublicationQueue.status)
-
-            result = await session.execute(stmt)
-            return {row.status: row.total for row in result}
-
-
-class _SafeDict(dict):
-    """dict que devuelve '' para keys faltantes en str.format_map()."""
-
-    def __missing__(self, key: str) -> str:
+class SafeDict(dict):
+    def __missing__(self, key):
         return f"[{key}]"

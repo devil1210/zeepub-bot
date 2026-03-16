@@ -182,20 +182,22 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
     }, [content, sampleBook]);
 
     return (
-        <div className="flex flex-col h-full rounded-premium overflow-hidden border border-white/10 bg-[#0e1621] font-sans">
-            <div className="flex items-center gap-3 px-4 py-2 bg-[#17212b] border-b border-black/20 shrink-0">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
+        <div className="flex flex-col h-full rounded-premium overflow-hidden border border-white/5 bg-[#0e1621] font-sans shadow-2xl">
+            <div className="flex items-center gap-3 px-4 py-2.5 bg-white/5 backdrop-blur-md border-b border-white/5 shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-black shadow-lg shadow-blue-500/10">
                     {templateName ? templateName.charAt(0).toUpperCase() : 'Z'}
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-white font-semibold text-sm">
+                    <span className="text-white font-bold text-sm tracking-tight">
                         {templateName || 'Vista Previa'}
                     </span>
-                    <span className="text-[#7f91a4] text-xs">bot</span>
+                    <span className="text-blue-400/80 text-[10px] font-black uppercase tracking-widest mt-0.5">
+                        bot oficial
+                    </span>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[url('https://telegram.org/file/464001088/2/5B5g3M1b0D8.127411/56c739199a5e4d2ebf')] bg-cover bg-center">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[url('https://telegram.org/file/464001088/2/5B5g3M1b0D8.127411/56c739199a5e4d2ebf')] bg-cover bg-center bg-fixed">
                 <style>{`
                     .tg-spoiler-preview {
                         background: rgba(255, 255, 255, 0.15);
@@ -280,17 +282,17 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
                             {/* Indicadores de Tipo de Mensaje */}
                             <div className="flex gap-2 mb-1 pl-1">
                                 {showCover && (
-                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-wider border border-blue-500/30">
+                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-premium-sm bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-500/20 backdrop-blur-sm">
                                         🖼️ Foto + Caption
                                     </span>
                                 )}
                                 {hasFile && (
-                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 text-[10px] font-bold uppercase tracking-wider border border-amber-500/30">
+                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-premium-sm bg-amber-500/10 text-amber-400 text-[10px] font-black uppercase tracking-widest border border-amber-500/20 backdrop-blur-sm">
                                         📎 Con Archivo EPUB
                                     </span>
                                 )}
                                 {!showCover && !hasFile && (
-                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/10 text-white/40 text-[10px] font-bold uppercase tracking-wider border border-white/5">
+                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-premium-sm bg-white/5 text-white/40 text-[10px] font-black uppercase tracking-widest border border-white/5 backdrop-blur-sm">
                                         📝 Mensaje de Texto
                                     </span>
                                 )}
@@ -343,10 +345,10 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
                             {showCover && (
                                 <div className="mt-1 flex flex-col max-w-[85%] space-y-1 w-full pl-[2px]">
                                     <div className="flex gap-1 w-full">
-                                        <button className="flex-1 bg-[#182533] text-[#53a6e4] hover:bg-[#202e3f] transition-colors py-2 px-3 rounded-xl text-sm font-semibold text-center border border-transparent">
+                                        <button className="flex-1 bg-[#182533] text-[#53a6e4] hover:bg-[#202e3f] transition-all py-2.5 px-3 text-sm font-bold text-center border border-white/5 shadow-lg active:scale-95" style={{ borderRadius: 'calc(var(--radius-premium) / 3)' }}>
                                             📖 Leer Online
                                         </button>
-                                        <button className="flex-1 bg-[#182533] text-[#53a6e4] hover:bg-[#202e3f] transition-colors py-2 px-3 rounded-xl text-sm font-semibold text-center border border-transparent">
+                                        <button className="flex-1 bg-[#182533] text-[#53a6e4] hover:bg-[#202e3f] transition-all py-2.5 px-3 text-sm font-bold text-center border border-white/5 shadow-lg active:scale-95" style={{ borderRadius: 'calc(var(--radius-premium) / 3)' }}>
                                             🔽 Descargar
                                         </button>
                                     </div>

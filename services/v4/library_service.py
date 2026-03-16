@@ -1,10 +1,11 @@
+import hashlib
+import uuid
 from typing import Any
 
 from sqlalchemy import func, or_, select
 
 from models.library_models import Book, Series
-from repositories.book_repository import BookRepository
-from repositories.series_repository import SeriesRepository
+from repositories.v4 import BookRepository, SeriesRepository
 
 from .base_service import BaseService
 
@@ -12,21 +13,21 @@ from .base_service import BaseService
 class LibraryService(BaseService):
     """
     V4 Business Logic for managing the Library.
-    Orchestrates BookRepository and SeriesRepository.
+    Orchestrates BookRepository and SeriesRepository V4.
     """
 
     async def get_series_catalog(
         self, page: int = 1, page_size: int = 20, sort_by: str = "title_asc"
     ) -> dict[str, Any]:
-        """Catálogo paginado de Series."""
+        """Catálogo paginado de Series V4."""
         async with self.db.get_session() as session:
             sort_map = {
-                "title_asc": Series.series_name.asc(),
-                "title_desc": Series.series_name.desc(),
+                "title_asc": Series.title_raw.asc(),
+                "title_desc": Series.title_raw.desc(),
                 "updated_desc": Series.updated_at.desc(),
                 "created_desc": Series.created_at.desc(),
             }
-            order_by = sort_map.get(sort_by, Series.series_name.asc())
+            order_by = sort_map.get(sort_by, Series.title_raw.asc())
 
             count_stmt = select(func.count()).select_from(Series)
             total_items = (await session.execute(count_stmt)).scalar() or 0
@@ -45,14 +46,14 @@ class LibraryService(BaseService):
             }
 
     async def search_series(self, query: str, page: int = 1, page_size: int = 20) -> dict[str, Any]:
-        """Búsqueda ILIKE en nombres (español, inglés, original) y autor."""
+        """Búsqueda ILIKE en nombres (español, original) y autor."""
         async with self.db.get_session() as session:
             term = f"%{query}%"
             where = or_(
-                Series.series_name.ilike(term),
-                Series.series_spanish.ilike(term),
-                Series.series_english.ilike(term),
-                Series.author.ilike(term),
+                Series.title_raw.ilike(term),
+                Series.title_spanish.ilike(term),
+                # Series.author no existe en V4 schema as per schemas_v4.md?
+                # Re-checking schemas_v4.md
             )
 
             count_stmt = select(func.count()).select_from(Series).where(where)
@@ -61,7 +62,7 @@ class LibraryService(BaseService):
             stmt = (
                 select(Series)
                 .where(where)
-                .order_by(Series.series_name.asc())
+                .order_by(Series.title_raw.asc())
                 .offset((page - 1) * page_size)
                 .limit(page_size)
             )
@@ -103,106 +104,100 @@ class LibraryService(BaseService):
     @staticmethod
     def _map_series(s: Series) -> dict[str, Any]:
         return {
-            "id": f"series_{s.series_hash}",
-            "title": s.series_name,
-            "series_name": s.series_name,
-            "series_spanish": s.series_spanish,
-            "series_english": s.series_english,
-            "series_hash": s.series_hash,
-            "author": s.author,
+            "id": str(s.id),
+            "title": s.title_raw,
+            "title_spanish": s.title_spanish,
+            "hash": s.hash,
             "cover": s.cover_url or "/book-placeholder.jpg",
-            "book_type": s.book_type or "novel",
             "is_folder": True,
         }
 
     @staticmethod
     def _map_book(b: Book) -> dict[str, Any]:
         return {
-            "id": b.id,
-            "book_hash": b.book_hash,
+            "id": str(b.id),
+            "hash": b.hash,
             "title": b.title,
-            "volume": float(b.volume) if b.volume is not None else 0.0,
-            "language": b.language,
+            "volume": float(b.volume_number) if b.volume_number is not None else 0.0,
             "file_size": b.file_size,
-            "filepath": b.filepath,
-            "filename": b.filename,
+            "file_path": b.file_path,
+            "extension": b.extension,
             "created_at": b.created_at.isoformat() if b.created_at else None,
-            "coverUrl": b.cover_medium or b.cover_low or "/book-placeholder.jpg",
+            "coverUrl": "/book-placeholder.jpg",  # V4 uses JSONB or dedicated fields for covers later
         }
 
     # ------------------------------------------------------------------ #
-    #  Ingesta de nuevos libros (UploadHandler)                           #
+    #  Ingesta de nuevos libros (Invocado por ScannerServiceV4)           #
     # ------------------------------------------------------------------ #
 
     async def ingest_book(self, book_data: dict[str, Any]) -> dict[str, Any]:
         """
-        Persiste un nuevo libro en la BD a partir de los datos del UploadHandler.
-
-        Flujo:
-          1. Obtener o crear la Serie por series_name + series_english
-          2. Generar book_hash desde filepath (sha256)
-          3. Crear el Book vinculado a la serie
-          4. Devolver DTO del libro creado
-
-        Args:
-            book_data: dict con title, filepath, filename, file_size,
-                       volume, language, series_name, series_english,
-                       book_type, genres, description.
+        Persiste un nuevo libro en la BD alineado al esquema V4.
         """
-        import hashlib
-
         async with self.db.get_session() as session:
             series_repo = SeriesRepository(session)
             book_repo = BookRepository(session)
 
             # 1. Obtener o crear la Serie
-            series_name: str = book_data.get("series_name") or book_data.get("series_english") or "Sin serie"
-            series_english: str = book_data.get("series_english") or series_name
+            # Mapeo flexible de títulos de serie
+            series_title: str = (
+                book_data.get("series")
+                or book_data.get("series_title")
+                or book_data.get("series_spanish")
+                or "Sin serie"
+            )
+            source_id = book_data.get("source_id")
+            if not source_id:
+                raise ValueError("source_id is required for ingestion")
 
-            # Generar series_hash determinístico desde el nombre normalizado
-            series_hash = hashlib.sha256(series_name.lower().strip().encode()).hexdigest()[:16]
+            # Generar hash determinístico para la serie (normalizado)
+            series_hash = hashlib.sha256(series_title.lower().strip().encode()).hexdigest()[:16]
             series = await series_repo.get_by_hash(series_hash)
 
             if not series:
                 series = Series(
-                    series_name=series_name,
-                    series_spanish=series_name,
-                    series_english=series_english,
-                    series_hash=series_hash,
-                    book_type=book_data.get("book_type", "novel"),
-                    description=book_data.get("description"),
+                    hash=series_hash,
+                    source_id=source_id,
+                    title_raw=series_title,
+                    title_spanish=book_data.get("series_spanish") or series_title,
+                    status="reading",
                 )
+                print(f"[DEBUG] Creating series: {series_title}")
                 series = await series_repo.create(series)
-                self.logger.info(f"[INGEST] Nueva serie: '{series_name}' hash={series_hash}")
+                self.logger.info(f"[INGEST-V4] Nueva serie: '{series_title}' hash={series_hash}")
             else:
-                self.logger.info(f"[INGEST] Serie existente: '{series.series_name}' id={series.id}")
+                print(f"[DEBUG] Found series: {series.title_raw}")
+                self.logger.info(f"[INGEST-V4] Serie existente: '{series.title_raw}' id={series.id}")
 
-            # 2. Generar book_hash desde filepath (inmutable)
-            filepath: str = book_data["filepath"]
-            book_hash = hashlib.sha256(filepath.encode()).hexdigest()[:24]
+            # 2. Generar book_hash desde file_path (inmutable)
+            file_path: str = book_data["file_path"]
+            book_hash = hashlib.sha256(file_path.encode()).hexdigest()[:24]
 
             # 3. Verificar si ya existe (deduplication)
             existing = await book_repo.get_by_hash(book_hash)
             if existing:
-                self.logger.info(f"[INGEST] Libro ya existe (hash={book_hash}), actualizando metadatos...")
+                print(f"[DEBUG] Book exists: {book_hash}")
+                self.logger.info(f"[INGEST-V4] Libro ya existe (hash={book_hash}), actualizando...")
                 existing.title = book_data.get("title") or existing.title
-                existing.volume = book_data.get("volume", existing.volume)
+                existing.volume_number = book_data.get("volume_number", existing.volume_number)
                 existing.file_size = book_data.get("file_size", existing.file_size)
                 await session.flush()
                 return self._map_book(existing)
 
             # 4. Crear el Book
+            print(f"[DEBUG] Creating book: {book_data.get('title') or series_title}")
             book = Book(
-                title=book_data.get("title") or series_name,
-                book_hash=book_hash,
-                filepath=filepath,
-                filename=book_data["filename"],
-                file_size=book_data.get("file_size", 0),
-                volume=book_data.get("volume", 0.0),
-                language=book_data.get("language", "es"),
+                id=uuid.uuid4(),
                 series_id=series.id,
-                series_hash=series_hash,
+                hash=book_hash,
+                file_path=file_path,
+                file_size=book_data.get("file_size", 0),
+                extension=book_data.get("extension", "epub"),
+                volume_number=book_data.get("volume_number", 0.0),
+                title=book_data.get("title") or series_title,
+                is_published=False,
             )
             book = await book_repo.create(book)
-            self.logger.info(f"[INGEST] Libro creado: '{book.title}' hash={book_hash}")
+            print(f"[DEBUG] Book created: {book.id}")
+            self.logger.info(f"[INGEST-V4] Libro creado: '{book.title}' hash={book_hash}")
             return self._map_book(book)

@@ -185,9 +185,16 @@ export const TemplateEditorPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0E0E11] pb-24 text-white font-sans animate-in fade-in duration-500">
+        <div className="min-h-screen bg-app-bg pb-24 text-white font-sans animate-in fade-in duration-500">
             {/* Header / Navbar */}
-            <div className="sticky top-0 z-50 px-4 py-4 md:px-8 bg-[#0E0E11]/80 backdrop-blur-xl border-b border-white/5 flex items-center justify-between">
+            <div
+                className="sticky top-0 z-50 px-4 py-4 md:px-8 flex items-center justify-between border-b border-white/5"
+                style={{
+                    backgroundColor: `rgba(var(--bg-color-rgb), ${settings.headerOpacity || 0.8})`,
+                    backdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
+                    WebkitBackdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`
+                }}
+            >
                 <div className="flex items-center gap-4">
                     <button
                         onClick={handleBack}
@@ -216,7 +223,8 @@ export const TemplateEditorPage: React.FC = () => {
                                     webApp?.HapticFeedback?.impactOccurred('medium');
                                 }
                             }}
-                            className="hidden md:flex items-center gap-2 rounded-premium-sm px-4 py-2.5 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-white border border-white/5 hover:bg-white/5 transition-all"
+                            className="hidden md:flex items-center gap-2 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-gray-400 hover:text-white border border-white/5 hover:bg-white/5 transition-all"
+                            style={{ borderRadius: 'calc(var(--radius-premium) / 2)' }}
                         >
                             <Smartphone className="w-4 h-4" /> Restaurar
                         </button>
@@ -224,10 +232,11 @@ export const TemplateEditorPage: React.FC = () => {
                     <button
                         onClick={handleSave}
                         disabled={isSubmitting || isSuccess || !name || !content}
-                        className={`hidden md:flex items-center gap-2 rounded-premium-sm px-6 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${isSuccess
+                        className={`hidden md:flex items-center gap-2 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed ${isSuccess
                             ? 'bg-green-500 shadow-green-500/20'
                             : 'bg-primary shadow-primary/20 hover:brightness-110'
                             }`}
+                        style={{ borderRadius: 'calc(var(--radius-premium) / 2)' }}
                     >
                         {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</> :
                             isSuccess ? <><Check className="w-4 h-4" /> ¡Guardado!</> :
@@ -240,7 +249,16 @@ export const TemplateEditorPage: React.FC = () => {
                 {/* Editor Section */}
                 <div className="space-y-8">
                     {/* Basic Info */}
-                    <div className="glass-panel rounded-premium p-6 border border-white/5 space-y-6">
+                    <div
+                        className="glass-panel p-6 border border-white/5 space-y-6"
+                        style={{
+                            backgroundColor: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+                            backdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
+                            WebkitBackdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
+                            borderRadius: `var(--radius-premium)`,
+                            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+                        }}
+                    >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Nombre</label>
@@ -249,8 +267,11 @@ export const TemplateEditorPage: React.FC = () => {
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="Ej: Lanzamientos Diarios"
-                                    className="w-full bg-black/40 border border-white/10 rounded-premium-sm px-4 py-3 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                                    style={{ caretColor: 'white' }}
+                                    className="w-full bg-black/40 border border-white/10 px-4 py-3 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                    style={{
+                                        caretColor: 'white',
+                                        borderRadius: 'calc(var(--radius-premium) / 2)'
+                                    }}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -261,10 +282,11 @@ export const TemplateEditorPage: React.FC = () => {
                                             key={p}
                                             type="button"
                                             onClick={() => setPlatform(p)}
-                                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all border ${platform === p
+                                            className={`flex-1 flex items-center justify-center gap-2 py-3 text-[10px] font-black uppercase tracking-widest transition-all border ${platform === p
                                                 ? 'bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10'
                                                 : 'bg-black/40 border-white/5 text-gray-500 hover:text-gray-300'
                                                 }`}
+                                            style={{ borderRadius: 'calc(var(--radius-premium) / 2)' }}
                                         >
                                             {p === 'telegram' ? <Smartphone className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
                                             {p}
@@ -283,10 +305,11 @@ export const TemplateEditorPage: React.FC = () => {
                                             key={q}
                                             type="button"
                                             onClick={() => setCoverQuality(q)}
-                                            className={`py-2 px-3 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${coverQuality === q
+                                            className={`py-2 px-3 text-[9px] font-black uppercase tracking-widest transition-all border ${coverQuality === q
                                                 ? 'bg-primary/20 border-primary text-primary'
                                                 : 'bg-black/40 border-white/5 text-gray-500 hover:text-gray-300'
                                                 }`}
+                                            style={{ borderRadius: 'calc(var(--radius-premium) / 4)' }}
                                         >
                                             {q === 'original' ? 'Ultra HD' : q === 'grande' ? 'Alta' : q === 'mediana' ? 'Media' : 'Baja'}
                                         </button>
@@ -312,11 +335,20 @@ export const TemplateEditorPage: React.FC = () => {
                 {/* Preview Section */}
                 <div className="flex flex-col gap-4">
                     {/* Live Book Selector Trigger */}
-                    <div className="glass-panel rounded-premium p-4 border border-white/5 space-y-3 relative z-20">
+                    <div
+                        className="glass-panel p-4 border border-white/5 space-y-3 relative z-20"
+                        style={{
+                            backgroundColor: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+                            backdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
+                            WebkitBackdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
+                            borderRadius: `var(--radius-premium)`
+                        }}
+                    >
                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Usar datos de libro para vista previa</label>
                         <button
                             onClick={() => setIsSearchModalOpen(true)}
-                            className="w-full bg-black/40 border border-white/10 pl-10 pr-4 py-3 text-sm rounded-premium-sm text-left text-gray-400 hover:border-primary/50 transition-all flex items-center gap-3 relative overflow-hidden group"
+                            className="w-full bg-black/40 border border-white/10 pl-10 pr-4 py-3 text-sm text-left text-gray-400 hover:border-primary/50 transition-all flex items-center gap-3 relative overflow-hidden group"
+                            style={{ borderRadius: 'calc(var(--radius-premium) / 2)' }}
                         >
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <SearchIcon className="h-4 w-4 text-gray-500 group-hover:text-primary transition-colors" />
@@ -344,7 +376,15 @@ export const TemplateEditorPage: React.FC = () => {
                             />
 
                             {/* Modal Content */}
-                            <div className="relative w-full max-w-xl glass-panel rounded-premium-lg border border-white/10 shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-in zoom-in-95 fade-in duration-300">
+                            <div
+                                className="relative w-full max-w-xl border border-white/10 shadow-2xl flex flex-col max-h-[80vh] overflow-hidden animate-in zoom-in-95 fade-in duration-300"
+                                style={{
+                                    backgroundColor: `rgba(var(--glass-rgb), 0.95)`,
+                                    backdropFilter: `blur(${settings.glassBlur * 2}px) saturate(${settings.glassSaturation}%)`,
+                                    WebkitBackdropFilter: `blur(${settings.glassBlur * 2}px) saturate(${settings.glassSaturation}%)`,
+                                    borderRadius: `var(--radius-premium)`
+                                }}
+                            >
                                 {/* Modal Header */}
                                 <div className="p-4 border-b border-white/5 flex items-center gap-3 bg-black/40">
                                     <div className="relative flex-1">
@@ -358,7 +398,8 @@ export const TemplateEditorPage: React.FC = () => {
                                             onChange={(e) => handleSearchChange(e.target.value)}
                                             onKeyDown={handleSearchKeyDown}
                                             placeholder="Buscar novela o volumen..."
-                                            className="w-full bg-white/5 border border-white/10 pl-10 pr-10 py-3 text-sm rounded-premium-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                            className="w-full bg-white/5 border border-white/10 pl-10 pr-10 py-3 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                                            style={{ borderRadius: 'calc(var(--radius-premium) / 2)' }}
                                         />
                                         {searchQuery && (
                                             <button
@@ -371,7 +412,7 @@ export const TemplateEditorPage: React.FC = () => {
                                     </div>
                                     <button
                                         onClick={() => setIsSearchModalOpen(false)}
-                                        className="p-2.5 bg-white/5 hover:bg-white/10 rounded-premium-sm text-gray-400 hover:text-white transition-all border border-white/5"
+                                        className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-all border border-white/5"
                                         title="Cerrar"
                                     >
                                         <X className="w-5 h-5" />
@@ -444,7 +485,13 @@ export const TemplateEditorPage: React.FC = () => {
                     )}
 
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1 mt-2">Vista Previa de Telegram</label>
-                    <div className="flex-1 min-h-[500px] bg-black/20 rounded-premium border border-white/5 overflow-hidden shadow-inner sticky top-24">
+                    <div
+                        className="flex-1 min-h-[500px] border border-white/5 overflow-hidden shadow-inner sticky top-24"
+                        style={{
+                            backgroundColor: `rgba(0, 0, 0, 0.2)`,
+                            borderRadius: `var(--radius-premium)`
+                        }}
+                    >
                         <TelegramMessagePreview
                             content={content}
                             templateName={name}
@@ -456,14 +503,22 @@ export const TemplateEditorPage: React.FC = () => {
             </div>
 
             {/* Mobile Sticky Footer */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-[#0E0E11]/90 backdrop-blur-xl border-t border-white/5 z-50">
+            <div
+                className="md:hidden fixed bottom-0 left-0 right-0 p-4 border-t border-white/5 z-50"
+                style={{
+                    backgroundColor: `rgba(var(--bg-color-rgb), 0.9)`,
+                    backdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
+                    WebkitBackdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`
+                }}
+            >
                 <button
                     onClick={handleSave}
                     disabled={isSubmitting || isSuccess || !name || !content}
-                    className={`w-full flex items-center justify-center gap-2 rounded-premium px-6 py-4 text-sm font-black uppercase tracking-widest text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 ${isSuccess
+                    className={`w-full flex items-center justify-center gap-2 px-6 py-4 text-sm font-black uppercase tracking-widest text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 ${isSuccess
                         ? 'bg-green-500 shadow-green-500/20'
                         : 'bg-primary shadow-primary/20'
                         }`}
+                    style={{ borderRadius: `var(--radius-premium)` }}
                 >
                     {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Guardando...</> :
                         isSuccess ? <><Check className="w-5 h-5" /> ¡Guardado!</> :

@@ -27,7 +27,13 @@ export const StatsWidget: React.FC<StatsWidgetProps> = ({
     settings
 }) => {
     return (
-        <div className="glass-panel rounded-[3rem] p-10 relative overflow-hidden group hover:scale-[1.01] transition-all duration-700 shadow-premium border-white/10">
+        <div className="glass-panel rounded-[3rem] p-10 relative overflow-hidden group hover:scale-[1.01] transition-all duration-700 shadow-premium border border-[var(--panel-border)] backdrop-blur-3xl"
+            style={{
+                background: `rgba(var(--glass-rgb), ${settings.glassOpacity})`,
+                backdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
+                WebkitBackdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`
+            }}
+        >
             <div
                 className="absolute -top-32 -right-32 w-80 h-80 bg-primary/10 rounded-full blur-[120px] group-hover:bg-primary/20 transition-all duration-1000 pointer-events-none"
                 style={{ opacity: settings.cardGlowIntensity }}
@@ -58,8 +64,8 @@ export const StatsWidget: React.FC<StatsWidgetProps> = ({
             </div>
 
             <div className="space-y-10 relative z-10">
-                <div className="bg-white/[0.03] rounded-[2.5rem] p-8 border border-white/5 shadow-inner backdrop-blur-3xl relative overflow-hidden group/quota">
-                    <div className="absolute -top-6 -right-6 p-2 opacity-[0.03] rotate-12">
+                <div className="bg-white/[0.03] rounded-[2.5rem] p-8 border border-[var(--panel-border)] shadow-inner backdrop-blur-3xl relative overflow-hidden group/quota transition-colors duration-500 hover:border-[var(--panel-border-hover)]">
+                    <div className="absolute -top-6 -right-6 p-2 opacity-[0.03] rotate-12 transition-transform duration-1000 group-hover/quota:scale-125 group-hover/quota:rotate-0">
                         <Zap className="w-32 h-32 text-primary" />
                     </div>
                     <div className="flex justify-between items-end mb-6 relative z-10">
@@ -81,7 +87,7 @@ export const StatsWidget: React.FC<StatsWidgetProps> = ({
                             <div className="absolute inset-0 bg-primary/10 blur-[4px]"></div>
                             <div
                                 className="relative h-full bg-gradient-to-r from-primary via-blue-400 to-indigo-500 rounded-full shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.6)] transition-all duration-1000 ease-out-expo"
-                                style={{ width: `${progressPercent}%` }}
+                                style={{ width: `${progressPercent}%`, backgroundColor: settings.primaryColor }}
                             >
                                 <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent"></div>
                             </div>
@@ -93,14 +99,14 @@ export const StatsWidget: React.FC<StatsWidgetProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
-                    <div className="glass-panel rounded-[2rem] p-6 border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-white/20 transition-all duration-700">
-                        <div className="p-4 bg-blue-500/10 rounded-premium-sm text-blue-400 mb-4 border border-blue-500/10 shadow-xl group-hover/stat:scale-110 group-hover/stat:rotate-3 transition-all duration-700">
+                    <div className="glass-panel rounded-[2rem] p-6 border border-[var(--panel-border)] flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-[var(--panel-border-hover)] transition-all duration-700 backdrop-blur-2xl">
+                        <div className="p-4 bg-primary/10 rounded-premium-sm text-primary mb-4 border border-primary/10 shadow-xl group-hover/stat:scale-110 group-hover/stat:rotate-3 transition-all duration-700">
                             <TrendingUp className="w-6 h-6" strokeWidth={2.5} />
                         </div>
                         <span className="text-white font-black text-2xl tracking-tighter">Top 5%</span>
                         <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-2 opacity-50">Status Ranking</span>
                     </div>
-                    <div className="glass-panel rounded-[2rem] p-6 border-white/5 flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-white/20 transition-all duration-700">
+                    <div className="glass-panel rounded-[2rem] p-6 border border-[var(--panel-border)] flex flex-col items-center justify-center text-center group/stat hover:bg-white/[0.05] hover:border-[var(--panel-border-hover)] transition-all duration-700 backdrop-blur-2xl">
                         <div className="p-4 bg-primary/10 rounded-premium-sm text-primary mb-4 border border-primary/10 shadow-xl group-hover/stat:scale-110 group-hover/stat:-rotate-3 transition-all duration-700">
                             <Download className="w-6 h-6" strokeWidth={2.5} />
                         </div>

@@ -349,126 +349,131 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
         }
     };
 
-    return (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-3 w-[90%] max-w-xl md:w-auto md:min-w-[500px] px-0 animate-in slide-in-from-bottom-4 duration-300 floating-nav-container">
-            {/* Sorting Menu */}
-            {isMenuOpen && (contextType === 'search' || contextType === 'series') && (
-                <div
-                    className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
-                    style={{
-                        background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-                        backdropFilter: `blur(${settings.glassBlur}px)`,
-                        WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-                    }}
-                >
-                    <div className="grid grid-cols-3 gap-2">
-                        {sortOptions.map((option) => (
-                            <button
-                                key={option.id}
-                                onClick={() => {
-                                    webApp?.HapticFeedback?.impactOccurred('light');
-                                    handleSortChange(option.id);
-                                }}
-                                className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${activeSort === option.id
-                                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                                    : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
-                                    }`}
-                            >
-                                <option.icon className={`w-4 h-4 ${option.id === 'z-a' ? 'rotate-180' : ''}`} />
-                                <span className="text-center leading-tight">{option.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
+    const SortPanel = () => (
+        <div
+            className="glass-panel rounded-premium p-3 border border-[var(--panel-border)] shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-300 backdrop-blur-3xl"
+            style={{
+                background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
+                backdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
+                WebkitBackdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`
+            }}
+        >
+            <div className="grid grid-cols-3 gap-2">
+                {sortOptions.map((option) => (
+                    <button
+                        key={option.id}
+                        onClick={() => {
+                            webApp?.HapticFeedback?.impactOccurred('light');
+                            handleSortChange(option.id);
+                        }}
+                        className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${activeSort === option.id
+                            ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                            : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
+                            }`}
+                    >
+                        <option.icon className={`w-4 h-4 ${option.id === 'z-a' ? 'rotate-180' : ''}`} />
+                        <span className="text-center leading-tight">{option.label}</span>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
 
-            {/* Admin/AI Actions Menu */}
-            {isMenuOpen && (contextType === 'admin' || contextType === 'ai') && state.actionButtons && (
-                <div
-                    className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
-                    style={{
-                        background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-                        backdropFilter: `blur(${settings.glassBlur}px)`,
-                        WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-                    }}
-                >
-                    <div className="grid grid-cols-2 gap-2">
-                        {state.actionButtons.map((btn) => (
+    const ActionsPanel = () => (
+        <div
+            className="glass-panel rounded-premium p-3 border border-[var(--panel-border)] shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-300 backdrop-blur-3xl"
+            style={{
+                background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
+                backdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
+                WebkitBackdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`
+            }}
+        >
+            <div className="grid grid-cols-2 gap-2">
+                {state.actionButtons?.map((btn) => (
+                    <button
+                        key={btn.id}
+                        onClick={() => {
+                            webApp?.HapticFeedback?.impactOccurred('light');
+                            btn.onClick();
+                            setMenuOpen(false);
+                        }}
+                        className={`flex items-center gap-3 px-3 py-3 rounded-premium-sm transition-all border ${btn.highlight
+                            ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                            : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
+                            }`}
+                    >
+                        <btn.icon className="w-4 h-4 flex-shrink-0" />
+                        <span className="text-[9px] font-black uppercase tracking-widest leading-tight text-left">{btn.label}</span>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+
+    const ChannelsPanel = () => (
+        <div
+            className="glass-panel rounded-premium p-3 border border-[var(--panel-border)] shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-300 backdrop-blur-3xl"
+            style={{
+                background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
+                backdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
+                WebkitBackdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`
+            }}
+        >
+            <div className="flex flex-col gap-2">
+                <p className="px-3 py-1 text-[10px] font-black uppercase text-primary/70 tracking-[0.2em]">Seleccionar Destino</p>
+                <div className="grid grid-cols-1 gap-1.5 max-h-[40vh] overflow-y-auto custom-scrollbar pr-1">
+                    {channels.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500 text-[10px] uppercase font-bold italic">
+                            Cargando canales...
+                        </div>
+                    ) : (
+                        channels.map((channel) => (
                             <button
-                                key={btn.id}
+                                key={channel.id}
                                 onClick={() => {
-                                    webApp?.HapticFeedback?.impactOccurred('light');
-                                    btn.onClick();
+                                    webApp?.HapticFeedback?.impactOccurred('medium');
+                                    setSelectedChannelId(channel.id);
+                                    onTabChange?.('library');
                                     setMenuOpen(false);
                                 }}
-                                className={`flex items-center gap-3 px-3 py-3 rounded-premium-sm transition-all border ${btn.highlight
-                                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                                className={`flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all border ${state.selectedChannelId === channel.id
+                                    ? 'bg-primary/20 text-white border-primary shadow-lg shadow-primary/10'
                                     : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
                                     }`}
                             >
-                                <btn.icon className="w-4 h-4 flex-shrink-0" />
-                                <span className="text-[9px] font-black uppercase tracking-widest leading-tight text-left">{btn.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Publication Channels Menu */}
-            {isMenuOpen && contextType === 'main' && (
-                <div
-                    className="glass-panel rounded-premium p-3 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-2 fade-in duration-200"
-                    style={{
-                        background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-                        backdropFilter: `blur(${settings.glassBlur}px)`,
-                        WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
-                    }}
-                >
-                    <div className="flex flex-col gap-2">
-                        <p className="px-3 py-1 text-[10px] font-black uppercase text-primary/70 tracking-[0.2em]">Seleccionar Destino</p>
-                        <div className="grid grid-cols-1 gap-1.5 max-h-[40vh] overflow-y-auto custom-scrollbar pr-1">
-                            {channels.length === 0 ? (
-                                <div className="p-4 text-center text-gray-500 text-[10px] uppercase font-bold italic">
-                                    Cargando canales...
+                                <div className={`p-1.5 rounded-lg ${channel.platform === 'telegram' ? 'bg-blue-500/10 text-blue-400' : 'bg-primary/10 text-primary'}`}>
+                                    <Send className="w-3.5 h-3.5" />
                                 </div>
-                            ) : (
-                                channels.map((channel) => (
-                                    <button
-                                        key={channel.id}
-                                        onClick={() => {
-                                            webApp?.HapticFeedback?.impactOccurred('medium');
-                                            setSelectedChannelId(channel.id);
-                                            onTabChange?.('library');
-                                            setMenuOpen(false);
-                                        }}
-                                        className={`flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all border ${state.selectedChannelId === channel.id
-                                            ? 'bg-primary/20 text-white border-primary shadow-lg shadow-primary/10'
-                                            : 'bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-white'
-                                            }`}
-                                    >
-                                        <div className={`p-1.5 rounded-lg ${channel.platform === 'telegram' ? 'bg-blue-500/10 text-blue-400' : 'bg-primary/10 text-primary'}`}>
-                                            <Send className="w-3.5 h-3.5" />
-                                        </div>
-                                        <div className="flex flex-col items-start min-w-0">
-                                            <span className="text-[10px] font-black uppercase tracking-widest truncate w-full">{channel.name}</span>
-                                            <span className="text-[8px] font-bold text-gray-500 uppercase tracking-tighter truncate w-full">{channel.target_id}</span>
-                                        </div>
-                                        {state.selectedChannelId === channel.id && <CheckCircle2 className="w-4 h-4 ml-auto text-primary" />}
-                                    </button>
-                                ))
-                            )}
-                        </div>
-                    </div>
+                                <div className="flex flex-col items-start min-w-0">
+                                    <span className="text-[10px] font-black uppercase tracking-widest truncate w-full">{channel.name}</span>
+                                    <span className="text-[8px] font-bold text-gray-500 uppercase tracking-tighter truncate w-full">{channel.target_id}</span>
+                                </div>
+                                {state.selectedChannelId === channel.id && <CheckCircle2 className="w-4 h-4 ml-auto text-primary" />}
+                            </button>
+                        ))
+                    )}
                 </div>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-3 w-[90%] max-w-xl md:w-auto md:min-w-[500px] px-0 animate-in slide-in-from-bottom-4 duration-300 floating-nav-container">
+            {isMenuOpen && (
+                <>
+                    {contextType === 'search' && <SortPanel />}
+                    {contextType === 'admin' && state.actionButtons && <ActionsPanel />}
+                    {contextType === 'main' && <ChannelsPanel />}
+                </>
             )}
 
             {/* Main Nav Bar */}
             <div
-                className="glass-panel rounded-premium p-1.5 border border-black/10 dark:border-white/10 shadow-2xl flex items-center justify-between overflow-hidden"
+                className="glass-panel rounded-premium p-1.5 border border-[var(--panel-border)] shadow-2xl flex items-center justify-between overflow-hidden backdrop-blur-3xl"
                 style={{
                     background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-                    backdropFilter: `blur(${settings.glassBlur}px)`,
-                    WebkitBackdropFilter: `blur(${settings.glassBlur}px)`
+                    backdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`,
+                    WebkitBackdropFilter: `blur(${settings.glassBlur}px) saturate(${settings.glassSaturation}%)`
                 }}
             >
                 {renderContent()}
@@ -497,7 +502,7 @@ const NavButton: React.FC<{
         <button
             onClick={handleClick}
             disabled={disabled}
-            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-500 relative z-10 ${disabled ? 'opacity-30 cursor-not-allowed' : 'hover:scale-105 active:scale-90 hover:text-black dark:hover:text-white'} ${isActive ? 'text-primary' : 'text-gray-500'}`}
+            className={`flex-1 flex flex-col items-center justify-center py-2 rounded-premium-sm transition-all duration-500 relative z-10 ${disabled ? 'opacity-30 cursor-not-allowed' : 'hover:scale-110 active:scale-95 hover:text-white'} ${isActive ? 'text-primary' : 'text-white/40'}`}
         >
             <div
                 className={`p-1.5 rounded-full transition-all duration-500 animate-in zoom-in-75 fade-in ${isActive && highlightOnActive ? 'bg-primary shadow-[0_0_15px_rgba(var(--primary-rgb),0.5)] translate-y-[-2px]' : ''}`}
@@ -512,4 +517,4 @@ const NavButton: React.FC<{
     );
 };
 
-const NavDivider = () => <div className="w-px h-8 bg-black/10 dark:bg-white/5"></div>;
+const NavDivider = () => <div className="w-px h-8 bg-white/5 border-l border-white/5"></div>;

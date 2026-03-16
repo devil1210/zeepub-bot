@@ -1,10 +1,14 @@
-from datetime import datetime
-from typing import Optional
+from __future__ import annotations
 
-from sqlalchemy import JSON, BigInteger, Boolean, DateTime, ForeignKey, String, Text
+import uuid
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import TimestampedBase
+from .library_models import Book
 
 
 class PublicationChannel(TimestampedBase):
@@ -15,19 +19,17 @@ class PublicationChannel(TimestampedBase):
 
     __tablename__ = "publication_channels"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    platform: Mapped[str] = mapped_column(String(50), nullable=False)  # 'telegram', 'discord', 'webhook'
+    platform: Mapped[str] = mapped_column(String(50), nullable=False)  # 'telegram', 'facebook', 'discord', 'webhook'
     target_id: Mapped[str] = mapped_column(String(255), nullable=False)
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_favorite: Mapped[bool] = mapped_column(Boolean, default=False)
-    config: Mapped[dict | None] = mapped_column(JSON)  # Extra configs (tokens, threads)
+    config: Mapped[dict | None] = mapped_column(JSONB)  # Extra configs (tokens, threads)
 
     # Relationships
-    queued_items: Mapped[list["PublicationQueue"]] = relationship(
-        back_populates="channel", cascade="all, delete-orphan"
-    )
+    queued_items: Mapped[list[PublicationQueue]] = relationship(back_populates="channel", cascade="all, delete-orphan")
 
 
 class DiscoveredChat(TimestampedBase):
@@ -38,7 +40,7 @@ class DiscoveredChat(TimestampedBase):
 
     __tablename__ = "discovered_chats"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     chat_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     type: Mapped[str | None] = mapped_column(String(50))
@@ -55,16 +57,16 @@ class PublicationTemplate(TimestampedBase):
 
     __tablename__ = "publication_templates"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)  # The template string with {placeholders}
     platform: Mapped[str] = mapped_column(String(50), nullable=False)
 
     is_default: Mapped[bool] = mapped_column(Boolean, default=False)
-    extra_config: Mapped[dict | None] = mapped_column(JSON)  # Layout preferences
+    extra_config: Mapped[dict | None] = mapped_column(JSONB)  # Layout preferences
 
     # Relationships
-    queued_items: Mapped[list["PublicationQueue"]] = relationship(back_populates="template")
+    queued_items: Mapped[list[PublicationQueue]] = relationship(back_populates="template")
 
 
 class PublicationQueue(TimestampedBase):
@@ -74,11 +76,18 @@ class PublicationQueue(TimestampedBase):
 
     __tablename__ = "publication_queue"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    book_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("books.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     book_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
 
-    channel_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("publication_channels.id"), nullable=False)
-    template_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("publication_templates.id"))
+    channel_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("publication_channels.id", ondelete="CASCADE"), nullable=False
+    )
+    template_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("publication_templates.id", ondelete="SET NULL")
+    )
 
     # Scheduling
     scheduled_for: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
@@ -88,8 +97,9 @@ class PublicationQueue(TimestampedBase):
     error_message: Mapped[str | None] = mapped_column(Text)
 
     # Snapshot to avoid costly reads at publish time
-    payload: Mapped[dict | None] = mapped_column(JSON)
+    payload: Mapped[dict | None] = mapped_column(JSONB)
 
     # Relationships
-    channel: Mapped["PublicationChannel"] = relationship(back_populates="queued_items")
-    template: Mapped[Optional["PublicationTemplate"]] = relationship(back_populates="queued_items")
+    channel: Mapped[PublicationChannel] = relationship(back_populates="queued_items")
+    template: Mapped[PublicationTemplate | None] = relationship(back_populates="queued_items")
+    book: Mapped[Book] = relationship()

@@ -12,10 +12,10 @@ export const DashboardHero: React.FC<DashboardHeroProps> = ({ userName, customSt
             <div className="absolute -top-20 -left-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] pointer-events-none animate-pulse-slow"></div>
             <div className="relative">
                 <div className="flex items-center gap-3 mb-4 animate-in fade-in slide-in-from-left-4 duration-700">
-                    <span className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em]">
+                    <span className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.2)]">
                         Vista General
                     </span>
-                    <div className="w-1.5 h-1.5 rounded-full bg-gray-600"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary/40"></div>
                     <span className="text-gray-500 text-[10px] font-bold uppercase tracking-widest">
                         {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
                     </span>

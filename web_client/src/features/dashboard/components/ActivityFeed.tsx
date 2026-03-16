@@ -11,6 +11,7 @@ interface ActivityItem {
 
 interface ActivityFeedProps {
     activities: ActivityItem[];
+    settings?: any;
 }
 
 export const ActivityFeed: React.FC<ActivityFeedProps> = ({ activities }) => {

@@ -1,398 +1,90 @@
-from datetime import datetime, timezone
-from typing import Optional
+import uuid
+from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import TimestampedBase
-from .user_models import DownloadLog
+
+if TYPE_CHECKING:
+    pass
+
+
+class LibrarySource(TimestampedBase):
+    """
+    V4 Library Source Entity.
+    Represents a root folder or source of book files.
+    """
+
+    __tablename__ = "library_sources"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    path: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    last_scanned: Mapped[any] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    series: Mapped[list["Series"]] = relationship(back_populates="source", cascade="all, delete-orphan")
 
 
 class Series(TimestampedBase):
     """
     V4 Series Entity.
-    Represents a collection of books (e.g., a Manga or Light Novel series).
+    Identified primarily by its hash and source.
     """
 
     __tablename__ = "series"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    source_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("library_sources.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
-    # Core Identity
-    series_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    series_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
-    slug: Mapped[str | None] = mapped_column(String(512), index=True)
+    # Core metadata
+    title_raw: Mapped[str] = mapped_column(String(512), nullable=False)
+    title_spanish: Mapped[str | None] = mapped_column(String(512))
 
-    # AI/Localization Enriched Data
-    series_spanish: Mapped[str | None] = mapped_column(String(255))
-    series_english: Mapped[str | None] = mapped_column(String(255))
+    # UI Metadata
+    description: Mapped[str | None] = mapped_column(Text)
+    cover_url: Mapped[str | None] = mapped_column(String(512))
 
-    # People
-    author: Mapped[str | None] = mapped_column(String(255))
-    author_jap: Mapped[str | None] = mapped_column(String(255))
-    illustrator: Mapped[str | None] = mapped_column(String(255))
-    illustrator_jap: Mapped[str | None] = mapped_column(String(255))
-
-    # Rich Metadata
-    description: Mapped[str | None] = mapped_column(String(5000))
-    tags: Mapped[list | None] = mapped_column(JSONB)
-    demographics: Mapped[list | None] = mapped_column(JSONB)
-
-    # Visuals & Stats
-    cover_url: Mapped[str | None] = mapped_column(String(1024))
-    book_type: Mapped[str | None] = mapped_column(String(100))
-    publisher: Mapped[str | None] = mapped_column(String(255))
-    rating_average: Mapped[float] = mapped_column(Float, default=0.0)
-    rating_count: Mapped[int] = mapped_column(Integer, default=0)
-    book_count: Mapped[int] = mapped_column(Integer, default=0)
+    # Identification/Status
+    slug: Mapped[str | None] = mapped_column(String(100), index=True)  # For Telegram hashtags
+    status: Mapped[str] = mapped_column(String(20), default="reading")  # 'reading', 'completed', 'dropped'
 
     # Relationships
+    source: Mapped["LibrarySource"] = relationship(back_populates="series")
     books: Mapped[list["Book"]] = relationship(back_populates="series", cascade="all, delete-orphan")
-
-    def to_dict(self) -> dict:
-        return {
-            "id": self.id,
-            "series_name": self.series_name,
-            "series_hash": self.series_hash,
-            "series_spanish": self.series_spanish,
-            "series_english": self.series_english,
-            "author": self.author,
-            "author_jap": self.author_jap,
-            "illustrator": self.illustrator,
-            "illustrator_jap": self.illustrator_jap,
-            "description": self.description,
-            "cover_url": self.cover_url,
-            "book_type": self.book_type,
-            "publisher": self.publisher,
-            "rating_average": self.rating_average,
-            "rating_count": self.rating_count,
-            "book_count": self.book_count,
-            "tags": self.tags,
-            "demographics": self.demographics,
-            "slug": self.slug,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-        }
 
 
 class Book(TimestampedBase):
     """
     V4 Book Entity.
-    The physical/digital representation of a volume or chapter.
+    Identity and global uniqueness are managed via UUID and hash.
     """
 
     __tablename__ = "books"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-
-    # The absolute truth of a book identity
-    book_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
-
-    # File traceability
-    filepath: Mapped[str] = mapped_column(String(1024), nullable=False, unique=True)
-    filename: Mapped[str] = mapped_column(String(512), nullable=False)
-    file_size: Mapped[int | None] = mapped_column(BigInteger)
-
-    # Extracted Info
-    title: Mapped[str] = mapped_column(String(512), nullable=False)
-    volume: Mapped[float | None] = mapped_column(Float)
-    language: Mapped[str] = mapped_column(String(10), default="es")
-
-    # Compatibility & Refined Metadata
-    series_spanish: Mapped[str | None] = mapped_column(String(255))
-    series_english: Mapped[str | None] = mapped_column(String(255))
-    layout_by: Mapped[str | None] = mapped_column(String(255))
-    translator: Mapped[str | None] = mapped_column(String(255))
-    author: Mapped[str | None] = mapped_column(String(255))
-    isbn: Mapped[str | None] = mapped_column(String(50), index=True)
-
-    # UI progressive covers
-    cover_low: Mapped[str | None] = mapped_column(String(1024))
-    cover_medium: Mapped[str | None] = mapped_column(String(1024))
-    cover_high: Mapped[str | None] = mapped_column(String(1024))
-    cover_original: Mapped[str | None] = mapped_column(String(1024))
-
-    # Extended Metadata
-    english_title: Mapped[str | None] = mapped_column(String(512))
-    jap_title: Mapped[str | None] = mapped_column(String(512))
-    romaji_title: Mapped[str | None] = mapped_column(String(512))
-    edition: Mapped[str | None] = mapped_column(String(100))
-    publisher: Mapped[str | None] = mapped_column(String(255))
-    extracted_data: Mapped[dict | None] = mapped_column(JSONB)
-    hash_md5: Mapped[str | None] = mapped_column(String(64))
-    asin: Mapped[str | None] = mapped_column(String(50))
-    uri_id: Mapped[str | None] = mapped_column(String(255))
-    published_at: Mapped[str | None] = mapped_column(String(100))
-    modified_at_opf: Mapped[str | None] = mapped_column(String(100))
-    epub_version: Mapped[str | None] = mapped_column(String(20))
-    word_count: Mapped[int | None] = mapped_column(Integer)
-    page_count: Mapped[int | None] = mapped_column(Integer)
-    reading_time: Mapped[int | None] = mapped_column(Integer)
-    is_uncensored: Mapped[int] = mapped_column(Integer, default=0)
-    color_mode: Mapped[str | None] = mapped_column(String(20), default="bw")
-    short_link: Mapped[str | None] = mapped_column(String(100))
-    file_modified_at: Mapped[float | None] = mapped_column(Float)
-    file_created_at: Mapped[datetime | None] = mapped_column(DateTime)
-
-    # Foreign Keys
-    series_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("series.id", ondelete="CASCADE"), index=True)
-    series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
-    source_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("library_sources.id", ondelete="SET NULL"), index=True
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    series_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("series.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    book_type: Mapped[str | None] = mapped_column(String(100))
-    rating_average: Mapped[float] = mapped_column(Float, default=0.0)
-    rating_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    # File Metadata
+    hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    file_path: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    file_size: Mapped[int] = mapped_column(BigInteger)
+    extension: Mapped[str] = mapped_column(String(10))
+
+    # Content Metadata
+    volume_number: Mapped[float] = mapped_column(Numeric, nullable=False)
+    title: Mapped[str | None] = mapped_column(String(512))
+    metadata_json: Mapped[dict | None] = mapped_column(JSONB, default=dict)
+
+    # Status
+    detected_at: Mapped[any] = mapped_column(DateTime(timezone=True), server_default="now()")
+    is_published: Mapped[bool] = mapped_column(default=False)
 
     # Relationships
-    series: Mapped[Optional["Series"]] = relationship(back_populates="books")
-
-    # Compatibility synonyms
-    spanish_title = synonym("series_spanish")
-
-    def to_dict(self) -> dict:
-        return {
-            "id": self.id,
-            "book_hash": self.book_hash,
-            "title": self.title,
-            "series_id": self.series_id,
-            "series_hash": self.series_hash,
-            "series_spanish": self.series_spanish,
-            "series_english": self.series_english,
-            "volume": self.volume,
-            "author": self.author,
-            "filepath": self.filepath,
-            "filename": self.filename,
-            "file_size": self.file_size,
-            "language": self.language,
-            "layout_by": self.layout_by,
-            "translator": self.translator,
-            "isbn": self.isbn,
-            "source_id": self.source_id,
-            "cover_low": self.cover_low,
-            "cover_medium": self.cover_medium,
-            "cover_high": self.cover_high,
-            "cover_original": self.cover_original,
-            "rating_average": self.rating_average,
-            "rating_count": self.rating_count,
-            "english_title": self.english_title,
-            "jap_title": self.jap_title,
-            "romaji_title": self.romaji_title,
-            "edition": self.edition,
-            "publisher": self.publisher,
-            "book_type": self.book_type,
-            "word_count": self.word_count,
-            "page_count": self.page_count,
-            "is_uncensored": self.is_uncensored,
-            "color_mode": self.color_mode,
-            "short_link": self.short_link,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-        }
-
-
-class UserRating(TimestampedBase):
-    """
-    V3 Compat: User ratings for books.
-    """
-
-    __tablename__ = "user_ratings"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    book_id: Mapped[int] = mapped_column(Integer, index=True)
-    book_hash: Mapped[str | None] = mapped_column(String(64), index=True)
-    rating: Mapped[int] = mapped_column(Integer)
-
-
-class LibrarySource(TimestampedBase):
-    """
-    V4 Library Source.
-    Represents a directory root where books are stored.
-    """
-
-    __tablename__ = "library_sources"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    path: Mapped[str] = mapped_column(String(1024), unique=True, nullable=False)
-    is_active: Mapped[bool] = mapped_column(default=True)
-    last_scanned: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-
-
-# Compatibility Aliases for older services (SyncService, etc.)
-LocalBook = Book
-SeriesMetadata = Series
-UserDownload = DownloadLog
-
-
-class MetadataProposal(TimestampedBase):
-    """
-    V3 Compat: Metadata merges/correction proposals.
-    """
-
-    __tablename__ = "metadata_proposals"
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    series_hash: Mapped[str] = mapped_column(String(64), index=True)
-    secondary_hash: Mapped[str | None] = mapped_column(String(64))
-    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, approved, rejected
-    type: Mapped[str] = mapped_column(String(20), default="merge")  # merge, update
-    proposal_data: Mapped[dict | None] = mapped_column(JSONB)
-
-
-class ArchivedBook(TimestampedBase):
-    """
-    V4 Record of a physically deleted book.
-    """
-
-    __tablename__ = "archived_books"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    series_hash: Mapped[str] = mapped_column(String(64), index=True)
-    book_hash: Mapped[str] = mapped_column(String(64), index=True)
-    title: Mapped[str] = mapped_column(String(512))
-    filename: Mapped[str | None] = mapped_column(String(512))
-    last_filepath: Mapped[str | None] = mapped_column(String(1024))
-    volume: Mapped[float | None] = mapped_column(Float)
-    author: Mapped[str | None] = mapped_column(String(255))
-    book_type: Mapped[str | None] = mapped_column(String(100))
-    original_book_id: Mapped[int | None] = mapped_column(Integer)
-    reason: Mapped[str | None] = mapped_column(String(100))
-
-
-class DuplicateBook(TimestampedBase):
-    """
-    V4 Record of duplicate files found during scan.
-    """
-
-    __tablename__ = "duplicate_books"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    book_hash: Mapped[str] = mapped_column(String(64), index=True)
-    original_filepath: Mapped[str] = mapped_column(String(1024))
-    duplicate_filepath: Mapped[str] = mapped_column(String(1024))
-    title: Mapped[str | None] = mapped_column(String(512))
-    author: Mapped[str | None] = mapped_column(String(255))
-    detected_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
-    )
-
-
-class LibraryCleanupLog(TimestampedBase):
-    """
-    V4 Audit log for library maintenance tasks.
-    """
-
-    __tablename__ = "library_cleanup_logs"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    performed_by: Mapped[int | None] = mapped_column(BigInteger)
-    total_books_checked: Mapped[int] = mapped_column(Integer, default=0)
-    missing_books_found: Mapped[int] = mapped_column(Integer, default=0)
-    empty_series_removed: Mapped[int] = mapped_column(Integer, default=0)
-    status: Mapped[str] = mapped_column(String(20), default="pending")
-
-
-class TranslatorsGroup(TimestampedBase):
-    """
-    V3 Compat: Translators/Scan groups.
-    """
-
-    __tablename__ = "translators_groups"
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), unique=True)
-    siglas: Mapped[str | None] = mapped_column(String(50))
-
-
-class AILearningFeedback(TimestampedBase):
-    """
-    V3 Compat: Feedback for AI decisions.
-    """
-
-    __tablename__ = "ai_learning_feedback"
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    series_hash: Mapped[str | None] = mapped_column(String(64), index=True)
-    original_name: Mapped[str | None] = mapped_column(String(255))
-    proposed_name: Mapped[str | None] = mapped_column(String(255))
-    final_name: Mapped[str | None] = mapped_column(String(255))
-    status: Mapped[str | None] = mapped_column(String(50))
-    ai_reason: Mapped[str | None] = mapped_column(Text)
-
-
-class ArchivedSeries(TimestampedBase):
-    """
-    V3 Compat: Archive for deleted series.
-    """
-
-    __tablename__ = "archived_series"
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    series_name: Mapped[str | None] = mapped_column(String(255))
-    series_spanish: Mapped[str | None] = mapped_column(String(255))
-    series_english: Mapped[str | None] = mapped_column(String(255))
-    series_hash: Mapped[str] = mapped_column(String(64), index=True)
-    author: Mapped[str | None] = mapped_column(String(255))
-    description: Mapped[str | None] = mapped_column(Text)
-    tags: Mapped[list | None] = mapped_column(JSONB)
-    cover_url: Mapped[str | None] = mapped_column(String(512))
-    book_type: Mapped[str | None] = mapped_column(String(100))
-    publisher: Mapped[str | None] = mapped_column(String(255))
-    original_series_id: Mapped[int | None] = mapped_column(Integer)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Aliases de compatibilidad V3 → V4
-# ─────────────────────────────────────────────────────────────────────────────
-LocalBook = Book
-SeriesMetadata = Series
-UserDownload = DownloadLog
-
-
-class UploadBook(TimestampedBase):
-    """
-    V4 UploadBook Entity.
-    Temporary record of a book uploaded for processing or approval.
-    """
-
-    __tablename__ = "upload_books"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
-
-    original_filename: Mapped[str] = mapped_column(String(512))
-    temp_filepath: Mapped[str] = mapped_column(String(1024))
-
-    # Metadata snapshots
-    title: Mapped[str | None] = mapped_column(String(512))
-    series: Mapped[str | None] = mapped_column(String(255))
-    series_spanish: Mapped[str | None] = mapped_column(String(255))
-    volume: Mapped[float | None] = mapped_column(Float)
-    author: Mapped[str | None] = mapped_column(String(255))
-    book_type: Mapped[str | None] = mapped_column(String(100))
-    translator: Mapped[str | None] = mapped_column(String(255))
-    layout_by: Mapped[str | None] = mapped_column(String(255))
-    language: Mapped[str] = mapped_column(String(10), default="es")
-
-    is_uncensored: Mapped[int] = mapped_column(Integer, default=0)
-    color_mode: Mapped[str] = mapped_column(String(20), default="bw")
-
-    book_hash: Mapped[str] = mapped_column(String(64), index=True)
-    series_hash: Mapped[str] = mapped_column(String(64), index=True)
-
-    upload_metadata: Mapped[dict | None] = mapped_column(JSONB)
-    identity_match: Mapped[str | None] = mapped_column(String(20))  # True/False as string
-
-
-class UploadHistory(TimestampedBase):
-    """
-    V4 UploadHistory Entity.
-    Tracks historical metadata and status changes for uploads.
-    """
-
-    __tablename__ = "upload_history"
-
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    upload_id: Mapped[int | None] = mapped_column(Integer, index=True)
-    telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
-    action: Mapped[str] = mapped_column(String(50))  # 'uploaded', 'approved', 'rejected'
-    details: Mapped[dict | None] = mapped_column(JSONB)
+    series: Mapped["Series"] = relationship(back_populates="books")

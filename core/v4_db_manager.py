@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Importar todos los modelos V4 para que los metadatos queden registrados
 import models.agent_models  # noqa: F401
@@ -41,7 +41,15 @@ class DBManagerV4:
         url = database_url or config.DATABASE_URL
         if not url:
             raise RuntimeError("DATABASE_URL no configurada. El stack V4 requiere PostgreSQL.")
+
+        # Asegurar prefijo asyncpg para SQLAlchemy
+        if url.startswith("postgresql://") and "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+
         self._engine = create_async_engine(url, echo=False)
+        self._session_factory = async_sessionmaker(self._engine, expire_on_commit=False, class_=AsyncSession)
 
     async def create_all_tables(self) -> None:
         """
@@ -49,8 +57,21 @@ class DBManagerV4:
         definidas en los modelos SQLAlchemy.
         """
         async with self._engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all, checkfirst=True)
+            await conn.run_sync(Base.metadata.create_all)
         logger.info("[DBManagerV4] Schema V4 sincronizado correctamente.")
+
+    def get_session(self) -> AsyncSession:
+        """Retorna una nueva instancia de AsyncSession."""
+        return self._session_factory()
 
     async def dispose(self) -> None:
         await self._engine.dispose()
+
+
+# Instancia global para el stack V4
+db_v4 = DBManagerV4()
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(db_v4.create_all_tables())
