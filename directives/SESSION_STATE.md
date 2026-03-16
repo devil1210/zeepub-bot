@@ -34,8 +34,15 @@
 - [x] Auditoría estética de los componentes del Publisher.
 - [x] Refactorización de `UniversalFloatingNav.tsx`.
 
+### Tareas Completadas (Fase 4 - Hito 1):
+- [x] Configuración de logs a DEBUG para visibilidad de tokens.
+- [x] Normalización de títulos en `generar_slug_from_meta` para tolerancia a typos.
+- [x] Creación de Workflow de GitHub Actions (`docker-publish.yml`) para CI/CD automatizado.
+- [x] Corrección de tipos en `metadata_utils.py`.
+
 ### Siguiente Paso
 - Implementación de la Fase 4: Búsqueda Semántica y RAG (Próximo hito principal).
+- Resolver conectividad de la BD en local (uso de Docker recomendado).
 
 ### Notas del Handover
-> El sistema se encuentra en un estado estable y verificado. La infraestructura V4 (Scanner y Publisher) está operativa. La siguiente IA puede proceder directamente con los componentes de UI. Se ha garantizado la persistencia local mediante `/push`.
+> El sistema se encuentra en un estado funcional respecto a CI/CD e infraestructura. La conectividad BD en local está pendiente de configuración mediante Docker. Persistencia completada mediante `/push`.

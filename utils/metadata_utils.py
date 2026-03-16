@@ -139,15 +139,17 @@ def generar_slug_from_meta(meta: Any) -> str:
     base_titulo = base_titulo.replace("×", "x")
     base_titulo = base_titulo.replace(",", " ")
 
+    # Asegurar minúsculas
+    base_titulo = base_titulo.lower()
     # Limpiar solo caracteres alfanuméricos y espacios
     base_titulo = base_titulo.strip()
     # Reemplazar caracteres con tildes y ñ por sus equivalentes básicos
     import unicodedata
 
     base_titulo = "".join(c for c in unicodedata.normalize("NFD", base_titulo) if unicodedata.category(c) != "Mn")
-    # Solo permitir letras latinas básicas, números y espacios (luego se convertirán a _)
-    # Eliminamos cualquier carácter que no sea a-z, A-Z, 0-9 o espacio
-    base_titulo = re.sub(r"[^a-zA-Z0-9\s]", "", base_titulo)
+    # Solo permitir letras latinas básicas, números y espacios
+    # Eliminamos cualquier carácter que no sea a-z, 0-9 o espacio
+    base_titulo = re.sub(r"[^a-z0-9\s]", "", base_titulo)
     # Reemplazar múltiples espacios por uno solo
     base_titulo = re.sub(r"\s+", " ", base_titulo).strip()
     # Los espacios pasan a ser guiones bajos
@@ -168,7 +170,8 @@ def process_book_identity_comprehensive(epub_path: str, original_filename: str |
         return {}
 
     title = meta.get("title") or original_filename or "Sin título"
-    author = normalize_author_name(meta.get("author"))
+    author_raw = meta.get("author") or ""
+    author = normalize_author_name(author_raw)
     series_meta = meta.get("series")
     romaji_from_series = None
 
