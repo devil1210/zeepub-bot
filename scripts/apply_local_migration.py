@@ -23,6 +23,22 @@ from core.db_manager_pg import pg_manager  # noqa: E402
 
 async def apply_local_migration():
     commands = [
+        # ── Users table: columnas faltantes del modelo User ──
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS nickname varchar(255)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS name varchar(255)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS photo_url varchar(512)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS beta_tester boolean DEFAULT false",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS bypass_limits boolean DEFAULT false",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS has_library_access boolean DEFAULT true",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS can_request_books boolean DEFAULT true",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS can_upload_epub boolean DEFAULT false",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS allow_theme_templates boolean DEFAULT false",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS roles JSONB DEFAULT '[]'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS insignias JSONB DEFAULT '[]'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS expires_at timestamp with time zone",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS total_downloads integer DEFAULT 0",
+        # ── Books table: columnas de extensión V4 ──
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS author text",
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS author_jap text",
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS layout_by text",
@@ -41,15 +57,18 @@ async def apply_local_migration():
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS word_count integer",
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS page_count integer",
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS reading_time integer",
-        "ALTER TABLE books ADD COLUMN IF NOT EXISTS is_uncensored integer",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS is_uncensored boolean DEFAULT false",
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS color_mode text DEFAULT 'bw'",
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS short_link text",
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS hash_md5 text",
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS extracted_data JSONB",
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS file_modified_at float8",
         "ALTER TABLE books ADD COLUMN IF NOT EXISTS file_created_at timestamp with time zone",
-        "ALTER TABLE books ADD COLUMN IF NOT EXISTS rating_average float8 DEFAULT 0.0",
-        "ALTER TABLE books ADD COLUMN IF NOT EXISTS rating_count integer DEFAULT 0",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS series_hash varchar(64)",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS cover_original varchar(512)",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS cover_high varchar(512)",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS cover_medium varchar(512)",
+        "ALTER TABLE books ADD COLUMN IF NOT EXISTS cover_low varchar(512)",
     ]
 
     logger.info("Applying migration to local database (localhost:5432)...")

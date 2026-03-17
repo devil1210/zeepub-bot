@@ -99,6 +99,12 @@
     - [x] Verificar acceso a sesión inyectada en `PublicationQueueRepository`.
     - [x] Resolver `UndefinedColumnError` en consultas de usuarios.
 
+- [x] **v4.2.3 - Schema & Scanner Bugfixes**:
+    - [x] Corregir `UndefinedColumnError: users.name` añadiendo 14 columnas faltantes a la migración local.
+    - [x] Corregir `NotNullViolationError: books.series_id` pasando `series_provider` y `translator_provider` en `ScannerService.sync_series`.
+    - [x] Añadir columnas `series_hash`, `cover_original/high/medium/low` a migración de `books`.
+    - [x] Corregir tipo de `is_uncensored` de `integer` a `boolean` en migración.
+
 ### Bloqueos
 - Ninguno detectado. El sistema es estable y operativo.
 

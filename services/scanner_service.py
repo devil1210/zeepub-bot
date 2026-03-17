@@ -365,7 +365,14 @@ class ScannerService:
                         for file in files:
                             if file.lower().endswith(".epub"):
                                 full_path = os.path.join(root, file)
-                                res = await EpubScanner.process_book(full_path, source, session, force_scan)
+                                res = await EpubScanner.process_book(
+                                    full_path,
+                                    source,
+                                    session,
+                                    force_scan,
+                                    series_provider=SeriesScanner.get_or_create_series,
+                                    translator_provider=LibraryScanner.sync_translator_group,
+                                )
                                 if res == "added":
                                     results["added"] += 1
                                 elif res == "updated":
