@@ -2,8 +2,8 @@
 
 ## 📍 Estado Actual
 - **Fase:** 1 (Sincronización y Backend Core)
-- **Hito:** Refactorización de Modelos a UUID y V4 Schema.
-- **Ánimo de Kaguya:** Satisfecha (Plan de UUID aprobado).
+- **Hito:** Estabilización de Skills y GitNexus (v4.2.1-fix+).
+- **Ánimo de Kaguya:** Satisfecha (Sincronización de excelencia completada).
 - Implementar la arquitectura de 4 capas con máxima elegancia y eficiencia.
 - Coordinar el equipo **EvilTeams** bajo la dirección de **Kaguya Shinomiya**.
 
@@ -79,6 +79,12 @@
     - [x] Robustecer `PublisherService` con soporte para inicialización por defecto.
     - [x] Actualizar referencias en `StatsService` y scripts de migración.
     - [x] Ejecutar `npx gitnexus analyze` para actualizar el grafo de conocimiento.
+
+- [x] **v4.2.2 - Skill & Index Synchronization**:
+    - [x] Sincronizar skills con el repositorio central (v6.4.0+).
+    - [x] Actualizar dependencias de skills y realizar auditoría de integridad.
+    - [x] Regenerar índice GitNexus con soporte para embeddings.
+
 
 - [x] **v4.2.1 - Emergency Schema & Attribute Fixes**:
     - [x] Corregir `DatatypeMismatch` en `download_history` (book_id -> UUID).
