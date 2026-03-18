@@ -79,10 +79,7 @@ services:
 
   # ── PostgreSQL 17 ────────────────────────────────────────────────────────
   db:
-    build:
-      context: .
-      dockerfile: docker/postgres/Dockerfile
-    image: zeepub_db_v4_custom
+    image: pgvector/pgvector:17-pg17
     container_name: zeepub_db_v4
     restart: always
     environment:

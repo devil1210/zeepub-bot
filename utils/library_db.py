@@ -144,6 +144,11 @@ def check_migrations():
                 add_column_if_missing("publication_templates", "extra_config", "JSONB")
                 add_column_if_missing("series_metadata", "rating_count", "INTEGER DEFAULT 0")
 
+                # 0.1 Table series (V4)
+                if table_exists("series"):
+                    add_column_if_missing("series", "title_english", "VARCHAR(255)")
+                    add_column_if_missing("series", "source_id", "UUID")
+
                 conn.execute(
                     text("CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);")
                 )
@@ -165,7 +170,7 @@ def check_migrations():
                 add_column_if_missing("local_books", "is_uncensored", "INTEGER DEFAULT 0")
                 add_column_if_missing("local_books", "color_mode", "VARCHAR(50)")
                 add_column_if_missing("local_books", "series_id", "INTEGER")
-                add_column_if_missing("local_books", "source_id", "UUID")
+                add_column_if_missing("local_books", "source_id_col", "UUID")
                 add_column_if_missing("local_books", "cover_original", "VARCHAR(1024)")
                 add_column_if_missing("local_books", "cover_high", "VARCHAR(1024)")
                 add_column_if_missing("local_books", "cover_medium", "VARCHAR(1024)")
