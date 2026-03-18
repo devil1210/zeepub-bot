@@ -65,7 +65,10 @@ class AIProcessor:
         """Generate AI proposal for missing author."""
         try:
             # Use AI to analyze title and suggest author
-            title = metadata.get("series", "") + " " + metadata.get("volume", "")
+            title = metadata.get("series", "")
+            if metadata.get("series_english"):
+                title += f" ({metadata.get('series_english')})"
+            title += " " + metadata.get("volume", "")
 
             prompt = f"""
             Analiza el siguiente título de novela ligera y sugiere el autor más probable:
@@ -108,6 +111,8 @@ class AIProcessor:
         """Generate AI proposal for improved description."""
         try:
             title = metadata.get("series", "")
+            if metadata.get("series_english"):
+                title += f" ({metadata.get('series_english')})"
             current_desc = metadata.get("description", "")
 
             prompt = f"""
@@ -158,6 +163,8 @@ class AIProcessor:
         """Generate AI proposal for better tags."""
         try:
             title = metadata.get("series", "")
+            if metadata.get("series_english"):
+                title += f" ({metadata.get('series_english')})"
             current_tags = metadata.get("tags", [])
 
             prompt = f"""

@@ -96,13 +96,13 @@ class MetadataProcessor:
                 series.description = book_metadata["description"]
                 logger.info(f"📝 Actualizada descripción: {series.description}")
 
-            # Handle demographics merge
-            if book_metadata.get("demographics"):
-                existing_demos = set(series.demographics or [])
-                new_demos = set(book_metadata["demographics"])
-                merged_demos = existing_demos.union(new_demos)
-                series.demographics = list(merged_demos)
-                logger.info(f"📝 Actualizados demographics: {len(merged_demos)} géneros")
+            if book_metadata.get("series_english") and not series.title_english:
+                series.title_english = book_metadata["series_english"]
+                logger.info(f"📝 Actualizado título inglés: {series.title_english}")
+
+            if book_metadata.get("series_spanish") and not series.title_spanish:
+                series.title_spanish = book_metadata["series_spanish"]
+                logger.info(f"📝 Actualizado título español: {series.title_spanish}")
 
             return series
 

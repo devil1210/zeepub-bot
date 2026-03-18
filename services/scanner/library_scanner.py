@@ -223,6 +223,7 @@ class LibraryScanner:
                 archived_s = ArchivedSeries(
                     title_raw=s.series_name,
                     title_spanish=s.series_spanish,
+                    title_english=s.title_english,
                     hash=s.series_hash,
                     author=s.author,
                     description=s.description,

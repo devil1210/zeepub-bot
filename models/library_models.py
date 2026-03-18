@@ -32,6 +32,7 @@ class Series(TimestampedBase):
     )
     title_raw: Mapped[str] = mapped_column(String(512), nullable=False)
     title_spanish: Mapped[str | None] = mapped_column(String(512))
+    title_english: Mapped[str | None] = mapped_column(String(512))
     description: Mapped[str | None] = mapped_column(Text)
     cover_url: Mapped[str | None] = mapped_column(String(512))
     author: Mapped[str | None] = mapped_column(String(512))
@@ -46,6 +47,24 @@ class Series(TimestampedBase):
     embedding: Mapped[list[float] | None] = mapped_column(Vector(768))
     source: Mapped["LibrarySource"] = relationship(back_populates="series")
     books: Mapped[list["Book"]] = relationship(back_populates="series", cascade="all, delete-orphan")
+
+    def __init__(self, **kwargs):
+        # Manejar propiedades híbridas en el constructor para evitar 'invalid keyword argument'
+        series_spanish = kwargs.pop("series_spanish", None)
+        series_english = kwargs.pop("series_english", None)
+        series_name = kwargs.pop("series_name", None)
+        series_hash = kwargs.pop("series_hash", None)
+
+        super().__init__(**kwargs)
+
+        if series_spanish:
+            self.series_spanish = series_spanish
+        if series_english:
+            self.series_english = series_english
+        if series_name:
+            self.series_name = series_name
+        if series_hash:
+            self.series_hash = series_hash
 
     @hybrid_property
     def series_spanish(self) -> str | None:
@@ -86,8 +105,8 @@ class Book(TimestampedBase):
     series_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("series.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    source_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("library_sources.id", ondelete="CASCADE"), nullable=True, index=True
+    source_id_col: Mapped[uuid.UUID | None] = mapped_column(
+        "source_id", ForeignKey("library_sources.id", ondelete="CASCADE"), nullable=True, index=True
     )
     hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     file_path: Mapped[str] = mapped_column(Text, nullable=False, unique=True)

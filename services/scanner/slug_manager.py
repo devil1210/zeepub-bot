@@ -73,8 +73,11 @@ class SlugManager:
         """
         try:
             # Generate slug using existing utility
-            # V4 Series doesn't have a to_dict() by default in TimestampedBase, using manual dict
-            series_data = {"title_raw": series.title_raw, "title_spanish": series.title_spanish}
+            series_data = {
+                "title_raw": series.title_raw,
+                "title_spanish": series.title_spanish,
+                "title_english": series.title_english,
+            }
             new_slug = generar_slug_from_meta(series_data)
 
             # Clean special characters
