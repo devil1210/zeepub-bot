@@ -36,6 +36,9 @@ class Series(TimestampedBase):
     description: Mapped[str | None] = mapped_column(Text)
     cover_url: Mapped[str | None] = mapped_column(String(512))
     author: Mapped[str | None] = mapped_column(String(512))
+    author_jap: Mapped[str | None] = mapped_column(String(512))
+    illustrator: Mapped[str | None] = mapped_column(String(512))
+    illustrator_jap: Mapped[str | None] = mapped_column(String(512))
     tags: Mapped[list[str] | None] = mapped_column(JSONB)
     rating_average: Mapped[float] = mapped_column(Numeric(3, 2), default=0.0)
     rating_count: Mapped[int] = mapped_column(default=0)
@@ -54,6 +57,8 @@ class Series(TimestampedBase):
         series_english = kwargs.pop("series_english", None)
         series_name = kwargs.pop("series_name", None)
         series_hash = kwargs.pop("series_hash", None)
+        author_jap = kwargs.pop("author_jap", None)
+        illustrator_jap = kwargs.pop("illustrator_jap", None)
 
         super().__init__(**kwargs)
 
@@ -65,6 +70,10 @@ class Series(TimestampedBase):
             self.series_name = series_name
         if series_hash:
             self.series_hash = series_hash
+        if author_jap:
+            self.author_jap = author_jap
+        if illustrator_jap:
+            self.illustrator_jap = illustrator_jap
 
     @hybrid_property
     def series_spanish(self) -> str | None:
@@ -124,6 +133,9 @@ class Book(TimestampedBase):
     translator: Mapped[str | None] = mapped_column(String(255))
     layout_by: Mapped[str | None] = mapped_column(String(255))
     author_col: Mapped[str | None] = mapped_column("author", String(512))
+    author_jap: Mapped[str | None] = mapped_column(String(512))
+    illustrator: Mapped[str | None] = mapped_column(String(512))
+    illustrator_jap: Mapped[str | None] = mapped_column(String(512))
     english_title: Mapped[str | None] = mapped_column(String(512))
     jap_title: Mapped[str | None] = mapped_column(String(512))
     romaji_title: Mapped[str | None] = mapped_column(String(512))

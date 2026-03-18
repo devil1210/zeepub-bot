@@ -146,8 +146,11 @@ def check_migrations():
 
                 # 0.1 Table series (V4)
                 if table_exists("series"):
-                    add_column_if_missing("series", "title_english", "VARCHAR(255)")
+                    add_column_if_missing("series", "title_english", "VARCHAR(512)")
                     add_column_if_missing("series", "source_id", "UUID")
+                    add_column_if_missing("series", "author_jap", "VARCHAR(512)")
+                    add_column_if_missing("series", "illustrator", "VARCHAR(512)")
+                    add_column_if_missing("series", "illustrator_jap", "VARCHAR(512)")
 
                 conn.execute(
                     text("CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);")
@@ -159,8 +162,9 @@ def check_migrations():
 
             # 1. local_books columns
             if table_exists("local_books"):
-                add_column_if_missing("local_books", "author_jap", "VARCHAR(255)")
-                add_column_if_missing("local_books", "illustrator_jap", "VARCHAR(255)")
+                add_column_if_missing("local_books", "author_jap", "VARCHAR(512)")
+                add_column_if_missing("local_books", "illustrator", "VARCHAR(512)")
+                add_column_if_missing("local_books", "illustrator_jap", "VARCHAR(512)")
                 add_column_if_missing("local_books", "romaji_title", "VARCHAR(512)")
                 add_column_if_missing("local_books", "spanish_title", "VARCHAR(512)")
                 add_column_if_missing("local_books", "english_title", "VARCHAR(512)")

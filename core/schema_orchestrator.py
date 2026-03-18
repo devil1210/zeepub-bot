@@ -46,8 +46,11 @@ class SchemaOrchestrator:
                 await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                 logger.info("Extension 'vector' enabled.")
 
-                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pgsentinel"))
-                logger.info("Extension 'pgsentinel' enabled.")
+                try:
+                    await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pgsentinel"))
+                    logger.info("Extension 'pgsentinel' enabled.")
+                except Exception as e:
+                    logger.warning(f"Extension 'pgsentinel' not available (optional): {e}")
 
                 # Create all tables defined in SQLAlchemy models
                 # This only creates tables that don't exist; it won't update existing frames
@@ -137,15 +140,20 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("books", "cover_high", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("books", "cover_medium", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("books", "cover_low", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "author_jap", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "illustrator", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "illustrator_jap", "VARCHAR(512)")
 
                 # Auto-Migration for PublicationChannels
                 await SchemaOrchestrator._check_and_add_column(
                     "publication_channels", "is_favorite", "BOOLEAN DEFAULT FALSE"
                 )
 
-                # Auto-Migration for Series (author_jap, illustrator_jap)
-                await SchemaOrchestrator._check_and_add_column("series", "author_jap", "VARCHAR(255)")
-                await SchemaOrchestrator._check_and_add_column("series", "illustrator_jap", "VARCHAR(255)")
+                # Auto-Migration for Series (author_jap, illustrator_jap, title_english)
+                await SchemaOrchestrator._check_and_add_column("series", "author_jap", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("series", "illustrator_jap", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("series", "illustrator", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("series", "title_english", "VARCHAR(512)")
 
                 # IMPORTANT: Wait a bit for Postgres to stabilize metadata
                 await asyncio.sleep(1)
