@@ -304,17 +304,12 @@ class EpubScanner:
                 if hash_conflict:
                     if not os.path.exists(hash_conflict.filepath):
                         logger.info(f"🔄 Migración detectada: {hash_conflict.filepath} -> {filepath}")
-                        # En lugar de crear uno nuevo, tomamos el conflictivo y actualizamos su path
-                        # Pero ya tenemos un objeto 'book', así que es más fácil borrar el conflictivo
-                        # o actualizarlo. Hagamos lo segundo: borramos el 'book' (si es nuevo) y usamos el conflictivo.
                         cls.copy_metadata_to_existing(book, hash_conflict)
                         hash_conflict.filepath = filepath
                         hash_conflict.filename = filename
                         hash_conflict.file_size = size
                         hash_conflict.file_modified_at = mtime
                         hash_conflict.series_hash = target_series_hash
-                        # Si 'book' es nuevo y no estaba en DB, no pasa nada.
-                        # Si estaba en DB (existing_same_file), borrarlo.
                         if book.id and book.id != hash_conflict.id:
                             await session.delete(book)
                         book = hash_conflict
@@ -337,19 +332,19 @@ class EpubScanner:
                             session.add(dup)
                         return "duplicate"
 
+                # Vinculación de serie DENTRO del no_autoflush para evitar flush prematuro
+                if series_provider:
+                    series = await series_provider(session, book, identity=identity)
+                    book.series_id = series.id
+
+                if translator_provider:
+                    await translator_provider(session, book)
+
                 if book not in session:
                     session.add(book)
                 outcome = "added" if not book.id else "updated"
 
-            # Vinculación
-            if series_provider:
-                series = await series_provider(session, book, identity=identity)
-                book.series_id = series.id
-
-            if translator_provider:
-                await translator_provider(session, book)
-
-            # Portadas
+            # Portadas (fuera del no_autoflush, series_id ya asignado)
             if extractor.cover_data:
                 cover_filename = f"{hashlib.md5(filepath.encode()).hexdigest()}.jpg"
                 cover_dest = os.path.join(COVERS_DIR, cover_filename)

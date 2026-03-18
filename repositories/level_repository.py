@@ -108,18 +108,21 @@ DEFAULT_LEVELS: list[dict[str, Any]] = [
     },
 ]
 
-# Mapeo de nombre de nivel a ID
-LEVEL_NAME_TO_ID: dict[str, int] = {
-    "admin": 1,
-    "administrador": 1,
-    "staff": 2,
-    "premium": 3,
-    "vip": 4,
-    "white": 5,
-    "patrocinador": 5,
-    "free": 6,
-    "gratis": 6,
+# Mapeo de nombre de nivel a UUID (consistente con DEFAULT_LEVELS)
+LEVEL_NAME_TO_UUID: dict[str, str] = {
+    "admin": "00000000-0000-0000-0000-000000000001",
+    "administrador": "00000000-0000-0000-0000-000000000001",
+    "staff": "00000000-0000-0000-0000-000000000002",
+    "premium": "00000000-0000-0000-0000-000000000003",
+    "vip": "00000000-0000-0000-0000-000000000004",
+    "white": "00000000-0000-0000-0000-000000000005",
+    "patrocinador": "00000000-0000-0000-0000-000000000005",
+    "free": "00000000-0000-0000-0000-000000000006",
+    "gratis": "00000000-0000-0000-0000-000000000006",
 }
+
+# Alias legacy (deprecated - usar LEVEL_NAME_TO_UUID)
+LEVEL_NAME_TO_ID = LEVEL_NAME_TO_UUID
 
 
 class LevelRepository(BaseRepository[UserLevel]):

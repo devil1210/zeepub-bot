@@ -105,11 +105,17 @@
     - [x] Añadir columnas `series_hash`, `cover_original/high/medium/low` a migración de `books`.
     - [x] Corregir tipo de `is_uncensored` de `integer` a `boolean` en migración.
 
+- [x] **v4.2.4 - UUID & Autoflush Critical Fixes**:
+    - [x] Corregir `DataError: invalid input for query argument $15` — `level_id` se pasaba como `int` (1) pero la columna es `UUID`. Actualizado en `user_repository.py`, `user_service.py`, `admin_extension.py` y `level_repository.py`.
+    - [x] Corregir `NotNullViolationError: books.series_id` (raíz real) — `series_provider` se ejecutaba fuera del `no_autoflush` block en `epub_scanner.py`, causando flush prematuro del book sin `series_id`.
+    - [x] Configurar GitNexus MCP con `alwaysAllow` en `mcp.json` y re-indexar codebase.
+
 ### Bloqueos
 - Ninguno detectado. El sistema es estable y operativo.
 
 ### Siguiente Paso
-1. Ejecutar `/push` para persistir los cambios de estabilidad en el repositorio.
+1. Ejecutar `/push` para persistir los cambios v4.2.4.
+2. Recargar la sesión de VS Code para activar GitNexus MCP (requiere reinicio del editor).
 
 ### Notas del Handover
-> **VERSIÓN 4.2.1-fix ESTABLE**: Se han resuelto los errores de atributo de sesión que bloqueaban el procesamiento de colas y las discrepancias de esquema en la tabla de usuarios. El sistema ahora soporta plenamente el modelo de datos V4 en producción.
+> **VERSIÓN 4.2.4 ESTABLE**: Se resolvieron los errores críticos de tipo UUID (level_id int→UUID) y el autoflush prematuro en el scanner. GitNexus MCP configurado permanentemente.

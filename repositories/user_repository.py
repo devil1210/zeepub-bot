@@ -5,6 +5,7 @@ Optimizado para PostgreSQL con soporte para patrones V4.
 """
 
 import logging
+import uuid as uuid_mod
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -114,9 +115,21 @@ class UserRepository(BaseRepository[User]):
         **kwargs,
     ) -> User:
         """Inserta o actualiza un usuario."""
-        # Mapeo básico de niveles si no se provee level_id
-        level_map = {"admin": 1, "staff": 2, "premium": 3, "vip": 4, "white": 5, "free": 6}
-        final_level_id = level_id or level_map.get(level.lower(), 6)
+        # Mapeo básico de niveles (UUIDs) si no se provee level_id
+        level_uuid_map = {
+            "admin": uuid_mod.UUID("00000000-0000-0000-0000-000000000001"),
+            "administrador": uuid_mod.UUID("00000000-0000-0000-0000-000000000001"),
+            "staff": uuid_mod.UUID("00000000-0000-0000-0000-000000000002"),
+            "premium": uuid_mod.UUID("00000000-0000-0000-0000-000000000003"),
+            "vip": uuid_mod.UUID("00000000-0000-0000-0000-000000000004"),
+            "white": uuid_mod.UUID("00000000-0000-0000-0000-000000000005"),
+            "patrocinador": uuid_mod.UUID("00000000-0000-0000-0000-000000000005"),
+            "free": uuid_mod.UUID("00000000-0000-0000-0000-000000000006"),
+        }
+        if level_id is not None:
+            final_level_id = uuid_mod.UUID(str(level_id)) if not isinstance(level_id, uuid_mod.UUID) else level_id
+        else:
+            final_level_id = level_uuid_map.get(level.lower(), uuid_mod.UUID("00000000-0000-0000-0000-000000000006"))
 
         async with self._get_session() as session:
             stmt = select(User).where(User.telegram_id == telegram_id)

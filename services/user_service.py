@@ -193,11 +193,10 @@ async def get_effective_user(
             try:
                 await user_repo.upsert(
                     uid,
-                    level="Administrador",
+                    level="admin",
                     role="admin",
                     name=nickname_from_tg or f"Admin_{uid}",
                     username=username_from_tg or "",
-                    level_id=1,
                 )
                 info = await get_user_info(uid)
             except Exception as e:
