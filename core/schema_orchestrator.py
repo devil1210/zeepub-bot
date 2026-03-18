@@ -143,6 +143,12 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("books", "author_jap", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("books", "illustrator", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("books", "illustrator_jap", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "spanish_title", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "english_title", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "romaji_title", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "jap_title", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("books", "series_spanish", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "series_english", "VARCHAR(255)")
 
                 # Auto-Migration for PublicationChannels
                 await SchemaOrchestrator._check_and_add_column(
