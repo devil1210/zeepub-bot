@@ -116,7 +116,10 @@ ok` en `library_models.py`.
     - [x] Corregir error de re-definición de `source_id` en `models/library_models.py` (F811).
     - [x] Integrar `title_english` en `MetadataProcessor`, `SlugManager` y `AIProcessor`.
     - [x] Actualizar lógica de archivado en `library_scanner.py` para compatibilidad con V4.
-    - [x] Validar calidad de código y sintaxis con `/audit` exitoso.
+- [x] **v4.3.1 - Performance Monitoring (pgsentinel)**:
+    - [x] Crear `docker/postgres/Dockerfile` para compilar e instalar `pgsentinel`.
+    - [x] Configurar `shared_preload_libraries` y parámetros de ASH en `docker-compose.yml`.
+    - [x] Automatizar `CREATE EXTENSION pgsentinel` en `SchemaOrchestrator`.
 
 ### Bloqueos
 - Ninguno detectado. El sistema es estable y operativo.

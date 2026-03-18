@@ -42,9 +42,12 @@ class SchemaOrchestrator:
             logger.info(f"Metadata contains {len(table_names)} tables: {', '.join(table_names)}")
 
             async with pg_manager.engine.begin() as conn:
-                # Enable pgvector extension
+                # Enable postgres extensions
                 await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                 logger.info("Extension 'vector' enabled.")
+
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pgsentinel"))
+                logger.info("Extension 'pgsentinel' enabled.")
 
                 # Create all tables defined in SQLAlchemy models
                 # This only creates tables that don't exist; it won't update existing frames
