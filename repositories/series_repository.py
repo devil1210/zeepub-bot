@@ -191,17 +191,18 @@ class SeriesRepository(BaseRepository[Series]):
 
                 # 4. Filtro por Fuente
                 if source_id:
-                    stmt = (
-                        stmt.join(
-                            Book,
+                    from sqlalchemy import exists as sa_exists
+
+                    source_subq = sa_exists().where(
+                        and_(
                             or_(
                                 Book.series_id == Series.id,
                                 Book.series_hash == Series.series_hash,
                             ),
+                            Book.source_id == source_id,
                         )
-                        .where(Book.source_id == source_id)
-                        .distinct()
                     )
+                    stmt = stmt.where(source_subq)
 
                 # 5. Ordenamiento
                 if sort_by == "newest":

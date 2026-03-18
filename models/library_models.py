@@ -56,6 +56,14 @@ class Series(TimestampedBase):
         self.title_spanish = value
 
     @hybrid_property
+    def series_english(self) -> str | None:
+        return self.title_english
+
+    @series_english.setter
+    def series_english(self, value: str | None):
+        self.title_english = value
+
+    @hybrid_property
     def series_name(self) -> str:
         return self.title_raw
 
@@ -175,7 +183,11 @@ class Book(TimestampedBase):
 
     @hybrid_property
     def source_id(self) -> uuid.UUID | None:
-        return self.series.source_id if self.series else None
+        return self.source_id_col or (self.series.source_id if self.series else None)
+
+    @source_id.setter
+    def source_id(self, value: uuid.UUID | None):
+        self.source_id_col = value
 
 
 # Mapping legacy class names
