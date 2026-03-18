@@ -59,7 +59,11 @@
 - [x] Estandarizar `user_repository.py` con `_get_session()` y commits condicionales.
 - [x] Estandarizar `agent_repository.py` (Previamente realizado en esta sesión).
 - [x] Fortalecer reglas en `AGENTS.md` contra `CodeGraphContext`.
-- [x] Restaurar `ArchivedSeries` y `UploadBook` en `library_models.py`.
+- [x] Corregir modelos de base de datos (Series, Book, DownloadLog).
+- [x] Sincronizar esquemas de Pydantic con los modelos.
+- [x] Actualizar lógica de migraciones en library_db.py.
+- [x] Re-indexar con GitNexus.
+ok` en `library_models.py`.
 - [x] Corrección de `ImportError` en `library_scanner.py` y `upload_repository.py`.
 - [x] Restauración de modelos faltantes: `ArchivedSeries`, `UploadBook`, `DuplicateBook`, `ArchivedBook`, `LibraryCleanupLog`, `AILearningFeedback`, `MetadataProposal`.
 - [x] Renombramiento de `PublisherServiceV4` a `PublisherService`.

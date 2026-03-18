@@ -165,6 +165,7 @@ def check_migrations():
                 add_column_if_missing("local_books", "is_uncensored", "INTEGER DEFAULT 0")
                 add_column_if_missing("local_books", "color_mode", "VARCHAR(50)")
                 add_column_if_missing("local_books", "series_id", "INTEGER")
+                add_column_if_missing("local_books", "source_id", "UUID")
                 add_column_if_missing("local_books", "cover_original", "VARCHAR(1024)")
                 add_column_if_missing("local_books", "cover_high", "VARCHAR(1024)")
                 add_column_if_missing("local_books", "cover_medium", "VARCHAR(1024)")
@@ -183,6 +184,10 @@ def check_migrations():
             # 3. users
             if table_exists("users"):
                 add_column_if_missing("users", "can_upload_epub", "BOOLEAN DEFAULT FALSE")
+
+            # 3.1 download_logs
+            if table_exists("download_logs"):
+                add_column_if_missing("download_logs", "telegram_id", "BIGINT")
 
             # 4. upload_books
             if table_exists("upload_books"):

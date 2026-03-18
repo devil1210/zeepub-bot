@@ -1,3 +1,8 @@
+---
+description: "Plan de mejoras del proyecto ZeePub-bot - Checklist de fases de implementación y reglas de desarrollo."
+alwaysApply: false
+---
+
 # 🚀 Plan de Mejoras ZeePub-bot
 
 > **Fuente**: Análisis externo en `analisis_claude/`

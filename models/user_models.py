@@ -111,9 +111,10 @@ class DownloadLog(TimestampedBase):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, index=True, nullable=True)
 
     book_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
-    downloaded_at: Mapped[any] = mapped_column(DateTime(timezone=True), server_default="now()")
+    downloaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="downloads")

@@ -1,5 +1,6 @@
 ---
-trigger: always_on
+description: "Manifesto de Operación ZeePub-bot v3.6.0 - Reglas universales de comportamiento, stack tecnológico, workflows y estándares del proyecto."
+alwaysApply: true
 version: 3.6.0
 edition: Enterprise
 ---

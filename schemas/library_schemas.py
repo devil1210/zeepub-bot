@@ -37,6 +37,7 @@ class BookDTO(BaseModel):
     rating_average: float = 0.0
     rating_count: int = 0
     is_folder: bool = False
+    source_id: Any | None = None
 
     # Enrichment
     romaji_title: str | None = None
@@ -134,3 +135,4 @@ class DownloadHistoryItemDTO(BaseModel):
     cover: str | None = None
     downloaded_at: str
     book_hash: str
+    telegram_id: int | None = None

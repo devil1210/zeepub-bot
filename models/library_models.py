@@ -48,6 +48,14 @@ class Series(TimestampedBase):
     books: Mapped[list["Book"]] = relationship(back_populates="series", cascade="all, delete-orphan")
 
     @hybrid_property
+    def series_spanish(self) -> str | None:
+        return self.title_spanish
+
+    @series_spanish.setter
+    def series_spanish(self, value: str | None):
+        self.title_spanish = value
+
+    @hybrid_property
     def series_name(self) -> str:
         return self.title_raw
 
@@ -69,6 +77,9 @@ class Book(TimestampedBase):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     series_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("series.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    source_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("library_sources.id", ondelete="CASCADE"), nullable=True, index=True
     )
     hash: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     file_path: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
