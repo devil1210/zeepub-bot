@@ -151,6 +151,7 @@ def check_migrations():
                     add_column_if_missing("series", "author_jap", "VARCHAR(512)")
                     add_column_if_missing("series", "illustrator", "VARCHAR(512)")
                     add_column_if_missing("series", "illustrator_jap", "VARCHAR(512)")
+                    add_column_if_missing("series", "demographics", "JSONB")
 
                 conn.execute(
                     text("CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);")

@@ -45,6 +45,7 @@ class Series(TimestampedBase):
     book_count: Mapped[int] = mapped_column(default=0)
     book_type: Mapped[str | None] = mapped_column(String(50))
     publisher: Mapped[str | None] = mapped_column(String(255))
+    demographics: Mapped[dict | None] = mapped_column(JSONB, default=dict)
     slug: Mapped[str | None] = mapped_column(String(100), index=True)
     status: Mapped[str] = mapped_column(String(20), default="reading")
     embedding: Mapped[list[float] | None] = mapped_column(Vector(768))
@@ -59,6 +60,7 @@ class Series(TimestampedBase):
         series_hash = kwargs.pop("series_hash", None)
         author_jap = kwargs.pop("author_jap", None)
         illustrator_jap = kwargs.pop("illustrator_jap", None)
+        demographics = kwargs.pop("demographics", None)
 
         super().__init__(**kwargs)
 
@@ -74,6 +76,8 @@ class Series(TimestampedBase):
             self.author_jap = author_jap
         if illustrator_jap:
             self.illustrator_jap = illustrator_jap
+        if demographics:
+            self.demographics = demographics
 
     @hybrid_property
     def series_spanish(self) -> str | None:

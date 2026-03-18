@@ -160,6 +160,7 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("series", "illustrator_jap", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("series", "illustrator", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("series", "title_english", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("series", "demographics", "JSONB")
 
                 # IMPORTANT: Wait a bit for Postgres to stabilize metadata
                 await asyncio.sleep(1)
