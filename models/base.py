@@ -22,6 +22,25 @@ class TimestampedBase(Base):
 
     __abstract__ = True
 
+    def to_dict(self) -> dict:
+        """Serializa todas las columnas del modelo a un dict."""
+        from sqlalchemy import inspect as sa_inspect
+
+        result = {}
+        mapper = sa_inspect(self.__class__)
+        for col in mapper.columns:
+            key = col.key
+            value = getattr(self, key, None)
+            # Convertir UUIDs y datetimes a string para serialización
+            if hasattr(value, "isoformat"):
+                result[key] = value.isoformat()
+            elif hasattr(value, "hex") and hasattr(value, "bytes"):
+                # UUID object
+                result[key] = str(value)
+            else:
+                result[key] = value
+        return result
+
     created_at: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
         server_default=func.now(),

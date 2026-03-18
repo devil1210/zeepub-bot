@@ -54,14 +54,14 @@ class GroupSettingsRepository(BaseRepository[GroupSettings]):
 
     async def get_by_chat_id(self, chat_id: int) -> GroupSettings | None:
         """Obtiene la configuración de un grupo por su chat_id."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(GroupSettings).where(GroupSettings.chat_id == chat_id)
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
     async def set_authorized(self, chat_id: int, authorized: bool = True) -> bool:
         """Establece el estado de autorización de un grupo."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 stmt = select(GroupSettings).where(GroupSettings.chat_id == chat_id)
                 result = await session.execute(stmt)
@@ -81,7 +81,7 @@ class GroupSettingsRepository(BaseRepository[GroupSettings]):
 
     async def set_welcome_slug(self, chat_id: int, slug: str) -> bool:
         """Establece el slug del mensaje de bienvenida para un grupo."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 stmt = select(GroupSettings).where(GroupSettings.chat_id == chat_id)
                 result = await session.execute(stmt)

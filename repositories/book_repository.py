@@ -98,7 +98,7 @@ class BookRepository(BaseRepository[Book]):
         Realiza una búsqueda de libros utilizando PostgreSQL ILIKE (Async).
         Optimizado con subconsulta para conteo de descargas.
         """
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 pattern = f"%{query}%"
 
@@ -185,7 +185,7 @@ class BookRepository(BaseRepository[Book]):
 
     async def get_recent_books(self, page: int = 1, items_per_page: int = 10) -> dict[str, Any]:
         """Obtiene los libros añadidos recientemente con soporte de paginación."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             # Subquery for download count
             dl_subquery = (
                 select(func.count(UserDownload.id))
@@ -226,7 +226,7 @@ class BookRepository(BaseRepository[Book]):
 
     async def get_duplicate_hashes(self) -> list[tuple[str, int]]:
         """Obtiene hashes duplicados y su conteo."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 stmt = (
                     select(Book.book_hash, func.count().label("count"))
@@ -242,7 +242,7 @@ class BookRepository(BaseRepository[Book]):
 
     async def get_books_by_hash(self, book_hash: str) -> list[Book]:
         """Obtiene todos los libros que comparten un hash."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 stmt = select(Book).where(Book.book_hash == book_hash).order_by(Book.indexed_at.asc())
                 result = await session.execute(stmt)
@@ -253,7 +253,7 @@ class BookRepository(BaseRepository[Book]):
 
     async def get_total_downloads(self, book_hash: str) -> int:
         """Obtiene el conteo total de descargas para un hash de libro."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = select(func.count(UserDownload.id)).where(UserDownload.book_hash == book_hash)
             result = await session.execute(stmt)
             return result.scalar() or 0

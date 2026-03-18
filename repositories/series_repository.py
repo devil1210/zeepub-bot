@@ -52,7 +52,7 @@ class SeriesRepository(BaseRepository[Series]):
 
     async def list_series(self, page: int = 1, items_per_page: int = 20, sort_by: str = "name") -> dict[str, Any]:
         """Lista series paginadas."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 stmt = select(Series)
 
@@ -84,7 +84,7 @@ class SeriesRepository(BaseRepository[Series]):
 
     async def update_data(self, series_id: int, data: dict[str, Any]) -> bool:
         """Actualiza campos específicos de una serie (Legacy/Helper)."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             series = await session.get(Series, series_id)
             if not series:
                 return False
@@ -108,7 +108,7 @@ class SeriesRepository(BaseRepository[Series]):
         """
         Búsqueda agrupada por series de forma eficiente usando PostgreSQL.
         """
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 pattern = f"%{query}%"
                 search_type = search_type.lower() if search_type else "todos"
@@ -241,7 +241,7 @@ class SeriesRepository(BaseRepository[Series]):
 
     async def sync_book_count(self, series_hash: str) -> int:
         """Actualiza el contador de libros de una serie basado en los libros reales en DB."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             # Contar libros reales
             count_stmt = select(func.count(Book.id)).where(Book.series_hash == series_hash)
             real_count = (await session.execute(count_stmt)).scalar() or 0

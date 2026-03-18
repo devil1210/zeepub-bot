@@ -22,7 +22,7 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
     ) -> bool:
         """Guarda o actualiza un mensaje personalizado en la base de datos."""
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(StoredMessage).where(StoredMessage.slug == slug)
                 result = await session.execute(stmt)
                 msg = result.scalar_one_or_none()
@@ -47,7 +47,7 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
     async def get_message(self, slug: str) -> StoredMessage | None:
         """Recupera un mensaje por su slug."""
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(StoredMessage).where(StoredMessage.slug == slug)
                 result = await session.execute(stmt)
                 return result.scalar_one_or_none()
@@ -58,7 +58,7 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
     async def delete_message(self, slug: str) -> bool:
         """Elimina un mensaje por su slug."""
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = delete(StoredMessage).where(StoredMessage.slug == slug)
                 await session.execute(stmt)
                 await session.commit()
@@ -70,7 +70,7 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
     async def list_messages(self, limit: int = 100, offset: int = 0) -> list[StoredMessage]:
         """Lista todos los mensajes guardados de forma paginada."""
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(StoredMessage).order_by(StoredMessage.created_at.desc()).limit(limit).offset(offset)
                 result = await session.execute(stmt)
                 return result.scalars().all()
@@ -81,7 +81,7 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
     async def set_setting(self, key: str, value: str) -> bool:
         """Guarda una configuración del plugin."""
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(PluginSettings).where(PluginSettings.key == key)
                 result = await session.execute(stmt)
                 setting = result.scalar_one_or_none()
@@ -100,7 +100,7 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
     async def get_setting(self, key: str) -> str | None:
         """Recupera una configuración del plugin."""
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(PluginSettings).where(PluginSettings.key == key)
                 result = await session.execute(stmt)
                 setting = result.scalar_one_or_none()
@@ -112,7 +112,7 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
     async def get_all_global_vars(self) -> dict[str, str]:
         """Obtiene todas las variables globales y retorna un diccionario."""
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(GlobalVariable)
                 result = await session.execute(stmt)
                 vars_db = result.scalars().all()
@@ -124,7 +124,7 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
     async def set_global_var(self, key: str, value: str) -> bool:
         """Define o actualiza una variable global."""
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = select(GlobalVariable).where(GlobalVariable.key == key)
                 result = await session.execute(stmt)
                 var = result.scalar_one_or_none()
@@ -143,7 +143,7 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
     async def del_global_var(self, key: str) -> bool:
         """Elimina una variable global."""
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 stmt = delete(GlobalVariable).where(GlobalVariable.key == key)
                 await session.execute(stmt)
                 await session.commit()
@@ -157,13 +157,13 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
         return await self.get_message(str(id))
 
     async def create(self, entity: StoredMessage) -> StoredMessage:
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             session.add(entity)
             await session.commit()
             return entity
 
     async def update(self, entity: StoredMessage) -> StoredMessage:
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             await session.merge(entity)
             await session.commit()
             return entity

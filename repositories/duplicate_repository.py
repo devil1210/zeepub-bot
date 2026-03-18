@@ -21,12 +21,12 @@ class DuplicateRepository(BaseRepository[DuplicateBook]):
 
     async def get_by_id(self, id: Any) -> DuplicateBook | None:
         """Obtiene un registro de duplicado por ID."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             return await session.get(DuplicateBook, id)
 
     async def create(self, entity: DuplicateBook) -> DuplicateBook:
         """Crea un nuevo registro de duplicado."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             session.add(entity)
             await session.commit()
             await session.refresh(entity)
@@ -34,7 +34,7 @@ class DuplicateRepository(BaseRepository[DuplicateBook]):
 
     async def update(self, entity: DuplicateBook) -> DuplicateBook:
         """Actualiza un registro de duplicado."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             merged = await session.merge(entity)
             await session.commit()
             await session.refresh(merged)
@@ -42,7 +42,7 @@ class DuplicateRepository(BaseRepository[DuplicateBook]):
 
     async def delete(self, id: Any) -> bool:
         """Elimina un registro de duplicado por ID."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 stmt = delete(DuplicateBook).where(DuplicateBook.id == id)
                 result = await session.execute(stmt)
@@ -55,7 +55,7 @@ class DuplicateRepository(BaseRepository[DuplicateBook]):
 
     async def get_all_duplicates(self) -> list[DuplicateBook]:
         """Obtiene todos los registros de duplicados detectados."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 stmt = select(DuplicateBook).order_by(DuplicateBook.detected_at.desc())
                 result = await session.execute(stmt)
@@ -66,7 +66,7 @@ class DuplicateRepository(BaseRepository[DuplicateBook]):
 
     async def clear_all(self) -> bool:
         """Limpia todos los registros de la tabla de duplicados."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             try:
                 await session.execute(delete(DuplicateBook))
                 await session.commit()

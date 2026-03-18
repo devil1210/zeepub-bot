@@ -133,13 +133,13 @@ class LevelRepository(BaseRepository[UserLevel]):
 
     async def get_by_id(self, id: Any) -> UserLevel | None:
         """Obtiene un nivel por su ID."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             result = await session.execute(select(UserLevel).where(UserLevel.id == id))
             return result.scalar_one_or_none()
 
     async def get_by_name(self, name: str) -> UserLevel | None:
         """Obtiene un nivel por nombre (case-insensitive)."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             result = await session.execute(select(UserLevel).where(UserLevel.name.ilike(name)))
             return result.scalar_one_or_none()
 
@@ -150,14 +150,14 @@ class LevelRepository(BaseRepository[UserLevel]):
         return await self.get_by_name(str(level_ref))
 
     async def create(self, entity: UserLevel) -> UserLevel:
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             session.add(entity)
             await session.commit()
             await session.refresh(entity)
             return entity
 
     async def update(self, entity: UserLevel) -> UserLevel:
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             await session.merge(entity)
             await session.commit()
             return entity
@@ -165,14 +165,14 @@ class LevelRepository(BaseRepository[UserLevel]):
     async def delete(self, id: Any) -> bool:
         from sqlalchemy import delete as sa_delete
 
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             result = await session.execute(sa_delete(UserLevel).where(UserLevel.id == id))
             await session.commit()
             return result.rowcount > 0
 
     async def get_all(self) -> list[UserLevel]:
         """Devuelve todos los niveles ordenados por prioridad descendente."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             result = await session.execute(select(UserLevel).order_by(UserLevel.priority.desc()))
             return list(result.scalars().all())
 
@@ -231,7 +231,7 @@ class LevelRepository(BaseRepository[UserLevel]):
             "canRequestBooks": "can_request_books",
         }
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 result = await session.execute(select(UserLevel).where(UserLevel.id == level_id))
                 level = result.scalar_one_or_none()
                 if not level:
@@ -262,7 +262,7 @@ class LevelRepository(BaseRepository[UserLevel]):
     async def ensure_defaults(self) -> None:
         """Seed de niveles por defecto si la tabla está vacía."""
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 count = (await session.execute(text("SELECT count(*) FROM user_levels"))).scalar()
                 if count and count > 0:
                     return

@@ -22,7 +22,7 @@ class MetricsRepository:
         if self.injected_session:
             yield self.injected_session
         else:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 yield session
 
     async def add_download(
@@ -33,7 +33,7 @@ class MetricsRepository:
         title: str | None = None,
     ):
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 query = text(
                     "INSERT INTO user_downloads (user_id, book_hash, series_hash, title, downloaded_at) VALUES (:user_id, :book_hash, :series_hash, :title, CURRENT_TIMESTAMP)"
                 )
@@ -67,7 +67,7 @@ class MetricsRepository:
         if not book_hash:
             return False
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 query = text("SELECT 1 FROM user_downloads WHERE user_id = :user_id AND book_hash = :book_hash LIMIT 1")
                 result = await session.execute(query, {"user_id": user_id, "book_hash": book_hash})
                 return result.fetchone() is not None
@@ -79,7 +79,7 @@ class MetricsRepository:
         if not book_hash:
             return 0
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 query = text("SELECT COUNT(*) FROM user_downloads WHERE book_hash = :book_hash")
                 result = await session.execute(query, {"book_hash": book_hash})
                 return result.scalar() or 0
@@ -91,7 +91,7 @@ class MetricsRepository:
         if not series_hash:
             return 0
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 query = text("SELECT COUNT(*) FROM user_downloads WHERE series_hash = :series_hash")
                 result = await session.execute(query, {"series_hash": series_hash})
                 return result.scalar() or 0
@@ -108,7 +108,7 @@ class MetricsRepository:
                 f"SELECT COUNT(*) FROM user_downloads WHERE series_hash IN ({placeholders}) OR book_hash IN ({placeholders})"
             )
             params = {f"h{i}": h for i, h in enumerate(hashes)}
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 result = await session.execute(query, params)
                 return result.scalar() or 0
         except Exception as e:
@@ -117,7 +117,7 @@ class MetricsRepository:
 
     async def add_rating(self, user_id: int, book_hash: str, rating: int):
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 query = text("""
                     INSERT INTO user_ratings (user_id, book_hash, rating, rated_at)
                     VALUES (:user_id, :book_hash, :rating, CURRENT_TIMESTAMP)
@@ -149,7 +149,7 @@ class MetricsRepository:
         if not book_hash:
             return {"average": 0.0, "count": 0}
         try:
-            async with self.db_manager.get_session() as session:
+            async with self._get_session() as session:
                 query = text("SELECT AVG(rating), COUNT(*) FROM user_ratings WHERE book_hash = :book_hash")
                 result = await session.execute(query, {"book_hash": book_hash})
                 row = result.fetchone()

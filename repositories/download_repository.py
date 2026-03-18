@@ -25,7 +25,7 @@ class DownloadRepository(BaseRepository[DownloadLog]):
     async def count_today(self, telegram_id: int) -> int:
         """Cuenta las descargas del usuario desde las 00:00 UTC de hoy."""
         today_utc = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = (
                 select(func.count())
                 .select_from(DownloadLog)
@@ -46,7 +46,7 @@ class DownloadRepository(BaseRepository[DownloadLog]):
         series_hash: str | None = None,
     ) -> DownloadLog:
         """Registra una nueva descarga."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             entry = DownloadLog(
                 telegram_id=telegram_id,
                 book_hash=book_hash,
@@ -86,7 +86,7 @@ class DownloadRepository(BaseRepository[DownloadLog]):
     async def get_recent(self, telegram_id: int, days: int = 7) -> list[DownloadLog]:
         """Devuelve las descargas recientes de un usuario."""
         since = datetime.now(UTC) - timedelta(days=days)
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = (
                 select(DownloadLog)
                 .where(
@@ -100,7 +100,7 @@ class DownloadRepository(BaseRepository[DownloadLog]):
 
     async def get_user_downloads(self, telegram_id: int, limit: int = 20) -> list[DownloadLog]:
         """Descargas del usuario (para historial). Alias usado por api/handlers/downloads."""
-        async with self.db_manager.get_session() as session:
+        async with self._get_session() as session:
             stmt = (
                 select(DownloadLog)
                 .where(DownloadLog.telegram_id == telegram_id)
