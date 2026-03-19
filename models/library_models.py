@@ -1,9 +1,9 @@
 import uuid
 from datetime import datetime
 
-from pgvector.sqlalchemy import Vector
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+# from pgvector.sqlalchemy import Vector
+from sqlalchemy import JSON, BigInteger, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -39,45 +39,18 @@ class Series(TimestampedBase):
     author_jap: Mapped[str | None] = mapped_column(String(512))
     illustrator: Mapped[str | None] = mapped_column(String(512))
     illustrator_jap: Mapped[str | None] = mapped_column(String(512))
-    tags: Mapped[list[str] | None] = mapped_column(JSONB)
+    tags: Mapped[list[str] | None] = mapped_column(JSON)
     rating_average: Mapped[float] = mapped_column(Numeric(3, 2), default=0.0)
     rating_count: Mapped[int] = mapped_column(default=0)
     book_count: Mapped[int] = mapped_column(default=0)
     book_type: Mapped[str | None] = mapped_column(String(50))
     publisher: Mapped[str | None] = mapped_column(String(255))
-    demographics: Mapped[dict | None] = mapped_column(JSONB, default=dict)
+    demographics: Mapped[dict | None] = mapped_column(JSON, default=dict)
     slug: Mapped[str | None] = mapped_column(String(100), index=True)
     status: Mapped[str] = mapped_column(String(20), default="reading")
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(768))
+    embedding: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
     source: Mapped["LibrarySource"] = relationship(back_populates="series")
     books: Mapped[list["Book"]] = relationship(back_populates="series", cascade="all, delete-orphan")
-
-    def __init__(self, **kwargs):
-        # Manejar propiedades híbridas en el constructor para evitar 'invalid keyword argument'
-        series_spanish = kwargs.pop("series_spanish", None)
-        series_english = kwargs.pop("series_english", None)
-        series_name = kwargs.pop("series_name", None)
-        series_hash = kwargs.pop("series_hash", None)
-        author_jap = kwargs.pop("author_jap", None)
-        illustrator_jap = kwargs.pop("illustrator_jap", None)
-        demographics = kwargs.pop("demographics", None)
-
-        super().__init__(**kwargs)
-
-        if series_spanish:
-            self.series_spanish = series_spanish
-        if series_english:
-            self.series_english = series_english
-        if series_name:
-            self.series_name = series_name
-        if series_hash:
-            self.series_hash = series_hash
-        if author_jap:
-            self.author_jap = author_jap
-        if illustrator_jap:
-            self.illustrator_jap = illustrator_jap
-        if demographics:
-            self.demographics = demographics
 
     @hybrid_property
     def series_spanish(self) -> str | None:
@@ -127,7 +100,7 @@ class Book(TimestampedBase):
     extension: Mapped[str] = mapped_column(String(10))
     volume_number: Mapped[float] = mapped_column(Numeric, nullable=False)
     title: Mapped[str | None] = mapped_column(String(512))
-    metadata_json: Mapped[dict | None] = mapped_column(JSONB, default=dict)
+    metadata_json: Mapped[dict | None] = mapped_column(JSON, default=dict)
     detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
     # V4 Library Extension
     filename: Mapped[str | None] = mapped_column(String(512))
@@ -146,7 +119,7 @@ class Book(TimestampedBase):
     book_type_col: Mapped[str | None] = mapped_column("book_type", String(50))
     edition: Mapped[str | None] = mapped_column(String(100))
     publisher: Mapped[str | None] = mapped_column(String(255))
-    extracted_data: Mapped[dict | None] = mapped_column(JSONB, default=dict)
+    extracted_data: Mapped[dict | None] = mapped_column(JSON, default=dict)
     hash_md5: Mapped[str | None] = mapped_column(String(64))
     isbn: Mapped[str | None] = mapped_column(String(50))
     asin: Mapped[str | None] = mapped_column(String(50))
@@ -165,7 +138,10 @@ class Book(TimestampedBase):
     cover_high: Mapped[str | None] = mapped_column(String(512))
     cover_medium: Mapped[str | None] = mapped_column(String(512))
     cover_low: Mapped[str | None] = mapped_column(String(512))
+    rating_count: Mapped[int | None] = mapped_column(Integer, default=0)
+    rating_average: Mapped[float | None] = mapped_column(Numeric, default=0.0)
 
+    # Relationships
     series: Mapped["Series"] = relationship(back_populates="books")
 
     @hybrid_property
@@ -238,7 +214,7 @@ class ArchivedSeries(TimestampedBase):
     description: Mapped[str | None] = mapped_column(Text)
     author: Mapped[str | None] = mapped_column(String(512))
     title_spanish: Mapped[str | None] = mapped_column(String(512))
-    tags: Mapped[list[str] | None] = mapped_column(JSONB)
+    tags: Mapped[list[str] | None] = mapped_column(JSON)
     cover_url: Mapped[str | None] = mapped_column(String(512))
     book_type: Mapped[str | None] = mapped_column(String(50))
     publisher: Mapped[str | None] = mapped_column(String(255))
@@ -268,7 +244,7 @@ class UploadBook(TimestampedBase):
     telegram_id: Mapped[int] = mapped_column(BigInteger, index=True)
     file_path: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending, processed, failed
-    metadata_json: Mapped[dict | None] = mapped_column(JSONB, default=dict)
+    metadata_json: Mapped[dict | None] = mapped_column(JSON, default=dict)
 
 
 class DuplicateBook(TimestampedBase):
@@ -330,4 +306,4 @@ class MetadataProposal(TimestampedBase):
     proposed_slug: Mapped[str | None] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(20), default="pending")
     ai_confidence: Mapped[float | None] = mapped_column(Numeric)
-    raw_response: Mapped[dict | None] = mapped_column(JSONB, default=dict)
+    raw_response: Mapped[dict | None] = mapped_column(JSON, default=dict)

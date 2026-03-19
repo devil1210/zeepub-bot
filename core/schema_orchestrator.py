@@ -96,8 +96,8 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("users", "total_downloads", "BIGINT DEFAULT 0")
                 await SchemaOrchestrator._check_and_add_column("users", "photo_url", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("users", "nickname", "VARCHAR(255)")
-                await SchemaOrchestrator._check_and_add_column("users", "roles", "JSONB DEFAULT '[]'::jsonb")
-                await SchemaOrchestrator._check_and_add_column("users", "insignias", "JSONB DEFAULT '[]'::jsonb")
+                await SchemaOrchestrator._check_and_add_column("users", "roles", "JSON DEFAULT '[]'::json")
+                await SchemaOrchestrator._check_and_add_column("users", "insignias", "JSON DEFAULT '[]'::json")
                 await SchemaOrchestrator._check_and_add_column("users", "expires_at", "TIMESTAMP WITH TIME ZONE")
                 await SchemaOrchestrator._check_and_add_column(
                     "users",
@@ -121,7 +121,7 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("books", "book_type", "VARCHAR(50)")
                 await SchemaOrchestrator._check_and_add_column("books", "edition", "VARCHAR(100)")
                 await SchemaOrchestrator._check_and_add_column("books", "publisher", "VARCHAR(255)")
-                await SchemaOrchestrator._check_and_add_column("books", "extracted_data", "JSONB DEFAULT '{}'::jsonb")
+                await SchemaOrchestrator._check_and_add_column("books", "extracted_data", "JSON DEFAULT '{}'::json")
                 await SchemaOrchestrator._check_and_add_column("books", "hash_md5", "VARCHAR(64)")
                 await SchemaOrchestrator._check_and_add_column("books", "isbn", "VARCHAR(50)")
                 await SchemaOrchestrator._check_and_add_column("books", "asin", "VARCHAR(50)")
@@ -160,7 +160,7 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("series", "illustrator_jap", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("series", "illustrator", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("series", "title_english", "VARCHAR(512)")
-                await SchemaOrchestrator._check_and_add_column("series", "demographics", "JSONB")
+                await SchemaOrchestrator._check_and_add_column("series", "demographics", "JSON")
 
                 # IMPORTANT: Wait a bit for Postgres to stabilize metadata
                 await asyncio.sleep(1)

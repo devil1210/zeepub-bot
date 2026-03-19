@@ -7,7 +7,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
-load_dotenv(override=False)
+load_dotenv(override=True)
 
 
 @dataclass

@@ -3,6 +3,20 @@ from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
+from sqlalchemy.types import JSON, TypeDecorator
+
+
+class CompatibleJSONB(TypeDecorator):
+    """
+    Usa JSON base para máxima compatibilidad entre motores (SQLite/Postgres).
+    En Postgres, SQLAlchemy lo mapeará a JSON nativo sin problemas.
+    """
+
+    impl = JSON
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        return dialect.type_descriptor(JSON())
 
 
 class Base(AsyncAttrs, DeclarativeBase):

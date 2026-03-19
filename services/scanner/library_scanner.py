@@ -53,7 +53,8 @@ class LibraryScanner:
                 if siglas and (not existing.siglas or len(siglas) < len(existing.siglas or "")):
                     existing.siglas = siglas
             else:
-                new_group = TranslatorsGroup(name=translator, siglas=siglas)
+                final_siglas = siglas or translator[:50]
+                new_group = TranslatorsGroup(name=translator, siglas=final_siglas)
                 session.add(new_group)
 
             # Flush to get ID if needed, but usually we commit in batches elsewhere
@@ -177,9 +178,6 @@ class LibraryScanner:
         total_checked = len(books)
 
         for book in books:
-            if book.filepath and book.filepath.startswith("/") and os.name == "nt":
-                continue
-
             if not book.filepath or not os.path.exists(book.filepath):
                 archived = ArchivedBook(
                     series_hash=book.series_hash,

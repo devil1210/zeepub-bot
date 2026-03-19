@@ -36,7 +36,7 @@ def create_library_engine():
     db_url = config.DATABASE_URL
 
     if not db_url:
-        _log.error("DATABASE_URL no está configurada. PostgreSQL es obligatorio.")
+        _log.error("❌ DATABASE_URL no está configurada. PostgreSQL es obligatorio.")
         raise RuntimeError("DATABASE_URL is required for PostgreSQL operation.")
 
     # For synchronous SQLAlchemy (psycopg2), ensure url starts with postgresql://
@@ -55,7 +55,6 @@ def create_library_engine():
         _log.debug("Converting 'db' to 'localhost' for Windows local execution.")
 
     # Configuración de pool optimizada para producción
-    # Eliminamos connect_timeout que causa problemas en algunas versiones del driver
     return create_engine(
         db_url,
         echo=False,
@@ -65,8 +64,10 @@ def create_library_engine():
         pool_recycle=3600,
         pool_timeout=30,
         connect_args={
-            "options": "-c statement_timeout=30000",  # Sigue permitiendo timeout de query
-        },
+            "options": "-c statement_timeout=30000",
+        }
+        if "sqlite" not in db_url
+        else {},
     )
 
 
@@ -135,7 +136,9 @@ def check_migrations():
                 add_column_if_missing("series_metadata", "series_spanish", "VARCHAR(255)")
                 add_column_if_missing("series_metadata", "book_type", "VARCHAR(100)")
                 add_column_if_missing("series_metadata", "publisher", "VARCHAR(255)")
-                add_column_if_missing("series_metadata", "demographics", "JSONB")
+                add_column_if_missing(
+                    "series_metadata", "demographics", "JSON" if "sqlite" in engine.url.drivername else "JSONB"
+                )
                 add_column_if_missing("series_metadata", "slug", "VARCHAR(100)")
                 add_column_if_missing("series_metadata", "rating_average", "FLOAT DEFAULT 0.0")
 
@@ -151,7 +154,9 @@ def check_migrations():
                     add_column_if_missing("series", "author_jap", "VARCHAR(512)")
                     add_column_if_missing("series", "illustrator", "VARCHAR(512)")
                     add_column_if_missing("series", "illustrator_jap", "VARCHAR(512)")
-                    add_column_if_missing("series", "demographics", "JSONB")
+                    add_column_if_missing(
+                        "series", "demographics", "JSON" if "sqlite" in engine.url.drivername else "JSONB"
+                    )
 
                 conn.execute(
                     text("CREATE INDEX IF NOT EXISTS idx_series_metadata_hash ON series_metadata(series_hash);")

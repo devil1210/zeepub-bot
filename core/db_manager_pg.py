@@ -42,21 +42,27 @@ class PostgresManager:
             if self._initialized:
                 return
 
-            db_url = config.DATABASE_URL
+            # Priority: use direct os.getenv to avoid any default SQLite falling from config
+            db_url = os.getenv("DATABASE_URL")
             if not db_url:
-                logger.warning("No DATABASE_URL found. PostgresManager will not work.")
+                db_url = config.DATABASE_URL
+
+            if not db_url or "sqlite" in db_url.lower():
+                logger.error("❌ CRITICAL: No valid PostgreSQL DATABASE_URL found.")
+                # We return here to avoid starting with SQLite if the user wants Postgres
                 return
 
-            # Handle 'postgres://' vs 'postgresql://' for SQLAlchemy
+            # Force asyncpg
             if db_url.startswith("postgres://"):
                 db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
             elif db_url.startswith("postgresql://") and "+asyncpg" not in db_url:
                 db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-            # Fallback 'db' to 'localhost' if running outside Docker (common for local agents on Windows)
-            if "@db:" in db_url and os.name == "nt":
-                db_url = db_url.replace("@db:", "@localhost:", 1)
-                logger.info(f"Converting 'db' to 'localhost' for Windows: {db_url}")
+            # Localhost for Windows
+            if "@db:" in db_url or "db:5432" in db_url:
+                if os.name == "nt":
+                    db_url = db_url.replace("@db:", "@localhost:", 1).replace("db:5432", "localhost:5432")
+                    logger.info("🔄 Windows detected: using localhost for Postgres.")
 
             try:
                 self.engine = create_async_engine(db_url, pool_pre_ping=True, pool_recycle=3600)

@@ -2,6 +2,7 @@ import functools
 import json
 import logging
 import os
+import sys
 import time
 
 from models.agent_models import AgentExecution
@@ -17,7 +18,7 @@ LOG_FILE = os.path.join(LOG_DIR, "execution.log")
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(LOG_FILE), logging.StreamHandler()],
+    handlers=[logging.FileHandler(LOG_FILE, encoding="utf-8"), logging.StreamHandler(sys.stdout)],
 )
 
 logger = logging.getLogger("ZeePub-Agent")

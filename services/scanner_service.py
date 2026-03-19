@@ -29,15 +29,23 @@ class ScannerService:
         """
         Inicializa el servicio.
         """
-        if isinstance(libraries, str):
-            try:
-                import json
+        self.libraries = libraries
+        if not self.libraries and hasattr(config, "LOCAL_LIBRARIES"):
+            libs = config.LOCAL_LIBRARIES
+            if isinstance(libs, str) and libs.strip().startswith("{"):
+                try:
+                    import json
 
-                self.libraries = json.loads(libraries)
-            except Exception:
-                self.libraries = None
-        else:
-            self.libraries = libraries
+                    self.libraries = json.loads(libs)
+                except Exception:
+                    self.libraries = None
+            else:
+                self.libraries = libs
+
+        # Auto-scan on startup if local libraries are defined
+        if self.libraries:
+            logger.info(f"🚀 Auto-scan detectado para: {list(self.libraries.keys())}. Iniciando...")
+            asyncio.create_task(self.sync_all())
 
     _is_scanning = False
     _stop_requested = False

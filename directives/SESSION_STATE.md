@@ -116,17 +116,20 @@ ok` en `library_models.py`.
     - [x] Corregir error de re-definición de `source_id` en `models/library_models.py` (F811).
     - [x] Integrar `title_english` en `MetadataProcessor`, `SlugManager` y `AIProcessor`.
     - [x] Actualizar lógica de archivado en `library_scanner.py` para compatibilidad con V4.
-- [x] **v4.3.1 - Performance Monitoring (pgsentinel)**:
-    - [x] Crear `docker/postgres/Dockerfile` para compilar e instalar `pgsentinel`.
-    - [x] Configurar `shared_preload_libraries` y parámetros de ASH en `docker-compose.yml`.
-    - [x] Automatizar `CREATE EXTENSION pgsentinel` en `SchemaOrchestrator`.
+- [x] **v4.3.2 - Local Database Reconstruction & Fixes**:
+    - [x] Reconstrucción total de la base de datos PostgreSQL local (Drop & Recreate).
+    - [x] Sincronización del modelo `Series` con el campo `series_hash`.
+    - [x] Corrección de `UnicodeEncodeError` en `utils/logger.py` para soporte de caracteres UTF-8 en Windows.
+    - [ ] Escaneo pendiente de 26 EPUBs (Estructura de DB lista).
+
 
 ### Bloqueos
 - Ninguno detectado. El sistema es estable y operativo.
 
 ### Siguiente Paso
-1. Ejecutar `/push` para persistir los cambios v4.3.0.
-2. Realizar una prueba de escaneo real en el entorno correspondiente.
+1. Ejecutar `/push` para persistir la reconstrucción de la DB y el fix del logger.
+2. Reiniciar el bot local para completar el escaneo de los 26 EPUBs.
+3. Verificar la integridad de los datos en el dashboard.
 
 ### Notas del Handover
-> **VERSIÓN 4.3.0 ESTABLE**: Integración total de `title_english`, resolución de conflictos de atributos en modelos y auditoría de calidad de código completada.
+> **ESTADO CRÍTICO SOLUCIONADO**: Se ha forzado la recreación de la DB para resolver la falta de columnas. El error de codificación detectado al final (`\u014d`) ha sido mitigado en el logger. El sistema está listo para el escaneo masivo.

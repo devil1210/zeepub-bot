@@ -27,7 +27,7 @@ class SeriesScanner:
 
     @classmethod
     async def get_or_create_series(
-        cls, session: Any, book: LocalBook, identity: dict[str, Any] | None = None
+        cls, session: Any, book: LocalBook, identity: dict[str, Any] | None = None, source: Any = None
     ) -> SeriesMetadata:
         """
         Obtiene o crea una entrada en SeriesMetadata para el libro.
@@ -83,6 +83,7 @@ class SeriesScanner:
                 book_type=extracted.get("book_type"),
                 publisher=extracted.get("publisher") or book.publisher,
                 cover_url=book.cover_low or book.cover_medium,
+                source_id=book.source_id or (source.id if source else None),
                 book_count=0,
             )
             # Generar slug usando el objeto recién creado

@@ -170,11 +170,8 @@ class EpubScanner:
                 and book.file_modified_at == mtime
                 and book.file_size == size
                 and book.book_hash
-                and book.short_link
                 and book.cover_low
                 and book.series is not None
-                and book.series_hash
-                == hash_service.generate_series_hash(book.series.series_name, book.series.author, book.series.book_type)
             ):
                 return "skipped"
 
@@ -184,22 +181,27 @@ class EpubScanner:
             extractor = EpubMetadataExtractor(filepath)
             meta = extractor.extract()
             if not meta:
+                logger.error(f"❌ Falló extracción de metadatos: {filename}")
                 return False
 
             from utils.helpers import process_book_identity_comprehensive
 
             identity = process_book_identity_comprehensive(filepath)
             if not identity:
+                logger.error(f"❌ Falló identidad del libro: {filename}")
                 return False
 
             if not book:
                 book = LocalBook(filepath=filepath)
+                session.add(book)
 
             # Actualizar campos
             book.filename = filename
             book.file_size = size
             book.file_modified_at = mtime
             book.file_created_at = datetime.fromtimestamp(stat.st_ctime)
+            book.extension = os.path.splitext(filepath)[1].lower().replace(".", "")
+            book.source_id = source.id
 
             book.title = identity["title"]
             book.volume = identity["volume"]
@@ -244,8 +246,8 @@ class EpubScanner:
                 "illustrator": meta.get("illustrator"),
                 "illustrator_jap": meta.get("illustrator_jap"),
                 "description": meta.get("description"),
-                "tags": final_genres,
-                "demographics": classified_demographics,
+                "tags": [],
+                "demographics": {},
                 "book_type": identity["book_type"],
             }
             book.extracted_data = extracted_data
@@ -334,7 +336,7 @@ class EpubScanner:
 
                 # Vinculación de serie DENTRO del no_autoflush para evitar flush prematuro
                 if series_provider:
-                    series = await series_provider(session, book, identity=identity)
+                    series = await series_provider(session, book, identity=identity, source=source)
                     book.series_id = series.id
 
                 if translator_provider:
