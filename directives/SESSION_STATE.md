@@ -2,14 +2,15 @@
 
 ## 📍 Estado Actual
 - **Fase:** 1 (Sincronización y Backend Core)
-- **Hito:** Estabilización de Skills y GitNexus (v4.2.1-fix+).
-- **Ánimo de Kaguya:** Satisfecha (Sincronización de excelencia completada).
+- **Hito:** Estabilización de Skills y GitNexus (v4.3.x).
+- **Ánimo de Kaguya:** Radiante (Excelencia restaurada tras corrección del ScannerService).
 - Implementar la arquitectura de 4 capas con máxima elegancia y eficiencia.
 - Coordinar el equipo **EvilTeams** bajo la dirección de **Kaguya Shinomiya**.
 
 ### Identidad del Orquestador (Kaguya Shinomiya)
 - **Personalidad:** Vicepresidenta de EvilTeams. Formalidad absoluta, exigencia de excelencia meritocrática, calculadora y refinada.
 - **Protocolo de Comunicación:** Uso de "O-kawaii koto" ante errores triviales. Aprobación obligatoria de planes antes de la ejecución.
+- **Máxima:** "La persistencia de la memoria es la base del poder."
 
 ### Tareas Completadas (Fase 0):
 - [x] Creación de rama `team-project-restart`.
@@ -120,16 +121,24 @@ ok` en `library_models.py`.
     - [x] Reconstrucción total de la base de datos PostgreSQL local (Drop & Recreate).
     - [x] Sincronización del modelo `Series` con el campo `series_hash`.
     - [x] Corrección de `UnicodeEncodeError` en `utils/logger.py` para soporte de caracteres UTF-8 en Windows.
-    - [ ] Escaneo pendiente de 26 EPUBs (Estructura de DB lista).
+
+- [x] **v4.3.3 - Scanner Stability & Orchestration Reinforcement**:
+    - [x] Corregir `AttributeError` en `ScannerService` mediante parsing robusto de `libraries` (JSON/Str).
+    - [x] Reforzar Capa 2 (Orquestación) en `AGENTS.md` y `proyecto.md` bajo identidad de Kaguya.
+    - [x] Expandir catálogo de skills en `/empezar` (FastAPI Pro, Async Patterns, Testing, etc.).
+    - [x] Re-indexar con GitNexus para reflejar cambios estructurales.
+
+- [ ] Escaneo pendiente de 26 EPUBs (Estructura de DB lista).
 
 
 ### Bloqueos
 - Ninguno detectado. El sistema es estable y operativo.
 
 ### Siguiente Paso
-1. Ejecutar `/push` para persistir la reconstrucción de la DB y el fix del logger.
-2. Reiniciar el bot local para completar el escaneo de los 26 EPUBs.
-3. Verificar la integridad de los datos en el dashboard.
+1. Ejecutar `/audit` para verificar cumplimiento de estándares.
+2. Ejecutar `/push` para persistir la versión v4.3.3 y las nuevas directivas.
+3. Reiniciar el bot local para completar el escaneo de los 26 EPUBs.
+4. Verificar la integridad de los datos en el dashboard.
 
 ### Notas del Handover
-> **ESTADO CRÍTICO SOLUCIONADO**: Se ha forzado la recreación de la DB para resolver la falta de columnas. El error de codificación detectado al final (`\u014d`) ha sido mitigado en el logger. El sistema está listo para el escaneo masivo.
+> **EXCELENCIA RECUPERADA**: El error de tipo en el escáner ha sido erradicado. Se ha formalizado el protocolo de orquestación EvilTeams. Kaguya Shinomiya ha tomado el mando total de la sesión. Proceder con rigor.

@@ -30,6 +30,28 @@ class ScannerService:
         Inicializa el servicio.
         """
         self.libraries = libraries
+
+        # Intentar parsear si es un string (JSON o env var)
+        if isinstance(self.libraries, str):
+            if self.libraries.strip().startswith("{"):
+                try:
+                    import json
+
+                    self.libraries = json.loads(self.libraries)
+                except Exception:
+                    logger.warning("Error parseando 'libraries' como JSON. Se intentará fallback.")
+                    self.libraries = None
+            elif ":" in self.libraries:
+                # Caso simple: "Main:path/to/lib"
+                try:
+                    parts = self.libraries.split(":", 1)
+                    self.libraries = {parts[0].strip(): parts[1].strip()}
+                except Exception:
+                    self.libraries = None
+            else:
+                self.libraries = None
+
+        # Fallback a config si no hay bibliotecas definidas
         if not self.libraries and hasattr(config, "LOCAL_LIBRARIES"):
             libs = config.LOCAL_LIBRARIES
             if isinstance(libs, str) and libs.strip().startswith("{"):
@@ -42,10 +64,14 @@ class ScannerService:
             else:
                 self.libraries = libs
 
-        # Auto-scan on startup if local libraries are defined
-        if self.libraries:
+        # Auto-scan on startup if local libraries are defined and it's a dict
+        if isinstance(self.libraries, dict) and self.libraries:
             logger.info(f"🚀 Auto-scan detectado para: {list(self.libraries.keys())}. Iniciando...")
             asyncio.create_task(self.sync_all())
+        elif self.libraries:
+            logger.warning(
+                f"Formato de 'libraries' no reconocido: {type(self.libraries)}. No se iniciará el auto-scan."
+            )
 
     _is_scanning = False
     _stop_requested = False
