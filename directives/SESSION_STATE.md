@@ -132,6 +132,11 @@ ok` en `library_models.py`.
     - [x] Corregir `UndefinedColumnError` añadiendo columnas de rating (`rating_count`, `rating_average`) al `SchemaOrchestrator.py`.
     - [x] Sincronizar metadatos adicionales de la tabla `series` (`slug`, `status`, `book_count`, `embedding`).
 
+- [x] **v4.3.5 - Nuclear Sync (Audit Atómico)**:
+    - [x] Sincronización total (1:1) de **TODAS** las columnas de `books` y `series` desde `library_models.py`.
+    - [x] Añadir cheques de existencia para `hash`, `file_path`, `sources`, etc., para evitar fallos en migraciones parciales.
+    - [x] Unificación de tipos TIMESTAMP para auditoría.
+
 - [ ] Escaneo pendiente de 26 EPUBs (Estructura de DB lista).
 
 
