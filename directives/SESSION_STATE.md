@@ -128,6 +128,10 @@ ok` en `library_models.py`.
     - [x] Expandir catálogo de skills en `/empezar` (FastAPI Pro, Async Patterns, Testing, etc.).
     - [x] Re-indexar con GitNexus para reflejar cambios estructurales.
 
+- [x] **v4.3.4 - DB Schema Synchronization Fix**:
+    - [x] Corregir `UndefinedColumnError` añadiendo columnas de rating (`rating_count`, `rating_average`) al `SchemaOrchestrator.py`.
+    - [x] Sincronizar metadatos adicionales de la tabla `series` (`slug`, `status`, `book_count`, `embedding`).
+
 - [ ] Escaneo pendiente de 26 EPUBs (Estructura de DB lista).
 
 
@@ -135,10 +139,9 @@ ok` en `library_models.py`.
 - Ninguno detectado. El sistema es estable y operativo.
 
 ### Siguiente Paso
-1. Ejecutar `/audit` para verificar cumplimiento de estándares.
-2. Ejecutar `/push` para persistir la versión v4.3.3 y las nuevas directivas.
-3. Reiniciar el bot local para completar el escaneo de los 26 EPUBs.
-4. Verificar la integridad de los datos en el dashboard.
+1. Reiniciar el bot local para completar el escaneo de los 26 EPUBs (v4.3.4 activará el esquema).
+2. Verificar la integridad de los datos en el dashboard.
+3. Proceder con el despliegue al VPS si el escaneo local es exitoso.
 
 ### Notas del Handover
 > **EXCELENCIA RECUPERADA**: El error de tipo en el escáner ha sido erradicado. Se ha formalizado el protocolo de orquestación EvilTeams. Kaguya Shinomiya ha tomado el mando total de la sesión. Proceder con rigor.

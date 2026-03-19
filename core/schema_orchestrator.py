@@ -149,6 +149,8 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("books", "jap_title", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("books", "series_spanish", "VARCHAR(255)")
                 await SchemaOrchestrator._check_and_add_column("books", "series_english", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "rating_count", "INTEGER DEFAULT 0")
+                await SchemaOrchestrator._check_and_add_column("books", "rating_average", "NUMERIC DEFAULT 0.0")
 
                 # Auto-Migration for PublicationChannels
                 await SchemaOrchestrator._check_and_add_column(
@@ -161,6 +163,12 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("series", "illustrator", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("series", "title_english", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("series", "demographics", "JSON")
+                await SchemaOrchestrator._check_and_add_column("series", "rating_count", "INTEGER DEFAULT 0")
+                await SchemaOrchestrator._check_and_add_column("series", "rating_average", "NUMERIC(3, 2) DEFAULT 0.0")
+                await SchemaOrchestrator._check_and_add_column("series", "book_count", "INTEGER DEFAULT 0")
+                await SchemaOrchestrator._check_and_add_column("series", "slug", "VARCHAR(100)")
+                await SchemaOrchestrator._check_and_add_column("series", "status", "VARCHAR(20) DEFAULT 'reading'")
+                await SchemaOrchestrator._check_and_add_column("series", "embedding", "JSON")
 
                 # IMPORTANT: Wait a bit for Postgres to stabilize metadata
                 await asyncio.sleep(1)
