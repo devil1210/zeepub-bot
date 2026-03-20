@@ -155,11 +155,15 @@ ok` en `library_models.py`.
 - **Cambios**: El arranque del bot ahora invoca el `SchemaOrchestrator` completo, garantizando que las columnas de rating (`rating_count`, `rating_average`) se creen atómicamente.
 - **Acción**: Reiniciar el contenedor/bot para aplicar.
 
-### v4.3.8 - Atomic Type Correction (BigInt to UUID)
-- **Cambio**: Implementación de `_check_and_fix_column_type` en `SchemaOrchestrator`.
-- **Motivo**: Resolver `DatatypeMismatchError` en el entorno Docker donde `source_id` persistía como `bigint`.
-- **Acción**: El bot ahora corregirá automáticamente su propio tipo de dato al iniciar.
+### v4.3.9 - Serie y Metadatos: Integridad Total
+- **Estado**: ✅ Completado y Sincronizado.
+- **Cambios**:
+  - `to_dict()` ahora incluye propiedades híbridas para metadatos de series.
+  - `SeriesScanner` garantiza la generación de UUIDs tras el flush.
+  - El generador de slugs reconoce campos `title_raw/spanish/english`.
+  - Validación de `series_id` en `epub_scanner` antes de insertar libros.
+- **Acción**: Reiniciar el bot en el VPS para aplicar los nuevos scanners de v4.3.9.
 
 ---
 ### Notas del Handover
-> **ORQUESTACIÓN TOTAL**: Se ha integrado el flujo de migración v4.3.7. El bot es ahora resiliente a fallos de extensiones y asegura la integridad del esquema antes de iniciar el escaneo. Proceder con el push.
+> **SOLUCIÓN DE INTEGRIDAD**: Se ha resuelto el error de `series_id` nulo. El sistema es ahora mucho más robusto en la vinculación de relaciones durante el escaneo masivo. Proceder con el auto-scan en el VPS.
