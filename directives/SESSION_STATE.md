@@ -150,20 +150,14 @@ ok` en `library_models.py`.
 3. Proceder con el despliegue al VPS si el escaneo local es exitoso.
 
 
-### v4.3.7 - Schema Orchestrator Integration
-- **Estado**: ✅ Completado e Integrado en `main.py`.
-- **Cambios**: El arranque del bot ahora invoca el `SchemaOrchestrator` completo, garantizando que las columnas de rating (`rating_count`, `rating_average`) se creen atómicamente.
-- **Acción**: Reiniciar el contenedor/bot para aplicar.
-
-### v4.3.9 - Serie y Metadatos: Integridad Total
-- **Estado**: ✅ Completado y Sincronizado.
+### v4.4.0 - Fix Crítico: IntegrityError (series_id IS NULL)
+- **Estado**: ✅ Completado y Verificado.
 - **Cambios**:
-  - `to_dict()` ahora incluye propiedades híbridas para metadatos de series.
-  - `SeriesScanner` garantiza la generación de UUIDs tras el flush.
-  - El generador de slugs reconoce campos `title_raw/spanish/english`.
-  - Validación de `series_id` en `epub_scanner` antes de insertar libros.
-- **Acción**: Reiniciar el bot en el VPS para aplicar los nuevos scanners de v4.3.9.
+  - `models/base.py`: `to_dict()` ahora incluye propiedades híbridas (hybrid properties), permitiendo que `series_name` y otros campos calculados se incluyan en la serialización.
+  - `services/scanner/series_scanner.py`: Refactorizado para generar UUIDs de serie manualmente (`uuid.uuid4()`) y eliminar llamadas a `session.flush()` que disparaban inserciones prematuras de libros incompletos.
+  - `services/scanner/epub_scanner.py`: Diferida la adición del objeto `LocalBook` a la sesión hasta que el `series_id` y otros metadatos obligatorios estén completamente asignados.
+- **Acción**: Reiniciar el bot en el VPS para aplicar la lógica de escaneo atómica de v4.4.0.
 
 ---
 ### Notas del Handover
-> **SOLUCIÓN DE INTEGRIDAD**: Se ha resuelto el error de `series_id` nulo. El sistema es ahora mucho más robusto en la vinculación de relaciones durante el escaneo masivo. Proceder con el auto-scan en el VPS.
+> **SOLUCIÓN DE INTEGRIDAD V4.4.0**: Se ha resuelto el error de `series_id` nulo mediante una arquitectura de guardado diferido. El libro ya no entra en la sesión de SQLAlchemy hasta que tiene su `series_id` asignado, y `SeriesScanner` ya no realiza flujos (flushes) intermedios. Esto garantiza la estabilidad del escaneo masivo en el VPS. Proceder con el auto-scan.

@@ -193,7 +193,6 @@ class EpubScanner:
 
             if not book:
                 book = LocalBook(filepath=filepath)
-                session.add(book)
 
             # Actualizar campos
             book.filename = filename

@@ -68,7 +68,11 @@ class SeriesScanner:
                 final_series_name = extracted_series
                 logger.info(f"📝 Usando título extraído: {extracted_series}")
 
+            import uuid
+
+            series_id = uuid.uuid4()
             series = SeriesMetadata(
+                id=series_id,
                 series_name=final_series_name,
                 series_spanish=series_spanish,
                 series_english=series_english,
@@ -86,26 +90,14 @@ class SeriesScanner:
                 source_id=book.source_id or (source.id if source else None),
                 book_count=0,
             )
-            # Generar slug usando el objeto recién creado
+            # Generar slug usando el objeto recién creado (v4.4.0: ahora to_dict incluye hybrid props)
             generated_slug = generar_slug_from_meta(series.to_dict())
 
             series.slug = generated_slug
             logger.info(f"📝 Slug inicial generado: {generated_slug}")
 
             session.add(series)
-            await session.flush()
-
-            # Verificación Crítica de ID (v4.3.9)
-            if not series.id:
-                logger.error(
-                    f"❌ ERROR CRÍTICO: El ID de la serie '{series.series_name}' sigue siendo None tras el flush."
-                )
-                # Generación forzada si falla el default de SQLAlchemy
-                import uuid
-
-                series.id = uuid.uuid4()
-                await session.flush()
-                logger.warning(f"⚠️ ID de serie generado manualmente: {series.id}")
+            # await session.flush()  # ELIMINADO (v4.4.0): Evita flush prematuro de LocalBook incompleto
 
             logger.info(f"🆕 Nueva serie detectada: {series.series_name} [ID: {series.id}]")
         else:
@@ -258,7 +250,7 @@ class SeriesScanner:
             )
             session.add(archived_s)
             await session.delete(series)
-            await session.flush()
+            # await session.flush()
             return
 
         for b in books:
@@ -284,7 +276,7 @@ class SeriesScanner:
         if ratings:
             series.rating_average = sum(ratings) / len(ratings)
         series.rating_count = sum(b.rating_count for b in books)
-        await session.flush()
+        # await session.flush()
 
     @classmethod
     async def run_ai_gardener(cls, session: Any, touched_hashes: set):
