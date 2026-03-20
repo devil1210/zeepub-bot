@@ -337,7 +337,12 @@ class EpubScanner:
                 # Vinculación de serie DENTRO del no_autoflush para evitar flush prematuro
                 if series_provider:
                     series = await series_provider(session, book, identity=identity, source=source)
-                    book.series_id = series.id
+                    if series and series.id:
+                        book.series_id = series.id
+                        # También vincular el objeto para que las relaciones se carguen si es necesario
+                        book.series = series
+                    else:
+                        logger.error(f"❌ Fallo crítico en series_provider para '{book.title}': serie o ID nulo.")
 
                 if translator_provider:
                     await translator_provider(session, book)

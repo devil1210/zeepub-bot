@@ -37,23 +37,45 @@ class TimestampedBase(Base):
     __abstract__ = True
 
     def to_dict(self) -> dict:
-        """Serializa todas las columnas del modelo a un dict."""
+        """Serializa todas las columnas y propiedades híbridas del modelo a un dict."""
         from sqlalchemy import inspect as sa_inspect
+        from sqlalchemy.ext.hybrid import hybrid_property
 
         result = {}
         mapper = sa_inspect(self.__class__)
+
+        # 1. Columnas estándar
         for col in mapper.columns:
             key = col.key
             value = getattr(self, key, None)
-            # Convertir UUIDs y datetimes a string para serialización
-            if hasattr(value, "isoformat"):
-                result[key] = value.isoformat()
-            elif hasattr(value, "hex") and hasattr(value, "bytes"):
-                # UUID object
-                result[key] = str(value)
-            else:
-                result[key] = value
+            result[key] = self._serialize_value(value)
+
+        # 2. Propiedades híbridas y descriptores (Crucial para Metadatos)
+        for name, prop in self.__class__.__dict__.items():
+            if isinstance(prop, hybrid_property) or (hasattr(prop, "__get__") and not name.startswith("_")):
+                try:
+                    value = getattr(self, name)
+                    # No sobreescribir si ya existe en columnas (a menos que sea None)
+                    if name not in result or result[name] is None:
+                        result[name] = self._serialize_value(value)
+                except Exception:
+                    continue
+
         return result
+
+    def _serialize_value(self, value):
+        """Helper para serializar valores individuales."""
+        if value is None:
+            return None
+        if hasattr(value, "isoformat"):
+            return value.isoformat()
+        if hasattr(value, "hex") and hasattr(value, "bytes"):
+            return str(value)
+        if isinstance(value, (list, tuple)):
+            return [self._serialize_value(v) for v in value]
+        if isinstance(value, dict):
+            return {k: self._serialize_value(v) for k, v in value.items()}
+        return value
 
     created_at: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),

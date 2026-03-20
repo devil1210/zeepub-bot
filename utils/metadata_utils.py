@@ -125,6 +125,9 @@ def generar_slug_from_meta(meta: Any) -> str:
             or meta.get("titulo_serie")
             or meta.get("series_clean")
             or meta.get("english_title")
+            or meta.get("title_raw")
+            or meta.get("title_spanish")
+            or meta.get("title_english")
             or meta.get("title")
         )
     elif isinstance(meta, str):

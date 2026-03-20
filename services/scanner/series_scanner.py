@@ -94,7 +94,20 @@ class SeriesScanner:
 
             session.add(series)
             await session.flush()
-            logger.info(f"🆕 Nueva serie detectada: {series.series_name}")
+
+            # Verificación Crítica de ID (v4.3.9)
+            if not series.id:
+                logger.error(
+                    f"❌ ERROR CRÍTICO: El ID de la serie '{series.series_name}' sigue siendo None tras el flush."
+                )
+                # Generación forzada si falla el default de SQLAlchemy
+                import uuid
+
+                series.id = uuid.uuid4()
+                await session.flush()
+                logger.warning(f"⚠️ ID de serie generado manualmente: {series.id}")
+
+            logger.info(f"🆕 Nueva serie detectada: {series.series_name} [ID: {series.id}]")
         else:
             # Sincronizar campos PERO preservar modificaciones manuales
             current_name = series.series_name or ""
