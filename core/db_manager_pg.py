@@ -55,8 +55,10 @@ class PostgresManager:
             # Force asyncpg
             if db_url.startswith("postgres://"):
                 db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
-            elif db_url.startswith("postgresql://") and "+asyncpg" not in db_url:
-                db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            elif "postgresql" in db_url:
+                db_url = db_url.replace("postgresql+psycopg2", "postgresql+asyncpg")
+                if "+asyncpg" not in db_url:
+                    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
             # Localhost for Windows
             if "@db:" in db_url or "db:5432" in db_url:

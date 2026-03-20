@@ -160,4 +160,9 @@ ok` en `library_models.py`.
 
 ---
 ### Notas del Handover
-> **SOLUCIÓN DE INTEGRIDAD V4.4.0**: Se ha resuelto el error de `series_id` nulo mediante una arquitectura de guardado diferido. El libro ya no entra en la sesión de SQLAlchemy hasta que tiene su `series_id` asignado, y `SeriesScanner` ya no realiza flujos (flushes) intermedios. Esto garantiza la estabilidad del escaneo masivo en el VPS. Proceder con el auto-scan.
+
+### v4.4.1 - Fix Crítico: Driver Async para Postgres
+- **Estado**: ✅ Completado y Verificado.
+- **Cambios**:
+  - `core/db_manager_pg.py`: Se modificó la lógica de inicialización para forzar el uso de `asyncpg` incluso si la `DATABASE_URL` contiene `+psycopg2`.
+- **Acción**: El bot ahora inicia correctamente sin errores de driver `psycopg2` en el contexto async.

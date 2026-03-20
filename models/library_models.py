@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 # from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, BigInteger, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -138,6 +138,7 @@ class Book(TimestampedBase):
     cover_high: Mapped[str | None] = mapped_column(String(512))
     cover_medium: Mapped[str | None] = mapped_column(String(512))
     cover_low: Mapped[str | None] = mapped_column(String(512))
+    is_published: Mapped[bool] = mapped_column(Boolean, default=False)
     rating_count: Mapped[int | None] = mapped_column(Integer, default=0)
     rating_average: Mapped[float | None] = mapped_column(Numeric, default=0.0)
 

@@ -164,6 +164,7 @@ class SchemaOrchestrator:
             await SchemaOrchestrator._check_and_add_column("books", "series_english", "VARCHAR(255)")
             await SchemaOrchestrator._check_and_add_column("books", "rating_count", "INTEGER DEFAULT 0")
             await SchemaOrchestrator._check_and_add_column("books", "rating_average", "NUMERIC DEFAULT 0.0")
+            await SchemaOrchestrator._check_and_add_column("books", "is_published", "BOOLEAN DEFAULT FALSE")
             await SchemaOrchestrator._check_and_add_column(
                 "books", "created_at", "TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP"
             )

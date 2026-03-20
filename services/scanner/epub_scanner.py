@@ -213,6 +213,7 @@ class EpubScanner:
             book.edition = identity["edition"]
             book.book_type = identity.get("book_type", "Novela Ligera")
             book.publisher = meta.get("publisher")
+            book.is_published = False
 
             # Tags clasificación
             raw_tags = meta.get("tags", [])
