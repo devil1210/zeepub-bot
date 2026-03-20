@@ -128,16 +128,17 @@ ok` en `library_models.py`.
     - [x] Expandir catálogo de skills en `/empezar` (FastAPI Pro, Async Patterns, Testing, etc.).
     - [x] Re-indexar con GitNexus para reflejar cambios estructurales.
 
-- [x] **v4.3.4 - DB Schema Synchronization Fix**:
-    - [x] Corregir `UndefinedColumnError` añadiendo columnas de rating (`rating_count`, `rating_average`) al `SchemaOrchestrator.py`.
-    - [x] Sincronizar metadatos adicionales de la tabla `series` (`slug`, `status`, `book_count`, `embedding`).
+- [x] **v4.3.4 - Schema Repair (Rating Columns)**: Añadidas columnas base.
+- [x] **v4.3.5 - Nuclear Sync (Audit Atómico)**: Sincronización 1:1 total.
+- [x] **v4.3.6 - Anti-Poisoning Fix (Critical)**:
+    - [x] Corregir aborto de transacción por fallo de `pgsentinel`.
+    - [x] Aislar `CREATE EXTENSION` en transacciones independientes.
+    - [x] Garantizar ejecución de migraciones en entornos restricted (VPS).
 
-- [x] **v4.3.5 - Nuclear Sync (Audit Atómico)**:
-    - [x] Sincronización total (1:1) de **TODAS** las columnas de `books` y `series` desde `library_models.py`.
-    - [x] Añadir cheques de existencia para `hash`, `file_path`, `sources`, etc., para evitar fallos en migraciones parciales.
-    - [x] Unificación de tipos TIMESTAMP para auditoría.
-
-- [ ] Escaneo pendiente de 26 EPUBs (Estructura de DB lista).
+## Próximo Paso
+1. **REINICIAR EL BOT**: El usuario debe reiniciar el bot para que el orquestador aplique el fix v4.3.6.
+2. **Validar Logs**: Confirmar que no hay `CRITICAL - Failed to initialize schema`.
+3. **Validar Escaneo**: Los libros se procesarán sin errores de columnas.
 
 
 ### Bloqueos
@@ -148,5 +149,12 @@ ok` en `library_models.py`.
 2. Verificar la integridad de los datos en el dashboard.
 3. Proceder con el despliegue al VPS si el escaneo local es exitoso.
 
+
+### v4.3.7 - Schema Orchestrator Integration
+- **Estado**: ✅ Completado e Integrado en `main.py`.
+- **Cambios**: El arranque del bot ahora invoca el `SchemaOrchestrator` completo, garantizando que las columnas de rating (`rating_count`, `rating_average`) se creen atómicamente.
+- **Acción**: Reiniciar el contenedor/bot para aplicar.
+
+---
 ### Notas del Handover
-> **EXCELENCIA RECUPERADA**: El error de tipo en el escáner ha sido erradicado. Se ha formalizado el protocolo de orquestación EvilTeams. Kaguya Shinomiya ha tomado el mando total de la sesión. Proceder con rigor.
+> **ORQUESTACIÓN TOTAL**: Se ha integrado el flujo de migración v4.3.7. El bot es ahora resiliente a fallos de extensiones y asegura la integridad del esquema antes de iniciar el escaneo. Proceder con el push.

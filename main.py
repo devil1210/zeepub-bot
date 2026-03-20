@@ -240,13 +240,13 @@ async def fix_schema_if_needed():
 
         # ── Schema V4 (tablas propias del stack V4) ──────────────────────
         try:
-            from core.v4_db_manager import DBManagerV4
+            from core.schema_orchestrator import schema_orchestrator
 
-            db_v4 = DBManagerV4()
-            await db_v4.create_all_tables()
-            logger.info("✅ Schema V4 verificado/creado correctamente")
+            # initialize_schema() ya llama a Base.metadata.create_all y además aplica migraciones
+            await schema_orchestrator.initialize_schema()
+            logger.info("✅ Schema V4 verificado y migraciones aplicadas correctamente")
         except Exception as ve:
-            logger.warning(f"⚠️ Schema V4 no disponible (puede ser primera vez): {ve}")
+            logger.warning(f"⚠️ Error inicializando Schema V4: {ve}")
 
         logger.info("Database schema check completed successfully.")
 
