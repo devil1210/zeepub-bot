@@ -155,6 +155,11 @@ ok` en `library_models.py`.
 - **Cambios**: El arranque del bot ahora invoca el `SchemaOrchestrator` completo, garantizando que las columnas de rating (`rating_count`, `rating_average`) se creen atómicamente.
 - **Acción**: Reiniciar el contenedor/bot para aplicar.
 
+### v4.3.8 - Atomic Type Correction (BigInt to UUID)
+- **Cambio**: Implementación de `_check_and_fix_column_type` en `SchemaOrchestrator`.
+- **Motivo**: Resolver `DatatypeMismatchError` en el entorno Docker donde `source_id` persistía como `bigint`.
+- **Acción**: El bot ahora corregirá automáticamente su propio tipo de dato al iniciar.
+
 ---
 ### Notas del Handover
 > **ORQUESTACIÓN TOTAL**: Se ha integrado el flujo de migración v4.3.7. El bot es ahora resiliente a fallos de extensiones y asegura la integridad del esquema antes de iniciar el escaneo. Proceder con el push.

@@ -101,6 +101,18 @@ class SchemaOrchestrator:
             # Auto-Migration for Books (Full Scanner Support)
             await SchemaOrchestrator._check_and_add_column("books", "series_id", "UUID")
             await SchemaOrchestrator._check_and_add_column("books", "source_id", "UUID")
+
+            # FORZAR CORRECCIÓN DE TIPO (Caso crítico bigint -> uuid)
+            await SchemaOrchestrator._check_and_fix_column_type(
+                "books", "source_id", "uuid", "UUID USING source_id::TEXT::UUID"
+            )
+            await SchemaOrchestrator._check_and_fix_column_type(
+                "books", "rating_count", "integer", "INTEGER USING rating_count::INTEGER"
+            )
+            await SchemaOrchestrator._check_and_fix_column_type(
+                "books", "rating_average", "numeric", "NUMERIC(5,2) USING rating_average::NUMERIC"
+            )
+
             await SchemaOrchestrator._check_and_add_column("books", "hash", "VARCHAR(64)")
             await SchemaOrchestrator._check_and_add_column("books", "file_path", "TEXT")
             await SchemaOrchestrator._check_and_add_column("books", "file_size", "BIGINT")
@@ -364,6 +376,30 @@ class SchemaOrchestrator:
                     await session.commit()
             except Exception as e:
                 logger.error(f"Error checking column {column_name} in {table_name}: {e}")
+
+    @staticmethod
+    async def _check_and_fix_column_type(table_name: str, column_name: str, expected_type: str, alter_using: str):
+        """Checks if a column has the expected type, and if not, runs ALTER TABLE."""
+        async with pg_manager.get_session() as session:
+            try:
+                # 1. Get current data type
+                check_sql = text(
+                    f"SELECT data_type FROM information_schema.columns WHERE table_name='{table_name}' AND column_name='{column_name}'"
+                )
+                result = await session.execute(check_sql)
+                current_type = result.scalar()
+
+                if current_type and current_type.lower() != expected_type.lower():
+                    logger.warning(
+                        f"Type mismatch in '{table_name}.{column_name}': expected {expected_type}, found {current_type}. Fixing..."
+                    )
+                    await session.execute(
+                        text(f"ALTER TABLE {table_name} ALTER COLUMN {column_name} TYPE {alter_using}")
+                    )
+                    await session.commit()
+                    logger.info(f"✅ Column '{table_name}.{column_name}' fixed successfully.")
+            except Exception as e:
+                logger.error(f"Error fixing column type for {column_name} in {table_name}: {e}")
 
 
 # Global instance
