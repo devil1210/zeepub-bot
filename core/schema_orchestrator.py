@@ -102,8 +102,8 @@ class SchemaOrchestrator:
                 await SchemaOrchestrator._check_and_add_column("users", "created_at", "TIMESTAMP DEFAULT NOW()")
 
                 # Auto-Migration for SeriesMetadata (Fix missing columns reported in logs)
-                await SchemaOrchestrator._check_and_add_column("series_metadata", "series_spanish", "VARCHAR(512)")
-                await SchemaOrchestrator._check_and_add_column("series_metadata", "series_english", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("series", "series_spanish", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("series", "series_english", "VARCHAR(512)")
 
                 # Auto-Migration for Download History (Fix series_hash missing)
                 await SchemaOrchestrator._check_and_add_column("download_history", "series_hash", "VARCHAR(64)")

@@ -96,17 +96,17 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
         async with pg_manager.get_session() as session:
             cursor = await session.execute(
                 text("""
-                SELECT title, clean_title, book_hash, COUNT(*) as dls
+                SELECT title, clean_title, book_id, COUNT(*) as dls
                 FROM download_history
                 WHERE downloaded_at >= NOW() - INTERVAL '30 days'
-                GROUP BY book_hash, title, clean_title
+                GROUP BY book_id, title, clean_title
                 ORDER BY dls DESC
                 LIMIT 1
             """)
             )
             row = cursor.fetchone()
             if row:
-                p_title, p_clean_title, p_book_hash, p_dls = row
+                p_title, p_clean_title, p_book_id, p_dls = row
                 popular_book = {
                     "title": p_clean_title or p_title,
                     "downloads": p_dls,
@@ -115,7 +115,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
                 stmt_lb = (
                     select(LocalBook)
                     .options(selectinload(LocalBook.series_info))
-                    .where(or_(LocalBook.book_hash == p_book_hash, LocalBook.title == p_title))
+                    .where(or_(LocalBook.book_hash == p_book_id, LocalBook.title == p_title))
                 )
                 lb_res = await session.execute(stmt_lb)
                 lb = lb_res.scalars().first()
