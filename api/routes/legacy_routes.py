@@ -38,6 +38,16 @@ class LegacyRoutes:
             "request_book": miniapp_handlers.handle_request_book,
             "download": miniapp_handlers.handle_download,
             "ui_settings": miniapp_handlers.handle_ui_settings,
+            # Admin Actions
+            "admin_get_system_logs": miniapp_handlers.handle_admin_get_system_logs,
+            "admin_send_logs_telegram": miniapp_handlers.handle_admin_send_logs_telegram,
+            "admin_stats": miniapp_handlers.handle_admin_stats,
+            "admin_get_users": miniapp_handlers.handle_admin_get_users,
+            "admin_get_tiers": miniapp_handlers.handle_admin_get_tiers,
+            "admin_get_tier_config": miniapp_handlers.handle_admin_get_tier_config,
+            "admin_get_themes": miniapp_handlers.handle_admin_get_themes,
+            "admin_get_recent_audit_logs": miniapp_handlers.handle_admin_get_recent_audit_logs,
+            "admin_get_sync_status": miniapp_handlers.handle_admin_get_sync_status,
         }
 
     def get_router(self) -> APIRouter:

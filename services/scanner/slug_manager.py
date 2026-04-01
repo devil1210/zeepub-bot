@@ -73,12 +73,24 @@ class SlugManager:
         """
         try:
             # Generate slug using existing utility
-            new_slug = generar_slug_from_meta(series_metadata.to_dict())
+            meta_dict = series_metadata.to_dict()
+            # Ensure name/series_name is present from the object directly if missing in dict
+            if "series_name" not in meta_dict or not meta_dict["series_name"]:
+                meta_dict["series_name"] = series_metadata.series_name or series_metadata.name
+
+            new_slug = generar_slug_from_meta(meta_dict)
+
+            # Fallback total: si sigue vacío, usar el nombre directo o el hash
+            if not new_slug and series_metadata.series_name:
+                # Generación manual rápida si el helper falló
+                new_slug = series_metadata.series_name.lower().replace(" ", "_")
 
             # Clean special characters
             cleaned_slug = SlugManager.clean_slug_special_chars(new_slug)
 
-            logger.info(f"🔗 Slug generado: {cleaned_slug}")
+            if not cleaned_slug:
+                logger.warning(f"⚠️ Slug generado vacío para: {series_metadata.series_name}")
+
             return cleaned_slug
 
         except Exception as e:

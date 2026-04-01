@@ -96,6 +96,7 @@ def generar_slug_from_meta(meta: Any) -> str:
             meta.get("series_english")
             or meta.get("series_name")
             or meta.get("series")
+            or meta.get("name")
             or meta.get("titulo_serie")
             or meta.get("series_clean")
             or meta.get("title")
