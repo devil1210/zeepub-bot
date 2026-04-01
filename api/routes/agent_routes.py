@@ -18,8 +18,7 @@ from fastapi import APIRouter, Header, HTTPException, Query
 from sqlalchemy import func, select
 
 from core.database import async_session
-from models.book import Book
-from models.series import Series
+from models.library import LocalBook, SeriesMetadata
 
 logger = logging.getLogger(__name__)
 
@@ -83,17 +82,17 @@ class AgentRoutes:
                     # Buscar en tabla series
                     stmt = (
                         select(
-                            Series.name,
-                            Series.series_spanish,
-                            Series.series_english,
-                            Series.author,
-                            Series.description,
+                            SeriesMetadata.series_name,
+                            SeriesMetadata.series_spanish,
+                            SeriesMetadata.series_english,
+                            SeriesMetadata.author,
+                            SeriesMetadata.description,
                         )
                         .where(
-                            (Series.name.ilike(pattern))
-                            | (Series.series_spanish.ilike(pattern))
-                            | (Series.series_english.ilike(pattern))
-                            | (Series.author.ilike(pattern))
+                            (SeriesMetadata.series_name.ilike(pattern))
+                            | (SeriesMetadata.series_spanish.ilike(pattern))
+                            | (SeriesMetadata.series_english.ilike(pattern))
+                            | (SeriesMetadata.author.ilike(pattern))
                         )
                         .limit(limit)
                     )
@@ -101,7 +100,7 @@ class AgentRoutes:
                     for row in rows:
                         results.append(
                             {
-                                "name": row.series_spanish or row.series_english or row.name,
+                                "name": row.series_spanish or row.series_english or row.series_name,
                                 "author": row.author,
                                 "description": (row.description or "")[:200] if row.description else None,
                             }
@@ -109,8 +108,8 @@ class AgentRoutes:
 
                 elif type == "libro":
                     stmt = (
-                        select(Book.title, Book.author, Book.layout_by, Book.translator)
-                        .where(Book.title.ilike(pattern))
+                        select(LocalBook.title, LocalBook.author, LocalBook.layout_by, LocalBook.translator)
+                        .where(LocalBook.title.ilike(pattern))
                         .limit(limit)
                     )
                     rows = (await session.execute(stmt)).fetchall()
@@ -126,10 +125,10 @@ class AgentRoutes:
 
                 elif type == "maquetador":
                     stmt = (
-                        select(Book.layout_by, func.count(Book.id).label("count"))
-                        .where(Book.layout_by.ilike(pattern))
-                        .group_by(Book.layout_by)
-                        .order_by(func.count(Book.id).desc())
+                        select(LocalBook.layout_by, func.count(LocalBook.id).label("count"))
+                        .where(LocalBook.layout_by.ilike(pattern))
+                        .group_by(LocalBook.layout_by)
+                        .order_by(func.count(LocalBook.id).desc())
                         .limit(limit)
                     )
                     rows = (await session.execute(stmt)).fetchall()
@@ -138,10 +137,10 @@ class AgentRoutes:
 
                 elif type == "traductor":
                     stmt = (
-                        select(Book.translator, func.count(Book.id).label("count"))
-                        .where(Book.translator.ilike(pattern))
-                        .group_by(Book.translator)
-                        .order_by(func.count(Book.id).desc())
+                        select(LocalBook.translator, func.count(LocalBook.id).label("count"))
+                        .where(LocalBook.translator.ilike(pattern))
+                        .group_by(LocalBook.translator)
+                        .order_by(func.count(LocalBook.id).desc())
                         .limit(limit)
                     )
                     rows = (await session.execute(stmt)).fetchall()
@@ -161,18 +160,18 @@ class AgentRoutes:
         _verify_key(x_api_key)
         try:
             async with async_session() as session:
-                total_books = (await session.execute(select(func.count(Book.id)))).scalar() or 0
-                total_series = (await session.execute(select(func.count(Series.id)))).scalar() or 0
+                total_books = (await session.execute(select(func.count(LocalBook.id)))).scalar() or 0
+                total_series = (await session.execute(select(func.count(SeriesMetadata.id)))).scalar() or 0
 
                 # Maquetadores únicos
-                maq_stmt = select(func.count(func.distinct(Book.layout_by))).where(
-                    Book.layout_by.isnot(None), Book.layout_by != ""
+                maq_stmt = select(func.count(func.distinct(LocalBook.layout_by))).where(
+                    LocalBook.layout_by.isnot(None), LocalBook.layout_by != ""
                 )
                 total_maquetadores = (await session.execute(maq_stmt)).scalar() or 0
 
                 # Traductores únicos
-                trad_stmt = select(func.count(func.distinct(Book.translator))).where(
-                    Book.translator.isnot(None), Book.translator != ""
+                trad_stmt = select(func.count(func.distinct(LocalBook.translator))).where(
+                    LocalBook.translator.isnot(None), LocalBook.translator != ""
                 )
                 total_traductores = (await session.execute(trad_stmt)).scalar() or 0
 
