@@ -19,10 +19,35 @@ class LibraryService:
         self.session = session
 
     async def get_series_details(self, series_id: str) -> Series | None:
-        """Obtiene los detalles completos de una serie (soporta búsqueda por prefijo)."""
+        """
+        Obtiene los detalles de una serie con robustez extrema (ID, Prefijo, Slug o Nombre).
+        Fundamental para evitar errores 404 tras migraciones de IDs.
+        """
+        if not series_id:
+            return None
+
+        # 1. Búsqueda por ID exacto (Hash 64)
+        series = await self.series_repo.get_by_id(series_id)
+        if series:
+            return series
+
+        # 2. Búsqueda por prefijo del ID (Típico de Mini App v3)
         if len(series_id) < 64:
-            return await self.series_repo.get_by_id_prefix(series_id)
-        return await self.series_repo.get_by_id(series_id)
+            series = await self.series_repo.get_by_id_prefix(series_id)
+            if series:
+                return series
+
+        # 3. Búsqueda por Slug
+        series = await self.series_repo.get_by_slug(series_id)
+        if series:
+            return series
+
+        # 4. Búsqueda por coincidencia de nombre exacto (Salvavidas)
+        from sqlalchemy import select
+
+        query = select(Series).where(Series.name == series_id).limit(1)
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
 
     async def get_series_by_slug(self, slug: str) -> Series | None:
         """Busca una serie por su slug (útil para Telegram/Web)."""
