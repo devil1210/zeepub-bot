@@ -4,9 +4,10 @@ import os
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, FileResponse, HTTPException, JSONResponse, Request
+from fastapi import FastAPI, HTTPException, JSONResponse, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import FileResponse
 
 from config.config_settings import config
 from core.bot import ZeePubBot
