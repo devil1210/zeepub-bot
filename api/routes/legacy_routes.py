@@ -3,7 +3,7 @@
 import logging
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
@@ -88,6 +88,12 @@ class LegacyRoutes:
                 return JSONResponse(content=jsonable_encoder(result))
             return JSONResponse(content={"error": "No result from handler"}, status_code=500)
 
+        except HTTPException as he:
+            # Propagate HTTP errors with their real status code (404, 400, etc.)
+            return JSONResponse(
+                content={"success": False, "error": he.detail},
+                status_code=he.status_code,
+            )
         except Exception as e:
             logger.error(
                 f"❌ Error in RPC dispatcher ({action if 'action' in locals() else 'unknown'}): {e}", exc_info=True
