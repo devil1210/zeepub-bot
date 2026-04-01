@@ -1,6 +1,7 @@
 # api/routes/__init__.py
 
 from .admin_routes import AdminRoutes
+from .agent_routes import AgentRoutes
 from .auth_routes import AuthRoutes
 from .config_routes import ConfigRoutes
 from .legacy_routes import LegacyRoutes
@@ -14,4 +15,5 @@ __all__ = [
     "AuthRoutes",
     "ConfigRoutes",
     "LegacyRoutes",
+    "AgentRoutes",
 ]

@@ -2,7 +2,7 @@
 
 import logging
 
-from .routes import AdminRoutes, AuthRoutes, ConfigRoutes, LegacyRoutes, LibraryRoutes, MediaRoutes
+from .routes import AdminRoutes, AgentRoutes, AuthRoutes, ConfigRoutes, LegacyRoutes, LibraryRoutes, MediaRoutes
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,7 @@ class RoutesManager:
         self.auth_routes = AuthRoutes()
         self.config_routes = ConfigRoutes()
         self.legacy_routes = LegacyRoutes()
+        self.agent_routes = AgentRoutes()  # 🌉 Puente MCP → SPbot
 
         # Register endpoint methods into routers
         self.library_routes.register_routes()
@@ -29,6 +30,7 @@ class RoutesManager:
         self.auth_routes.register_routes()
         self.config_routes.register_routes()
         self.legacy_routes.register_routes()
+        self.agent_routes.register_routes()
 
     def register_all_routes(self, app):
         """
@@ -44,6 +46,7 @@ class RoutesManager:
             app.include_router(self.auth_routes.get_router())
             app.include_router(self.config_routes.get_router())
             app.include_router(self.legacy_routes.get_router())
+            app.include_router(self.agent_routes.get_router())  # 🌉 Puente MCP
 
             logger.info("✅ All API routes registered successfully")
 
