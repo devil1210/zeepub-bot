@@ -85,6 +85,7 @@ class Series(Base):
 
     @hybrid_property
     def series_name(self) -> str:
+        """Nombre de la serie con fallback inteligente."""
         return self.name
 
     @series_name.setter
@@ -96,8 +97,9 @@ class Series(Base):
         return cls.name
 
     @hybrid_property
-    def series_spanish(self) -> str | None:
-        return self.name_spanish
+    def series_spanish(self) -> str:
+        """Nombre en español con fallback al nombre original."""
+        return self.name_spanish or self.name
 
     @series_spanish.setter
     def series_spanish(self, value: str | None):
@@ -108,8 +110,9 @@ class Series(Base):
         return cls.name_spanish
 
     @hybrid_property
-    def series_english(self) -> str | None:
-        return self.name_english
+    def series_english(self) -> str:
+        """Nombre en inglés con fallback al nombre original."""
+        return self.name_english or self.name
 
     @series_english.setter
     def series_english(self, value: str | None):

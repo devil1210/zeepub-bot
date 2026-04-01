@@ -4,7 +4,7 @@ import os
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, FileResponse, HTTPException, JSONResponse, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
@@ -187,7 +187,6 @@ if enable_miniapp:
     # Short Link Download - SIEMPRE activo con miniapp
     # Usa library_db (sync) porque LocalBook vive ahí
     # ==========================================
-    from fastapi.responses import FileResponse
 
     from core.database import async_session
     from services.library_service import LibraryService
@@ -288,20 +287,19 @@ if enable_miniapp:
         @app.get("/{full_path:path}")
         async def serve_spa(full_path: str):
             if full_path.startswith("api"):
-                return {"error": "Not found"}
+                return JSONResponse(status_code=404, content={"error": "API route not found"})
 
-            if full_path == "":
-                html_path = os.path.join(frontend_dist, "index.html")
-            else:
-                html_path = os.path.join(frontend_dist, f"{full_path}.html")
-                if not os.path.exists(html_path):
-                    html_path = os.path.join(frontend_dist, full_path, "index.html")
-                if not os.path.exists(html_path):
-                    html_path = os.path.join(frontend_dist, "index.html")
+            # Intentar servir el archivo estático directamente si existe (ej. assets/...)
+            file_path = os.path.join(frontend_dist, full_path)
+            if os.path.isfile(file_path):
+                return FileResponse(file_path)
 
-            if os.path.exists(html_path):
-                return FileResponse(html_path)
-            return {"error": "Frontend not built"}
+            # Si no es un archivo, servir index.html (esto habilita el ruteo interno de React)
+            index_path = os.path.join(frontend_dist, "index.html")
+            if os.path.exists(index_path):
+                return FileResponse(index_path)
+
+            return JSONResponse(status_code=404, content={"error": "Frontend not built"})
 
     else:
         logger.warning(f"No se encontró el directorio {frontend_dist}. El frontend no se servirá.")
