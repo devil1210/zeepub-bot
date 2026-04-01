@@ -14,7 +14,7 @@ class PublishHandlerV4(BaseHandlerV4):
     """
 
     @with_services
-    async def handle_upload(self, update: Update, context: ContextTypes.DEFAULT_TYPE, **services):
+    async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE, **services):
         """Maneja el comando /upload para publicadores."""
         user_id = update.effective_user.id
 
