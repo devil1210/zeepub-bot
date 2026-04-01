@@ -51,8 +51,12 @@ async def lifespan(app: FastAPI):
     # 1. Inicializar DB (Prevenir errores de loop en tareas de fondo)
     try:
         await pg_manager.initialize()
+        # 🟢 BLOQUEO DE SEGURIDAD: Asegurar esquema y niveles básicos antes de seguir
+        from core.schema_orchestrator import schema_orchestrator
+
+        await schema_orchestrator.initialize_schema()
     except Exception as e:
-        logger.error(f"Postgres initial connection failed: {e}")
+        logger.error(f"Postgres initial connection/schema failed: {e}")
 
     # Startup: Iniciar el bot
     logger.info("Iniciando ZeePub Bot junto con la API...")

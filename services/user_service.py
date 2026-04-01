@@ -26,9 +26,29 @@ class UserService:
         is_configured_admin = telegram_id in config.ADMIN_USERS or telegram_id == 133994080
         if is_configured_admin:
             defaults["role"] = "admin"
-            defaults["level_id"] = 1  # Asumimos que 1 es el nivel admin
+            # Solo asignamos level_id=1 si estamos seguros de que existe o si el repo lo permite
+            # UserRepository.create manejará la integridad o usará el default del modelo (6) si falla
+            defaults["level_id"] = 1
 
         if not user:
+            # Verificación proactiva: ¿Existe el level_id en la DB?
+            from sqlalchemy import text
+
+            lvl_exists = (
+                await self.session.execute(
+                    text("SELECT EXISTS(SELECT 1 FROM user_levels WHERE id = :lid)"),
+                    {"lid": defaults.get("level_id", 6)},
+                )
+            ).scalar()
+
+            if not lvl_exists:
+                logger.warning(
+                    f"Level ID {defaults.get('level_id', 6)} not found in DB. Using fallback level 0 (Temporary) or skipping assignment."
+                )
+                # Si es el primer arranque, tratamos de forzar el nivel default o dejar que el modelo decida
+                if "level_id" in defaults:
+                    del defaults["level_id"]  # Dejar que el modelo use su default (6) si no existe el 1
+
             user = await self.user_repo.create(telegram_id=telegram_id, **defaults)
             # Crear configuración de UI por defecto
             ui_settings = UserUISettings(user_id=telegram_id, primary_color="#3b82f6")

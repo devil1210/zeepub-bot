@@ -130,12 +130,22 @@ class SchemaOrchestrator:
             async with pg_manager.get_session() as session:
                 try:
                     # 0. Check if table exists (asyncpg level)
-                    table_check = text(
-                        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'user_levels')"
-                    )
-                    exists = (await session.execute(table_check)).scalar()
+                    # We check multiple ways to be sure
+                    exists = False
+                    for _ in range(5):  # Up to 5 retries here
+                        table_check = text(
+                            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'user_levels')"
+                        )
+                        exists = (await session.execute(table_check)).scalar()
+                        if exists:
+                            break
+                        logger.debug(f"Waiting for user_levels to become visible... (Attempt {attempt + 1})")
+                        await asyncio.sleep(1)
+
                     if not exists:
-                        logger.warning(f"Attempt {attempt + 1}: user_levels table not visible. Retrying...")
+                        logger.warning(
+                            f"Attempt {attempt + 1}: user_levels table NOT FOUND in information_schema. Retrying..."
+                        )
                         await asyncio.sleep(2)
                         continue
 
