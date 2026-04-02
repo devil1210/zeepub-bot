@@ -42,4 +42,4 @@ jobs:
           file: ./Dockerfile.nexus
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          labels: ${{ id.meta.outputs.labels }}
+          labels: ${{ steps.meta.outputs.labels }}
