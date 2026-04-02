@@ -1,0 +1,30 @@
+# docker-compose.nexus.yml
+# Versión optimizada para despliegue en VPS (Nexus UI + Bot)
+
+services:
+  nexus-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.nexus
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ${LIBRARY_PATH:-/library}:/library/books:ro
+    ports:
+      - "8000:8000"
+    networks:
+      - nexus-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  nexus-network:
+    driver: bridge
+
+# Configuración sugerida para la base de datos externa (Postgres)
+# Se asume que usas la DB actual del VPS especificada en DATABASE_URL

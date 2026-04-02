@@ -2,11 +2,17 @@ name: Docker
 
 on:
   push:
-    branches: ["main", "feat/*"]
+    branches:
+      - main
+      - 'feat/**'
+      - '!feat/nexus-skeleton'
     # Publish semver tags as releases.
     tags: ["v*"]
   pull_request:
-    branches: ["main", "feat/*"]
+    branches:
+      - main
+      - 'feat/**'
+      - '!feat/nexus-skeleton'
   workflow_dispatch:
 
 env:

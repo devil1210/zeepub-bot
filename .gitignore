@@ -4,14 +4,24 @@
 # Exceptuar este archivo .gitignore
 !.gitignore
 !Dockerfile
+!Dockerfile.nexus
 !docker-compose.yml
 !docker-compose.prod-lib.yml
+!docker-compose.nexus.yml
 !.github/
 !.github/workflows/
 !.github/workflows/*.yml
 !publish.sh
 !start.sh
 !.flake8
+
+!src/
+!src/**/
+!src/**/*.py
+
+!legacy/
+!legacy/**/
+!legacy/**/*.py
 
 !scripts/
 !scripts/*.sh

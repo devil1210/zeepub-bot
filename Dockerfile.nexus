@@ -1,0 +1,27 @@
+# Dockerfile.nexus
+FROM python:3.11-slim
+
+# Evitar generación de .pyc y habilitar logs en tiempo real
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+# Instalación de dependencias de sistema mínimas (si fueran necesarias)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalación de dependencias Python
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copia de código fuente (Estructura Nexus)
+COPY ./src ./src
+
+# Exponer el puerto para la API de Nexus (Bridge)
+EXPOSE 8000
+
+# Comando de arranque del orquestador unificado
+CMD ["python", "src/nexus_start.py"]
