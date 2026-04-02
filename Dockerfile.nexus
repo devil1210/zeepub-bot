@@ -7,6 +7,10 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+# src/nexus_start.py se encuentra dentro de src/, pero al arrancar desde /app 
+# necesitamos que Python vea la raíz.
+ENV PYTHONPATH=/app
+
 # Instalación de dependencias de sistema mínimas (si fueran necesarias)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
@@ -23,5 +27,5 @@ COPY ./src ./src
 # Exponer el puerto para la API de Nexus (Bridge)
 EXPOSE 8000
 
-# Comando de arranque del orquestador unificado
-CMD ["python", "src/nexus_start.py"]
+# Comando de arranque del orquestador unificado como módulo
+CMD ["python", "-m", "src.nexus_start"]

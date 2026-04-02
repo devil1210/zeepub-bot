@@ -1,0 +1,43 @@
+# Ruff configuration for Zeepub-bot
+# Optimization for efficiency and reliability
+
+target-version = "py310"
+line-length = 120
+
+[lint]
+# Enable specific rule categories
+# E: Error, F: Pyflakes, I: Isort, B: Bugbear, Q: Quotes, UP: Upgrade
+select = ["E", "F", "I", "B", "Q", "UP"]
+ignore = ["E501", "UP038"] # E501: Line too long, UP038: isinstance with tuple
+
+# Allow autofix for all enabled rules (when possible)
+fixable = ["ALL"]
+unfixable = []
+
+# Exclude common directories
+exclude = [
+    ".git",
+    ".agent",
+    ".agents",
+    ".brain",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+]
+
+[lint.isort]
+known-first-party = ["api", "core", "models", "repositories", "services", "utils", "config"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+
+[lint.per-file-ignores]
+"scripts/**/*.py" = ["E402"]
+"utils/**/*.py" = ["E402"]
+"tests/**/*.py" = ["E402"]

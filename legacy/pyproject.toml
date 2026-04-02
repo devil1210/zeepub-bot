@@ -1,0 +1,33 @@
+[tool.ruff]
+# Longitud de línea para evitar E501 en la medida de lo posible
+line-length = 100
+exclude = [
+    ".agent/skills/",
+    "skills/",
+    "web_client/node_modules/",
+    "__pycache__",
+    ".git",
+]
+
+
+[tool.ruff.lint]
+# Habilitar reglas básicas
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+]
+
+# Ignorar line-too-long (E501) por ahora para limpiar el ruido ya que hay 457 instancias
+ignore = [
+    "E501", 
+    "E402", # module-import-not-at-top-of-file (común en este proyecto por imports locales)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
