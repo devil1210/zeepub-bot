@@ -1,0 +1,12 @@
+[flake8]
+# Ignorar las carpetas de skills y directorios de sistema para evitar errores de sintaxis o nombres indefinidos en CI
+exclude =
+    .agent/skills/*,
+    .git,
+    __pycache__,
+    venv,
+    web_client/node_modules/
+# Mantener consistencia con Ruff
+max-line-length = 100
+# Ignorar errores comunes de estilo que ya manejamos con Ruff
+ignore = E501, E402

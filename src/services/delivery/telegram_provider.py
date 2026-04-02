@@ -1,5 +1,7 @@
 # src/services/delivery/telegram_provider.py
 import logging
+import os
+from datetime import datetime
 from typing import Any, Dict, Optional
 from telegram import Bot, InputMediaPhoto
 from telegram.constants import ParseMode
@@ -84,7 +86,6 @@ class TelegramDeliveryProvider:
 
     def _prepare_template_data(self, book_data: Dict[str, Any]) -> Dict[str, Any]:
         """Asegura que las llaves coincidan con las plantillas."""
-        from datetime import datetime
         return {
             "serie": book_data.get("serie", "Standalone"),
             "romaji_title": book_data.get("romaji", ""),
