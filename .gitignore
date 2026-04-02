@@ -14,6 +14,8 @@
 !publish.sh
 !start.sh
 !.flake8
+!.ruff.toml
+!pyproject.toml
 
 !src/
 !src/**
