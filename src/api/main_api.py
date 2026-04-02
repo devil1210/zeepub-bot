@@ -1,7 +1,10 @@
 # src/api/main_api.py
 import logging
+import os
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from src.core.config import settings
 from src.core.db import db_manager
 
@@ -34,7 +37,16 @@ def create_app() -> FastAPI:
 
     # Importación diferida para evitar ciclos
     from src.api.routers.bridge_router import router as bridge_router
+    from src.api.routers.status_router import router as status_router
+    
     app.include_router(bridge_router)
+    app.include_router(status_router)
+
+    # Montaje de archivos estáticos (Mini App / Dashboard)
+    static_path = Path(__file__).resolve().parent.parent / "static"
+    os.makedirs(static_path, exist_ok=True)
+    
+    app.mount("/", StaticFiles(directory=str(static_path), html=True), name="static")
 
     return app
 
