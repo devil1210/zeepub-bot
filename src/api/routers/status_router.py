@@ -8,7 +8,9 @@ from datetime import datetime
 from src.core.db import db_manager
 from src.models.library import LocalBook, MetadataProposal
 
-router = APIRouter(prefix="/api/status", tags=["Status"])
+from src.api.auth import verify_api_key
+
+router = APIRouter(prefix="/api/status", tags=["Status"], dependencies=[Depends(verify_api_key)])
 
 START_TIME = time.time()
 

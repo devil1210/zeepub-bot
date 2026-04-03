@@ -34,6 +34,7 @@ COPY --from=frontend-build /app/frontend/dist /app/web_client/dist
 
 # Variables de entorno por defecto (se pueden sobrescribir)
 ENV LOG_LEVEL=INFO
+ENV PYTHONPATH=/app
 
 # Exponer el puerto de la API
 EXPOSE 8000

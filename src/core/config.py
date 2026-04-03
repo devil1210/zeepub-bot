@@ -43,6 +43,7 @@ class NexusSettings(BaseModel):
     
     # Administración
     ADMIN_USERS_RAW: str = Field("", alias="ADMIN_USERS")
+    AGENT_API_KEY: str | None = Field(None, alias="AGENT_API_KEY")
     
     # Rutas (Mapeadas a Volúmenes Docker por defecto)
     LIBRARY_PATH: str = Field("/library", alias="LIBRARY_PATH")
@@ -79,6 +80,7 @@ try:
         DATABASE_URL=os.getenv("DATABASE_URL", ""),
         ADMIN_USERS=os.getenv("ADMIN_USERS", ""),
         GEMINI_API_KEY=os.getenv("GEMINI_API_KEY"),
+        AGENT_API_KEY=os.getenv("AGENT_API_KEY"),
         LIBRARY_PATH=os.getenv("LIBRARY_PATH", "/library"),
         DATA_PATH=os.getenv("DATA_PATH", "/app/data")
     )

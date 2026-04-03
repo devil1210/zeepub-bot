@@ -8,8 +8,10 @@ from sqlalchemy import select, or_
 from src.core.db import db_manager
 from src.models.library import LocalBook, SeriesMetadata
 
+from src.api.auth import verify_api_key
+
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/bridge", tags=["SPbot Bridge v2"])
+router = APIRouter(prefix="/bridge", tags=["SPbot Bridge v2"], dependencies=[Depends(verify_api_key)])
 
 @router.get("/status")
 async def bridge_status():
