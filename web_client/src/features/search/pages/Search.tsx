@@ -141,7 +141,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
           return {
             id: seriesId,
             series_hash: item.series_hash,
-            title: item.title,
+            title: item.title || item.name || item.series_name || '',
             author: item.author,
             coverUrl: item.coverUrl || {
               cover_low: item.cover_low,
