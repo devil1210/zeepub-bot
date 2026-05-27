@@ -30,6 +30,12 @@ class Base(AsyncAttrs, DeclarativeBase):
                         res[attr] = val
                 except Exception:
                     pass
+
+        # Incluir atributos de instancia dinámicos (como download_count)
+        for key, val in self.__dict__.items():
+            if not key.startswith("_") and key not in res:
+                res[key] = val
+
         return res
 
 

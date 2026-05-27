@@ -107,7 +107,7 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                                 alt={vol.title}
                                 loading="lazy"
                                 className="absolute inset-0 w-full h-full object-cover transition-all duration-1000 group-hover:scale-110"
-                                src={getCoverUrl(vol.coverUrl as any, vol.coverThumbUrl, settings.coverQuality)}
+                                src={getCoverUrl(vol.coverUrl as any, vol.coverThumbUrl, settings.coverQuality === 'pequeña' ? 'mediana' : settings.coverQuality)}
                             />
 
                             {/* Floating Badges */}

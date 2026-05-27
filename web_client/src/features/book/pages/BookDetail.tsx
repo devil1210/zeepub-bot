@@ -59,7 +59,19 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     const fetchData = async () => {
       if (initialVolume && initialSeries && (initialVolume.wordCount || initialVolume.word_count)) {
         // Robust normalization for coverUrl if it's missing the expected object structure
-        if (typeof initialVolume.coverUrl === 'string' && (initialVolume as any).cover_original) {
+        if (!initialVolume.coverUrl && (initialVolume as any).cover_low) {
+          setCurVolume({
+            ...initialVolume,
+            coverUrl: {
+              cover_low: (initialVolume as any).cover_low,
+              cover_medium: (initialVolume as any).cover_medium,
+              cover_high: (initialVolume as any).cover_high,
+              cover_original: (initialVolume as any).cover_original,
+              cover: (initialVolume as any).cover || (initialVolume as any).cover_low || ''
+            },
+            coverThumbUrl: (initialVolume as any).cover_thumb || (initialVolume as any).cover_low || ''
+          });
+        } else if (typeof initialVolume.coverUrl === 'string' && (initialVolume as any).cover_original) {
           setCurVolume({
             ...initialVolume,
             coverUrl: {

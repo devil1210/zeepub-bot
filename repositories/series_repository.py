@@ -162,6 +162,9 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 if search_type in ("translator", "traductor", "group", "grupo"):
                     series_filters.append(SeriesMetadata.publisher.ilike(pattern))
 
+                if search_type in ("todos", "all", "illustrator", "ilustrador"):
+                    series_filters.append(SeriesMetadata.illustrator.ilike(pattern))
+
                 # 2. Filtros de Libro (vía EXISTS)
                 book_filters = []
                 if search_type in ("todos", "all", "maquetador", "layout", "typesetter"):
@@ -172,6 +175,9 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
 
                 if search_type in ("todos", "all", "isbn"):
                     book_filters.append(LocalBook.isbn.ilike(pattern))
+
+                if search_type in ("todos", "all", "illustrator", "ilustrador"):
+                    book_filters.append(LocalBook.illustrator.ilike(pattern))
 
                 if search_type in ("todos", "all"):
                     # En modo 'todos', también buscamos título/filename en libros
@@ -213,9 +219,19 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
 
                 # 5. Ordenamiento
                 if sort_by == "newest":
-                    stmt = stmt.order_by(SeriesMetadata.series_hash.desc())  # O usar indexed_at si existe
-                elif sort_by in ("popular", "downloads"):
+                    stmt = stmt.order_by(SeriesMetadata.updated_at.desc())
+                elif sort_by == "added":
+                    stmt = stmt.order_by(SeriesMetadata.created_at.desc())
+                elif sort_by == "updated":
+                    stmt = stmt.order_by(SeriesMetadata.updated_at.desc())
+                elif sort_by == "downloads":
+                    stmt = stmt.order_by(dl_subquery.desc())
+                elif sort_by == "popular":
                     stmt = stmt.order_by(SeriesMetadata.rating_count.desc())
+                elif sort_by == "rating":
+                    stmt = stmt.order_by(SeriesMetadata.rating_average.desc())
+                elif sort_by == "z-a":
+                    stmt = stmt.order_by(func.lower(SeriesMetadata.series_name).desc())
                 else:
                     stmt = stmt.order_by(func.lower(SeriesMetadata.series_name).asc())
 

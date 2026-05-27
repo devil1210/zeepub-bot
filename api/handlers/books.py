@@ -119,6 +119,16 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
             else:
                 local_book["volumes"] = [local_book]
 
+            # Query download count for this book dynamically
+            from sqlalchemy import select, func
+            from core.db_manager_pg import pg_manager
+            from models.library import UserDownload
+
+            async with pg_manager.get_session() as session:
+                dl_stmt = select(func.count()).where(UserDownload.book_hash == book_hash)
+                dl_count = (await session.execute(dl_stmt)).scalar() or 0
+                local_book["download_count"] = dl_count
+
             # Crucial: if it was explicitly a book_id (starts with local_ or digit), it's NOT a series view
             local_book["is_series"] = False
 

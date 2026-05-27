@@ -21,7 +21,7 @@ export const SearchCardGrid: React.FC<SearchCardGridProps> = React.memo(({ serie
                 <ProgressiveImage
                     alt={series.title}
                     className="object-contain w-full h-full group-hover:scale-110 transition-transform duration-1000 opacity-90 group-hover:opacity-100"
-                    src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality)}
+                    src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality === 'pequeña' ? 'mediana' : settings.coverQuality)}
                 />
 
                 {/* Floating Badges */}

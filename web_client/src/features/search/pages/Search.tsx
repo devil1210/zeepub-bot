@@ -157,7 +157,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
             rating: item.rating_average || 0,
             voteCount: item.rating_count || 0,
             downloadCount: item.download_count || 0,
-            volumesCount: item.numBooks || 1,
+            volumesCount: item.book_count || item.numBooks || 1,
             status: 'Completed',
             lastUpdated: item.updatedDate || 'Reciente',
             illustrator: item.illustrator,
