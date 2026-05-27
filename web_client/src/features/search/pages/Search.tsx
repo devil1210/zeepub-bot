@@ -148,9 +148,9 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
               cover_medium: item.cover_medium,
               cover_high: item.cover_high,
               cover_original: item.cover_original,
-              cover: item.cover || ''
+              cover: item.cover_url || item.cover || ''
             },
-            coverThumbUrl: item.cover_thumb || item.cover_low || item.cover || '',
+            coverThumbUrl: item.cover_thumb || item.cover_low || item.cover_url || item.cover || '',
             description: item.summary,
             genre: item.categories ? item.categories.join(', ') : '',
             format: item.fileType ? item.fileType.replace('application/', '').toUpperCase() : 'EPUB',
