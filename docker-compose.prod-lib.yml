@@ -9,9 +9,6 @@ services:
       - ./data:/app/data
       # La ruta del host se define en el .env como HOST_LIB_PATH
       - ${HOST_LIB_PATH}:/library:ro
-    dns:
-      - 1.1.1.1
-      - 8.8.8.8
     environment:
       - DATABASE_URL=postgresql+psycopg2://user:pass@host:5432/dbname
       - LOG_LEVEL=INFO
@@ -28,6 +25,8 @@ services:
   watchtower:
     image: containrrr/watchtower
     container_name: watchtower_v6
+    ports:
+      - "8081:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
