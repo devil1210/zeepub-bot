@@ -27,6 +27,8 @@ class Base(AsyncAttrs, DeclarativeBase):
                 try:
                     val = getattr(self, attr)
                     if not callable(val):
+                        if isinstance(val, Base):
+                            continue
                         res[attr] = val
                 except Exception:
                     pass
@@ -34,6 +36,8 @@ class Base(AsyncAttrs, DeclarativeBase):
         # Incluir atributos de instancia dinámicos (como download_count)
         for key, val in self.__dict__.items():
             if not key.startswith("_") and key not in res:
+                if isinstance(val, Base):
+                    continue
                 res[key] = val
 
         return res
