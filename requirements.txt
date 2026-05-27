@@ -44,8 +44,7 @@ alembic==1.15.2
 beautifulsoup4==4.14.3
 EbookLib==0.18
 
-# Supabase
-supabase==2.27.3
+
 google-genai==0.3.0
 
 # Pydantic (Latest stable for FastAPI 0.128+)

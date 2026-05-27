@@ -117,7 +117,7 @@ class BotConfig:
             # Log only once to avoid spamming
             import logging
 
-            logging.getLogger("config").info(f"🤖 AI Key detected: {key[:4]}...{key[-4:]}")
+            logging.getLogger("config").info(f"AI Key detected: {key[:4]}...{key[-4:]}")
             self._ai_key_logged = True
         return key
 

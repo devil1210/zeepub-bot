@@ -189,7 +189,7 @@ if enable_miniapp:
     # Usa library_db (sync) porque LocalBook vive ahí
     # ==========================================
 
-    from core.database import async_session
+    from core.db_manager_pg import pg_manager
     from services.library_service import LibraryService
 
     # Almacén temporal en memoria para Rate Limiting
@@ -221,7 +221,7 @@ if enable_miniapp:
 
         client_ip = request.headers.get("X-Forwarded-For", request.client.host)
 
-        async with async_session() as session:
+        async with pg_manager.get_session() as session:
             library_service = LibraryService(session)
             book = await library_service.get_book_by_short_link(short_link)
 

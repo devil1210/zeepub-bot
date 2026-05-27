@@ -44,4 +44,4 @@ class HandlerManagerV4:
         # Pero como es un Deep Refactor, v4.0 tomará el control.
         self.app.add_handler(CallbackQueryHandler(self.callback_h.handle))
 
-        print("✅ Handlers ZeePub v4.0 registrados correctamente.")
+        print("[OK] Handlers ZeePub v4.0 registrados correctamente.")

@@ -1,228 +1,110 @@
-import logging
-from datetime import datetime
-from typing import Any
+"""
+repositories/download_repository.py
+--------------------------------------
+Repositorio de DownloadHistory para tracking y rate limiting de descargas.
+"""
 
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import UTC, datetime, timedelta
 
-from core.db_manager_pg import pg_manager
-from repositories.base_repository import BaseRepository
+from sqlalchemy import func, select
 
-logger = logging.getLogger(__name__)
+from models.download_models import DownloadHistory
+
+from .base_repository import BaseRepository
 
 
-class DownloadRepository(BaseRepository[dict[str, Any]]):
-    """Repository for managing download history using PostgreSQL."""
+class DownloadRepository(BaseRepository[DownloadHistory]):
+    """
+    CRUD para DownloadHistory.
+    Gestiona el registro de descargas y la consulta de límites diarios.
+    """
 
-    def __init__(self, session: AsyncSession | None = None, db_manager=None):
-        self.session = session
-        super().__init__(None, "user_downloads")
+    def __init__(self, db_manager=None):
+        super().__init__(DownloadHistory, db_manager=db_manager)
 
-    async def get_by_id(self, id: Any) -> dict[str, Any] | None:
-        async def _execute(session):
-            query = text("SELECT * FROM user_downloads WHERE id = :id")
-            result = await session.execute(query, {"id": id})
-            row = result.fetchone()
-            if not row:
-                return None
-            return dict(row._mapping)
-
-        try:
-            if self.session:
-                return await _execute(self.session)
-            async with pg_manager.get_session() as session:
-                return await _execute(session)
-        except Exception as e:
-            logger.error(f"Postgres get_by_id error: {e}")
-            return None
-
-    async def create(self, entity: dict[str, Any]) -> dict[str, Any]:
-        new_id = await self.add_download(**entity)
-        entity["id"] = new_id
-        return entity
-
-    async def update(self, entity: dict[str, Any]) -> dict[str, Any]:
-        return entity
-
-    async def delete(self, id: Any) -> bool:
-        try:
-            async with pg_manager.get_session() as session:
-                await session.execute(text("DELETE FROM user_downloads WHERE id = :id"), {"id": id})
-                await session.commit()
-                return True
-        except Exception as e:
-            logger.error(f"Postgres delete error: {e}")
-            return False
-
-    async def add_download(
-        self,
-        user_id: int,
-        title: str,
-        book_hash: str,
-        series_hash: str | None = None,
-    ) -> int:
-        async def _execute(session):
-            query = text("""
-                INSERT INTO user_downloads
-                (user_id, book_hash, series_hash, title, downloaded_at)
-                VALUES (:user_id, :book_hash, :series_hash, :title, CURRENT_TIMESTAMP)
-                RETURNING id
-            """)
-            result = await session.execute(
-                query,
-                {
-                    "user_id": user_id,
-                    "book_hash": book_hash,
-                    "series_hash": series_hash,
-                    "title": title,
-                },
-            )
-            new_id = result.scalar()
-            await session.flush()
-            return new_id
-
-        try:
-            if self.session:
-                new_id = await _execute(self.session)
-            else:
-                async with pg_manager.get_session() as session:
-                    new_id = await _execute(session)
-                    await session.commit()
-
-            # Supabase Sync (Optional, if still needed for real-time)
-            if self.supabase.is_active:
-                try:
-                    data = {
-                        "user_id": user_id,
-                        "book_hash": book_hash,
-                        "series_hash": series_hash,
-                        "title": title,
-                    }
-                    self.supabase.get_client().table("user_downloads").insert(data).execute()
-                except Exception:
-                    pass
-
-            # Trigger full bidirectional sync
-            try:
-                from services.sync_service import SyncService
-
-                SyncService.trigger_auto_sync()
-            except Exception:
-                pass
-
-            return new_id
-        except Exception as e:
-            logger.error(f"Postgres add_download error: {e}")
-            return 0
-
-    async def get_user_downloads(self, user_id: int, limit: int = 10) -> list[dict[str, Any]]:
-        async def _execute(session):
-            query = text("""
-                SELECT
-                    dh.id,
-                    dh.book_hash,
-                    dh.series_hash,
-                    dh.title,
-                    dh.downloaded_at,
-                    lb.filepath,
-                    lb.volume,
-                    sm.name as series_name,
-                    sm.author
-                FROM user_downloads dh
-                LEFT JOIN books lb ON dh.book_hash = lb.id
-                LEFT JOIN series sm ON lb.series_id = sm.id
-                WHERE dh.user_id = :user_id
-                ORDER BY dh.downloaded_at DESC
-                LIMIT :limit
-            """)
-            result = await session.execute(query, {"user_id": user_id, "limit": limit})
-            rows = result.fetchall()
-            results = []
-            for row in rows:
-                item = dict(row._mapping)
-                if item.get("downloaded_at"):
-                    item["downloaded_at"] = item["downloaded_at"].isoformat()
-                item["cover"] = item.get("cover_medium") or item.get("cover_low") or item.get("cover_original")
-                results.append(item)
-            return results
-
-        try:
-            if self.session:
-                return await _execute(self.session)
-            async with pg_manager.get_session() as session:
-                return await _execute(session)
-        except Exception as e:
-            logger.error(f"Postgres get_user_downloads error: {e}")
-            return []
-
-    async def get_download_count(self, user_id: int, since: datetime | None = None) -> int:
-        try:
-            async with pg_manager.get_session() as session:
-                if since:
-                    query = text("SELECT COUNT(*) FROM user_downloads WHERE user_id = :uid AND downloaded_at >= :since")
-                    params = {"uid": user_id, "since": since}
-                else:
-                    query = text("SELECT COUNT(*) FROM user_downloads WHERE user_id = :uid")
-                    params = {"uid": user_id}
-
-                result = await session.execute(query, params)
-                return result.scalar() or 0
-        except Exception as e:
-            logger.error(f"Postgres get_download_count error: {e}")
-            return 0
-
-    async def has_user_downloaded(
-        self,
-        user_id: int,
-        title: str,
-        clean_title: str | None = None,
-        book_hash: str | None = None,
-    ) -> bool:
-        try:
-            from utils.epub_extractor import clean_metadata_tags
-
-            search_clean = clean_title or clean_metadata_tags(title)
-
-            async with pg_manager.get_session() as session:
-                if book_hash:
-                    query = text("SELECT 1 FROM user_downloads WHERE user_id = :uid AND book_hash = :hash LIMIT 1")
-                    if (await session.execute(query, {"uid": user_id, "hash": book_hash})).fetchone():
-                        return True
-
-                    query = text("""
-                        SELECT 1 FROM user_downloads
-                        WHERE user_id = :uid AND (title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t)
-                        LIMIT 1
-                    """)
-                if (await session.execute(query, {"uid": user_id, "t": title, "ct": search_clean})).fetchone():
-                    return True
-            return False
-        except Exception as e:
-            logger.error(f"Postgres has_user_downloaded error: {e}")
-            return False
-
-    async def get_total_download_count(
-        self, title: str, clean_title: str | None = None, book_hash: str | None = None
-    ) -> int:
-        try:
-            from utils.epub_extractor import clean_metadata_tags
-
-            search_clean = clean_title or clean_metadata_tags(title)
-
-            async with pg_manager.get_session() as session:
-                if book_hash:
-                    query = text("SELECT COUNT(*) FROM user_downloads WHERE book_hash = :hash")
-                    count = (await session.execute(query, {"hash": book_hash})).scalar()
-                    if count > 0:
-                        return count
-
-                query = text(
-                    "SELECT COUNT(*) FROM user_downloads WHERE title = :t OR clean_title = :ct OR title = :ct OR clean_title = :t"
+    async def count_today(self, telegram_id: int) -> int:
+        """Cuenta las descargas del usuario desde las 00:00 UTC de hoy."""
+        today_utc = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        async with self._get_session() as session:
+            stmt = (
+                select(func.count())
+                .select_from(DownloadHistory)
+                .where(
+                    DownloadHistory.user_id == telegram_id,
+                    DownloadHistory.downloaded_at >= today_utc,
                 )
-                return (await session.execute(query, {"t": title, "ct": search_clean})).scalar() or 0
-        except Exception as e:
-            logger.error(f"Postgres get_total_download_count error: {e}")
-            return 0
+            )
+            result = await session.execute(stmt)
+            return result.scalar() or 0
+
+    async def log_download(
+        self,
+        telegram_id: int,
+        book_hash: str,
+        book_title: str | None = None,
+        chat_id: int | None = None,
+        series_hash: str | None = None,
+    ) -> DownloadHistory:
+        """Registra una nueva descarga."""
+        async with self._get_session() as session:
+            entry = DownloadHistory(
+                user_id=telegram_id,
+                book_id=book_hash,
+                title=book_title or "",
+                series_id=series_hash,
+            )
+            session.add(entry)
+            await session.commit()
+            await session.refresh(entry)
+            return entry
+
+    async def add_download(self, **kwargs) -> DownloadHistory:
+        """
+        Alias para log_download compatible con V3.
+        Mapea campos extendidos a los campos del modelo V4.
+        """
+        # Extraer campos que sí existen en V4
+        telegram_id = kwargs.get("user_id") or kwargs.get("telegram_id")
+        if not telegram_id:
+            raise ValueError("telegram_id/user_id is required")
+
+        book_hash = kwargs.get("book_hash")
+        book_title = kwargs.get("title") or kwargs.get("book_title")
+        series_hash = kwargs.get("series_hash")
+
+        return await self.log_download(
+            telegram_id=telegram_id,
+            book_hash=book_hash,
+            book_title=book_title,
+            series_hash=series_hash,
+        )
+
+    async def get_recent(self, telegram_id: int, days: int = 7) -> list[DownloadHistory]:
+        """Devuelve las descargas recientes de un usuario."""
+        since = datetime.now(UTC) - timedelta(days=days)
+        async with self._get_session() as session:
+            stmt = (
+                select(DownloadHistory)
+                .where(
+                    DownloadHistory.user_id == telegram_id,
+                    DownloadHistory.downloaded_at >= since,
+                )
+                .order_by(DownloadHistory.downloaded_at.desc())
+            )
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
+
+    async def get_user_downloads(self, telegram_id: int, limit: int = 20) -> list[DownloadHistory]:
+        """Descargas del usuario (para historial). Alias usado por api/handlers/downloads."""
+        async with self._get_session() as session:
+            stmt = (
+                select(DownloadHistory)
+                .where(DownloadHistory.user_id == telegram_id)
+                .order_by(DownloadHistory.downloaded_at.desc())
+                .limit(limit)
+            )
+            result = await session.execute(stmt)
+            return list(result.scalars().all())
 
 
-download_repo = DownloadRepository(None)
+download_repo = DownloadRepository()

@@ -16,7 +16,7 @@ Este archivo es la **Única Fuente de Verdad** para el comportamiento del asiste
 4.  **Calidad y Stack**:
     - **Backend**: Seguir `python-patterns` (idiomático, async, type hints) y `backend-dev-guidelines`.
     - **Frontend**: Stack React + Vite + Tailwind/CSS + React Router. Usar `react-patterns`. Evitar librerías UI pesadas (MUI) salvo indicación expresa.
-    - **DB**: **PostgreSQL** para todo (Local y Supabase).
+    - **DB**: **PostgreSQL** para todo (Local e InsForge).
 5.  **Validación Pre-Vuelo**: Antes de push/commit: check de sintaxis (`py_compile`), linter (`ruff check`) y formatter (`ruff format`).
 6.  **Normalización de Datos**: El hash del libro es sagrado. Usar siempre `utils.helpers` e integrar IA (`services/ai_service`) como paso previo para `series_spanish` y `volume`.
 7.  **Single Floating Nav**: Todas las páginas deben integrarse en `UniversalFloatingNav.tsx` vía `NavigationContext.tsx`. Prohibido crear navbars paralelas.
@@ -65,7 +65,7 @@ Estas skills deben ser priorizadas y aplicadas proactivamente según el contexto
 Usa estos comandos para tareas repetitivas y asegurar la calidad:
 
 - **`/audit`**: Valida sintaxis, calidad de código (Linter/Formatter) y cumplimiento de estándares pre-vuelo.
-- **`/db-sync`**: Sincroniza y valida la integridad de los esquemas entre PostgreSQL Local y Supabase.
+- **`/db-sync`**: Sincroniza y valida la integridad de los esquemas de PostgreSQL a nivel local e InsForge.
 - **`/glass-check`**: Auditoría estética para asegurar cumplimiento de estándares Glassmorphism/Premium.
 - **`/push`**: Sincronizar cambios localmente y subir al repositorio remoto automáticamente.
 - **`/release`**: Flujo maestro de despliegue (Audit -> Sync -> Push).
