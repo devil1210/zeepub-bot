@@ -100,41 +100,75 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
         return list(result.scalars().all())
 
     # --- Publication Channel Methods ---
-
+ 
     async def get_channel_by_id(self, channel_id: int) -> PublicationChannel | None:
         """Obtiene un canal por su ID."""
-        return await self.session.get(PublicationChannel, channel_id)
+        from core.db_manager_pg import pg_manager
 
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                return await session.get(PublicationChannel, channel_id)
+        return await self.session.get(PublicationChannel, channel_id)
+ 
     async def get_channels(self, active_only: bool = True) -> list[PublicationChannel]:
         """Lista canales registrados."""
+        from core.db_manager_pg import pg_manager
+
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                return await self._get_channels_logic(session, active_only)
+        return await self._get_channels_logic(self.session, active_only)
+
+    async def _get_channels_logic(self, session, active_only: bool = True):
         stmt = select(PublicationChannel)
         if active_only:
             stmt = stmt.where(PublicationChannel.is_active.is_(True))
-
+ 
         stmt = stmt.order_by(PublicationChannel.is_favorite.desc(), PublicationChannel.name.asc())
-        result = await self.session.execute(stmt)
+        result = await session.execute(stmt)
         return list(result.scalars().all())
-
+ 
     # --- Publication Template Methods ---
-
+ 
     async def get_template_by_id(self, template_id: int) -> PublicationTemplate | None:
         """Obtiene una plantilla por su ID."""
-        return await self.session.get(PublicationTemplate, template_id)
+        from core.db_manager_pg import pg_manager
 
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                return await session.get(PublicationTemplate, template_id)
+        return await self.session.get(PublicationTemplate, template_id)
+ 
     async def get_templates(self, platform: str | None = None) -> list[PublicationTemplate]:
         """Lista plantillas de publicación."""
+        from core.db_manager_pg import pg_manager
+
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                return await self._get_templates_logic(session, platform)
+        return await self._get_templates_logic(self.session, platform)
+
+    async def _get_templates_logic(self, session, platform: str | None = None):
         stmt = select(PublicationTemplate)
         if platform:
             stmt = stmt.where(PublicationTemplate.platform == platform)
-        result = await self.session.execute(stmt)
+        result = await session.execute(stmt)
         return list(result.scalars().all())
-
+ 
     # --- Discovered Chats Methods ---
-
+ 
     async def get_discovered_chats(self, limit: int = 20) -> list[DiscoveredChat]:
         """Lista chats descubiertos por el bot."""
+        from core.db_manager_pg import pg_manager
+
+        if not self.session:
+            async with pg_manager.get_session() as session:
+                return await self._get_discovered_chats_logic(session, limit)
+        return await self._get_discovered_chats_logic(self.session, limit)
+
+    async def _get_discovered_chats_logic(self, session, limit: int = 20):
         stmt = select(DiscoveredChat).order_by(DiscoveredChat.last_seen_at.desc()).limit(limit)
-        result = await self.session.execute(stmt)
+        result = await session.execute(stmt)
         return list(result.scalars().all())
 
     async def get_full_queue(self, status: str = None, limit: int = 50) -> list[PublicationQueue]:
