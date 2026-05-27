@@ -208,9 +208,28 @@ class PublisherService:
                 platform = item.channel.platform if item.channel else "telegram"
                 provider = self.providers.get(platform)
 
+                # Cargar plantilla personalizada si existe
+                caption = None
+                cover_quality = "high"
+                if item.template_id:
+                    template = await self.repo.get_template_by_id(item.template_id)
+                    if template:
+                        # Compilar plantilla con los datos del libro
+                        caption = apply_publication_template(template.content, book_data)
+                        if template.extra_config and "cover_quality" in template.extra_config:
+                            saved_q = template.extra_config["cover_quality"]
+                            # Convertir de español (del frontend) a la clave esperada en el backend
+                            cover_quality = "high" if saved_q == "grande" else "medium" if saved_q == "mediana" else "low" if saved_q == "pequeña" else saved_q
+
                 if provider:
                     success = await provider.announce_book(
-                        item.channel.target_id, book_data, options={"template_id": item.template_id}
+                        item.channel.target_id,
+                        book_data,
+                        options={
+                            "template_id": item.template_id,
+                            "caption": caption,
+                            "cover_quality": cover_quality,
+                        },
                     )
                     item.status = "sent" if success else "failed"
                 else:

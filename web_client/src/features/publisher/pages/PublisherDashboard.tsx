@@ -185,7 +185,11 @@ export const PublisherDashboard: React.FC = () => {
                                                     )}
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{item.channel}</span>
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                                        {typeof item.channel === 'object' && item.channel !== null 
+                                                            ? (item.channel as any).name 
+                                                            : String(item.channel || 'Unknown')}
+                                                    </span>
                                                     <span className="text-[10px] text-gray-500 flex items-center gap-1">
                                                         <Calendar className="w-2.5 h-2.5" />
                                                         {new Date(item.scheduled_for).toLocaleString()}
