@@ -34,4 +34,5 @@ services:
       - WATCHTOWER_HTTP_API_UPDATE=true
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_LABEL_ENABLE=true
+      - DOCKER_API_VERSION=1.40
     command: --interval 300 --label-enable
