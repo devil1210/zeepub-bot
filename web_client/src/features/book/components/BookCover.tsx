@@ -11,6 +11,39 @@ interface BookCoverProps {
 
 export const BookCover: React.FC<BookCoverProps> = ({ title, coverUrl, coverThumbUrl, settings }) => {
     const [isFullscreen, setIsFullscreen] = useState(false);
+    
+    // Fallbacks inteligentes de resolución
+    const [coverSrc, setCoverSrc] = useState<string>(() => 
+        getCoverUrl(coverUrl, coverThumbUrl, 'mediana')
+    );
+    const [fullscreenSrc, setFullscreenSrc] = useState<string>(() => 
+        getCoverUrl(coverUrl, coverThumbUrl, 'original')
+    );
+
+    const handleCoverError = () => {
+        // Si falla la calidad mediana, recaer de inmediato en pequeña (200px)
+        const fallback = getCoverUrl(coverUrl, coverThumbUrl, 'pequeña');
+        if (coverSrc !== fallback) {
+            setCoverSrc(fallback);
+        }
+    };
+
+    const handleFullscreenError = () => {
+        // Recaer progresivamente de original -> mediana -> pequeña
+        const medFallback = getCoverUrl(coverUrl, coverThumbUrl, 'mediana');
+        const lowFallback = getCoverUrl(coverUrl, coverThumbUrl, 'pequeña');
+        if (fullscreenSrc === getCoverUrl(coverUrl, coverThumbUrl, 'original')) {
+            setFullscreenSrc(medFallback);
+        } else if (fullscreenSrc === medFallback) {
+            setFullscreenSrc(lowFallback);
+        }
+    };
+
+    // Actualizar estados si cambian las props
+    React.useEffect(() => {
+        setCoverSrc(getCoverUrl(coverUrl, coverThumbUrl, 'mediana'));
+        setFullscreenSrc(getCoverUrl(coverUrl, coverThumbUrl, 'original'));
+    }, [coverUrl, coverThumbUrl]);
 
     return (
         <>
@@ -23,7 +56,8 @@ export const BookCover: React.FC<BookCoverProps> = ({ title, coverUrl, coverThum
 
                 <div className="relative aspect-[2/3] rounded-[2.2rem] overflow-hidden shadow-premium border border-white/10 group-hover:border-white/30 group-hover:-translate-y-2 transition-all duration-700 bg-white/5">
                     <img
-                        src={getCoverUrl(coverUrl, coverThumbUrl, 'mediana')}
+                        src={coverSrc}
+                        onError={handleCoverError}
                         alt={title}
                         className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                     />
@@ -54,7 +88,8 @@ export const BookCover: React.FC<BookCoverProps> = ({ title, coverUrl, coverThum
                         <X className="w-6 h-6 text-white" />
                     </button>
                     <img
-                        src={getCoverUrl(coverUrl, coverThumbUrl, 'original')}
+                        src={fullscreenSrc}
+                        onError={handleFullscreenError}
                         alt={title}
                         className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-300"
                         onClick={(e) => e.stopPropagation()}
