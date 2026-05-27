@@ -48,6 +48,8 @@ class LegacyRoutes:
             "admin_get_themes": miniapp_handlers.handle_admin_get_themes,
             "admin_get_recent_audit_logs": miniapp_handlers.handle_admin_get_recent_audit_logs,
             "admin_get_sync_status": miniapp_handlers.handle_admin_get_sync_status,
+            "admin_scan_library": miniapp_handlers.handle_admin_scan_library,
+            "admin_scan_status": miniapp_handlers.handle_admin_scan_status,
         }
 
     def get_router(self) -> APIRouter:

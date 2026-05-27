@@ -27,7 +27,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
         async with pg_manager.get_session() as session:
             # 1. Basic Counts
             total_users = (await session.execute(text("SELECT COUNT(*) FROM users"))).scalar() or 0
-            total_books = (await session.execute(text("SELECT COUNT(*) FROM local_books"))).scalar() or 0
+            total_books = (await session.execute(text("SELECT COUNT(*) FROM books"))).scalar() or 0
             users_7d = (
                 await session.execute(
                     text("SELECT COUNT(*) FROM users WHERE created_at >= (CURRENT_TIMESTAMP - INTERVAL '7 days')")
@@ -35,7 +35,7 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
             ).scalar() or 0
 
             # 2. Storage
-            res_size = await session.execute(text("SELECT SUM(file_size) FROM local_books"))
+            res_size = await session.execute(text("SELECT SUM(file_size) FROM books"))
             total_bytes = res_size.scalar() or 0
             storage_gb = round(total_bytes / (1024**3), 2)
 
