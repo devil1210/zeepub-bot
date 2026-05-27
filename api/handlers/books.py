@@ -22,15 +22,23 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
     # 1. Series/Group Handling
     is_series_request = False
     s_hash = None
+    local_book = None
 
     if isinstance(book_id_raw, str):
         if book_id_raw.startswith("series_"):
             is_series_request = True
             s_hash = book_id_raw.replace("series_", "")
-        elif not book_id_raw.isdigit() and not book_id_raw.startswith("local_"):
-            # Probable series_hash directo (desde URL o navegación profunda)
-            is_series_request = True
-            s_hash = book_id_raw
+        elif book_id_raw.startswith("local_"):
+            is_series_request = False
+        elif not book_id_raw.isdigit():
+            # Si no empieza con series_ ni local_ ni es dígito, verificamos inteligentemente si existe como libro físico
+            book_hash = book_id_raw
+            local_book = await LibraryService.get_book_by_hash(book_hash)
+            if local_book:
+                is_series_request = False
+            else:
+                is_series_request = True
+                s_hash = book_id_raw
 
     if is_series_request and s_hash:
         v_limit = data.get("limit", 100)
@@ -90,9 +98,10 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
         }
 
     # 2. Local Book Handling
-    if str(book_id_raw).startswith("local_") or not str(book_id_raw).startswith("series_"):
+    if str(book_id_raw).startswith("local_") or not is_series_request:
         book_hash = str(book_id_raw).replace("local_", "")
-        local_book = await LibraryService.get_book_by_hash(book_hash)
+        if not local_book:
+            local_book = await LibraryService.get_book_by_hash(book_hash)
 
         if local_book:
             logger.info(
