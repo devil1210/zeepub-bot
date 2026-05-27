@@ -194,13 +194,30 @@ class PublisherService:
                         book_data.update(
                             {
                                 "title": book.title,
-                                "author": book.author,
+                                "author": book.author or (book.series.author if book.series else ""),
                                 "volume": book.volume,
-                                "portada": book.series.cover_medium if book.series else None,
+                                "portada": book.series.cover_url if book.series else (book.cover_medium or book.cover_low or ""),
                                 "series_spanish": book.series.series_spanish if book.series else book.title,
                                 "sinopsis": book.series.description if book.series else "",
-                                "generos": book.series.genres if book.series else [],
+                                "generos": book.series.tags_json if book.series else [],
+                                "tags": book.series.tags_json if book.series else [],
+                                "demographics": book.series.demographics_json if book.series else [],
+                                "demography": book.series.demographics_json if book.series else [],
+                                "illustrator": book.series.illustrator if book.series else "",
+                                "author_jap": book.series.author_jap if book.series else "",
+                                "illustrator_jap": book.series.illustrator_jap if book.series else "",
+                                "series_name": book.series.name if book.series else "",
+                                "layout_by": book.layout_by if book.layout_by else "",
+                                "book_type": book.series.book_type if book.series else "Light Novel",
+                                "publisher": book.series.publisher if book.series else "",
                                 "book_hash": book.book_hash,
+                                "traductor": book.translator if book.translator else "",
+                                "editorial": book.publisher or (book.series.publisher if book.series else ""),
+                                "version": book.epub_version or "",
+                                "filename": book.filename or "",
+                                "filepath": book.filepath or "",
+                                "file_size": book.file_size or 0,
+                                "short_link": book.short_link or "",
                             }
                         )
 
@@ -222,6 +239,11 @@ class PublisherService:
                             cover_quality = "high" if saved_q == "grande" else "medium" if saved_q == "mediana" else "low" if saved_q == "pequeña" else saved_q
 
                 if provider:
+                    # Extraer message_thread_id del config del canal
+                    thread_id = None
+                    if item.channel and item.channel.config:
+                        thread_id = item.channel.config.get("message_thread_id")
+
                     success = await provider.announce_book(
                         item.channel.target_id,
                         book_data,
@@ -229,6 +251,7 @@ class PublisherService:
                             "template_id": item.template_id,
                             "caption": caption,
                             "cover_quality": cover_quality,
+                            "message_thread_id": thread_id,
                         },
                     )
                     item.status = "sent" if success else "failed"
@@ -251,7 +274,6 @@ class PublisherService:
         """Obtiene canales oficiales y chats descubiertos (v3.x compat)."""
         channels = await self.repo.get_channels(active_only)
         discovered = await self.repo.get_discovered_chats(limit=50)
-
         return {
             "channels": [
                 {
@@ -261,6 +283,7 @@ class PublisherService:
                     "target_id": c.target_id,
                     "is_active": c.is_active,
                     "is_favorite": c.is_favorite,
+                    "config": c.config or {},
                 }
                 for c in channels
             ],

@@ -238,6 +238,11 @@ class Book(Base):
     def series_hash(cls):
         return cls.series_id
 
+    @property
+    def series(self) -> "Series":
+        """Alias de compatibilidad para series_info."""
+        return self.series_info
+
     # Relaciones
     series_info: Mapped[Series] = relationship(back_populates="books")
     genres: Mapped[list[Genre]] = relationship(secondary="book_genres", lazy="selectin")
