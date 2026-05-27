@@ -10,7 +10,6 @@ services:
       # La ruta del host se define en el .env como HOST_LIB_PATH
       - ${HOST_LIB_PATH}:/library:ro
     environment:
-      - DATABASE_URL=postgresql+psycopg2://user:pass@host:5432/dbname
       - LOG_LEVEL=INFO
     ports:
       - "${DEV_PORT:-8001}:8000"
