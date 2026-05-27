@@ -145,8 +145,8 @@ class BookRepository(BaseRepository[LocalBook]):
 
                 # Subconsulta para conteo de descargas
                 dl_subquery = (
-                    select(func.count(DownloadHistory.id))
-                    .where(DownloadHistory.book_hash == LocalBook.book_hash)
+                    select(func.count(UserDownload.id))
+                    .where(UserDownload.book_hash == LocalBook.book_hash)
                     .correlate(LocalBook)
                     .scalar_subquery()
                 )
@@ -202,8 +202,8 @@ class BookRepository(BaseRepository[LocalBook]):
         async with pg_manager.get_session() as session:
             # Subquery for download count
             dl_subquery = (
-                select(func.count(DownloadHistory.id))
-                .where(DownloadHistory.book_hash == LocalBook.book_hash)
+                select(func.count(UserDownload.id))
+                .where(UserDownload.book_hash == LocalBook.book_hash)
                 .correlate(LocalBook)
                 .scalar_subquery()
             )

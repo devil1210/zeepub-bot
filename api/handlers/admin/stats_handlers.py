@@ -2,7 +2,7 @@ import logging
 import time
 from typing import Any
 
-from sqlalchemy import or_, select, text
+from sqlalchemy import select, text
 from sqlalchemy.orm import selectinload
 
 from api.handlers.helpers import check_staff
@@ -39,18 +39,18 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
             total_bytes = res_size.scalar() or 0
             storage_gb = round(total_bytes / (1024**3), 2)
 
-            # 3. Download Metrics
+            # 3. Download Metrics (usar user_downloads que es la tabla principal de la v4)
             dls_24h = (
                 await session.execute(
                     text(
-                        "SELECT COUNT(*) FROM download_history WHERE downloaded_at >= (CURRENT_TIMESTAMP - INTERVAL '1 day')"
+                        "SELECT COUNT(*) FROM user_downloads WHERE downloaded_at >= (CURRENT_TIMESTAMP - INTERVAL '1 day')"
                     )
                 )
             ).scalar() or 0
             dls_prev_24h = (
                 await session.execute(
                     text(
-                        "SELECT COUNT(*) FROM download_history WHERE downloaded_at >= (CURRENT_TIMESTAMP - INTERVAL '2 days') AND downloaded_at < (CURRENT_TIMESTAMP - INTERVAL '1 day')"
+                        "SELECT COUNT(*) FROM user_downloads WHERE downloaded_at >= (CURRENT_TIMESTAMP - INTERVAL '2 days') AND downloaded_at < (CURRENT_TIMESTAMP - INTERVAL '1 day')"
                     )
                 )
             ).scalar() or 0
@@ -96,32 +96,35 @@ async def handle_admin_stats(data: dict[str, Any], user_data: dict[str, Any], re
         async with pg_manager.get_session() as session:
             cursor = await session.execute(
                 text("""
-                SELECT title, clean_title, book_id, COUNT(*) as dls
-                FROM download_history
-                WHERE downloaded_at >= NOW() - INTERVAL '30 days'
-                GROUP BY book_id, title, clean_title
+                SELECT ud.book_hash, b.title, COUNT(*) as dls
+                FROM user_downloads ud
+                LEFT JOIN books b ON b.id = ud.book_hash
+                WHERE ud.downloaded_at >= NOW() - INTERVAL '30 days'
+                  AND ud.book_hash IS NOT NULL
+                GROUP BY ud.book_hash, b.title
                 ORDER BY dls DESC
                 LIMIT 1
             """)
             )
             row = cursor.fetchone()
             if row:
-                p_title, p_clean_title, p_book_id, p_dls = row
+                p_book_hash, p_title, p_dls = row
                 popular_book = {
-                    "title": p_clean_title or p_title,
+                    "title": p_title or "Desconocido",
                     "downloads": p_dls,
                     "author": "N/A",
                 }
-                stmt_lb = (
-                    select(LocalBook)
-                    .options(selectinload(LocalBook.series_info))
-                    .where(or_(LocalBook.book_hash == p_book_id, LocalBook.title == p_title))
-                )
-                lb_res = await session.execute(stmt_lb)
-                lb = lb_res.scalars().first()
-                if lb:
-                    popular_book["author"] = lb.series_info.author if lb.series_info else "N/A"
-                    popular_book["cover"] = lb.cover_low
+                if p_book_hash:
+                    stmt_lb = (
+                        select(LocalBook)
+                        .options(selectinload(LocalBook.series_info))
+                        .where(LocalBook.book_hash == p_book_hash)
+                    )
+                    lb_res = await session.execute(stmt_lb)
+                    lb = lb_res.scalars().first()
+                    if lb:
+                        popular_book["author"] = lb.series_info.author if lb.series_info else "N/A"
+                        popular_book["cover"] = lb.cover_low
     except Exception as e:
         logger.error(f"Error fetching popular book: {e}")
 

@@ -100,24 +100,30 @@ async def handle_get_download_count(data: dict[str, Any], user_data: dict[str, A
         raise HTTPException(status_code=400, detail="Faltan parámetros bookId")
 
     book_id = str(book_id_raw)
-    title_for_query = None
     book_hash_for_query = None
 
-    if book_id.startswith("local_") or book_id.isdigit():
-        clean_id_int = int(book_id.replace("local_", ""))
-        local_book = await LibraryService.get_book_by_id(clean_id_int)
+    if book_id.startswith("local_"):
+        # ID numérico local: buscar por ID
+        clean_id = book_id.replace("local_", "")
+        if clean_id.isdigit():
+            local_book = await LibraryService.get_book_by_id(int(clean_id))
+            if local_book:
+                book_hash_for_query = local_book.get("book_hash")
+        else:
+            # local_<hash>
+            book_hash_for_query = clean_id
+    elif book_id.isdigit():
+        local_book = await LibraryService.get_book_by_id(int(book_id))
         if local_book:
-            title_for_query = local_book["title"]
-            local_book.get("cleanTitle")
             book_hash_for_query = local_book.get("book_hash")
     else:
-        # No OPDS fallback
-        pass
+        # Es un hash directo (v4)
+        book_hash_for_query = book_id
 
-    if not title_for_query and not book_hash_for_query:
+    if not book_hash_for_query:
         return {"count": 0}
 
     from repositories.metrics_repository import metrics_repo
 
-    count = await metrics_repo.get_total_downloads(book_hash_for_query) if book_hash_for_query else 0
+    count = await metrics_repo.get_total_downloads(book_hash_for_query)
     return {"count": count}

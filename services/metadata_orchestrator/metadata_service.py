@@ -71,7 +71,47 @@ class MetadataOrchestrator:
                     lb = res_path.scalar_one_or_none()
 
                 if lb:
-                    return lb.to_dict()
+                    res = lb.to_dict()
+                    series = lb.series_info
+                    if series:
+                        res.update({
+                            "series_name": series.name or "",
+                            "serie": series.name or "",
+                            "series": series.name or "",
+                            "series_spanish": series.series_spanish or series.name or "",
+                            "series_english": series.series_english or series.name or "",
+                            "author": series.author or lb.author or "",
+                            "autor": series.author or lb.author or "",
+                            "author_jap": series.author_jap or lb.author_jap or "",
+                            "illustrator": series.illustrator or lb.illustrator or "",
+                            "illustrator_jap": series.illustrator_jap or lb.illustrator_jap or "",
+                            "description": series.description or lb.description or "",
+                            "sinopsis": series.description or lb.description or "",
+                            "publisher": series.publisher or lb.publisher or "",
+                            "editorial": lb.publisher or series.publisher or "",
+                            "book_type": series.book_type or "Light Novel",
+                            "tipo": series.book_type or "Light Novel",
+                            "tags": series.tags_json or lb.tags_json or [],
+                            "generos": series.tags_json or lb.tags_json or [],
+                            "etiquetas": ", ".join(series.tags_json) if series.tags_json else "",
+                            "demographics": series.demographics_json or lb.demographics_json or [],
+                            "demography": series.demographics_json or lb.demographics_json or [],
+                        })
+                    else:
+                        res.update({
+                            "series_name": lb.series_spanish or lb.title,
+                            "serie": lb.series_spanish or lb.title,
+                            "series": lb.series_spanish or lb.title,
+                            "series_spanish": lb.series_spanish or lb.title,
+                            "series_english": lb.series_english or lb.title,
+                            "autor": lb.author or "",
+                            "sinopsis": lb.description or "",
+                            "tipo": "Light Novel",
+                            "generos": lb.tags_json or [],
+                            "demographics": lb.demographics_json or [],
+                            "demography": lb.demographics_json or [],
+                        })
+                    return res
         except Exception as e:
             logger.error(f"MetadataOrchestrator error resolving book {book_id}: {e}")
 

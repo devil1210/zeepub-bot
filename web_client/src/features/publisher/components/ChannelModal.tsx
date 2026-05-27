@@ -49,7 +49,7 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onS
                 is_active: isActive,
                 config: {
                     ...editingChannel?.config,
-                    message_thread_id: threadId ? parseInt(threadId) : null
+                    message_thread_id: threadId && !isNaN(parseInt(threadId)) ? parseInt(threadId) : null
                 }
             };
 
