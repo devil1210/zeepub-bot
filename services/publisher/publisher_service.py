@@ -75,9 +75,9 @@ class TelegramPublisherProvider(PublisherProvider):
         from services.cover_service import send_doc_bytes, send_photo_bytes
 
         if not self.bot:
-            from core.bot import telegram_bot
+            from api.main import bot as main_bot
 
-            self.bot = telegram_bot
+            self.bot = main_bot.app.bot
 
         options = options or {}
         thread_id = options.get("message_thread_id")
