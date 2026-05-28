@@ -153,7 +153,7 @@ class BookRepository(BaseRepository[LocalBook]):
 
                 stmt = (
                     select(LocalBook, dl_subquery.label("download_count"))
-                    .join(SeriesMetadata, LocalBook.series_hash == SeriesMetadata.series_hash)
+                    .outerjoin(SeriesMetadata, LocalBook.series_hash == SeriesMetadata.series_hash)
                     .options(selectinload(LocalBook.series_info))
                     .where(or_(*filters))
                 )

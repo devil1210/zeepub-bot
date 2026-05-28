@@ -25,12 +25,21 @@ logger = logging.getLogger(__name__)
 async def resolve_cover_data(cover_path: str | None) -> bytes | str | None:
     """
     Resuelve la portada desde ruta o URL.
-    - Si es URL de API (/api/...), la descarga desde el servidor local
+    - Si es URL de API (/api/...), la descarga desde el servidor local o la lee de disco si es posible
     - Si es ruta local absoluta y existe, la usa directamente
     - Retorna bytes, ruta absoluta, o None
     """
     if not cover_path:
         return None
+
+    # Optimización de alto rendimiento: Traducir rutas relativas de covers directamente al disco local
+    if cover_path.startswith("/api/library/covers/"):
+        filename = os.path.basename(cover_path)
+        from utils.library_db import COVERS_DIR
+        local_path = os.path.join(COVERS_DIR, filename)
+        if os.path.exists(local_path):
+            logger.info(f"🚀 Portada resuelta directamente de disco local: {local_path}")
+            return local_path
 
     # Si es URL de la API o HTTP, descargarla
     if cover_path.startswith("/api/") or cover_path.startswith("http"):

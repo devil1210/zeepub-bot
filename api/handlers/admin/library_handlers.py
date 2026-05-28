@@ -487,7 +487,10 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
     return {"success": True, "results": results}
 
 
-async def handle_get_upload_history(limit: int = 100, offset: int = 0):
+async def handle_get_upload_history(data: dict[str, Any], user_data: dict[str, Any]):
+    check_staff(user_data)
+    limit = data.get("limit", 100)
+    offset = data.get("offset", 0)
     history_entries = await upload_repo.get_history(limit=limit, offset=offset)
 
     return {
