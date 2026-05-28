@@ -163,8 +163,30 @@ export const SeriesDetail: React.FC<SeriesDetailProps> = ({ series, onBack, onSe
             settings={settings}
           />
 
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 mt-8 mb-4">
+              <button
+                onClick={handlePrevPageLocal}
+                disabled={currentPage === 1}
+                className="px-6 py-2.5 rounded-premium-sm bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 disabled:opacity-40 disabled:pointer-events-none transition-all text-xs font-black uppercase tracking-wider text-white shadow-lg backdrop-blur-md"
+              >
+                ← Anterior
+              </button>
+              <span className="text-xs font-bold text-gray-400">
+                Página {currentPage} de {totalPages}
+              </span>
+              <button
+                onClick={handleNextPageLocal}
+                disabled={currentPage === totalPages}
+                className="px-6 py-2.5 rounded-premium-sm bg-white/5 border border-white/10 hover:bg-white/10 active:scale-95 disabled:opacity-40 disabled:pointer-events-none transition-all text-xs font-black uppercase tracking-wider text-white shadow-lg backdrop-blur-md"
+              >
+                Siguiente →
+              </button>
+            </div>
+          )}
+
           <div className="text-center py-4 text-xs text-gray-500 font-medium">
-            Página {currentPage} de {totalPages} • {volumes.length} Volúmenes
+            {volumes.length} Volúmenes
           </div>
         </div>
       </div>

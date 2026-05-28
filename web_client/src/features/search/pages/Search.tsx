@@ -55,14 +55,26 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const viewMode = navState.viewMode;
   const searchTerm = navState.searchTerm;
 
-  // Data State
-  const [series, setSeries] = useState<Series[]>([]);
+  // Data State con restauración de caché síncrona
+  const [series, setSeries] = useState<Series[]>(() => {
+    const cached = sessionStorage.getItem('search_cached_results');
+    return cached ? JSON.parse(cached) : [];
+  });
   const [loading, setLoading] = useState(false);
 
-  // Pagination State
-  const [currentPage, setCurrentPage] = useState(navState.currentPage || 1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalResults, setTotalResults] = useState(0);
+  // Pagination State con restauración de caché síncrona
+  const [currentPage, setCurrentPage] = useState(() => {
+    const savedPage = sessionStorage.getItem('search_cached_page');
+    return savedPage ? parseInt(savedPage) : (navState.currentPage || 1);
+  });
+  const [totalPages, setTotalPages] = useState(() => {
+    const savedTotal = sessionStorage.getItem('search_cached_total_pages');
+    return savedTotal ? parseInt(savedTotal) : 1;
+  });
+  const [totalResults, setTotalResults] = useState(() => {
+    const savedResults = sessionStorage.getItem('search_cached_total_results');
+    return savedResults ? parseInt(savedResults) : 0;
+  });
   const [loadingMore, setLoadingMore] = useState(false);
   const isFirstRender = useRef(true);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -266,12 +278,16 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
     }
   }, []);
 
-  const handleSelectSeries = (series: Series) => {
+  const handleSelectSeries = (seriesItem: Series) => {
     const mainContainer = document.querySelector('main');
     if (mainContainer) {
       sessionStorage.setItem('search_scroll_pos', mainContainer.scrollTop.toString());
+      sessionStorage.setItem('search_cached_results', JSON.stringify(series));
+      sessionStorage.setItem('search_cached_page', currentPage.toString());
+      sessionStorage.setItem('search_cached_total_pages', totalPages.toString());
+      sessionStorage.setItem('search_cached_total_results', totalResults.toString());
     }
-    onSelectSeries(series);
+    onSelectSeries(seriesItem);
   };
 
   const scrollToTop = (behavior: ScrollBehavior = 'smooth') => {

@@ -123,6 +123,27 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
 
     level_info = user_data.get("level_info") or {}
 
+    # Obtener foto del usuario desde el bot de Telegram
+    photo_url = None
+    bot = None
+    
+    # Intentamos obtener la instancia del bot a partir de request_state o global
+    try:
+        from api.main import bot as global_bot
+        bot = global_bot.app.bot
+    except Exception:
+        pass
+
+    if bot and user_id:
+        try:
+            photos = await bot.get_user_profile_photos(user_id, limit=1)
+            if photos.photos:
+                # Usamos la primera foto en el tamaño de resolución más bajo para carga ultra rápida
+                file_id = photos.photos[0][0].file_id
+                photo_url = f"/api/bot/avatar?file_id={file_id}"
+        except Exception as e:
+            logger.warning(f"Could not fetch profile photo for user {user_id}: {e}")
+
     return {
         "user": {
             "id": user_id,
@@ -146,6 +167,7 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
                 "used": int(used or 0),
                 "limit": max_dl,
             },
+            "photo_url": photo_url or user_data.get("photo_url")
         },
         "timeUntilReset": f"{hours}h {minutes}m",
         "hasUnlimitedDownloads": has_unlimited,

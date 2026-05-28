@@ -157,6 +157,18 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const { api } = await import('@shared/services/api');
       const res = await api.getUserStatus();
       setStatus(res);
+
+      if (res && res.user) {
+        setUser(prev => prev ? {
+          ...prev,
+          photo_url: res.user.photo_url || prev.photo_url
+        } : {
+          id: res.user.id,
+          first_name: res.user.username,
+          username: res.user.username,
+          photo_url: res.user.photo_url
+        });
+      }
     } catch (e) {
       console.error("Failed to refresh user status", e);
     }

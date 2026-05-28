@@ -54,6 +54,7 @@ export const usePublisher = () => {
     };
 
     const deleteQueueItem = async (id: number) => {
+        if (!window.confirm('¿Estás seguro de eliminar esta publicación de la cola?')) return;
         const res = await publisherApi.deleteQueueItem(id);
         if (res.success) await fetchData();
         return res;

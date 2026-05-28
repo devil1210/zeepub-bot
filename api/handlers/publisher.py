@@ -350,30 +350,36 @@ async def handle_pub_update_queue_item(data: dict[str, Any], user_data: dict[str
     if not item_id:
         raise HTTPException(status_code=400, detail="Falta id")
 
-    item = await pub_repo.get_by_id(item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Item no encontrado")
-
-    if "scheduled_for" in data:
+    from core.db_manager_pg import pg_manager
+    async with pg_manager.get_session() as session:
+        pub_repo.session = session
         try:
-            scheduled_for_str = data["scheduled_for"]
-            # Parse ISO date
-            dt_aware = datetime.fromisoformat(scheduled_for_str.replace("Z", "+00:00"))
-            item.scheduled_for = dt_aware.replace(tzinfo=None)
-        except Exception as e:
-            logger.error(f"Error parsing date: {e}")
-            pass
+            item = await pub_repo.get_by_id(int(item_id))
+            if not item:
+                raise HTTPException(status_code=404, detail="Item no encontrado")
 
-    if "status" in data:
-        item.status = data["status"]
+            if "scheduled_for" in data:
+                try:
+                    scheduled_for_str = data["scheduled_for"]
+                    # Parse ISO date
+                    dt_aware = datetime.fromisoformat(scheduled_for_str.replace("Z", "+00:00"))
+                    item.scheduled_for = dt_aware.replace(tzinfo=None)
+                except Exception as e:
+                    logger.error(f"Error parsing date: {e}")
+                    pass
 
-    if "payload" in data:
-        item.payload = data["payload"]
+            if "status" in data:
+                item.status = data["status"]
 
-    if "template_id" in data:
-        item.template_id = data["template_id"]
+            if "payload" in data:
+                item.payload = data["payload"]
 
-    await pub_repo.update(item)
+            if "template_id" in data:
+                item.template_id = int(data["template_id"]) if data["template_id"] else None
+
+            await session.commit()
+        finally:
+            pub_repo.session = None
 
     return {"success": True}
 
@@ -384,7 +390,16 @@ async def handle_pub_delete_queue_item(data: dict[str, Any], user_data: dict[str
     item_id = data.get("id")
     if not item_id:
         raise HTTPException(status_code=400, detail="Falta id")
-    await pub_repo.delete(item_id)
+    
+    from core.db_manager_pg import pg_manager
+    async with pg_manager.get_session() as session:
+        pub_repo.session = session
+        try:
+            await pub_repo.delete(int(item_id))
+            await session.commit()
+        finally:
+            pub_repo.session = None
+
     return {"success": True}
 
 

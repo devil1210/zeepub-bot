@@ -11,6 +11,7 @@ services:
       - ${HOST_LIB_PATH}:/library:ro
     environment:
       - LOG_LEVEL=INFO
+      - GIT_BRANCH=feat/integrate-web-client
     ports:
       - "${DEV_PORT:-8001}:8000"
     labels:
