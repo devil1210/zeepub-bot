@@ -75,12 +75,12 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                             </div>
 
                             <h3 className="text-white font-black text-base sm:text-lg leading-tight line-clamp-2 tracking-tight group-hover:text-primary transition-colors mb-1">
-                                {vol.englishTitle || vol.title || series.title || vol.cleanTitle}
+                                {String(vol.englishTitle || vol.title || series.title || vol.cleanTitle || '').replace(/\.epub$/i, '').trim()}
                             </h3>
 
                             {vol.romajiTitle && vol.romajiTitle !== (vol.englishTitle || vol.title) && (
                                 <p className="text-gray-500 text-[10px] sm:text-xs font-medium italic mb-2 line-clamp-2 opacity-70">
-                                    {vol.romajiTitle}
+                                    {String(vol.romajiTitle).replace(/\.epub$/i, '').trim()}
                                 </p>
                             )}
 
@@ -144,11 +144,11 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                                     <span className="text-[12px] font-black">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
                                 </div>
                                 <h3 className="text-white font-black text-sm sm:text-lg leading-tight line-clamp-2 drop-shadow-2xl group-hover:text-primary transition-colors tracking-tight">
-                                    {vol.englishTitle || vol.title || series.title || vol.cleanTitle}
+                                    {String(vol.englishTitle || vol.title || series.title || vol.cleanTitle || '').replace(/\.epub$/i, '').trim()}
                                 </h3>
                                 {vol.romajiTitle && vol.romajiTitle !== (vol.englishTitle || vol.title) && (
                                     <p className="text-gray-400 text-[9px] font-medium italic mt-1 line-clamp-1 truncate opacity-80">
-                                        {vol.romajiTitle}
+                                        {String(vol.romajiTitle).replace(/\.epub$/i, '').trim()}
                                     </p>
                                 )}
                             </div>

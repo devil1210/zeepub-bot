@@ -430,9 +430,18 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     lastUpdated: curVolume.modified_at_opf || curVolume.modifiedAtOpf ? formatDate(String(curVolume.modified_at_opf || curVolume.modifiedAtOpf)) : (curVolume.modified_at || curVolume.modifiedAt ? formatDate(String(curVolume.modified_at || curVolume.modifiedAt)) : 'N/A'),
     publishedDate: formatDate(String(curVolume.published_at || curVolume.publishedAt || curVolume.publishedDate || '')),
     description: String(curVolume.description || curVolume.summary || 'Sin sinopsis disponible.'),
-    displayTitle: String(curSeries?.seriesName || curVolume.series_name || curVolume.english_title || curVolume.englishTitle || curVolume.title || curSeries?.title || curVolume.series || 'Libro sin título'),
-    romajiTitle: String(curVolume.romaji_title || curVolume.romajiTitle || getRomajiTitle()),
-    spanishTitle: String(curVolume.spanish_title || curVolume.spanishTitle || curSeries?.spanishTitle || curSeries?.name_spanish || ''),
+    displayTitle: (() => {
+      const eng = curVolume.english_title || curVolume.englishTitle || curSeries?.name_english || curSeries?.seriesEnglish || curVolume.title || curVolume.series_name || curSeries?.seriesName || 'Libro sin título';
+      return String(eng).replace(/\.epub$/i, '').trim();
+    })(),
+    romajiTitle: (() => {
+      const rom = curVolume.romaji_title || curVolume.romajiTitle || getRomajiTitle() || '';
+      return String(rom).replace(/\.epub$/i, '').trim();
+    })(),
+    spanishTitle: (() => {
+      const esp = curVolume.spanish_title || curVolume.spanishTitle || curSeries?.name_spanish || curSeries?.seriesSpanish || curVolume.title || '';
+      return String(esp).replace(/\.epub$/i, '').trim();
+    })(),
     illustrator: String(curVolume.illustrator || 'N/A'),
     translator: String(curVolume.translator || 'ZeePub'),
     group: String(curVolume.group || curVolume.publisher || curVolume.translator || 'ZeePub'),

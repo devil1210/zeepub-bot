@@ -12,6 +12,10 @@ def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = Fal
     if not title_str or not isinstance(title_str, str):
         return {"series": "", "volume": "", "clean_title": "", "tags": [], "romaji": ""}
 
+    # Remover extensión .epub si está presente
+    if title_str.lower().endswith(".epub"):
+        title_str = title_str[:-5].strip()
+
     tags = re.findall(r"\[(.*?)\]", title_str)
     clean = re.sub(r"\[.*?\]", " ", title_str).strip()
     clean = re.sub(r"\(.*?\)", " ", clean).strip()
@@ -210,6 +214,8 @@ def process_book_identity_comprehensive(
 
     # Título de visualización: Filename limpio (título en español) > dc:title
     ui_title = parsed_filename.get("clean_title") or meta.get("title") or original_filename or "Sin título"
+    if ui_title.lower().endswith(".epub"):
+        ui_title = ui_title[:-5].strip()
     romaji_from_title = parsed_filename.get("romaji")
 
     # Registro de Serie
