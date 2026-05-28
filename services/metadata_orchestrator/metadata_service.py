@@ -75,12 +75,13 @@ class MetadataOrchestrator:
                     series = lb.series_info
                     if series:
                         res.update({
-                            "series_name": series.name or "",
-                            "serie": series.series_english or series.name or "",
-                            "series": series.name or "",
-                            "series_spanish": series.series_spanish or series.name or "",
-                            "series_english": series.series_english or series.name or "",
-                            "romaji_title": series.name or "",
+                            "series_name": series.name or lb.series_english or "",
+                            "serie": series.series_english or lb.series_english or series.name or "",
+                            "series": series.name or lb.series_english or "",
+                            "series_spanish": series.series_spanish or lb.series_spanish or series.name or "",
+                            "series_english": series.series_english or lb.series_english or series.name or "",
+                            "romaji_title": series.name or lb.romaji_title or "",
+                            "romaji": series.name or lb.romaji_title or "",
                             "author": series.author or lb.author or "",
                             "autor": series.author or lb.author or "",
                             "author_jap": series.author_jap or lb.author_jap or "",
@@ -101,10 +102,12 @@ class MetadataOrchestrator:
                     else:
                         res.update({
                             "series_name": lb.series_spanish or lb.title,
-                            "serie": lb.series_spanish or lb.title,
+                            "serie": lb.series_english or lb.series_spanish or lb.title,
                             "series": lb.series_spanish or lb.title,
                             "series_spanish": lb.series_spanish or lb.title,
-                            "series_english": lb.series_english or lb.title,
+                            "series_english": lb.series_english or lb.series_spanish or lb.title,
+                            "romaji_title": lb.romaji_title or "",
+                            "romaji": lb.romaji_title or "",
                             "autor": lb.author or "",
                             "sinopsis": lb.description or "",
                             "tipo": "Light Novel",
