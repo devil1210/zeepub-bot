@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Any
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, update, text
 from sqlalchemy.orm import selectinload
 
 from models.library import (
@@ -24,6 +24,98 @@ class LibraryScanner:
     Módulo encargado del mantenimiento global de la librería:
     limpieza de archivos eliminados, detección de huérfanos e integridad.
     """
+
+    @staticmethod
+    async def _cleanup_book_references(session: Any, book_hash: str):
+        """
+        Limpia y desvincula todas las referencias de clave foránea a un libro antes de su eliminación,
+        evitando errores de ForeignKeyViolationError en PostgreSQL.
+        """
+        # 1. Eliminar relaciones de muchos a muchos (genres y demographics)
+        await session.execute(
+            text("DELETE FROM book_genres WHERE book_id = :book_id"),
+            {"book_id": book_hash}
+        )
+        await session.execute(
+            text("DELETE FROM book_demographics WHERE book_id = :book_id"),
+            {"book_id": book_hash}
+        )
+
+        # 2. Eliminar de la cola de publicación (campo book_hash no nulo con FK)
+        await session.execute(
+            text("DELETE FROM publication_queue WHERE book_hash = :book_id"),
+            {"book_id": book_hash}
+        )
+
+        # 3. Eliminar assets multimedia específicos del libro
+        await session.execute(
+            text("DELETE FROM media_assets WHERE book_id = :book_id"),
+            {"book_id": book_hash}
+        )
+
+        # 4. Eliminar calificaciones (campo book_id no nulo con FK)
+        await session.execute(
+            text("DELETE FROM user_ratings WHERE book_id = :book_id"),
+            {"book_id": book_hash}
+        )
+
+        # 5. Desvincular historial de descargas del usuario (nullable)
+        await session.execute(
+            text("UPDATE user_downloads SET book_id = NULL, book_hash = NULL WHERE book_id = :book_id OR book_hash = :book_id"),
+            {"book_id": book_hash}
+        )
+
+        # 6. Desvincular historial global de descargas (nullable)
+        await session.execute(
+            text("UPDATE download_history SET book_id = NULL WHERE book_id = :book_id"),
+            {"book_id": book_hash}
+        )
+
+    @staticmethod
+    async def _cleanup_series_references(session: Any, series_hash: str):
+        """
+        Limpia y desvincula todas las referencias de clave foránea a una serie antes de su eliminación,
+        evitando errores de ForeignKeyViolationError en PostgreSQL.
+        """
+        # 1. Eliminar relaciones de muchos a muchos de la serie
+        await session.execute(
+            text("DELETE FROM series_genres WHERE series_id = :series_id"),
+            {"series_id": series_hash}
+        )
+        await session.execute(
+            text("DELETE FROM series_demographics WHERE series_id = :series_id"),
+            {"series_id": series_hash}
+        )
+
+        # 2. Eliminar feedback de aprendizaje de IA
+        await session.execute(
+            text("DELETE FROM ai_learning_feedback WHERE series_hash = :series_id"),
+            {"series_id": series_hash}
+        )
+
+        # 3. Eliminar propuestas de metadatos
+        await session.execute(
+            text("DELETE FROM metadata_proposals WHERE series_hash = :series_id"),
+            {"series_id": series_hash}
+        )
+
+        # 4. Eliminar assets multimedia de la serie
+        await session.execute(
+            text("DELETE FROM media_assets WHERE series_id = :series_id"),
+            {"series_id": series_hash}
+        )
+
+        # 5. Desvincular de descargas de usuarios
+        await session.execute(
+            text("UPDATE user_downloads SET series_id = NULL, series_hash = NULL WHERE series_id = :series_id OR series_hash = :series_id"),
+            {"series_id": series_hash}
+        )
+
+        # 6. Desvincular de historial de descargas
+        await session.execute(
+            text("UPDATE download_history SET series_id = NULL, series_hash = NULL WHERE series_id = :series_id OR series_hash = :series_id"),
+            {"series_id": series_hash}
+        )
 
     @staticmethod
     async def sync_translator_group(session: Any, book: LocalBook):
@@ -102,16 +194,8 @@ class LibraryScanner:
                     session.add(archived)
                     archived_count += 1
 
-                    # Desvincular - PostgreSQL async style
-                    await session.execute(
-                        update(DownloadHistory).where(DownloadHistory.book_hash == b.book_hash).values(book_hash=None)
-                    )
-                    await session.execute(
-                        update(UserDownload).where(UserDownload.book_hash == b.book_hash).values(book_hash=None)
-                    )
-                    await session.execute(
-                        update(UserRating).where(UserRating.book_hash == b.book_hash).values(book_hash=None)
-                    )
+                    # Desvincular y limpiar todas las referencias de FK en PostgreSQL
+                    await LibraryScanner._cleanup_book_references(session, b.book_hash)
 
                     await session.delete(b)
                     removed_count += 1
@@ -156,6 +240,8 @@ class LibraryScanner:
                 )
                 session.add(dup)
                 count_moved += 1
+            # Limpiar referencias de FK antes de borrar el libro
+            await LibraryScanner._cleanup_book_references(session, orphan.book_hash)
             await session.delete(orphan)
 
         await session.flush()
@@ -195,15 +281,8 @@ class LibraryScanner:
                 )
                 session.add(archived)
 
-                await session.execute(
-                    update(DownloadHistory).where(DownloadHistory.book_hash == book.book_hash).values(book_hash=None)
-                )
-                await session.execute(
-                    update(UserDownload).where(UserDownload.book_hash == book.book_hash).values(book_hash=None)
-                )
-                await session.execute(
-                    update(UserRating).where(UserRating.book_hash == book.book_hash).values(book_hash=None)
-                )
+                # Limpiar y desvincular referencias de FK en PostgreSQL
+                await LibraryScanner._cleanup_book_references(session, book.book_hash)
 
                 await session.delete(book)
                 deleted_books += 1
@@ -240,6 +319,8 @@ class LibraryScanner:
                     original_series_id=s.id,
                 )
                 session.add(archived_s)
+            # Limpiar referencias de FK de la serie vacía
+            await LibraryScanner._cleanup_series_references(session, s.series_hash)
             await session.delete(s)
             deleted_series += 1
 
