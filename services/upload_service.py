@@ -403,6 +403,34 @@ class UploadService:
         try:
             logger.info(f"Finalizando upload: sugiera path '{suggested_path}' para {epub_path.name}")
 
+            # Desviar a Nextcloud si las credenciales están configuradas
+            from services.nextcloud_service import nextcloud_service
+            if nextcloud_service.is_active:
+                logger.info("☁️ Nextcloud detectado activo. Desviando la subida directamente a Nextcloud...")
+                upload_success = await nextcloud_service.upload_file(epub_path, suggested_path)
+                if upload_success:
+                    # Borrar archivo temporal
+                    if epub_path.exists():
+                        try:
+                            epub_path.unlink()
+                        except Exception as unlink_err:
+                            logger.warning(f"No se pudo borrar el archivo temporal {epub_path}: {unlink_err}")
+
+                    # Limpieza de registro temporal de upload_books en DB
+                    upload_id = metadata.get("upload_id")
+                    if upload_id:
+                        try:
+                            await upload_repo.delete_upload_record(int(upload_id))
+                            logger.info(f"Registro temporal de upload {upload_id} eliminado.")
+                        except Exception as e:
+                            logger.warning(f"No se pudo eliminar el registro temporal {upload_id}: {e}")
+
+                    logger.info(f"✅ Finalización de upload exitosa vía Nextcloud: {suggested_path}")
+                    return True
+                else:
+                    logger.error("❌ Fallo subiendo el libro a Nextcloud.")
+                    return False
+
             library_base = await self._get_library_base()
             source_id = getattr(self, "_active_source_id", 1)
 
