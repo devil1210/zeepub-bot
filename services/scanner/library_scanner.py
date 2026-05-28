@@ -96,11 +96,8 @@ class LibraryScanner:
                         title=b.title,
                         filename=b.filename,
                         last_filepath=b.filepath,
-                        volume=b.volume,
                         author=b.series_info.author if b.series_info else "Unknown",
                         book_type=b.series_info.book_type if b.series_info else "Light Novel",
-                        original_book_id=None,
-                        reason="physically_deleted",
                     )
                     session.add(archived)
                     archived_count += 1
@@ -193,11 +190,8 @@ class LibraryScanner:
                     title=book.title,
                     filename=book.filename,
                     last_filepath=book.filepath,
-                    volume=book.volume,
                     author=book.author,
                     book_type="Light Novel",
-                    original_book_id=book.id,
-                    reason="physically_missing_detected",
                 )
                 session.add(archived)
 

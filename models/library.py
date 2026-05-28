@@ -457,6 +457,8 @@ class ArchivedBook(Base):
     last_filepath: Mapped[str | None] = mapped_column(String(1024))
     file_size: Mapped[int | None] = mapped_column(Integer)
     hash_md5: Mapped[str | None] = mapped_column(String(32))
+    author: Mapped[str | None] = mapped_column(String(255))
+    book_type: Mapped[str | None] = mapped_column(String(100))
 
     archived_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
