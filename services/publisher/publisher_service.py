@@ -99,7 +99,12 @@ class TelegramPublisherProvider(PublisherProvider):
         # 1. Foto / Portada
         cover_quality = options.get("cover_quality", "high")
         cover_key = f"cover_{cover_quality}"
-        cover_source = book_data.get(cover_key) or book_data.get("cover_original") or book_data.get("cover")
+        cover_source = (
+            book_data.get(cover_key)
+            or book_data.get("cover_original")
+            or book_data.get("cover")
+            or book_data.get("portada")
+        )
 
         cover_data = book_data.get("cover_bytes")
         if not cover_data and isinstance(cover_source, str) and cover_source.startswith("http"):
@@ -108,9 +113,29 @@ class TelegramPublisherProvider(PublisherProvider):
             cover_data = cover_source
 
         main_caption = msg_parts[0] if msg_parts else ""
-        await send_photo_bytes(
-            self.bot, target_id, main_caption, cover_data, parse_mode="HTML", message_thread_id=thread_id
-        )
+
+        # Resolver portada (bytes o ruta de archivo local) de forma asíncrona
+        from services.cover_service import resolve_cover_data
+        resolved_cover = await resolve_cover_data(cover_data) if isinstance(cover_data, str) else cover_data
+
+        sent_photo = None
+        if resolved_cover and main_caption:
+            sent_photo = await send_photo_bytes(
+                self.bot, target_id, main_caption, resolved_cover, parse_mode="HTML", message_thread_id=thread_id
+            )
+
+        # Fallback a texto plano si la portada no se pudo enviar pero hay un caption
+        if not sent_photo and main_caption:
+            logger.info("No se pudo enviar la portada como foto, enviando como texto plano de fallback...")
+            try:
+                await self.bot.send_message(
+                    chat_id=target_id,
+                    text=main_caption,
+                    parse_mode="HTML",
+                    message_thread_id=thread_id,
+                )
+            except Exception as e:
+                logger.error(f"Error enviando fallback de texto de portada: {e}")
 
         # 2. Sinopsis y Archivo
         if len(msg_parts) > 1:

@@ -162,6 +162,17 @@ class LibraryService:
             }
 
     @classmethod
+    async def search_books(
+        cls, query: str = "", page: int = 1, items_per_page: int = 10, search_type: str = "all"
+    ) -> dict:
+        """Busca libros individuales utilizando el repositorio optimizado v4 (Estático)."""
+        from repositories.book_repository import book_repo
+
+        return await book_repo.search_books(
+            query=query, page=page, items_per_page=items_per_page, search_type=search_type
+        )
+
+    @classmethod
     async def get_recent_books(cls, page: int = 1, items_per_page: int = 10) -> dict:
         """Obtiene libros recientes."""
         from core.db_manager_pg import pg_manager
