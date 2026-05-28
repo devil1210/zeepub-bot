@@ -10,7 +10,7 @@ from config.config_settings import config
 from core.db_manager_pg import pg_manager
 from core.state_manager import state_manager
 from models.users import User, UserLevel, UserUISettings
-from repositories.base import BaseRepository
+from repositories.base_repository import BaseRepository
 from repositories.level_repository import LEVEL_NAME_TO_ID, level_repo
 from services.cache_service import cache_manager
 
@@ -24,7 +24,7 @@ class UserRepository(BaseRepository[User]):
     """
 
     def __init__(self, db_manager=None):
-        super().__init__(db_manager or pg_manager, "users")
+        super().__init__(model=User, db_manager=db_manager or pg_manager)
 
     # --- Implementación de métodos abstractos de BaseRepository ---
 

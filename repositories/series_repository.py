@@ -17,7 +17,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
     """
 
     def __init__(self, db_manager=None):
-        super().__init__(db_manager or pg_manager, "series_metadata")
+        super().__init__(model=SeriesMetadata, db_manager=db_manager or pg_manager)
 
     async def get_by_id(self, series_hash: str) -> SeriesMetadata | None:
         """Obtiene una serie por su hash único."""

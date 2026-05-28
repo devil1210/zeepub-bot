@@ -16,7 +16,7 @@ class CustomMessagesRepository(BaseRepository[StoredMessage]):
     """
 
     def __init__(self, db_manager=None):
-        super().__init__(db_manager or pg_manager, "stored_messages")
+        super().__init__(model=StoredMessage, db_manager=db_manager or pg_manager)
 
     async def save_message(
         self, slug: str, chat_id: int, message_id: int, description: str = None, text_content: str = None

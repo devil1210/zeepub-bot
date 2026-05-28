@@ -17,7 +17,7 @@ class UploadRepository(BaseRepository[UploadBook]):
     """
 
     def __init__(self, db_manager=None):
-        super().__init__(db_manager or pg_manager, "upload_books")
+        super().__init__(model=UploadBook, db_manager=db_manager or pg_manager)
 
     # --- Implementación de métodos abstractos de BaseRepository ---
 
