@@ -195,7 +195,7 @@ class LibraryScanner:
                     last_filepath=book.filepath,
                     volume=book.volume,
                     author=book.author,
-                    book_type=book.book_type,
+                    book_type="Light Novel",
                     original_book_id=book.id,
                     reason="physically_missing_detected",
                 )
