@@ -13,6 +13,8 @@ class LibraryService:
     Servicio para gestionar la lógica de negocio de la librería (Series y Libros).
     """
 
+    _is_ai_scanning: bool = False
+
     def __init__(self, session: AsyncSession):
         self.series_repo = SeriesRepository(session)
         self.book_repo = BookRepository(session)

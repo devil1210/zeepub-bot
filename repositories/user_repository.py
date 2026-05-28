@@ -142,17 +142,17 @@ class UserRepository(BaseRepository[User]):
             "role": user.role or "user",
             "photo_url": user.photo_url,
             "level": {
-                "name": user.level_info.name if user.level_info else "free",
-                "color": user.level_info.color if user.level_info else "#3b82f6",
+                "name": user.level.name if user.level else "free",
+                "color": user.level.color if user.level else "#3b82f6",
             },
             "downloads": {
                 "used": self._get_downloads_used(user.telegram_id),
-                "limit": user.level_info.daily_downloads if user.level_info else 5,
+                "limit": user.level.daily_downloads if user.level else 5,
                 "total": user.total_downloads or 0,
             },
             # Keep legacy fields for compatibility
             "telegram_id": user.telegram_id,
-            "level_name": user.level_info.name if user.level_info else "free",
+            "level_name": user.level.name if user.level else "free",
             "expires_at": user.expires_at,
             "roles": user.roles or [],
             "insignias": user.insignias or [],
@@ -173,7 +173,7 @@ class UserRepository(BaseRepository[User]):
         async with pg_manager.get_session() as session:
             stmt = (
                 select(User)
-                .options(selectinload(User.ui_settings), selectinload(User.level_info))
+                .options(selectinload(User.ui_settings), selectinload(User.level))
                 .where(User.telegram_id == telegram_id)
             )
             result = await session.execute(stmt)
@@ -187,7 +187,7 @@ class UserRepository(BaseRepository[User]):
         async with pg_manager.get_session() as session:
             stmt = (
                 select(User)
-                .options(selectinload(User.ui_settings), selectinload(User.level_info))
+                .options(selectinload(User.ui_settings), selectinload(User.level))
                 .where(User.email == email.lower())
             )
             result = await session.execute(stmt)
@@ -332,7 +332,7 @@ class UserRepository(BaseRepository[User]):
         """Listar usuarios para el panel de administración con paginación y búsqueda."""
         try:
             async with pg_manager.get_session() as session:
-                query = select(User).options(selectinload(User.level_info), selectinload(User.ui_settings))
+                query = select(User).options(selectinload(User.level), selectinload(User.ui_settings))
 
                 if search:
                     term = f"%{search}%"
@@ -593,7 +593,7 @@ class UserRepository(BaseRepository[User]):
             async with pg_manager.get_session() as session:
                 stmt = (
                     select(User)
-                    .options(selectinload(User.ui_settings), selectinload(User.level_info))
+                    .options(selectinload(User.ui_settings), selectinload(User.level))
                     .where(User.telegram_id == telegram_id)
                 )
 
@@ -601,7 +601,7 @@ class UserRepository(BaseRepository[User]):
                 user = result.scalar_one_or_none()
 
                 if user:
-                    lvl = user.level_info
+                    lvl = user.level
                     level_dict = {
                         "id": str(lvl.id) if lvl else "6",
                         "name": lvl.name if lvl else "free",

@@ -231,7 +231,7 @@ async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dic
     async with pg_manager.get_session() as session:
         from sqlalchemy.orm import selectinload
 
-        stmt = select(User).options(selectinload(User.level_info)).where(User.telegram_id == int(target_id))
+        stmt = select(User).options(selectinload(User.level)).where(User.telegram_id == int(target_id))
         result = await session.execute(stmt)
         user = result.scalar_one_or_none()
 
@@ -247,8 +247,8 @@ async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dic
                 "name": user.name,
                 "nickname": user.nickname,
                 "levelId": user.level_id,
-                "levelName": user.level_info.name if user.level_info else "Básico",
-                "levelColor": user.level_info.color if user.level_info else "#3b82f6",
+                "levelName": user.level.name if user.level else "Básico",
+                "levelColor": user.level.color if user.level else "#3b82f6",
                 "hasLibraryAccess": user.has_library_access,
                 "canRequestBooks": user.can_request_books,
                 "canUploadEpub": user.can_upload_epub,

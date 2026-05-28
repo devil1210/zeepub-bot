@@ -37,7 +37,7 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
             async with pg_manager.get_session() as session:
                 stmt = (
                     select(User)
-                    .options(selectinload(User.ui_settings), selectinload(User.level_info))
+                    .options(selectinload(User.ui_settings), selectinload(User.level))
                     .where(User.telegram_id == telegram_id)
                 )
 

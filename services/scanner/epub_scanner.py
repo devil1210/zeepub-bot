@@ -271,6 +271,22 @@ class EpubScanner:
                     else:
                         logger.warning(f"📕 Duplicado ignorado (ya existe en DB): {filename}")
                         # Registrar duplicado si es necesario
+                        from models.library import DuplicateBook
+                        dup_stmt = select(DuplicateBook).where(
+                            DuplicateBook.duplicate_filepath == filepath
+                        )
+                        dup_res = await session.execute(dup_stmt)
+                        dup_exists = dup_res.scalar_one_or_none()
+                        if not dup_exists:
+                            new_duplicate = DuplicateBook(
+                                book_hash=target_book_hash,
+                                original_filepath=hash_conflict.filepath,
+                                duplicate_filepath=filepath,
+                                title=identity.get("title") or hash_conflict.title,
+                                author=identity.get("author") or hash_conflict.author
+                            )
+                            session.add(new_duplicate)
+                            await session.flush()
                         return "duplicate"
 
                 if not book:
