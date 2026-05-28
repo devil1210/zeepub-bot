@@ -54,6 +54,9 @@ class SeriesScanner:
             series = SeriesMetadata(
                 id=series_hash,
                 series_name=series_name,
+                series_spanish=identity.get("series_spanish") or series_name,
+                series_english=identity.get("series_english") or series_name,
+                name=identity.get("romaji_title") or series_name,
                 author=identity.get("author") or "Unknown",
                 author_jap=identity.get("author_jap"),
                 illustrator=identity.get("illustrator"),
@@ -79,9 +82,21 @@ class SeriesScanner:
             )
 
             series.slug = SlugManager.generate_valid_slug(series)
-            logger.info(f"🆕 Nueva serie detectada: {series.series_name} [{series.slug}]")
+            logger.info(
+                f"🆕 Nueva serie creada desde metadatos EPUB: {series.series_name}\n"
+                f"   ├─ Español: {series.series_spanish}\n"
+                f"   ├─ Inglés:  {series.series_english}\n"
+                f"   └─ Romaji:  {series.name} [{series.slug}]"
+            )
         else:
             # ACTUALIZACIÓN DE SERIE EXISTENTE
+            if identity.get("series_spanish") and (not series.series_spanish or series.series_spanish == series.series_name):
+                series.series_spanish = identity["series_spanish"]
+            if identity.get("series_english") and (not series.series_english or series.series_english == series.series_name):
+                series.series_english = identity["series_english"]
+            if identity.get("romaji_title") and (not series.name or series.name == series.series_name):
+                series.name = identity["romaji_title"]
+
             if not series.series_english:
                 series.series_english = series.series_name
 

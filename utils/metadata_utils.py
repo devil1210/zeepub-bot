@@ -152,12 +152,33 @@ def process_book_identity_comprehensive(
 
     author = normalize_author_name(meta.get("author"))
     romaji_from_series = None
+    series_spanish = None
+    series_english = None
 
     if series_meta:
-        # Solo usamos el tag específico de serie del EPUB
-        series_parsed_meta = parse_metadata_from_title(series_meta)
-        series = series_parsed_meta.get("series_clean") or series_parsed_meta.get("series") or series_meta
-        romaji_from_series = series_parsed_meta.get("romaji")
+        # Intentar extraer partes si vienen con separadores en el tag de serie del EPUB
+        parts = re.split(r"(?:\s+[\-\–\—\−\―\~～\|¦║]\s+)|(?:\s+:\s+)", series_meta)
+        parts = [p.strip() for p in parts if p.strip()]
+        
+        if len(parts) >= 3:
+            series_spanish = parts[0]
+            series_english = parts[1]
+            romaji_from_series = parts[2]
+            series = parts[0]
+        elif len(parts) == 2:
+            p2 = parts[1]
+            if any(part.lower() in ("no", "to", "ga", "wa", "ni", "de", "wo") for part in p2.split()) or len(parts[0]) < len(p2) * 0.8:
+                series_spanish = parts[0]
+                romaji_from_series = p2
+                series = parts[0]
+            else:
+                series_spanish = parts[0]
+                series_english = p2
+                series = parts[0]
+        else:
+            series_parsed_meta = parse_metadata_from_title(series_meta)
+            series = series_parsed_meta.get("series_clean") or series_parsed_meta.get("series") or series_meta
+            romaji_from_series = series_parsed_meta.get("romaji")
     else:
         # Si no hay tag de serie en el metadato, NO usamos el título ni el nombre de archivo
         series = "Unknown"
@@ -231,6 +252,8 @@ def process_book_identity_comprehensive(
         "is_uncensored": meta.get("is_uncensored", 0),
         "color_mode": meta.get("color_mode", "bw"),
         "romaji_title": romaji_from_series or romaji_from_title or meta.get("romaji_title"),
+        "series_spanish": series_spanish or meta.get("series_spanish"),
+        "series_english": series_english or meta.get("series_english"),
     }
 
 
