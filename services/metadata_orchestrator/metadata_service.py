@@ -76,10 +76,11 @@ class MetadataOrchestrator:
                     if series:
                         res.update({
                             "series_name": series.name or "",
-                            "serie": series.name or "",
+                            "serie": series.series_english or series.name or "",
                             "series": series.name or "",
                             "series_spanish": series.series_spanish or series.name or "",
                             "series_english": series.series_english or series.name or "",
+                            "romaji_title": series.name or "",
                             "author": series.author or lb.author or "",
                             "autor": series.author or lb.author or "",
                             "author_jap": series.author_jap or lb.author_jap or "",
