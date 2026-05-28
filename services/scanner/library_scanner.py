@@ -328,7 +328,6 @@ class LibraryScanner:
             performed_by=user_id,
             total_books_checked=total_checked,
             missing_books_found=deleted_books,
-            empty_series_removed=deleted_series,
             status="success",
         )
         session.add(log)
