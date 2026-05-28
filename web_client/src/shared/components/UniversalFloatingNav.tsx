@@ -69,21 +69,7 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             webApp.setHeaderColor(settings.theme === 'amoled' ? '#000000' : bgColor);
             webApp.setBackgroundColor(settings.theme === 'amoled' ? '#000000' : bgColor);
         }
-
-        if (contextType !== 'main') {
-            webApp.BackButton.show();
-            const onBack = () => {
-                webApp.HapticFeedback.impactOccurred('light');
-                handleBack();
-            };
-            webApp.BackButton.onClick(onBack);
-            return () => {
-                webApp.BackButton.offClick(onBack);
-            };
-        } else {
-            webApp.BackButton.hide();
-        }
-    }, [webApp, contextType, handleBack, settings.theme]);
+    }, [webApp, settings.theme]);
 
     useEffect(() => {
         if (!webApp) return;
@@ -206,16 +192,14 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
                                 />
                             </>
                         )}
-                        {!isTelegram && (
-                            <>
-                                <NavDivider />
-                                <NavButton
-                                    onClick={handleBack}
-                                    icon={Reply}
-                                    label="Volver"
-                                />
-                            </>
-                        )}
+                        <>
+                            <NavDivider />
+                            <NavButton
+                                onClick={handleBack}
+                                icon={Reply}
+                                label="Volver"
+                            />
+                        </>
                     </>
                 );
 
@@ -223,16 +207,14 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             case 'ai':
                 return (
                     <>
-                        {!isTelegram && (
-                            <>
-                                <NavButton
-                                    onClick={handleBack}
-                                    icon={ChevronLeft}
-                                    label={state.backAction ? "Atrás" : "Salir"}
-                                />
-                                <NavDivider />
-                            </>
-                        )}
+                        <>
+                            <NavButton
+                                onClick={handleBack}
+                                icon={ChevronLeft}
+                                label={state.backAction ? "Atrás" : "Salir"}
+                            />
+                            <NavDivider />
+                        </>
                         <button
                             onClick={() => setMenuOpen(!isMenuOpen)}
                             className={`flex-[2] flex items-center justify-center gap-2 px-4 py-2 rounded-premium-sm transition-all ${isMenuOpen ? 'text-primary' : 'text-gray-300'} hover:bg-white/5 cursor-pointer`}
@@ -252,16 +234,14 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             case 'book':
                 return (
                     <>
-                        {!isTelegram && (
-                            <>
-                                <NavButton
-                                    onClick={handleBack}
-                                    icon={Reply}
-                                    label="Volver"
-                                />
-                                <NavDivider />
-                            </>
-                        )}
+                        <>
+                            <NavButton
+                                onClick={handleBack}
+                                icon={Reply}
+                                label="Volver"
+                            />
+                            <NavDivider />
+                        </>
                         {state.actionButtons ? (
                             state.actionButtons
                                 .filter(btn => !isTelegram || !btn.highlight)
@@ -290,16 +270,14 @@ export const UniversalFloatingNav: React.FC<{ activeTab?: string; onTabChange?: 
             case 'settings':
                 return (
                     <>
-                        {!isTelegram && (
-                            <>
-                                <NavButton
-                                    onClick={handleBack}
-                                    icon={ChevronLeft}
-                                    label="Volver"
-                                />
-                                <NavDivider />
-                            </>
-                        )}
+                        <>
+                            <NavButton
+                                onClick={handleBack}
+                                icon={ChevronLeft}
+                                label="Volver"
+                            />
+                            <NavDivider />
+                        </>
                         <NavButton
                             onClick={() => state.actionButtons?.find(b => b.id === 'restore')?.onClick()}
                             icon={RotateCcw}

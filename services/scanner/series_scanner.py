@@ -127,8 +127,13 @@ class SeriesScanner:
         if identity.get("romaji_title") and (not book.romaji_title or book.romaji_title == "Unknown"):
             book.romaji_title = identity["romaji_title"]
 
-        # Enriquecimiento (Spanish title, etc)
-        if not series.series_spanish and not skip_ai:
+        # Enriquecimiento completo de metadatos (Spanish, English y Romaji titles)
+        needs_enrichment = (
+            not series.series_spanish or 
+            not series.series_english or 
+            series.series_english == series.series_name
+        )
+        if needs_enrichment and not skip_ai:
             await cls.enrich_series_metadata(session, series, skip_ai=skip_ai)
 
         logger.debug(f"💾 Persistiendo serie: {series.series_name} (ID: {series.id})")
@@ -138,25 +143,9 @@ class SeriesScanner:
     @classmethod
     async def enrich_series_metadata(cls, session: Any, series: SeriesMetadata, skip_ai: bool = False):
         """
-        Enriquece una serie buscando metadatos en español y otros campos.
-        Usa Google Books API y/o IA como fallback.
+        Enriquece una serie buscando metadatos en español, inglés y romaji/japonés.
+        Usa IA avanzada de Gemini para una precisión absoluta de base de datos corporativa.
         """
-        if series.series_spanish:
-            return
-
-        from utils.helpers import get_series_spanish_from_api
-
-        # 1. Intentar vía Google Books (Heurística rápida)
-        try:
-            spanish_title = await get_series_spanish_from_api(series.series_name, series.author)
-            if spanish_title:
-                series.series_spanish = spanish_title
-                logger.info(f"✨ Enriquecido (API): {series.series_name} -> {spanish_title}")
-                return
-        except Exception as e:
-            logger.debug(f"API Enrichment failed for {series.series_name}: {e}")
-
-        # 2. IA Fallback (Solo si lo anterior falla, tenemos API Key y NO saltamos IA)
         if skip_ai:
             return
 
@@ -165,24 +154,55 @@ class SeriesScanner:
 
             ai_service = AIService()
             prompt = f"""
-            Identifica el título oficial en español de esta serie de Novela Ligera/Manga.
-            Nombre: {series.series_name}
-            Autor: {series.author}
+            Analiza la siguiente serie de Novela Ligera, Novela Web o Manga y proporciona sus títulos oficiales en español, inglés y romaji:
 
-            Si no hay un título oficial diferente al inglés, responde el mismo nombre.
-            Responde SOLO con el nombre en un JSON:
-            {{ "series_spanish": "string" }}
+            - Título original detectado: {series.series_name}
+            - Autor: {series.author or "Desconocido"}
+
+            Necesitamos que identifiques con la mayor precisión posible:
+            1. **series_spanish**: El título oficial o más popular en español (por ejemplo, "Bajo un Mismo Techo, Me Enamoré de la Prometida de Mi Difunto Hermano"). Si no existe traducción en español, pon el mismo que en inglés.
+            2. **series_english**: El título oficial en inglés (por ejemplo, "Living Under the Same Roof, I Fell in Love with My Deceased Brother's Fiancée").
+            3. **romaji_title**: El título original transliterado en Romaji (por ejemplo, "Ani no Konyakusha to Kurashite Iru."). Si ya está en romaji o inglés de origen, úsalo.
+
+            Responde estrictamente en formato JSON con la siguiente estructura:
+            {{
+                "series_spanish": "título en español",
+                "series_english": "título en inglés",
+                "romaji_title": "título en romaji"
+            }}
             """
+
             res = await ai_service._call_ai(prompt, json_mode=True)
             if res:
                 import json
-
                 from services.ai_service import AIService as AI
-
-                data = json.loads(AI._extract_json_from_text(res))
-                series.series_spanish = data.get("series_spanish")
-                logger.info(f"🤖 Enriquecido (IA): {series.series_name} -> {series.series_spanish}")
-        except Exception:
+                
+                raw_json = AI._extract_json_from_text(res)
+                data = json.loads(raw_json)
+                
+                spanish = data.get("series_spanish")
+                english = data.get("series_english")
+                romaji = data.get("romaji_title")
+                
+                if spanish:
+                    series.series_spanish = spanish
+                if english:
+                    series.series_english = english
+                if romaji:
+                    series.name = romaji
+                    
+                # Regenerar el slug e indicar el enriquecimiento en los logs
+                from services.scanner.slug_manager import SlugManager
+                series.slug = SlugManager.generate_valid_slug(series)
+                
+                logger.info(
+                    f"🤖 Serie Enriquecida por IA: {series.series_name}\n"
+                    f"   ├─ Español: {series.series_spanish}\n"
+                    f"   ├─ Inglés:  {series.series_english}\n"
+                    f"   └─ Romaji:  {series.name} [{series.slug}]"
+                )
+        except Exception as e:
+            logger.error(f"❌ Error en enrich_series_metadata: {e}")
             pass
 
     @classmethod
