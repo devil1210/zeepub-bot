@@ -29,13 +29,20 @@ export const SearchCardList: React.FC<SearchCardListProps> = React.memo(({ serie
             {/* Right: Details */}
             <div className="flex flex-col flex-1 min-w-0 py-1">
                 {/* Title & Action */}
-                <div className="flex justify-between items-start gap-4 mb-2">
-                    <h3 className="text-white font-black text-base sm:text-lg md:text-xl leading-tight line-clamp-2 tracking-tight group-hover:text-primary transition-colors flex-1 min-w-0">
-                        {series.title}
-                    </h3>
+                <div className="flex justify-between items-start gap-4 mb-2.5">
+                    <div className="flex-1 min-w-0 flex flex-col">
+                        <h3 className="text-white font-black text-base sm:text-lg md:text-xl leading-tight line-clamp-2 tracking-tight group-hover:text-primary transition-colors">
+                            {series.englishTitle || series.title}
+                        </h3>
+                        {series.romajiTitle && series.romajiTitle !== (series.englishTitle || series.title) && (
+                            <p className="text-gray-500 text-[10px] sm:text-xs font-medium italic mt-1 line-clamp-1 opacity-70">
+                                {series.romajiTitle}
+                            </p>
+                        )}
+                    </div>
                     <button
                         onClick={(e) => { e.stopPropagation(); }}
-                        className="p-2.5 rounded-premium-sm bg-white/5 hover:bg-primary text-gray-400 hover:text-white transition-all duration-300 transform group-hover:scale-110 shadow-lg active:scale-90 shrink-0"
+                        className="p-2.5 rounded-premium-sm bg-white/5 hover:bg-primary text-gray-400 hover:text-white transition-all duration-300 transform group-hover:scale-110 shadow-lg active:scale-90 shrink-0 self-start"
                     >
                         <PlusCircle className="w-4 h-4" />
                     </button>

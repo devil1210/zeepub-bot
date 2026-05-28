@@ -117,20 +117,53 @@ class LibraryService:
     @classmethod
     async def get_series_volumes(cls, series_hash: str, limit: int = 100, offset: int = 0) -> list[dict]:
         """Obtiene volúmenes de una serie (Estático)."""
+        from sqlalchemy import func, select
         from core.db_manager_pg import pg_manager
+        from models.library import UserDownload
 
-        async with pg_manager.get_session() as session:
-            service = cls(session)
-            books = await service.get_books_by_series(series_hash)
-            # Aplicar paginación manual si es necesario, pero get_by_series ya devuelve todo
-            # Convertir a dict para compatibilidad
-            return [b.to_dict() for b in books]
+        try:
+            async with pg_manager.get_session() as session:
+                service = cls(session)
+                books = await service.get_books_by_series(series_hash)
+
+                # Obtener descargas de todos los libros de esta serie agrupadas por book_hash
+                book_hashes = [b.id for b in books]
+                dl_map = {}
+                if book_hashes:
+                    dl_stmt = (
+                        select(UserDownload.book_hash, func.count(UserDownload.id))
+                        .where(UserDownload.book_hash.in_(book_hashes))
+                        .group_by(UserDownload.book_hash)
+                    )
+                    dl_res = await session.execute(dl_stmt)
+                    dl_map = {row[0]: row[1] for row in dl_res.all() if row[0]}
+
+                # Convertir a dict y poblar download_count
+                res = []
+                for b in books:
+                    b_dict = b.to_dict()
+                    b_dict["download_count"] = dl_map.get(b.id, 0)
+                    res.append(b_dict)
+                return res
+        except Exception as e:
+            logger.error(f"Error getting volumes for series {series_hash}: {e}")
+            return []
 
     @classmethod
     async def get_series_total_downloads(cls, series_hash: str) -> int:
         """Obtiene el total de descargas de una serie (Estático)."""
-        # TODO: Implementar contador real en la BD
-        return 0
+        from sqlalchemy import func, select
+        from core.db_manager_pg import pg_manager
+        from models.library import UserDownload
+
+        try:
+            async with pg_manager.get_session() as session:
+                stmt = select(func.count(UserDownload.id)).where(UserDownload.series_hash == series_hash)
+                res = await session.execute(stmt)
+                return res.scalar() or 0
+        except Exception as e:
+            logger.error(f"Error getting total downloads for series {series_hash}: {e}")
+            return 0
 
     @classmethod
     async def get_book_by_hash(cls, book_hash: str) -> dict | None:

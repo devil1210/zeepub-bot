@@ -4,6 +4,7 @@ import { Calendar, Clock, Download, Hash, Languages, PenTool, Star, User } from 
 interface BookHeaderProps {
     displayTitle: string;
     romajiTitle: string;
+    spanishTitle?: string;
     seriesName?: string; // Nombre de la serie
     author: string;
     rating: number;
@@ -23,6 +24,7 @@ interface BookHeaderProps {
 export const BookHeader: React.FC<BookHeaderProps> = ({
     displayTitle,
     romajiTitle,
+    spanishTitle,
     seriesName,
     author,
     rating,
@@ -89,12 +91,19 @@ export const BookHeader: React.FC<BookHeaderProps> = ({
                 )}
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-2 tracking-tight drop-shadow-xl">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-3 tracking-tight drop-shadow-xl">
                 {displayTitle}
             </h1>
-            {romajiTitle && (
-                <h2 className="text-base sm:text-lg text-white/50 italic font-medium mb-6 leading-relaxed">
-                    {romajiTitle}
+            {spanishTitle && spanishTitle !== displayTitle && (
+                <div className="text-lg sm:text-xl font-bold text-white/70 mb-2 leading-relaxed flex items-center gap-2 drop-shadow-md">
+                    <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-white/10 text-white/60 font-black tracking-widest border border-white/5 shrink-0">ESP</span>
+                    <span>{spanishTitle}</span>
+                </div>
+            )}
+            {romajiTitle && romajiTitle !== displayTitle && (
+                <h2 className="text-base sm:text-lg text-white/40 italic font-medium mb-6 leading-relaxed flex items-center gap-2">
+                    <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-white/5 text-white/30 font-black tracking-widest border border-white/5 shrink-0">ROM</span>
+                    <span>{romajiTitle}</span>
                 </h2>
             )}
 

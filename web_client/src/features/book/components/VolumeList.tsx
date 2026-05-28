@@ -54,7 +54,7 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                         {/* Middle Section: Detailed Content */}
                         <div className="flex-1 min-w-0 flex flex-col py-1 z-10">
                             {/* Clean Header Info */}
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-1 text-[10px] font-black uppercase tracking-widest">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-1 text-[10px] font-black uppercase tracking-widest">
                                 <span className="text-primary opacity-90">{vol.volumeNumber === 0 ? 'VOLUMEN ÚNICO' : `VOLUMEN ${vol.volumeNumber}`}</span>
                                 {vol.group && (
                                     <>
@@ -62,13 +62,23 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                                         <span className="text-emerald-400 opacity-80 truncate max-w-[150px]">{vol.group}</span>
                                     </>
                                 )}
+                                {vol.color_mode === 'color' && (
+                                    <span className="px-1.5 py-0.5 rounded bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[8px] font-black tracking-widest shadow-lg">
+                                        COLOR
+                                    </span>
+                                )}
+                                {vol.is_uncensored && (
+                                    <span className="px-1.5 py-0.5 rounded bg-red-600/20 text-red-400 border border-red-500/20 text-[8px] font-black tracking-widest">
+                                        S/C
+                                    </span>
+                                )}
                             </div>
 
                             <h3 className="text-white font-black text-base sm:text-lg leading-tight line-clamp-2 tracking-tight group-hover:text-primary transition-colors mb-1">
-                                {series.title || vol.cleanTitle || vol.title}
+                                {vol.englishTitle || vol.title || series.title || vol.cleanTitle}
                             </h3>
 
-                            {vol.romajiTitle && (
+                            {vol.romajiTitle && vol.romajiTitle !== (vol.englishTitle || vol.title) && (
                                 <p className="text-gray-500 text-[10px] sm:text-xs font-medium italic mb-2 line-clamp-2 opacity-70">
                                     {vol.romajiTitle}
                                 </p>
@@ -134,8 +144,13 @@ export const VolumeList: React.FC<VolumeListProps> = ({ volumes, viewMode, onSel
                                     <span className="text-[12px] font-black">{vol.rating > 0 ? vol.rating.toFixed(1) : '—'}</span>
                                 </div>
                                 <h3 className="text-white font-black text-sm sm:text-lg leading-tight line-clamp-2 drop-shadow-2xl group-hover:text-primary transition-colors tracking-tight">
-                                    {series.title || vol.cleanTitle || vol.title}
+                                    {vol.englishTitle || vol.title || series.title || vol.cleanTitle}
                                 </h3>
+                                {vol.romajiTitle && vol.romajiTitle !== (vol.englishTitle || vol.title) && (
+                                    <p className="text-gray-400 text-[9px] font-medium italic mt-1 line-clamp-1 truncate opacity-80">
+                                        {vol.romajiTitle}
+                                    </p>
+                                )}
                             </div>
                         </div>
 

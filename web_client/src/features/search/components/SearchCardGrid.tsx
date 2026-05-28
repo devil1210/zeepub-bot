@@ -50,8 +50,13 @@ export const SearchCardGrid: React.FC<SearchCardGridProps> = React.memo(({ serie
                         </div>
                     </div>
                     <h3 className="text-white font-black text-base leading-tight line-clamp-2 drop-shadow-xl group-hover:text-primary transition-colors">
-                        {series.title}
+                        {series.englishTitle || series.title}
                     </h3>
+                    {series.romajiTitle && series.romajiTitle !== (series.englishTitle || series.title) && (
+                        <p className="text-gray-400 text-[10px] italic font-medium mt-1 line-clamp-1 truncate opacity-80">
+                            {series.romajiTitle}
+                        </p>
+                    )}
                     <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1.5 truncate">
                         {series.author}
                     </p>
