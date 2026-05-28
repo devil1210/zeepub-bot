@@ -243,6 +243,14 @@ class EpubScanner:
 
             # 6. RESOLUCIÓN DE CONFLICTOS Y ACTUALIZACIÓN
             with session.no_autoflush:
+                # Si existía un registro para este filepath pero su hash cambió, lo eliminamos para evitar
+                # actualizar la clave primaria (id/book_hash) en caliente, previniendo ForeignKeyViolationError.
+                if book and book.book_hash != target_book_hash:
+                    logger.info(f"🗑️ Reemplazando libro por cambio de hash sagrado: {book.book_hash} -> {target_book_hash}")
+                    await session.delete(book)
+                    await session.flush()
+                    book = None
+
                 conflict_stmt = (
                     select(LocalBook)
                     .options(

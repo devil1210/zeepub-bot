@@ -33,7 +33,7 @@ class User(Base):
     can_upload: Mapped[bool] = mapped_column(Boolean, default=False)
     can_upload_epub: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    extra_data: Mapped[dict] = mapped_column(JSONB, default=dict)
+    settings: Mapped[dict] = mapped_column(JSONB, default=dict)
 
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
