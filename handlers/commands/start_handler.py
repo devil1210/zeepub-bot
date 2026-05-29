@@ -39,7 +39,7 @@ class StartHandler(BaseCommandHandler):
                 # If topics exist, redirect welcome message to "System" topic
                 thread_id = topic_ids.get("sistema", thread_id)
 
-        welcome_text = self._get_welcome_text(uid)
+        welcome_text = self._get_welcome_text(update)
         await self._send_message(update, welcome_text, thread_id)
 
         # Clean previous temporary book state on restart
@@ -47,9 +47,10 @@ class StartHandler(BaseCommandHandler):
 
         await mostrar_menu_principal(update, context)
 
-    def _get_welcome_text(self, uid: int) -> str:
+    def _get_welcome_text(self, update: Update) -> str:
         """Generate personalized welcome message based on user level."""
-        user_info = self._get_user_info(uid)
+        uid = update.effective_user.id
+        user_info = self._get_user_info(update)
         level = user_info.get("level", "free")
         role = user_info.get("role")
         is_admin = uid in self.settings_service.get_admin_users()
