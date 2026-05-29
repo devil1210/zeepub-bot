@@ -23,7 +23,7 @@ class StatusHandler(BaseCommandHandler):
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /status: informa estado interno, nivel de usuario y descargas restantes."""
         thread_id = get_thread_id(update)
-        user_info = self._get_user_info(update)
+        user_info = await self._get_user_info(update)
         st = self._get_user_state(update.effective_user.id)
 
         if not st:

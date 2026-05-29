@@ -35,11 +35,17 @@ class BaseCommandHandler(ABC):
             parse_mode="HTML",
         )
 
-    def _get_user_info(self, update: Update):
+    async def _get_user_info(self, update: Update):
         """Get effective user information."""
         from services.user_service import get_effective_user
 
-        return get_effective_user(update.effective_user.id, tg_user=update.effective_user)
+        return await get_effective_user(update.effective_user.id, tg_user=update.effective_user)
+
+    def _get_user_state(self, uid: int) -> dict:
+        """Get user state from state manager."""
+        from core.state_manager import state_manager
+
+        return state_manager.get_user_state(uid)
 
     def _clean_user_state(self, uid: int, keys_to_remove: list = None):
         """Clean user state for specific keys."""
