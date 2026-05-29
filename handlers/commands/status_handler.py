@@ -42,7 +42,7 @@ class StatusHandler(BaseCommandHandler):
         """Build comprehensive status message."""
         level = user_info.get("level", "free")
         role = user_info.get("role")
-        is_admin = uid in self.settings_service.get_admin_users()
+        is_admin = user_info.get("is_real_admin", False)
 
         # User level and role info
         status_text = "✨ <b>Perfil de Lector - ZeePub</b> ✨\n\n"
