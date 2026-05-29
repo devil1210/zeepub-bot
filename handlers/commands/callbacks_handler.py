@@ -290,6 +290,9 @@ class CallbackHandlerV6(BaseCommandHandler):
                         title=title_for_cap,
                     )
 
+                    # Conservar Portada y Sinopsis permanentemente en el chat al descargar con éxito
+                    st["last_detalles_msg_ids"] = []
+
                     # F. Mensaje final interactivo de "¿Qué quieres hacer ahora?"
                     series_hash = st.get("current_series_hash")
                     keyboard = []
