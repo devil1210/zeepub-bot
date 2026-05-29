@@ -1,6 +1,6 @@
 from sqlalchemy import select
 
-from models.library import Book, Series
+from models.library import Book, Series, Genre
 from repositories.base import BaseRepository
 
 
@@ -43,12 +43,8 @@ class SeriesRepository(BaseRepository[Series]):
             )
 
         if tag:
-            # Asumimos que genres es una relación y queremos filtrar por ella
-            # Pero para v4.0, a veces se guarda como JSON o relación many-to-many
-            # Revisando model library: Series.genres es relación selectin
-            # Filtramos por el nombre del tag en la tabla de taxonomía si fuera necesario.
-            # Por ahora, implementación simple basada en el nombre de la serie
-            pass
+            # Filtramos por el nombre del tag/género en la relación many-to-many
+            stmt = stmt.where(Series.genres.any(Genre.name.ilike(tag)))
 
         if author:
             stmt = stmt.where(Series.author.ilike(f"%{author}%"))

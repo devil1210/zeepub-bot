@@ -85,6 +85,7 @@ async def mostrar_generos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")])
 
     st["current_view"] = "genres"
+    st["prev_view_local"] = "main"
     st["titulo"] = "🏷️ Géneros"
 
     text = "<b>🏷️ Selecciona un Género:</b>"
@@ -576,6 +577,7 @@ async def mostrar_autores_local(
     keyboard.append(nav_row)
 
     st["current_view"] = "authors"
+    st["prev_view_local"] = "main"
     st["titulo"] = "✍️ Autores"
 
     text = f"<b>✍️ Selecciona un Autor:</b>\nMostrando {len(authors)} autores (Pág. {page})."

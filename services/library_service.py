@@ -194,9 +194,21 @@ class LibraryService:
         async with pg_manager.get_session() as session:
             service = cls(session)
             skip = (page - 1) * items_per_page
-            items, total = await service.series_repo.search(
-                query=query, sort_by=sort_by, skip=skip, limit=items_per_page
-            )
+
+            # Mapear search_type a filtros específicos del repositorio
+            search_args = {
+                "sort_by": sort_by,
+                "skip": skip,
+                "limit": items_per_page,
+            }
+            if search_type == "author":
+                search_args["author"] = query
+            elif search_type == "genres":
+                search_args["tag"] = query
+            else:
+                search_args["query"] = query
+
+            items, total = await service.series_repo.search(**search_args)
             return {
                 "results": [s.to_dict() for s in items],
                 "totalItems": total,
@@ -263,10 +275,7 @@ class LibraryService:
         res = await cls.search_series(
             query=tag, page=page, items_per_page=page_size, search_type="genres"
         )
-        return {
-            "items": res["results"],
-            "total": res["totalItems"]
-        }
+        return {"items": res["results"], "total": res["totalItems"]}
 
     @classmethod
     async def get_series_by_author(
@@ -276,10 +285,7 @@ class LibraryService:
         res = await cls.search_series(
             query=author, page=page, items_per_page=page_size, search_type="author"
         )
-        return {
-            "items": res["results"],
-            "total": res["totalItems"]
-        }
+        return {"items": res["results"], "total": res["totalItems"]}
 
     @classmethod
     async def resolve_series_hash(cls, short_hash: str) -> str:
