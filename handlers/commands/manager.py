@@ -1,7 +1,13 @@
 # handlers/commands/manager.py
 
 import logging
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler, MessageHandler, filters
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
 
 from handlers.commands.start_handler import StartHandler
 from handlers.commands.catalog_handler import CatalogHandler
@@ -13,6 +19,7 @@ from handlers.commands.plugins_handler import PluginsHandler
 from handlers.commands.auth_handler import AuthHandler
 from handlers.commands.callbacks_handler import CallbackHandlerV6
 from core.state_manager import state_manager
+from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +48,9 @@ class HandlerManagerV6:
         """Registra de forma ordenada todos los handlers y comandos de la v6."""
         # 1. Comandos principales de Onboarding y Menú
         self.app.add_handler(CommandHandler("start", self.start_h.handle))
-        self.app.add_handler(CommandHandler(["catalog", "menu", "inicio"], self.catalog_h.handle))
+        self.app.add_handler(
+            CommandHandler(["catalog", "menu", "inicio"], self.catalog_h.handle)
+        )
         self.app.add_handler(CommandHandler(["ayuda", "help"], self.start_h.handle))
 
         # 2. Comandos de Búsqueda y Perfil
@@ -57,7 +66,7 @@ class HandlerManagerV6:
         # 4. MessageHandler para interceptar texto libre (Búsqueda interactiva en chat)
         self.app.add_handler(
             MessageHandler(filters.TEXT & (~filters.COMMAND), self.handle_text_message),
-            group=5  # Usar un grupo dedicado para evitar colisiones
+            group=5,  # Usar un grupo dedicado para evitar colisiones
         )
 
         # 5. Callback Queries (Manejador unificado de navegación por botones)
@@ -74,6 +83,8 @@ class HandlerManagerV6:
         if st.get("esperando_busqueda"):
             st["esperando_busqueda"] = False  # Consumir estado
             search_term = update.message.text.strip()
-            
+
             # Delegar al buscador asíncrono pasándole el término ingresado
-            await self.search_h._search_by_term(update, context, search_term, get_thread_id(update))
+            await self.search_h._search_by_term(
+                update, context, search_term, get_thread_id(update)
+            )

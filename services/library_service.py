@@ -115,7 +115,9 @@ class LibraryService:
             return await service.get_series_details(series_hash)
 
     @classmethod
-    async def get_series_volumes(cls, series_hash: str, limit: int = 100, offset: int = 0) -> list[dict]:
+    async def get_series_volumes(
+        cls, series_hash: str, limit: int = 100, offset: int = 0
+    ) -> list[dict]:
         """Obtiene volúmenes de una serie (Estático)."""
         from sqlalchemy import func, select
         from core.db_manager_pg import pg_manager
@@ -158,7 +160,9 @@ class LibraryService:
 
         try:
             async with pg_manager.get_session() as session:
-                stmt = select(func.count(UserDownload.id)).where(UserDownload.series_hash == series_hash)
+                stmt = select(func.count(UserDownload.id)).where(
+                    UserDownload.series_hash == series_hash
+                )
                 res = await session.execute(stmt)
                 return res.scalar() or 0
         except Exception as e:
@@ -177,7 +181,12 @@ class LibraryService:
 
     @classmethod
     async def search_series(
-        cls, query: str = "", page: int = 1, items_per_page: int = 20, search_type: str = "todos", sort_by: str = "a-z"
+        cls,
+        query: str = "",
+        page: int = 1,
+        items_per_page: int = 20,
+        search_type: str = "todos",
+        sort_by: str = "a-z",
     ) -> dict:
         """Busca series (Estático)."""
         from core.db_manager_pg import pg_manager
@@ -198,13 +207,20 @@ class LibraryService:
 
     @classmethod
     async def search_books(
-        cls, query: str = "", page: int = 1, items_per_page: int = 10, search_type: str = "all"
+        cls,
+        query: str = "",
+        page: int = 1,
+        items_per_page: int = 10,
+        search_type: str = "all",
     ) -> dict:
         """Busca libros individuales utilizando el repositorio optimizado v4 (Estático)."""
         from repositories.book_repository import book_repo
 
         return await book_repo.search_books(
-            query=query, page=page, items_per_page=items_per_page, search_type=search_type
+            query=query,
+            page=page,
+            items_per_page=items_per_page,
+            search_type=search_type,
         )
 
     @classmethod
@@ -215,7 +231,9 @@ class LibraryService:
         async with pg_manager.get_session() as session:
             service = cls(session)
             skip = (page - 1) * items_per_page
-            books, total = await service.book_repo.get_all_paginated(skip=skip, limit=items_per_page)
+            books, total = await service.book_repo.get_all_paginated(
+                skip=skip, limit=items_per_page
+            )
             return {
                 "items": [b.to_dict() for b in books],
                 "totalItems": total,
@@ -226,4 +244,61 @@ class LibraryService:
     async def get_genres(cls) -> list[str]:
         """Obtiene lista de géneros."""
         # TODO: Implementar en repo
-        return ["Acción", "Aventura", "Comedia", "Drama", "Fantasía", "Romance", "Recuentos de la vida", "Sci-Fi"]
+        return [
+            "Acción",
+            "Aventura",
+            "Comedia",
+            "Drama",
+            "Fantasía",
+            "Romance",
+            "Recuentos de la vida",
+            "Sci-Fi",
+        ]
+
+    @classmethod
+    async def get_series_by_tag(
+        cls, tag: str, page: int = 1, page_size: int = 10
+    ) -> dict:
+        """Obtiene series filtradas por tag/género."""
+        return await cls.search_series(
+            query=tag, page=page, items_per_page=page_size, search_type="genres"
+        )
+
+    @classmethod
+    async def get_series_by_author(
+        cls, author: str, page: int = 1, page_size: int = 10
+    ) -> dict:
+        """Obtiene series filtradas por autor."""
+        return await cls.search_series(
+            query=author, page=page, items_per_page=page_size, search_type="author"
+        )
+
+    @classmethod
+    async def get_authors(cls, page: int = 1, page_size: int = 10) -> dict:
+        """Obtiene la lista de autores únicos de forma paginada desde PostgreSQL."""
+        from core.db_manager_pg import pg_manager
+        from models.library import Series
+        from sqlalchemy import select, func
+
+        async with pg_manager.get_session() as session:
+            stmt = (
+                select(Series.author)
+                .where(Series.author.isnot(None), Series.author != "")
+                .distinct()
+                .order_by(Series.author.asc())
+            )
+            count_stmt = select(func.count(func.distinct(Series.author))).where(
+                Series.author.isnot(None), Series.author != ""
+            )
+            total = (await session.execute(count_stmt)).scalar() or 0
+
+            start = (page - 1) * page_size
+            stmt = stmt.offset(start).limit(page_size)
+
+            result = await session.execute(stmt)
+            authors = [r[0] for r in result.all()]
+
+            return {
+                "items": authors,
+                "total": total,
+            }

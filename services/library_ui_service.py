@@ -11,7 +11,9 @@ from utils.helpers import get_thread_id, get_translator_acronym
 logger = logging.getLogger(__name__)
 
 
-async def mostrar_menu_principal(update: Update, context: ContextTypes.DEFAULT_TYPE, force_new: bool = False):
+async def mostrar_menu_principal(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, force_new: bool = False
+):
     """Muestra el menú principal basado en la BD local."""
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
@@ -21,8 +23,16 @@ async def mostrar_menu_principal(update: Update, context: ContextTypes.DEFAULT_T
     st["titulo"] = "📚 Biblioteca Local"
 
     keyboard = [
-        [InlineKeyboardButton("📖 Catálogo de Series", callback_data="nav_local|all_series")],
-        [InlineKeyboardButton("⭐ Novedades (Series)", callback_data="nav_local|newest")],
+        [
+            InlineKeyboardButton(
+                "📖 Catálogo de Series", callback_data="nav_local|all_series"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "⭐ Novedades (Series)", callback_data="nav_local|newest"
+            )
+        ],
         [InlineKeyboardButton("🏷️ Géneros", callback_data="nav_local|genres")],
         [InlineKeyboardButton("✍️ Autores", callback_data="nav_local|authors")],
         [InlineKeyboardButton("🔍 Buscar EPUB", callback_data="buscar")],
@@ -65,7 +75,11 @@ async def mostrar_generos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for i in range(0, len(genres), 2):
         row = [InlineKeyboardButton(genres[i], callback_data=f"gen|{genres[i]}")]
         if i + 1 < len(genres):
-            row.append(InlineKeyboardButton(genres[i + 1], callback_data=f"gen|{genres[i + 1]}"))
+            row.append(
+                InlineKeyboardButton(
+                    genres[i + 1], callback_data=f"gen|{genres[i + 1]}"
+                )
+            )
         keyboard.append(row)
 
     keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")])
@@ -106,16 +120,22 @@ async def mostrar_series(
     st["current_page"] = page
 
     if origin_type == "genre":
-        data = await LibraryService.get_series_by_tag(filter_val, page=page, page_size=page_size)
+        data = await LibraryService.get_series_by_tag(
+            filter_val, page=page, page_size=page_size
+        )
         title = f"🏷️ Género: {filter_val}"
         st["prev_view_local"] = "genres"
     elif origin_type == "author":
-        data = await LibraryService.get_series_by_author(filter_val, page=page, page_size=page_size)
+        data = await LibraryService.get_series_by_author(
+            filter_val, page=page, page_size=page_size
+        )
         title = f"✍️ Autor: {filter_val}"
         st["prev_view_local"] = "authors"
     else:  # newest or all_series
         sort = "newest" if origin_type == "newest" else "a-z"
-        res = await LibraryService.search_series("", page=page, items_per_page=page_size, sort_by=sort)
+        res = await LibraryService.search_series(
+            "", page=page, items_per_page=page_size, sort_by=sort
+        )
         data = {"items": res["results"], "total": res["totalItems"]}
         title = "⭐ Novedades" if origin_type == "newest" else "📖 Todas las Series"
         st["prev_view_local"] = "main"
@@ -125,17 +145,24 @@ async def mostrar_series(
 
     for i, s in enumerate(data["items"]):
         href = f"local_series|{s['series_hash']}"
-        st["colecciones"][i] = {"titulo": s["title"], "href": href}
-        keyboard.append([InlineKeyboardButton(s["title"], callback_data=f"col|{i}")])
+        series_title = s.get("name") or s.get("series_name") or s.get("title", "Novela")
+        st["colecciones"][i] = {"titulo": series_title, "href": href}
+        keyboard.append([InlineKeyboardButton(series_title, callback_data=f"col|{i}")])
 
     nav_row = [InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")]
     if page > 1:
         nav_row.append(
-            InlineKeyboardButton("⬅️ Ant.", callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page - 1}")
+            InlineKeyboardButton(
+                "⬅️ Ant.",
+                callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page - 1}",
+            )
         )
     if page * page_size < data["total"]:
         nav_row.append(
-            InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page + 1}")
+            InlineKeyboardButton(
+                "Sig. ➡️",
+                callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page + 1}",
+            )
         )
 
     keyboard.append(nav_row)
@@ -186,7 +213,9 @@ async def mostrar_libros(
 
     if origin_type == "recent":
         # Usamos el nuevo fetcher de LibraryService
-        data = await LibraryService.get_recent_books(page=page, items_per_page=page_size)
+        data = await LibraryService.get_recent_books(
+            page=page, items_per_page=page_size
+        )
     else:
         # Fallback futuro
         data = {"items": [], "totalItems": 0, "totalPages": 0}
@@ -213,11 +242,17 @@ async def mostrar_libros(
     nav_row = [InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")]
     if page > 1:
         nav_row.append(
-            InlineKeyboardButton("⬅️ Ant.", callback_data=f"nav_b|{origin_type}|{filter_val or ''}|{page - 1}")
+            InlineKeyboardButton(
+                "⬅️ Ant.",
+                callback_data=f"nav_b|{origin_type}|{filter_val or ''}|{page - 1}",
+            )
         )
     if page < data.get("totalPages", 1):
         nav_row.append(
-            InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_b|{origin_type}|{filter_val or ''}|{page + 1}")
+            InlineKeyboardButton(
+                "Sig. ➡️",
+                callback_data=f"nav_b|{origin_type}|{filter_val or ''}|{page + 1}",
+            )
         )
 
     keyboard.append(nav_row)
@@ -243,7 +278,10 @@ async def mostrar_libros(
 
 
 async def mostrar_volumenes_local(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, series_hash: str, force_new: bool = False
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    series_hash: str,
+    force_new: bool = False,
 ):
     """Muestra volúmenes de una serie local."""
     uid = update.effective_user.id
@@ -299,7 +337,9 @@ async def mostrar_volumenes_local(
     st["current_view"] = "volumes_local"
     st["current_series_hash"] = series_hash
 
-    text = f"<b>📖 {series_name}</b>\n\nSelecciona un volumen para obtener más detalles:"
+    text = (
+        f"<b>📖 {series_name}</b>\n\nSelecciona un volumen para obtener más detalles:"
+    )
 
     # Intentar editar, si falla (mensaje borrado), enviar uno nuevo
     if update.callback_query and not force_new:
@@ -326,7 +366,9 @@ async def mostrar_volumenes_local(
         )
 
 
-async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_TYPE, key: str):
+async def mostrar_detalles_libro(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, key: str
+):
     """
     Muestra la ficha técnica del libro con el flujo de 3 mensajes: Portada, Sinopsis y Technical Info.
     Sigue el patrón Premium/Glassmorphism y sincroniza la cuota de descargas.
@@ -349,7 +391,9 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
     if not libro_st:
         logger.warning(f"Libro no encontrado en estado para key: {key}")
         if update.callback_query:
-            await update.callback_query.answer("⚠️ Información no disponible.", show_alert=True)
+            await update.callback_query.answer(
+                "⚠️ Información no disponible.", show_alert=True
+            )
         return
 
     # 1. Obtener Metadata Enriquecida (incluye sinopsis y detalles técnicos)
@@ -428,7 +472,9 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
     # encontrar el mensaje con botones y quitarlos sin borrar la info.
     if update.callback_query:
         # Notificar que se queda en espera de forma sutil
-        await update.callback_query.answer("📌 Ficha técnica fijada en el chat.", show_alert=False)
+        await update.callback_query.answer(
+            "📌 Ficha técnica fijada en el chat.", show_alert=False
+        )
 
     # A. Mensaje de Portada
     # Flujo de Prioridad: Alta -> Media -> Baja -> Original -> Portada genérica
@@ -446,7 +492,12 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
     msg_portada = None
     if portada:
         msg_portada = await send_photo_bytes(
-            context.bot, chat_id, part0, portada, parse_mode="HTML", message_thread_id=thread_id
+            context.bot,
+            chat_id,
+            part0,
+            portada,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
         )
 
     # Fallback si no hay portada O si falló el envío (ej: formato no soportado)
@@ -495,7 +546,9 @@ async def mostrar_detalles_libro(update: Update, context: ContextTypes.DEFAULT_T
         st["last_detalles_msg_ids"].append(msg_info.message_id)
 
 
-async def mostrar_autores_local(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 1):
+async def mostrar_autores_local(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 1
+):
     """Muestra lista de autores locales paginada."""
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
@@ -512,9 +565,13 @@ async def mostrar_autores_local(update: Update, context: ContextTypes.DEFAULT_TY
 
     nav_row = [InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")]
     if page > 1:
-        nav_row.append(InlineKeyboardButton("⬅️ Ant.", callback_data=f"nav_au|{page - 1}"))
+        nav_row.append(
+            InlineKeyboardButton("⬅️ Ant.", callback_data=f"nav_au|{page - 1}")
+        )
     if page * page_size < total:
-        nav_row.append(InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_au|{page + 1}"))
+        nav_row.append(
+            InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_au|{page + 1}")
+        )
 
     keyboard.append(nav_row)
 
@@ -558,8 +615,13 @@ async def mostrar_resultados_locales(
             if i >= 15:
                 break
             href = f"local_series|{s['series_hash']}"
-            st["colecciones"][i] = {"titulo": s["title"], "href": href}
-            keyboard.append([InlineKeyboardButton(f"📁 {s['title']}", callback_data=f"col|{i}")])
+            series_title = (
+                s.get("name") or s.get("series_name") or s.get("title", "Novela")
+            )
+            st["colecciones"][i] = {"titulo": series_title, "href": href}
+            keyboard.append(
+                [InlineKeyboardButton(f"📁 {series_title}", callback_data=f"col|{i}")]
+            )
 
     # 2. Agregar Libros "Sueltos" (que no pertenecen a las series encontradas o no tienen serie)
     if books_standalone:
