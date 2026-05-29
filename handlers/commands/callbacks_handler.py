@@ -6,6 +6,7 @@ from telegram.ext import ContextTypes
 
 from core.state_manager import state_manager
 from handlers.commands.base_handler import BaseCommandHandler
+from services.library_service import LibraryService
 from services.library_ui_service import (
     mostrar_menu_principal,
     mostrar_generos,
@@ -134,7 +135,10 @@ class CallbackHandlerV6(BaseCommandHandler):
 
             # Direct Navigation to Series Volumes
             elif data.startswith("show_series|"):
-                series_hash = data.split("|")[1]
+                series_hash_short = data.split("|")[1]
+                series_hash = await LibraryService.resolve_series_hash(
+                    series_hash_short
+                )
                 await mostrar_volumenes_local(
                     update, context, series_hash, force_new=True
                 )
@@ -176,15 +180,16 @@ class CallbackHandlerV6(BaseCommandHandler):
                     "⚡️ Descargando e iniciando envío...", show_alert=False
                 )
 
-                # B. Borrar mensajes de arriba (La ficha técnica)
-                for msg_id in st.get("last_detalles_msg_ids", []):
+                # B. Borrar solo el mensaje de información técnica (el último de la lista)
+                msg_ids = st.get("last_detalles_msg_ids", [])
+                if msg_ids:
+                    info_msg_id = msg_ids.pop()  # Conservar portada y sinopsis intactas
                     try:
                         await context.bot.delete_message(
-                            chat_id=update.effective_chat.id, message_id=msg_id
+                            chat_id=update.effective_chat.id, message_id=info_msg_id
                         )
                     except Exception:
                         pass
-                st["last_detalles_msg_ids"] = []
 
                 # C. Formatear pie de foto (caption) enriquecido del archivo
                 from services.publisher.publisher_service import (
@@ -193,16 +198,20 @@ class CallbackHandlerV6(BaseCommandHandler):
                 from utils.template_engine import apply_publication_template
                 import re
 
-                # Asegurar que el volumen esté integrado al título en el pie de foto
+                # Asegurar que el volumen esté integrado en el caption con el icono del libro 📖
                 volume = libro_st.get("volume")
+                # Fallback para intentar parsear volumen del display o el nombre del archivo si no está
+                if volume is None:
+                    import re
+
+                    m = re.search(
+                        r"V(?:ol)?\.?\s*0*(\d+)",
+                        libro_st.get("display", "") + libro_st.get("filename", ""),
+                    )
+                    if m:
+                        volume = float(m.group(1))
+
                 title_for_cap = title
-                if (
-                    volume is not None
-                    and "Vol." not in title_for_cap
-                    and "Vol " not in title_for_cap
-                ):
-                    vol_display = int(volume) if float(volume).is_integer() else volume
-                    title_for_cap = f"{title_for_cap} - Vol. {vol_display}"
 
                 # Mapear variables para el template
                 libro_map = libro_st.copy()
@@ -238,6 +247,19 @@ class CallbackHandlerV6(BaseCommandHandler):
                 )
                 caption = caption.replace("__ATTACH_FILE_SIGNAL__", "").strip()
 
+                # Insertar volumen en una línea dedicada debajo de la carpeta
+                if volume is not None:
+                    vol_display = int(volume) if float(volume).is_integer() else volume
+                    vol_line = (
+                        f"📖 Vol. {vol_display:02d}"
+                        if isinstance(vol_display, int)
+                        else f"📖 Vol. {vol_display}"
+                    )
+                    # Reemplazar la línea de la serie en el caption
+                    caption = caption.replace(
+                        f"📂 <b>{title_for_cap}</b>", f"📂 <b>{title}</b>\n{vol_line}"
+                    )
+
                 try:
                     # D. Enviar el Documento .epub
                     sent_doc = await send_doc_bytes(
@@ -272,11 +294,13 @@ class CallbackHandlerV6(BaseCommandHandler):
                     series_hash = st.get("current_series_hash")
                     keyboard = []
                     if series_hash:
+                        # Recortamos el hash a 16 caracteres para no superar el límite de 64 bytes de callback_data
+                        series_hash_short = series_hash[:16]
                         keyboard.append(
                             [
                                 InlineKeyboardButton(
                                     "🔙 Volver a la Serie",
-                                    callback_data=f"show_series|{series_hash}",
+                                    callback_data=f"show_series|{series_hash_short}",
                                 )
                             ]
                         )

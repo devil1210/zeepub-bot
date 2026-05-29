@@ -260,18 +260,42 @@ class LibraryService:
         cls, tag: str, page: int = 1, page_size: int = 10
     ) -> dict:
         """Obtiene series filtradas por tag/género."""
-        return await cls.search_series(
+        res = await cls.search_series(
             query=tag, page=page, items_per_page=page_size, search_type="genres"
         )
+        return {
+            "items": res["results"],
+            "total": res["totalItems"]
+        }
 
     @classmethod
     async def get_series_by_author(
         cls, author: str, page: int = 1, page_size: int = 10
     ) -> dict:
         """Obtiene series filtradas por autor."""
-        return await cls.search_series(
+        res = await cls.search_series(
             query=author, page=page, items_per_page=page_size, search_type="author"
         )
+        return {
+            "items": res["results"],
+            "total": res["totalItems"]
+        }
+
+    @classmethod
+    async def resolve_series_hash(cls, short_hash: str) -> str:
+        """Resuelve el hash completo de una serie a partir de un prefijo de 16 caracteres."""
+        if len(short_hash) == 64:
+            return short_hash
+
+        from core.db_manager_pg import pg_manager
+        from models.library import Series
+        from sqlalchemy import select
+
+        async with pg_manager.get_session() as session:
+            stmt = select(Series.id).where(Series.id.like(f"{short_hash}%")).limit(1)
+            result = await session.execute(stmt)
+            val = result.scalar_one_or_none()
+            return val or short_hash
 
     @classmethod
     async def get_authors(cls, page: int = 1, page_size: int = 10) -> dict:
