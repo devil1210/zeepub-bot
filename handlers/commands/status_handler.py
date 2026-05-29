@@ -27,14 +27,14 @@ class StatusHandler(BaseCommandHandler):
         st = self._get_user_state(update.effective_user.id)
 
         if not st:
-            no_activity_text = (
-                "✨ <b>Tu estado está limpio</b>\n\nNo hay operaciones activas en este momento. ¡Todo en orden! 👌"
-            )
+            no_activity_text = "✨ <b>Tu estado está limpio</b>\n\nNo hay operaciones activas en este momento. ¡Todo en orden! 👌"
             await self._send_message(update, no_activity_text, thread_id)
             return
 
         # Build status message
-        status_text = await self._build_status_message(user_info, st, update.effective_user.id)
+        status_text = await self._build_status_message(
+            user_info, st, update.effective_user.id
+        )
 
         await self._send_message(update, status_text, thread_id)
 
@@ -58,15 +58,11 @@ class StatusHandler(BaseCommandHandler):
 
         # Download limits
         downloads_info = await downloads_left(uid)
-        if downloads_info:
-            status_text += "\n📊 <b>Límites de Descarga:</b>\n"
-            status_text += f"• Restantes hoy: {downloads_info.get('remaining_today', 0)}\n"
-            status_text += f"• Restantes semana: {downloads_info.get('remaining_week', 0)}\n"
-            status_text += f"• Restantes mes: {downloads_info.get('remaining_month', 0)}\n"
-
-            if downloads_info.get("reset_time"):
-                reset_time = downloads_info["reset_time"]
-                status_text += f"• Reinicio diario: {reset_time.strftime('%H:%M')}\n"
+        status_text += "\n📊 <b>Límites de Descarga:</b>\n"
+        if downloads_info == "ilimitadas":
+            status_text += "• Restantes hoy: ilimitadas\n"
+        else:
+            status_text += f"• Restantes hoy: {downloads_info}\n"
 
         # Current activity state
         if st:
