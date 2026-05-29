@@ -75,17 +75,27 @@ def check_migrations():
         with engine.connect() as conn:
 
             def table_exists(name):
-                res = conn.execute(
-                    text(f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '{name}');")
-                )
+                if engine.dialect.name == 'sqlite':
+                    res = conn.execute(
+                        text(f"SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='{name}');")
+                    )
+                else:
+                    res = conn.execute(
+                        text(f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '{name}');")
+                    )
                 return res.scalar()
 
             def column_exists(table, column):
-                res = conn.execute(
-                    text(
-                        f"SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = '{table}' AND column_name = '{column}');"
+                if engine.dialect.name == 'sqlite':
+                    res = conn.execute(
+                        text(f"SELECT EXISTS (SELECT 1 FROM pragma_table_info('{table}') WHERE name='{column}');")
                     )
-                )
+                else:
+                    res = conn.execute(
+                        text(
+                            f"SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = '{table}' AND column_name = '{column}');"
+                        )
+                    )
                 return res.scalar()
 
             def add_column_if_missing(table, column, col_type):
