@@ -176,6 +176,38 @@ class BookRepository(BaseRepository[LocalBook]):
                 for row in rows:
                     book, dl_count = row
                     book_dict = book.to_dict()
+
+                    # Normalizar demographics de objetos complexes de SQLAlchemy a strings
+                    if "demographics" in book_dict and book_dict["demographics"]:
+                        new_demos = []
+                        for d in book_dict["demographics"]:
+                            if isinstance(d, str):
+                                new_demos.append(d)
+                            elif hasattr(d, "name"):
+                                new_demos.append(d.name)
+                        book_dict["demographics"] = new_demos
+                    else:
+                        book_dict["demographics"] = []
+
+                    # Normalizar tags/genres de objetos complexes a strings
+                    if "tags" in book_dict and book_dict["tags"]:
+                        new_tags = []
+                        for t in book_dict["tags"]:
+                            if isinstance(t, str):
+                                new_tags.append(t)
+                            elif hasattr(t, "name"):
+                                new_tags.append(t.name)
+                        book_dict["tags"] = new_tags
+                    else:
+                        book_dict["tags"] = []
+
+                    # Normalizar modified_at_opf (datetime) a string ISO
+                    from datetime import datetime
+                    if "modified_at_opf" in book_dict and isinstance(book_dict["modified_at_opf"], datetime):
+                        book_dict["modified_at_opf"] = book_dict["modified_at_opf"].isoformat()
+                    elif "modified_at_opf" in book_dict and book_dict["modified_at_opf"] is None:
+                        book_dict["modified_at_opf"] = None
+
                     # Mapear a DTO para consistencia con el frontend
                     dto = BookDTO(
                         **book_dict,

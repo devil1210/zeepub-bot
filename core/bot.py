@@ -51,7 +51,13 @@ class ZeePubBot:
             pool_timeout=30.0,
         )
 
-        self.app = ApplicationBuilder().application_class(ZeePubApplication).token(token).request(trequest).build()
+        self.app = (
+            ApplicationBuilder()
+            .application_class(ZeePubApplication)
+            .token(token)
+            .request(trequest)
+            .build()
+        )
 
         self.plugin_manager = PluginManager()
 
@@ -102,7 +108,8 @@ class ZeePubBot:
             # Pero MessageHandler con filtro de chat type es suficiente
             self.app.add_handler(
                 MessageHandler(
-                    (filters.ChatType.GROUPS | filters.ChatType.CHANNEL) & ~filters.COMMAND,
+                    (filters.ChatType.GROUPS | filters.ChatType.CHANNEL)
+                    & ~filters.COMMAND,
                     chat_discovery_handler,
                 ),
                 group=20,  # Grupo bajo prioridad, solo escucha
@@ -112,7 +119,9 @@ class ZeePubBot:
             from telegram.ext import ChatMemberHandler
 
             self.app.add_handler(
-                ChatMemberHandler(chat_discovery_handler, ChatMemberHandler.MY_CHAT_MEMBER),
+                ChatMemberHandler(
+                    chat_discovery_handler, ChatMemberHandler.MY_CHAT_MEMBER
+                ),
                 group=20,
             )
 
@@ -152,18 +161,24 @@ class ZeePubBot:
         bot_initialized = False
         for attempt in range(max_retries):
             try:
-                logger.info(f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})...")
+                logger.info(
+                    f"Intentando inicializar bot (intento {attempt + 1}/{max_retries})..."
+                )
                 await self.app.initialize()
 
                 # Verify bot is actually ready by accessing bot.id
                 try:
                     _ = self.app.bot.id
-                    logger.info(f"Bot inicializado exitosamente (ID: {self.app.bot.id}).")
+                    logger.info(
+                        f"Bot inicializado exitosamente (ID: {self.app.bot.id})."
+                    )
                     bot_initialized = True
                     break
                 except RuntimeError as e:
                     if "not properly initialized" in str(e):
-                        logger.warning("Bot marcado como initialized pero ExtBot no está listo. Reintentando...")
+                        logger.warning(
+                            "Bot marcado como initialized pero ExtBot no está listo. Reintentando..."
+                        )
                         # Force a new initialization attempt
                         await asyncio.sleep(retry_delay)
                         continue
@@ -172,11 +187,15 @@ class ZeePubBot:
             except Exception as e:
                 # Check if it's already initialized (happens on retry)
                 if "already initialized" in str(e).lower():
-                    logger.info("Bot ya estaba marcado como inicializado, verificando estado...")
+                    logger.info(
+                        "Bot ya estaba marcado como inicializado, verificando estado..."
+                    )
                     # Try to access bot.id to verify it's really ready
                     try:
                         _ = self.app.bot.id
-                        logger.info(f"Bot verificado correctamente (ID: {self.app.bot.id}).")
+                        logger.info(
+                            f"Bot verificado correctamente (ID: {self.app.bot.id})."
+                        )
                         bot_initialized = True
                         break
                     except RuntimeError:
@@ -188,10 +207,14 @@ class ZeePubBot:
 
                 if attempt < max_retries - 1:
                     wait = retry_delay * (attempt + 1)
-                    logger.warning(f"Fallo en initialize (intento {attempt + 1}): {e}. Reintentando en {wait}s...")
+                    logger.warning(
+                        f"Fallo en initialize (intento {attempt + 1}): {e}. Reintentando en {wait}s..."
+                    )
                     await asyncio.sleep(wait)
                 else:
-                    logger.error(f"Error crítico: No se pudo inicializar el bot tras {max_retries} intentos: {e}")
+                    logger.error(
+                        f"Error crítico: No se pudo inicializar el bot tras {max_retries} intentos: {e}"
+                    )
                     self._initialized = False
                     return
 
@@ -239,7 +262,9 @@ class ZeePubBot:
                             text=f"❌ Error crítico en update: {ex}",
                         )
 
-                self.app.add_handler(CommandHandler("update_system", emergency_update_handler))
+                self.app.add_handler(
+                    CommandHandler("update_system", emergency_update_handler)
+                )
 
                 # Notify admins of Safe Mode
                 for admin_id in config.ADMIN_USERS:
@@ -250,7 +275,9 @@ class ZeePubBot:
                             parse_mode="HTML",
                         )
                     except Exception as ex:
-                        logger.warning(f"Could not notify admin {admin_id} of safe mode: {ex}")
+                        logger.warning(
+                            f"Could not notify admin {admin_id} of safe mode: {ex}"
+                        )
             except Exception as e2:
                 logger.error(f"FATAL: Could not register emergency handler: {e2}")
 
@@ -270,22 +297,50 @@ class ZeePubBot:
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                logger.info(f"Iniciando polling (intento {attempt + 1}/{max_retries})...")
+                logger.info(
+                    f"Iniciando polling (intento {attempt + 1}/{max_retries})..."
+                )
                 await self.app.updater.start_polling()
                 logger.info("Bot iniciado en modo asíncrono (API).")
                 break
             except Exception as e:
                 if attempt < max_retries - 1:
                     wait = 5 * (attempt + 1)
-                    logger.warning(f"Error iniciando polling: {e}. Reintentando en {wait}s...")
+                    logger.warning(
+                        f"Error iniciando polling: {e}. Reintentando en {wait}s..."
+                    )
                     await asyncio.sleep(wait)
                 else:
-                    logger.error(f"No se pudo iniciar polling tras {max_retries} intentos: {e}")
+                    logger.error(
+                        f"No se pudo iniciar polling tras {max_retries} intentos: {e}"
+                    )
                     raise
 
         # Inicializar schedulers y updates usando BotInitializer
         await BotInitializer.initialize_schedulers(self.app)
         await BotInitializer.check_update_state(self.app.bot)
+
+        # Configurar el botón de menú de Telegram con la URL de la Mini App (.vip)
+        try:
+            from telegram import MenuButtonWebApp, WebAppInfo
+
+            if config.WEBAPP_URL:
+                logger.info(
+                    f"Configurando Menu Button del bot con URL: {config.WEBAPP_URL}"
+                )
+                await self.app.bot.set_chat_menu_button(
+                    menu_button=MenuButtonWebApp(
+                        text="🚀 Abrir Mini App",
+                        web_app=WebAppInfo(url=config.WEBAPP_URL),
+                    )
+                )
+                logger.info("Menu Button de la Mini App configurado exitosamente.")
+            else:
+                logger.warning(
+                    "WEBAPP_URL no configurada en env. No se pudo configurar el Menu Button."
+                )
+        except Exception as e:
+            logger.error(f"Error configurando el Menu Button del bot: {e}")
 
     async def stop_async(self):
         """Detiene el bot de forma asíncrona."""
@@ -296,9 +351,15 @@ class ZeePubBot:
         await session_manager.close()
         logger.info("Bot detenido (API).")
 
-    async def _metrics_middleware(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def _metrics_middleware(
+        self, update: Update, context: ContextTypes.DEFAULT_TYPE
+    ):
         """Middleware para recolectar métricas básicas."""
-        if update.message and update.message.text and update.message.text.startswith("/"):
+        if (
+            update.message
+            and update.message.text
+            and update.message.text.startswith("/")
+        ):
             try:
                 cmd = update.message.text.split()[0].split("@")[0]
                 metrics.inc_command(cmd)

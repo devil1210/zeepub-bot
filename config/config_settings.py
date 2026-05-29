@@ -15,7 +15,7 @@ class BotConfig:
     TELEGRAM_TOKEN: str = field(default_factory=lambda: os.getenv("TELEGRAM_TOKEN", ""))
     VERSION: str = "v8.5.0-PG-STABLE"
 
-    # Dominio público (ej: zp-dev.sp-core.xyz o zeepub-bot.sp-core.xyz)
+    # Dominio público (ej: zp-dev.sp-core.vip o zeepub-bot.sp-core.vip)
     PUBLIC_DOMAIN: str = os.getenv("PUBLIC_DOMAIN", "")
 
     # Si no se define BASE_URL, se construye usando PUBLIC_DOMAIN
@@ -28,26 +28,42 @@ class BotConfig:
 
     # Administradores (no tienen descargas ilimitadas aquí)
     ADMIN_USERS: set[int] = field(
-        default_factory=lambda: {int(x.strip()) for x in os.getenv("ADMIN_USERS", "").split(",") if x.strip().isdigit()}
+        default_factory=lambda: {
+            int(x.strip())
+            for x in os.getenv("ADMIN_USERS", "").split(",")
+            if x.strip().isdigit()
+        }
     )
 
     # Listas de usuarios con distintos niveles
     WHITELIST: set[int] = field(
-        default_factory=lambda: {int(x.strip()) for x in os.getenv("WHITELIST", "").split(",") if x.strip().isdigit()}
+        default_factory=lambda: {
+            int(x.strip())
+            for x in os.getenv("WHITELIST", "").split(",")
+            if x.strip().isdigit()
+        }
     )
     VIP_LIST: set[int] = field(
-        default_factory=lambda: {int(x.strip()) for x in os.getenv("VIP_LIST", "").split(",") if x.strip().isdigit()}
+        default_factory=lambda: {
+            int(x.strip())
+            for x in os.getenv("VIP_LIST", "").split(",")
+            if x.strip().isdigit()
+        }
     )
     PREMIUM_LIST: set[int] = field(
         default_factory=lambda: {
-            int(x.strip()) for x in os.getenv("PREMIUM_LIST", "").split(",") if x.strip().isdigit()
+            int(x.strip())
+            for x in os.getenv("PREMIUM_LIST", "").split(",")
+            if x.strip().isdigit()
         }
     )
 
     # Facebook Publishers
     FACEBOOK_PUBLISHERS: set[int] = field(
         default_factory=lambda: {
-            int(x.strip()) for x in os.getenv("FACEBOOK_PUBLISHERS", "").split(",") if x.strip().isdigit()
+            int(x.strip())
+            for x in os.getenv("FACEBOOK_PUBLISHERS", "").split(",")
+            if x.strip().isdigit()
         }
     )
 
@@ -66,7 +82,9 @@ class BotConfig:
 
     # Límites por hora
     MAX_DOWNLOADS_PER_DAY: int = int(os.getenv("MAX_DOWNLOADS_PER_DAY", "5"))
-    WHITELIST_DOWNLOADS_PER_DAY: int = int(os.getenv("WHITELIST_DOWNLOADS_PER_DAY", "10"))
+    WHITELIST_DOWNLOADS_PER_DAY: int = int(
+        os.getenv("WHITELIST_DOWNLOADS_PER_DAY", "10")
+    )
     VIP_DOWNLOADS_PER_DAY: int = int(os.getenv("VIP_DOWNLOADS_PER_DAY", "20"))
 
     # Otros ajustes
@@ -80,19 +98,29 @@ class BotConfig:
     PLUGIN_DIRECTORY: str = os.getenv("PLUGIN_DIRECTORY", "plugins")
 
     # Plugin PostgreSQL
-    ENABLE_POSTGRES_PLUGIN: bool = os.getenv("ENABLE_POSTGRES_PLUGIN", "True").lower() == "true"
+    ENABLE_POSTGRES_PLUGIN: bool = (
+        os.getenv("ENABLE_POSTGRES_PLUGIN", "True").lower() == "true"
+    )
 
     # Plugin Group Manager
-    ENABLE_GROUP_MANAGER: bool = os.getenv("ENABLE_GROUP_MANAGER", "True").lower() == "true"
+    ENABLE_GROUP_MANAGER: bool = (
+        os.getenv("ENABLE_GROUP_MANAGER", "True").lower() == "true"
+    )
 
     # Plugin System Manager
-    ENABLE_SYSTEM_MANAGER: bool = os.getenv("ENABLE_SYSTEM_MANAGER", "True").lower() == "true"
+    ENABLE_SYSTEM_MANAGER: bool = (
+        os.getenv("ENABLE_SYSTEM_MANAGER", "True").lower() == "true"
+    )
 
     # Plugin User Manager
-    ENABLE_USER_MANAGER: bool = os.getenv("ENABLE_USER_MANAGER", "True").lower() == "true"
+    ENABLE_USER_MANAGER: bool = (
+        os.getenv("ENABLE_USER_MANAGER", "True").lower() == "true"
+    )
 
     # Plugin Stats
-    ENABLE_STATS_PLUGIN: bool = os.getenv("ENABLE_STATS_PLUGIN", "True").lower() == "true"
+    ENABLE_STATS_PLUGIN: bool = (
+        os.getenv("ENABLE_STATS_PLUGIN", "True").lower() == "true"
+    )
 
     # Plugin Help
     ENABLE_HELP_PLUGIN: bool = os.getenv("ENABLE_HELP_PLUGIN", "True").lower() == "true"
