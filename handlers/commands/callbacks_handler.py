@@ -1,13 +1,11 @@
 # handlers/commands/callbacks_handler.py
 
 import logging
-import uuid
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from core.state_manager import state_manager
 from handlers.commands.base_handler import BaseCommandHandler
-from services.library_service import LibraryService
 from services.library_ui_service import (
     mostrar_menu_principal,
     mostrar_generos,
@@ -52,7 +50,9 @@ class CallbackHandlerV6(BaseCommandHandler):
             elif data.startswith("nav_local|"):
                 category = data.split("|")[1]
                 if category == "all_series":
-                    await mostrar_series(update, context, origin_type="all_series", page=1)
+                    await mostrar_series(
+                        update, context, origin_type="all_series", page=1
+                    )
                 elif category == "newest":
                     await mostrar_series(update, context, origin_type="newest", page=1)
                 elif category == "genres":
@@ -63,12 +63,20 @@ class CallbackHandlerV6(BaseCommandHandler):
             # 4. Genre Filtering
             elif data.startswith("gen|"):
                 genre_name = data.split("|")[1]
-                await mostrar_series(update, context, origin_type="genre", filter_val=genre_name, page=1)
+                await mostrar_series(
+                    update, context, origin_type="genre", filter_val=genre_name, page=1
+                )
 
             # 5. Author Filtering
             elif data.startswith("aut|"):
                 author_name = data.split("|")[1]
-                await mostrar_series(update, context, origin_type="author", filter_val=author_name, page=1)
+                await mostrar_series(
+                    update,
+                    context,
+                    origin_type="author",
+                    filter_val=author_name,
+                    page=1,
+                )
 
             # 6. Series Paginator
             elif data.startswith("nav_p|"):
@@ -76,7 +84,13 @@ class CallbackHandlerV6(BaseCommandHandler):
                 origin_type = parts[1]
                 filter_val = parts[2] if parts[2] else None
                 page = int(parts[3])
-                await mostrar_series(update, context, origin_type=origin_type, filter_val=filter_val, page=page)
+                await mostrar_series(
+                    update,
+                    context,
+                    origin_type=origin_type,
+                    filter_val=filter_val,
+                    page=page,
+                )
 
             # 7. Books Paginator
             elif data.startswith("nav_b|"):
@@ -84,7 +98,13 @@ class CallbackHandlerV6(BaseCommandHandler):
                 origin_type = parts[1]
                 filter_val = parts[2] if parts[2] else None
                 page = int(parts[3])
-                await mostrar_libros(update, context, origin_type=origin_type, filter_val=filter_val, page=page)
+                await mostrar_libros(
+                    update,
+                    context,
+                    origin_type=origin_type,
+                    filter_val=filter_val,
+                    page=page,
+                )
 
             # 8. Authors Paginator
             elif data.startswith("nav_au|"):
@@ -100,10 +120,24 @@ class CallbackHandlerV6(BaseCommandHandler):
                     series_hash = href.split("|")[1]
                     # Guardamos historial para permitir navegación "Volver"
                     st["historial"] = st.get("historial", [])
-                    st["historial"].append(("series_list", st.get("origin_type"), st.get("filter_val"), st.get("current_page")))
+                    st["historial"].append(
+                        (
+                            "series_list",
+                            st.get("origin_type"),
+                            st.get("filter_val"),
+                            st.get("current_page"),
+                        )
+                    )
                     await mostrar_volumenes_local(update, context, series_hash)
                 else:
                     await query.answer("⚠️ Serie no disponible.", show_alert=True)
+
+            # Direct Navigation to Series Volumes
+            elif data.startswith("show_series|"):
+                series_hash = data.split("|")[1]
+                await mostrar_volumenes_local(
+                    update, context, series_hash, force_new=True
+                )
 
             # 10. Choose Book (Show Rich Metadata details)
             elif data.startswith("lib|"):
@@ -119,7 +153,10 @@ class CallbackHandlerV6(BaseCommandHandler):
                 libro_st = st.get("libros", {}).get(key)
 
                 if not libro_st:
-                    await query.answer("⚠️ Información no encontrada. Intenta buscar la novela de nuevo.", show_alert=True)
+                    await query.answer(
+                        "⚠️ Información no encontrada. Intenta buscar la novela de nuevo.",
+                        show_alert=True,
+                    )
                     return
 
                 filepath = libro_st.get("descarga")
@@ -129,28 +166,94 @@ class CallbackHandlerV6(BaseCommandHandler):
                 # A. Validate quota limits
                 left = await downloads_left(uid)
                 if left != "ilimitadas" and isinstance(left, int) and left <= 0:
-                    await query.answer("⛔ Límite alcanzado. Te has quedado sin descargas para hoy.", show_alert=True)
+                    await query.answer(
+                        "⛔ Límite alcanzado. Te has quedado sin descargas para hoy.",
+                        show_alert=True,
+                    )
                     return
 
-                await query.answer("⚡️ Descargando e iniciando envío...", show_alert=False)
+                await query.answer(
+                    "⚡️ Descargando e iniciando envío...", show_alert=False
+                )
 
-                # B. Send Document and retrieve the Message object
-                caption = f"📕 <b>{title}</b>\n🏷️ Hash: <code>{book_hash[:8] if book_hash else 'N/A'}</code>"
+                # B. Borrar mensajes de arriba (La ficha técnica)
+                for msg_id in st.get("last_detalles_msg_ids", []):
+                    try:
+                        await context.bot.delete_message(
+                            chat_id=update.effective_chat.id, message_id=msg_id
+                        )
+                    except Exception:
+                        pass
+                st["last_detalles_msg_ids"] = []
+
+                # C. Formatear pie de foto (caption) enriquecido del archivo
+                from services.publisher.publisher_service import (
+                    TelegramPublisherProvider,
+                )
+                from utils.template_engine import apply_publication_template
+                import re
+
+                # Asegurar que el volumen esté integrado al título en el pie de foto
+                volume = libro_st.get("volume")
+                title_for_cap = title
+                if (
+                    volume is not None
+                    and "Vol." not in title_for_cap
+                    and "Vol " not in title_for_cap
+                ):
+                    vol_display = int(volume) if float(volume).is_integer() else volume
+                    title_for_cap = f"{title_for_cap} - Vol. {vol_display}"
+
+                # Mapear variables para el template
+                libro_map = libro_st.copy()
+                libro_map.update(
+                    {
+                        "titulo": title_for_cap,
+                        "slug": libro_st.get("slug") or "",
+                        "layout_by": libro_st.get("layout_by") or "Desconocido",
+                        "traductor": libro_st.get("translator") or "Desconocida",
+                        "tags": libro_st.get("tags", []),
+                        "demographics": libro_st.get("demographics", []),
+                        "tipo": libro_st.get("book_type") or "Novela",
+                    }
+                )
+
+                def sanitize_tg_html(t: str) -> str:
+                    if not t:
+                        return ""
+                    t = re.sub(
+                        r"<(/?p|/?div|/?h\d|/?span|/?a[^>]*)>",
+                        "\n",
+                        t,
+                        flags=re.IGNORECASE,
+                    )
+                    t = re.sub(r"<br\s*/?>", "\n", t, flags=re.IGNORECASE)
+                    t = re.sub(r"<hr\s*/?>", "\n---\n", t, flags=re.IGNORECASE)
+                    t = re.sub(r"\n{3,}", "\n\n", t).strip()
+                    return t
+
+                info_template = TelegramPublisherProvider.INFO_TEMPLATE
+                caption = sanitize_tg_html(
+                    apply_publication_template(info_template, libro_map)
+                )
+                caption = caption.replace("__ATTACH_FILE_SIGNAL__", "").strip()
+
                 try:
+                    # D. Enviar el Documento .epub
                     sent_doc = await send_doc_bytes(
                         context.bot,
                         update.effective_chat.id,
                         caption,
                         filepath,
-                        filename=libro_st.get("filename") or f"{title}.epub",
+                        filename=libro_st.get("filename") or f"{title_for_cap}.epub",
                         parse_mode="HTML",
                         message_thread_id=get_thread_id(update),
                     )
 
-                    # C. Register Download successfully
+                    # E. Registrar descarga en BD
                     meta_reg = {
                         "book_hash": book_hash,
-                        "title": title,
+                        "title": title_for_cap,
                         "file_size": libro_st.get("file_size"),
                         "autor": libro_st.get("autor"),
                         "id": book_hash,
@@ -162,11 +265,52 @@ class CallbackHandlerV6(BaseCommandHandler):
                         meta=meta_reg,
                         sent_doc=sent_doc,
                         download_url=None,
-                        title=title
+                        title=title_for_cap,
                     )
+
+                    # F. Mensaje final interactivo de "¿Qué quieres hacer ahora?"
+                    series_hash = st.get("current_series_hash")
+                    keyboard = []
+                    if series_hash:
+                        keyboard.append(
+                            [
+                                InlineKeyboardButton(
+                                    "🔙 Volver a la Serie",
+                                    callback_data=f"show_series|{series_hash}",
+                                )
+                            ]
+                        )
+                    keyboard.append(
+                        [
+                            InlineKeyboardButton(
+                                "📚 Catálogo Principal", callback_data="volver_menu"
+                            )
+                        ]
+                    )
+                    keyboard.append(
+                        [InlineKeyboardButton("❌ Salir", callback_data="cerrar")]
+                    )
+
+                    now_text = (
+                        "✅ <b>¡Novela enviada con éxito!</b>\n\n"
+                        "<i>¿Qué quieres hacer ahora? Selecciona una opción del menú:</i>"
+                    )
+                    await context.bot.send_message(
+                        chat_id=update.effective_chat.id,
+                        text=now_text,
+                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        parse_mode="HTML",
+                        message_thread_id=get_thread_id(update),
+                    )
+
                 except Exception as e:
-                    logger.error(f"Error enviando o registrando descarga: {e}", exc_info=True)
-                    await query.answer("❌ Error al procesar la descarga. Contacta a un administrador.", show_alert=True)
+                    logger.error(
+                        f"Error enviando o registrando descarga: {e}", exc_info=True
+                    )
+                    await query.answer(
+                        "❌ Error al procesar la descarga. Contacta a un administrador.",
+                        show_alert=True,
+                    )
 
             # 12. Navigation Go Back
             elif data == "subir_nivel":
@@ -174,7 +318,9 @@ class CallbackHandlerV6(BaseCommandHandler):
                 if prev_view == "genres":
                     await mostrar_generos(update, context)
                 elif prev_view == "authors":
-                    await mostrar_autores_local(update, context, page=st.get("current_page_b", 1))
+                    await mostrar_autores_local(
+                        update, context, page=st.get("current_page_b", 1)
+                    )
                 else:
                     await mostrar_menu_principal(update, context)
 
@@ -186,12 +332,20 @@ class CallbackHandlerV6(BaseCommandHandler):
                     view_name = last_view[0]
                     if view_name == "series_list":
                         # Restaurar estado
-                        await mostrar_series(update, context, origin_type=last_view[1], filter_val=last_view[2], page=last_view[3])
+                        await mostrar_series(
+                            update,
+                            context,
+                            origin_type=last_view[1],
+                            filter_val=last_view[2],
+                            page=last_view[3],
+                        )
                     elif view_name == "volumes_local":
                         # Limpiar mensajes de ficha previos
                         for msg_id in st.get("last_detalles_msg_ids", []):
                             try:
-                                await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=msg_id)
+                                await context.bot.delete_message(
+                                    chat_id=update.effective_chat.id, message_id=msg_id
+                                )
                             except Exception:
                                 pass
                         st["last_detalles_msg_ids"] = []
@@ -216,11 +370,13 @@ class CallbackHandlerV6(BaseCommandHandler):
                 # Limpiar cualquier mensaje de ficha técnica previo
                 for msg_id in st.get("last_detalles_msg_ids", []):
                     try:
-                        await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=msg_id)
+                        await context.bot.delete_message(
+                            chat_id=update.effective_chat.id, message_id=msg_id
+                        )
                     except Exception:
                         pass
                 st["last_detalles_msg_ids"] = []
-                
+
                 try:
                     await query.message.delete()
                 except Exception:
@@ -230,5 +386,9 @@ class CallbackHandlerV6(BaseCommandHandler):
                 logger.info(f"Callback no manejado en la v6: {data}")
 
         except Exception as e:
-            logger.error(f"Error procesando callback query de la v6: {e}", exc_info=True)
-            await query.answer("❌ Error en la navegación del catálogo.", show_alert=True)
+            logger.error(
+                f"Error procesando callback query de la v6: {e}", exc_info=True
+            )
+            await query.answer(
+                "❌ Error en la navegación del catálogo.", show_alert=True
+            )
