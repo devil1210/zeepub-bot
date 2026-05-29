@@ -28,7 +28,7 @@ class BaseCommandHandler(ABC):
 
     async def _send_message(self, update: Update, text: str, thread_id: int | None = None):
         """Common message sending with thread support."""
-        await update.bot.send_message(
+        await update._bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
             message_thread_id=thread_id,
