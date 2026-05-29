@@ -18,7 +18,7 @@ from config.config_settings import config
 from core.bot_initializer import BotInitializer
 from core.error_handler import ErrorHandler
 from core.session_manager import session_manager
-from handlers.v4.manager import HandlerManagerV4
+from handlers.commands.manager import HandlerManagerV6
 from plugins.plugin_manager import PluginManager
 from utils.metrics import metrics
 
@@ -64,10 +64,10 @@ class ZeePubBot:
         # Metrics Middleware (Group -1 to run first)
         self.app.add_handler(TypeHandler(Update, self._metrics_middleware), group=-1)
 
-        # --- INICIO REFACTOR v4.0 ---
-        self.handler_manager_v4 = HandlerManagerV4(self.app)
-        self.handler_manager_v4.register()
-        # --- FIN REFACTOR v4.0 ---
+        # --- INICIO REFACTOR v6.0 (Unified & Interactive) ---
+        self.handler_manager_v6 = HandlerManagerV6(self.app)
+        self.handler_manager_v6.register()
+        # --- FIN REFACTOR v6.0 ---
 
         # Mensajes de texto movidos a initialize() para evitar conflictos con plugins
 
