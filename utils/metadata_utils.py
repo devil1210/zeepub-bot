@@ -197,29 +197,34 @@ def process_book_identity_comprehensive(
 
     author = normalize_author_name(meta.get("author"))
     romaji_from_series = None
-    series_spanish = None
-    series_english = None
+    series_spanish = meta.get("series_spanish")
+    series_english = clean_english_title(series_meta) if series_meta else None
 
     if series_meta:
-        # Intentar extraer partes si vienen con separadores en el tag de serie del EPUB
-        parts = re.split(r"(?:\s+[\-\–\—\−\―\~～\|¦║]\s+)|(?:\s+:\s+)", series_meta)
+        # Solo intentar extraer partes si vienen con separadores claros tipo guiones o barras con espacios alrededor.
+        # NUNCA separar por dos puntos (:) porque son parte natural de los títulos en inglés (ej: "Arifureta: From...")
+        parts = re.split(r"\s+[\-\–\—\−\―\~～\|¦║]\s+", series_meta)
         parts = [p.strip() for p in parts if p.strip()]
         
         if len(parts) >= 3:
-            series_spanish = parts[0]
+            if not series_spanish:
+                series_spanish = parts[0]
             series_english = clean_english_title(parts[1])
             romaji_from_series = clean_romaji_title(parts[2])
             series = parts[0]
         elif len(parts) == 2:
+            p1 = parts[0]
             p2 = parts[1]
-            if any(part.lower() in ("no", "to", "ga", "wa", "ni", "de", "wo") for part in p2.split()) or len(parts[0]) < len(p2) * 0.8:
-                series_spanish = parts[0]
+            if any(part.lower() in ("no", "to", "ga", "wa", "ni", "de", "wo") for part in p2.split()) or len(p1) < len(p2) * 0.8:
+                if not series_spanish:
+                    series_spanish = p1
                 romaji_from_series = clean_romaji_title(p2)
-                series = parts[0]
+                series = p1
             else:
-                series_spanish = parts[0]
+                if not series_spanish:
+                    series_spanish = p1
                 series_english = clean_english_title(p2)
-                series = parts[0]
+                series = p1
         else:
             series_parsed_meta = parse_metadata_from_title(series_meta)
             series = series_parsed_meta.get("series_clean") or series_parsed_meta.get("series") or series_meta

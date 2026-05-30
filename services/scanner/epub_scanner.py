@@ -219,6 +219,16 @@ class EpubScanner:
                 logger.error(f"❌ No se pudo extraer metadata de {filename}")
                 return False
 
+            # Extracción nativa adicional del Español Puro desde el HTML del EPUB
+            try:
+                from services.epub_service import extract_internal_title
+                internal_title = extract_internal_title(filepath)
+                if internal_title:
+                    meta["series_spanish"] = internal_title
+                    logger.info(f"📖 Título en Español extraído del HTML nativo: {internal_title}")
+            except Exception as e:
+                logger.debug(f"No se pudo extraer el título interno en español de {filename}: {e}")
+
             # 4. PROCESAR IDENTIDAD (Sin redundancia de E/S)
             from utils.helpers import process_book_identity_comprehensive
 
@@ -319,6 +329,10 @@ class EpubScanner:
                 book.is_uncensored = identity["is_uncensored"]
                 book.color_mode = identity["color_mode"]
                 book.romaji_title = identity.get("romaji_title") or book.romaji_title
+                book.spanish_title = identity.get("series_spanish") or book.spanish_title
+                book.english_title = identity.get("series_english") or book.english_title
+                book.series_spanish = identity.get("series_spanish") or book.series_spanish
+                book.series_english = identity.get("series_english") or book.series_english
 
                 # Campos adicionales desde OPF Meta
                 book.publisher = meta.get("publisher") or book.publisher
