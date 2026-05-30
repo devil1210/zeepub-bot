@@ -143,11 +143,18 @@ class SeriesScanner:
             book.romaji_title = identity["romaji_title"]
 
         # Enriquecimiento completo de metadatos (Spanish, English y Romaji titles)
+        # Omitimos la IA proactivamente si los metadatos nativos limpios ya están completamente poblados
+        has_full_native_titles = (
+            series.series_spanish and series.series_spanish != "Unknown" and
+            series.series_english and series.series_english != "Unknown" and
+            series.name and series.name != "Unknown"
+        )
         needs_enrichment = (
             not series.series_spanish or 
             not series.series_english or 
             series.series_english == series.series_name
-        )
+        ) and not has_full_native_titles
+
         if needs_enrichment and not skip_ai:
             await cls.enrich_series_metadata(session, series, skip_ai=skip_ai)
 

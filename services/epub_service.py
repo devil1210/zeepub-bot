@@ -13,8 +13,7 @@ from utils.helpers import limpiar_html_basico
 def extract_internal_title(data_or_path: bytes | str) -> str | None:
     """
     Busca un título interno en archivos 'title' o 'titulo' dentro del EPUB.
-    Prioriza <... epub:type="fulltitle"> y combina title/subtitle.
-    Fallback a <span class="grande" epub:type="title">.
+    Prioriza <span class="grande" epub:type="title"> para obtener el título en Español puro.
     """
     try:
         if isinstance(data_or_path, (bytes, bytearray)):
@@ -25,22 +24,23 @@ def extract_internal_title(data_or_path: bytes | str) -> str | None:
         # Buscar archivos candidatos
         candidates = [n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()]
 
+        # Regex específica para span class grande (Título en Español Puro)
+        pattern_grande = re.compile(
+            r'<span[^>]*class="[^"]*grande[^"]*"[^>]*epub:type="title"[^>]*>(.*?)</span>',
+            re.IGNORECASE | re.DOTALL,
+        )
+        # Regex general de span title
+        pattern_span_title = re.compile(
+            r'<span[^>]*epub:type="title"[^>]*>(.*?)</span>',
+            re.IGNORECASE | re.DOTALL,
+        )
+
         # Regex para fulltitle: <tag ... epub:type="fulltitle" ...> content </tag>
         fulltitle_pattern = re.compile(
             r'<(\w+)[^>]*epub:type="fulltitle"[^>]*>(.*?)</\1>',
             re.IGNORECASE | re.DOTALL,
         )
-
-        # Regex para componentes internos
         title_pat = re.compile(r'epub:type="title"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL)
-        subtitle_pat = re.compile(r'epub:type="subtitle"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL)
-
-        # Regex legacy/fallback
-        pattern_legacy = re.compile(
-            r'<span[^>]*class="grande"[^>]*epub:type="title"[^>]*>(.*?)</span>',
-            re.IGNORECASE | re.DOTALL,
-        )
-        pattern_loose = re.compile(r'<span[^>]*epub:type="title"[^>]*>(.*?)</span>', re.IGNORECASE | re.DOTALL)
 
         for name in candidates:
             try:
@@ -49,26 +49,24 @@ def extract_internal_title(data_or_path: bytes | str) -> str | None:
                 # Remove HTML comments first to avoid matching commented-out tags
                 content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
 
-                # 1. Intentar fulltitle
+                # 1. Intentar el patrón de clase "grande" directamente (Español Puro)
+                match = pattern_grande.search(content)
+                if match:
+                    text = re.sub(r"<[^>]+>", "", match.group(1)).strip()
+                    if text:
+                        return text
+
+                # 2. Intentar buscar dentro de fulltitle pero solo el elemento 'title' (sin subtítulo)
                 match = fulltitle_pattern.search(content)
                 if match:
                     inner_html = match.group(2)
-
-                    # Buscar title y subtitle dentro
                     t_match = title_pat.search(inner_html)
-                    s_match = subtitle_pat.search(inner_html)
-
-                    if t_match and s_match:
+                    if t_match:
                         t_text = re.sub(r"<[^>]+>", "", t_match.group(1)).strip()
-                        s_text = re.sub(r"<[^>]+>", "", s_match.group(1)).strip()
+                        if t_text:
+                            return t_text
 
-                        if t_text and s_text:
-                            # Agregar separador si no existe
-                            if not t_text.endswith(":") and not t_text.endswith("-"):
-                                return f"{t_text}: {s_text}"
-                            return f"{t_text} {s_text}"
-
-                    # Si no hay sub-tags claros, limpiar HTML (reemplazando br con espacio)
+                    # Si no hay sub-tags claros, limpiar HTML
                     clean = re.sub(r"<br\s*/?>", " ", inner_html, flags=re.IGNORECASE)
                     clean = re.sub(r"<[^>]+>", "", clean).strip()
                     clean = clean.replace("-->", "").strip()
@@ -76,14 +74,12 @@ def extract_internal_title(data_or_path: bytes | str) -> str | None:
                     if clean:
                         return clean
 
-                # 2. Fallback a lógica anterior
-                match = pattern_legacy.search(content)
-                if not match:
-                    match = pattern_loose.search(content)
-
+                # 3. Fallback a span title general
+                match = pattern_span_title.search(content)
                 if match:
                     text = re.sub(r"<[^>]+>", "", match.group(1)).strip()
-                    return text
+                    if text:
+                        return text
             except Exception:
                 continue
 
@@ -241,9 +237,13 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                         break
 
         # Título volumen: primer <dc:title> o <title>
+        # Título volumen: primer <dc:title> o <title> (Limpiar Romaji del volumen del título principal)
+        from utils.metadata_utils import clean_romaji_title, clean_english_title
         for el in root.iter():
             if local_name(el).lower() == "title" and el.text:
                 out["titulo_volumen"] = el.text.strip()
+                # Extraemos el Romaji limpio del título (Ore dake Haireru Kakushi Dungeon - Volumen 01 [GET] -> Ore dake Haireru Kakushi Dungeon)
+                out["romaji_title"] = clean_romaji_title(el.text.strip())
                 break
 
         # Metadata extendida: Series y Volumen Index
@@ -254,7 +254,8 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
             if local_name(el).lower() == "meta":
                 prop = el.attrib.get("property", "") or el.attrib.get("{http://www.idpf.org/2007/opf}property", "")
                 if prop == "belongs-to-collection" and el.text:
-                    out["titulo_serie"] = el.text.strip()
+                    # Limpiamos el inglés del belongs-to-collection (The Hidden Dungeon Only I Can Enter [NL] -> The Hidden Dungeon Only I Can Enter)
+                    out["titulo_serie"] = clean_english_title(el.text.strip())
                     if el.attrib.get("id"):
                         collection_ids[el.attrib.get("id")] = out["titulo_serie"]
 
@@ -617,6 +618,7 @@ async def enrich_metadata_from_epub(
             for key in (
                 "titulo_serie",
                 "titulo_volumen",
+                "romaji_title",
                 "ilustrador",
                 "categoria",
                 "publisher",

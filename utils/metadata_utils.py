@@ -5,6 +5,42 @@ from typing import Any
 from utils.string_utils import normalize_author_name
 
 
+def clean_romaji_title(title: str) -> str:
+    """
+    Limpia un título en Romaji removiendo sufijos de volumen y grupos/corchetes finales.
+    Ej: "Ore dake Haireru Kakushi Dungeon - Volumen 01 [GET]" -> "Ore dake Haireru Kakushi Dungeon"
+    """
+    if not title:
+        return ""
+    # Remover corchetes finales con cualquier tag
+    clean = re.sub(r"\s*\[[^\]]+\]\s*$", "", title).strip()
+    
+    # Expresión regular robusta para remover el volumen y cualquier texto subsiguiente.
+    # Cubre: - Volumen 01, - Vol. 04, - Vol 03, - Tomo 02, etc.
+    volume_separator_pattern = re.compile(
+        r"\s*[\-\–\—\−\―\~～\|¦║]?\s*(?:Volumen|Vol\.?|V|Tomo\.?|Parte|Part|Capítulo|Chapter)\s*\d+.*$",
+        re.IGNORECASE
+    )
+    clean = volume_separator_pattern.sub("", clean).strip()
+    
+    # Limpieza final de espacios repetidos
+    return re.sub(r"\s+", " ", clean).strip()
+
+
+def clean_english_title(title: str) -> str:
+    """
+    Limpia un título en inglés de indicadores de formato finales como [NL], [WN], [LN], [Manga].
+    Ej: "The Hidden Dungeon Only I Can Enter [NL]" -> "The Hidden Dungeon Only I Can Enter"
+    """
+    if not title:
+        return ""
+    # Remover corchetes comunes al final que tengan las siglas de tipo de novela
+    clean = re.sub(r"\s*\[(?:NL|WN|LN|Manga|WD|LN\s*Color|SC)\]\s*$", "", title, flags=re.IGNORECASE).strip()
+    # Remover cualquier corchete final redundante
+    clean = re.sub(r"\s*\[[^\]]+\]\s*$", "", clean).strip()
+    return re.sub(r"\s+", " ", clean).strip()
+
+
 def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = False) -> dict:
     """
     Parsea un título completo de forma inteligente.
@@ -78,6 +114,11 @@ def parse_metadata_from_title(title_str: str, preserve_special_chars: bool = Fal
 
     series_clean = re.sub(r"\s*\[.*?\]\s*", " ", series).strip()
     series_clean = re.sub(r"(?:\s+[\-\–\—\−\―\~～\|¦║]+\s*|[\:\.]+)$", "", series_clean).strip()
+
+    # Limpiar mediante nuestras funciones de precisión
+    if romaji:
+        romaji = clean_romaji_title(romaji)
+    series_clean = clean_romaji_title(series_clean)
 
     clean_title_result = series_clean if romaji else series_clean or clean
     clean_title_result = re.sub(r"\s+", " ", clean_title_result).strip()
@@ -166,18 +207,18 @@ def process_book_identity_comprehensive(
         
         if len(parts) >= 3:
             series_spanish = parts[0]
-            series_english = parts[1]
-            romaji_from_series = parts[2]
+            series_english = clean_english_title(parts[1])
+            romaji_from_series = clean_romaji_title(parts[2])
             series = parts[0]
         elif len(parts) == 2:
             p2 = parts[1]
             if any(part.lower() in ("no", "to", "ga", "wa", "ni", "de", "wo") for part in p2.split()) or len(parts[0]) < len(p2) * 0.8:
                 series_spanish = parts[0]
-                romaji_from_series = p2
+                romaji_from_series = clean_romaji_title(p2)
                 series = parts[0]
             else:
                 series_spanish = parts[0]
-                series_english = p2
+                series_english = clean_english_title(p2)
                 series = parts[0]
         else:
             series_parsed_meta = parse_metadata_from_title(series_meta)
@@ -217,6 +258,16 @@ def process_book_identity_comprehensive(
     if ui_title.lower().endswith(".epub"):
         ui_title = ui_title[:-5].strip()
     romaji_from_title = parsed_filename.get("romaji")
+
+    # Limpieza final de strings
+    if series and series != "Unknown":
+        series = clean_romaji_title(series)
+    if romaji_from_series:
+        romaji_from_series = clean_romaji_title(romaji_from_series)
+    if romaji_from_title:
+        romaji_from_title = clean_romaji_title(romaji_from_title)
+    if series_english:
+        series_english = clean_english_title(series_english)
 
     # Registro de Serie
     if series:
