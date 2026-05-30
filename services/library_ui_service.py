@@ -618,7 +618,7 @@ async def mostrar_resultados_locales(
                 break
             href = f"local_series|{s['series_hash']}"
             series_title = (
-                s.get("name") or s.get("series_name") or s.get("title", "Novela")
+                s.get("series_english") or s.get("name_english") or s.get("name") or s.get("series_name") or s.get("title", "Novela")
             )
             st["colecciones"][i] = {"titulo": series_title, "href": href}
             keyboard.append(
@@ -632,15 +632,28 @@ async def mostrar_resultados_locales(
             if len(keyboard) >= 20:
                 break
             key = uuid.uuid4().hex[:8]
+
+            # Construir título en inglés consistente con el catálogo de la Mini App
+            eng_t = b.get("english_title") or b.get("series_english")
+            if eng_t:
+                vol_num = b.get("volume")
+                if vol_num and vol_num > 0:
+                    vol_str = f" {int(vol_num)}" if vol_num % 1 == 0 else f" {vol_num}"
+                    display_title = f"{eng_t} - Volumen {vol_str}"
+                else:
+                    display_title = eng_t
+            else:
+                display_title = b["title"]
+
             st["libros"][key] = {
-                "titulo": b["title"],
+                "titulo": display_title,
                 "autor": b["author"],
                 "descarga": b["filepath"],
                 "portada": b.get("cover_medium") or b.get("cover_low"),
                 "hash": b["book_hash"],
             }
 
-            display = f"📕 {b['title']}"
+            display = f"📕 {display_title}"
             if len(display) > 35:
                 display = display[:32] + "..."
 
