@@ -263,6 +263,8 @@ class EpubScanner:
                 # actualizar la clave primaria (id/book_hash) en caliente, previniendo ForeignKeyViolationError.
                 if book and book.book_hash != target_book_hash:
                     logger.info(f"🗑️ Reemplazando libro por cambio de hash sagrado: {book.book_hash} -> {target_book_hash}")
+                    from services.scanner.library_scanner import LibraryScanner
+                    await LibraryScanner._cleanup_book_references(session, book.book_hash)
                     await session.delete(book)
                     await session.flush()
                     book = None
