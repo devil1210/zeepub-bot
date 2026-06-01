@@ -315,6 +315,43 @@ class EpubScanner:
                             await session.flush()
                         return "duplicate"
 
+                # 6.2 Detección de Colisión de Metadatos Homólogos con UUIDs Distintos
+                if not hash_conflict:
+                    target_series_hash = cls.generate_series_hash(
+                        series_name=identity["series"], author=identity["author"], book_type=identity["book_type"]
+                    )
+                    dup_meta_stmt = select(LocalBook).where(
+                        LocalBook.series_id == target_series_hash,
+                        LocalBook.volume == identity["volume"],
+                        LocalBook.translator == identity["translator"],
+                        LocalBook.layout_by == identity["layout_by"],
+                        LocalBook.edition == (identity["edition"] or meta.get("edition")),
+                        LocalBook.is_uncensored == bool(identity["is_uncensored"]),
+                        LocalBook.color_mode == identity["color_mode"],
+                        LocalBook.id != target_book_hash
+                    )
+                    dup_meta_res = await session.execute(dup_meta_stmt)
+                    logical_conflict = dup_meta_res.scalar_one_or_none()
+
+                    if logical_conflict:
+                        logger.warning(f"⚠️ Alerta [POR REVISAR]: Colisión de metadatos homólogos pero UUIDs distintos para {filename}")
+                        from models.library import DuplicateBook
+                        dup_stmt = select(DuplicateBook).where(
+                            DuplicateBook.duplicate_filepath == filepath
+                        )
+                        dup_res = await session.execute(dup_stmt)
+                        dup_exists = dup_res.scalar_one_or_none()
+                        if not dup_exists:
+                            new_duplicate = DuplicateBook(
+                                book_hash=target_book_hash,
+                                original_filepath=logical_conflict.filepath,
+                                duplicate_filepath=filepath,
+                                title=f"[POR REVISAR] {identity.get('title') or logical_conflict.title}",
+                                author=identity.get("author") or logical_conflict.author
+                            )
+                            session.add(new_duplicate)
+                            await session.flush()
+
                 if not book:
                     # Inicializamos colecciones vacías para evitar lazy-load al asignar después del flush
                     book = LocalBook(id=target_book_hash, filepath=filepath, source=source, genres=[], demographics=[])

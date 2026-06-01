@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from api.handlers.helpers import check_admin, check_staff
 from models.communications import PublicationChannel, PublicationTemplate
 from repositories.publication_repository import pub_repo
-from services.publisher.publisher_service import publisher_service
+from services.publisher.publisher_service import publisher_service, TelegramPublisherProvider
 
 logger = logging.getLogger(__name__)
 
@@ -235,7 +235,7 @@ async def handle_pub_restore_templates(data: dict[str, Any], user_data: dict[str
     """Restaura las plantillas por defecto de Telegram."""
     check_staff(user_data)
 
-    from services.publisher.publisher_service import TelegramPublisherProvider
+
 
     # Definir templates por defecto
     defaults = [
