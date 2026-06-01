@@ -149,31 +149,9 @@ async def handle_pub_get_templates(data: dict[str, Any], user_data: dict[str, An
 
     templates = await pub_repo.get_templates(platform=data.get("platform"))
 
-    # Sincronización automática de plantillas por defecto de Telegram
-    from services.publisher.publisher_service import TelegramPublisherProvider
-
-    telegram_defaults = {
-        "Default Telegram Cover": TelegramPublisherProvider.COVER_TEMPLATE,
-        "Default Telegram Synopsis": TelegramPublisherProvider.SYNOPSIS_TEMPLATE,
-        "Default Telegram Info": TelegramPublisherProvider.INFO_TEMPLATE,
-        "Default Telegram Unified": TelegramPublisherProvider.FULL_TEMPLATE,
-    }
-
-    updated_any = False
-    for t in templates:
-        if t.platform == "telegram" and t.name in telegram_defaults:
-            new_content = telegram_defaults[t.name]
-            if t.content != new_content:
-                logger.info(f"Sincronizando plantilla por defecto '{t.name}' en base de datos")
-                t.content = new_content
-                await pub_repo.update_template(t.id, {"content": new_content})
-                updated_any = True
-
-    # Volver a cargar si hubo actualizaciones para reflejar los cambios
-    if updated_any:
-        templates = await pub_repo.get_templates(platform=data.get("platform"))
-
+    # Seed default templates if none exist for Telegram
     has_telegram = any(t.platform == "telegram" for t in templates)
+
     target_platform = data.get("platform")
 
     if (not target_platform or target_platform == "telegram") and not has_telegram:

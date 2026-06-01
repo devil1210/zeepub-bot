@@ -34,22 +34,20 @@ class TelegramPublisherProvider(PublisherProvider):
         "📚 {serie} ║ {romaji_title} ║ {titulo}"
         "[?volumen]\n📖 Volumen {volumen}[/?]"
         "\n#{slug}\n"
-        "[?download_link]\n⬇️ Descarga: <a href=\"{download_link}\">Pulsa aquí</a>[/?]\n"
-        "\n📅 Actualizado: {fecha}"
-        "[?size_mb]\n📦 Tamaño: {size_mb}[/?]\n"
-        "[?layout_by]\n🎨 Maquetado por: #{layout_by}[/?]"
-        "[?tipo]\n🏷️ Categoría: {tipo}[/?]"
-        "[?demography]\n👥 Demografía: {demography}[/?]"
-        "[?genres]\n🎭 Géneros: {genres}[/?]"
-        "[?autor]\n✍️ Autor: {autor}[/?]"
-        "[?illustrator]\n🎨 Ilustrador: {illustrator}[/?]"
-        "[?published_at]\n📅 Publicado: {published_at}[/?]"
-        "[?traductor]\n🌐 Traducción: {traductor}[/?]"
-        "[?editorial]\n🏢 Grupo Traductor: {editorial}[/?]"
+        "[?layout_by]\n🎨 <b>Maquetado por:</b> #{layout_by}[/?]"
+        "[?tipo]\n🏷️ <b>Categoría:</b> {tipo}[/?]"
+        "[?demography]\n👥 <b>Demografía:</b> {demography}[/?]"
+        "[?genres]\n🎭 <b>Géneros:</b> {genres}[/?]"
+        "[?autor]\n✍️ <b>Autor:</b> {autor}[/?]"
+        "[?illustrator]\n🎨 <b>Ilustrador:</b> {illustrator}[/?]"
+        "[?published_at]\n📅 <b>Publicado:</b> {published_at}[/?]"
+        "[?traductor]\n🌐 <b>Traductor:</b> {traductor}[/?]"
+        "[?editorial]\n🏢 <b>Grupo Traductor:</b> {editorial}[/?]"
     )
-    SYNOPSIS_TEMPLATE = "[?sinopsis]📝 Sinopsis:\n\n<blockquote>{sinopsis}</blockquote>[/?]"
-    INFO_TEMPLATE = "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n\n#{slug}{archivo}"
+    SYNOPSIS_TEMPLATE = "📝 <b>Sinopsis:</b>\n\n<blockquote>{sinopsis}</blockquote>\n\n#{slug}"
+    INFO_TEMPLATE = "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n[?download_link]⬇️ Descarga: <a href=\"{download_link}\">Pulsa aquí</a>[/?]\n\n#{slug}{archivo}"
     FULL_TEMPLATE = COVER_TEMPLATE + "\n<hr/>\n" + SYNOPSIS_TEMPLATE + "\n<hr/>\n" + INFO_TEMPLATE
+
 
 
 
