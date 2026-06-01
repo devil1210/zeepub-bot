@@ -15,6 +15,10 @@ fileConfig(config.config_file_name)
 # set the sqlalchemy.url to environment DATABASE_URL if provided
 db_url = os.environ.get("DATABASE_URL")
 if db_url:
+    if "postgresql+asyncpg" in db_url:
+        db_url = db_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+    elif "postgresql://" in db_url and "+psycopg2" not in db_url:
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg2://")
     config.set_main_option("sqlalchemy.url", db_url)
 
 # Define metadata directly to avoid circular imports
