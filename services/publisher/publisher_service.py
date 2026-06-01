@@ -55,6 +55,7 @@ class TelegramPublisherProvider(PublisherProvider):
     FB_CAPTION_TEMPLATE = (
         "📚 {serie} ║ {romaji_title} ║ {titulo}"
         "[?volumen]\n📖 Volumen {volumen}[/?]"
+        "\n[?download_link]\n⬇️ Descarga: {download_link}[/?]\n"
         "\n[?layout_by]🎨 Maquetado por: {layout_by}[/?]"
         "[?tipo]\n🏷️ Categoría: {tipo}[/?]"
         "[?demography]\n👥 Demografía: {demography}[/?]"
@@ -64,8 +65,9 @@ class TelegramPublisherProvider(PublisherProvider):
         "[?published_at]\n📅 Publicado: {published_at}[/?]"
         "[?traductor]\n🌐 Traductor: {traductor}[/?]"
         "[?editorial]\n🏢 Grupo Traductor: {editorial}[/?]"
-        "\n📝 Sinopsis: {sinopsis}{archivo}"
+        "\n📝 Sinopsis: {sinopsis}"
     )
+
 
     def __init__(self, bot=None):
         self.bot = bot
