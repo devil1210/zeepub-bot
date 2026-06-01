@@ -82,10 +82,24 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const abortControllerRef = useRef<AbortController | null>(null);
   const responsiveColumns = useResponsiveColumns();
 
-  // Determine actual columns based on view mode
+  // Columnas personalizadas con persistencia Premium
+  const [customColumns, setCustomColumns] = useState<number | null>(() => {
+    const saved = sessionStorage.getItem('search_custom_columns');
+    return saved ? parseInt(saved) : null;
+  });
+
+  useEffect(() => {
+    if (customColumns !== null) {
+      sessionStorage.setItem('search_custom_columns', customColumns.toString());
+    }
+  }, [customColumns]);
+
+  // Determine actual columns based on view mode and custom user preference
   const columns = useMemo(() => {
-    return viewMode === 'list' ? 1 : responsiveColumns;
-  }, [viewMode, responsiveColumns]);
+    if (viewMode === 'list') return 1;
+    return customColumns || responsiveColumns;
+  }, [viewMode, customColumns, responsiveColumns]);
+
 
   useEffect(() => {
     return () => {
@@ -340,7 +354,31 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
 
       <div className="flex-1 px-4 pb-32 md:pb-6">
         <div className="max-w-[1800px] mx-auto space-y-3">
+          {/* Slider Premium de Regulación de Tamaño de Portadas */}
+          {viewMode === 'grid' && series.length > 0 && (
+            <div className="flex justify-end pr-2 py-1">
+              <div className="flex items-center gap-3 bg-white/5 border border-white/5 backdrop-blur-md rounded-full px-4 py-1.5 text-xs text-gray-300 select-none shadow-lg">
+                <span className="opacity-75 font-medium">Tamaño de Portadas:</span>
+                <input
+                  type="range"
+                  min="2"
+                  max="8"
+                  value={customColumns || responsiveColumns}
+                  onChange={(e) => setCustomColumns(parseInt(e.target.value))}
+                  className="w-24 md:w-32 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-sky-400 focus:outline-none transition-all duration-200"
+                  style={{
+                    background: `linear-gradient(to right, #38bdf8 0%, #38bdf8 ${( ((customColumns || responsiveColumns) - 2) / 6) * 100}%, rgba(255,255,255,0.1) ${( ((customColumns || responsiveColumns) - 2) / 6) * 100}%, rgba(255,255,255,0.1) 100%)`
+                  }}
+                />
+                <span className="text-sky-400 font-semibold min-w-[65px] text-right">
+                  {customColumns || responsiveColumns} por fila
+                </span>
+              </div>
+            </div>
+          )}
+
           {series.length > 0 && (
+
             <div className="w-full">
               {rows.map((row, rowIndex) => (
                 <div
