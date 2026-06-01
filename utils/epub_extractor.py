@@ -149,9 +149,14 @@ class EpubMetadataExtractor:
                             if not self.metadata.get("illustrator_jap"):
                                 self.metadata["illustrator_jap"] = jap_name
 
-                    # 3.2 Identificadores (ISBN, ASIN, URI)
+                    # 3.2 Identificadores (ISBN, ASIN, URI, UUID)
+                    uuid_val = None
+                    unique_id_ref = opf_root.get("unique-identifier")
+
                     for ident in metadata_node.findall("dc:identifier", self.NAMESPACE):
-                        id_text = ident.text or ""
+                        id_text = (ident.text or "").strip()
+                        id_attr_id = get_attr_agnostic(ident, "id")
+
                         clean_id = re.sub(
                             r"^urn:(isbn|amazon|uri|uuid|asin):",
                             "",
@@ -167,6 +172,21 @@ class EpubMetadataExtractor:
                             self.metadata["asin"] = clean_id
                         elif "uri" in lower_id:
                             self.metadata["uri"] = clean_id
+
+                        # Extraer UUID con prioridad
+                        is_unique = unique_id_ref and id_attr_id == unique_id_ref
+                        is_uuid_format = lower_id.startswith("urn:uuid:") or re.match(
+                            r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                            clean_id,
+                            re.IGNORECASE,
+                        )
+
+                        # Guardamos en uuid_val solo si cumple con el formato UUID estricto
+                        if is_uuid_format:
+                            if is_unique or not uuid_val:
+                                uuid_val = clean_id
+
+                    self.metadata["uuid"] = uuid_val
 
                     # 3.3 Etiquetas (Géneros)
                     tags = []

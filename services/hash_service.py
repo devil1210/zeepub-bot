@@ -34,12 +34,19 @@ class HashService:
         edition: str | None = None,
         is_uncensored: int = 0,
         color_mode: str = "bw",
+        uuid: str | None = None,
     ) -> str:
         """
-        Genera un hash estable basado exclusivamente en:
-        series + author + book_type + volume + translator + layout_by + language + edition + traits.
+        Genera un hash estable basado en:
+        - El UUID (si está presente)
+        - O series + author + book_type + volume + translator + layout_by + language + edition + traits (si no hay UUID).
         NO usar title.
         """
+        if uuid:
+            uuid_norm = cls.norm_string(uuid)
+            identity = f"uuid:{uuid_norm}"
+            return hashlib.sha256(identity.encode("utf-8")).hexdigest()
+
         s_norm = cls.norm_string(series)
         a_norm = cls.norm_string(author)
         t_norm = cls.norm_string(book_type)

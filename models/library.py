@@ -208,6 +208,7 @@ class Book(Base):
     cover_original: Mapped[str | None] = mapped_column(String(1024))
 
     short_link: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
+    uuid: Mapped[str | None] = mapped_column(String(255), index=True)
 
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     indexed_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)

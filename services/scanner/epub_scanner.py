@@ -56,9 +56,10 @@ class EpubScanner:
         edition: str,
         is_uncensored: int,
         color_mode: str,
+        uuid: str | None = None,
     ) -> str:
         """
-        Genera un hash estable basado en la metadata técnica del libro.
+        Genera un hash estable basado en la metadata técnica o UUID del libro.
         """
         return hash_service.generate_book_hash(
             series=series_name or "Unknown",
@@ -71,6 +72,7 @@ class EpubScanner:
             edition=edition,
             is_uncensored=is_uncensored or 0,
             color_mode=color_mode or "bw",
+            uuid=uuid,
         )
 
     @staticmethod
@@ -236,8 +238,11 @@ class EpubScanner:
             if not identity:
                 return False
 
+            # Inyectar el UUID en la identidad
+            identity["uuid"] = meta.get("uuid")
+
             # 5. GENERACIÓN DE HASHES SAGRADOS
-            # El hash depende de la identidad extraída (normalizada)
+            # El hash depende de la identidad extraída (normalizada) o del UUID
             target_book_hash = cls.generate_book_hash(
                 series_name=identity["series"],
                 author=identity["author"],
@@ -249,6 +254,7 @@ class EpubScanner:
                 edition=identity["edition"] or meta.get("edition"),
                 is_uncensored=identity["is_uncensored"],
                 color_mode=identity["color_mode"],
+                uuid=identity["uuid"],
             )
 
             # 6. RESOLUCIÓN DE CONFLICTOS Y ACTUALIZACIÓN
@@ -333,6 +339,7 @@ class EpubScanner:
                 book.english_title = identity.get("series_english") or book.english_title
                 book.series_spanish = identity.get("series_spanish") or book.series_spanish
                 book.series_english = identity.get("series_english") or book.series_english
+                book.uuid = identity.get("uuid") or book.uuid
 
                 # Campos adicionales desde OPF Meta
                 book.publisher = meta.get("publisher") or book.publisher
