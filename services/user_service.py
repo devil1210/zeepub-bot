@@ -86,8 +86,15 @@ class UserService:
         user = await self.user_repo.get_by_telegram_id(telegram_id)
         if not user:
             # Create minimal user if not exists
-            username = tg_user.get("username") if tg_user else None
-            name = tg_user.get("first_name") if tg_user else f"User_{telegram_id}"
+            username = None
+            name = f"User_{telegram_id}"
+            if tg_user:
+                if isinstance(tg_user, dict):
+                    username = tg_user.get("username")
+                    name = tg_user.get("first_name") or name
+                else:
+                    username = getattr(tg_user, "username", None)
+                    name = getattr(tg_user, "first_name", None) or getattr(tg_user, "full_name", name)
             user = await self.get_or_create_user(telegram_id, username=username, name=name)
 
         # Prepare base data for RBAC
