@@ -184,19 +184,28 @@ def count_mappings() -> int:
 
 async def validate_and_update_url(url_hash: str, url: str) -> bool:
     import aiohttp
+    import os
 
-    try:
-        async with aiohttp.ClientSession() as session:
-            headers = {"Range": "bytes=0-1024"}
-            async with session.get(
-                url,
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=15),
-                allow_redirects=True,
-            ) as resp:
-                is_valid = 200 <= resp.status < 300
-    except Exception:
-        is_valid = False
+    # Validar paths locales (Regla 8: Operación Local Estricta)
+    if not url.startswith(("http://", "https://")):
+        try:
+            is_valid = os.path.exists(url) and os.path.isfile(url)
+        except Exception:
+            is_valid = False
+    else:
+        try:
+            async with aiohttp.ClientSession() as session:
+                headers = {"Range": "bytes=0-1024"}
+                async with session.get(
+                    url,
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=15),
+                    allow_redirects=True,
+                ) as resp:
+                    is_valid = 200 <= resp.status < 300
+        except Exception:
+            is_valid = False
+
 
     try:
         engine = _get_sa_engine()

@@ -34,6 +34,7 @@ class LibraryRoutes:
     async def short_download(self, url_hash: str):
         """
         Endpoint acortado para descargas usando hash SHA256.
+        Garantiza compatibilidad 100% con URLs remotas y archivos locales.
         """
         try:
             logger.info(f"📥 Short download request: {url_hash}")
@@ -42,37 +43,61 @@ class LibraryRoutes:
             source_url = get_url_from_hash(url_hash)
             if not source_url:
                 logger.warning(f"❌ No URL found for hash: {url_hash}")
-                return Response(content={"error": "URL no encontrada"}, status_code=404)
+                return Response(content={"error": "URL no encontrada o expirada"}, status_code=404)
 
-            # Download and stream file
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(source_url)
-                resp.raise_for_status()
+            # Extraer título legible de la URL o archivo de manera segura
+            from urllib.parse import unquote, urlparse
+            try:
+                parsed = urlparse(source_url)
+                title = unquote(parsed.path.split("/")[-1]).replace(".epub", "")
+            except Exception:
+                title = "libro"
 
-                return Response(
-                    content=resp.content,
-                    media_type="application/epub+zip",
-                    headers={"Cache-Control": "public, max-age=31536000"},  # Cache for a year
-                )
+            if not title:
+                title = "libro"
+
+            # Delegar la descarga/entrega al método público incluyendo el url_hash para Self-Healing
+            return await self.public_download(url=source_url, title=title, url_hash=url_hash)
 
         except Exception as e:
-            logger.error(f"❌ Error in short download: {e}")
-            return Response(content={"error": "Error al descargar archivo"}, status_code=500)
+            logger.error(f"❌ Error in short download resolver: {e}", exc_info=True)
+            return Response(content={"error": "Error interno al procesar la descarga"}, status_code=500)
+
+    async def _serve_local_file(self, filepath: str, title: str):
+        """Helper para servir un archivo local como streaming de forma asíncrona."""
+        async def iterfile_async():
+            try:
+                async with aiofiles.open(filepath, mode="rb") as f:
+                    while chunk := await f.read(64 * 1024):
+                        yield chunk
+            except Exception as e:
+                logger.error(f"❌ Error reading local file: {e}")
+                return
+
+        return StreamingResponse(
+            content=iterfile_async(),
+            media_type="application/epub+zip",
+            headers={
+                "Content-Disposition": f'attachment; filename="{title}.epub"',
+                "Cache-Control": "public, max-age=31536000",
+            },
+        )
 
     async def public_download(
         self,
         url: str = Query(..., description="Source EPUB URL or Local Path"),
         title: str = Query("libro", description="Filename hint"),
+        url_hash: str | None = None,
     ):
         """
         Endpoint público para descargas directas.
+        Soporta auto-recuperación de paths físicos locales renombrados o movidos.
         """
         try:
             logger.info(f"📥 Public download request: {url}")
 
-            # Handle different URL types
+            # 1. Caso URL Remota
             if url.startswith(("http://", "https://")):
-                # Remote URL
                 data = await fetch_bytes(url)
                 if not data:
                     return Response(content={"error": "No se pudo descargar el archivo"}, status_code=404)
@@ -86,32 +111,59 @@ class LibraryRoutes:
                     },
                 )
 
-            elif os.path.exists(url):
-                # Local file
-                async def iterfile_async():
-                    try:
-                        async with aiofiles.open(url, mode="rb") as f:
-                            while chunk := await f.read(64 * 1024):
-                                yield chunk
-                    except Exception as e:
-                        logger.error(f"❌ Error reading local file: {e}")
-                        return
+            # 2. Caso Archivo Local Existente
+            elif os.path.exists(url) and os.path.isfile(url):
+                return await self._serve_local_file(url, title)
 
-                return StreamingResponse(
-                    content=iterfile_async(),
-                    media_type="application/epub+zip",
-                    headers={
-                        "Content-Disposition": f'attachment; filename="{title}.epub"',
-                        "Cache-Control": "public, max-age=31536000",
-                    },
-                )
-
+            # 3. Caso Auto-Recuperación (Self-Healing) de Archivos Locales Reubicados/Renombrados
             else:
-                return Response(content={"error": "Archivo no encontrado"}, status_code=404)
+                logger.warning(f"Archivo local no encontrado en ruta original: {url}")
+                logger.info("Iniciando proceso de Auto-Recuperacion Dinamica...")
+
+                filename_to_find = os.path.basename(url)
+                
+                try:
+                    from core.db_manager_pg import pg_manager
+                    from models.library import Book
+                    from sqlalchemy import select
+
+                    async with pg_manager.get_session() as session:
+                        stmt = select(Book.filepath).where(Book.filename == filename_to_find).limit(1)
+                        result = await session.execute(stmt)
+                        new_filepath = result.scalar_one_or_none()
+
+                    if new_filepath and os.path.exists(new_filepath):
+                        logger.info(f"Archivo auto-recuperado exitosamente: {new_filepath}")
+
+                        # Actualizar url_mappings en segundo plano para optimizar futuras descargas
+                        if url_hash:
+                            try:
+                                from utils.url_cache import _get_sa_engine
+                                from sqlalchemy import Table, MetaData
+                                engine = _get_sa_engine()
+                                meta = MetaData()
+                                url_mappings = Table("url_mappings", meta, autoload_with=engine)
+                                with engine.begin() as conn:
+                                    upd = url_mappings.update().where(url_mappings.c.hash == url_hash).values(url=new_filepath)
+                                    conn.execute(upd)
+                                logger.info(f"URL cache actualizada para hash '{url_hash}' con la nueva ruta.")
+                            except Exception as update_err:
+                                logger.error(f"Error actualizando la nueva ruta en cache: {update_err}")
+
+                        return await self._serve_local_file(new_filepath, title)
+
+                except Exception as recovery_err:
+                    logger.error(f"Error durante el proceso de Auto-Recuperacion: {recovery_err}", exc_info=True)
+
+
+
+
+                return Response(content={"error": "Archivo no encontrado o reubicado sin escaneo previo"}, status_code=404)
 
         except Exception as e:
-            logger.error(f"❌ Error in public download: {e}")
+            logger.error(f"❌ Error in public download: {e}", exc_info=True)
             return Response(content={"error": "Error al procesar descarga"}, status_code=500)
+
 
     async def download_book(
         self,
