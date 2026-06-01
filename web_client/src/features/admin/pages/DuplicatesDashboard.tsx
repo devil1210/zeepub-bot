@@ -684,12 +684,45 @@ export const DuplicatesDashboard: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-6">
-                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4">Instrucciones</h4>
-                                    <div className="p-8 bg-white/2 border border-white/5 rounded-premium text-xs text-gray-400 leading-relaxed italic">
-                                        Ambos archivos son binariamente idénticos. Si deseas que ambos convivan como registros separados, edita los metadatos de uno de ellos (título, autor o volumen) y vuelve a escanear.
-                                        <br /><br />
-                                        De lo contrario, borra la "Copia omitida" para liberar espacio.
-                                    </div>
+                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4">Instrucciones de Resolución</h4>
+                                    {selectedDuplicate.title?.includes('[POR REVISAR]') ? (
+                                        <div className="p-6 bg-amber-500/5 border border-amber-500/10 rounded-premium text-xs text-gray-300 leading-relaxed space-y-4">
+                                            <div className="flex items-center gap-2 text-amber-500 font-black uppercase tracking-wider text-[10px]">
+                                                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                                                Conflicto Homólogo Detectado
+                                            </div>
+                                            <p className="text-gray-400 text-xs">
+                                                Estos archivos son <b>físicamente distintos</b> (tienen UUIDs diferentes) pero colisionaron al poseer exactamente los <b>mismos metadatos clásicos de identificación</b>. Ambos están en catálogo, pero debes revisarlos.
+                                            </p>
+                                            <div className="p-4 bg-white/5 border border-white/5 rounded-premium-sm space-y-2">
+                                                <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Metadatos Idénticos Colisionados:</div>
+                                                <ul className="list-disc pl-4 text-[10px] text-gray-400 space-y-1">
+                                                    <li><b>Serie</b> (mismo nombre interno de serie)</li>
+                                                    <li><b>Volumen</b> (mismo número de volumen)</li>
+                                                    <li><b>Traductor</b> (mismo nombre de traductor)</li>
+                                                    <li><b>Maquetador</b> (mismo nombre de maquetación)</li>
+                                                    <li><b>Edición</b> (misma etiqueta de edición)</li>
+                                                    <li><b>Censura</b> (mismo estado de censura/sin censura)</li>
+                                                    <li><b>Color</b> (mismo modo de color)</li>
+                                                </ul>
+                                            </div>
+                                            <div className="text-[10px] text-gray-400 leading-relaxed border-t border-white/5 pt-4 space-y-2">
+                                                <div className="font-bold text-white">💡 ¿Cómo resolverlo?</div>
+                                                <p>
+                                                    <b>Si son el mismo libro redundante:</b> Borra la "Copia omitida" pulsando el botón de papelera correspondiente.
+                                                </p>
+                                                <p>
+                                                    <b>Si son libros distintos (ej. diferentes traducciones, maquetaciones o ediciones):</b> Abre uno de los archivos EPUB en un editor de metadatos (como Calibre) y cambia alguno de los campos de arriba (título de serie, maquetador o traductor) para diferenciarlos, y vuelve a escanear.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="p-8 bg-white/2 border border-white/5 rounded-premium text-xs text-gray-400 leading-relaxed italic">
+                                            Ambos archivos son binariamente idénticos. Si deseas que ambos convivan como registros separados, edita los metadatos de uno de ellos (título, autor o volumen) y vuelve a escanear.
+                                            <br /><br />
+                                            De lo contrario, borra la "Copia omitida" para liberar espacio.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
