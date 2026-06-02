@@ -244,6 +244,15 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     # Forzar que solo se envíe el mensaje del archivo con la info (1 solo mensaje)
     # Usamos <hr><hr> para que enviar_libro_directo salte Part 0 (Portada) y Part 1 (Sinopsis)
     from services.publisher.publisher_service import TelegramPublisherProvider
+    from repositories.publication_repository import pub_repo
+
+    try:
+        db_templates = await pub_repo.get_templates(platform="telegram")
+        info_t = next((t for t in db_templates if (t.extra_config or {}).get("type") == "info"), None)
+        info_template = info_t.content if info_t else TelegramPublisherProvider.INFO_TEMPLATE
+    except Exception as e:
+        logger.warning(f"Error cargando plantilla de info de base de datos en descargar_epub_pendiente: {e}")
+        info_template = TelegramPublisherProvider.INFO_TEMPLATE
 
     # Botones de navegación integrados
     restantes = await downloads_left(uid)
@@ -252,7 +261,7 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
         quota_text = f"\n\n📥 Te quedan {restantes} descargas disponibles para hoy."
 
     gratitude = "\n\n✨ ¡Disfruta de tu lectura! Gracias por ser parte de nuestra comunidad. ❤️"
-    compact_caption = f"<hr><hr>{TelegramPublisherProvider.INFO_TEMPLATE}{quota_text}{gratitude}"
+    compact_caption = f"<hr><hr>{info_template}{quota_text}{gratitude}"
 
     keyboard = [
         [InlineKeyboardButton("📚 Volver a categorías", callback_data="volver_colecciones")],

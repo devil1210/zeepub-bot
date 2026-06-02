@@ -214,6 +214,11 @@ async def handle_pub_save_template(data: dict[str, Any], user_data: dict[str, An
     }
 
     if template_id:
+        existing = await pub_repo.get_template_by_id(template_id)
+        if existing:
+            merged_config = (existing.extra_config or {}).copy()
+            merged_config.update(data.get("extra_config", {}))
+            template_data["extra_config"] = merged_config
         await pub_repo.update_template(template_id, template_data)
     else:
         template = PublicationTemplate(**template_data)

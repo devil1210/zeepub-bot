@@ -241,7 +241,14 @@ class CallbackHandlerV6(BaseCommandHandler):
                     t = re.sub(r"\n{3,}", "\n\n", t).strip()
                     return t
 
-                info_template = TelegramPublisherProvider.INFO_TEMPLATE
+                try:
+                    from repositories.publication_repository import pub_repo
+                    db_templates = await pub_repo.get_templates(platform="telegram")
+                    info_t = next((t for t in db_templates if (t.extra_config or {}).get("type") == "info"), None)
+                    info_template = info_t.content if info_t else TelegramPublisherProvider.INFO_TEMPLATE
+                except Exception as e:
+                    logger.warning(f"Error cargando plantilla de info de base de datos en dl_confirm: {e}")
+                    info_template = TelegramPublisherProvider.INFO_TEMPLATE
                 caption = sanitize_tg_html(
                     apply_publication_template(info_template, libro_map)
                 )

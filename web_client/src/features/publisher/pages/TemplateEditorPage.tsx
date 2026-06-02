@@ -43,6 +43,10 @@ export const TemplateEditorPage: React.FC = () => {
     const [content, setContent] = useState(DEFAULT_TELEGRAM_TEMPLATE);
     const [platform, setPlatform] = useState('telegram');
     const [coverQuality, setCoverQuality] = useState<'original' | 'grande' | 'mediana' | 'pequeña'>('grande');
+    const [templateType, setTemplateType] = useState<'general' | 'cover' | 'synopsis' | 'info' | 'unified'>('general');
+    const [extraConfig, setExtraConfig] = useState<any>({});
+
+
 
     // UI state
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,6 +76,8 @@ export const TemplateEditorPage: React.FC = () => {
                         savedQuality === 'low' ? 'pequeña' :
                             (savedQuality || 'grande');
                 setCoverQuality(mappedQuality as any);
+                setExtraConfig(template.extra_config || {});
+                setTemplateType(template.extra_config?.type || 'general');
                 isInitialized.current = id;
             }
         }
@@ -160,7 +166,9 @@ export const TemplateEditorPage: React.FC = () => {
                 content,
                 platform,
                 extra_config: {
-                    cover_quality: coverQuality
+                    ...extraConfig,
+                    cover_quality: coverQuality,
+                    type: templateType
                 }
             });
 
@@ -275,22 +283,38 @@ export const TemplateEditorPage: React.FC = () => {
                         </div>
 
                         {platform === 'telegram' && (
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Calidad de Portada (Telegram)</label>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                    {(['original', 'grande', 'mediana', 'pequeña'] as const).map((q) => (
-                                        <button
-                                            key={q}
-                                            type="button"
-                                            onClick={() => setCoverQuality(q)}
-                                            className={`py-2 px-3 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${coverQuality === q
-                                                ? 'bg-primary/20 border-primary text-primary'
-                                                : 'bg-black/40 border-white/5 text-gray-500 hover:text-gray-300'
-                                                }`}
-                                        >
-                                            {q === 'original' ? 'Ultra HD' : q === 'grande' ? 'Alta' : q === 'mediana' ? 'Media' : 'Baja'}
-                                        </button>
-                                    ))}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Tipo de Plantilla (Telegram)</label>
+                                    <select
+                                        value={templateType}
+                                        onChange={(e) => setTemplateType(e.target.value as any)}
+                                        className="w-full bg-black/40 border border-white/10 rounded-premium-sm px-4 py-3 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer"
+                                    >
+                                        <option value="general" className="bg-[#141416] text-white">Publicación General (Canales)</option>
+                                        <option value="cover" className="bg-[#141416] text-white">Envío de EPUB: Portada</option>
+                                        <option value="synopsis" className="bg-[#141416] text-white">Envío de EPUB: Sinopsis</option>
+                                        <option value="info" className="bg-[#141416] text-white">Envío de EPUB: Info / Archivo</option>
+                                        <option value="unified" className="bg-[#141416] text-white">Envío de EPUB: Unificado</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Calidad de Portada (Telegram)</label>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 h-[46px] items-center">
+                                        {(['original', 'grande', 'mediana', 'pequeña'] as const).map((q) => (
+                                            <button
+                                                key={q}
+                                                type="button"
+                                                onClick={() => setCoverQuality(q)}
+                                                className={`py-2 px-1 rounded-premium-sm text-[9px] font-black uppercase tracking-widest transition-all border ${coverQuality === q
+                                                    ? 'bg-primary/20 border-primary text-primary'
+                                                    : 'bg-black/40 border-white/5 text-gray-500 hover:text-gray-300'
+                                                    }`}
+                                            >
+                                                {q === 'original' ? 'Ultra' : q === 'grande' ? 'Alta' : q === 'mediana' ? 'Media' : 'Baja'}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}

@@ -407,10 +407,27 @@ async def mostrar_detalles_libro(
 
     # 2. Preparar Capciones usando el Publisher Provider oficial (Garantiza paridad bot/canal)
     # Parte 0: Portada/Principal, Parte 1: Sinopsis, Parte 2: Info técnica
+    from repositories.publication_repository import pub_repo
+
+    try:
+        db_templates = await pub_repo.get_templates(platform="telegram")
+        cover_t = next((t for t in db_templates if (t.extra_config or {}).get("type") == "cover"), None)
+        synopsis_t = next((t for t in db_templates if (t.extra_config or {}).get("type") == "synopsis"), None)
+        info_t = next((t for t in db_templates if (t.extra_config or {}).get("type") == "info"), None)
+
+        cover_content = cover_t.content if cover_t else TelegramPublisherProvider.COVER_TEMPLATE
+        syn_content = synopsis_t.content if synopsis_t else TelegramPublisherProvider.SYNOPSIS_TEMPLATE
+        info_content = info_t.content if info_t else TelegramPublisherProvider.INFO_TEMPLATE
+    except Exception as e:
+        logger.warning(f"Error cargando plantillas de base de datos en mostrar_detalles_libro: {e}")
+        cover_content = TelegramPublisherProvider.COVER_TEMPLATE
+        syn_content = TelegramPublisherProvider.SYNOPSIS_TEMPLATE
+        info_content = TelegramPublisherProvider.INFO_TEMPLATE
+
     templates = [
-        TelegramPublisherProvider.COVER_TEMPLATE,
-        TelegramPublisherProvider.SYNOPSIS_TEMPLATE,
-        TelegramPublisherProvider.INFO_TEMPLATE,
+        cover_content,
+        syn_content,
+        info_content,
     ]
 
     # Fallback si no hay sinopsis

@@ -380,8 +380,19 @@ export const PublisherDashboard: React.FC = () => {
                                         <Type className="w-4 h-4 text-primary" />
                                         <span className="text-xs font-black uppercase tracking-wider">{template.name}</span>
                                     </div>
-                                    <div className="px-2 py-0.5 rounded-full bg-white/5 text-[9px] font-black uppercase tracking-wider text-gray-400">
-                                        {template.platform}
+                                    <div className="flex gap-2">
+                                        {template.extra_config?.type && template.extra_config.type !== 'general' && (
+                                            <div className="px-2 py-0.5 rounded-full bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-wider text-primary">
+                                                {template.extra_config.type === 'cover' ? 'Envío: Portada' :
+                                                 template.extra_config.type === 'synopsis' ? 'Envío: Sinopsis' :
+                                                 template.extra_config.type === 'info' ? 'Envío: Info' :
+                                                 template.extra_config.type === 'unified' ? 'Envío: Unificado' :
+                                                 template.extra_config.type}
+                                            </div>
+                                        )}
+                                        <div className="px-2 py-0.5 rounded-full bg-white/5 text-[9px] font-black uppercase tracking-wider text-gray-400">
+                                            {template.platform}
+                                        </div>
                                     </div>
                                 </div>
                                 <div
