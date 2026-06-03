@@ -17,6 +17,7 @@ const DUMMY_DATA: Record<string, string> = {
     '{titulo}': 'Demon Slayer: Kimetsu no Yaiba',
     '{titulo_volumen}': 'Demon Slayer: Kimetsu no Yaiba - Volumen 01',
     '{romaji_title}': 'Kimetsu no Yaiba',
+    '{romaji}': 'Kimetsu no Yaiba',
     '{jap_title}': '鬼滅 de la Hoja',
     '{slug}': 'demon_slayer_kimetsu_no_yaiba',
     '{autor}': 'Koyoharu Gotouge',
@@ -24,7 +25,11 @@ const DUMMY_DATA: Record<string, string> = {
     '{illustrator}': 'Koyoharu Gotouge',
     '{illustrator_jap}': '吾峠 呼世晴',
     '{serie}': 'Demon Slayer [NL]',
-    '{volumen}': 'Volumen 01',
+    '{series}': 'Demon Slayer [NL]',
+    '{series_english}': 'Demon Slayer [NL]',
+    '{series_spanish}': 'Demon Slayer [NL]',
+    '{titulo_serie}': 'Demon Slayer [NL]',
+    '{volumen}': '01',
     '{sinopsis}': 'Tanjiro Kamado es un chico inteligente y de buen corazón que vive con su familia y gana dinero vendiendo carbón. Todo cambia cuando su familia es atacada y asesinada por un demonio (oni).',
     '{resumen}': 'Una historia épica sobre un joven que se convierte en cazador de demonios para vengar a su familia.',
     '{etiquetas}': 'Acción, Fantasía, Demonios',
@@ -35,14 +40,20 @@ const DUMMY_DATA: Record<string, string> = {
     '{layout_by}': 'Demon Fansub',
     '{tipo}': 'Novela Ligera',
     '{tamaño}': '5.2 MB',
+    '{size_mb}': '5.2 MB',
     '{rating}': '4.9',
+    '{rating_txt}': '\n⭐ 4.9 (128 votos)',
     '{votes}': '128',
     '{hash}': 'DS_KNY_01',
     '{version}': '2.0',
     '{tags}': 'Acción, Fantasía, Demonios',
     '{genres}': 'Acción, Fantasía, Demonios',
     '{demography}': 'Shounen',
-    '{published_at}': '2016-02-15',
+    '{demographics}': 'Shounen',
+    '{published_at}': '15-02-2016',
+    '{fecha}': '20-05-2024',
+    '{fecha_modificacion}': '20-05-2024',
+    '{updated_at}': '20-05-2024',
     '{edition}': 'Digital',
     '{color_mode}': 'Color',
     '{is_uncensored}': 'Sí',
@@ -51,8 +62,9 @@ const DUMMY_DATA: Record<string, string> = {
     '{isbn}': '978-4-08-880723-2',
     '{asin}': 'B01AXHUEPU',
     '{description}': 'Tanjiro Kamado es un chico inteligente y de buen corazón que vive con su familia y gana dinero vendiendo carbón.',
-    '{fecha_actualizacion}': '2024-05-20',
-    '{descargas_globales}': '1,234'
+    '{fecha_actualizacion}': '20-05-2024',
+    '{descargas_globales}': '1,234',
+    '{download_link}': 'https://dl.zeepubs.com/DS_KNY_01'
 };
 
 function convertHtmlToTelegramVisual(html: string): string {
@@ -76,6 +88,32 @@ function convertHtmlToTelegramVisual(html: string): string {
     return result;
 }
 
+function formatDate(dateStr: string | null | undefined): string {
+    if (!dateStr) return '';
+    const cleanStr = dateStr.trim();
+    
+    // 1. Intentar parsear YYYY-MM-DD
+    const match = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+        return `${match[3]}-${match[2]}-${match[1]}`;
+    }
+    
+    // 2. Intentar parsear con Date
+    try {
+        const d = new Date(cleanStr);
+        if (!isNaN(d.getTime())) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}-${month}-${year}`;
+        }
+    } catch {
+        // Fallback
+    }
+    
+    return cleanStr;
+}
+
 export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ content, templateName, coverQuality, sampleBook, templateType }) => {
 
     const messages = useMemo(() => {
@@ -84,7 +122,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
         const mapping = { ...DUMMY_DATA };
 
         if (sampleBook) {
-            mapping['{titulo}'] = sampleBook.title || mapping['{titulo}'];
+            mapping['{titulo}'] = sampleBook.title || '';
             const slugSource = sampleBook.series || sampleBook.title || "";
             let baseTitle = slugSource.trim();
             baseTitle = baseTitle.replace(/\[.*?\]/g, "");
@@ -106,56 +144,79 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
                 .trim();
             const words = cleanedTitle.split(/[\s_]+/);
             const capitalizedWords = words.filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-            mapping['{slug}'] = capitalizedWords.join('_') || mapping['{slug}'];
-            mapping['{romaji_title}'] = sampleBook.romaji_title || mapping['{romaji_title}'];
-            mapping['{jap_title}'] = sampleBook.jap_title || mapping['{jap_title}'];
-            mapping['{autor}'] = sampleBook.author || mapping['{autor}'];
-            mapping['{illustrator}'] = sampleBook.illustrator || mapping['{illustrator}'];
-            mapping['{serie}'] = sampleBook.series || mapping['{serie}'];
-            mapping['{serie}'] = sampleBook.series || mapping['{serie}'];
+            mapping['{slug}'] = capitalizedWords.join('_') || '';
+            mapping['{romaji_title}'] = sampleBook.romaji_title || '';
+            mapping['{romaji}'] = sampleBook.romaji_title || '';
+            mapping['{jap_title}'] = sampleBook.jap_title || '';
+            mapping['{autor}'] = sampleBook.author || 'Desconocido';
+            mapping['{illustrator}'] = sampleBook.illustrator || '';
+            mapping['{serie}'] = sampleBook.series || '';
+            mapping['{series}'] = sampleBook.series || '';
+            mapping['{series_english}'] = sampleBook.series || '';
+            mapping['{series_spanish}'] = (sampleBook as any).series_spanish || sampleBook.series || '';
+            mapping['{titulo_serie}'] = sampleBook.series || '';
 
-            const volNum = sampleBook.volumeNumber || (sampleBook as any).volume || (sampleBook as any).series_index;
-            mapping['{volumen}'] = volNum ? String(Math.floor(parseFloat(String(volNum)))) : mapping['{volumen}'];
+            let volNum: any = undefined;
+            if (sampleBook.volumeNumber !== undefined && sampleBook.volumeNumber !== null && sampleBook.volumeNumber !== "") {
+                volNum = sampleBook.volumeNumber;
+            } else if ((sampleBook as any).volume !== undefined && (sampleBook as any).volume !== null && (sampleBook as any).volume !== "") {
+                volNum = (sampleBook as any).volume;
+            } else if ((sampleBook as any).series_index !== undefined && (sampleBook as any).series_index !== null && (sampleBook as any).series_index !== "") {
+                volNum = (sampleBook as any).series_index;
+            }
 
-            mapping['{tamaño}'] = sampleBook.size || mapping['{tamaño}'];
+            if (volNum !== undefined && volNum !== null) {
+                let volStr = String(volNum).trim();
+                // Limpiar prefijos de volumen ("Volumen", "Vol.", "V")
+                const matchVol = volStr.match(/(?:volumen|vol|v)\.?\s*0*(\d+(?:\.\d+)?)/i);
+                if (matchVol) {
+                    volStr = matchVol[1];
+                }
+                const parsed = parseFloat(volStr);
+                mapping['{volumen}'] = isNaN(parsed) ? volStr : String(parsed);
+            } else {
+                mapping['{volumen}'] = '0';
+            }
+
+            mapping['{tamaño}'] = sampleBook.size || '0.00 MB';
+            mapping['{size_mb}'] = sampleBook.size || '0.00 MB';
             mapping['{is_uncensored}'] = sampleBook.is_uncensored ? 'Sí' : 'No';
             mapping['{traductor}'] = sampleBook.translator || 'Desconocido';
             mapping['{maquetador}'] = sampleBook.layout_by || 'Desconocido';
             mapping['{layout_by}'] = sampleBook.layout_by || 'Desconocido';
-            mapping['{tipo}'] = sampleBook.bookType || sampleBook.book_type || mapping['{tipo}'];
-            mapping['{isbn}'] = sampleBook.isbn || mapping['{isbn}'];
+            mapping['{tipo}'] = sampleBook.bookType || sampleBook.book_type || '';
+            mapping['{isbn}'] = sampleBook.isbn || '';
             mapping['{archivo}'] = '';
-            mapping['{nombre_archivo}'] = sampleBook.title ? sampleBook.title.replace(/\s+/g, '_') : 'Demon_Slayer_v01';
-            mapping['{hash}'] = (sampleBook as any).book_hash || mapping['{hash}'];
-            mapping['{rating}'] = sampleBook.rating ? String(sampleBook.rating) : mapping['{rating}'];
-            mapping['{votes}'] = (sampleBook as any).rating_count ? String((sampleBook as any).rating_count) : mapping['{votes}'];
-            mapping['{description}'] = (sampleBook as any).description || (sampleBook as any).summary || mapping['{description}'];
-            mapping['{sinopsis}'] = (sampleBook as any).description || (sampleBook as any).summary || (sampleBook as any).sinopsis || mapping['{sinopsis}'];
-            mapping['{resumen}'] = (sampleBook as any).summary || (sampleBook as any).description || (sampleBook as any).resumen || mapping['{resumen}'];
-            mapping['{version}'] = (sampleBook as any).epub_version || mapping['{version}'];
+            mapping['{nombre_archivo}'] = sampleBook.title ? sampleBook.title.replace(/\s+/g, '_') : 'archivo';
+            mapping['{hash}'] = (sampleBook as any).book_hash || '';
+            mapping['{rating}'] = sampleBook.rating ? String(sampleBook.rating) : '0.0';
+            mapping['{votes}'] = (sampleBook as any).rating_count ? String((sampleBook as any).rating_count) : '0';
+            
+            const ratAvg = sampleBook.rating ? parseFloat(String(sampleBook.rating)) : 0;
+            const ratCount = (sampleBook as any).rating_count ? parseInt(String((sampleBook as any).rating_count)) : 0;
+            mapping['{rating_txt}'] = ratAvg > 0 ? `\n⭐ ${ratAvg.toFixed(1)} (${ratCount} votos)` : '';
 
-            const pubDate = (sampleBook as any).published_at || '';
-            if (pubDate && pubDate.includes('T')) {
-                try {
-                    const d = new Date(pubDate);
-                    mapping['{published_at}'] = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                } catch {
-                    mapping['{published_at}'] = pubDate.substring(0, 10);
-                }
-            } else {
-                mapping['{published_at}'] = pubDate || mapping['{published_at}'];
-            }
+            mapping['{description}'] = (sampleBook as any).description || (sampleBook as any).summary || '';
+            mapping['{sinopsis}'] = (sampleBook as any).description || (sampleBook as any).summary || (sampleBook as any).sinopsis || '';
+            mapping['{resumen}'] = (sampleBook as any).summary || (sampleBook as any).description || (sampleBook as any).resumen || '';
+            mapping['{version}'] = (sampleBook as any).epub_version || '';
 
-            mapping['{edition}'] = (sampleBook as any).edition || mapping['{edition}'];
-            mapping['{color_mode}'] = (sampleBook as any).color_mode || mapping['{color_mode}'];
-            mapping['{idioma}'] = (sampleBook as any).language || mapping['{idioma}'];
-            mapping['{editorial}'] = (sampleBook as any).publisher || mapping['{editorial}'];
-            mapping['{asin}'] = (sampleBook as any).asin || mapping['{asin}'];
-            mapping['{titulo_volumen}'] = (sampleBook as any).title_volumen || sampleBook.title || mapping['{titulo_volumen}'];
-            mapping['{author_jap}'] = (sampleBook as any).author_jap || mapping['{author_jap}'];
-            mapping['{illustrator_jap}'] = (sampleBook as any).illustrator_jap || mapping['{illustrator_jap}'];
-            mapping['{fecha_actualizacion}'] = (sampleBook as any).updated_at || (sampleBook as any).fecha_modificacion || mapping['{fecha_actualizacion}'];
-            mapping['{descargas_globales}'] = (sampleBook as any).download_count || (sampleBook as any).total_downloads || '0';
+            mapping['{published_at}'] = formatDate((sampleBook as any).published_at);
+            mapping['{fecha}'] = formatDate((sampleBook as any).updated_at || (sampleBook as any).fecha_modificacion);
+            mapping['{fecha_modificacion}'] = mapping['{fecha}'];
+            mapping['{updated_at}'] = mapping['{fecha}'];
+            mapping['{edition}'] = (sampleBook as any).edition || '';
+            mapping['{color_mode}'] = (sampleBook as any).color_mode || 'bw';
+            mapping['{idioma}'] = (sampleBook as any).language || '';
+            mapping['{editorial}'] = (sampleBook as any).publisher || '';
+            mapping['{asin}'] = (sampleBook as any).asin || '';
+            mapping['{titulo_volumen}'] = (sampleBook as any).title_volumen || sampleBook.title || '';
+            mapping['{author_jap}'] = (sampleBook as any).author_jap || '';
+            mapping['{illustrator_jap}'] = (sampleBook as any).illustrator_jap || '';
+            mapping['{fecha_actualizacion}'] = mapping['{fecha}'];
+            mapping['{descargas_globales}'] = String((sampleBook as any).download_count || (sampleBook as any).total_downloads || 0);
+            
+            mapping['{download_link}'] = sampleBook.short_link ? `https://dl.zeepubs.com/${sampleBook.short_link}` : `https://dl.zeepubs.com/${mapping['{hash}']}`;
 
             const tags = (sampleBook as any).tags || (sampleBook as any).genres || (sampleBook as any).etiquetas;
             if (tags && Array.isArray(tags)) {
@@ -163,11 +224,15 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
                 mapping['{genres}'] = tagsStr;
                 mapping['{tags}'] = tagsStr;
                 mapping['{etiquetas}'] = tagsStr;
-                mapping['{demography}'] = (sampleBook as any).demography ||
+                mapping['{demographics}'] = (sampleBook as any).demography ||
                     (tags.includes('Seinen') ? 'Seinen' :
                         tags.includes('Shounen') ? 'Shounen' :
                             tags.includes('Shoujo') ? 'Shoujo' :
-                                tags.includes('Josei') ? 'Josei' : mapping['{demography}']);
+                                tags.includes('Josei') ? 'Josei' : '');
+                mapping['{demography}'] = mapping['{demographics}'];
+            } else {
+                mapping['{demographics}'] = '';
+                mapping['{demography}'] = '';
             }
         }
 

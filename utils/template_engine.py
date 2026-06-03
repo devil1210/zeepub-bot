@@ -53,16 +53,29 @@ def generate_slug_from_title(title: str) -> str:
 
 
 def format_published_date(date_str: str) -> str:
-    """Formatea una fecha ISO a formato legible DD-MM-YYYY."""
+    """Formatea una fecha ISO o YYYY-MM-DD a formato legible DD-MM-YYYY."""
     if not date_str:
         return ""
-    try:
-        if "T" in date_str:
+    date_str = date_str.strip()
+
+    # 1. Intentar parsear ISO con 'T'
+    if "T" in date_str:
+        try:
             dt = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+            return dt.strftime("%d-%m-%Y")
+        except (ValueError, TypeError):
+            pass
+
+    # 2. Intentar parsear como YYYY-MM-DD
+    try:
+        part = date_str[:10]
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", part):
+            dt = datetime.strptime(part, "%Y-%m-%d")
             return dt.strftime("%d-%m-%Y")
     except (ValueError, TypeError):
         pass
-    return date_str[:10] if len(date_str) >= 10 else date_str
+
+    return date_str
 
 
 def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
@@ -135,13 +148,25 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         )
         fecha_mod_formatted = format_published_date(fecha_mod_raw)
 
-        volume_raw = data.get("volume") or data.get("series_index") or ""
-        volume_clean = (
-            str(int(float(volume_raw)))
-            if volume_raw
-            and str(volume_raw).replace(".", "").replace("-", "").isdigit()
-            else str(volume_raw)
+        volume_raw = data.get("volume")
+        if volume_raw is None or volume_raw == "":
+            volume_raw = data.get("series_index")
+        if volume_raw is None or volume_raw == "":
+            volume_raw = ""
+
+        # Limpiar si contiene palabras como "Volumen", "Vol", "V"
+        volume_str = str(volume_raw).strip()
+        match_vol = re.search(
+            r"(?:volumen|vol|v)\.?\s*0*(\d+(?:\.\d+)?)", volume_str, re.IGNORECASE
         )
+        if match_vol:
+            volume_str = match_vol.group(1)
+
+        try:
+            f = float(volume_str)
+            volume_clean = str(int(f)) if f.is_integer() else str(f)
+        except (ValueError, TypeError):
+            volume_clean = volume_str
 
         # Sanitize demography and demographics (can be lists from JSONB)
         demography_raw = (
