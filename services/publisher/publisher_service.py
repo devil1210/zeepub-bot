@@ -44,12 +44,13 @@ class TelegramPublisherProvider(PublisherProvider):
         "[?traductor]\n🌐 <b>Traductor:</b> {traductor}[/?]"
         "[?editorial]\n🏢 <b>Grupo Traductor:</b> {editorial}[/?]"
     )
-    SYNOPSIS_TEMPLATE = "📝 <b>Sinopsis:</b>\n\n<blockquote>{sinopsis}</blockquote>\n\n#{slug}"
+    SYNOPSIS_TEMPLATE = (
+        "📝 <b>Sinopsis:</b>\n\n<blockquote>{sinopsis}</blockquote>\n\n#{slug}"
+    )
     INFO_TEMPLATE = "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n\n#{slug}{archivo}"
-    FULL_TEMPLATE = COVER_TEMPLATE + "\n<hr/>\n" + SYNOPSIS_TEMPLATE + "\n<hr/>\n" + INFO_TEMPLATE
-
-
-
+    FULL_TEMPLATE = (
+        COVER_TEMPLATE + "\n<hr/>\n" + SYNOPSIS_TEMPLATE + "\n<hr/>\n" + INFO_TEMPLATE
+    )
 
     FB_CAPTION_TEMPLATE = (
         "📚 {serie} ║ {romaji_title} ║ {titulo}"
@@ -66,7 +67,6 @@ class TelegramPublisherProvider(PublisherProvider):
         "[?editorial]\n🏢 Grupo Traductor: {editorial}[/?]"
         "\n📝 Sinopsis: {sinopsis}"
     )
-
 
     def __init__(self, bot=None):
         self.bot = bot
@@ -97,7 +97,9 @@ class TelegramPublisherProvider(PublisherProvider):
             t = re.sub(r"\n{3,}", "\n\n", t).strip()
             return t
 
-        caption_raw = options.get("caption") or apply_publication_template(self.COVER_TEMPLATE, book_data)
+        caption_raw = options.get("caption") or apply_publication_template(
+            self.COVER_TEMPLATE, book_data
+        )
         msg_parts = re.split(r"<hr\s*/?>|---next---|---", caption_raw)
         msg_parts = [sanitize_tg_html(p) for p in msg_parts if p.strip()]
 
@@ -112,56 +114,69 @@ class TelegramPublisherProvider(PublisherProvider):
         )
 
         cover_data = book_data.get("cover_bytes")
-        if not cover_data and isinstance(cover_source, str) and cover_source.startswith("http"):
+        if (
+            not cover_data
+            and isinstance(cover_source, str)
+            and cover_source.startswith("http")
+        ):
             cover_data = await fetch_bytes(cover_source)
         elif not cover_data:
             cover_data = cover_source
 
-        main_caption = msg_parts[0] if msg_parts else ""
-
         # Resolver portada (bytes o ruta de archivo local) de forma asíncrona
         from services.cover_service import resolve_cover_data
-        resolved_cover = await resolve_cover_data(cover_data) if isinstance(cover_data, str) else cover_data
 
-        sent_photo = None
-        if resolved_cover and main_caption:
-            sent_photo = await send_photo_bytes(
-                self.bot, target_id, main_caption, resolved_cover, parse_mode="HTML", message_thread_id=thread_id
-            )
+        resolved_cover = (
+            await resolve_cover_data(cover_data)
+            if isinstance(cover_data, str)
+            else cover_data
+        )
 
-        # Fallback a texto plano si la portada no se pudo enviar pero hay un caption
-        if not sent_photo and main_caption:
-            logger.info("No se pudo enviar la portada como foto, enviando como texto plano de fallback...")
-            try:
-                await self.bot.send_message(
-                    chat_id=target_id,
-                    text=main_caption,
+        photo_sent = False
+        for part in msg_parts:
+            if not part.strip():
+                continue
+
+            if "__ATTACH_FILE_SIGNAL__" in part or "{archivo}" in part:
+                part = (
+                    part.replace("__ATTACH_FILE_SIGNAL__", "")
+                    .replace("{archivo}", "")
+                    .strip()
+                )
+                epub_data = book_data.get("epub_bytes") or book_data.get("filepath")
+                fname = book_data.get("filename", "libro.epub")
+                await send_doc_bytes(
+                    self.bot,
+                    target_id,
+                    part,
+                    epub_data,
+                    filename=fname,
                     parse_mode="HTML",
                     message_thread_id=thread_id,
                 )
-            except Exception as e:
-                logger.error(f"Error enviando fallback de texto de portada: {e}")
+            else:
+                sent_photo = None
+                if resolved_cover and not photo_sent:
+                    try:
+                        sent_photo = await send_photo_bytes(
+                            self.bot,
+                            target_id,
+                            part,
+                            resolved_cover,
+                            parse_mode="HTML",
+                            message_thread_id=thread_id,
+                        )
+                        if sent_photo:
+                            photo_sent = True
+                    except Exception as e:
+                        logger.warning(f"Error al enviar portada como foto: {e}")
 
-        # 2. Sinopsis y Archivo
-        if len(msg_parts) > 1:
-            for part in msg_parts[1:]:
-                # Si contiene señal de archivo
-                if "__ATTACH_FILE_SIGNAL__" in part or "{archivo}" in part:
-                    part = part.replace("__ATTACH_FILE_SIGNAL__", "").replace("{archivo}", "").strip()
-                    epub_data = book_data.get("epub_bytes") or book_data.get("filepath")
-                    fname = book_data.get("filename", "libro.epub")
-                    await send_doc_bytes(
-                        self.bot,
-                        target_id,
-                        part,
-                        epub_data,
-                        filename=fname,
+                if not sent_photo:
+                    await self.bot.send_message(
+                        chat_id=target_id,
+                        text=part,
                         parse_mode="HTML",
                         message_thread_id=thread_id,
-                    )
-                else:
-                    await self.bot.send_message(
-                        chat_id=target_id, text=part, parse_mode="HTML", message_thread_id=thread_id
                     )
 
         return True
@@ -184,7 +199,10 @@ class PublisherService:
         self.session = session
         self.repo = PublicationRepository(session)
         self.book_repo = BookRepository(session)  # Inyectar sesión a BookRepository
-        self.providers = {"telegram": TelegramPublisherProvider(), "facebook": FacebookPublisherProvider()}
+        self.providers = {
+            "telegram": TelegramPublisherProvider(),
+            "facebook": FacebookPublisherProvider(),
+        }
 
     async def schedule_publication(
         self,
@@ -217,41 +235,103 @@ class PublisherService:
 
                 # Datos del libro: intentar cargar desde repositorio si no están completos
                 book_data = item.payload or {}
-                if item.book_hash and ("title" not in book_data or "author" not in book_data):
+                if item.book_hash and (
+                    "title" not in book_data or "author" not in book_data
+                ):
                     book = await self.book_repo.get_by_hash(item.book_hash)
                     if book:
                         # Extraer metadatos para el template engine
                         book_data.update(
                             {
                                 "title": book.title,
-                                "author": book.author or (book.series.author if book.series else ""),
+                                "author": book.author
+                                or (book.series.author if book.series else ""),
                                 "volume": book.volume,
-                                "portada": book.series.cover_url if book.series else (book.cover_medium or book.cover_low or ""),
-                                "serie": (book.series.series_english if book.series else None) or book.series_english or "",
-                                "series_english": (book.series.series_english if book.series else None) or book.series_english or "",
-                                "series": (book.series.name if book.series else None) or book.series_english or "",
-                                "romaji_title": (book.series.name if book.series else None) or book.romaji_title or "",
-                                "romaji": (book.series.name if book.series else None) or book.romaji_title or "",
-                                "series_spanish": (book.series.series_spanish if book.series else None) or book.series_spanish or book.title,
-                                "sinopsis": (book.series.description if book.series else None) or book.description or "",
-                                "generos": book.series.tags_json if book.series else (book.tags_json or []),
-                                "tags": book.series.tags_json if book.series else (book.tags_json or []),
-                                "demographics": book.series.demographics_json if book.series else (book.demographics_json or []),
-                                "demography": book.series.demographics_json if book.series else (book.demographics_json or []),
-                                "illustrator": (book.series.illustrator if book.series else None) or book.illustrator or "",
-                                "author_jap": (book.series.author_jap if book.series else None) or book.author_jap or "",
-                                "illustrator_jap": (book.series.illustrator_jap if book.series else None) or book.illustrator_jap or "",
-                                "series_name": (book.series.name if book.series else None) or book.series_english or "",
+                                "portada": book.series.cover_url
+                                if book.series
+                                else (book.cover_medium or book.cover_low or ""),
+                                "serie": (
+                                    book.series.series_english if book.series else None
+                                )
+                                or book.series_english
+                                or "",
+                                "series_english": (
+                                    book.series.series_english if book.series else None
+                                )
+                                or book.series_english
+                                or "",
+                                "series": (book.series.name if book.series else None)
+                                or book.series_english
+                                or "",
+                                "romaji_title": (
+                                    book.series.name if book.series else None
+                                )
+                                or book.romaji_title
+                                or "",
+                                "romaji": (book.series.name if book.series else None)
+                                or book.romaji_title
+                                or "",
+                                "series_spanish": (
+                                    book.series.series_spanish if book.series else None
+                                )
+                                or book.series_spanish
+                                or book.title,
+                                "sinopsis": (
+                                    book.series.description if book.series else None
+                                )
+                                or book.description
+                                or "",
+                                "generos": book.series.tags_json
+                                if book.series
+                                else (book.tags_json or []),
+                                "tags": book.series.tags_json
+                                if book.series
+                                else (book.tags_json or []),
+                                "demographics": book.series.demographics_json
+                                if book.series
+                                else (book.demographics_json or []),
+                                "demography": book.series.demographics_json
+                                if book.series
+                                else (book.demographics_json or []),
+                                "illustrator": (
+                                    book.series.illustrator if book.series else None
+                                )
+                                or book.illustrator
+                                or "",
+                                "author_jap": (
+                                    book.series.author_jap if book.series else None
+                                )
+                                or book.author_jap
+                                or "",
+                                "illustrator_jap": (
+                                    book.series.illustrator_jap if book.series else None
+                                )
+                                or book.illustrator_jap
+                                or "",
+                                "series_name": (
+                                    book.series.name if book.series else None
+                                )
+                                or book.series_english
+                                or "",
                                 "layout_by": book.layout_by if book.layout_by else "",
-                                "book_type": book.series.book_type if book.series else "Light Novel",
-                                "publisher": book.series.publisher if book.series else "",
+                                "book_type": book.series.book_type
+                                if book.series
+                                else "Light Novel",
+                                "publisher": book.series.publisher
+                                if book.series
+                                else "",
                                 "book_hash": book.book_hash,
                                 "traductor": book.translator if book.translator else "",
-                                "editorial": book.publisher or (book.series.publisher if book.series else ""),
+                                "editorial": book.publisher
+                                or (book.series.publisher if book.series else ""),
                                 "epub_version": book.epub_version or "",
                                 "version": book.epub_version or "",
-                                "modified_at_opf": book.modified_at_opf.isoformat() if book.modified_at_opf else "",
-                                "updated_at": book.file_modified_at.isoformat() if book.file_modified_at else "",
+                                "modified_at_opf": book.modified_at_opf.isoformat()
+                                if book.modified_at_opf
+                                else "",
+                                "updated_at": book.file_modified_at.isoformat()
+                                if book.file_modified_at
+                                else "",
                                 "filename": book.filename or "",
                                 "filepath": book.filepath or "",
                                 "file_size": book.file_size or 0,
@@ -270,11 +350,24 @@ class PublisherService:
                     template = await self.repo.get_template_by_id(item.template_id)
                     if template:
                         # Compilar plantilla con los datos del libro
-                        caption = apply_publication_template(template.content, book_data)
-                        if template.extra_config and "cover_quality" in template.extra_config:
+                        caption = apply_publication_template(
+                            template.content, book_data
+                        )
+                        if (
+                            template.extra_config
+                            and "cover_quality" in template.extra_config
+                        ):
                             saved_q = template.extra_config["cover_quality"]
                             # Convertir de español (del frontend) a la clave esperada en el backend
-                            cover_quality = "high" if saved_q == "grande" else "medium" if saved_q == "mediana" else "low" if saved_q == "pequeña" else saved_q
+                            cover_quality = (
+                                "high"
+                                if saved_q == "grande"
+                                else "medium"
+                                if saved_q == "mediana"
+                                else "low"
+                                if saved_q == "pequeña"
+                                else saved_q
+                            )
 
                 if provider:
                     # Extraer message_thread_id del config del canal
@@ -357,7 +450,9 @@ class PublisherService:
             return False
 
         # Crear nuevo canal
-        new_channel = PublicationChannel(name=name, target_id=str(chat_id), platform="telegram", is_active=True)
+        new_channel = PublicationChannel(
+            name=name, target_id=str(chat_id), platform="telegram", is_active=True
+        )
         self.session.add(new_channel)
         await self.session.flush()
         return True

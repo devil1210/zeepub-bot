@@ -201,7 +201,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                 # Asegurar que el volumen esté integrado en el caption con el icono del libro 📖
                 volume = libro_st.get("volume")
                 # Fallback para intentar parsear volumen del display o el nombre del archivo si no está
-                if volume is None:
+                if volume is None or volume == "":
                     import re
 
                     m = re.search(
@@ -210,6 +210,8 @@ class CallbackHandlerV6(BaseCommandHandler):
                     )
                     if m:
                         volume = float(m.group(1))
+                    else:
+                        volume = 0
 
                 title_for_cap = title
 
@@ -243,11 +245,25 @@ class CallbackHandlerV6(BaseCommandHandler):
 
                 try:
                     from repositories.publication_repository import pub_repo
+
                     db_templates = await pub_repo.get_templates(platform="telegram")
-                    info_t = next((t for t in db_templates if (t.extra_config or {}).get("type") == "info"), None)
-                    info_template = info_t.content if info_t else TelegramPublisherProvider.INFO_TEMPLATE
+                    info_t = next(
+                        (
+                            t
+                            for t in db_templates
+                            if (t.extra_config or {}).get("type") == "info"
+                        ),
+                        None,
+                    )
+                    info_template = (
+                        info_t.content
+                        if info_t
+                        else TelegramPublisherProvider.INFO_TEMPLATE
+                    )
                 except Exception as e:
-                    logger.warning(f"Error cargando plantilla de info de base de datos en dl_confirm: {e}")
+                    logger.warning(
+                        f"Error cargando plantilla de info de base de datos en dl_confirm: {e}"
+                    )
                     info_template = TelegramPublisherProvider.INFO_TEMPLATE
                 caption = sanitize_tg_html(
                     apply_publication_template(info_template, libro_map)
@@ -255,17 +271,27 @@ class CallbackHandlerV6(BaseCommandHandler):
                 caption = caption.replace("__ATTACH_FILE_SIGNAL__", "").strip()
 
                 # Insertar volumen en una línea dedicada debajo de la carpeta
-                if volume is not None:
-                    vol_display = int(volume) if float(volume).is_integer() else volume
+                if volume is None or volume == "":
+                    volume = 0
+
+                try:
+                    f_vol = float(volume)
+                    vol_display = int(f_vol) if f_vol.is_integer() else f_vol
+                except (ValueError, TypeError):
+                    vol_display = volume
+
+                if vol_display == 0:
+                    vol_line = "📖 Volumen Único"
+                else:
                     vol_line = (
                         f"📖 Vol. {vol_display:02d}"
                         if isinstance(vol_display, int)
                         else f"📖 Vol. {vol_display}"
                     )
-                    # Reemplazar la línea de la serie en el caption
-                    caption = caption.replace(
-                        f"📂 <b>{title_for_cap}</b>", f"📂 <b>{title}</b>\n{vol_line}"
-                    )
+                # Reemplazar la línea de la serie en el caption
+                caption = caption.replace(
+                    f"📂 <b>{title_for_cap}</b>", f"📂 <b>{title}</b>\n{vol_line}"
+                )
 
                 try:
                     # D. Enviar el Documento .epub

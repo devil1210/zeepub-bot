@@ -299,11 +299,19 @@ async def mostrar_volumenes_local(
         key = uuid.uuid4().hex[:8]
         # Nuevo formato: Vol. X [TR] [Color]
         vol = v.get("volume")
-        if vol is not None:
-            vol_display = int(vol) if float(vol).is_integer() else vol
-            vol_str = f"📖 Vol. {vol_display}"
+        if vol is None or vol == "":
+            vol = 0
+
+        try:
+            f_vol = float(vol)
+            vol_display = int(f_vol) if f_vol.is_integer() else f_vol
+        except (ValueError, TypeError):
+            vol_display = vol
+
+        if vol_display == 0:
+            vol_str = "📖 Volumen Único"
         else:
-            vol_str = v.get("title", "")
+            vol_str = f"📖 Vol. {vol_display}"
 
         translator = v.get("translator")
         # Preferimos siglas de BD, si no hay, usamos heurística
@@ -411,15 +419,38 @@ async def mostrar_detalles_libro(
 
     try:
         db_templates = await pub_repo.get_templates(platform="telegram")
-        cover_t = next((t for t in db_templates if (t.extra_config or {}).get("type") == "cover"), None)
-        synopsis_t = next((t for t in db_templates if (t.extra_config or {}).get("type") == "synopsis"), None)
-        info_t = next((t for t in db_templates if (t.extra_config or {}).get("type") == "info"), None)
+        cover_t = next(
+            (t for t in db_templates if (t.extra_config or {}).get("type") == "cover"),
+            None,
+        )
+        synopsis_t = next(
+            (
+                t
+                for t in db_templates
+                if (t.extra_config or {}).get("type") == "synopsis"
+            ),
+            None,
+        )
+        info_t = next(
+            (t for t in db_templates if (t.extra_config or {}).get("type") == "info"),
+            None,
+        )
 
-        cover_content = cover_t.content if cover_t else TelegramPublisherProvider.COVER_TEMPLATE
-        syn_content = synopsis_t.content if synopsis_t else TelegramPublisherProvider.SYNOPSIS_TEMPLATE
-        info_content = info_t.content if info_t else TelegramPublisherProvider.INFO_TEMPLATE
+        cover_content = (
+            cover_t.content if cover_t else TelegramPublisherProvider.COVER_TEMPLATE
+        )
+        syn_content = (
+            synopsis_t.content
+            if synopsis_t
+            else TelegramPublisherProvider.SYNOPSIS_TEMPLATE
+        )
+        info_content = (
+            info_t.content if info_t else TelegramPublisherProvider.INFO_TEMPLATE
+        )
     except Exception as e:
-        logger.warning(f"Error cargando plantillas de base de datos en mostrar_detalles_libro: {e}")
+        logger.warning(
+            f"Error cargando plantillas de base de datos en mostrar_detalles_libro: {e}"
+        )
         cover_content = TelegramPublisherProvider.COVER_TEMPLATE
         syn_content = TelegramPublisherProvider.SYNOPSIS_TEMPLATE
         info_content = TelegramPublisherProvider.INFO_TEMPLATE
@@ -635,7 +666,11 @@ async def mostrar_resultados_locales(
                 break
             href = f"local_series|{s['series_hash']}"
             series_title = (
-                s.get("series_english") or s.get("name_english") or s.get("name") or s.get("series_name") or s.get("title", "Novela")
+                s.get("series_english")
+                or s.get("name_english")
+                or s.get("name")
+                or s.get("series_name")
+                or s.get("title", "Novela")
             )
             st["colecciones"][i] = {"titulo": series_title, "href": href}
             keyboard.append(
