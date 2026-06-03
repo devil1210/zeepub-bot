@@ -249,6 +249,9 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "isbn": data.get("isbn") or "",
                 "asin": data.get("asin") or "",
                 "archivo": "__ATTACH_FILE_SIGNAL__",  # Marcador para que el Publisher sepa que debe adjuntar el archivo
+                "nombre_archivo": (lambda f: f[: f.rfind(".")] if "." in f else f)(
+                    data.get("filename") or "archivo.epub"
+                ),
                 "titulo_serie": data.get("series") or data.get("titulo_serie") or "",
                 "fecha_actualizacion": data.get("updated_at")
                 or data.get("fecha_modificacion")

@@ -8,6 +8,7 @@ interface TelegramMessagePreviewProps {
     templateName?: string;
     coverQuality?: string;
     sampleBook?: Book | null;
+    templateType?: string;
 }
 
 import { getCoverUrl } from '@shared/utils/imageUtils';
@@ -45,7 +46,8 @@ const DUMMY_DATA: Record<string, string> = {
     '{edition}': 'Digital',
     '{color_mode}': 'Color',
     '{is_uncensored}': 'Sí',
-    '{archivo}': 'Demon_Slayer_v01.epub',
+    '{archivo}': '',
+    '{nombre_archivo}': 'Demon_Slayer_v01',
     '{isbn}': '978-4-08-880723-2',
     '{asin}': 'B01AXHUEPU',
     '{description}': 'Tanjiro Kamado es un chico inteligente y de buen corazón que vive con su familia y gana dinero vendiendo carbón.',
@@ -74,7 +76,7 @@ function convertHtmlToTelegramVisual(html: string): string {
     return result;
 }
 
-export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ content, templateName, coverQuality, sampleBook }) => {
+export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ content, templateName, coverQuality, sampleBook, templateType }) => {
 
     const messages = useMemo(() => {
         if (!content) return [];
@@ -122,7 +124,8 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
             mapping['{layout_by}'] = sampleBook.layout_by || 'Desconocido';
             mapping['{tipo}'] = sampleBook.bookType || sampleBook.book_type || mapping['{tipo}'];
             mapping['{isbn}'] = sampleBook.isbn || mapping['{isbn}'];
-            mapping['{archivo}'] = sampleBook.title ? `${sampleBook.title.replace(/\s+/g, '_')}.epub` : mapping['{archivo}'];
+            mapping['{archivo}'] = '';
+            mapping['{nombre_archivo}'] = sampleBook.title ? sampleBook.title.replace(/\s+/g, '_') : 'Demon_Slayer_v01';
             mapping['{hash}'] = (sampleBook as any).book_hash || mapping['{hash}'];
             mapping['{rating}'] = sampleBook.rating ? String(sampleBook.rating) : mapping['{rating}'];
             mapping['{votes}'] = (sampleBook as any).rating_count ? String((sampleBook as any).rating_count) : mapping['{votes}'];
@@ -283,9 +286,9 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
                         );
                     }
 
-                    const showCover = idx === 0;
-                    // Detectar si el mensaje contiene el archivo (buscando el nombre del dummy o la variable)
-                    const hasFile = msg.includes('Demon_Slayer_v01.epub') || msg.includes('.epub') || msg.includes('.mobi') || msg.includes('.pdf');
+                    const showCover = idx === 0 && templateType !== 'info' && templateType !== 'synopsis';
+                    // Detectar si el texto original de la plantilla contiene el tag de archivo
+                    const hasFile = content.toLowerCase().includes('{archivo}');
 
                     return (
                         <div key={idx} className="flex flex-col items-start w-full animate-in fade-in slide-in-from-bottom-2 duration-300 relative">

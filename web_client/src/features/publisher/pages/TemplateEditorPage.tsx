@@ -474,6 +474,7 @@ export const TemplateEditorPage: React.FC = () => {
                             templateName={name}
                             coverQuality={coverQuality}
                             sampleBook={selectedBook}
+                            templateType={templateType}
                         />
                     </div>
                 </div>
