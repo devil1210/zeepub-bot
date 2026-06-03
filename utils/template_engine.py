@@ -18,11 +18,38 @@ def generate_slug_from_title(title: str) -> str:
     """Genera un slug amigable desde un título."""
     if not title:
         return ""
-    slug = title.lower()
-    slug = re.sub(r"[^\w\s-]", "", slug)
-    slug = re.sub(r"[\s_]+", "_", slug)
-    slug = re.sub(r"-+", "_", slug)
-    return slug.strip("_")[:50]
+
+    base_titulo = title.strip()
+    base_titulo = re.sub(r"\[.*?\]", "", base_titulo)
+
+    parts = re.split(r"(?:\s+[\-\–\—\−\―\~～\|¦║]\s+)|(?:\s*:\s*)", base_titulo)
+    if parts:
+        first_part = parts[0].strip()
+        if len(first_part) <= 3 and len(parts) > 1:
+            base_titulo = first_part + " " + parts[1].strip()
+        else:
+            base_titulo = first_part
+
+    base_titulo = base_titulo.replace("×", "x")
+    base_titulo = base_titulo.replace(",", " ")
+
+    # Reemplazar caracteres con tildes y ñ por sus equivalentes básicos
+    import unicodedata
+
+    base_titulo = "".join(
+        c
+        for c in unicodedata.normalize("NFD", base_titulo)
+        if unicodedata.category(c) != "Mn"
+    )
+    # Solo permitir letras latinas básicas, números y espacios
+    base_titulo = re.sub(r"[^a-zA-Z0-9\s_]", "", base_titulo)
+    # Reemplazar múltiples espacios por uno solo
+    base_titulo = re.sub(r"\s+", " ", base_titulo).strip()
+    # Capitalizar inicial de cada palabra y unir con _
+    words = re.split(r"[\s_]+", base_titulo)
+    capitalized_words = [w.capitalize() for w in words if w]
+    slug = "_".join(capitalized_words)
+    return slug
 
 
 def format_published_date(date_str: str) -> str:
@@ -57,7 +84,9 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
 
         # Pre-formatear campos numéricos
         size_mb_val = data.get("size_mb") or data.get("size") or 0.0
-        if not size_mb_val or (isinstance(size_mb_val, str) and "mb" in size_mb_val.lower()):
+        if not size_mb_val or (
+            isinstance(size_mb_val, str) and "mb" in size_mb_val.lower()
+        ):
             file_size = data.get("file_size") or data.get("fileSize") or 0
             if file_size:
                 size_mb_val = file_size / (1024 * 1024)
@@ -109,16 +138,25 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         volume_raw = data.get("volume") or data.get("series_index") or ""
         volume_clean = (
             str(int(float(volume_raw)))
-            if volume_raw and str(volume_raw).replace(".", "").replace("-", "").isdigit()
+            if volume_raw
+            and str(volume_raw).replace(".", "").replace("-", "").isdigit()
             else str(volume_raw)
         )
 
         # Sanitize demography and demographics (can be lists from JSONB)
-        demography_raw = data.get("demography") or data.get("demographics") or extract_demography(tags)
+        demography_raw = (
+            data.get("demography")
+            or data.get("demographics")
+            or extract_demography(tags)
+        )
         if isinstance(demography_raw, list):
             demography_raw = ", ".join(demography_raw)
 
-        demographics_raw = data.get("demographics") or data.get("demography") or extract_demography(tags)
+        demographics_raw = (
+            data.get("demographics")
+            or data.get("demography")
+            or extract_demography(tags)
+        )
         if isinstance(demographics_raw, list):
             demographics_raw = ", ".join(demographics_raw)
 
@@ -139,7 +177,11 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         download_link = ""
         short_link = data.get("short_link")
         if short_link:
-            base_url = config.DL_DOMAIN.rstrip("/") if config.DL_DOMAIN else config.BASE_URL.rstrip("/")
+            base_url = (
+                config.DL_DOMAIN.rstrip("/")
+                if config.DL_DOMAIN
+                else config.BASE_URL.rstrip("/")
+            )
             if base_url and not base_url.startswith("http"):
                 base_url = f"https://{base_url}"
             download_link = f"{base_url}/{short_link}"
@@ -156,10 +198,26 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "author_jap": data.get("author_jap") or "",
                 "illustrator": data.get("illustrator") or data.get("ilustrador") or "",
                 "illustrator_jap": data.get("illustrator_jap") or "",
-                "serie": data.get("serie") or data.get("series_english") or data.get("series") or data.get("titulo_serie") or "",
-                "series": data.get("series") or data.get("serie") or data.get("series_english") or data.get("titulo_serie") or "",
-                "series_english": data.get("series_english") or data.get("serie") or data.get("series") or data.get("titulo_serie") or "",
-                "series_spanish": data.get("series_spanish") or data.get("series_name") or data.get("title") or data.get("titulo") or "",
+                "serie": data.get("serie")
+                or data.get("series_english")
+                or data.get("series")
+                or data.get("titulo_serie")
+                or "",
+                "series": data.get("series")
+                or data.get("serie")
+                or data.get("series_english")
+                or data.get("titulo_serie")
+                or "",
+                "series_english": data.get("series_english")
+                or data.get("serie")
+                or data.get("series")
+                or data.get("titulo_serie")
+                or "",
+                "series_spanish": data.get("series_spanish")
+                or data.get("series_name")
+                or data.get("title")
+                or data.get("titulo")
+                or "",
                 "volumen": volume_clean,
                 "sinopsis": sinopsis_raw,
                 "resumen": data.get("summary") or data.get("resumen") or "",
@@ -192,8 +250,12 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "asin": data.get("asin") or "",
                 "archivo": "__ATTACH_FILE_SIGNAL__",  # Marcador para que el Publisher sepa que debe adjuntar el archivo
                 "titulo_serie": data.get("series") or data.get("titulo_serie") or "",
-                "fecha_actualizacion": data.get("updated_at") or data.get("fecha_modificacion") or fecha_mod_formatted,
-                "descargas_globales": str(data.get("descargas_globales") or data.get("total_downloads") or 0),
+                "fecha_actualizacion": data.get("updated_at")
+                or data.get("fecha_modificacion")
+                or fecha_mod_formatted,
+                "descargas_globales": str(
+                    data.get("descargas_globales") or data.get("total_downloads") or 0
+                ),
                 "download_link": download_link,
             }
         )
@@ -254,8 +316,8 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         result_str = re.sub(r"\n{3,}", "\n\n", result_str).strip()
 
         import html
-        return html.unescape(result_str)
 
+        return html.unescape(result_str)
 
     except Exception:
         # Fallback silencioso al string original

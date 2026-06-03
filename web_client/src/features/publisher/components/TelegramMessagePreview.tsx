@@ -83,9 +83,28 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({ 
 
         if (sampleBook) {
             mapping['{titulo}'] = sampleBook.title || mapping['{titulo}'];
-            mapping['{slug}'] = sampleBook.title
-                ? sampleBook.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/[\s_]+/g, '_').substring(0, 50)
-                : mapping['{slug}'];
+            const slugSource = sampleBook.series || sampleBook.title || "";
+            let baseTitle = slugSource.trim();
+            baseTitle = baseTitle.replace(/\[.*?\]/g, "");
+            const titleParts = baseTitle.split(/(?:\s+[\-\–\—\−\―\~～\|¦║]\s+)|(?:\s*:\s*)/);
+            if (titleParts.length > 0) {
+                const firstPart = titleParts[0].trim();
+                if (firstPart.length <= 3 && titleParts.length > 1) {
+                    baseTitle = firstPart + " " + titleParts[1].trim();
+                } else {
+                    baseTitle = firstPart;
+                }
+            }
+            baseTitle = baseTitle.replace(/×/g, "x").replace(/,/g, " ");
+            const cleanedTitle = baseTitle
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-zA-Z0-9\s_]/g, "")
+                .replace(/\s+/g, " ")
+                .trim();
+            const words = cleanedTitle.split(/[\s_]+/);
+            const capitalizedWords = words.filter(Boolean).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+            mapping['{slug}'] = capitalizedWords.join('_') || mapping['{slug}'];
             mapping['{romaji_title}'] = sampleBook.romaji_title || mapping['{romaji_title}'];
             mapping['{jap_title}'] = sampleBook.jap_title || mapping['{jap_title}'];
             mapping['{autor}'] = sampleBook.author || mapping['{autor}'];
