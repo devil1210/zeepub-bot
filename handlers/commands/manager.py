@@ -110,13 +110,72 @@ class HandlerManagerV6:
 
         # Procesar consulta conversacional sobre la biblioteca con IA
         from services.ai_chat_service import AIChatService
-        response_html = await AIChatService.process_user_query(text)
+        response_html, series_found, books_found = await AIChatService.process_user_query(text)
+
+        # Construir botones interactivos para las recomendaciones encontradas
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+        import uuid
+
+        keyboard = []
+
+        # 1. Agregar Series a los botones
+        seen_series = set()
+        for s in series_found:
+            s_id = s.get("id") or s.get("series_hash")
+            if not s_id or s_id in seen_series:
+                continue
+            seen_series.add(s_id)
+            
+            s_name = s.get("name") or s.get("series_name") or "Novela"
+            # Recortar a 16 caracteres para callback_data
+            s_hash_short = s_id[:16]
+            
+            keyboard.append([
+                InlineKeyboardButton(
+                    text=f"📁 Ver Serie: {s_name}",
+                    callback_data=f"show_series|{s_hash_short}"
+                )
+            ])
+
+        # 2. Agregar Libros a los botones y registrarlos en el estado
+        seen_books = set()
+        st["libros"] = st.get("libros", {})
+        for b in books_found:
+            b_id = b.get("id") or b.get("hash") or b.get("book_hash")
+            if not b_id or b_id in seen_books:
+                continue
+            seen_books.add(b_id)
+
+            b_title = b.get("title") or b.get("filename") or "Libro"
+            vol = b.get("volume")
+            vol_str = f" Vol. {vol}" if vol is not None else ""
+            
+            # Registrar en el estado del usuario para que mostrar_detalles_libro funcione al pulsar
+            key = uuid.uuid4().hex[:8]
+            st["libros"][key] = {
+                "titulo": b_title,
+                "autor": b.get("author") or "Desconocido",
+                "descarga": b.get("filepath"),
+                "portada": b.get("cover_medium") or b.get("cover_low") or b.get("coverUrl"),
+                "hash": b_id,
+                "volume": vol
+            }
+
+            keyboard.append([
+                InlineKeyboardButton(
+                    text=f"📕 Ver Libro:{vol_str} {b_title[:25]}...",
+                    callback_data=f"lib|{key}"
+                )
+            ])
+
+        reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
 
         try:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=response_html,
                 parse_mode="HTML",
+                reply_markup=reply_markup,
                 reply_to_message_id=update.message.message_id,
                 message_thread_id=thread_id,
                 disable_web_page_preview=False,
@@ -133,6 +192,7 @@ class HandlerManagerV6:
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
                     text=fallback_text,
+                    reply_markup=reply_markup,
                     message_thread_id=thread_id,
                 )
             except Exception as fe:
