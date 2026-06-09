@@ -23,6 +23,30 @@ from handlers.commands.inline_handler import InlineQueryHandlerV6
 from core.state_manager import state_manager
 from utils.helpers import get_thread_id
 
+import time
+
+
+class RateLimiter:
+    def __init__(self, limit_window_seconds: int = 10, max_messages: int = 5):
+        self.limit_window = limit_window_seconds
+        self.max_messages = max_messages
+        self.history = {}
+
+    def is_allowed(self, user_id: int) -> bool:
+        now = time.time()
+        user_history = self.history.get(user_id, [])
+        # Filtrar marcas de tiempo dentro de la ventana de tiempo
+        user_history = [ts for ts in user_history if now - ts < self.limit_window]
+        if len(user_history) >= self.max_messages:
+            return False
+        user_history.append(now)
+        self.history[user_id] = user_history
+        return True
+
+
+rate_limiter = RateLimiter()
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,28 +72,22 @@ class HandlerManagerV6:
         self.inline_h = InlineQueryHandlerV6(app)
 
     def register(self):
-        """Registra de forma ordenada todos los handlers y comandos de la v6."""
-        # 1. Comandos principales de Onboarding y Menú
+        """Registra comandos y callbacks del bot."""
         self.app.add_handler(CommandHandler("start", self.start_h.handle))
         self.app.add_handler(
             CommandHandler(["catalog", "menu", "inicio"], self.catalog_h.handle)
         )
         self.app.add_handler(CommandHandler(["ayuda", "help"], self.start_h.handle))
-
-        # 2. Comandos de Búsqueda y Perfil
         self.app.add_handler(CommandHandler(["search", "buscar"], self.search_h.handle))
         self.app.add_handler(CommandHandler("status", self.status_h.handle))
-
-        # 3. Comandos de Sistema y Administración
         self.app.add_handler(CommandHandler("cancel", self.cancel_h.handle))
         self.app.add_handler(CommandHandler("evil", self.evil_h.handle))
         self.app.add_handler(CommandHandler("plugins", self.plugins_h.handle))
         self.app.add_handler(CommandHandler("auth", self.auth_h.handle))
 
-        # 4. MessageHandler para interceptar texto libre (Búsqueda interactiva en chat)
+        # Manejador de texto suelto interceptor (Con prioridad)
         self.app.add_handler(
-            MessageHandler(filters.TEXT & (~filters.COMMAND), self.handle_text_message),
-            group=5,  # Usar un grupo dedicado para evitar colisiones
+            MessageHandler(filters.TEXT & (~filters.COMMAND), self.handle_text_message)
         )
 
         # 5. Callback Queries (Manejador unificado de navegación por botones)
@@ -85,6 +103,10 @@ class HandlerManagerV6:
         if not update.message or not update.message.text:
             return
 
+        # 1. Protección Bot-a-Bot
+        if update.effective_user.is_bot:
+            return
+
         chat_type = update.effective_chat.type
         is_group = chat_type in ["group", "supergroup"]
         text = update.message.text.strip()
@@ -98,21 +120,35 @@ class HandlerManagerV6:
                 and update.message.reply_to_message.from_user.id == context.bot.id
             )
             has_mention = bot_username and f"@{bot_username}" in text
-            
+
             # Si no se menciona al bot ni es un reply al bot, ignorar silenciosamente
             if not is_reply_to_bot and not has_mention:
                 return
 
         uid = update.effective_user.id
+
+        # 2. Rate Limiting (Omitir para Administradores de la configuración)
+        from config.config_settings import config
+
+        is_admin = uid in config.ADMIN_USERS
+
+        if not is_admin and not rate_limiter.is_allowed(uid):
+            logger.warning(f"Rate limit superado para el usuario {uid}")
+            try:
+                await update.message.reply_text(
+                    "⚠️ Has superado el límite de mensajes permitidos. Por favor, espera unos segundos e intenta nuevamente."
+                )
+            except Exception:
+                pass
+            return
+
         st = state_manager.get_user_state(uid)
         thread_id = get_thread_id(update)
 
         # Si el usuario estaba esperando búsqueda interactiva
         if st.get("esperando_busqueda"):
             st["esperando_busqueda"] = False  # Consumir estado
-            await self.search_h._search_by_term(
-                update, context, text, thread_id
-            )
+            await self.search_h._search_by_term(update, context, text, thread_id)
             return
 
         # Enviar aviso de "escribiendo..." de Telegram para mejorar la UX
@@ -120,14 +156,19 @@ class HandlerManagerV6:
             await context.bot.send_chat_action(
                 chat_id=update.effective_chat.id,
                 action="typing",
-                message_thread_id=thread_id
+                message_thread_id=thread_id,
             )
         except Exception:
             pass
 
         # Procesar consulta conversacional sobre la biblioteca con IA
         from services.ai_chat_service import AIChatService
-        response_html, series_found, books_found = await AIChatService.process_user_query(text)
+
+        (
+            response_html,
+            series_found,
+            books_found,
+        ) = await AIChatService.process_user_query(text, is_admin=is_admin)
 
         # Construir botones interactivos para las recomendaciones encontradas
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -142,17 +183,19 @@ class HandlerManagerV6:
             if not s_id or s_id in seen_series:
                 continue
             seen_series.add(s_id)
-            
+
             s_name = s.get("name") or s.get("series_name") or "Novela"
             # Recortar a 16 caracteres para callback_data
             s_hash_short = s_id[:16]
-            
-            keyboard.append([
-                InlineKeyboardButton(
-                    text=f"📁 Ver Serie: {s_name}",
-                    callback_data=f"show_series|{s_hash_short}"
-                )
-            ])
+
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        text=f"📁 Ver Serie: {s_name}",
+                        callback_data=f"show_series|{s_hash_short}",
+                    )
+                ]
+            )
 
         # 2. Agregar Libros a los botones y registrarlos en el estado
         seen_books = set()
@@ -166,24 +209,28 @@ class HandlerManagerV6:
             b_title = b.get("title") or b.get("filename") or "Libro"
             vol = b.get("volume")
             vol_str = f" Vol. {vol}" if vol is not None else ""
-            
+
             # Registrar en el estado del usuario para que mostrar_detalles_libro funcione al pulsar
             key = uuid.uuid4().hex[:8]
             st["libros"][key] = {
                 "titulo": b_title,
                 "autor": b.get("author") or "Desconocido",
                 "descarga": b.get("filepath"),
-                "portada": b.get("cover_medium") or b.get("cover_low") or b.get("coverUrl"),
+                "portada": b.get("cover_medium")
+                or b.get("cover_low")
+                or b.get("coverUrl"),
                 "hash": b_id,
-                "volume": vol
+                "volume": vol,
             }
 
-            keyboard.append([
-                InlineKeyboardButton(
-                    text=f"📕 Ver Libro:{vol_str} {b_title[:25]}...",
-                    callback_data=f"lib|{key}"
-                )
-            ])
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        text=f"📕 Ver Libro:{vol_str} {b_title[:25]}...",
+                        callback_data=f"lib|{key}",
+                    )
+                ]
+            )
 
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
 
