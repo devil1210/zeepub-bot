@@ -332,3 +332,28 @@ class LibraryService:
                 "items": authors,
                 "total": total,
             }
+
+    @classmethod
+    async def get_library_stats(cls) -> dict:
+        """Obtiene estadísticas globales de la biblioteca (cantidad total de series y libros)."""
+        from core.db_manager_pg import pg_manager
+        from models.library import Book, Series
+        from sqlalchemy import select, func
+
+        try:
+            async with pg_manager.get_session() as session:
+                series_count_stmt = select(func.count(Series.id))
+                books_count_stmt = select(func.count(Book.id))
+
+                series_res = await session.execute(series_count_stmt)
+                books_res = await session.execute(books_count_stmt)
+
+                return {
+                    "series_count": series_res.scalar() or 0,
+                    "books_count": books_res.scalar() or 0,
+                }
+        except Exception as e:
+            logger.error(
+                f"Error al obtener estadísticas globales de la biblioteca: {e}"
+            )
+            return {"series_count": 0, "books_count": 0}
