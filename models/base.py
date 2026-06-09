@@ -23,7 +23,9 @@ class Base(AsyncAttrs, DeclarativeBase):
 
             # Obtener el descriptor de la clase
             cls_attr = getattr(self.__class__, attr, None)
-            if isinstance(cls_attr, (property, hybrid_property)) or attr.endswith("_hash"):
+            if isinstance(cls_attr, (property, hybrid_property)) or attr.endswith(
+                "_hash"
+            ):
                 try:
                     val = getattr(self, attr)
                     if not callable(val):
@@ -38,6 +40,22 @@ class Base(AsyncAttrs, DeclarativeBase):
             if not key.startswith("_") and key not in res:
                 if isinstance(val, Base):
                     continue
+                # Sanitizar colecciones (listas, tuplas, conjuntos) que contengan modelos Base (como Genre/Demographic)
+                if isinstance(val, (list, tuple, set)):
+                    if any(isinstance(item, Base) for item in val):
+                        cleaned_list = []
+                        for item in val:
+                            if isinstance(item, Base):
+                                if hasattr(item, "name"):
+                                    cleaned_list.append(item.name)
+                                elif hasattr(item, "to_dict"):
+                                    cleaned_list.append(item.to_dict())
+                                else:
+                                    cleaned_list.append(str(item))
+                            else:
+                                cleaned_list.append(item)
+                        res[key] = cleaned_list
+                        continue
                 res[key] = val
 
         return res

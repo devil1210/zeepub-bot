@@ -3,7 +3,6 @@
 import json
 import logging
 from typing import Any
-import html
 
 from services.ai_service import AIService
 from services.library_service import LibraryService
@@ -69,7 +68,7 @@ class AIChatService:
             response_text = await AIService._call_ai(prompt, json_mode=True)
             if not response_text:
                 return {"intent": "general", "keywords": None, "genre": None}
-            
+
             # Limpiar markdown de json si existe
             clean_json = AIService._extract_json_from_text(response_text)
             data = json.loads(clean_json)
@@ -77,14 +76,16 @@ class AIChatService:
             return {
                 "intent": data.get("intent", "general"),
                 "keywords": data.get("keywords"),
-                "genre": data.get("genre")
+                "genre": data.get("genre"),
             }
         except Exception as e:
             logger.error(f"Error al clasificar intención con IA: {e}")
             return {"intent": "general", "keywords": None, "genre": None}
 
     @staticmethod
-    async def get_candidates(intent: str, keywords: str | None, genre: str | None) -> tuple[list[dict], list[dict]]:
+    async def get_candidates(
+        intent: str, keywords: str | None, genre: str | None
+    ) -> tuple[list[dict], list[dict]]:
         """
         Busca candidatos en base de datos y retorna listas de Series y Libros encontrados.
         """
@@ -94,26 +95,32 @@ class AIChatService:
         try:
             # 1. Búsqueda de series por nombre o palabras clave
             if keywords and intent in ["search", "details", "recommend"]:
-                res_series = await LibraryService.search_series(query=keywords, items_per_page=5)
+                res_series = await LibraryService.search_series(
+                    query=keywords, items_per_page=5
+                )
                 series_found.extend(res_series.get("results", []))
 
                 # Buscar libros individuales
-                res_books = await LibraryService.search_books(query=keywords, items_per_page=5)
+                res_books = await LibraryService.search_books(
+                    query=keywords, items_per_page=5
+                )
                 books_found.extend(res_books.get("items", []))
 
             # 2. Búsqueda por género
             if genre and intent == "recommend":
-                res_series = await LibraryService.search_series(query=genre, search_type="genres", items_per_page=5)
+                res_series = await LibraryService.search_series(
+                    query=genre, search_type="genres", items_per_page=5
+                )
                 series_found.extend(res_series.get("results", []))
 
             # 3. Si es recomendación genérica o vacía, listar series recientes
             if not series_found and not books_found and intent == "recommend":
                 res_recent = await LibraryService.get_recent_books(items_per_page=5)
                 books_found.extend(res_recent.get("items", []))
-                
+
         except Exception as e:
             logger.error(f"Error al buscar candidatos RAG: {e}")
-            
+
         return series_found, books_found
 
     @staticmethod
@@ -122,7 +129,7 @@ class AIChatService:
         Formatea los candidatos a un bloque de texto contextual para la IA.
         """
         context_parts = []
-        
+
         if series_found:
             context_parts.append("SERIES DISPONIBLES EN EL CATÁLOGO:")
             seen_series = set()
@@ -131,12 +138,22 @@ class AIChatService:
                 if not s_id or s_id in seen_series:
                     continue
                 seen_series.add(s_id)
-                
+
+                # Sanitizar géneros si vienen como objetos Genre de SQLAlchemy
+                genres_raw = s.get("genres") or []
+                if isinstance(genres_raw, list):
+                    genres_clean = [
+                        g.name if hasattr(g, "name") else str(g) for g in genres_raw
+                    ]
+                    genres_str = ", ".join(genres_clean)
+                else:
+                    genres_str = str(genres_raw)
+
                 context_parts.append(
                     f"- Nombre: {s.get('name') or s.get('series_name')}\n"
                     f"  Autor: {s.get('author') or 'Desconocido'}\n"
                     f"  Sinopsis: {s.get('description') or 'Sin descripción'}\n"
-                    f"  Géneros: {', '.join(s.get('genres', [])) if isinstance(s.get('genres'), list) else ''}\n"
+                    f"  Géneros: {genres_str}\n"
                 )
 
         if books_found:
@@ -147,7 +164,7 @@ class AIChatService:
                 if not b_id or b_id in seen_books:
                     continue
                 seen_books.add(b_id)
-                
+
                 context_parts.append(
                     f"- Libro: {b.get('title') or b.get('filename')}\n"
                     f"  Volumen: {b.get('volume') or 'Único'}\n"
@@ -175,7 +192,9 @@ class AIChatService:
         series_found, books_found = [], []
         rag_context = ""
         if intent != "general":
-            series_found, books_found = await cls.get_candidates(intent, keywords, genre)
+            series_found, books_found = await cls.get_candidates(
+                intent, keywords, genre
+            )
             rag_context = cls.build_rag_context(series_found, books_found)
 
         # 3. Prompt de generación de respuesta sin URLs y sin saludos repetitivos
@@ -207,11 +226,23 @@ class AIChatService:
 
         try:
             # Ejecutar llamada a la IA con Gemini 3.1 Flash Lite
-            response_text = await AIService._call_ai(prompt, system_instruction=system_prompt, target_model="gemini-3.1-flash-lite")
+            response_text = await AIService._call_ai(
+                prompt,
+                system_instruction=system_prompt,
+                target_model="gemini-3.1-flash-lite",
+            )
             if not response_text:
-                return "<i>Lo siento, estoy teniendo problemas para conectarme al servicio de IA en este momento. Por favor intenta de nuevo.</i>", [], []
-            
+                return (
+                    "<i>Lo siento, estoy teniendo problemas para conectarme al servicio de IA en este momento. Por favor intenta de nuevo.</i>",
+                    [],
+                    [],
+                )
+
             return response_text.strip(), series_found, books_found
         except Exception as e:
             logger.error(f"Error procesando respuesta de chat con IA: {e}")
-            return "<i>Lo siento, ocurrió un error inesperado al procesar tu consulta con la IA.</i>", [], []
+            return (
+                "<i>Lo siento, ocurrió un error inesperado al procesar tu consulta con la IA.</i>",
+                [],
+                [],
+            )
