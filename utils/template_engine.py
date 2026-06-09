@@ -94,6 +94,9 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         tags = data.get("tags") or []
         if isinstance(tags, str):
             tags = [t.strip() for t in tags.split(",") if t.strip()]
+        elif isinstance(tags, list):
+            # Limpiar si contiene objetos Genre u otros modelos de base de datos
+            tags = [t.name if hasattr(t, "name") else str(t) for t in tags]
 
         # Pre-formatear campos numéricos
         size_mb_val = data.get("size_mb") or data.get("size") or 0.0
@@ -175,6 +178,8 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
             or extract_demography(tags)
         )
         if isinstance(demography_raw, list):
+            # Limpiar si contiene objetos Demographic u otros modelos de base de datos
+            demography_raw = [d.name if hasattr(d, "name") else str(d) for d in demography_raw]
             demography_raw = ", ".join(demography_raw)
 
         demographics_raw = (
@@ -183,6 +188,8 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
             or extract_demography(tags)
         )
         if isinstance(demographics_raw, list):
+            # Limpiar si contiene objetos Demographic u otros modelos de base de datos
+            demographics_raw = [d.name if hasattr(d, "name") else str(d) for d in demographics_raw]
             demographics_raw = ", ".join(demographics_raw)
 
         # Sanitize sinopsis - remove HTML tags not supported by Telegram
