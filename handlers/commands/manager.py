@@ -85,9 +85,26 @@ class HandlerManagerV6:
         if not update.message or not update.message.text:
             return
 
+        chat_type = update.effective_chat.type
+        is_group = chat_type in ["group", "supergroup"]
+        text = update.message.text.strip()
+
+        # Si estamos en un grupo, solo responder si es mencionado o si es un reply al bot
+        if is_group:
+            bot_username = context.bot.username
+            is_reply_to_bot = (
+                update.message.reply_to_message
+                and update.message.reply_to_message.from_user
+                and update.message.reply_to_message.from_user.id == context.bot.id
+            )
+            has_mention = bot_username and f"@{bot_username}" in text
+            
+            # Si no se menciona al bot ni es un reply al bot, ignorar silenciosamente
+            if not is_reply_to_bot and not has_mention:
+                return
+
         uid = update.effective_user.id
         st = state_manager.get_user_state(uid)
-        text = update.message.text.strip()
         thread_id = get_thread_id(update)
 
         # Si el usuario estaba esperando búsqueda interactiva
