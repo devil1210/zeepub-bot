@@ -161,6 +161,9 @@ class HandlerManagerV6:
         except Exception:
             pass
 
+        # Recuperar historial previo de chat con IA (últimos turnos)
+        history = st.get("ai_history", [])
+
         # Procesar consulta conversacional sobre la biblioteca con IA
         from services.ai_chat_service import AIChatService
 
@@ -168,7 +171,16 @@ class HandlerManagerV6:
             response_html,
             series_found,
             books_found,
-        ) = await AIChatService.process_user_query(text, is_admin=is_admin)
+        ) = await AIChatService.process_user_query(
+            text, is_admin=is_admin, history=history
+        )
+
+        # Guardar en el historial la consulta del usuario y la respuesta de la IA (solo respuestas exitosas, max 10 mensajes)
+        if response_html and not response_html.startswith("<i>Lo siento"):
+            new_history = list(history)
+            new_history.append({"role": "user", "parts": [{"text": text}]})
+            new_history.append({"role": "model", "parts": [{"text": response_html}]})
+            st["ai_history"] = new_history[-10:]
 
         # Construir botones interactivos para las recomendaciones encontradas
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup

@@ -100,9 +100,17 @@ class AIChatService:
                 )
                 series_found.extend(res_series.get("results", []))
 
-                # Buscar libros individuales
+                # Para cada serie encontrada, recuperar todos sus volúmenes reales
+                # y agregarlos a books_found de forma prioritaria para evitar exclusión por límites.
+                for s in series_found:
+                    s_id = s.get("id") or s.get("series_hash")
+                    if s_id:
+                        vols = await LibraryService.get_series_volumes(s_id, limit=50)
+                        books_found.extend(vols)
+
+                # Buscar libros individuales sueltos (ampliando el cap a 20 para robustez)
                 res_books = await LibraryService.search_books(
-                    query=keywords, items_per_page=5
+                    query=keywords, items_per_page=20
                 )
                 books_found.extend(res_books.get("items", []))
 
@@ -178,10 +186,11 @@ class AIChatService:
 
     @classmethod
     async def process_user_query(
-        cls, query: str, is_admin: bool = False
+        cls, query: str, is_admin: bool = False, history: list[dict] | None = None
     ) -> tuple[str, list[dict], list[dict]]:
         """
         Recibe la consulta del usuario, clasifica, obtiene contexto y genera respuesta HTML sin enlaces directos.
+        Soporta historial conversacional estructurado para un seguimiento contextual de las preguntas.
         Retorna (texto_respuesta, series_encontradas, libros_encontrados).
         """
         # 1. Clasificar consulta
@@ -229,6 +238,17 @@ class AIChatService:
         series_total = stats.get("series_count", 0)
         books_total = stats.get("books_count", 0)
 
+        # Construir secuencia de mensajes (historial)
+        contents = []
+        if history:
+            for msg in history:
+                contents.append(
+                    {
+                        "role": msg.get("role"),
+                        "parts": [{"text": msg.get("parts", [{}])[0].get("text", "")}],
+                    }
+                )
+
         # Aislamiento y envoltura de la consulta (Evitar rupturas de contexto)
         safe_query = query.replace('"""', "''")
         if is_admin:
@@ -238,7 +258,7 @@ class AIChatService:
         else:
             user_prompt = f'[CONTENIDO DE USUARIO_EXTERNO]\n"""{safe_query}"""\n[BLOQUEO DE INSTRUCCIONES ACTIVO]'
 
-        prompt = f"""
+        prompt_str = f"""
         CONSULTA DEL USUARIO:
         {user_prompt}
 
@@ -252,10 +272,12 @@ class AIChatService:
         Escribe tu respuesta formateada en HTML para Telegram basándote estrictamente en el contexto y las reglas anteriores.
         """
 
+        contents.append({"role": "user", "parts": [{"text": prompt_str}]})
+
         try:
             # Ejecutar llamada a la IA con Gemini 3.1 Flash Lite
             response_text = await AIService._call_ai(
-                prompt,
+                contents,
                 system_instruction=system_prompt,
                 target_model="gemini-3.1-flash-lite",
             )

@@ -36,7 +36,7 @@ class AIService:
     @classmethod
     async def _call_ai(
         cls,
-        prompt: str,
+        prompt: Any,
         system_instruction: str | None = None,
         max_retries: int = 3,
         json_mode: bool = False,
@@ -45,7 +45,9 @@ class AIService:
         """Llamada a servicios de IA (Gemini o Perplexity)."""
         # 1. Perplexity Routing
         if target_model == "perplexity":
-            return await cls._call_perplexity(prompt, system_instruction, max_retries, json_mode)
+            return await cls._call_perplexity(
+                prompt, system_instruction, max_retries, json_mode
+            )
 
         # 2. Gemini Routing (Default)
         client = cls._get_client()
@@ -53,21 +55,32 @@ class AIService:
             return None
 
         # Modelos: gemini-2.5-flash (estable/por defecto según usuario), gemini-3-flash-preview
-        models_to_try = [target_model] if target_model else ["gemini-2.5-flash", "gemini-3-flash-preview"]
+        models_to_try = (
+            [target_model]
+            if target_model
+            else ["gemini-2.5-flash", "gemini-3-flash-preview"]
+        )
         now = time.time()
 
         for model_name in models_to_try:
-            if model_name in cls._exhausted_until and now < cls._exhausted_until[model_name]:
+            if (
+                model_name in cls._exhausted_until
+                and now < cls._exhausted_until[model_name]
+            ):
                 continue
 
             for attempt in range(max_retries):
                 try:
                     config_args = types.GenerateContentConfig(
                         system_instruction=system_instruction,
-                        response_mime_type="application/json" if json_mode else "text/plain",
+                        response_mime_type="application/json"
+                        if json_mode
+                        else "text/plain",
                     )
 
-                    response = client.models.generate_content(model=model_name, contents=prompt, config=config_args)
+                    response = client.models.generate_content(
+                        model=model_name, contents=prompt, config=config_args
+                    )
                     if hasattr(response, "usage_metadata") and response.usage_metadata:
                         usage = response.usage_metadata
                         logger.info(
@@ -77,7 +90,9 @@ class AIService:
                 except Exception as e:
                     error_str = str(e).upper()
                     if "429" in error_str or "QUOTA" in error_str:
-                        logger.warning(f"⚠️ Cuota de {model_name} agotada. Reintentando...")
+                        logger.warning(
+                            f"⚠️ Cuota de {model_name} agotada. Reintentando..."
+                        )
                         if attempt == max_retries - 1:
                             cls._exhausted_until[model_name] = now + 600
                         await asyncio.sleep(2**attempt)
@@ -88,7 +103,7 @@ class AIService:
     @classmethod
     async def _call_perplexity(
         cls,
-        prompt: str,
+        prompt: Any,
         system_instruction: str | None = None,
         max_retries: int = 3,
         json_mode: bool = False,
@@ -104,20 +119,47 @@ class AIService:
         url = "https://api.perplexity.ai/chat/completions"
         headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
 
+        # Construir mensajes (OpenAI format)
+        messages = [
+            {
+                "role": "system",
+                "content": system_instruction or "Eres un bibliotecario experto.",
+            }
+        ]
+        if isinstance(prompt, list):
+            for msg in prompt:
+                role = msg.get("role")
+                if role == "model":
+                    role = "assistant"
+                elif role != "user":
+                    continue  # Saltar otros roles desconocidos si los hay
+
+                parts = msg.get("parts", [])
+                text_content = ""
+                if isinstance(parts, list) and parts:
+                    text_content = parts[0].get("text", "")
+                elif isinstance(parts, str):
+                    text_content = parts
+                else:
+                    text_content = str(parts)
+
+                messages.append({"role": role, "content": text_content})
+        else:
+            messages.append({"role": "user", "content": str(prompt)})
+
         # Perplexity models: sonar, sonar-reasoning, etc. Default to sonar
         payload = {
             "model": "sonar",
-            "messages": [
-                {"role": "system", "content": system_instruction or "Eres un bibliotecario experto."},
-                {"role": "user", "content": prompt},
-            ],
+            "messages": messages,
             "response_format": {"type": "json_object"} if json_mode else None,
         }
 
         for attempt in range(max_retries):
             try:
                 async with aiohttp.ClientSession() as session:
-                    async with session.post(url, headers=headers, json=payload, timeout=60) as resp:
+                    async with session.post(
+                        url, headers=headers, json=payload, timeout=60
+                    ) as resp:
                         if resp.status == 200:
                             data = await resp.json()
                             content = data["choices"][0]["message"]["content"]
@@ -127,7 +169,9 @@ class AIService:
                             logger.warning("⚠️ Perplexity Quota reached. Retrying...")
                         else:
                             error_text = await resp.text()
-                            logger.error(f"❌ Perplexity Error {resp.status}: {error_text}")
+                            logger.error(
+                                f"❌ Perplexity Error {resp.status}: {error_text}"
+                            )
             except Exception as e:
                 logger.error(f"❌ Exception in _call_perplexity: {e}")
 
@@ -137,7 +181,9 @@ class AIService:
         return None
 
     @staticmethod
-    async def normalize_book_metadata(filename: str, raw_meta: dict[str, Any]) -> dict[str, Any] | None:
+    async def normalize_book_metadata(
+        filename: str, raw_meta: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """
         Analiza un libro y devuelve metadatos normalizados, priorizando la extracción de volumen desde metadatos internos.
         """
@@ -213,7 +259,9 @@ class AIService:
             txt = AIService._extract_json_from_text(response_text)
             data = json.loads(txt)
             if data.get("suggested_filename"):
-                data["suggested_filename"] = AIService.sanitize_filename(data["suggested_filename"])
+                data["suggested_filename"] = AIService.sanitize_filename(
+                    data["suggested_filename"]
+                )
             return data
         except Exception as e:
             logger.error(f"Error en normalize_book_metadata: {e}")
@@ -322,20 +370,30 @@ class AIService:
                 # Get valid siglas
 
                 res_siglas = session.execute(
-                    text("SELECT siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 100")
+                    text(
+                        "SELECT siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 100"
+                    )
                 )
                 valid_siglas = [r[0] for r in res_siglas]
 
                 # Get similar historical corrections
                 res_learning = session.execute(
-                    text("SELECT proposed_name, final_name FROM ai_learning_feedback WHERE status='edited' LIMIT 5")
+                    text(
+                        "SELECT proposed_name, final_name FROM ai_learning_feedback WHERE status='edited' LIMIT 5"
+                    )
                 )
-                corrections = [f"IA propuso '{r[0]}' pero el usuario corrigió a '{r[1]}'" for r in res_learning]
+                corrections = [
+                    f"IA propuso '{r[0]}' pero el usuario corrigió a '{r[1]}'"
+                    for r in res_learning
+                ]
 
                 if valid_siglas:
                     learning_context += f"\nSIGLAS VÁLIDAS CONOCIDAS (Úsalas si encajan): {', '.join(valid_siglas)}"
                 if corrections:
-                    learning_context += "\nAPRENDIZAJE DE CORRECCIONES PASADAS:\n" + "\n".join(corrections)
+                    learning_context += (
+                        "\nAPRENDIZAJE DE CORRECCIONES PASADAS:\n"
+                        + "\n".join(corrections)
+                    )
         except Exception as e:
             logger.warning(f"Failed to load learning context or series info: {e}")
 
@@ -345,7 +403,9 @@ class AIService:
                 prompt.replace("{group_context}", group_context)
                 + f"\n\nCONTEXTO ADICIONAL DE APRENDIZAJE:\n{learning_context}"
             )
-            response_text = await AIService._call_ai(full_prompt, json_mode=True, target_model=target_model)
+            response_text = await AIService._call_ai(
+                full_prompt, json_mode=True, target_model=target_model
+            )
             if not response_text:
                 return {"error": "AI failed or quota exceeded"}
             txt = AIService._extract_json_from_text(response_text)
@@ -376,9 +436,13 @@ class AIService:
                 # Use IA volume if it's a dict or a plain number (backward compatibility)
                 if isinstance(vol_info, dict):
                     current_vol = vol_info.get("volume", book.get("volume", 0))
-                    book_siglas = vol_info.get("siglas") or proposal["group_siglas"] or "Unknown"
+                    book_siglas = (
+                        vol_info.get("siglas") or proposal["group_siglas"] or "Unknown"
+                    )
                 else:
-                    current_vol = vol_info if vol_info is not None else book.get("volume", 0)
+                    current_vol = (
+                        vol_info if vol_info is not None else book.get("volume", 0)
+                    )
                     book_siglas = proposal["group_siglas"] or "Unknown"
 
                 # Handling volume string
@@ -394,9 +458,9 @@ class AIService:
                 # Determinar prefijos por rasgos (Color/SC)
                 tags = book.get("tags") or []
                 is_color = any("Color" in str(t) for t in tags)
-                is_sc = any("Sin Censura" in str(t) or "Uncensored" in str(t) for t in tags) or book.get(
-                    "is_uncensored"
-                )
+                is_sc = any(
+                    "Sin Censura" in str(t) or "Uncensored" in str(t) for t in tags
+                ) or book.get("is_uncensored")
 
                 prefix = ""
                 if is_color and is_sc:
@@ -415,7 +479,9 @@ class AIService:
                     proposal["changes"].append(
                         {
                             "book_id": book.get("id"),
-                            "current_filename": book.get("filename") or book.get("filepath") or book.get("title"),
+                            "current_filename": book.get("filename")
+                            or book.get("filepath")
+                            or book.get("title"),
                             "proposed_filename": new_filename,
                             "volume": current_vol,
                             "siglas": book_siglas,
@@ -458,11 +524,16 @@ class AIService:
 
             with get_session() as session:
                 res = session.execute(
-                    text("SELECT name, siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 200")
+                    text(
+                        "SELECT name, siglas FROM translators_groups WHERE siglas IS NOT NULL LIMIT 200"
+                    )
                 )
                 mappings = [f"'{r[0]}' -> sigla: '{r[1]}'" for r in res]
                 if mappings:
-                    context = "\nLISTA DE GRUPOS VÁLIDOS (Nombre -> Sigla):\n" + "\n".join(mappings)
+                    context = (
+                        "\nLISTA DE GRUPOS VÁLIDOS (Nombre -> Sigla):\n"
+                        + "\n".join(mappings)
+                    )
         except Exception as e:
             logger.warning(f"Error fetching group context: {e}")
         return context
@@ -507,7 +578,12 @@ class AIService:
                 return None
             txt = AIService._extract_json_from_text(response_text)
             res = json.loads(txt)
-            if res and isinstance(res, dict) and res.get("is_same") and res.get("confidence", 0) > 0.8:
+            if (
+                res
+                and isinstance(res, dict)
+                and res.get("is_same")
+                and res.get("confidence", 0) > 0.8
+            ):
                 # Normalizar booleano si llegó como string
                 if isinstance(res["is_same"], str):
                     res["is_same"] = res["is_same"].lower() == "true"
@@ -564,7 +640,9 @@ class AIService:
                         "status": status,
                         "ai_reason": ai_reason,
                     }
-                    client.table("ai_learning_feedback").insert(supabase_params).execute()
+                    client.table("ai_learning_feedback").insert(
+                        supabase_params
+                    ).execute()
                 except Exception as cloud_e:
                     logger.warning(f"Failed to push feedback to cloud: {cloud_e}")
 
