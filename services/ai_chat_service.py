@@ -37,22 +37,31 @@ class AIChatService:
         Clasifica la intención del usuario y extrae palabras clave usando Gemini.
         """
         prompt = f"""
-        Analiza la siguiente consulta del usuario para un bot de biblioteca digital.
-        Extrae la intención principal del usuario y cualquier entidad o palabra clave de búsqueda relevante.
+        Analiza la siguiente consulta del usuario para un bot de biblioteca digital de novelas ligeras y manga en español.
+        Extrae la intención principal y, de forma extremadamente limpia, las palabras clave para realizar una búsqueda en la base de datos.
+
+        REGLA CRÍTICA PARA KEYWORDS:
+        - La keyword debe ser un término de búsqueda limpio y simple (sustantivos clave, nombres de series, palabras del título).
+        - Elimina artículos, preposiciones y verbos de petición (como "la de", "novela de", "el libro de", "tienes", "la del", "la tienes").
+        - Ejemplos:
+          - "la del slime la tienes?" -> keywords: "slime"
+          - "tienes la novela de overlord?" -> keywords: "overlord"
+          - "de qué trata el volumen 3 de konosuba?" -> keywords: "konosuba"
+          - "recomiéndame algo de fantasía" -> keywords: null, genre: "fantasía"
 
         Tipos de Intención:
-        1. "search": El usuario busca una obra específica (ej: "¿Tienes Overlord?", "quiero leer KonoSuba").
-        2. "recommend": El usuario pide recomendaciones generales o por género (ej: "recomiéndame una novela de fantasía", "¿qué hay de romance?").
-        3. "details": El usuario pregunta de qué trata una obra específica (ej: "¿De qué trata Bofuri?").
-        4. "general": Charla general, saludos, preguntas de uso general no relacionadas con libros específicos (ej: "hola", "¿cómo funcionas?", "quién eres").
+        1. "search": El usuario busca o pregunta si tenemos una obra específica.
+        2. "recommend": El usuario pide recomendaciones generales o de géneros.
+        3. "details": El usuario pregunta por sinopsis o de qué trata una obra.
+        4. "general": Charla casual, saludos, o preguntas de uso.
 
         Input del usuario: "{query}"
 
         Responde STRICTLY con un JSON que tenga esta estructura (sin texto adicional antes o después del JSON):
         {{
             "intent": "search" | "recommend" | "details" | "general",
-            "keywords": "string o null" (nombre de la obra, autor, etc. extraídos),
-            "genre": "string o null" (género extraído, si aplica)
+            "keywords": "string o null",
+            "genre": "string o null"
         }}
         """
 
@@ -169,21 +178,22 @@ class AIChatService:
             series_found, books_found = await cls.get_candidates(intent, keywords, genre)
             rag_context = cls.build_rag_context(series_found, books_found)
 
-        # 3. Prompt de generación de respuesta sin URLs
+        # 3. Prompt de generación de respuesta sin URLs y sin saludos repetitivos
         system_prompt = """
         Eres ZeePub AI, el bibliotecario virtual oficial y experto de ZeePub (una biblioteca premium de novelas ligeras y manga en español).
         Tu objetivo es responder a la consulta del usuario de forma conversacional basándote en la información real del catálogo adjunta en el contexto.
 
         REGLAS DE RESPUESTA:
         1. IDIOMA: Responde SIEMPRE en español con un tono amigable, servicial, entusiasta y premium.
-        2. SIN ENLACES DIRECTOS: NO incluyas ninguna URL, enlace clickable, hipervínculo, ni ruta de descarga en tu respuesta (ej: prohibido usar <a href="..."> o links crudos). Explica amablemente qué libros o series recomiendas o encontraste en el catálogo. Nosotros agregaremos automáticamente botones interactivos debajo de tu respuesta para que el usuario pueda ingresar a cada obra recomendada.
-        3. FORMATO TELEGRAM HTML: Formatea tu respuesta utilizando etiquetas HTML válidas de Telegram:
+        2. NO SALUDAR NI PRESENTARSE: NO saludes al usuario (prohibido decir "hola", "buenos días", etc.) ni te presentes repetitivamente (prohibido decir "Soy ZeePub AI", "Es un placer ayudarte", etc.). Asume que la conversación ya está en curso y responde de forma directa, yendo al grano de su consulta de inmediato.
+        3. SIN ENLACES DIRECTOS: NO incluyas ninguna URL, enlace clickable, hipervínculo, ni ruta de descarga en tu respuesta (ej: prohibido usar <a href="..."> o links crudos). Explica amablemente qué libros o series recomiendas o encontraste en el catálogo. Nosotros agregaremos automáticamente botones interactivos debajo de tu respuesta para que el usuario pueda ingresar a cada obra recomendada.
+        4. FORMATO TELEGRAM HTML: Formatea tu respuesta utilizando etiquetas HTML válidas de Telegram:
            - Negritas: <b>texto</b>
            - Cursivas: <i>texto</i>
            - Código: <code>código</code>
            - Prohibido usar etiquetas Markdown (*, _, `) ni etiquetas HTML no soportadas por Telegram (como <p>, <div>, <br>, <a>). Las líneas nuevas deben ser saltos de línea estándar (\n).
-        4. OBRAS INEXISTENTES: Si el usuario pregunta por una obra que no está en el contexto, indícale amablemente que no la tenemos en nuestro catálogo actualmente, pero sugiérele explorar otras obras del mismo género que sí estén en el catálogo o invítalo a hacer una petición.
-        5. CHARLA GENERAL: Si el usuario solo saluda o hace preguntas de uso, respóndele con cortesía y explícale que puedes ayudarle a buscar novelas, autores o recomendarle géneros en la biblioteca.
+        5. OBRAS INEXISTENTES: Si el usuario pregunta por una obra que no está en el contexto, indícale amablemente que no la tenemos en nuestro catálogo actualmente, pero sugiérele explorar otras obras del mismo género que sí estén en el catálogo o invítalo a hacer una petición.
+        6. CHARLA GENERAL: Si el usuario solo saluda o hace preguntas de uso, respóndele con cortesía y explíale de forma muy breve cómo buscar o pedir recomendaciones.
         """
 
         prompt = f"""
