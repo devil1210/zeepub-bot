@@ -85,6 +85,7 @@ class HandlerManagerV6:
         self.app.add_handler(CommandHandler("plugins", self.plugins_h.handle))
         self.app.add_handler(CommandHandler("auth", self.auth_h.handle))
         self.app.add_handler(CommandHandler("test_ai", self.handle_test_ai))
+        self.app.add_handler(CommandHandler("setkey", self.handle_setkey))
 
         # Manejador de texto suelto interceptor (Con prioridad)
         self.app.add_handler(
@@ -349,6 +350,105 @@ class HandlerManagerV6:
             tb = traceback.format_exc()
             await update.message.reply_text(
                 f"❌ Error al inicializar/probar:\n\n<code>{tb[:3000]}</code>",
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+
+    async def handle_setkey(self, update, context):
+        """Manejador de administración para actualizar en caliente la API Key de Gemini en el VPS."""
+        uid = update.effective_user.id
+        from config.config_settings import config
+
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text(
+                "❌ Este comando es de uso exclusivo para administradores."
+            )
+            return
+
+        thread_id = get_thread_id(update)
+        args = context.args
+        if not args or len(args) < 1:
+            await update.message.reply_text(
+                "✏️ Uso: <code>/setkey [nueva_api_key]</code>",
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+            return
+
+        new_key = args[0].strip()
+        await update.message.reply_text(
+            "⚙️ Actualizando API Key en el servidor VPS...",
+            message_thread_id=thread_id,
+        )
+
+        try:
+            import os
+
+            # 1. Leer y modificar el archivo .env en caliente
+            env_path = ".env"
+            if os.path.exists(env_path):
+                with open(env_path, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+
+                key_found = False
+                new_lines = []
+                for line in lines:
+                    if line.strip().startswith("GEMINI_API_KEY="):
+                        new_lines.append(f"GEMINI_API_KEY={new_key}\n")
+                        key_found = True
+                    else:
+                        new_lines.append(line)
+
+                if not key_found:
+                    new_lines.append(f"\nGEMINI_API_KEY={new_key}\n")
+
+                with open(env_path, "w", encoding="utf-8") as f:
+                    f.writelines(new_lines)
+            else:
+                with open(env_path, "w", encoding="utf-8") as f:
+                    f.write(f"GEMINI_API_KEY={new_key}\n")
+
+            # 2. Re-cargar en memoria y vaciar cache del cliente
+            os.environ["GEMINI_API_KEY"] = new_key
+            config._ai_key_logged = False
+
+            from services.ai_service import AIService
+
+            AIService._client = None
+
+            await update.message.reply_text(
+                "✅ Archivo .env modificado y cargado en memoria exitosamente.",
+                message_thread_id=thread_id,
+            )
+
+            # 3. Testear de inmediato
+            await update.message.reply_text(
+                "🔍 Ejecutando llamada de prueba a Gemini...",
+                message_thread_id=thread_id,
+            )
+            response = await AIService._call_ai(
+                prompt="Responde únicamente con la palabra 'OK'.",
+                target_model="gemini-3.1-flash-lite",
+                max_retries=1,
+            )
+            if response:
+                await update.message.reply_text(
+                    f"🚀 Conexión Exitosa con la nueva clave!\n\n<b>Respuesta:</b> {response}",
+                    parse_mode="HTML",
+                    message_thread_id=thread_id,
+                )
+            else:
+                await update.message.reply_text(
+                    "❌ La API Key se guardó, pero la llamada a Gemini retornó vacío (None).",
+                    message_thread_id=thread_id,
+                )
+
+        except Exception:
+            import traceback
+
+            tb = traceback.format_exc()
+            await update.message.reply_text(
+                f"❌ Error al guardar/probar la API Key:\n\n<code>{tb[:3000]}</code>",
                 parse_mode="HTML",
                 message_thread_id=thread_id,
             )
