@@ -65,7 +65,69 @@ class SeriesRepository(BaseRepository[Series]):
         # Paginar
         stmt = stmt.offset(skip).limit(limit)
         result = await self.session.execute(stmt)
-        return result.scalars().all(), total_count
+        series_list = list(result.scalars().all())
+
+        # Fallback de Búsqueda Difusa en Memoria si SQL no devolvió nada
+        if not series_list and query and len(query) > 2:
+            try:
+                import difflib
+
+                # Obtener todas las series para comparar en memoria
+                all_stmt = select(Series)
+                all_res = await self.session.execute(all_stmt)
+                all_series = all_res.scalars().all()
+
+                scored_series = []
+                q_lower = query.lower()
+
+                for s in all_series:
+                    # Comparar contra nombre original, español e inglés
+                    names_to_check = [
+                        s.name,
+                        s.name_spanish,
+                        s.name_english,
+                    ]
+                    max_score = 0.0
+                    for name in names_to_check:
+                        if not name:
+                            continue
+                        name_lower = name.lower()
+
+                        # 1. Coincidencia difusa rápida de ratio
+                        ratio = difflib.SequenceMatcher(
+                            None, q_lower, name_lower
+                        ).ratio()
+
+                        # 2. Si es substring, darle un bonus alto
+                        if q_lower in name_lower or name_lower in q_lower:
+                            ratio = max(ratio, 0.7)
+
+                        if ratio > max_score:
+                            max_score = ratio
+
+                    # Umbral de coincidencia aceptable
+                    if max_score >= 0.45:
+                        scored_series.append((max_score, s))
+
+                # Ordenar por score de mayor a menor
+                scored_series.sort(key=lambda x: x[0], reverse=True)
+
+                # Re-calcular total_count y paginar en memoria
+                total_count = len(scored_series)
+                sliced = scored_series[skip : skip + limit]
+
+                series_list = []
+                for score, s in sliced:
+                    series_list.append(s)
+
+            except Exception as fe:
+                import logging
+
+                logging.getLogger(__name__).error(
+                    f"Error en fallback difuso de búsqueda de series: {fe}"
+                )
+
+        return series_list, total_count
 
 
 class BookRepository(BaseRepository[Book]):
