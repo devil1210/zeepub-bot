@@ -282,11 +282,11 @@ class AIChatService:
         contents.append({"role": "user", "parts": [{"text": prompt_str}]})
 
         try:
-            # Ejecutar llamada a la IA con Gemini 3.1 Flash Lite
+            # Ejecutar llamada a la IA con Gemini 2.5 Flash
             response_text = await AIService._call_ai(
                 contents,
                 system_instruction=system_prompt,
-                target_model="gemini-3.1-flash-lite",
+                target_model="gemini-2.5-flash",
             )
             if not response_text:
                 return (
