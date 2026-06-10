@@ -84,6 +84,7 @@ class HandlerManagerV6:
         self.app.add_handler(CommandHandler("evil", self.evil_h.handle))
         self.app.add_handler(CommandHandler("plugins", self.plugins_h.handle))
         self.app.add_handler(CommandHandler("auth", self.auth_h.handle))
+        self.app.add_handler(CommandHandler("test_ai", self.handle_test_ai))
 
         # Manejador de texto suelto interceptor (Con prioridad)
         self.app.add_handler(
@@ -273,3 +274,81 @@ class HandlerManagerV6:
                 )
             except Exception as fe:
                 logger.error(f"Error en fallback de mensaje de IA: {fe}")
+
+    async def handle_test_ai(self, update, context):
+        """Manejador de depuración para probar la conexión con Gemini en el VPS."""
+        uid = update.effective_user.id
+        from config.config_settings import config
+
+        if uid not in config.ADMIN_USERS:
+            await update.message.reply_text(
+                "❌ Este comando es de uso exclusivo para administradores."
+            )
+            return
+
+        thread_id = get_thread_id(update)
+        await update.message.reply_text(
+            "🔍 Probando conexión a la API de Gemini desde el servidor...",
+            message_thread_id=thread_id,
+        )
+
+        try:
+            from services.ai_service import AIService
+
+            # Probar llamada
+            response = await AIService._call_ai(
+                prompt="Responde únicamente con la palabra 'CONEXIÓN_OK'.",
+                target_model="gemini-3.1-flash-lite",
+                max_retries=1,
+            )
+            if response:
+                await update.message.reply_text(
+                    f"✅ Conexión Exitosa con Gemini!\n\n<b>Respuesta:</b> {response}",
+                    parse_mode="HTML",
+                    message_thread_id=thread_id,
+                )
+            else:
+                # Si response es None, hacemos una llamada directa capturando e informando la excepción
+                client = AIService._get_client()
+                if not client:
+                    await update.message.reply_text(
+                        "❌ Error: AIService._get_client() retornó None. ¿Está configurada GEMINI_API_KEY en el .env?",
+                        message_thread_id=thread_id,
+                    )
+                    return
+
+                try:
+                    from google.genai import types
+
+                    config_args = types.GenerateContentConfig(
+                        system_instruction="Test",
+                        response_mime_type="text/plain",
+                    )
+                    res = client.models.generate_content(
+                        model="gemini-3.1-flash-lite",
+                        contents="Test",
+                        config=config_args,
+                    )
+                    await update.message.reply_text(
+                        f"❓ Retornó vacio, pero sin excepción. Texto: {res.text if res else 'None'}",
+                        message_thread_id=thread_id,
+                    )
+                except Exception:
+                    import traceback
+
+                    tb = traceback.format_exc()
+                    await update.message.reply_text(
+                        f"❌ Excepción durante la llamada directa:\n\n<code>{tb[:3000]}</code>",
+                        parse_mode="HTML",
+                        message_thread_id=thread_id,
+                    )
+
+        except Exception:
+            import traceback
+
+            tb = traceback.format_exc()
+            await update.message.reply_text(
+                f"❌ Error al inicializar/probar:\n\n<code>{tb[:3000]}</code>",
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
