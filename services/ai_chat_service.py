@@ -39,12 +39,16 @@ class AIChatService:
         Analiza la siguiente consulta del usuario para un bot de biblioteca digital de novelas ligeras y manga en español.
         Extrae la intención principal y, de forma extremadamente limpia, las palabras clave para realizar una búsqueda en la base de datos.
 
-        REGLA CRÍTICA PARA KEYWORDS:
-        - La keyword debe ser un término de búsqueda limpio y simple (sustantivos clave, nombres de series, palabras del título).
-        - Elimina artículos, preposiciones y verbos de petición (como "la de", "novela de", "el libro de", "tienes", "la del", "la tienes").
+        REGLAS CRÍTICAS PARA KEYWORDS:
+        1. Limpieza: La keyword debe ser un término de búsqueda limpio y simple (sustantivos clave, nombres de series, palabras del título). Elimina artículos, preposiciones y verbos de petición (como "la de", "novela de", "el libro de", "tienes", "la del", "la tienes").
+        2. Traducción y Mapeo: Dado que el catálogo está indexado principalmente con títulos originales en inglés o romaji, si el usuario busca una obra usando su título traducido al español (ej: "el señor de los misterios", "la boticaria", "los diarios de la boticaria"), DEBES traducir/mapear ese título y devolver la variante oficial en inglés o romaji (ej: "Lord of Mysteries", "The Apothecary Diaries").
+        3. Corrección de Errores Ortográficos (Typos): Si el usuario comete errores tipográficos al escribir el título (ej: "lord of mistery", "konosuva"), DEBES corregirlos a su escritura canónica correcta (ej: "Lord of Mysteries", "Konosuba").
         - Ejemplos:
           - "la del slime la tienes?" -> keywords: "slime"
           - "tienes la novela de overlord?" -> keywords: "overlord"
+          - "tenemos al señor de los misterios?" -> keywords: "Lord of Mysteries"
+          - "la de la boticaria la tienes?" -> keywords: "The Apothecary Diaries"
+          - "el volumen 3 de lord of mistery" -> keywords: "Lord of Mysteries"
           - "de qué trata el volumen 3 de konosuba?" -> keywords: "konosuba"
           - "recomiéndame algo de fantasía" -> keywords: null, genre: "fantasía"
 

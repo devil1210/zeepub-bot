@@ -49,7 +49,9 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
     async def delete(self, series_hash: str) -> bool:
         """Elimina una serie por hash."""
         async with pg_manager.get_session() as session:
-            stmt = delete(SeriesMetadata).where(SeriesMetadata.series_hash == series_hash)
+            stmt = delete(SeriesMetadata).where(
+                SeriesMetadata.series_hash == series_hash
+            )
             result = await session.execute(stmt)
             await session.commit()
             return result.rowcount > 0
@@ -57,18 +59,24 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
     async def get_by_hash(self, series_hash: str) -> SeriesMetadata | None:
         """Busca una serie por su hash único."""
         async with pg_manager.get_session() as session:
-            stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == series_hash)
+            stmt = select(SeriesMetadata).where(
+                SeriesMetadata.series_hash == series_hash
+            )
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
     async def get_by_name(self, series_name: str) -> SeriesMetadata | None:
         """Busca una serie por su nombre original."""
         async with pg_manager.get_session() as session:
-            stmt = select(SeriesMetadata).where(SeriesMetadata.series_name == series_name)
+            stmt = select(SeriesMetadata).where(
+                SeriesMetadata.series_name == series_name
+            )
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
-    async def list_series(self, page: int = 1, items_per_page: int = 20, sort_by: str = "name") -> dict[str, Any]:
+    async def list_series(
+        self, page: int = 1, items_per_page: int = 20, sort_by: str = "name"
+    ) -> dict[str, Any]:
         """Lista series paginadas."""
         async with pg_manager.get_session() as session:
             try:
@@ -143,10 +151,19 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
 
                 # 1. Filtros de Serie
                 series_filters = []
-                if search_type in ("todos", "all", "series", "serie", "título", "títulos"):
+                if search_type in (
+                    "todos",
+                    "all",
+                    "series",
+                    "serie",
+                    "título",
+                    "títulos",
+                ):
                     series_filters.extend(
                         [
                             SeriesMetadata.series_name.ilike(pattern),
+                            SeriesMetadata.name_spanish.ilike(pattern),
+                            SeriesMetadata.name_english.ilike(pattern),
                         ]
                     )
 
@@ -154,10 +171,14 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                     series_filters.append(SeriesMetadata.author.ilike(pattern))
 
                 if search_type in ("todos", "all", "tags", "géneros", "genres"):
-                    series_filters.append(cast(SeriesMetadata.tags_json, String).ilike(pattern))
+                    series_filters.append(
+                        cast(SeriesMetadata.tags_json, String).ilike(pattern)
+                    )
 
                 if search_type in ("todos", "all", "demographics", "demografía"):
-                    series_filters.append(cast(SeriesMetadata.demographics_json, String).ilike(pattern))
+                    series_filters.append(
+                        cast(SeriesMetadata.demographics_json, String).ilike(pattern)
+                    )
 
                 if search_type in ("translator", "traductor", "group", "grupo"):
                     series_filters.append(SeriesMetadata.publisher.ilike(pattern))
@@ -167,10 +188,23 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
 
                 # 2. Filtros de Libro (vía EXISTS)
                 book_filters = []
-                if search_type in ("todos", "all", "maquetador", "layout", "typesetter"):
+                if search_type in (
+                    "todos",
+                    "all",
+                    "maquetador",
+                    "layout",
+                    "typesetter",
+                ):
                     book_filters.append(LocalBook.layout_by.ilike(pattern))
 
-                if search_type in ("todos", "all", "traductor", "translator", "group", "grupo"):
+                if search_type in (
+                    "todos",
+                    "all",
+                    "traductor",
+                    "translator",
+                    "group",
+                    "grupo",
+                ):
                     book_filters.append(LocalBook.translator.ilike(pattern))
 
                 if search_type in ("todos", "all", "isbn"):
@@ -181,7 +215,12 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
 
                 if search_type in ("todos", "all"):
                     # En modo 'todos', también buscamos título/filename en libros
-                    book_filters.extend([LocalBook.title.ilike(pattern), LocalBook.filename.ilike(pattern)])
+                    book_filters.extend(
+                        [
+                            LocalBook.title.ilike(pattern),
+                            LocalBook.filename.ilike(pattern),
+                        ]
+                    )
 
                 # 3. Combinar filtros
                 final_where = []
@@ -251,6 +290,66 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                     s.download_count = row[1] or 0
                     series_list.append(s)
 
+                # Fallback de Búsqueda Difusa en Memoria si SQL no devolvió nada
+                if not series_list and query and len(query) > 2:
+                    try:
+                        import difflib
+
+                        # Obtener todas las series para comparar en memoria
+                        all_stmt = select(SeriesMetadata)
+                        all_res = await session.execute(all_stmt)
+                        all_series = all_res.scalars().all()
+
+                        scored_series = []
+                        q_lower = query.lower()
+
+                        for s in all_series:
+                            # Comparar contra nombre original, español e inglés
+                            names_to_check = [
+                                s.name,
+                                s.name_spanish,
+                                s.name_english,
+                            ]
+                            max_score = 0.0
+                            for name in names_to_check:
+                                if not name:
+                                    continue
+                                name_lower = name.lower()
+
+                                # 1. Coincidencia difusa rápida de ratio
+                                ratio = difflib.SequenceMatcher(
+                                    None, q_lower, name_lower
+                                ).ratio()
+
+                                # 2. Si es substring, darle un bonus alto
+                                if q_lower in name_lower or name_lower in q_lower:
+                                    ratio = max(ratio, 0.7)
+
+                                if ratio > max_score:
+                                    max_score = ratio
+
+                            # Umbral de coincidencia aceptable
+                            if max_score >= 0.45:
+                                scored_series.append((max_score, s))
+
+                        # Ordenar por score de mayor a menor
+                        scored_series.sort(key=lambda x: x[0], reverse=True)
+
+                        # Re-calcular total_series y paginar en memoria
+                        total_series = len(scored_series)
+                        start = (page - 1) * items_per_page
+                        sliced = scored_series[start : start + items_per_page]
+
+                        series_list = []
+                        for score, s in sliced:
+                            s.download_count = 0
+                            series_list.append(s)
+
+                    except Exception as fe:
+                        logger.error(
+                            f"Error en fallback difuso de búsqueda de series: {fe}"
+                        )
+
                 return {
                     "results": series_list,
                     "items": series_list,
@@ -261,17 +360,26 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 }
             except Exception as e:
                 logger.error(f"Error en SeriesRepository.search_series: {e}")
-                return {"results": [], "totalItems": 0, "currentPage": page, "totalPages": 0}
+                return {
+                    "results": [],
+                    "totalItems": 0,
+                    "currentPage": page,
+                    "totalPages": 0,
+                }
 
     async def sync_book_count(self, series_hash: str) -> int:
         """Actualiza el contador de libros de una serie basado en los libros reales en DB."""
         async with pg_manager.get_session() as session:
             # Contar libros reales
-            count_stmt = select(func.count(LocalBook.book_hash)).where(LocalBook.series_hash == series_hash)
+            count_stmt = select(func.count(LocalBook.book_hash)).where(
+                LocalBook.series_hash == series_hash
+            )
             real_count = (await session.execute(count_stmt)).scalar() or 0
 
             # Actualizar metadata
-            stmt = select(SeriesMetadata).where(SeriesMetadata.series_hash == series_hash)
+            stmt = select(SeriesMetadata).where(
+                SeriesMetadata.series_hash == series_hash
+            )
             result = await session.execute(stmt)
             series = result.scalar_one_or_none()
 
