@@ -109,11 +109,12 @@ class RichMessageService:
     # ── Builders de Bloques ──────────────────────────────────────────────────
 
     @classmethod
-    def create_paragraph(cls, text: str) -> dict:
-        """Crea un bloque de párrafo. Acepta una cadena de texto (soporta HTML nativo)."""
+    def create_paragraph(cls, text: str | dict) -> dict:
+        """Crea un bloque de párrafo. Acepta texto plano o diccionario RichText estructurado."""
+        rich_text = text if isinstance(text, dict) else {"type": "plain", "text": text}
         return {
             "type": "paragraph",
-            "text": text
+            "text": rich_text
         }
 
     @classmethod
@@ -185,75 +186,75 @@ class RichMessageService:
     @classmethod
     def html_to_rich_text(cls, html_text: str) -> dict:
         """
-        Parsea HTML básico y extrae el texto plano junto con las entidades RichText.
-        Soporta <b>, <strong>, <i>, <em>, <code>, <pre>, <a href="...">.
+        Convierte una cadena de texto formateada en HTML básico (<b>, <i>, <a>, <code>)
+        en la estructura de árbol RichText de Telegram.
         """
         if not html_text:
-            return {"text": ""}
+            return {"type": "plain", "text": ""}
 
-        # Sanitizar saltos de línea y tags
-        tag_re = re.compile(
-            r'<(b|strong|i|em|code|pre|a)(?:\s+href="([^"]+)")?>(.*?)</\1>',
-            re.IGNORECASE | re.DOTALL
-        )
+        tag_pattern = r'<(b|strong|i|em|code|pre|a)(?:\s+href=["\']([^"\']+)["\'])?>(.*?)</\1>'
+        tag_re = re.compile(tag_pattern, re.IGNORECASE | re.DOTALL)
 
-        entities = []
-        plain_text = ""
+        parts = []
         last_idx = 0
-
-        # Normalizar espaciado y saltos de línea de HTML a texto plano
         text_to_parse = html_text.strip()
+
+        def clean_and_escape(text: str) -> str:
+            # Remover etiquetas residuales huérfanas
+            text = re.sub(r'<[^>]+>', '', text)
+            return (
+                text.replace("&amp;", "&")
+                .replace("&lt;", "<")
+                .replace("&gt;", ">")
+                .replace("&quot;", '"')
+            )
 
         for match in tag_re.finditer(text_to_parse):
             start_text = text_to_parse[last_idx:match.start()]
-            plain_text += start_text
+            if start_text:
+                parts.append({
+                    "type": "plain",
+                    "text": clean_and_escape(start_text)
+                })
 
             tag = match.group(1).lower()
             href = match.group(2)
             content = match.group(3)
 
-            # Limpiar etiquetas HTML anidadas residuales en el contenido
-            clean_content = re.sub(r'<[^>]+>', '', content)
+            clean_content = clean_and_escape(content)
+            inner_text = {"type": "plain", "text": clean_content}
 
-            offset = len(plain_text)
-            length = len(clean_content)
+            part = None
+            if tag in ("b", "strong"):
+                part = {"type": "bold", "text": inner_text}
+            elif tag in ("i", "em"):
+                part = {"type": "italic", "text": inner_text}
+            elif tag == "code":
+                part = {"type": "code", "text": inner_text}
+            elif tag == "pre":
+                part = {"type": "pre", "text": inner_text}
+            elif tag == "a" and href:
+                part = {"type": "url", "url": href, "text": inner_text}
 
-            plain_text += clean_content
+            if part:
+                parts.append(part)
+            else:
+                parts.append(inner_text)
+
             last_idx = match.end()
 
-            # Determinar tipo de entidad de Telegram
-            entity_type = None
-            if tag in ("b", "strong"):
-                entity_type = "bold"
-            elif tag in ("i", "em"):
-                entity_type = "italic"
-            elif tag == "code":
-                entity_type = "code"
-            elif tag == "pre":
-                entity_type = "preformatted"
-            elif tag == "a" and href:
-                entity_type = "text_link"
+        residual = text_to_parse[last_idx:]
+        if residual:
+            parts.append({
+                "type": "plain",
+                "text": clean_and_escape(residual)
+            })
 
-            if entity_type:
-                ent = {"type": entity_type, "offset": offset, "length": length}
-                if entity_type == "text_link":
-                    ent["url"] = href
-                entities.append(ent)
-
-        plain_text += text_to_parse[last_idx:]
-        # Remover cualquier etiqueta residual huérfana
-        plain_text = re.sub(r'<[^>]+>', '', plain_text)
-
-        # Reemplazar entidades de escape HTML comunes
-        plain_text = (
-            plain_text.replace("&amp;", "&")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&quot;", '"')
-        )
-
-        rich_res = {"text": plain_text}
-        if entities:
-            rich_res["entities"] = entities
-
-        return rich_res
+        if not parts:
+            return {"type": "plain", "text": ""}
+        if len(parts) == 1:
+            return parts[0]
+        return {
+            "type": "concat",
+            "texts": parts
+        }

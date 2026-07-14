@@ -594,8 +594,10 @@ async def mostrar_detalles_libro(
     sinopsis_clean = re.sub(r"<[^>]+>", "", sinopsis_clean)
 
     blocks = [
-        # Metadatos del libro en un párrafo con formato HTML directo
-        RichMessageService.create_paragraph(details_html),
+        # Metadatos del libro en un párrafo con formato RichText estructurado recursivo
+        RichMessageService.create_paragraph(
+            RichMessageService.html_to_rich_text(details_html)
+        ),
         # Sinopsis colapsable limpia de HTML
         RichMessageService.create_details(
             title="📖 Ver Sinopsis Completa",
@@ -609,7 +611,6 @@ async def mostrar_detalles_libro(
         chat_id=chat_id,
         blocks=blocks,
         reply_markup=reply_markup,
-        parse_mode="HTML",
         message_thread_id=thread_id
     )
 
