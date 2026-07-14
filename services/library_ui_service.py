@@ -577,17 +577,19 @@ async def mostrar_detalles_libro(
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
+    # Ficha técnica formateada en un párrafo enriquecido con HTML
+    details_html = (
+        f"👤 <b>Autor:</b> {libro.get('autor') or 'Desconocido'}\n"
+        f"🎨 <b>Maquetador:</b> {libro.get('layout_by') or 'No especificado'}\n"
+        f"🌐 <b>Traductor:</b> {libro.get('traductor') or libro.get('translator') or 'No especificado'}\n"
+        f"📦 <b>Categoría:</b> {libro.get('book_type') or libro.get('tipo') or 'Novela'}\n"
+        f"📁 <b>Formato:</b> {libro.get('extension') or 'epub'}\n"
+        f"💾 <b>Tamaño:</b> {libro.get('size') or 'Desconocido'}"
+    )
+
     blocks = [
-        RichMessageService.create_table(
-            headers=["Atributo", "Detalle"],
-            rows=[
-                ["👤 Autor", libro.get("autor") or "Desconocido"],
-                ["🎨 Maquetador", libro.get("layout_by") or "No especificado"],
-                ["🌐 Traductor", libro.get("traductor") or libro.get("translator") or "No especificado"],
-                ["📦 Categoría", libro.get("book_type") or libro.get("tipo") or "Novela"],
-                ["📁 Formato", libro.get("extension") or "epub"],
-                ["💾 Tamaño", libro.get("size") or "Desconocido"],
-            ]
+        RichMessageService.create_paragraph(
+            RichMessageService.html_to_rich_text(details_html)
         ),
         RichMessageService.create_details(
             title="📖 Ver Sinopsis Completa",
