@@ -526,8 +526,7 @@ async def mostrar_detalles_libro(
             "📌 Ficha técnica fijada en el chat.", show_alert=False
         )
 
-    # A. Mensaje de Portada
-    # Flujo de Prioridad: Alta -> Media -> Baja -> Original -> Portada genérica
+    # A. Resolver Portada y preparar multimedia para Rich HTML
     portada_raw = (
         libro.get("cover_high")
         or libro.get("cover_medium")
@@ -535,31 +534,43 @@ async def mostrar_detalles_libro(
         or libro.get("cover_original")
         or libro.get("portada")
     )
-
-    # El servicio de portadas resuelve automáticamente rutas locales, URLs remotas y URLs de API interna
     portada = await resolve_cover_data(portada_raw)
 
-    msg_portada = None
+    import os
+    import io
+    files = {}
+    media = None
+
     if portada:
-        msg_portada = await send_photo_bytes(
-            context.bot,
-            chat_id,
-            part0,
-            portada,
-            parse_mode="HTML",
-            message_thread_id=thread_id,
-        )
+        if isinstance(portada, bytes):
+            files["tomozaki_cover"] = ("cover.png", io.BytesIO(portada), "image/png")
+            media = [
+                {
+                    "id": "tomozaki_cover",
+                    "media": {
+                        "type": "photo",
+                        "media": "attach://tomozaki_cover"
+                    }
+                }
+            ]
+        elif isinstance(portada, str) and os.path.exists(portada):
+            try:
+                with open(portada, "rb") as f:
+                    file_bytes = f.read()
+                files["tomozaki_cover"] = ("cover.png", io.BytesIO(file_bytes), "image/png")
+                media = [
+                    {
+                        "id": "tomozaki_cover",
+                        "media": {
+                            "type": "photo",
+                            "media": "attach://tomozaki_cover"
+                        }
+                    }
+                ]
+            except Exception as ex:
+                logger.error(f"[UI Service] Error leyendo archivo de portada: {ex}")
 
-    # Fallback si no hay portada O si falló el envío (ej: formato no soportado)
-    if not msg_portada:
-        msg_portada = await context.bot.send_message(
-            chat_id=chat_id, text=part0, parse_mode="HTML", message_thread_id=thread_id
-        )
-
-    if msg_portada:
-        st["last_detalles_msg_ids"].append(msg_portada.message_id)
-
-    # B. Intentar enviar ficha detallada enriquecida (Rich Message) en lugar de los dos mensajes planos
+    # B. Preparar Botones e información técnica del usuario
     left = await downloads_left(uid)
     left_str = (
         f"tienes {left} descargas restantes hoy"
@@ -567,7 +578,6 @@ async def mostrar_detalles_libro(
         else "tienes descargas ilimitadas"
     )
 
-    # Botones en una fila
     keyboard = [
         [
             InlineKeyboardButton("Descargar", callback_data=f"dl_confirm|{key}"),
@@ -577,55 +587,162 @@ async def mostrar_detalles_libro(
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Ficha técnica formateada en un párrafo enriquecido con HTML
-    details_html = (
-        f"👤 <b>Autor:</b> {libro.get('autor') or 'Desconocido'}\n"
-        f"🎨 <b>Maquetador:</b> {libro.get('layout_by') or 'No especificado'}\n"
-        f"🌐 <b>Traductor:</b> {libro.get('traductor') or libro.get('translator') or 'No especificado'}\n"
-        f"📦 <b>Categoría:</b> {libro.get('book_type') or libro.get('tipo') or 'Novela'}\n"
-        f"📁 <b>Formato:</b> {libro.get('extension') or 'epub'}\n"
-        f"💾 <b>Tamaño:</b> {libro.get('size') or 'Desconocido'}"
+    # C. Construir HTML dinámico para el Rich Message unificado
+    html_parts = []
+    
+    # 1. Imagen al inicio de todo
+    if media:
+        html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
+
+    # 2. Títulos en cascada
+    title_en = libro.get("title") or libro.get("titulo") or "Sin título"
+    html_parts.append(f'<h3>📚 {title_en}</h3>')
+    
+    title_jp = libro.get("title_japanese") or libro.get("title_jp") or libro.get("original_title")
+    if title_jp:
+        html_parts.append(f'<h4>🇯🇵 {title_jp}</h4>')
+        
+    title_es = libro.get("title_spanish") or libro.get("title_es") or libro.get("spanish_title")
+    if title_es:
+        html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
+        
+    volume = libro.get("volume")
+    if volume:
+        html_parts.append(f'<h6>Volumen {volume}</h6>\n')
+
+    # 3. TABLA 1: Ficha artística y literaria
+    tabla_literaria = '<table bordered striped>\n'
+    tabla_literaria += f'  <tr><td><b>👤 Autor</b></td><td>{libro.get("autor") or libro.get("author") or "Desconocido"}</td></tr>\n'
+    
+    ilustrador = libro.get("illustrator") or libro.get("ilustrador")
+    if ilustrador:
+        tabla_literaria += f'  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n'
+        
+    layout_by = libro.get("layout_by") or libro.get("maquetador")
+    if layout_by:
+        layout_val = layout_by if layout_by.startswith("#") else f"#{layout_by}"
+        tabla_literaria += f'  <tr><td><b>🎨 Maquetador</b></td><td>{layout_val}</td></tr>\n'
+        
+    tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{libro.get("book_type") or libro.get("tipo") or "Novela"}</td></tr>\n'
+    
+    demo = libro.get("demographics") or libro.get("demografia")
+    if demo:
+        demo_val = ", ".join(demo) if isinstance(demo, list) else demo
+        tabla_literaria += f'  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n'
+        
+    generos = libro.get("tags") or libro.get("generos")
+    if generos:
+        generos_val = ", ".join(generos) if isinstance(generos, list) else generos
+        tabla_literaria += f'  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n'
+        
+    traductor = libro.get("translator") or libro.get("traductor")
+    if traductor:
+        tabla_literaria += f'  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n'
+        
+    grupo_trad = libro.get("translation_group") or libro.get("grupo_traductor")
+    if grupo_trad:
+        grupo_trad_val = grupo_trad
+        if libro.get("translation_group_url"):
+            url_g = libro.get("translation_group_url")
+            grupo_trad_val = f'<a href="{url_g}">{grupo_trad}</a>'
+        tabla_literaria += f'  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n'
+        
+    tabla_literaria += '</table>\n'
+    html_parts.append(tabla_literaria)
+
+    # 4. SINOPSIS: Acordeón colapsable
+    sinopsis_raw = libro.get("sinopsis") or "Sin sinopsis disponible."
+    html_parts.append(
+        '<details>\n'
+        '  <summary>📖 Ver Sinopsis</summary>\n'
+        '  <blockquote>\n'
+        f'    {sinopsis_raw}\n'
+        '  </blockquote>\n'
+        '</details>\n'
     )
 
-    # Limpiar etiquetas HTML en la sinopsis para el bloque colapsable
-    sinopsis_raw = libro.get("sinopsis") or "Sin sinopsis disponible."
-    import re
-    sinopsis_clean = re.sub(r"<br\s*/?>", "\n", sinopsis_raw, flags=re.IGNORECASE)
-    sinopsis_clean = re.sub(r"<[^>]+>", "", sinopsis_clean)
+    # 5. TABLA 2: Detalles del archivo
+    tabla_archivo = (
+        '<details>\n'
+        '  <summary>📂 Ver Detalles del Archivo</summary>\n'
+        '  <table bordered striped>\n'
+        f'    <tr><td><b>📂 Nombre</b></td><td>{libro.get("title") or "Desconocido"}</td></tr>\n'
+    )
+    if volume:
+        tabla_archivo += f'    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n'
+    if libro.get("version"):
+        tabla_archivo += f'    <tr><td><b>ℹ️ Versión Epub</b></td><td>{libro.get("version")}</td></tr>\n'
+    
+    fecha = libro.get("updated_at") or libro.get("actualizado")
+    if fecha:
+        tabla_archivo += f'    <tr><td><b>📅 Actualizado</b></td><td>{fecha}</td></tr>\n'
+        
+    size = libro.get("size") or libro.get("tamano")
+    if size:
+        tabla_archivo += f'    <tr><td><b>💾 Tamaño</b></td><td>{size}</td></tr>\n'
+        
+    tabla_archivo += (
+        '  </table>\n'
+        '</details>\n'
+    )
+    html_parts.append(tabla_archivo)
 
-    blocks = [
-        # Metadatos del libro en un párrafo con formato RichText estructurado recursivo
-        RichMessageService.create_paragraph(
-            RichMessageService.html_to_rich_text(details_html)
-        ),
-        # Sinopsis colapsable limpia de HTML
-        RichMessageService.create_details(
-            title="📖 Ver Sinopsis Completa",
-            blocks=[RichMessageService.create_paragraph(sinopsis_clean)]
-        ),
-        # Cuota de descargas
-        RichMessageService.create_paragraph(f"💡 Recuerda que {left_str}.")
-    ]
+    # 6. Línea divisoria y pie
+    html_parts.append('<hr/>')
+    
+    slug = libro.get("slug")
+    if slug:
+        hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
+        html_parts.append(f'{hashtag_serie}\n\n\n')
+    else:
+        import re
+        clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
+        html_parts.append(f'#{clean_title}\n\n\n')
 
+    html_content = "\n".join(html_parts)
+
+    # D. Intentar enviar Rich Message unificado
     res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
-        blocks=blocks,
+        html=html_content,
+        media=media,
+        files=files if files else None,
         reply_markup=reply_markup,
         message_thread_id=thread_id
     )
 
-    # Fallback tradicional si la API de Telegram o el transporte fallan
+    # E. Fallback tradicional si la API de Telegram o el transporte fallan
     if not res or not res.get("ok"):
         logger.warning("[UI Service] Fallback a mensajes tradicionales en mostrar_detalles_libro")
         
-        # B. Mensaje de Sinopsis plano
+        # 1. Enviar portada tradicional
+        msg_portada = None
+        if portada:
+            msg_portada = await send_photo_bytes(
+                context.bot,
+                chat_id,
+                part0,
+                portada,
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+
+        if not msg_portada:
+            msg_portada = await context.bot.send_message(
+                chat_id=chat_id, text=part0, parse_mode="HTML", message_thread_id=thread_id
+            )
+
+        if msg_portada:
+            st["last_detalles_msg_ids"].append(msg_portada.message_id)
+
+        # 2. Mensaje de Sinopsis plano
         msg_sinopsis = await context.bot.send_message(
             chat_id=chat_id, text=part1, parse_mode="HTML", message_thread_id=thread_id
         )
         if msg_sinopsis:
             st["last_detalles_msg_ids"].append(msg_sinopsis.message_id)
 
-        # C. Mensaje Técnico plano + Botones + Cuota
+        # 3. Mensaje Técnico plano + Botones + Cuota
         text_final = f"{part2}\n\n💡 <i>Recuerda que {left_str}.</i>"
         msg_info = await context.bot.send_message(
             chat_id=chat_id,

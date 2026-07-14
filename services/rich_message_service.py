@@ -6,6 +6,7 @@
 
 import logging
 import re
+import json
 import httpx
 from config.config_settings import config
 
@@ -19,26 +20,55 @@ class RichMessageService:
     """
 
     @classmethod
-    async def send_rich_message(cls, chat_id: int | str, blocks: list[dict], **kwargs) -> dict | None:
+    async def send_rich_message(
+        cls,
+        chat_id: int | str,
+        blocks: list[dict] | None = None,
+        html: str | None = None,
+        markdown: str | None = None,
+        media: list[dict] | None = None,
+        files: dict | None = None,
+        **kwargs
+    ) -> dict | None:
         """
         Envía un mensaje enriquecido al chat especificado usando POST directo.
+        Soporta bloques estructurados, Rich HTML o Rich Markdown.
+        Si se pasa el parámetro `files`, utiliza multipart/form-data de forma automática.
         """
         url = f"https://api.telegram.org/bot{config.TELEGRAM_TOKEN}/sendRichMessage"
+        
+        rich_payload = {}
+        if blocks is not None:
+            rich_payload["blocks"] = blocks
+        if html is not None:
+            rich_payload["html"] = html
+        if markdown is not None:
+            rich_payload["markdown"] = markdown
+        if media is not None:
+            rich_payload["media"] = media
+
         payload = {
             "chat_id": chat_id,
-            "rich_message": {
-                "blocks": blocks
-            },
+            "rich_message": rich_payload,
             **kwargs
         }
         if "reply_markup" in payload:
             markup = payload["reply_markup"]
             if hasattr(markup, "to_dict"):
                 payload["reply_markup"] = markup.to_dict()
+
         try:
-            logger.info(f"[RichMessageService] Enviando payload: {payload}")
+            logger.info(f"[RichMessageService] Enviando rich message al chat {chat_id}")
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, json=payload, timeout=30.0)
+                if files:
+                    payload["rich_message"] = json.dumps(payload["rich_message"])
+                    if "reply_markup" in payload and payload["reply_markup"] is not None:
+                        payload["reply_markup"] = json.dumps(payload["reply_markup"])
+                    
+                    response = await client.post(url, data=payload, files=files, timeout=30.0)
+                else:
+                    response = await client.post(url, json=payload, timeout=30.0)
+                
                 result = response.json()
                 if not result.get("ok"):
                     logger.error(f"[RichMessageService] Error en sendRichMessage: {result}")
@@ -48,16 +78,35 @@ class RichMessageService:
             return None
 
     @classmethod
-    async def send_rich_message_draft(cls, chat_id: int | str, blocks: list[dict], draft_id: str | None = None, **kwargs) -> dict | None:
+    async def send_rich_message_draft(
+        cls,
+        chat_id: int | str,
+        blocks: list[dict] | None = None,
+        html: str | None = None,
+        markdown: str | None = None,
+        media: list[dict] | None = None,
+        draft_id: str | None = None,
+        files: dict | None = None,
+        **kwargs
+    ) -> dict | None:
         """
         Envía o actualiza un borrador enriquecido (AI Streaming) usando POST directo.
         """
         url = f"https://api.telegram.org/bot{config.TELEGRAM_TOKEN}/sendRichMessageDraft"
+        
+        rich_payload = {}
+        if blocks is not None:
+            rich_payload["blocks"] = blocks
+        if html is not None:
+            rich_payload["html"] = html
+        if markdown is not None:
+            rich_payload["markdown"] = markdown
+        if media is not None:
+            rich_payload["media"] = media
+
         payload = {
             "chat_id": chat_id,
-            "rich_message": {
-                "blocks": blocks
-            },
+            "rich_message": rich_payload,
             **kwargs
         }
         if "reply_markup" in payload:
@@ -66,9 +115,18 @@ class RichMessageService:
                 payload["reply_markup"] = markup.to_dict()
         if draft_id:
             payload["draft_id"] = draft_id
+
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.post(url, json=payload, timeout=30.0)
+                if files:
+                    payload["rich_message"] = json.dumps(payload["rich_message"])
+                    if "reply_markup" in payload and payload["reply_markup"] is not None:
+                        payload["reply_markup"] = json.dumps(payload["reply_markup"])
+                    
+                    response = await client.post(url, data=payload, files=files, timeout=30.0)
+                else:
+                    response = await client.post(url, json=payload, timeout=30.0)
+                
                 result = response.json()
                 if not result.get("ok"):
                     logger.error(f"[RichMessageService] Error en sendRichMessageDraft: {result}")
@@ -78,17 +136,35 @@ class RichMessageService:
             return None
 
     @classmethod
-    async def edit_rich_message(cls, chat_id: int | str, message_id: int, blocks: list[dict], reply_markup=None) -> dict | None:
+    async def edit_rich_message(
+        cls,
+        chat_id: int | str,
+        message_id: int,
+        blocks: list[dict] | None = None,
+        html: str | None = None,
+        markdown: str | None = None,
+        media: list[dict] | None = None,
+        reply_markup=None
+    ) -> dict | None:
         """
         Edita un mensaje existente para transformarlo en un Rich Message.
         """
         url = f"https://api.telegram.org/bot{config.TELEGRAM_TOKEN}/editMessageText"
+        
+        rich_payload = {}
+        if blocks is not None:
+            rich_payload["blocks"] = blocks
+        if html is not None:
+            rich_payload["html"] = html
+        if markdown is not None:
+            rich_payload["markdown"] = markdown
+        if media is not None:
+            rich_payload["media"] = media
+
         payload = {
             "chat_id": chat_id,
             "message_id": message_id,
-            "rich_message": {
-                "blocks": blocks
-            }
+            "rich_message": rich_payload
         }
         if reply_markup:
             if hasattr(reply_markup, "to_dict"):
