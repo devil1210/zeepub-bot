@@ -155,7 +155,10 @@ class RichMessageService:
         rich_summary = title if isinstance(title, dict) else {"text": title}
         return {
             "type": "details",
-            "summary": rich_summary,
+            "summary": {
+                "type": "paragraph",
+                "text": rich_summary
+            },
             "blocks": blocks,
             "is_open": is_open
         }
