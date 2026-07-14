@@ -109,11 +109,12 @@ class RichMessageService:
     # ── Builders de Bloques ──────────────────────────────────────────────────
 
     @classmethod
-    def create_paragraph(cls, text: str) -> dict:
-        """Crea un bloque de párrafo. Acepta una cadena de texto (soporta HTML nativo)."""
+    def create_paragraph(cls, text: str | dict) -> dict:
+        """Crea un bloque de párrafo. Acepta texto plano o diccionario RichText."""
+        rich_text = text if isinstance(text, dict) else {"text": text}
         return {
             "type": "paragraph",
-            "text": text
+            "text": rich_text
         }
 
     @classmethod

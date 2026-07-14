@@ -587,12 +587,23 @@ async def mostrar_detalles_libro(
         f"💾 <b>Tamaño:</b> {libro.get('size') or 'Desconocido'}"
     )
 
+    # Limpiar etiquetas HTML en la sinopsis para el bloque colapsable
+    sinopsis_raw = libro.get("sinopsis") or "Sin sinopsis disponible."
+    import re
+    sinopsis_clean = re.sub(r"<br\s*/?>", "\n", sinopsis_raw, flags=re.IGNORECASE)
+    sinopsis_clean = re.sub(r"<[^>]+>", "", sinopsis_clean)
+
     blocks = [
-        RichMessageService.create_paragraph(details_html),
+        # Metadatos del libro en un párrafo con negritas enriquecidas
+        RichMessageService.create_paragraph(
+            RichMessageService.html_to_rich_text(details_html)
+        ),
+        # Sinopsis colapsable limpia de HTML
         RichMessageService.create_details(
             title="📖 Ver Sinopsis Completa",
-            blocks=[RichMessageService.create_paragraph(libro.get("sinopsis") or "Sin sinopsis disponible.")]
+            blocks=[RichMessageService.create_paragraph(sinopsis_clean)]
         ),
+        # Cuota de descargas
         RichMessageService.create_paragraph(f"💡 Recuerda que {left_str}.")
     ]
 
