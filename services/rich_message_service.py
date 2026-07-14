@@ -110,12 +110,20 @@ class RichMessageService:
 
     @classmethod
     def create_paragraph(cls, text: str | dict) -> dict:
-        """Crea un bloque de párrafo. Acepta texto plano o diccionario RichText estructurado."""
-        rich_text = text if isinstance(text, dict) else {"type": "richTextPlain", "text": text}
-        return {
-            "type": "paragraph",
-            "text": rich_text
-        }
+        """Crea un bloque de párrafo. Acepta una cadena de texto o un diccionario con text y entities."""
+        if isinstance(text, dict):
+            block = {
+                "type": "paragraph",
+                "text": text["text"]
+            }
+            if "entities" in text and text["entities"]:
+                block["entities"] = text["entities"]
+            return block
+        else:
+            return {
+                "type": "paragraph",
+                "text": text
+            }
 
     @classmethod
     def create_section_heading(cls, text: str | dict, level: int = 1) -> dict:
@@ -186,16 +194,17 @@ class RichMessageService:
     @classmethod
     def html_to_rich_text(cls, html_text: str) -> dict:
         """
-        Convierte una cadena de texto formateada en HTML básico (<b>, <i>, <a>, <code>)
-        en la estructura de árbol RichText de Telegram (TDLib compatible).
+        Parsea HTML básico y extrae el texto plano junto con las entidades.
+        Soporta <b>, <strong>, <i>, <em>, <code>, <pre>, <a href="...">.
         """
         if not html_text:
-            return {"type": "richTextPlain", "text": ""}
+            return {"text": "", "entities": []}
 
         tag_pattern = r'<(b|strong|i|em|code|pre|a)(?:\s+href=["\']([^"\']+)["\'])?>(.*?)</\1>'
         tag_re = re.compile(tag_pattern, re.IGNORECASE | re.DOTALL)
 
-        parts = []
+        entities = []
+        plain_text = ""
         last_idx = 0
         text_to_parse = html_text.strip()
 
@@ -211,50 +220,42 @@ class RichMessageService:
 
         for match in tag_re.finditer(text_to_parse):
             start_text = text_to_parse[last_idx:match.start()]
-            if start_text:
-                parts.append({
-                    "type": "richTextPlain",
-                    "text": clean_and_escape(start_text)
-                })
+            plain_text += clean_and_escape(start_text)
 
             tag = match.group(1).lower()
             href = match.group(2)
             content = match.group(3)
 
             clean_content = clean_and_escape(content)
-            inner_text = {"type": "richTextPlain", "text": clean_content}
+            offset = len(plain_text)
+            length = len(clean_content)
 
-            part = None
-            if tag in ("b", "strong"):
-                part = {"type": "richTextBold", "text": inner_text}
-            elif tag in ("i", "em"):
-                part = {"type": "richTextItalic", "text": inner_text}
-            elif tag == "code":
-                part = {"type": "richTextFixed", "text": inner_text}
-            elif tag == "pre":
-                part = {"type": "richTextFixed", "text": inner_text}
-            elif tag == "a" and href:
-                part = {"type": "richTextUrl", "url": href, "text": inner_text}
-
-            if part:
-                parts.append(part)
-            else:
-                parts.append(inner_text)
-
+            plain_text += clean_content
             last_idx = match.end()
+
+            entity_type = None
+            if tag in ("b", "strong"):
+                entity_type = "bold"
+            elif tag in ("i", "em"):
+                entity_type = "italic"
+            elif tag == "code":
+                entity_type = "code"
+            elif tag == "pre":
+                entity_type = "preformatted"
+            elif tag == "a" and href:
+                entity_type = "text_link"
+
+            if entity_type:
+                ent = {"type": entity_type, "offset": offset, "length": length}
+                if entity_type == "text_link":
+                    ent["url"] = href
+                entities.append(ent)
 
         residual = text_to_parse[last_idx:]
         if residual:
-            parts.append({
-                "type": "richTextPlain",
-                "text": clean_and_escape(residual)
-            })
+            plain_text += clean_and_escape(residual)
 
-        if not parts:
-            return {"type": "richTextPlain", "text": ""}
-        if len(parts) == 1:
-            return parts[0]
         return {
-            "type": "richTextConcat",
-            "texts": parts
+            "text": plain_text,
+            "entities": entities
         }
