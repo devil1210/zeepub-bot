@@ -111,7 +111,7 @@ class RichMessageService:
     @classmethod
     def create_paragraph(cls, text: str | dict) -> dict:
         """Crea un bloque de párrafo. Acepta texto plano o diccionario RichText estructurado."""
-        rich_text = text if isinstance(text, dict) else {"type": "plain", "text": text}
+        rich_text = text if isinstance(text, dict) else {"type": "richTextPlain", "text": text}
         return {
             "type": "paragraph",
             "text": rich_text
@@ -187,10 +187,10 @@ class RichMessageService:
     def html_to_rich_text(cls, html_text: str) -> dict:
         """
         Convierte una cadena de texto formateada en HTML básico (<b>, <i>, <a>, <code>)
-        en la estructura de árbol RichText de Telegram.
+        en la estructura de árbol RichText de Telegram (TDLib compatible).
         """
         if not html_text:
-            return {"type": "plain", "text": ""}
+            return {"type": "richTextPlain", "text": ""}
 
         tag_pattern = r'<(b|strong|i|em|code|pre|a)(?:\s+href=["\']([^"\']+)["\'])?>(.*?)</\1>'
         tag_re = re.compile(tag_pattern, re.IGNORECASE | re.DOTALL)
@@ -213,7 +213,7 @@ class RichMessageService:
             start_text = text_to_parse[last_idx:match.start()]
             if start_text:
                 parts.append({
-                    "type": "plain",
+                    "type": "richTextPlain",
                     "text": clean_and_escape(start_text)
                 })
 
@@ -222,19 +222,19 @@ class RichMessageService:
             content = match.group(3)
 
             clean_content = clean_and_escape(content)
-            inner_text = {"type": "plain", "text": clean_content}
+            inner_text = {"type": "richTextPlain", "text": clean_content}
 
             part = None
             if tag in ("b", "strong"):
-                part = {"type": "bold", "text": inner_text}
+                part = {"type": "richTextBold", "text": inner_text}
             elif tag in ("i", "em"):
-                part = {"type": "italic", "text": inner_text}
+                part = {"type": "richTextItalic", "text": inner_text}
             elif tag == "code":
-                part = {"type": "code", "text": inner_text}
+                part = {"type": "richTextFixed", "text": inner_text}
             elif tag == "pre":
-                part = {"type": "pre", "text": inner_text}
+                part = {"type": "richTextFixed", "text": inner_text}
             elif tag == "a" and href:
-                part = {"type": "url", "url": href, "text": inner_text}
+                part = {"type": "richTextUrl", "url": href, "text": inner_text}
 
             if part:
                 parts.append(part)
@@ -246,15 +246,15 @@ class RichMessageService:
         residual = text_to_parse[last_idx:]
         if residual:
             parts.append({
-                "type": "plain",
+                "type": "richTextPlain",
                 "text": clean_and_escape(residual)
             })
 
         if not parts:
-            return {"type": "plain", "text": ""}
+            return {"type": "richTextPlain", "text": ""}
         if len(parts) == 1:
             return parts[0]
         return {
-            "type": "concat",
+            "type": "richTextConcat",
             "texts": parts
         }
