@@ -109,12 +109,11 @@ class RichMessageService:
     # ── Builders de Bloques ──────────────────────────────────────────────────
 
     @classmethod
-    def create_paragraph(cls, text: str | dict) -> dict:
-        """Crea un bloque de párrafo. Acepta texto plano o diccionario RichText."""
-        rich_text = text if isinstance(text, dict) else {"text": text}
+    def create_paragraph(cls, text: str) -> dict:
+        """Crea un bloque de párrafo. Acepta una cadena de texto (soporta HTML nativo)."""
         return {
             "type": "paragraph",
-            "text": rich_text
+            "text": text
         }
 
     @classmethod
@@ -150,15 +149,11 @@ class RichMessageService:
         return table_block
 
     @classmethod
-    def create_details(cls, title: str | dict, blocks: list[dict], is_open: bool = False) -> dict:
+    def create_details(cls, title: str, blocks: list[dict], is_open: bool = False) -> dict:
         """Crea un bloque colapsable de detalles."""
-        rich_summary = title if isinstance(title, dict) else {"text": title}
         return {
             "type": "details",
-            "summary": {
-                "type": "paragraph",
-                "text": rich_summary
-            },
+            "summary": title,
             "blocks": blocks,
             "is_open": is_open
         }

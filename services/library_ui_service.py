@@ -588,11 +588,10 @@ async def mostrar_detalles_libro(
     )
 
     blocks = [
-        RichMessageService.create_paragraph(
-            RichMessageService.html_to_rich_text(details_html)
-        ),
-        RichMessageService.create_paragraph(
-            RichMessageService.html_to_rich_text(f"📖 <b>Sinopsis:</b>\n{libro.get('sinopsis') or 'Sin sinopsis disponible.'}")
+        RichMessageService.create_paragraph(details_html),
+        RichMessageService.create_details(
+            title="📖 Ver Sinopsis Completa",
+            blocks=[RichMessageService.create_paragraph(libro.get("sinopsis") or "Sin sinopsis disponible.")]
         ),
         RichMessageService.create_paragraph(f"💡 Recuerda que {left_str}.")
     ]
