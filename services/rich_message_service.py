@@ -31,6 +31,10 @@ class RichMessageService:
             },
             **kwargs
         }
+        if "reply_markup" in payload:
+            markup = payload["reply_markup"]
+            if hasattr(markup, "to_dict"):
+                payload["reply_markup"] = markup.to_dict()
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(url, json=payload, timeout=30.0)
@@ -55,6 +59,10 @@ class RichMessageService:
             },
             **kwargs
         }
+        if "reply_markup" in payload:
+            markup = payload["reply_markup"]
+            if hasattr(markup, "to_dict"):
+                payload["reply_markup"] = markup.to_dict()
         if draft_id:
             payload["draft_id"] = draft_id
         try:
