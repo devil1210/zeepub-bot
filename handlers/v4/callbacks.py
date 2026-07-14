@@ -6,6 +6,7 @@ from telegram.ext import ContextTypes
 from handlers.v4.base import BaseHandlerV4, with_services
 from repositories.download_repository import DownloadRepository
 from services.cover_service import send_doc_bytes
+from services.rich_message_service import RichMessageService
 from services.v4.ui_service import UIServiceV4
 
 logger = logging.getLogger(__name__)
@@ -68,8 +69,41 @@ class CallbackHandlerV4(BaseHandlerV4):
                     await query.answer("⚠️ Libro no encontrado.", show_alert=True)
                     return
 
-                text, markup = await UIServiceV4.render_book_details(book)
-                await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
+                # Obtener detalles de la serie para la sinopsis
+                series = await library_service.get_series_details(book.series_id) if book.series_id else None
+                sinopsis = series.description if series and series.description else "No hay descripción disponible para esta obra."
+
+                # Intentar enviar Rich Message (API 10.2)
+                _, markup = await UIServiceV4.render_book_details(book)
+                blocks = [
+                    RichMessageService.create_section_heading(f"📕 {book.title}", level=2),
+                    RichMessageService.create_table(
+                        headers=["Atributo", "Detalle"],
+                        rows=[
+                            ["🏷️ Identificador", book.id[:8]],
+                            ["👤 Autor", book.author or "Desconocido"],
+                            ["🎨 Maquetador", book.layout_by or "No especificado"],
+                            ["🌐 Traductor", book.translator or "No especificado"],
+                        ]
+                    ),
+                    RichMessageService.create_details(
+                        title="📖 Ver Sinopsis Completa",
+                        blocks=[RichMessageService.create_paragraph(sinopsis)]
+                    )
+                ]
+
+                res = await RichMessageService.edit_rich_message(
+                    chat_id=update.effective_chat.id,
+                    message_id=query.message.message_id,
+                    blocks=blocks,
+                    reply_markup=markup
+                )
+
+                # Fallback tradicional si la API de Telegram o el transporte fallan
+                if not res or not res.get("ok"):
+                    logger.warning("[Callbacks] Fallback a mensaje tradicional en bv|")
+                    text, markup = await UIServiceV4.render_book_details(book)
+                    await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
 
             elif data.startswith("bd|"):
                 book_id = data.split("|")[1]
@@ -83,6 +117,13 @@ class CallbackHandlerV4(BaseHandlerV4):
 
                 await query.answer("⚡️ Iniciando descarga...", show_alert=False)
 
+                # Obtener preferencia del usuario
+                user_service = services["user_service"]
+                user = await user_service.get_or_create_user(
+                    telegram_id=user_id, username=update.effective_user.username, name=update.effective_user.full_name
+                )
+                preferencia_destino = user.extra_data.get("download_destination", "chat") if user.extra_data else "chat"
+
                 # Registrar descarga
                 download_repo = DownloadRepository(session=services["library_service"].session)
                 await download_repo.add_download(
@@ -91,14 +132,67 @@ class CallbackHandlerV4(BaseHandlerV4):
 
                 # Enviar archivo (flujo v3)
                 caption = f"📕 <b>{book.title}</b>\n🏷️ Hash: <code>{book.id[:8]}</code>"
-                await send_doc_bytes(
-                    context.bot,
-                    update.effective_chat.id,
-                    caption,
-                    book.filepath,
-                    filename=book.filename or f"{book.title}.epub",
-                    parse_mode="HTML",
-                )
+                
+                dest_chat_id = update.effective_chat.id
+                api_kwargs = None
+
+                if preferencia_destino == "private":
+                    dest_chat_id = user_id
+                else:
+                    if update.effective_chat and update.effective_chat.type in ("group", "supergroup"):
+                        api_kwargs = {"receiver_user_id": user_id}
+
+                try:
+                    await send_doc_bytes(
+                        context.bot,
+                        dest_chat_id,
+                        caption,
+                        book.filepath,
+                        filename=book.filename or f"{book.title}.epub",
+                        parse_mode="HTML",
+                        api_kwargs=api_kwargs,
+                    )
+                    # Notificar éxito
+                    await query.answer("🚀 ¡Archivo enviado con éxito!", show_alert=False)
+
+                    # Auditoría para Staff en el grupo si fue efímero (obtenido de PostgreSQL)
+                    if api_kwargs:
+                        from models.users import User
+                        from sqlalchemy import select
+                        
+                        stmt = select(User.telegram_id).where(User.role.in_(["admin", "staff"]))
+                        staff_ids = (await user_service.session.execute(stmt)).scalars().all()
+                        
+                        # Combinar con los admins configurados en .env como fallback
+                        from config.config_settings import config
+                        all_staff_ids = set(staff_ids)
+                        if config.ADMIN_USERS:
+                            all_staff_ids.update(config.ADMIN_USERS)
+                        
+                        for staff_id in all_staff_ids:
+                            # Omitir notificar al propio usuario
+                            if staff_id == user_id:
+                                continue
+                            try:
+                                admin_kwargs = {"receiver_user_id": staff_id}
+                                admin_text = f"👁‍🗨 [Auditoría] El usuario <b>{update.effective_user.full_name}</b> (<code>{user_id}</code>) descargó <b>{book.title}</b>."
+                                await context.bot.send_message(
+                                    chat_id=update.effective_chat.id,
+                                    text=admin_text,
+                                    parse_mode="HTML",
+                                    api_kwargs=admin_kwargs
+                                )
+                            except Exception:
+                                pass
+                except Exception as e:
+                    logger.warning(f"Error enviando descarga al destino {dest_chat_id}: {e}")
+                    if preferencia_destino == "private":
+                        await query.answer(
+                            "⚠️ No pude enviarte el libro al privado. Inicia el bot en privado (/start) e inténtalo de nuevo.",
+                            show_alert=True
+                        )
+                    else:
+                        await query.answer("❌ Error al enviar el libro.", show_alert=True)
 
                 # Notificar éxito
                 await query.answer("🚀 ¡Archivo enviado con éxito!", show_alert=False)
@@ -151,6 +245,44 @@ class CallbackHandlerV4(BaseHandlerV4):
                 # Volver al menú principal tras configurar
                 text, markup = await UIServiceV4.render_main_menu()
                 await query.edit_message_text(text, reply_markup=markup, parse_mode="HTML")
+
+            elif data.startswith("set_dest|"):
+                _, nuevo_destino = data.split("|")
+                user_service = services["user_service"]
+                uid = update.effective_user.id
+
+                user = await user_service.get_or_create_user(
+                    telegram_id=uid, username=update.effective_user.username, name=update.effective_user.full_name
+                )
+
+                if not isinstance(user.extra_data, dict):
+                    user.extra_data = {}
+                user.extra_data["download_destination"] = nuevo_destino
+
+                from sqlalchemy.orm.attributes import flag_modified
+                flag_modified(user, "extra_data")
+                await user_service.session.commit()
+
+                dest_names = {
+                    "chat": "Chat actual (Efímero en grupos)",
+                    "private": "Mensaje Privado (DM)"
+                }
+                await query.answer(f"✅ Destino cambiado a: {dest_names.get(nuevo_destino)}", show_alert=True)
+
+                # Actualizar el mensaje
+                text = (
+                    f"⚙️ <b>Destino de Descarga</b>\n\n"
+                    f"Configura dónde deseas recibir tus novelas descargadas.\n\n"
+                    f"📍 <b>Configuración actual:</b> <code>{dest_names.get(nuevo_destino)}</code>\n\n"
+                    f"<i>Selecciona una opción a continuación para cambiarlo:</i>"
+                )
+
+                keyboard = [
+                    [InlineKeyboardButton("📥 Chat actual", callback_data="set_dest|chat")],
+                    [InlineKeyboardButton("💬 Mensaje Privado", callback_data="set_dest|private")],
+                ]
+
+                await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
 
             elif data == "close_menu":
                 await query.message.delete()

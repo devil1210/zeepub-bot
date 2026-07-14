@@ -703,3 +703,64 @@ class AIService:
         clean = re.sub(forbidden, "-", name)
         # Limpiar espacios extra y puntos al final (prohibidos en Windows)
         return clean.strip().strip(".")
+
+    @classmethod
+    async def generate_recommendation_stream(cls, chat_id: int | str, user_history_summary: str, draft_id: str | None = None):
+        """
+        Genera una recomendación interactiva usando streaming de Gemini (generate_content_stream)
+        y actualiza el borrador en Telegram usando sendRichMessageDraft.
+        """
+        client = cls._get_client()
+        if not client:
+            return None
+
+        # 1. Enviar el borrador inicial con el bloque Thinking para feedback visual
+        from services.rich_message_service import RichMessageService
+        blocks = [RichMessageService.create_thinking()]
+        res = await RichMessageService.send_rich_message_draft(chat_id, blocks, draft_id=draft_id)
+
+        if not res or not res.get("ok"):
+            logger.warning("[AIService] No se pudo enviar el borrador de pensamiento.")
+            return None
+
+        actual_draft_id = res.get("result", {}).get("draft_id") or draft_id
+
+        # 2. Iniciar la consulta de streaming a Gemini
+        prompt = (
+            f"Basándote en el siguiente historial de lecturas, recomienda 1 novela ligera y explica de forma atractiva por qué: \n"
+            f"{user_history_summary}"
+        )
+        system_instruction = "Eres un recomendador literario experto en Novelas Ligeras, Manga y Web Novels. Tus explicaciones deben ser en ESPAÑOL, breves, emocionantes y premium."
+
+        try:
+            config_args = types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                response_mime_type="text/plain",
+            )
+
+            # Streaming de Gemini
+            response_stream = client.models.generate_content_stream(
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config=config_args
+            )
+
+            accumulated_text = ""
+            for chunk in response_stream:
+                if chunk.text:
+                    accumulated_text += chunk.text
+                    # Actualizar el borrador de Telegram agregando el texto acumulado
+                    # Reemplazamos el pensamiento inicial por el texto progresivo
+                    blocks = [
+                        RichMessageService.create_paragraph(accumulated_text)
+                    ]
+                    await RichMessageService.send_rich_message_draft(chat_id, blocks, draft_id=actual_draft_id)
+                    await asyncio.sleep(0.2)  # Delay menor para evitar colisiones/ratelimits en actualizaciones rápidas
+
+            # 3. Finalizar: Enviar el mensaje definitivo
+            await RichMessageService.send_rich_message(chat_id, blocks)
+
+        except Exception as e:
+            logger.error(f"Error en generate_recommendation_stream: {e}", exc_info=True)
+            # Intentar notificar error
+            await RichMessageService.send_rich_message(chat_id, [RichMessageService.create_paragraph("❌ Ha ocurrido un error al generar la recomendación.")])

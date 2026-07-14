@@ -116,6 +116,11 @@ class DonationsPlugin(BasePlugin):
             [InlineKeyboardButton("⏳ Donar más tarde", callback_data=f"cerrar_donacion|{uid}")],
         ]
 
+        api_kwargs = None
+        es_grupo = update.effective_chat and update.effective_chat.type in ("group", "supergroup")
+        if es_grupo:
+            api_kwargs = {"receiver_user_id": uid}
+
         msg = await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
@@ -123,10 +128,11 @@ class DonationsPlugin(BasePlugin):
             message_thread_id=thread_id,
             disable_web_page_preview=False,
             reply_markup=InlineKeyboardMarkup(keyboard),
+            api_kwargs=api_kwargs,
         )
 
-        # Programar auto-borrado en 2 minutos (120s)
-        if context.job_queue:
+        # Programar auto-borrado en 2 minutos (120s) solo si NO es efímero (grupo)
+        if not es_grupo and context.job_queue:
             context.job_queue.run_once(
                 self._delete_message_delayed,
                 120,
@@ -198,11 +204,16 @@ class DonationsPlugin(BasePlugin):
                 duration=months,
             )
 
+        api_kwargs = None
+        if update.effective_chat and update.effective_chat.type in ("group", "supergroup"):
+            api_kwargs = {"receiver_user_id": update.effective_user.id}
+
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
             parse_mode="HTML",
             message_thread_id=thread_id,
+            api_kwargs=api_kwargs,
         )
 
     async def set_price(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

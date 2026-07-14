@@ -180,6 +180,7 @@ async def send_doc_bytes(
     parse_mode=None,
     message_thread_id=None,
     reply_markup=None,
+    api_kwargs=None,
 ):
     """Envía documento EPUB desde bytes o ruta de archivo."""
     if not data_or_path:
@@ -198,6 +199,7 @@ async def send_doc_bytes(
                     parse_mode=parse_mode,
                     message_thread_id=message_thread_id,
                     reply_markup=reply_markup,
+                    api_kwargs=api_kwargs,
                 )
             except BadRequest as e:
                 if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -209,6 +211,7 @@ async def send_doc_bytes(
                         parse_mode=parse_mode,
                         message_thread_id=None,
                         reply_markup=reply_markup,
+                        api_kwargs=api_kwargs,
                     )
                 raise e
         elif isinstance(data_or_path, str) and await asyncio.to_thread(os.path.exists, data_or_path):
@@ -237,6 +240,7 @@ async def send_doc_bytes(
                             parse_mode=parse_mode,
                             message_thread_id=message_thread_id,
                             reply_markup=reply_markup,
+                            api_kwargs=api_kwargs,
                         )
                     except BadRequest as e:
                         if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -248,6 +252,7 @@ async def send_doc_bytes(
                                 parse_mode=parse_mode,
                                 message_thread_id=None,
                                 reply_markup=reply_markup,
+                                api_kwargs=api_kwargs,
                             )
                         raise e
                 except Exception:
@@ -264,6 +269,7 @@ async def send_doc_bytes(
                         parse_mode=parse_mode,
                         message_thread_id=message_thread_id,
                         reply_markup=reply_markup,
+                        api_kwargs=api_kwargs,
                     )
                 except BadRequest as e:
                     if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -275,6 +281,7 @@ async def send_doc_bytes(
                             parse_mode=parse_mode,
                             message_thread_id=None,
                             reply_markup=reply_markup,
+                            api_kwargs=api_kwargs,
                         )
                     raise e
     except Exception as e:

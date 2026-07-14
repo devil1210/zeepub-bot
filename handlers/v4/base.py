@@ -69,6 +69,12 @@ class BaseHandlerV4(ABC):
         """Obtiene el estado en memoria para un usuario."""
         return state_manager.get_user_state(uid)
 
-    async def send_glass_message(self, update: Update, text: str, reply_markup=None):
-        """Envía un mensaje formateado (placeholder para lógica estética futura)."""
-        return await update.effective_message.reply_html(text=text, reply_markup=reply_markup)
+    async def send_glass_message(self, update: Update, text: str, reply_markup=None, is_ephemeral: bool = False):
+        """Envía un mensaje formateado con soporte para mensajes efímeros (API 10.2)."""
+        api_kwargs = {}
+        if is_ephemeral and update.effective_chat and update.effective_chat.type in ("group", "supergroup"):
+            api_kwargs["receiver_user_id"] = update.effective_user.id
+
+        return await update.effective_message.reply_html(
+            text=text, reply_markup=reply_markup, api_kwargs=api_kwargs
+        )

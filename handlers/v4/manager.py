@@ -33,6 +33,7 @@ class HandlerManagerV4:
         self.app.add_handler(CommandHandler("status", self.system_h.handle_status))
         self.app.add_handler(CommandHandler("cancel", self.system_h.handle_cancel))
         self.app.add_handler(CommandHandler("evil", self.system_h.handle_evil))
+        self.app.add_handler(CommandHandler("destino", self.system_h.handle_destino))
         self.app.add_handler(CommandHandler("upload", self.publish_h.handle))
 
         from telegram.ext import MessageHandler, filters

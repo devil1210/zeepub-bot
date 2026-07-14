@@ -46,4 +46,4 @@ class StartHandlerV4(BaseHandlerV4):
             [InlineKeyboardButton("⚙️ Ajustes", callback_data="settings_menu")],
         ]
 
-        await self.send_glass_message(update, welcome_text, reply_markup=InlineKeyboardMarkup(keyboard))
+        await self.send_glass_message(update, welcome_text, reply_markup=InlineKeyboardMarkup(keyboard), is_ephemeral=True)

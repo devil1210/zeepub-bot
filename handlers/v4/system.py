@@ -53,7 +53,7 @@ class SystemHandlerV4(BaseHandlerV4):
             [InlineKeyboardButton("🌐 Acceso Web", callback_data="web_access")],
         ]
 
-        await self.send_glass_message(update, status_text, reply_markup=InlineKeyboardMarkup(keyboard))
+        await self.send_glass_message(update, status_text, reply_markup=InlineKeyboardMarkup(keyboard), is_ephemeral=True)
 
     @with_services
     async def handle_cancel(self, update: Update, context: ContextTypes.DEFAULT_TYPE, **services):
@@ -72,7 +72,7 @@ class SystemHandlerV4(BaseHandlerV4):
         except Exception:
             pass
 
-        await self.send_glass_message(update, "✅ <b>Operación cancelada.</b>")
+        await self.send_glass_message(update, "✅ <b>Operación cancelada.</b>", is_ephemeral=True)
 
     @with_services
     async def handle_evil(self, update: Update, context: ContextTypes.DEFAULT_TYPE, **services):
@@ -84,7 +84,7 @@ class SystemHandlerV4(BaseHandlerV4):
         st = self.get_user_state(uid)
         st["esperando_password"] = True
 
-        await self.send_glass_message(update, "🔒 <b>Modo Privado.</b> Por favor, ingresa la contraseña:")
+        await self.send_glass_message(update, "🔒 <b>Modo Privado.</b> Por favor, ingresa la contraseña:", is_ephemeral=True)
 
     @with_services
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE, **services):
@@ -108,7 +108,7 @@ class SystemHandlerV4(BaseHandlerV4):
         if st.get("esperando_destino_manual"):
             st["destino"] = text
             st.pop("esperando_destino_manual", None)
-            await self.send_glass_message(update, f"✅ <b>Destino manual establecido:</b> <code>{text}</code>")
+            await self.send_glass_message(update, f"✅ <b>Destino manual establecido:</b> <code>{text}</code>", is_ephemeral=True)
             # Mostrar menú principal tras configurar
             from services.v4.ui_service import UIServiceV4
 
@@ -122,9 +122,9 @@ class SystemHandlerV4(BaseHandlerV4):
         if st.get("esperando_password"):
             st.pop("esperando_password", None)
             if text == config.get_six_hour_password():
-                await self.send_glass_message(update, "🔓 <b>Acceso concedido al Modo Evil.</b>")
+                await self.send_glass_message(update, "🔓 <b>Acceso concedido al Modo Evil.</b>", is_ephemeral=True)
             else:
-                await self.send_glass_message(update, "❌ <b>Contraseña incorrecta.</b>")
+                await self.send_glass_message(update, "❌ <b>Contraseña incorrecta.</b>", is_ephemeral=True)
             return
 
         # Si no hay estado de espera, ignorar o loguear (evitar spam)
@@ -133,3 +133,34 @@ class SystemHandlerV4(BaseHandlerV4):
     async def handle(self, update: Update, context: ContextTypes.DEFAULT_TYPE, **services):
         """Implementación requerida por BaseHandlerV4 (no se usa directamente si registramos por método)."""
         pass
+
+    @with_services
+    async def handle_destino(self, update: Update, context: ContextTypes.DEFAULT_TYPE, **services):
+        """Maneja el comando /destino: permite elegir entre Chat actual (efímero en grupos) y Mensaje Privado."""
+        user_service = services["user_service"]
+        uid = update.effective_user.id
+
+        user = await user_service.get_or_create_user(
+            telegram_id=uid, username=update.effective_user.username, name=update.effective_user.full_name
+        )
+
+        current_dest = user.extra_data.get("download_destination", "chat") if user.extra_data else "chat"
+        dest_names = {
+            "chat": "📥 Chat actual (Efímero en grupos)",
+            "private": "💬 Mensaje Privado (DM)"
+        }
+        current_name = dest_names.get(current_dest, dest_names["chat"])
+
+        text = (
+            f"⚙️ <b>Destino de Descarga</b>\n\n"
+            f"Configura dónde deseas recibir tus novelas descargadas.\n\n"
+            f"📍 <b>Configuración actual:</b> <code>{current_name}</code>\n\n"
+            f"<i>Selecciona una opción a continuación para cambiarlo:</i>"
+        )
+
+        keyboard = [
+            [InlineKeyboardButton("📥 Chat actual", callback_data="set_dest|chat")],
+            [InlineKeyboardButton("💬 Mensaje Privado", callback_data="set_dest|private")],
+        ]
+
+        await self.send_glass_message(update, text, reply_markup=InlineKeyboardMarkup(keyboard), is_ephemeral=True)
