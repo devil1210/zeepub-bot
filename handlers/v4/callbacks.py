@@ -1,6 +1,6 @@
 import logging
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from handlers.v4.base import BaseHandlerV4, with_services
