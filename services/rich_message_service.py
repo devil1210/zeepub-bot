@@ -151,10 +151,10 @@ class RichMessageService:
     @classmethod
     def create_details(cls, title: str | dict, blocks: list[dict], is_open: bool = False) -> dict:
         """Crea un bloque colapsable de detalles."""
-        rich_title = title if isinstance(title, dict) else {"text": title}
+        rich_summary = title if isinstance(title, dict) else {"text": title}
         return {
             "type": "details",
-            "title": rich_title,
+            "summary": rich_summary,
             "blocks": blocks,
             "is_open": is_open
         }
