@@ -596,7 +596,7 @@ async def mostrar_detalles_libro(
 
     # 2. Títulos en cascada
     title_en = libro.get("title") or libro.get("titulo") or "Sin título"
-    html_parts.append(f'<h3>📚 {title_en}</h3>')
+    html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
     
     title_jp = libro.get("title_japanese") or libro.get("title_jp") or libro.get("original_title")
     if title_jp:
@@ -608,7 +608,7 @@ async def mostrar_detalles_libro(
         
     volume = libro.get("volume")
     if volume:
-        html_parts.append(f'<h6>Volumen {volume}</h6>\n')
+        html_parts.append(f'<h6>📚 Volumen {volume}</h6>\n')
 
     # 3. TABLA 1: Ficha artística y literaria
     tabla_literaria = '<table bordered striped>\n'
