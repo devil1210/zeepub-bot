@@ -6,6 +6,7 @@ from telegram.ext import ContextTypes
 
 from core.state_manager import state_manager
 from services.library_service import LibraryService
+from services.rich_message_service import RichMessageService
 from utils.helpers import get_thread_id, get_translator_acronym
 
 logger = logging.getLogger(__name__)
@@ -558,24 +559,15 @@ async def mostrar_detalles_libro(
     if msg_portada:
         st["last_detalles_msg_ids"].append(msg_portada.message_id)
 
-    # B. Mensaje de Sinopsis
-    msg_sinopsis = await context.bot.send_message(
-        chat_id=chat_id, text=part1, parse_mode="HTML", message_thread_id=thread_id
-    )
-    if msg_sinopsis:
-        st["last_detalles_msg_ids"].append(msg_sinopsis.message_id)
-
-    # C. Mensaje Técnico + Botones + Cuota
+    # B. Intentar enviar ficha detallada enriquecida (Rich Message) en lugar de los dos mensajes planos
     left = await downloads_left(uid)
     left_str = (
-        f"tienes <b>{left}</b> descargas restantes hoy"
+        f"tienes {left} descargas restantes hoy"
         if isinstance(left, int)
-        else "tienes <b>descargas ilimitadas</b>"
+        else "tienes descargas ilimitadas"
     )
 
-    text_final = f"{part2}\n\n💡 <i>Recuerda que {left_str}.</i>"
-
-    # Botones en UNA SOLA FILA según solicitado
+    # Botones en una fila
     keyboard = [
         [
             InlineKeyboardButton("Descargar", callback_data=f"dl_confirm|{key}"),
@@ -583,16 +575,61 @@ async def mostrar_detalles_libro(
             InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
         ]
     ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-    msg_info = await context.bot.send_message(
+    blocks = [
+        RichMessageService.create_table(
+            headers=["Atributo", "Detalle"],
+            rows=[
+                ["👤 Autor", libro.get("autor") or "Desconocido"],
+                ["🎨 Maquetador", libro.get("layout_by") or "No especificado"],
+                ["🌐 Traductor", libro.get("traductor") or libro.get("translator") or "No especificado"],
+                ["📦 Categoría", libro.get("book_type") or libro.get("tipo") or "Novela"],
+                ["📁 Formato", libro.get("extension") or "epub"],
+                ["💾 Tamaño", libro.get("size") or "Desconocido"],
+            ]
+        ),
+        RichMessageService.create_details(
+            title="📖 Ver Sinopsis Completa",
+            blocks=[RichMessageService.create_paragraph(libro.get("sinopsis") or "Sin sinopsis disponible.")]
+        ),
+        RichMessageService.create_paragraph(f"💡 Recuerda que {left_str}.")
+    ]
+
+    res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
-        text=text_final,
-        reply_markup=InlineKeyboardMarkup(keyboard),
-        parse_mode="HTML",
-        message_thread_id=thread_id,
+        blocks=blocks,
+        reply_markup=reply_markup,
+        message_thread_id=thread_id
     )
-    if msg_info:
-        st["last_detalles_msg_ids"].append(msg_info.message_id)
+
+    # Fallback tradicional si la API de Telegram o el transporte fallan
+    if not res or not res.get("ok"):
+        logger.warning("[UI Service] Fallback a mensajes tradicionales en mostrar_detalles_libro")
+        
+        # B. Mensaje de Sinopsis plano
+        msg_sinopsis = await context.bot.send_message(
+            chat_id=chat_id, text=part1, parse_mode="HTML", message_thread_id=thread_id
+        )
+        if msg_sinopsis:
+            st["last_detalles_msg_ids"].append(msg_sinopsis.message_id)
+
+        # C. Mensaje Técnico plano + Botones + Cuota
+        text_final = f"{part2}\n\n💡 <i>Recuerda que {left_str}.</i>"
+        msg_info = await context.bot.send_message(
+            chat_id=chat_id,
+            text=text_final,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )
+        if msg_info:
+            st["last_detalles_msg_ids"].append(msg_info.message_id)
+    else:
+        # Si fue exitoso el Rich Message, guardamos su ID de mensaje para limpieza
+        rich_msg_id = res.get("result", {}).get("message_id")
+        if rich_msg_id:
+            st["last_detalles_msg_ids"].append(rich_msg_id)
 
 
 async def mostrar_autores_local(
