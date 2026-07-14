@@ -36,6 +36,7 @@ class RichMessageService:
             if hasattr(markup, "to_dict"):
                 payload["reply_markup"] = markup.to_dict()
         try:
+            logger.info(f"[RichMessageService] Enviando payload: {payload}")
             async with httpx.AsyncClient() as client:
                 response = await client.post(url, json=payload, timeout=30.0)
                 result = response.json()
