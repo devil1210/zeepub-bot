@@ -621,7 +621,7 @@ async def mostrar_detalles_libro(
     layout_by = libro.get("layout_by") or libro.get("maquetador")
     if layout_by:
         layout_val = layout_by if layout_by.startswith("#") else f"#{layout_by}"
-        tabla_literaria += f'  <tr><td><b>🎨 Maquetador</b></td><td>{layout_val}</td></tr>\n'
+        tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
         
     tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{libro.get("book_type") or libro.get("tipo") or "Novela"}</td></tr>\n'
     
