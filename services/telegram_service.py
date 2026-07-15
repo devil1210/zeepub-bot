@@ -600,7 +600,6 @@ async def enviar_libro_directo(
             hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
             html_parts.append(f'{hashtag_serie}\n\n\n')
         else:
-            import re
             clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
             html_parts.append(f'#{clean_title}\n\n\n')
 
@@ -655,7 +654,6 @@ async def enviar_libro_directo(
         if slug:
             final_caption = slug if slug.startswith("#") else f"#{slug}"
         else:
-            import re
             clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
             final_caption = f"#{clean_title}"
 

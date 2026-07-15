@@ -324,7 +324,6 @@ class TelegramPublisherProvider(PublisherProvider):
             hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
             html_parts.append(f'{hashtag_serie}\n\n\n')
         else:
-            import re
             clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
             html_parts.append(f'#{clean_title}\n\n\n')
 
