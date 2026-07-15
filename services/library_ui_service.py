@@ -595,14 +595,14 @@ async def mostrar_detalles_libro(
         html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
 
     # 2. Títulos en cascada
-    title_en = libro.get("title") or libro.get("titulo") or "Sin título"
+    title_en = libro.get("english_title") or libro.get("title") or libro.get("titulo") or "Sin título"
     html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
     
-    title_jp = libro.get("title_japanese") or libro.get("title_jp") or libro.get("original_title")
+    title_jp = libro.get("romaji_title") or libro.get("title_japanese") or libro.get("title_jp") or libro.get("original_title")
     if title_jp:
         html_parts.append(f'<h4>🇯🇵 {title_jp}</h4>')
         
-    title_es = libro.get("title_spanish") or libro.get("title_es") or libro.get("spanish_title")
+    title_es = libro.get("spanish_title") or libro.get("title_spanish") or libro.get("title_es") or libro.get("spanish_title")
     if title_es:
         html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
         
@@ -612,7 +612,9 @@ async def mostrar_detalles_libro(
 
     # 3. TABLA 1: Ficha artística y literaria
     tabla_literaria = '<table bordered striped>\n'
-    tabla_literaria += f'  <tr><td><b>👤 Autor</b></td><td>{libro.get("autor") or libro.get("author") or "Desconocido"}</td></tr>\n'
+    
+    autor = libro.get("author") or libro.get("autor") or "Desconocido"
+    tabla_literaria += f'  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n'
     
     ilustrador = libro.get("illustrator") or libro.get("ilustrador")
     if ilustrador:
@@ -623,14 +625,15 @@ async def mostrar_detalles_libro(
         layout_val = layout_by if layout_by.startswith("#") else f"#{layout_by}"
         tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
         
-    tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{libro.get("book_type") or libro.get("tipo") or "Novela"}</td></tr>\n'
+    categoria = libro.get("book_type") or libro.get("tipo") or "Novela"
+    tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n'
     
-    demo = libro.get("demographics") or libro.get("demografia")
+    demo = libro.get("demographics_json") or libro.get("demographics") or libro.get("demografia")
     if demo:
         demo_val = ", ".join(demo) if isinstance(demo, list) else demo
         tabla_literaria += f'  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n'
         
-    generos = libro.get("tags") or libro.get("generos")
+    generos = libro.get("tags_json") or libro.get("tags") or libro.get("generos")
     if generos:
         generos_val = ", ".join(generos) if isinstance(generos, list) else generos
         tabla_literaria += f'  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n'
@@ -639,7 +642,7 @@ async def mostrar_detalles_libro(
     if traductor:
         tabla_literaria += f'  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n'
         
-    grupo_trad = libro.get("translation_group") or libro.get("grupo_traductor")
+    grupo_trad = libro.get("publisher") or libro.get("translation_group") or libro.get("grupo_traductor")
     if grupo_trad:
         grupo_trad_val = grupo_trad
         if libro.get("translation_group_url"):
@@ -662,6 +665,18 @@ async def mostrar_detalles_libro(
     )
 
     # 5. TABLA 2: Detalles del archivo
+    size_val = libro.get("size")
+    if not size_val and libro.get("file_size"):
+        try:
+            size_bytes = int(libro.get("file_size"))
+            size_val = f"{size_bytes / (1024 * 1024):.2f} MB"
+        except:
+            size_val = "Desconocido"
+    if not size_val:
+        size_val = "Desconocido"
+
+    version_val = libro.get("epub_version") or libro.get("version") or "3.0"
+
     tabla_archivo = (
         '<details>\n'
         '  <summary>📂 Ver Detalles del Archivo</summary>\n'
@@ -670,16 +685,18 @@ async def mostrar_detalles_libro(
     )
     if volume:
         tabla_archivo += f'    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n'
-    if libro.get("version"):
-        tabla_archivo += f'    <tr><td><b>ℹ️ Versión Epub</b></td><td>{libro.get("version")}</td></tr>\n'
     
-    fecha = libro.get("updated_at") or libro.get("actualizado")
+    tabla_archivo += f'    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n'
+    
+    fecha = libro.get("updated_at") or libro.get("actualizado") or libro.get("indexed_at")
     if fecha:
-        tabla_archivo += f'    <tr><td><b>📅 Actualizado</b></td><td>{fecha}</td></tr>\n'
+        if hasattr(fecha, "strftime"):
+            fecha_str = fecha.strftime("%d-%m-%Y")
+        else:
+            fecha_str = str(fecha)
+        tabla_archivo += f'    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n'
         
-    size = libro.get("size") or libro.get("tamano")
-    if size:
-        tabla_archivo += f'    <tr><td><b>💾 Tamaño</b></td><td>{size}</td></tr>\n'
+    tabla_archivo += f'    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n'
         
     tabla_archivo += (
         '  </table>\n'
