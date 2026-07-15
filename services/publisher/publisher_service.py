@@ -350,7 +350,6 @@ class TelegramPublisherProvider(PublisherProvider):
                     if slug:
                         final_caption = slug if slug.startswith("#") else f"#{slug}"
                     else:
-                        import re
                         clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
                         final_caption = f"#{clean_title}"
 
