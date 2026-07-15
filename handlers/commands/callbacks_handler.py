@@ -180,118 +180,17 @@ class CallbackHandlerV6(BaseCommandHandler):
                     "⚡️ Descargando e iniciando envío...", show_alert=False
                 )
 
-                # B. Borrar solo el mensaje de información técnica (el último de la lista)
-                msg_ids = st.get("last_detalles_msg_ids", [])
-                if msg_ids:
-                    info_msg_id = msg_ids.pop()  # Conservar portada y sinopsis intactas
-                    try:
-                        await context.bot.delete_message(
-                            chat_id=update.effective_chat.id, message_id=info_msg_id
-                        )
-                    except Exception:
-                        pass
+                # B. Mantener el mensaje original intacto (No borrar nada)
+                pass
 
-                # C. Formatear pie de foto (caption) enriquecido del archivo
-                from services.publisher.publisher_service import (
-                    TelegramPublisherProvider,
-                )
-                from utils.template_engine import apply_publication_template
-                import re
-
-                # Asegurar que el volumen esté integrado en el caption con el icono del libro 📖
-                volume = libro_st.get("volume")
-                # Fallback para intentar parsear volumen del display o el nombre del archivo si no está
-                if volume is None or volume == "":
-                    import re
-
-                    m = re.search(
-                        r"V(?:ol)?\.?\s*0*(\d+)",
-                        libro_st.get("display", "") + libro_st.get("filename", ""),
-                    )
-                    if m:
-                        volume = float(m.group(1))
-                    else:
-                        volume = 0
-
-                title_for_cap = title
-
-                # Mapear variables para el template
-                libro_map = libro_st.copy()
-                libro_map.update(
-                    {
-                        "titulo": title_for_cap,
-                        "slug": libro_st.get("slug") or "",
-                        "layout_by": libro_st.get("layout_by") or "Desconocido",
-                        "traductor": libro_st.get("translator") or "Desconocida",
-                        "tags": libro_st.get("tags", []),
-                        "demographics": libro_st.get("demographics", []),
-                        "tipo": libro_st.get("book_type") or "Novela",
-                    }
-                )
-
-                def sanitize_tg_html(t: str) -> str:
-                    if not t:
-                        return ""
-                    t = re.sub(
-                        r"<(/?p|/?div|/?h\d|/?span|/?a[^>]*)>",
-                        "\n",
-                        t,
-                        flags=re.IGNORECASE,
-                    )
-                    t = re.sub(r"<br\s*/?>", "\n", t, flags=re.IGNORECASE)
-                    t = re.sub(r"<hr\s*/?>", "\n---\n", t, flags=re.IGNORECASE)
-                    t = re.sub(r"\n{3,}", "\n\n", t).strip()
-                    return t
-
-                try:
-                    from repositories.publication_repository import pub_repo
-
-                    db_templates = await pub_repo.get_templates(platform="telegram")
-                    info_t = next(
-                        (
-                            t
-                            for t in db_templates
-                            if (t.extra_config or {}).get("type") == "info"
-                        ),
-                        None,
-                    )
-                    info_template = (
-                        info_t.content
-                        if info_t
-                        else TelegramPublisherProvider.INFO_TEMPLATE
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Error cargando plantilla de info de base de datos en dl_confirm: {e}"
-                    )
-                    info_template = TelegramPublisherProvider.INFO_TEMPLATE
-                caption = sanitize_tg_html(
-                    apply_publication_template(info_template, libro_map)
-                )
-                caption = caption.replace("__ATTACH_FILE_SIGNAL__", "").strip()
-
-                # Insertar volumen en una línea dedicada debajo de la carpeta
-                if volume is None or volume == "":
-                    volume = 0
-
-                try:
-                    f_vol = float(volume)
-                    vol_display = int(f_vol) if f_vol.is_integer() else f_vol
-                except (ValueError, TypeError):
-                    vol_display = volume
-
-                if vol_display == 0:
-                    vol_line = "📖 Volumen Único"
+                # C. Formatear pie de foto (caption) del archivo (únicamente el slug)
+                slug = libro_st.get("slug") or ""
+                if slug:
+                    caption = slug if slug.startswith("#") else f"#{slug}"
                 else:
-                    vol_line = (
-                        f"📖 Vol. {vol_display:02d}"
-                        if isinstance(vol_display, int)
-                        else f"📖 Vol. {vol_display}"
-                    )
-                # Reemplazar la línea de la serie en el caption
-                caption = caption.replace(
-                    f"📂 <b>{title_for_cap}</b>", f"📂 <b>{title}</b>\n{vol_line}"
-                )
+                    import re
+                    clean_title = re.sub(r'[^\w\s]', '', title).replace(" ", "_")
+                    caption = f"#{clean_title}"
 
                 try:
                     # D. Enviar el Documento .epub
@@ -300,7 +199,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                         update.effective_chat.id,
                         caption,
                         filepath,
-                        filename=libro_st.get("filename") or f"{title_for_cap}.epub",
+                        filename=libro_st.get("filename") or f"{title}.epub",
                         parse_mode="HTML",
                         message_thread_id=get_thread_id(update),
                     )
@@ -308,7 +207,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                     # E. Registrar descarga en BD
                     meta_reg = {
                         "book_hash": book_hash,
-                        "title": title_for_cap,
+                        "title": title,
                         "file_size": libro_st.get("file_size"),
                         "autor": libro_st.get("autor"),
                         "id": book_hash,
@@ -320,7 +219,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                         meta=meta_reg,
                         sent_doc=sent_doc,
                         download_url=None,
-                        title=title_for_cap,
+                        title=title,
                     )
 
                     # Conservar Portada y Sinopsis permanentemente en el chat al descargar con éxito
