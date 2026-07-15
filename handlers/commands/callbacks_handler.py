@@ -180,8 +180,15 @@ class CallbackHandlerV6(BaseCommandHandler):
                     "⚡️ Descargando e iniciando envío...", show_alert=False
                 )
 
-                # B. Mantener el mensaje original intacto (No borrar nada)
-                pass
+                # B. Mantener el mensaje original intacto (No borrar nada) pero quitarle los botones inline
+                try:
+                    await context.bot.edit_message_reply_markup(
+                        chat_id=update.effective_chat.id,
+                        message_id=query.message.message_id,
+                        reply_markup=None
+                    )
+                except Exception as e:
+                    logger.warning(f"Error removiendo botones del Rich Message: {e}")
 
                 # C. Formatear pie de foto (caption) del archivo (únicamente el slug)
                 slug = libro_st.get("slug") or ""
