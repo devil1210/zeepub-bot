@@ -455,60 +455,221 @@ async def enviar_libro_directo(
                 portada_data=portada_data,
             )
 
-        # --- PROCESAR CAPTION Y PLANTILLAS (Telegram) ---
-        from services.presentation.delivery_formatter import build_telegram_delivery_parts
+        # --- CONSTRUIR RENDER RICH HTML (Telegram Premium) ---
+        media = None
+        files = None
+        if portada_data:
+            if isinstance(portada_data, bytes):
+                files = {"tomozaki_cover": ("cover.jpg", portada_data, "image/jpeg")}
+            elif isinstance(portada_data, str) and os.path.exists(portada_data):
+                try:
+                    with open(portada_data, "rb") as f:
+                        files = {"tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")}
+                except Exception as e:
+                    logger.warning(f"Error al leer archivo de portada local: {e}")
 
-        msg_parts, final_caption, should_send_file_by_template = build_telegram_delivery_parts(
-            meta=meta, custom_caption=custom_caption, caption_template=caption_template
+            if files:
+                media = [
+                    {
+                        "id": "tomozaki_cover",
+                        "media": {
+                            "type": "photo",
+                            "media": "attach://tomozaki_cover"
+                        }
+                    }
+                ]
+
+        html_parts = []
+        if media:
+            html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
+
+        # Títulos en cascada
+        title_en = meta.get("english_title") or meta.get("title") or meta.get("titulo") or "Sin título"
+        html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
+        
+        title_jp = meta.get("romaji_title") or meta.get("title_japanese") or meta.get("title_jp") or meta.get("original_title")
+        if title_jp:
+            html_parts.append(f'<h4>🇯🇵 {title_jp}</h4>')
+            
+        title_es = meta.get("spanish_title") or meta.get("title_spanish") or meta.get("title_es") or meta.get("spanish_title")
+        if title_es:
+            html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
+            
+        volume = meta.get("volume")
+        if volume:
+            html_parts.append(f'<h6>📚 Volumen {volume}</h6>\n')
+
+        # TABLA 1: Ficha artística y literaria
+        tabla_literaria = '<table bordered striped>\n'
+        autor = meta.get("author") or meta.get("autor") or "Desconocido"
+        tabla_literaria += f'  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n'
+        
+        ilustrador = meta.get("illustrator") or meta.get("ilustrador")
+        if ilustrador:
+            tabla_literaria += f'  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n'
+            
+        layout_by = meta.get("layout_by") or meta.get("maquetador")
+        if layout_by:
+            layout_val = layout_by if layout_by.startswith("#") else f"#{layout_by}"
+            tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
+            
+        categoria = meta.get("book_type") or meta.get("tipo") or "Novela"
+        tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n'
+        
+        demo = meta.get("demographics_json") or meta.get("demographics") or meta.get("demografia")
+        if demo:
+            demo_val = ", ".join(demo) if isinstance(demo, list) else demo
+            tabla_literaria += f'  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n'
+            
+        generos = meta.get("tags_json") or meta.get("tags") or meta.get("generos")
+        if generos:
+            generos_val = ", ".join(generos) if isinstance(generos, list) else generos
+            tabla_literaria += f'  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n'
+            
+        traductor = meta.get("translator") or meta.get("traductor")
+        if traductor:
+            tabla_literaria += f'  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n'
+            
+        grupo_trad = meta.get("publisher") or meta.get("translation_group") or meta.get("grupo_traductor")
+        if grupo_trad:
+            grupo_trad_val = grupo_trad
+            if meta.get("translation_group_url"):
+                url_g = meta.get("translation_group_url")
+                grupo_trad_val = f'<a href="{url_g}">{grupo_trad}</a>'
+            tabla_literaria += f'  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n'
+            
+        tabla_literaria += '</table>\n'
+        html_parts.append(tabla_literaria)
+
+        # SINOPSIS: Acordeón colapsable
+        sinopsis_raw = meta.get("sinopsis") or meta.get("description") or "Sin sinopsis disponible."
+        html_parts.append(
+            '<details>\n'
+            '  <summary>📖 Ver Sinopsis</summary>\n'
+            '  <blockquote>\n'
+            f'    {sinopsis_raw}\n'
+            '  </blockquote>\n'
+            '</details>\n'
         )
 
-        # 5. Enviar Portada
-        if len(msg_parts) > 0:
-            mensaje_portada = msg_parts[0]
-            if portada_data and mensaje_portada:  # Solo si hay texto
-                logger.info(f"Enviando portada a {destino}")
-                await send_photo_bytes(
-                    bot,
-                    destino,
-                    mensaje_portada,
-                    portada_data,
-                    filename="cover.jpg",
-                    parse_mode="HTML",
-                    message_thread_id=message_thread_id,
-                )
-            elif mensaje_portada:  # Solo enviar si hay texto
-                logger.info(f"Enviando mensaje de portada como texto a {destino}")
-                await bot.send_message(
-                    chat_id=destino,
-                    text=mensaje_portada,
-                    parse_mode="HTML",
-                    message_thread_id=message_thread_id,
-                )
+        # TABLA 2: Detalles del archivo
+        size_val = meta.get("size")
+        if not size_val and meta.get("file_size"):
+            try:
+                size_bytes = int(meta.get("file_size"))
+                size_val = f"{size_bytes / (1024 * 1024):.2f} MB"
+            except:
+                size_val = "Desconocido"
+        if not size_val:
+            size_val = "Desconocido"
 
-        # 6. Enviar Sinopsis
-        if len(msg_parts) > 1:
-            sinopsis_to_send = msg_parts[1]
-            if sinopsis_to_send:
-                logger.info(f"Enviando sinopsis a {destino}")
-                await bot.send_message(
-                    chat_id=destino,
-                    text=sinopsis_to_send,
-                    parse_mode="HTML",
-                    message_thread_id=message_thread_id,
-                )
+        version_val = meta.get("epub_version") or meta.get("version") or "3.0"
 
-        # 7. Enviar Archivo EPUB
+        tabla_archivo = (
+            '<details>\n'
+            '  <summary>📂 Ver Detalles del Archivo</summary>\n'
+            '  <table bordered striped>\n'
+            f'    <tr><td><b>📂 Nombre</b></td><td>{meta.get("title") or "Desconocido"}</td></tr>\n'
+        )
+        if volume:
+            tabla_archivo += f'    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n'
+        
+        tabla_archivo += f'    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n'
+        
+        fecha = meta.get("updated_at") or meta.get("actualizado") or meta.get("indexed_at")
+        if fecha:
+            if hasattr(fecha, "strftime"):
+                fecha_str = fecha.strftime("%d-%m-%Y")
+            else:
+                fecha_str = str(fecha)
+            tabla_archivo += f'    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n'
+            
+        tabla_archivo += f'    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n'
+            
+        tabla_archivo += (
+            '  </table>\n'
+            '</details>\n'
+        )
+        html_parts.append(tabla_archivo)
+
+        # Línea divisoria y pie
+        html_parts.append('<hr/>')
+        
+        slug = meta.get("slug")
+        if slug:
+            hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
+            html_parts.append(f'{hashtag_serie}\n\n\n')
+        else:
+            import re
+            clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
+            html_parts.append(f'#{clean_title}\n\n\n')
+
+        html_content = "\n".join(html_parts)
+
+        # Intentar enviar Rich Message unificado
+        rich_sent = False
+        from services.rich_message_service import RichMessageService
+        try:
+            res = await RichMessageService.send_rich_message(
+                chat_id=destino,
+                html=html_content,
+                media=media,
+                files=files if files else None,
+                reply_markup=reply_markup,
+                message_thread_id=message_thread_id
+            )
+            if res and res.get("ok"):
+                rich_sent = True
+        except Exception as e:
+            logger.warning(f"Error al enviar Rich Message unificado en enviar_libro_directo: {e}")
+
+        # Fallback tradicional si falla
+        if not rich_sent:
+            logger.info("Ejecutando fallback tradicional en enviar_libro_directo")
+            from services.presentation.delivery_formatter import build_telegram_delivery_parts
+            msg_parts, fallback_caption, should_send_file_by_template = build_telegram_delivery_parts(
+                meta=meta, custom_caption=custom_caption, caption_template=caption_template
+            )
+            if len(msg_parts) > 0:
+                mensaje_portada = msg_parts[0]
+                if portada_data and mensaje_portada:
+                    await send_photo_bytes(
+                        bot, destino, mensaje_portada, portada_data, filename="cover.jpg",
+                        parse_mode="HTML", message_thread_id=message_thread_id,
+                    )
+                elif mensaje_portada:
+                    await bot.send_message(
+                        chat_id=destino, text=mensaje_portada, parse_mode="HTML",
+                        message_thread_id=message_thread_id,
+                    )
+
+            if len(msg_parts) > 1:
+                sinopsis_to_send = msg_parts[1]
+                if sinopsis_to_send:
+                    await bot.send_message(
+                        chat_id=destino, text=sinopsis_to_send, parse_mode="HTML",
+                        message_thread_id=message_thread_id,
+                    )
+
+        # Formatear el caption del archivo epub (Únicamente el slug)
+        if slug:
+            final_caption = slug if slug.startswith("#") else f"#{slug}"
+        else:
+            import re
+            clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
+            final_caption = f"#{clean_title}"
+
         if auto_delete_seconds > 0:
             mins = auto_delete_seconds // 60
             final_caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
 
-        # Nombre de archivo - usar filename de LocalBook o extraer de ruta
+        # Nombre de archivo
         fname = meta.get("filename") or "archivo.epub"
         if download_url and not download_url.startswith("http"):
             fname = os.path.basename(download_url)
 
-        if epub_bytes and should_send_file_by_template:
-            logger.info(f"Enviando archivo EPUB a {destino} (Plantilla con {{archivo}}): {fname}")
+        if epub_bytes:
+            logger.info(f"Enviando archivo EPUB a {destino}: {fname}")
             sent_doc = await send_doc_bytes(
                 bot,
                 destino,
@@ -517,12 +678,11 @@ async def enviar_libro_directo(
                 filename=fname,
                 parse_mode="HTML",
                 message_thread_id=message_thread_id,
-                reply_markup=reply_markup,
+                reply_markup=reply_markup if not rich_sent else None,
             )
         else:
-            logger.info(f"No se envía archivo a {destino} (Plantilla sin {{archivo}})")
             sent_doc = None
-            if final_caption:
+            if not rich_sent and final_caption:
                 await bot.send_message(
                     chat_id=destino,
                     text=final_caption,
