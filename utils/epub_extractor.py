@@ -63,6 +63,10 @@ class EpubMetadataExtractor:
                     # Clean title from tags like [ShinsengumiTL]
                     raw_title = self._get_dc_value(metadata_node, "title")
                     self.metadata["title"] = raw_title
+                    if raw_title:
+                        from utils.metadata_utils import clean_romaji_title, is_romaji_string
+                        if is_romaji_string(raw_title):
+                            self.metadata["romaji_title"] = clean_romaji_title(raw_title)
                     self.metadata["publisher"] = self._get_dc_value(metadata_node, "publisher")
                     self.metadata["language"] = self._get_dc_value(metadata_node, "language")
                     self.metadata["description"] = self._get_dc_value(metadata_node, "description")

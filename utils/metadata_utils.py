@@ -403,7 +403,8 @@ def process_book_identity_comprehensive(
         "color_mode": meta.get("color_mode", "bw"),
         "romaji_title": romaji_from_series
         or romaji_from_title
-        or meta.get("romaji_title"),
+        or meta.get("romaji_title")
+        or (clean_romaji_title(meta.get("title")) if (meta.get("title") and is_romaji_string(meta.get("title"))) else None),
         "series_spanish": series_spanish or meta.get("series_spanish"),
         "series_english": series_english or meta.get("series_english"),
     }

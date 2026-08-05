@@ -386,7 +386,7 @@ class EpubScanner:
                         book.romaji_title = sp_val
                     sp_val = None
 
-                book.romaji_title = identity.get("romaji_title") or book.romaji_title
+                book.romaji_title = identity.get("romaji_title") or meta.get("romaji_title") or book.romaji_title
                 book.spanish_title = sp_val or (book.spanish_title if not is_romaji_string(book.spanish_title or "") else None)
                 book.english_title = identity.get("series_english") or book.english_title
                 book.series_spanish = sp_val or (book.series_spanish if not is_romaji_string(book.series_spanish or "") else None)
