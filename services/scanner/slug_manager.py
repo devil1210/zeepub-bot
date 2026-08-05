@@ -64,6 +64,10 @@ class SlugManager:
         cleaned_slug = re.sub(r"_+", "_", cleaned_slug)
         cleaned_slug = cleaned_slug.strip("_")
 
+        # Remover sufijos de volumen del slug de la serie (ej: _V20 -> "")
+        cleaned_slug = re.sub(r"_(?:v|vol|volumen|tomo)_\d+$", "", cleaned_slug, flags=re.IGNORECASE)
+        cleaned_slug = re.sub(r"_(?:v|vol|volumen|tomo)\d+$", "", cleaned_slug, flags=re.IGNORECASE)
+
         return cleaned_slug
 
     @staticmethod
@@ -85,7 +89,7 @@ class SlugManager:
                 # Generación manual rápida si el helper falló
                 new_slug = series_metadata.series_name.lower().replace(" ", "_")
 
-            # Clean special characters
+            # Clean special characters and volume suffixes
             cleaned_slug = SlugManager.clean_slug_special_chars(new_slug)
 
             if not cleaned_slug:
@@ -104,6 +108,10 @@ class SlugManager:
         """
         if not current_slug:
             return True, "vacío"
+
+        # Detectar si el slug actual contiene un sufijo de volumen (ej: _V20, _Vol_1)
+        if re.search(r"_(?:v|vol|volumen|tomo)\d+$", current_slug, re.IGNORECASE) or re.search(r"_(?:v|vol|volumen|tomo)_\d+$", current_slug, re.IGNORECASE):
+            return True, "contiene sufijo de volumen"
 
         if current_slug == new_slug:
             return False, "idéntico"

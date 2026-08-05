@@ -221,15 +221,20 @@ class EpubScanner:
                 logger.error(f"❌ No se pudo extraer metadata de {filename}")
                 return False
 
-            # Extracción nativa adicional del Español Puro desde el HTML del EPUB
+            # Extracción nativa adicional desde el HTML del EPUB
             try:
                 from services.epub_service import extract_internal_title
+                from utils.metadata_utils import is_romaji_string
                 internal_title = extract_internal_title(filepath)
                 if internal_title:
-                    meta["series_spanish"] = internal_title
-                    logger.info(f"📖 Título en Español extraído del HTML nativo: {internal_title}")
+                    if is_romaji_string(internal_title):
+                        meta["romaji_title"] = internal_title
+                        logger.info(f"📖 Título en Romaji extraído del HTML nativo: {internal_title}")
+                    else:
+                        meta["series_spanish"] = internal_title
+                        logger.info(f"📖 Título en Español extraído del HTML nativo: {internal_title}")
             except Exception as e:
-                logger.debug(f"No se pudo extraer el título interno en español de {filename}: {e}")
+                logger.debug(f"No se pudo extraer el título interno de {filename}: {e}")
 
             # 4. PROCESAR IDENTIDAD (Sin redundancia de E/S)
             from utils.helpers import process_book_identity_comprehensive
