@@ -373,10 +373,18 @@ class EpubScanner:
                 book.book_hash = target_book_hash
                 book.is_uncensored = identity["is_uncensored"]
                 book.color_mode = identity["color_mode"]
+                from utils.metadata_utils import is_romaji_string
+
+                sp_val = identity.get("series_spanish") or identity.get("spanish_title")
+                if sp_val and is_romaji_string(sp_val):
+                    if not book.romaji_title or book.romaji_title == identity.get("title"):
+                        book.romaji_title = sp_val
+                    sp_val = None
+
                 book.romaji_title = identity.get("romaji_title") or book.romaji_title
-                book.spanish_title = identity.get("series_spanish") or book.spanish_title
+                book.spanish_title = sp_val or (book.spanish_title if not is_romaji_string(book.spanish_title or "") else None)
                 book.english_title = identity.get("series_english") or book.english_title
-                book.series_spanish = identity.get("series_spanish") or book.series_spanish
+                book.series_spanish = sp_val or (book.series_spanish if not is_romaji_string(book.series_spanish or "") else None)
                 book.series_english = identity.get("series_english") or book.series_english
                 book.uuid = identity.get("uuid") or book.uuid
 

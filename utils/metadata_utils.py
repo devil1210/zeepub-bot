@@ -4,6 +4,26 @@ from typing import Any
 
 from utils.string_utils import normalize_author_name
 
+ROMAJI_PARTICLES = {
+    "no", "to", "ga", "wa", "ni", "de", "wo", "ka", "mo", "ya", "kara", "made",
+    "san", "chan", "kun", "sama", "tonari", "desu", "kuro", "shiro", "boku",
+    "ore", "watashi", "monogatari", "isekai", "tensei", "shinja", "kusuriya",
+    "hitorigoto", "rosia", "russiago", "dereru", "bosotto", "arya"
+}
+
+
+def is_romaji_string(text: str) -> bool:
+    """Verifica si una cadena dada es predominantemente Romaji / Japonés romanizado."""
+    if not text or not isinstance(text, str):
+        return False
+    if re.search(r"[\u3040-\u30ff\u4e00-\u9faf]", text):
+        return True
+    words = [w.lower() for w in re.findall(r"\b[a-zA-Z]+\b", text)]
+    if not words:
+        return False
+    romaji_matches = sum(1 for w in words if w in ROMAJI_PARTICLES)
+    return romaji_matches >= 2 or (len(words) >= 3 and (romaji_matches / len(words)) >= 0.2)
+
 
 def clean_romaji_title(title: str) -> str:
     """

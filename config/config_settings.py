@@ -149,6 +149,8 @@ class BotConfig:
             self._ai_key_logged = True
         return key
 
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+
     @property
     def PERPLEXITY_API_KEY(self) -> str:
         return os.getenv("PERPLEXITY_API_KEY", "")

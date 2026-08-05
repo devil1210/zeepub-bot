@@ -202,14 +202,27 @@ class TelegramPublisherProvider(PublisherProvider):
             html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
 
         # Títulos en cascada
+        from utils.metadata_utils import is_romaji_string
+
         title_en = book_data.get("english_title") or book_data.get("title") or book_data.get("titulo") or "Sin título"
+        title_jp = book_data.get("romaji_title") or book_data.get("title_japanese") or book_data.get("title_jp")
+        title_es = book_data.get("spanish_title") or book_data.get("title_spanish") or book_data.get("title_es")
+
+        # Autocorrección de campos permutados
+        if title_es and is_romaji_string(title_es):
+            if not title_jp or title_jp == title_en:
+                title_jp = title_es
+            title_es = None
+
+        if title_jp and (title_jp == title_en or not is_romaji_string(title_jp)):
+            title_jp = None
+
+        if title_es and (title_es == title_en or is_romaji_string(title_es)):
+            title_es = None
+
         html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
-        
-        title_jp = book_data.get("romaji_title") or book_data.get("title_japanese") or book_data.get("title_jp") or book_data.get("original_title")
         if title_jp:
             html_parts.append(f'<h4>🇯🇵 {title_jp}</h4>')
-            
-        title_es = book_data.get("spanish_title") or book_data.get("title_spanish") or book_data.get("title_es") or book_data.get("spanish_title")
         if title_es:
             html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
             

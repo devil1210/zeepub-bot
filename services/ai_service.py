@@ -54,12 +54,15 @@ class AIService:
         if not client:
             return None
 
-        # Modelos: gemini-3.1-flash-lite (por defecto), gemini-2.5-flash, gemini-3-flash-preview
+        # Modelos: gemini-3.5-flash-lite, gemini-3.1-flash-lite, gemini-2.5-flash, gemini-3-flash-preview
+        default_model = getattr(config, "GEMINI_MODEL", "gemini-3.5-flash-lite")
         models_to_try = (
             [target_model]
             if target_model
-            else ["gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3-flash-preview"]
+            else [default_model, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3-flash-preview"]
         )
+        # Deduplicar preservando el orden
+        models_to_try = list(dict.fromkeys(models_to_try))
         now = time.time()
 
         for model_name in models_to_try:
