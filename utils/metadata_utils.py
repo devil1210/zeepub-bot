@@ -333,6 +333,12 @@ def process_book_identity_comprehensive(
         ui_title = ui_title[:-5].strip()
     romaji_from_title = parsed_filename.get("romaji")
 
+    # Fallback para series_spanish si no viene de la serie OPF o si es Romaji
+    if not series_spanish or is_romaji_string(series_spanish):
+        fn_series = parsed_filename.get("series") or parsed_filename.get("clean_title")
+        if fn_series and not is_romaji_string(fn_series):
+            series_spanish = fn_series
+
     # Limpieza final de strings
     if series and series != "Unknown":
         series = clean_romaji_title(series)
