@@ -106,35 +106,51 @@ async def handle_facebook_publication(
         from services.cover_service import resolve_cover_data
         resolved_cover = await resolve_cover_data(fb_cover_url) if fb_cover_url else None
 
-        url = f"https://graph.facebook.com/v19.0/{target_id}/photos"
-        params = {
-            "caption": fb_caption,
+        url_upload = f"https://graph.facebook.com/v19.0/{target_id}/photos"
+        params_upload = {
             "access_token": token,
-            "published": "true",
+            "published": "false",
         }
 
         try:
             async with httpx.AsyncClient() as client:
+                photo_id = None
                 if isinstance(resolved_cover, bytes):
                     files = {"source": ("cover.jpg", resolved_cover, "image/jpeg")}
-                    resp = await client.post(url, params=params, files=files, timeout=45)
+                    resp_up = await client.post(url_upload, params=params_upload, files=files, timeout=45)
+                    if resp_up.status_code in (200, 201):
+                        photo_id = resp_up.json().get("id")
                 elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
                     with open(resolved_cover, "rb") as f:
                         files = {"source": ("cover.jpg", f.read(), "image/jpeg")}
-                        resp = await client.post(url, params=params, files=files, timeout=45)
+                        resp_up = await client.post(url_upload, params=params_upload, files=files, timeout=45)
+                        if resp_up.status_code in (200, 201):
+                            photo_id = resp_up.json().get("id")
                 elif fb_cover_url and fb_cover_url.startswith("http"):
-                    params["url"] = fb_cover_url
-                    resp = await client.post(url, params=params, timeout=45)
-                else:
-                    await bot.send_message(chat_id=user_id, text="⚠️ No se pudo obtener la portada del libro para Facebook.")
+                    params_upload["url"] = fb_cover_url
+                    resp_up = await client.post(url_upload, params=params_upload, timeout=45)
+                    if resp_up.status_code in (200, 201):
+                        photo_id = resp_up.json().get("id")
+
+                # Publicar en el muro ("Publicaciones") vía /feed
+                url_feed = f"https://graph.facebook.com/v19.0/{target_id}/feed"
+                payload_feed: dict[str, Any] = {"message": fb_caption}
+                if photo_id:
+                    payload_feed["attached_media"] = [{"media_fbid": str(photo_id)}]
+
+                resp_feed = await client.post(
+                    url_feed,
+                    params={"access_token": token},
+                    json=payload_feed,
+                    timeout=45,
+                )
+
+                if resp_feed.status_code not in (200, 201):
+                    logger.error(f"FB Feed Error: {resp_feed.text}")
+                    await bot.send_message(chat_id=user_id, text=f"❌ Error publicando en el muro de Facebook: {resp_feed.text}")
                     return False
 
-                if resp.status_code not in (200, 201):
-                    logger.error(f"FB Error: {resp.text}")
-                    await bot.send_message(chat_id=user_id, text=f"❌ Error publicando en Facebook: {resp.text}")
-                    return False
-
-            await bot.send_message(chat_id=user_id, text="✅ Publicado exitosamente en Facebook.")
+            await bot.send_message(chat_id=user_id, text="✅ Publicado exitosamente en el muro de Facebook.")
             return True
         except Exception as e:
             logger.error(f"Excepción publicando en Facebook: {e}")
