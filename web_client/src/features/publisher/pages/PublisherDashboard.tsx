@@ -16,6 +16,7 @@ import {
     Copy,
     Type,
     Facebook,
+    Twitter,
     Send as TelegramIcon,
     RefreshCw,
     Star
@@ -170,8 +171,8 @@ export const PublisherDashboard: React.FC = () => {
 
                                     <div className="flex justify-between items-start">
                                         <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-xl bg-white/5 ${item.platform === 'telegram' ? 'text-blue-400' : 'text-primary'}`}>
-                                                {item.platform === 'telegram' ? <TelegramIcon className="w-4 h-4" /> : <Facebook className="w-4 h-4" />}
+                                            <div className={`p-2 rounded-xl bg-white/5 ${item.platform === 'telegram' ? 'text-blue-400' : item.platform === 'facebook' ? 'text-primary' : 'text-sky-400'}`}>
+                                                {item.platform === 'telegram' ? <TelegramIcon className="w-4 h-4" /> : item.platform === 'facebook' ? <Facebook className="w-4 h-4" /> : <Twitter className="w-4 h-4" />}
                                             </div>
                                             <div className="flex flex-col gap-0.5">
                                                 <div className="flex items-center gap-1.5">
@@ -262,9 +263,9 @@ export const PublisherDashboard: React.FC = () => {
                                 channels.map(channel => (
                                     <div key={channel.id} className={`glass-panel rounded-premium p-4 border flex items-center justify-between group transition-all ${channel.is_favorite ? 'border-yellow-500/20 bg-yellow-500/5' : 'border-white/5'}`}>
                                         <div className="flex items-center gap-4">
-                                            <div className={`p-3 rounded-2xl ${channel.platform === 'telegram' ? 'bg-blue-500/10 text-blue-400' : 'bg-primary/10 text-primary'
+                                            <div className={`p-3 rounded-2xl ${channel.platform === 'telegram' ? 'bg-blue-500/10 text-blue-400' : channel.platform === 'facebook' ? 'bg-primary/10 text-primary' : 'bg-sky-500/10 text-sky-400'
                                                 } shadow-inner relative`}>
-                                                {channel.platform === 'telegram' ? <TelegramIcon className="w-5 h-5" /> : <Facebook className="w-5 h-5" />}
+                                                {channel.platform === 'telegram' ? <TelegramIcon className="w-5 h-5" /> : channel.platform === 'facebook' ? <Facebook className="w-5 h-5" /> : <Twitter className="w-5 h-5" />}
                                                 {channel.is_favorite && (
                                                     <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border-2 border-[#1a1b1e] shadow-sm transform rotate-12" />
                                                 )}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Send, Facebook, Loader2, Check, Save, Hash, Settings } from 'lucide-react';
+import { X, Send, Facebook, Twitter, Loader2, Check, Save, Hash, Settings } from 'lucide-react';
 import { PublicationChannel } from '../services/publisherApi';
 
 interface ChannelModalProps {
@@ -109,7 +109,7 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onS
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Plataforma</label>
                                 <div className="flex gap-2">
-                                    {(['telegram', 'facebook'] as const).map((p) => (
+                                    {(['telegram', 'facebook', 'twitter'] as const).map((p) => (
                                         <button
                                             key={p}
                                             type="button"
@@ -119,8 +119,8 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onS
                                                 : 'bg-black/20 border-white/5 text-gray-400 hover:text-gray-200'
                                                 }`}
                                         >
-                                            {p === 'telegram' ? <Send className="w-3.5 h-3.5" /> : <Facebook className="w-3.5 h-3.5" />}
-                                            {p}
+                                            {p === 'telegram' ? <Send className="w-3.5 h-3.5" /> : p === 'facebook' ? <Facebook className="w-3.5 h-3.5" /> : <Twitter className="w-3.5 h-3.5" />}
+                                            {p === 'twitter' ? 'X / Twitter' : p}
                                         </button>
                                     ))}
                                 </div>
@@ -141,13 +141,13 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onS
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">
-                                {platform === 'telegram' ? 'Chat ID / @Username' : 'ID de Grupo de Facebook'}
+                                {platform === 'telegram' ? 'Chat ID / @Username' : platform === 'facebook' ? 'ID de Grupo de Facebook' : 'Cuenta de X / Twitter'}
                             </label>
                             <input
                                 type="text"
                                 value={targetId}
                                 onChange={(e) => setTargetId(e.target.value)}
-                                placeholder={platform === 'telegram' ? "-100..." : "87290..."}
+                                placeholder={platform === 'telegram' ? "-100..." : platform === 'facebook' ? "87290..." : "@mi_cuenta"}
                                 className="w-full bg-black/20 border border-white/10 rounded-premium-sm px-4 py-2.5 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                             />
                         </div>

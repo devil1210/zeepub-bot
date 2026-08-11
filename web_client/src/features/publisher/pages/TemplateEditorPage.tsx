@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-    ChevronLeft, Type, Save, Check, Loader2, Smartphone, Globe, Search as SearchIcon, ArrowRight, X
+    ChevronLeft, Type, Save, Check, Loader2, Smartphone, Globe, Twitter, Search as SearchIcon, ArrowRight, X
 } from 'lucide-react';
 import { usePublisher } from '../hooks/usePublisher';
 import { RichTextEditor } from '@shared/components/RichTextEditor/RichTextEditor';
@@ -264,7 +264,7 @@ export const TemplateEditorPage: React.FC = () => {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Plataforma</label>
                                 <div className="flex gap-2">
-                                    {(['telegram', 'facebook'] as const).map((p) => (
+                                    {(['telegram', 'facebook', 'twitter'] as const).map((p) => (
                                         <button
                                             key={p}
                                             type="button"
@@ -274,8 +274,8 @@ export const TemplateEditorPage: React.FC = () => {
                                                 : 'bg-black/40 border-white/5 text-gray-500 hover:text-gray-300'
                                                 }`}
                                         >
-                                            {p === 'telegram' ? <Smartphone className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
-                                            {p}
+                                            {p === 'telegram' ? <Smartphone className="w-4 h-4" /> : p === 'facebook' ? <Globe className="w-4 h-4" /> : <Twitter className="w-4 h-4" />}
+                                            {p === 'twitter' ? 'X / Twitter' : p}
                                         </button>
                                     ))}
                                 </div>

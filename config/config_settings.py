@@ -71,6 +71,12 @@ class BotConfig:
     FACEBOOK_PAGE_ACCESS_TOKEN: str = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN", "")
     FACEBOOK_GROUP_ID: str = os.getenv("FACEBOOK_GROUP_ID", "")
 
+    # Twitter / X Credentials
+    TWITTER_API_KEY: str = os.getenv("TWITTER_API_KEY", "")
+    TWITTER_API_SECRET: str = os.getenv("TWITTER_API_SECRET", "")
+    TWITTER_ACCESS_TOKEN: str = os.getenv("TWITTER_ACCESS_TOKEN", "")
+    TWITTER_ACCESS_TOKEN_SECRET: str = os.getenv("TWITTER_ACCESS_TOKEN_SECRET", "")
+
     # Domain for public downloads
     DL_DOMAIN: str = os.getenv("DL_DOMAIN", "dl.zeepubs.com")
 
