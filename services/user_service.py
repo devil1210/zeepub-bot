@@ -343,3 +343,44 @@ async def update_user_status_label(telegram_id: int, label: str | None):
 async def invalidate_user_cache(telegram_id: int = None):
     # Standalone wrapper for cache invalidation
     pass
+
+
+async def increment_download_count(telegram_id: int) -> int:
+    """Incrementa el contador total de descargas de un usuario."""
+    from repositories.user_repository import user_repo
+
+    return await user_repo.increment_download_count(telegram_id)
+
+
+async def sync_user_profile_photo(telegram_id: int, bot=None) -> dict | None:
+    """Sincroniza la foto de perfil del usuario desde Telegram API."""
+    from repositories.user_repository import user_repo
+
+    photo_url = None
+    if bot:
+        try:
+            photos = await bot.get_user_profile_photos(telegram_id, limit=1)
+            if photos and photos.photos:
+                file_id = photos.photos[0][0].file_id
+                photo_url = f"/api/bot/avatar?file_id={file_id}"
+        except Exception as e:
+            logger.warning(f"No se pudo obtener foto de perfil para {telegram_id}: {e}")
+
+    if photo_url:
+        await user_repo.update_profile(telegram_id, photo_url=photo_url)
+
+    return await user_repo.get_by_telegram_id(telegram_id)
+
+
+async def check_milestones(telegram_id: int, context=None) -> str | None:
+    """Comprueba si el usuario ha alcanzado un hito de descargas."""
+    from repositories.user_repository import user_repo
+
+    user = await user_repo.get_by_telegram_id(telegram_id)
+    if not user:
+        return None
+    downloads = getattr(user, "total_downloads", 0) or 0
+    if downloads in (10, 50, 100, 250, 500, 1000):
+        return f"🎉 ¡Felicidades! Has alcanzado un hito de <b>{downloads} descargas</b> en ZeePub."
+    return None
+

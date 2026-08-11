@@ -14,15 +14,15 @@ def start_publisher_scheduler(application: Application):
         logger.warning("JobQueue no disponible. No se puede iniciar el scheduler de publicación.")
         return
 
-    # Procesar cada 5 minutos
-    # Usamos un intervalo corto para mayor precisión en la programación
+    # Procesar cada 1 minuto
+    # Usamos un intervalo corto para mayor precisión en la programación de publicaciones
     application.job_queue.run_repeating(
         callback=process_queue_job,
-        interval=300,  # 5 minutos
-        first=10,  # Iniciar a los 10 segundos del arranque
+        interval=60,  # 1 minuto
+        first=5,  # Iniciar a los 5 segundos del arranque
         name="publisher_queue_processor",
     )
-    logger.info("🚀 Scheduler de publicación iniciado (intervalo: 5m)")
+    logger.info("🚀 Scheduler de publicación iniciado (intervalo: 1m)")
 
 
 async def process_queue_job(context):
