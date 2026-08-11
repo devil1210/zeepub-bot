@@ -51,9 +51,12 @@ async def handle_facebook_publication(
             TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta
         )
 
-    # Convertir hipervínculos HTML a texto con URL visible para Facebook
+    # Convertir hipervínculos HTML y etiquetas de salto de línea a texto plano con saltos reales para Facebook
     fb_caption = re.sub(r'<a\s+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', r'\2: \1', fb_caption, flags=re.IGNORECASE)
-    fb_caption = re.sub(r"<[^>]+>", "", fb_caption).strip()
+    fb_caption = re.sub(r'<(br|/p|/div|hr)\s*/?>', '\n', fb_caption, flags=re.IGNORECASE)
+    fb_caption = re.sub(r'<p[^>]*>', '', fb_caption, flags=re.IGNORECASE)
+    fb_caption = re.sub(r'<[^>]+>', '', fb_caption).strip()
+    fb_caption = re.sub(r'\n{3,}', '\n\n', fb_caption)
 
     # Añadir link de descarga si existe y no está incluido en la plantilla
     if public_link and public_link not in fb_caption and "http" not in fb_caption:

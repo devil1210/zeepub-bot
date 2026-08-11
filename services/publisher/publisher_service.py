@@ -54,19 +54,21 @@ class TelegramPublisherProvider(PublisherProvider):
     )
 
     FB_CAPTION_TEMPLATE = (
-        "📚 {serie} ║ {romaji_title} ║ {titulo}"
-        "[?volumen]\n📖 Volumen {volumen}[/?]"
-        "\n[?download_link]\n⬇️ Descarga: {download_link}[/?]\n"
-        "\n[?layout_by]🎨 Maquetado por: {layout_by}[/?]"
-        "[?tipo]\n🏷️ Categoría: {tipo}[/?]"
-        "[?demography]\n👥 Demografía: {demography}[/?]"
-        "[?genres]\n🎭 Géneros: {genres}[/?]"
-        "[?autor]\n✍️ Autor: {autor}[/?]"
-        "[?illustrator]\n🎨 Ilustrador: {illustrator}[/?]"
-        "[?published_at]\n📅 Publicado: {published_at}[/?]"
-        "[?traductor]\n🌐 Traductor: {traductor}[/?]"
-        "[?editorial]\n🏢 Grupo Traductor: {editorial}[/?]"
-        "\n📝 Sinopsis: {sinopsis}"
+        "📚 {serie} ║ {romaji_title} ║ {titulo}\n"
+        "[?volumen]📖 Volumen {volumen}\n[/?]"
+        "[?download_link]⬇️ Descarga: {download_link}\n[/?]"
+        "[?fecha]📅 Actualizado: {fecha}\n[/?]"
+        "[?tamaño]📦 Tamaño: {tamaño}\n[/?]"
+        "[?layout_by]🎨 Maquetado por: {layout_by}\n[/?]"
+        "[?tipo]🏷️ Categoría: {tipo}\n[/?]"
+        "[?demography]👥 Demografía: {demography}\n[/?]"
+        "[?genres]🎭 Géneros: {genres}\n[/?]"
+        "[?autor]✍️ Autor: {autor}\n[/?]"
+        "[?illustrator]🎨 Ilustrador: {illustrator}\n[/?]"
+        "[?traductor]🌐 Traducción: {traductor}\n[/?]"
+        "[?editorial]🏢 Grupo: {editorial}\n[/?]"
+        "\n[?sinopsis]📝 Sinopsis:\n{sinopsis}\n[/?]"
+        "\n[?slug]#{slug}[/?]"
     )
 
     def __init__(self, bot=None):
@@ -453,9 +455,12 @@ class FacebookPublisherProvider(PublisherProvider):
                 TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
             )
 
-        # Convertir hipervínculos HTML a texto con URL visible para Facebook
+        # Convertir hipervínculos HTML y etiquetas de salto de línea a texto plano con saltos reales para Facebook
         fb_caption = re.sub(r'<a\s+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', r'\2: \1', caption, flags=re.IGNORECASE)
-        fb_caption = re.sub(r"<[^>]+>", "", fb_caption).strip()
+        fb_caption = re.sub(r'<(br|/p|/div|hr)\s*/?>', '\n', fb_caption, flags=re.IGNORECASE)
+        fb_caption = re.sub(r'<p[^>]*>', '', fb_caption, flags=re.IGNORECASE)
+        fb_caption = re.sub(r'<[^>]+>', '', fb_caption).strip()
+        fb_caption = re.sub(r'\n{3,}', '\n\n', fb_caption)
         if len(fb_caption) > 2100:
             fb_caption = fb_caption[:2097] + "..."
 
