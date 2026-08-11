@@ -198,9 +198,16 @@ class TelegramPublisherProvider(PublisherProvider):
                     }
                 ]
 
-        html_parts = []
-        if media:
-            html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
+        # Si se proporcionó una plantilla personalizada (caption), usarla directamente para RichMessage
+        if options and options.get("caption"):
+            if media:
+                html_content = f'<img src="tg://photo?id=tomozaki_cover" />\n{caption_raw}'
+            else:
+                html_content = caption_raw
+        else:
+            html_parts = []
+            if media:
+                html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
 
         # Títulos en cascada
         from utils.metadata_utils import is_romaji_string
@@ -341,7 +348,8 @@ class TelegramPublisherProvider(PublisherProvider):
             clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
             html_parts.append(f'#{clean_title}\n\n\n')
 
-        html_content = "\n".join(html_parts)
+        if not (options and options.get("caption")):
+            html_content = "\n".join(html_parts)
 
         # A. Intentar enviar Rich Message unificado a través de Telegram API 10.2
         rich_sent = False
