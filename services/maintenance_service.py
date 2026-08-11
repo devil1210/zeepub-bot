@@ -24,6 +24,7 @@ async def trigger_watchtower_update():
 
     potential_urls = [
         "http://watchtower:8080/v1/update",
+        "http://watchtower_v6:8080/v1/update",
         "http://localhost:8081/v1/update",
         "http://192.168.1.1:8081/v1/update",
         "http://172.17.0.1:8081/v1/update",
