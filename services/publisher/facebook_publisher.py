@@ -89,10 +89,16 @@ async def handle_facebook_publication(
             async with httpx.AsyncClient() as client:
                 resp = await client.get("https://graph.facebook.com/v19.0/me/accounts", params={"access_token": token}, timeout=10)
                 if resp.status_code == 200:
-                    for acc in resp.json().get("data", []):
+                    accounts = resp.json().get("data", [])
+                    found = False
+                    for acc in accounts:
                         if str(acc.get("id")) == str(target_id):
                             token = acc.get("access_token", token)
+                            found = True
                             break
+                    if not found and len(accounts) == 1:
+                        target_id = str(accounts[0].get("id"))
+                        token = accounts[0].get("access_token", token)
         except Exception:
             pass
 
@@ -104,6 +110,7 @@ async def handle_facebook_publication(
         params = {
             "caption": fb_caption,
             "access_token": token,
+            "published": "true",
         }
 
         try:
