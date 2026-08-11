@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 import aiofiles
 import httpx
 from fastapi import APIRouter, Depends, Query, Request, Response
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from api.deps import require_mini_app_access
 from services.epub_service import extract_internal_title, parse_opf_from_epub
