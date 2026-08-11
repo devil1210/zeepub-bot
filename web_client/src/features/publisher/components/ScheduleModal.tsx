@@ -42,7 +42,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     useEffect(() => {
         if (isOpen) {
             setBookHash(editingItem?.book_hash || initialBookHash);
-            setSelectedChannel(editingItem?.channel_id || '');
+            const defaultChan = editingItem?.channel_id || (channels.find(c => c.is_favorite)?.id || (channels.length > 0 ? channels[0].id : ''));
+            setSelectedChannel(defaultChan);
             setSelectedTemplates(editingItem?.template_id ? [editingItem.template_id] : []);
             if (editingItem) {
                 const date = new Date(editingItem.scheduled_for);
@@ -57,7 +58,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             setIsImmediate(false);
             setIsSuccess(false);
         }
-    }, [isOpen, editingItem, initialBookHash]);
+    }, [isOpen, editingItem, initialBookHash, channels]);
 
     const [isImmediate, setIsImmediate] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
