@@ -458,7 +458,7 @@ class FacebookPublisherProvider(PublisherProvider):
         if len(fb_caption) > 2100:
             fb_caption = fb_caption[:2097] + "..."
 
-        cover_url = (
+        cover_source = (
             book_data.get("cover_high")
             or book_data.get("cover_original")
             or book_data.get("portada")
@@ -473,23 +473,52 @@ class FacebookPublisherProvider(PublisherProvider):
             return False
 
         target_group_id = str(target_id) if target_id else config.FACEBOOK_GROUP_ID
-        url = f"https://graph.facebook.com/{target_group_id}/photos"
+        token = config.FACEBOOK_PAGE_ACCESS_TOKEN
+
+        import httpx
+
+        # Intentar resolver Page Access Token dinámicamente si token es User Token
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get("https://graph.facebook.com/v19.0/me/accounts", params={"access_token": token}, timeout=10)
+                if resp.status_code == 200:
+                    for acc in resp.json().get("data", []):
+                        if str(acc.get("id")) == str(target_group_id):
+                            token = acc.get("access_token", token)
+                            break
+        except Exception:
+            pass
+
+        from services.cover_service import resolve_cover_data
+        resolved_cover = await resolve_cover_data(cover_source) if cover_source else None
+
+        url = f"https://graph.facebook.com/v19.0/{target_group_id}/photos"
         params = {
-            "url": cover_url,
             "caption": fb_caption,
-            "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
+            "access_token": token,
         }
 
         try:
-            import httpx
-
             async with httpx.AsyncClient() as client:
-                resp = await client.post(url, params=params, timeout=30)
-                if resp.status_code != 200:
+                if isinstance(resolved_cover, bytes):
+                    files = {"source": ("cover.jpg", resolved_cover, "image/jpeg")}
+                    resp = await client.post(url, params=params, files=files, timeout=45)
+                elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
+                    with open(resolved_cover, "rb") as f:
+                        files = {"source": ("cover.jpg", f.read(), "image/jpeg")}
+                        resp = await client.post(url, params=params, files=files, timeout=45)
+                elif cover_source and str(cover_source).startswith("http"):
+                    params["url"] = cover_source
+                    resp = await client.post(url, params=params, timeout=45)
+                else:
+                    logger.error("No se pudo obtener la portada del libro para Facebook.")
+                    return False
+
+                if resp.status_code not in (200, 201):
                     logger.error(f"FB Error: {resp.text}")
                     return False
             logger.info(
-                f"✅ Publicado exitosamente en Facebook (Grupo/Página {target_group_id})"
+                f"✅ Publicado exitosamente en Facebook (Página {target_group_id})"
             )
             return True
         except Exception as e:

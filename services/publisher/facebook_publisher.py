@@ -79,27 +79,57 @@ async def handle_facebook_publication(
             await bot.send_message(chat_id=user_id, text=error_msg, parse_mode="HTML")
             return False
 
-        fb_cover_url = cover_url or meta.get("portada")
-        if not fb_cover_url or not fb_cover_url.startswith("http"):
-            await bot.send_message(
-                chat_id=user_id,
-                text="⚠️ No se pudo obtener una URL pública para la portada. Facebook requiere una URL pública.",
-            )
-            return False
+        target_id = config.FACEBOOK_GROUP_ID
+        token = config.FACEBOOK_PAGE_ACCESS_TOKEN
 
-        url = f"https://graph.facebook.com/{config.FACEBOOK_GROUP_ID}/photos"
+        # Intentar resolver Page Access Token si es un User Token
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get("https://graph.facebook.com/v19.0/me/accounts", params={"access_token": token}, timeout=10)
+                if resp.status_code == 200:
+                    for acc in resp.json().get("data", []):
+                        if str(acc.get("id")) == str(target_id):
+                            token = acc.get("access_token", token)
+                            break
+        except Exception:
+            pass
+
+        fb_cover_url = cover_url or meta.get("portada")
+        from services.cover_service import resolve_cover_data
+        resolved_cover = await resolve_cover_data(fb_cover_url) if fb_cover_url else None
+
+        url = f"https://graph.facebook.com/v19.0/{target_id}/photos"
         params = {
-            "url": fb_cover_url,
             "caption": fb_caption,
-            "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
+            "access_token": token,
         }
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(url, params=params, timeout=30)
-            if resp.status_code != 200:
-                logger.error(f"FB Error: {resp.text}")
-                await bot.send_message(chat_id=user_id, text=f"❌ Error publicando en Facebook: {resp.text}")
-                return False
-        await bot.send_message(chat_id=user_id, text="✅ Publicado exitosamente en el Grupo de Facebook.")
-        return True
+
+        try:
+            async with httpx.AsyncClient() as client:
+                if isinstance(resolved_cover, bytes):
+                    files = {"source": ("cover.jpg", resolved_cover, "image/jpeg")}
+                    resp = await client.post(url, params=params, files=files, timeout=45)
+                elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
+                    with open(resolved_cover, "rb") as f:
+                        files = {"source": ("cover.jpg", f.read(), "image/jpeg")}
+                        resp = await client.post(url, params=params, files=files, timeout=45)
+                elif fb_cover_url and fb_cover_url.startswith("http"):
+                    params["url"] = fb_cover_url
+                    resp = await client.post(url, params=params, timeout=45)
+                else:
+                    await bot.send_message(chat_id=user_id, text="⚠️ No se pudo obtener la portada del libro para Facebook.")
+                    return False
+
+                if resp.status_code not in (200, 201):
+                    logger.error(f"FB Error: {resp.text}")
+                    await bot.send_message(chat_id=user_id, text=f"❌ Error publicando en Facebook: {resp.text}")
+                    return False
+
+            await bot.send_message(chat_id=user_id, text="✅ Publicado exitosamente en Facebook.")
+            return True
+        except Exception as e:
+            logger.error(f"Excepción publicando en Facebook: {e}")
+            await bot.send_message(chat_id=user_id, text=f"❌ Excepción publicando en Facebook: {e}")
+            return False
 
     return False
