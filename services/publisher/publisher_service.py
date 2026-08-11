@@ -432,10 +432,62 @@ class TelegramPublisherProvider(PublisherProvider):
 
 
 class FacebookPublisherProvider(PublisherProvider):
-    async def announce_book(self, target_id, book_data, options=None) -> bool:
-        # Implementación simplificada para v4, delegando a httpx
-        logger.info(f"Facebook announcement logic placeholder for target {target_id}")
-        return True
+    async def announce_book(
+        self,
+        target_id: str | int,
+        book_data: dict[str, Any],
+        options: dict[str, Any] | None = None,
+    ) -> bool:
+        options = options or {}
+        caption = options.get("caption")
+
+        if not caption:
+            caption = apply_publication_template(
+                TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
+            )
+
+        # Limpiar HTML para Facebook
+        fb_caption = re.sub(r"<[^>]+>", "", caption).strip()
+        if len(fb_caption) > 2100:
+            fb_caption = fb_caption[:2097] + "..."
+
+        cover_url = (
+            book_data.get("cover_high")
+            or book_data.get("cover_original")
+            or book_data.get("portada")
+        )
+
+        from config.config_settings import config
+        from utils.helpers import validate_facebook_credentials
+
+        is_valid, error_msg = validate_facebook_credentials(config)
+        if not is_valid:
+            logger.error(f"Error publicando en Facebook: {error_msg}")
+            return False
+
+        target_group_id = str(target_id) if target_id else config.FACEBOOK_GROUP_ID
+        url = f"https://graph.facebook.com/{target_group_id}/photos"
+        params = {
+            "url": cover_url,
+            "caption": fb_caption,
+            "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
+        }
+
+        try:
+            import httpx
+
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(url, params=params, timeout=30)
+                if resp.status_code != 200:
+                    logger.error(f"FB Error: {resp.text}")
+                    return False
+            logger.info(
+                f"✅ Publicado exitosamente en Facebook (Grupo/Página {target_group_id})"
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Excepción al publicar en Facebook: {e}")
+            return False
 
 
 class PublisherService:

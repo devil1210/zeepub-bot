@@ -23,6 +23,7 @@ async def handle_facebook_publication(
     cover_url: str | None,
     meta: dict[str, Any],
     portada_data: bytes | None,
+    caption: str | None = None,
 ) -> bool:
     """
     Handles formatting and publishing to Facebook or sending a Facebook preview to the user.
@@ -38,13 +39,25 @@ async def handle_facebook_publication(
         logger.error("Error creating short URL: %s", e)
         public_link = download_url or ""
 
-    # Generar caption FB usando plantilla unificada
-    fb_caption = apply_publication_template(TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta)
-    # Limpiar HTML residual (FB no lo soporta)
-    fb_caption = re.sub(r"<[^>]+>", "", fb_caption)
-    # Añadir link de descarga
-    fb_caption = f"{fb_caption}\n\n⬇️ Descarga: {public_link}"
-    # Truncar si excede límite FB
+    # Generar caption FB usando la plantilla seleccionada o predeterminada
+    custom_caption = caption or meta.get("caption")
+    if custom_caption:
+        fb_caption = custom_caption
+    elif meta.get("template_content"):
+        fb_caption = apply_publication_template(meta["template_content"], meta)
+    else:
+        fb_caption = apply_publication_template(
+            TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta
+        )
+
+    # Limpiar HTML residual (FB no soporta HTML tags)
+    fb_caption = re.sub(r"<[^>]+>", "", fb_caption).strip()
+
+    # Añadir link de descarga si existe y no está incluido en la plantilla
+    if public_link and public_link not in fb_caption and "http" not in fb_caption:
+        fb_caption = f"{fb_caption}\n\n⬇️ Descarga: {public_link}"
+
+    # Truncar si excede el límite de FB
     if len(fb_caption) > 2100:
         fb_caption = fb_caption[:2097] + "..."
 
