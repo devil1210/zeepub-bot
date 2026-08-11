@@ -453,8 +453,9 @@ class FacebookPublisherProvider(PublisherProvider):
                 TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
             )
 
-        # Limpiar HTML para Facebook
-        fb_caption = re.sub(r"<[^>]+>", "", caption).strip()
+        # Convertir hipervínculos HTML a texto con URL visible para Facebook
+        fb_caption = re.sub(r'<a\s+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', r'\2: \1', caption, flags=re.IGNORECASE)
+        fb_caption = re.sub(r"<[^>]+>", "", fb_caption).strip()
         if len(fb_caption) > 2100:
             fb_caption = fb_caption[:2097] + "..."
 

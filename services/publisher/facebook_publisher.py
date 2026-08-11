@@ -50,7 +50,8 @@ async def handle_facebook_publication(
             TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta
         )
 
-    # Limpiar HTML residual (FB no soporta HTML tags)
+    # Convertir hipervínculos HTML a texto con URL visible para Facebook
+    fb_caption = re.sub(r'<a\s+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', r'\2: \1', fb_caption, flags=re.IGNORECASE)
     fb_caption = re.sub(r"<[^>]+>", "", fb_caption).strip()
 
     # Añadir link de descarga si existe y no está incluido en la plantilla
