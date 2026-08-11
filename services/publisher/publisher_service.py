@@ -209,146 +209,145 @@ class TelegramPublisherProvider(PublisherProvider):
             if media:
                 html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
 
-        # Títulos en cascada
-        from utils.metadata_utils import is_romaji_string
+            # Títulos en cascada
+            from utils.metadata_utils import is_romaji_string
 
-        title_en = book_data.get("english_title") or book_data.get("title") or book_data.get("titulo") or "Sin título"
-        title_jp = book_data.get("romaji_title") or book_data.get("title_japanese") or book_data.get("title_jp")
-        title_es = book_data.get("spanish_title") or book_data.get("title_spanish") or book_data.get("title_es")
+            title_en = book_data.get("english_title") or book_data.get("title") or book_data.get("titulo") or "Sin título"
+            title_jp = book_data.get("romaji_title") or book_data.get("title_japanese") or book_data.get("title_jp")
+            title_es = book_data.get("spanish_title") or book_data.get("title_spanish") or book_data.get("title_es")
 
-        # Autocorrección de campos permutados
-        if title_es and is_romaji_string(title_es):
-            if not title_jp or title_jp == title_en:
-                title_jp = title_es
-            title_es = None
+            # Autocorrección de campos permutados
+            if title_es and is_romaji_string(title_es):
+                if not title_jp or title_jp == title_en:
+                    title_jp = title_es
+                title_es = None
 
-        if title_jp and (title_jp == title_en or not is_romaji_string(title_jp)):
-            title_jp = None
+            if title_jp and (title_jp == title_en or not is_romaji_string(title_jp)):
+                title_jp = None
 
-        if title_es and (title_es == title_en or is_romaji_string(title_es)):
-            title_es = None
+            if title_es and (title_es == title_en or is_romaji_string(title_es)):
+                title_es = None
 
-        html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
-        if title_jp:
-            html_parts.append(f'<h4>🇯🇵 {title_jp}</h4>')
-        if title_es:
-            html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
+            html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
+            if title_jp:
+                html_parts.append(f'<h4>🇯🇵 {title_jp}</h4>')
+            if title_es:
+                html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
+                
+            volume = book_data.get("volume")
+            if volume:
+                html_parts.append(f'<h6>📚 Volumen {volume}</h6>\n')
+
+            # TABLA 1: Ficha artística y literaria
+            tabla_literaria = '<table bordered striped>\n'
+            autor = book_data.get("author") or book_data.get("autor") or "Desconocido"
+            tabla_literaria += f'  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n'
             
-        volume = book_data.get("volume")
-        if volume:
-            html_parts.append(f'<h6>📚 Volumen {volume}</h6>\n')
+            ilustrador = book_data.get("illustrator") or book_data.get("ilustrador")
+            if ilustrador:
+                tabla_literaria += f'  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n'
+                
+            layout_by = book_data.get("layout_by") or book_data.get("maquetador")
+            if layout_by:
+                layout_val = layout_by if layout_by.startswith("#") else f"#{layout_by}"
+                tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
+                
+            categoria = book_data.get("book_type") or book_data.get("tipo") or "Novela"
+            tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n'
+            
+            demo = book_data.get("demographics_json") or book_data.get("demographics") or book_data.get("demografia")
+            if demo:
+                demo_val = ", ".join(demo) if isinstance(demo, list) else demo
+                tabla_literaria += f'  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n'
+                
+            generos = book_data.get("tags_json") or book_data.get("tags") or book_data.get("generos")
+            if generos:
+                generos_val = ", ".join(generos) if isinstance(generos, list) else generos
+                tabla_literaria += f'  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n'
+                
+            traductor = book_data.get("translator") or book_data.get("traductor")
+            if traductor:
+                tabla_literaria += f'  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n'
+                
+            grupo_trad = book_data.get("publisher") or book_data.get("translation_group") or book_data.get("grupo_traductor")
+            if grupo_trad:
+                grupo_trad_val = grupo_trad
+                if book_data.get("translation_group_url"):
+                    url_g = book_data.get("translation_group_url")
+                    grupo_trad_val = f'<a href="{url_g}">{grupo_trad}</a>'
+                tabla_literaria += f'  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n'
+                
+            tabla_literaria += '</table>\n'
+            html_parts.append(tabla_literaria)
 
-        # TABLA 1: Ficha artística y literaria
-        tabla_literaria = '<table bordered striped>\n'
-        autor = book_data.get("author") or book_data.get("autor") or "Desconocido"
-        tabla_literaria += f'  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n'
-        
-        ilustrador = book_data.get("illustrator") or book_data.get("ilustrador")
-        if ilustrador:
-            tabla_literaria += f'  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n'
-            
-        layout_by = book_data.get("layout_by") or book_data.get("maquetador")
-        if layout_by:
-            layout_val = layout_by if layout_by.startswith("#") else f"#{layout_by}"
-            tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
-            
-        categoria = book_data.get("book_type") or book_data.get("tipo") or "Novela"
-        tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n'
-        
-        demo = book_data.get("demographics_json") or book_data.get("demographics") or book_data.get("demografia")
-        if demo:
-            demo_val = ", ".join(demo) if isinstance(demo, list) else demo
-            tabla_literaria += f'  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n'
-            
-        generos = book_data.get("tags_json") or book_data.get("tags") or book_data.get("generos")
-        if generos:
-            generos_val = ", ".join(generos) if isinstance(generos, list) else generos
-            tabla_literaria += f'  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n'
-            
-        traductor = book_data.get("translator") or book_data.get("traductor")
-        if traductor:
-            tabla_literaria += f'  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n'
-            
-        grupo_trad = book_data.get("publisher") or book_data.get("translation_group") or book_data.get("grupo_traductor")
-        if grupo_trad:
-            grupo_trad_val = grupo_trad
-            if book_data.get("translation_group_url"):
-                url_g = book_data.get("translation_group_url")
-                grupo_trad_val = f'<a href="{url_g}">{grupo_trad}</a>'
-            tabla_literaria += f'  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n'
-            
-        tabla_literaria += '</table>\n'
-        html_parts.append(tabla_literaria)
+            # SINOPSIS: Acordeón colapsable
+            sinopsis_raw = book_data.get("sinopsis") or book_data.get("description") or "Sin sinopsis disponible."
+            html_parts.append(
+                '<details>\n'
+                '  <summary>📖 Ver Sinopsis</summary>\n'
+                '  <blockquote>\n'
+                f'    {sinopsis_raw}\n'
+                '  </blockquote>\n'
+                '</details>\n'
+            )
 
-        # SINOPSIS: Acordeón colapsable
-        sinopsis_raw = book_data.get("sinopsis") or book_data.get("description") or "Sin sinopsis disponible."
-        html_parts.append(
-            '<details>\n'
-            '  <summary>📖 Ver Sinopsis</summary>\n'
-            '  <blockquote>\n'
-            f'    {sinopsis_raw}\n'
-            '  </blockquote>\n'
-            '</details>\n'
-        )
-
-        # TABLA 2: Detalles del archivo
-        size_val = book_data.get("size")
-        if not size_val and book_data.get("file_size"):
-            try:
-                size_bytes = int(book_data.get("file_size"))
-                size_val = f"{size_bytes / (1024 * 1024):.2f} MB"
-            except:
-                size_val = "Desconocido"
-        if not size_val:
-            size_val = "Desconocido"
-
-        version_val = book_data.get("epub_version") or book_data.get("version") or "3.0"
-
-        tabla_archivo = (
-            '<details>\n'
-            '  <summary>📂 Ver Detalles del Archivo</summary>\n'
-            '  <table bordered striped>\n'
-            f'    <tr><td><b>📂 Nombre</b></td><td>{book_data.get("title") or "Desconocido"}</td></tr>\n'
-        )
-        if volume:
-            tabla_archivo += f'    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n'
-        
-        tabla_archivo += f'    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n'
-        
-        fecha = book_data.get("updated_at") or book_data.get("actualizado") or book_data.get("indexed_at")
-        if fecha:
-            if hasattr(fecha, "strftime"):
-                fecha_str = fecha.strftime("%d-%m-%Y")
-            elif isinstance(fecha, str):
+            # TABLA 2: Detalles del archivo
+            size_val = book_data.get("size")
+            if not size_val and book_data.get("file_size"):
                 try:
-                    dt = datetime.fromisoformat(fecha)
-                    fecha_str = dt.strftime("%d-%m-%Y")
+                    size_bytes = int(book_data.get("file_size"))
+                    size_val = f"{size_bytes / (1024 * 1024):.2f} MB"
                 except:
-                    fecha_str = fecha
+                    size_val = "Desconocido"
+            if not size_val:
+                size_val = "Desconocido"
+
+            version_val = book_data.get("epub_version") or book_data.get("version") or "3.0"
+
+            tabla_archivo = (
+                '<details>\n'
+                '  <summary>📂 Ver Detalles del Archivo</summary>\n'
+                '  <table bordered striped>\n'
+                f'    <tr><td><b>📂 Nombre</b></td><td>{book_data.get("title") or "Desconocido"}</td></tr>\n'
+            )
+            if volume:
+                tabla_archivo += f'    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n'
+            
+            tabla_archivo += f'    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n'
+            
+            fecha = book_data.get("updated_at") or book_data.get("actualizado") or book_data.get("indexed_at")
+            if fecha:
+                if hasattr(fecha, "strftime"):
+                    fecha_str = fecha.strftime("%d-%m-%Y")
+                elif isinstance(fecha, str):
+                    try:
+                        dt = datetime.fromisoformat(fecha)
+                        fecha_str = dt.strftime("%d-%m-%Y")
+                    except:
+                        fecha_str = fecha
+                else:
+                    fecha_str = str(fecha)
+                tabla_archivo += f'    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n'
+                
+            tabla_archivo += f'    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n'
+                
+            tabla_archivo += (
+                '  </table>\n'
+                '</details>\n'
+            )
+            html_parts.append(tabla_archivo)
+
+            # Línea divisoria y pie
+            html_parts.append('<hr/>')
+            
+            slug = book_data.get("slug")
+            if slug:
+                hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
+                html_parts.append(f'{hashtag_serie}\n\n\n')
             else:
-                fecha_str = str(fecha)
-            tabla_archivo += f'    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n'
-            
-        tabla_archivo += f'    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n'
-            
-        tabla_archivo += (
-            '  </table>\n'
-            '</details>\n'
-        )
-        html_parts.append(tabla_archivo)
+                clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
+                html_parts.append(f'#{clean_title}\n\n\n')
 
-        # Línea divisoria y pie
-        html_parts.append('<hr/>')
-        
-        slug = book_data.get("slug")
-        if slug:
-            hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
-            html_parts.append(f'{hashtag_serie}\n\n\n')
-        else:
-            clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
-            html_parts.append(f'#{clean_title}\n\n\n')
-
-        if not (options and options.get("caption")):
             html_content = "\n".join(html_parts)
 
         # A. Intentar enviar Rich Message unificado a través de Telegram API 10.2
