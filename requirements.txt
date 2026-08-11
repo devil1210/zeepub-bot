@@ -1,57 +1,58 @@
 # Telegram Bot Framework
-python-telegram-bot[job-queue]==22.6
+python-telegram-bot[job-queue]==22.8
 
 # HTTP client y soporte async
-aiohttp==3.13.3
+aiohttp==3.14.3
 aiofiles==25.1.0
 httpx==0.28.1
-prometheus_client==0.21.1
+prometheus_client==0.26.0
 
 # OPDS & feeds
-feedparser==6.0.11
-lxml==5.3.1
+feedparser==6.0.14
+lxml==6.1.1
 
 # Configuración
-python-dotenv==1.2.1
+python-dotenv==1.2.2
 
 # Typing para compatibilidad
-typing-extensions==4.15.0
+typing-extensions==4.16.0
 
 # Utilidades
 nest-asyncio==1.6.0
-rich>=10.14.0,<14
-psutil==7.0.0
+rich==15.0.0
+psutil==7.2.2
 python-dateutil==2.9.0.post0
-Pillow==11.1.0
+Pillow==12.3.0
 
 # Desarrollo y pruebas
-pytest==8.3.4
-pytest-asyncio==1.3.0
-ruff==0.15.0
+pytest==9.1.1
+pytest-asyncio==1.4.0
+ruff==0.16.2
 
 # API (Mini App Backend)
-fastapi==0.128.1
-uvicorn==0.40.0
-python-multipart==0.0.22
+fastapi==0.141.1
+uvicorn==0.52.1
+python-multipart==0.0.32
 
 # Optional DB backend via SQLAlchemy (supports external DBs like Postgres)
-SQLAlchemy==2.0.46
-psycopg2-binary==2.9.10
-asyncpg==0.30.0
-aiosqlite==0.20.0
-alembic==1.15.2
+SQLAlchemy==2.0.52
+psycopg2-binary==2.9.12
+asyncpg==0.31.0
+aiosqlite==0.22.1
+alembic==1.19.1
 
 # Metadata Extraction
-beautifulsoup4==4.14.3
-EbookLib==0.18
+beautifulsoup4==4.15.0
+EbookLib==0.20
 
+# Google GenAI SDK (Gemini 3 Flash / 2.5 Flash)
+google-genai==2.17.0
 
-google-genai==0.3.0
+# Pydantic (Latest stable for FastAPI 0.141+)
+pydantic==2.13.4
+pydantic-core==2.48.0
 
-# Pydantic (Latest stable for FastAPI 0.128+)
-pydantic==2.12.5
-pydantic-core==2.41.5
 # Dashboard & Observability
-streamlit==1.42.0
-pandas==2.2.3
-plotly==5.24.1
+streamlit==1.61.1
+pandas==3.0.5
+plotly==6.9.0
