@@ -43,7 +43,7 @@ class LibraryRoutes:
             source_url = get_url_from_hash(url_hash)
             if not source_url:
                 logger.warning(f"❌ No URL found for hash: {url_hash}")
-                return Response(content={"error": "URL no encontrada o expirada"}, status_code=404)
+                return JSONResponse(content={"error": "URL no encontrada o expirada"}, status_code=404)
 
             # Extraer título legible de la URL o archivo de manera segura
             from urllib.parse import unquote, urlparse
@@ -61,7 +61,7 @@ class LibraryRoutes:
 
         except Exception as e:
             logger.error(f"❌ Error in short download resolver: {e}", exc_info=True)
-            return Response(content={"error": "Error interno al procesar la descarga"}, status_code=500)
+            return JSONResponse(content={"error": "Error interno al procesar la descarga"}, status_code=500)
 
     async def _serve_local_file(self, filepath: str, title: str):
         """Helper para servir un archivo local como streaming de forma asíncrona."""
