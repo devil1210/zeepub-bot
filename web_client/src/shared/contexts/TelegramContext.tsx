@@ -159,12 +159,16 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setStatus(res);
 
       if (res && res.user) {
+        const rawName = res.user.username || '';
+        const cleanName = (rawName && !rawName.startsWith('User_')) ? rawName : 'Administrador';
+
         setUser(prev => prev ? {
           ...prev,
+          first_name: (prev.first_name && !prev.first_name.startsWith('User_')) ? prev.first_name : cleanName,
           photo_url: res.user.photo_url || prev.photo_url
         } : {
           id: res.user.id,
-          first_name: res.user.username,
+          first_name: cleanName,
           username: res.user.username,
           photo_url: res.user.photo_url
         });
