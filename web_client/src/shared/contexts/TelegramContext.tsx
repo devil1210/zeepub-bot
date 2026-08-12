@@ -72,6 +72,7 @@ interface TelegramContextType {
   ready: boolean;
   allowThemeTemplates: boolean; // Controls if user can select theme templates
   refreshStatus: () => Promise<void>;
+  logout: () => Promise<void>;
   extendedInfo: TelegramExtendedInfo | null;
   // Level simulation for admins
   simulatedLevel: number | null;
@@ -354,6 +355,22 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, [status?.user?.needs_telegram_link]);
 
+  const handleLogout = async () => {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+      if (supabase) {
+        await supabase.auth.signOut().catch(() => {});
+      }
+    } catch (e) {
+      console.error('Logout error:', e);
+    } finally {
+      setStatus(null);
+      setUser(null);
+      window.location.href = '/';
+    }
+  };
+
   return (
     <TelegramContext.Provider value={{
       webApp,
@@ -372,6 +389,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ready,
       allowThemeTemplates: isAdmin || allowThemeTemplates,
       refreshStatus,
+      logout: handleLogout,
       extendedInfo,
       simulatedLevel,
       setSimulatedLevel: handleSetSimulatedLevel,

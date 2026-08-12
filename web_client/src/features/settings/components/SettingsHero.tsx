@@ -1,5 +1,5 @@
-import React from 'react';
-import { Palette, PenTool, LogOut, Eye } from 'lucide-react';
+import { useTelegram } from '@shared/contexts/TelegramContext';
+import { Send } from 'lucide-react';
 
 interface SettingsHeroProps {
     tgUser: any;
@@ -20,6 +20,7 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
     setSimulatedLevel,
     availableLevels
 }) => {
+    const { logout, setIsLinkModalOpen } = useTelegram();
     return (
         <>
             {/* Admin Level Simulation Banner */}
@@ -106,10 +107,23 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
                             )}
                         </div>
 
-                        <button className="w-full py-5 px-8 bg-white/[0.03] hover:bg-white/5 border border-white/10 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.4em] text-gray-500 hover:text-white transition-all flex items-center justify-center gap-4 group/logout">
-                            <LogOut className="w-4 h-4 group-hover/logout:-translate-x-1 transition-transform" />
-                            Cerrar Sesión
-                        </button>
+                        <div className="w-full space-y-3">
+                            <button
+                                onClick={() => setIsLinkModalOpen(true)}
+                                className="w-full py-3.5 px-6 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 border border-blue-500/30 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.25em] text-blue-400 hover:text-white transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-500/10"
+                            >
+                                <Send className="w-4 h-4" />
+                                Vincular / Conectar Telegram ✈️
+                            </button>
+
+                            <button
+                                onClick={logout}
+                                className="w-full py-4 px-6 bg-white/[0.03] hover:bg-red-500/10 border border-white/10 hover:border-red-500/20 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.3em] text-gray-400 hover:text-red-400 transition-all flex items-center justify-center gap-3 group/logout"
+                            >
+                                <LogOut className="w-4 h-4 group-hover/logout:-translate-x-1 transition-transform" />
+                                Cerrar Sesión
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
