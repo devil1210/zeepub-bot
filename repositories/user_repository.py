@@ -137,7 +137,7 @@ class UserRepository(BaseRepository[User]):
         return {
             "id": str(user.telegram_id),
             "username": raw_username or (user.email.split("@")[0] if user.email else f"User_{user.telegram_id}"),
-            "tg_username": raw_username,  # @username real de Telegram (puede ser None si no tiene)
+            "tg_username": raw_username,  # @username real de Telegram (puede ser None)
             "name": raw_name or raw_username or user.email or f"User_{user.telegram_id}",
             "nickname": raw_nickname,
             "display_name": display_name,
@@ -152,23 +152,23 @@ class UserRepository(BaseRepository[User]):
             "downloads": {
                 "used": self._get_downloads_used(user.telegram_id),
                 "limit": user.level.daily_downloads if user.level else 5,
-                "total": user.total_downloads or 0,
+                "total": getattr(user, "total_downloads", None) or 0,
             },
             # Keep legacy fields for compatibility
             "telegram_id": user.telegram_id,
             "level_name": user.level.name if user.level else "free",
-            "expires_at": user.expires_at,
-            "roles": user.roles or [],
-            "insignias": user.insignias or [],
-            "allow_theme_templates": user.allow_theme_templates,
-            "bypass_limits": user.bypass_limits,
+            "expires_at": getattr(user, "expires_at", None),
+            "roles": getattr(user, "roles", None) or [],
+            "insignias": getattr(user, "insignias", None) or [],
+            "allow_theme_templates": getattr(user, "allow_theme_templates", False),
+            "bypass_limits": getattr(user, "bypass_limits", False),
             "settings": settings,
-            "total_downloads": user.total_downloads or 0,
+            "total_downloads": getattr(user, "total_downloads", None) or 0,
             "level_id": user.level_id or 6,
-            "beta_tester": user.beta_tester,
-            "has_library_access": user.has_library_access,
-            "can_request_books": user.can_request_books,
-            "can_upload_epub": user.can_upload_epub,
+            "beta_tester": getattr(user, "beta_tester", None) or getattr(user, "is_beta", False),
+            "has_library_access": getattr(user, "has_library_access", True),
+            "can_request_books": getattr(user, "can_request_books", True),
+            "can_upload_epub": getattr(user, "can_upload_epub", False) or getattr(user, "can_upload", False),
         }
 
     async def get_by_id(self, telegram_id: int, as_dict: bool = False) -> User | dict[str, Any] | None:
