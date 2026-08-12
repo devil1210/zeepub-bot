@@ -23,7 +23,10 @@ services:
         max-file: "3"
 
   zeepubs_web:
-    image: ghcr.io/devil1210/zeepub-web:${WEB_IMAGE_TAG:-latest}
+    build:
+      context: ./web_client
+      dockerfile: Dockerfile
+    image: zeepub-web:local
     container_name: zeepub_web_v6
     restart: unless-stopped
     ports:
