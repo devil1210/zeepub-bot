@@ -13,7 +13,7 @@ services:
       - LOG_LEVEL=INFO
       - GIT_BRANCH=feat/integrate-web-client
     ports:
-      - "${DEV_PORT:-8001}:8000"
+      - "8000:8000"
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     logging:
@@ -27,7 +27,7 @@ services:
     container_name: zeepub_web_v6
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-3000}:80"
+      - "${DEV_PORT:-8001}:80"
     depends_on:
       - zeepubs_bot
     labels:
