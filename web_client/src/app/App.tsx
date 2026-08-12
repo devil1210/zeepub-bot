@@ -235,16 +235,6 @@ const UniversalDetailWrapper = () => {
 
 
 const AppContentWrapper: React.FC = () => {
-  const { user, ready } = useTelegram();
-
-  // If not ready, show nothing or a loader
-  if (!ready) return null;
-
-  // If no user is present (not in Telegram and no Supabase session), block access
-  if (!user) {
-    return <LoginGate />;
-  }
-
   return (
     <NavigationProvider>
       <MemoryRouter>
