@@ -35,6 +35,15 @@ class BotConfig:
         }
     )
 
+    # Correos de Administradores (Cloudflare Access / Auth)
+    ADMIN_EMAILS: set[str] = field(
+        default_factory=lambda: {
+            x.strip().lower()
+            for x in os.getenv("ADMIN_EMAILS", "").split(",")
+            if x.strip()
+        }
+    )
+
     # Listas de usuarios con distintos niveles
     WHITELIST: set[int] = field(
         default_factory=lambda: {

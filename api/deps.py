@@ -13,15 +13,31 @@ logger = logging.getLogger(__name__)
 
 async def get_telegram_user_id(
     authorization: Annotated[str | None, Header()] = None,
+    cf_access_authenticated_user_email: Annotated[str | None, Header(alias="Cf-Access-Authenticated-User-Email")] = None,
+    cf_access_user_email: Annotated[str | None, Header(alias="cf-access-authenticated-user-email")] = None,
     x_telegram_init_data: Annotated[str | None, Header(alias="x-telegram-init-data")] = None,
     x_telegram_data: Annotated[str | None, Header(alias="X-Telegram-Data")] = None,
     uid: Annotated[int | None, Query()] = None,
 ) -> int:
     """
     Dependency that extracts and validates the Telegram User ID from headers or query.
-    Prioritizes initData validation for security.
-    Falls back to Supabase Auth for browser-based access.
+    Supports Cloudflare Access Email, Telegram WebApp initData, and Supabase Auth.
     """
+    # 0. Cloudflare Access Email Auth (Highest Priority for Web Standalone)
+    cf_email = (cf_access_authenticated_user_email or cf_access_user_email or "").strip().lower()
+    if cf_email:
+        if config.ADMIN_EMAILS and cf_email in config.ADMIN_EMAILS:
+            admin_id = list(config.ADMIN_USERS)[0] if config.ADMIN_USERS else 133994080
+            return admin_id
+
+        try:
+            from services.user_service import get_user_by_email
+            db_user = await get_user_by_email(cf_email)
+            if db_user and db_user.get("telegram_id"):
+                return db_user.get("telegram_id")
+        except Exception as e:
+            logger.debug(f"Cloudflare email DB lookup failed: {e}")
+
     init_data = x_telegram_init_data or x_telegram_data
     bot_token = config.TELEGRAM_TOKEN
 
