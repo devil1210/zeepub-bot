@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import re
@@ -299,7 +300,7 @@ class TelegramPublisherProvider(PublisherProvider):
                 try:
                     size_bytes = int(book_data.get("file_size"))
                     size_val = f"{size_bytes / (1024 * 1024):.2f} MB"
-                except:
+                except Exception:
                     size_val = "Desconocido"
             if not size_val:
                 size_val = "Desconocido"
@@ -325,7 +326,7 @@ class TelegramPublisherProvider(PublisherProvider):
                     try:
                         dt = datetime.fromisoformat(fecha)
                         fecha_str = dt.strftime("%d-%m-%Y")
-                    except:
+                    except Exception:
                         fecha_str = fecha
                 else:
                     fecha_str = str(fecha)
@@ -353,7 +354,6 @@ class TelegramPublisherProvider(PublisherProvider):
             html_content = "\n".join(html_parts)
 
         # A. Intentar enviar Rich Message unificado a través de Telegram API 10.2
-        rich_sent = False
         from services.rich_message_service import RichMessageService
         fname = book_data.get("filename", "libro.epub")
         try:
@@ -365,8 +365,6 @@ class TelegramPublisherProvider(PublisherProvider):
                 message_thread_id=thread_id
             )
             if res and res.get("ok"):
-                rich_sent = True
-                
                 # B. Si el Rich Message se envió con éxito, enviar el documento ePub abajo con únicamente su hashtag
                 epub_data = book_data.get("epub_bytes") or book_data.get("filepath")
                 if epub_data:
@@ -598,6 +596,8 @@ class PublisherService:
     Maneja la lógica de negocio, colas y proveedores.
     """
 
+    _queue_lock = asyncio.Lock()
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repo = PublicationRepository(session)
@@ -632,173 +632,178 @@ class PublisherService:
 
     async def process_queue(self):
         """Procesa items pendientes en la cola."""
-        pending = await self.repo.get_pending_queue(limit=10)
-        for item in pending:
-            try:
-                item.status = "publishing"
-                await self.session.flush()
+        async with PublisherService._queue_lock:
+            pending = await self.repo.get_pending_queue(limit=10)
+            for item in pending:
+                try:
+                    item.status = "publishing"
+                    await self.session.commit()
 
-                # Datos del libro: cargar siempre desde la base de datos si existe book_hash,
-                # y luego permitir que el payload (opcional) sobrescriba cualquier campo.
-                book_data = {}
-                if item.book_hash:
-                    book = await self.book_repo.get_by_hash(item.book_hash)
-                    if book:
-                        # Extraer metadatos para el template engine
-                        book_data = {
-                            "title": book.title,
-                            "author": book.author
-                            or (book.series.author if book.series else ""),
-                            "volume": book.volume,
-                            "cover_original": book.cover_original,
-                            "cover_high": book.cover_high,
-                            "cover_medium": book.cover_medium,
-                            "cover_low": book.cover_low,
-                            "portada": book.series.cover_url
-                            if book.series
-                            else (book.cover_medium or book.cover_low or ""),
-                            "serie": (
-                                book.series.series_english if book.series else None
-                            )
-                            or book.series_english
-                            or "",
-                            "series_english": (
-                                book.series.series_english if book.series else None
-                            )
-                            or book.series_english
-                            or "",
-                            "series": (book.series.name if book.series else None)
-                            or book.series_english
-                            or "",
-                            "romaji_title": (book.series.name if book.series else None)
-                            or book.romaji_title
-                            or "",
-                            "romaji": (book.series.name if book.series else None)
-                            or book.romaji_title
-                            or "",
-                            "series_spanish": (
-                                book.series.series_spanish if book.series else None
-                            )
-                            or book.series_spanish
-                            or book.title,
-                            "sinopsis": (
-                                book.series.description if book.series else None
-                            )
-                            or book.description
-                            or "",
-                            "generos": book.series.tags_json
-                            if book.series
-                            else (book.tags_json or []),
-                            "tags": book.series.tags_json
-                            if book.series
-                            else (book.tags_json or []),
-                            "demographics": book.series.demographics_json
-                            if book.series
-                            else (book.demographics_json or []),
-                            "demography": book.series.demographics_json
-                            if book.series
-                            else (book.demographics_json or []),
-                            "illustrator": (
-                                book.series.illustrator if book.series else None
-                            )
-                            or book.illustrator
-                            or "",
-                            "author_jap": (
-                                book.series.author_jap if book.series else None
-                            )
-                            or book.author_jap
-                            or "",
-                            "illustrator_jap": (
-                                book.series.illustrator_jap if book.series else None
-                            )
-                            or book.illustrator_jap
-                            or "",
-                            "series_name": (book.series.name if book.series else None)
-                            or book.series_english
-                            or "",
-                            "layout_by": book.layout_by if book.layout_by else "",
-                            "book_type": book.series.book_type
-                            if book.series
-                            else "Light Novel",
-                            "publisher": book.series.publisher if book.series else "",
-                            "book_hash": book.book_hash,
-                            "traductor": book.translator if book.translator else "",
-                            "editorial": book.publisher
-                            or (book.series.publisher if book.series else ""),
-                            "epub_version": book.epub_version or "",
-                            "version": book.epub_version or "",
-                            "modified_at_opf": book.modified_at_opf.isoformat()
-                            if book.modified_at_opf
-                            else "",
-                            "updated_at": book.file_modified_at.isoformat()
-                            if book.file_modified_at
-                            else "",
-                            "filename": book.filename or "",
-                            "filepath": book.filepath or "",
-                            "file_size": book.file_size or 0,
-                            "short_link": book.short_link or "",
-                        }
-                if item.payload:
-                    book_data.update(item.payload)
+                    # Datos del libro: cargar siempre desde la base de datos si existe book_hash,
+                    # y luego permitir que el payload (opcional) sobrescriba cualquier campo.
+                    book_data = {}
+                    if item.book_hash:
+                        book = await self.book_repo.get_by_hash(item.book_hash)
+                        if book:
+                            # Extraer metadatos para el template engine
+                            book_data = {
+                                "title": book.title,
+                                "author": book.author
+                                or (book.series.author if book.series else ""),
+                                "volume": book.volume,
+                                "cover_original": book.cover_original,
+                                "cover_high": book.cover_high,
+                                "cover_medium": book.cover_medium,
+                                "cover_low": book.cover_low,
+                                "portada": book.series.cover_url
+                                if book.series
+                                else (book.cover_medium or book.cover_low or ""),
+                                "serie": (
+                                    book.series.series_english if book.series else None
+                                )
+                                or book.series_english
+                                or "",
+                                "series_english": (
+                                    book.series.series_english if book.series else None
+                                )
+                                or book.series_english
+                                or "",
+                                "series": (book.series.name if book.series else None)
+                                or book.series_english
+                                or "",
+                                "romaji_title": (
+                                    book.series.name if book.series else None
+                                )
+                                or book.romaji_title
+                                or "",
+                                "romaji": (book.series.name if book.series else None)
+                                or book.romaji_title
+                                or "",
+                                "series_spanish": (
+                                    book.series.series_spanish if book.series else None
+                                )
+                                or book.series_spanish
+                                or book.title,
+                                "sinopsis": (
+                                    book.series.description if book.series else None
+                                )
+                                or book.description
+                                or "",
+                                "generos": book.series.tags_json
+                                if book.series
+                                else (book.tags_json or []),
+                                "tags": book.series.tags_json
+                                if book.series
+                                else (book.tags_json or []),
+                                "demographics": book.series.demographics_json
+                                if book.series
+                                else (book.demographics_json or []),
+                                "demography": book.series.demographics_json
+                                if book.series
+                                else (book.demographics_json or []),
+                                "illustrator": (
+                                    book.series.illustrator if book.series else None
+                                )
+                                or book.illustrator
+                                or "",
+                                "author_jap": (
+                                    book.series.author_jap if book.series else None
+                                )
+                                or book.author_jap
+                                or "",
+                                "illustrator_jap": (
+                                    book.series.illustrator_jap if book.series else None
+                                )
+                                or book.illustrator_jap
+                                or "",
+                                "series_name": (
+                                    book.series.name if book.series else None
+                                )
+                                or book.series_english
+                                or "",
+                                "layout_by": book.layout_by if book.layout_by else "",
+                                "book_type": book.series.book_type
+                                if book.series
+                                else "Light Novel",
+                                "publisher": book.series.publisher if book.series else "",
+                                "book_hash": book.book_hash,
+                                "traductor": book.translator if book.translator else "",
+                                "editorial": book.publisher
+                                or (book.series.publisher if book.series else ""),
+                                "epub_version": book.epub_version or "",
+                                "version": book.epub_version or "",
+                                "modified_at_opf": book.modified_at_opf.isoformat()
+                                if book.modified_at_opf
+                                else "",
+                                "updated_at": book.file_modified_at.isoformat()
+                                if book.file_modified_at
+                                else "",
+                                "filename": book.filename or "",
+                                "filepath": book.filepath or "",
+                                "file_size": book.file_size or 0,
+                                "short_link": book.short_link or "",
+                            }
+                    if item.payload:
+                        book_data.update(item.payload)
 
-                # Obtener proveedor
-                platform = item.channel.platform if item.channel else "telegram"
-                provider = self.providers.get(platform)
+                    # Obtener proveedor
+                    platform = item.channel.platform if item.channel else "telegram"
+                    provider = self.providers.get(platform)
 
-                # Cargar plantilla personalizada si existe
-                caption = None
-                cover_quality = "high"
-                if item.template_id:
-                    template = await self.repo.get_template_by_id(item.template_id)
-                    if template:
-                        # Compilar plantilla con los datos del libro
-                        caption = apply_publication_template(
-                            template.content, book_data
+                    # Cargar plantilla personalizada si existe
+                    caption = None
+                    cover_quality = "high"
+                    if item.template_id:
+                        template = await self.repo.get_template_by_id(item.template_id)
+                        if template:
+                            # Compilar plantilla con los datos del libro
+                            caption = apply_publication_template(
+                                template.content, book_data
+                            )
+                            if (
+                                template.extra_config
+                                and "cover_quality" in template.extra_config
+                            ):
+                                saved_q = template.extra_config["cover_quality"]
+                                # Convertir de español (del frontend) a la clave esperada en el backend
+                                cover_quality = (
+                                    "high"
+                                    if saved_q == "grande"
+                                    else "medium"
+                                    if saved_q == "mediana"
+                                    else "low"
+                                    if saved_q == "pequeña"
+                                    else saved_q
+                                )
+
+                    if provider:
+                        # Extraer message_thread_id del config del canal
+                        thread_id = None
+                        if item.channel and item.channel.config:
+                            thread_id = item.channel.config.get("message_thread_id")
+
+                        success = await provider.announce_book(
+                            item.channel.target_id,
+                            book_data,
+                            options={
+                                "template_id": item.template_id,
+                                "caption": caption,
+                                "cover_quality": cover_quality,
+                                "message_thread_id": thread_id,
+                            },
                         )
-                        if (
-                            template.extra_config
-                            and "cover_quality" in template.extra_config
-                        ):
-                            saved_q = template.extra_config["cover_quality"]
-                            # Convertir de español (del frontend) a la clave esperada en el backend
-                            cover_quality = (
-                                "high"
-                                if saved_q == "grande"
-                                else "medium"
-                                if saved_q == "mediana"
-                                else "low"
-                                if saved_q == "pequeña"
-                                else saved_q
-                            )
+                        item.status = "sent" if success else "failed"
+                    else:
+                        item.status = "failed"
+                        item.error_message = f"Provider {platform} not found"
 
-                if provider:
-                    # Extraer message_thread_id del config del canal
-                    thread_id = None
-                    if item.channel and item.channel.config:
-                        thread_id = item.channel.config.get("message_thread_id")
-
-                    success = await provider.announce_book(
-                        item.channel.target_id,
-                        book_data,
-                        options={
-                            "template_id": item.template_id,
-                            "caption": caption,
-                            "cover_quality": cover_quality,
-                            "message_thread_id": thread_id,
-                        },
-                    )
-                    item.status = "sent" if success else "failed"
-                else:
+                    item.published_at = datetime.utcnow()
+                    await self.session.commit()
+                except Exception as e:
+                    logger.error(f"Error processing queue item {item.id}: {e}")
                     item.status = "failed"
-                    item.error_message = f"Provider {platform} not found"
-
-                item.published_at = datetime.utcnow()
-            except Exception as e:
-                logger.error(f"Error processing queue item {item.id}: {e}")
-                item.status = "failed"
-                item.error_message = str(e)
-
-        await self.session.commit()
+                    item.error_message = str(e)
+                    await self.session.commit()
 
     async def get_channels(self, active_only: bool = True):
         return await self.repo.get_channels(active_only)
