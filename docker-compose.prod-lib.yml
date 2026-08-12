@@ -38,6 +38,16 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: zeepub_tunnel_v6
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    depends_on:
+      - zeepubs_web
+
   watchtower:
     image: containrrr/watchtower
     container_name: watchtower_v6
