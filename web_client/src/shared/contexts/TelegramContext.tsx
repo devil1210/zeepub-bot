@@ -320,7 +320,20 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         tg.offEvent('themeChanged', onThemeChanged);
       };
     } else {
+      // Standalone Web App Mode (Cloudflare Access / Web)
+      const adminUser: TelegramUser = {
+        id: 133994080,
+        first_name: 'Admin',
+        username: 'admin',
+      };
+      setUser(adminUser);
+      setIsAdminFromAccess(true);
+      setIsBetaTester(true);
+      setCustomThemes(true);
+      setAllowThemeTemplates(true);
       setReady(true);
+      refreshStatus();
+      refreshBotInfo();
     }
   }, []);
 

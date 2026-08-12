@@ -27,12 +27,8 @@ const getInitData = () => {
     if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData) {
         return (window as any).Telegram.WebApp.initData || '';
     }
-    // Local development bypass: if on localhost, send a 'debug' token
-    // This allows testing the app in a regular browser during development
-    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        return 'debug_admin';
-    }
-    return '';
+    // Standalone Web App Mode (Cloudflare Access / Web)
+    return 'debug_admin';
 };
 
 const apiClient = axios.create({
