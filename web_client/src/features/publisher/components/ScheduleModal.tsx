@@ -62,7 +62,48 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
     const [isImmediate, setIsImmediate] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSuccess, setIsSuccess] = useState(false);
+    const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+    const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+
+    const datePart = scheduledFor ? scheduledFor.slice(0, 10) : '';
+    const hourPart = scheduledFor && scheduledFor.includes('T') ? scheduledFor.slice(11, 13) : '10';
+    const minutePart = scheduledFor && scheduledFor.includes('T') ? scheduledFor.slice(14, 16) : '00';
+
+    const updateDateTime = (newDate: string, newHour: string, newMinute: string) => {
+        const d = newDate || new Date().toISOString().slice(0, 10);
+        const h = (newHour || '10').padStart(2, '0');
+        const m = (newMinute || '00').padStart(2, '0');
+        setScheduledFor(`${d}T${h}:${m}`);
+    };
+
+    const applyPreset = (minutesToAdd: number, targetHour?: number) => {
+        const now = new Date();
+        if (targetHour !== undefined) {
+            if (minutesToAdd > 0) now.setDate(now.getDate() + 1);
+            now.setHours(targetHour, 0, 0, 0);
+        } else {
+            now.setMinutes(now.getMinutes() + minutesToAdd);
+        }
+        const tzOffset = now.getTimezoneOffset() * 60000;
+        setScheduledFor(new Date(now.getTime() - tzOffset).toISOString().slice(0, 16));
+    };
+
+    const getFormattedPreview = () => {
+        try {
+            if (!scheduledFor) return '';
+            const d = new Date(scheduledFor);
+            if (isNaN(d.getTime())) return '';
+            return d.toLocaleString('es-ES', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch {
+            return '';
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -241,166 +282,121 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                         </div>
 
                         {/* Fecha y Hora */}
-                        {!isImmediate && (() => {
-                            const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-                            const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+                        {!isImmediate && (
+                            <div className="flex flex-col gap-3 animate-in slide-in-from-top-2 duration-300">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary/80">
+                                        Fecha y Hora de Publicación
+                                    </label>
+                                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                                        {getFormattedPreview()}
+                                    </span>
+                                </div>
 
-                            const datePart = scheduledFor ? scheduledFor.slice(0, 10) : '';
-                            const hourPart = scheduledFor && scheduledFor.includes('T') ? scheduledFor.slice(11, 13) : '10';
-                            const minutePart = scheduledFor && scheduledFor.includes('T') ? scheduledFor.slice(14, 16) : '00';
+                                {/* Presets Rápidos */}
+                                <div className="flex flex-wrap gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => applyPreset(10)}
+                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                    >
+                                        +10m
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => applyPreset(30)}
+                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                    >
+                                        +30m
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => applyPreset(60)}
+                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                    >
+                                        +1h
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => applyPreset(180)}
+                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                    >
+                                        +3h
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => applyPreset(1, 9)}
+                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                    >
+                                        Mañana 9:00 AM
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => applyPreset(1, 18)}
+                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                    >
+                                        Mañana 6:00 PM
+                                    </button>
+                                </div>
 
-                            const updateDateTime = (newDate: string, newHour: string, newMinute: string) => {
-                                const d = newDate || new Date().toISOString().slice(0, 10);
-                                const h = (newHour || '10').padStart(2, '0');
-                                const m = (newMinute || '00').padStart(2, '0');
-                                setScheduledFor(`${d}T${h}:${m}`);
-                            };
-
-                            const applyPreset = (minutesToAdd: number, targetHour?: number) => {
-                                const now = new Date();
-                                if (targetHour !== undefined) {
-                                    if (minutesToAdd > 0) now.setDate(now.getDate() + 1);
-                                    now.setHours(targetHour, 0, 0, 0);
-                                } else {
-                                    now.setMinutes(now.getMinutes() + minutesToAdd);
-                                }
-                                const tzOffset = now.getTimezoneOffset() * 60000;
-                                setScheduledFor(new Date(now.getTime() - tzOffset).toISOString().slice(0, 16));
-                            };
-
-                            const getFormattedPreview = () => {
-                                try {
-                                    if (!scheduledFor) return '';
-                                    const d = new Date(scheduledFor);
-                                    if (isNaN(d.getTime())) return '';
-                                    return d.toLocaleString('es-ES', {
-                                        weekday: 'short',
-                                        day: 'numeric',
-                                        month: 'short',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    });
-                                } catch {
-                                    return '';
-                                }
-                            };
-
-                            return (
-                                <div className="flex flex-col gap-3 animate-in slide-in-from-top-2 duration-300">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-primary/80">
-                                            Fecha y Hora de Publicación
-                                        </label>
-                                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                                            {getFormattedPreview()}
+                                {/* Grid de Fecha, Hora y Minutos */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                    {/* Campo Fecha */}
+                                    <div className="sm:col-span-1 flex flex-col gap-1">
+                                        <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
+                                            <Calendar className="w-2.5 h-2.5" /> Fecha
                                         </span>
+                                        <input
+                                            type="date"
+                                            value={datePart}
+                                            onChange={(e) => updateDateTime(e.target.value, hourPart, minutePart)}
+                                            className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors [color-scheme:dark]"
+                                        />
                                     </div>
 
-                                    {/* Presets Rápidos */}
-                                    <div className="flex flex-wrap gap-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={() => applyPreset(10)}
-                                            className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                    {/* Selector Hora */}
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
+                                            <Clock className="w-2.5 h-2.5" /> Hora
+                                        </span>
+                                        <select
+                                            value={hourPart}
+                                            onChange={(e) => updateDateTime(datePart, e.target.value, minutePart)}
+                                            className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors cursor-pointer"
                                         >
-                                            +10m
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => applyPreset(30)}
-                                            className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
-                                        >
-                                            +30m
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => applyPreset(60)}
-                                            className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
-                                        >
-                                            +1h
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => applyPreset(180)}
-                                            className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
-                                        >
-                                            +3h
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => applyPreset(1, 9)}
-                                            className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
-                                        >
-                                            Mañana 9:00 AM
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => applyPreset(1, 18)}
-                                            className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
-                                        >
-                                            Mañana 6:00 PM
-                                        </button>
-                                    </div>
-
-                                    {/* Grid de Fecha, Hora y Minutos */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                        {/* Campo Fecha */}
-                                        <div className="sm:col-span-1 flex flex-col gap-1">
-                                            <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
-                                                <Calendar className="w-2.5 h-2.5" /> Fecha
-                                            </span>
-                                            <input
-                                                type="date"
-                                                value={datePart}
-                                                onChange={(e) => updateDateTime(e.target.value, hourPart, minutePart)}
-                                                className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors [color-scheme:dark]"
-                                            />
-                                        </div>
-
-                                        {/* Selector Hora */}
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
-                                                <Clock className="w-2.5 h-2.5" /> Hora
-                                            </span>
-                                            <select
-                                                value={hourPart}
-                                                onChange={(e) => updateDateTime(datePart, e.target.value, minutePart)}
-                                                className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors cursor-pointer"
-                                            >
-                                                {HOURS.map((h) => {
-                                                    const hNum = parseInt(h, 10);
-                                                    const ampm = hNum >= 12 ? 'PM' : 'AM';
-                                                    const displayHour = hNum % 12 === 0 ? 12 : hNum % 12;
-                                                    return (
-                                                        <option key={h} value={h} className="bg-gray-900 text-white">
-                                                            {h}:00 ({displayHour} {ampm})
-                                                        </option>
-                                                    );
-                                                })}
-                                            </select>
-                                        </div>
-
-                                        {/* Selector Minutos */}
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
-                                                <Clock className="w-2.5 h-2.5 text-gray-500" /> Minutos
-                                            </span>
-                                            <select
-                                                value={minutePart}
-                                                onChange={(e) => updateDateTime(datePart, hourPart, e.target.value)}
-                                                className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors cursor-pointer"
-                                            >
-                                                {MINUTES.map((m) => (
-                                                    <option key={m} value={m} className="bg-gray-900 text-white">
-                                                        :{m}
+                                            {HOURS.map((h) => {
+                                                const hNum = parseInt(h, 10);
+                                                const ampm = hNum >= 12 ? 'PM' : 'AM';
+                                                const displayHour = hNum % 12 === 0 ? 12 : hNum % 12;
+                                                return (
+                                                    <option key={h} value={h} className="bg-gray-900 text-white">
+                                                        {h}:00 ({displayHour} {ampm})
                                                     </option>
-                                                ))}
-                                            </select>
-                                        </div>
+                                                );
+                                            })}
+                                        </select>
+                                    </div>
+
+                                    {/* Selector Minutos */}
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
+                                            <Clock className="w-2.5 h-2.5 text-gray-500" /> Minutos
+                                        </span>
+                                        <select
+                                            value={minutePart}
+                                            onChange={(e) => updateDateTime(datePart, hourPart, e.target.value)}
+                                            className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors cursor-pointer"
+                                        >
+                                            {MINUTES.map((m) => (
+                                                <option key={m} value={m} className="bg-gray-900 text-white">
+                                                    :{m}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
-                            );
-                        })()}
+                            </div>
+                        )}
 
                         {/* Actions */}
                         <div className="flex gap-3 pt-2">

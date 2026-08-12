@@ -38,11 +38,14 @@
       "@components/*": [
         "src/shared/components/*"
       ],
-      "@types": [
-        "src/shared/types"
+      "@types/*": [
+        "src/shared/types/*"
       ]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "src"
+  ]
 }
