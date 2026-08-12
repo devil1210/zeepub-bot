@@ -225,6 +225,45 @@ async def handle_link_telegram(data: dict[str, Any], user_data: dict[str, Any], 
     return result
 
 
+async def handle_telegram_widget_auth(data: dict[str, Any], user_data: dict[str, Any], request=None):
+    """Procesa y valida la autenticación nativa desde el Telegram Login Widget."""
+    auth_data = data.get("auth_data") or data
+    bot_token = config.TELEGRAM_TOKEN
+
+    from utils.security import validate_telegram_widget_data
+
+    validated = validate_telegram_widget_data(auth_data, bot_token)
+
+    if not validated:
+        raise HTTPException(status_code=401, detail="Firma de autenticación de Telegram inválida o expirada.")
+
+    tg_id = int(validated["id"])
+    first_name = validated.get("first_name", "")
+    last_name = validated.get("last_name", "")
+    full_name = f"{first_name} {last_name}".strip()
+    username = validated.get("username", "")
+    photo_url = validated.get("photo_url")
+
+    from services.user_service import get_user_service
+
+    async with get_user_service() as service:
+        user = await service.upsert_user(
+            telegram_id=tg_id,
+            name=full_name or username or f"User_{tg_id}",
+            username=username,
+            photo_url=photo_url,
+        )
+        await service.commit_changes()
+
+    return {
+        "success": True,
+        "user_id": tg_id,
+        "username": username or full_name,
+        "photo_url": photo_url,
+        "message": "¡Autenticación con Telegram exitosa!",
+    }
+
+
 async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve recomendaciones personalizadas (Beta exclusiva Staff)."""
     user_id = user_data.get("user_id")

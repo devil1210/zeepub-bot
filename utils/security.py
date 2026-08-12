@@ -57,6 +57,41 @@ def validate_telegram_data(init_data: str, token: str, expire_seconds: int = 864
     return user_data
 
 
+def validate_telegram_widget_data(data: dict[str, Any], token: str, expire_seconds: int = 86400) -> dict[str, Any] | None:
+    """
+    Valida los datos de autenticación recibidos desde el Telegram Login Widget oficial.
+
+    Args:
+        data: Dict con la respuesta recibida de Telegram (id, first_name, username, photo_url, auth_date, hash).
+        token: Token del bot de Telegram.
+        expire_seconds: Expiración máxima en segundos (24h).
+
+    Returns:
+        Dict con los datos validados si es genuino, None si es inválido o expiró.
+    """
+    if not isinstance(data, dict) or "hash" not in data:
+        return None
+
+    received_hash = str(data.get("hash"))
+    clean_data = {k: str(v) for k, v in data.items() if k != "hash"}
+
+    # Ordenar claves alfabéticamente
+    data_check_string = "\n".join(f"{k}={clean_data[k]}" for k in sorted(clean_data.keys()))
+
+    # En el Login Widget, secret_key es SHA256(bot_token)
+    secret_key = hashlib.sha256(token.encode()).digest()
+    calculated_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+
+    if calculated_hash != received_hash:
+        return None
+
+    auth_date = int(clean_data.get("auth_date", 0))
+    if time.time() - auth_date > expire_seconds:
+        return None
+
+    return clean_data
+
+
 async def verify_telegram_user(
     x_telegram_init_data: str = Header(..., alias="x-telegram-init-data"),
 ):
