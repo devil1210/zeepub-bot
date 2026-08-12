@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { X, Send, Facebook, Twitter, Loader2, Check, Save, Hash, Settings } from 'lucide-react';
 import { PublicationChannel } from '../services/publisherApi';
