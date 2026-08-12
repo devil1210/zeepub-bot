@@ -1,0 +1,8 @@
+.git
+.env
+.venv
+node_modules
+pgdata
+data
+web_client/node_modules
+web_client/dist

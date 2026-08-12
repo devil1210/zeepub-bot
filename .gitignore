@@ -3,6 +3,7 @@
 
 # Exceptuar este archivo .gitignore
 !.gitignore
+!.dockerignore
 !Dockerfile
 !docker-compose.yml
 !docker-compose.prod-lib.yml
