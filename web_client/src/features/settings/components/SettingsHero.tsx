@@ -1,5 +1,6 @@
+import React from 'react';
 import { useTelegram } from '@shared/contexts/TelegramContext';
-import { Send } from 'lucide-react';
+import { Send, Palette, PenTool, LogOut, Eye } from 'lucide-react';
 
 interface SettingsHeroProps {
     tgUser: any;
