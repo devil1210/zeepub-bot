@@ -12,6 +12,10 @@ services:
       - ./data:/app/data
       # La ruta del host se define en el .env como HOST_LIB_PATH
       - ${HOST_LIB_PATH}:/library:ro
+      - ./api:/app/api
+      - ./config:/app/config
+      - ./services:/app/services
+      - ./utils:/app/utils
     environment:
       - LOG_LEVEL=INFO
       - GIT_BRANCH=feat/integrate-web-client
