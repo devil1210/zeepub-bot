@@ -248,12 +248,23 @@ if enable_miniapp:
     # Montar portadas de la librería local
     from utils.library_db import COVERS_DIR, PROFILES_DIR
 
-    if os.path.exists(COVERS_DIR):
-        app.mount(
-            "/api/library/covers",
-            StaticFiles(directory=COVERS_DIR, html=False),
-            name="library_covers",
-        )
+    @app.get("/api/library/covers/{filename:path}")
+    async def get_cover_image(filename: str):
+        filepath = os.path.join(COVERS_DIR, filename)
+        if os.path.exists(filepath):
+            return FileResponse(filepath)
+
+        # Fallback a variantes alternativas si no existe la variante pedida (_medium, _high, etc)
+        clean_base = filename
+        for ext in ["_low.jpg", "_medium.jpg", "_high.jpg", "_original.jpg", ".jpg", ".png", ".webp"]:
+            clean_base = clean_base.replace(ext, "")
+
+        for alt_ext in [f"{clean_base}_low.jpg", f"{clean_base}.jpg", f"{clean_base}_medium.jpg", f"{clean_base}_high.jpg", f"{clean_base}.png", f"{clean_base}.webp"]:
+            alt_path = os.path.join(COVERS_DIR, alt_ext)
+            if os.path.exists(alt_path):
+                return FileResponse(alt_path)
+
+        raise HTTPException(status_code=404, detail="Cover image not found")
 
     if os.path.exists(PROFILES_DIR):
         app.mount(

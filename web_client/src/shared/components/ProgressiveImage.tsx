@@ -44,6 +44,12 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
         };
     }, []);
 
+    const [currentSrc, setCurrentSrc] = useState(src);
+
+    useEffect(() => {
+        setCurrentSrc(src);
+    }, [src]);
+
     return (
         <div
             ref={containerRef}
@@ -57,12 +63,19 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
 
             {isInView && (
                 <img
-                    src={src}
+                    src={currentSrc}
                     alt={alt}
                     loading="lazy"
-                    className={`transition-all duration-1000 ease-out ${isLoaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-xl scale-110'
+                    className={`transition-all duration-700 ease-out ${isLoaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-md scale-105'
                         } ${className}`}
                     onLoad={() => setIsLoaded(true)}
+                    onError={() => {
+                        setIsLoaded(true);
+                        // If low/medium variant failed, fallback to base src without suffix
+                        if (currentSrc.includes('_medium.jpg') || currentSrc.includes('_high.jpg')) {
+                            setCurrentSrc(currentSrc.replace(/_(medium|high)\.jpg$/, '_low.jpg'));
+                        }
+                    }}
                     {...props}
                 />
             )}
