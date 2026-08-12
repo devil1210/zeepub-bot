@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTelegram } from '@shared/contexts/TelegramContext';
-import { Send, Palette, PenTool, LogOut, Eye } from 'lucide-react';
+import { Send, Palette, PenTool, LogOut, Eye, Unlink } from 'lucide-react';
 
 interface SettingsHeroProps {
     tgUser: any;
@@ -21,7 +21,7 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
     setSimulatedLevel,
     availableLevels
 }) => {
-    const { logout, setIsLinkModalOpen } = useTelegram();
+    const { logout, unlinkTelegram, setIsLinkModalOpen } = useTelegram();
     return (
         <>
             {/* Admin Level Simulation Banner */}
@@ -114,12 +114,22 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
                                 className="w-full py-3.5 px-6 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 border border-blue-500/30 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.25em] text-blue-400 hover:text-white transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-500/10"
                             >
                                 <Send className="w-4 h-4" />
-                                Vincular / Conectar Telegram ✈️
+                                {tgUser?.id || status?.user?.telegram_id ? 'Cambiar / Vincular Telegram ✈️' : 'Vincular Telegram ✈️'}
                             </button>
+
+                            {(tgUser?.id || status?.user?.telegram_id) && (
+                                <button
+                                    onClick={unlinkTelegram}
+                                    className="w-full py-3.5 px-6 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.25em] text-amber-400 hover:text-amber-300 transition-all flex items-center justify-center gap-3"
+                                >
+                                    <Unlink className="w-4 h-4" />
+                                    Desvincular Telegram 🔗
+                                </button>
+                            )}
 
                             <button
                                 onClick={logout}
-                                className="w-full py-4 px-6 bg-white/[0.03] hover:bg-red-500/10 border border-white/10 hover:border-red-500/20 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.3em] text-gray-400 hover:text-red-400 transition-all flex items-center justify-center gap-3 group/logout"
+                                className="w-full py-4 px-6 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.3em] text-red-400 hover:text-red-300 transition-all flex items-center justify-center gap-3 group/logout shadow-lg shadow-red-500/10"
                             >
                                 <LogOut className="w-4 h-4 group-hover/logout:-translate-x-1 transition-transform" />
                                 Cerrar Sesión

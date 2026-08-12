@@ -118,6 +118,7 @@ from api.handlers.users import (
     handle_bot_info,
     handle_feedback,
     handle_link_telegram,
+    handle_unlink_telegram,
     handle_status,
     handle_telegram_widget_auth,
     handle_user_status,
@@ -226,5 +227,6 @@ __all__ = [
     "handle_admin_get_genre_audits",
     "handle_admin_resolve_genre_audit",
     "handle_link_telegram",
+    "handle_unlink_telegram",
     "handle_telegram_widget_auth",
 ]

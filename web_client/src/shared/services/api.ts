@@ -117,6 +117,7 @@ export const api = {
     // Status & User
     getUserStatus: (signal?: AbortSignal) => rpc('user_status', {}, signal),
     linkTelegram: (telegramIdOrUsername: string) => rpc('link_telegram', { telegram_id: telegramIdOrUsername }),
+    unlinkTelegram: () => rpc('unlink_telegram'),
     telegramWidgetAuth: (authData: any) => rpc('telegram_widget_auth', { auth_data: authData }),
     getDownloadHistory: () => rpc('user_downloads_history'),
 

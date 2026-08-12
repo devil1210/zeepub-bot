@@ -73,6 +73,7 @@ interface TelegramContextType {
   allowThemeTemplates: boolean; // Controls if user can select theme templates
   refreshStatus: () => Promise<void>;
   logout: () => Promise<void>;
+  unlinkTelegram: () => Promise<void>;
   extendedInfo: TelegramExtendedInfo | null;
   // Level simulation for admins
   simulatedLevel: number | null;
@@ -367,7 +368,17 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setStatus(null);
       setUser(null);
-      window.location.href = '/';
+      // Redirect to Cloudflare Access logout page to clear SSO session cookies
+      window.location.href = '/cdn-cgi/access/logout';
+    }
+  };
+
+  const handleUnlinkTelegram = async () => {
+    try {
+      await api.unlinkTelegram();
+      await refreshStatus();
+    } catch (e) {
+      console.error('Unlink error:', e);
     }
   };
 
@@ -390,6 +401,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       allowThemeTemplates: isAdmin || allowThemeTemplates,
       refreshStatus,
       logout: handleLogout,
+      unlinkTelegram: handleUnlinkTelegram,
       extendedInfo,
       simulatedLevel,
       setSimulatedLevel: handleSetSimulatedLevel,

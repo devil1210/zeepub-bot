@@ -31,6 +31,8 @@ class LegacyRoutes:
             "feedback": miniapp_handlers.handle_feedback,
             "link_telegram": miniapp_handlers.handle_link_telegram,
             "link-telegram": miniapp_handlers.handle_link_telegram,
+            "unlink_telegram": miniapp_handlers.handle_unlink_telegram,
+            "unlink-telegram": miniapp_handlers.handle_unlink_telegram,
             "telegram_widget_auth": miniapp_handlers.handle_telegram_widget_auth,
             "telegram-widget-auth": miniapp_handlers.handle_telegram_widget_auth,
             "bot_info": miniapp_handlers.handle_bot_info,

@@ -260,6 +260,27 @@ async def handle_telegram_widget_auth(data: dict[str, Any], user_data: dict[str,
     }
 
 
+async def handle_unlink_telegram(data: dict[str, Any], user_data: dict[str, Any], request=None):
+    """Desvincula la cuenta de Telegram del usuario activo."""
+    user_id = user_data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Usuario no autenticado.")
+
+    from core.db_manager_pg import pg_manager
+    from sqlalchemy import update
+    from models.users import User
+
+    async with pg_manager.get_session() as session:
+        stmt = update(User).where(User.telegram_id == user_id).values(
+            telegram_id=None,
+            username=None
+        )
+        await session.execute(stmt)
+        await session.commit()
+
+    return {"success": True, "message": "Cuenta de Telegram desvinculada exitosamente."}
+
+
 async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]):
     """Devuelve recomendaciones personalizadas (Beta exclusiva Staff)."""
     user_id = user_data.get("user_id")
