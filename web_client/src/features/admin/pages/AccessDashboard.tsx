@@ -34,6 +34,8 @@ interface AdminUser {
     name?: string;
     nickname?: string;
     display_name?: string;
+    email?: string;
+    is_telegram_linked?: boolean;
     role: string;
     photo_url?: string;
     level: {
@@ -165,7 +167,7 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
     }
 
     return (
-        <div className="flex flex-col gap-10 animate-in fade-in duration-500">
+        <div className="flex flex-col gap-10 animate-in fade-in duration-500 pb-36">
             {/* Page Heading */}
             <div className="flex flex-col gap-4">
                 <h1 className="text-4xl font-black text-white leading-tight tracking-tighter uppercase">Niveles y Acceso</h1>
@@ -365,11 +367,9 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                                             <RefreshCw className="w-3 h-3" />
                                                         )}
                                                     </button>
-                                                    {user.email && (
-                                                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20">
-                                                            {user.id && user.id.length > 5 && !user.id.startsWith('synthetic') ? '🟢 Vinculado' : '🟡 Correo Registrado'}
-                                                        </span>
-                                                    )}
+                                                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${user.is_telegram_linked || (user.id && !user.id.startsWith('synthetic') && Number(user.id) > 0) ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-amber-500/10 text-amber-300 border-amber-500/20'}`}>
+                                                         {user.is_telegram_linked || (user.id && !user.id.startsWith('synthetic') && Number(user.id) > 0) ? `🟢 Telegram Vinculado (ID: ${user.id})` : '⚠️ Telegram No Vinculado'}
+                                                     </span>
                                                 </div>
                                                 <p className="text-[10px] text-gray-600 font-mono tracking-tighter mt-1">ID: {user.id}</p>
                                             </div>

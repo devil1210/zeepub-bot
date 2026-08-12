@@ -131,16 +131,18 @@ class UserRepository(BaseRepository[User]):
         if raw_nickname and raw_nickname.lower() in ("unknown", "none", ""):
             raw_nickname = None
 
-        display_name = raw_nickname or raw_name or raw_username or f"User_{user.telegram_id}"
+        display_name = raw_nickname or raw_name or (f"@{raw_username}" if raw_username else None) or user.email or f"User_{user.telegram_id}"
 
         return {
             "id": str(user.telegram_id),
-            "username": raw_username or f"User_{user.telegram_id}",
-            "name": raw_name or raw_username or f"User_{user.telegram_id}",
+            "username": raw_username or (user.email.split("@")[0] if user.email else f"User_{user.telegram_id}"),
+            "name": raw_name or raw_username or user.email or f"User_{user.telegram_id}",
             "nickname": raw_nickname,
             "display_name": display_name,
             "role": user.role or "user",
             "photo_url": user.photo_url,
+            "email": user.email,
+            "is_telegram_linked": bool(user.telegram_id and user.telegram_id > 0 and (user.username or user.photo_url or not user.email)),
             "level": {
                 "name": user.level.name if user.level else "free",
                 "color": user.level.color if user.level else "#3b82f6",
@@ -165,7 +167,6 @@ class UserRepository(BaseRepository[User]):
             "has_library_access": user.has_library_access,
             "can_request_books": user.can_request_books,
             "can_upload_epub": user.can_upload_epub,
-            "email": user.email,
         }
 
     async def get_by_id(self, telegram_id: int, as_dict: bool = False) -> User | dict[str, Any] | None:

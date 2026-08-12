@@ -242,6 +242,10 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
   const handleDownload = async () => {
     if (!curVolume) return;
+    if (status?.user?.needs_telegram_link) {
+      setIsLinkModalOpen(true);
+      return;
+    }
     try {
       webApp?.HapticFeedback?.impactOccurred('medium');
       await api.requestDownload(curVolume.id);
@@ -249,10 +253,14 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       setLocalDownloadCount(prev => prev + 1);
       webApp?.HapticFeedback?.notificationOccurred('success');
       webApp?.showAlert?.("📚 ¡Libro enviado! Revisa tu chat privado con el bot.");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error downloading book", err);
-      webApp?.HapticFeedback?.notificationOccurred('error');
-      webApp?.showAlert?.("❌ Error: " + (err as Error).message);
+      if (err?.message?.includes("vincular tu cuenta de Telegram")) {
+        setIsLinkModalOpen(true);
+      } else {
+        webApp?.HapticFeedback?.notificationOccurred('error');
+        webApp?.showAlert?.("❌ Error: " + (err as Error).message);
+      }
     }
   };
 

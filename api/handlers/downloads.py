@@ -42,6 +42,15 @@ async def handle_download(data: dict[str, Any], user_data: dict[str, Any]):
     if not book_id:
         raise HTTPException(status_code=400, detail="Missing bookId")
 
+    # Check Telegram linking requirement
+    needs_link = user_data.get("needs_telegram_link")
+    is_linked = user_data.get("is_telegram_linked")
+    if needs_link or is_linked is False or not user_id or user_id < 0:
+        raise HTTPException(
+            status_code=403,
+            detail="⚠️ Debes vincular tu cuenta de Telegram para poder descargar libros.",
+        )
+
     # 0. Quota Check (Synchronize with bot)
     if not await can_download(user_id):
         raise HTTPException(status_code=403, detail="Has alcanzado tu límite de descargas por hoy.")
