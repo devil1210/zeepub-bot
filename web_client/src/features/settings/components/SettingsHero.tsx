@@ -107,7 +107,9 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
                                 </div>
                             )}
                             <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border ${tgUser?.id || status?.user?.telegram_id ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                                {tgUser?.id || status?.user?.telegram_id ? `🟢 TELEGRAM VINCULADO (ID: ${tgUser?.id || status?.user?.telegram_id})` : '⚠️ TELEGRAM NO VINCULADO'}
+                                {tgUser?.id || status?.user?.telegram_id
+                                    ? `🟢 TELEGRAM: ${tgUser?.username ? `@${tgUser.username}` : `ID ${tgUser?.id || status?.user?.telegram_id}`}`
+                                    : '⚠️ TELEGRAM NO VINCULADO'}
                             </div>
                         </div>
 

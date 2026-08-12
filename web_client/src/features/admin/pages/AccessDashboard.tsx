@@ -368,7 +368,9 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                                         )}
                                                     </button>
                                                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${user.is_telegram_linked || (user.id && !user.id.startsWith('synthetic') && Number(user.id) > 0) ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-amber-500/10 text-amber-300 border-amber-500/20'}`}>
-                                                         {user.is_telegram_linked || (user.id && !user.id.startsWith('synthetic') && Number(user.id) > 0) ? `🟢 Telegram Vinculado (ID: ${user.id})` : '⚠️ Telegram No Vinculado'}
+                                                         {user.is_telegram_linked || (user.id && !user.id.startsWith('synthetic') && Number(user.id) > 0)
+                                                             ? `🟢 Telegram: ${user.username && !user.username.startsWith('User_') ? `@${user.username}` : `ID ${user.id}`}`
+                                                             : '⚠️ Telegram No Vinculado'}
                                                      </span>
                                                 </div>
                                                 <p className="text-[10px] text-gray-600 font-mono tracking-tighter mt-1">ID: {user.id}</p>
