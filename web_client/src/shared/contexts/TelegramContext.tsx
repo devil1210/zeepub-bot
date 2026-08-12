@@ -331,8 +331,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const isRealAdmin = isAdminFromAccess || (status as any)?.user?.is_real_admin || (status?.user?.level === 'admin' && simulatedLevel === null);
-  const isAdmin = isAdminFromAccess || status?.user?.level === 'admin';
+  const isRealAdmin = isAdminFromAccess || (status as any)?.user?.is_real_admin || status?.user?.role === 'admin' || (status?.user?.level === 'admin' && simulatedLevel === null);
+  const isAdmin = isAdminFromAccess || (status as any)?.user?.is_real_admin || status?.user?.level === 'admin' || status?.user?.level === 'Administrador' || status?.user?.role === 'admin' || (status as any)?.isAdmin === true;
 
 
   // Admins are always beta testers

@@ -89,8 +89,16 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
     level_key = user_data.get("level", "free")
     st = state_manager.get_user_state(user_id)
 
+    is_admin = (
+        user_data.get("role") == "admin"
+        or user_data.get("is_real_admin")
+        or level_key in ["admin", "Administrador"]
+        or user_id in config.ADMIN_USERS
+    )
+
     roles_display = {
         "admin": "Admin 🛠️",
+        "Administrador": "Admin 🛠️",
         "staff": "Staff 🛡️",
         "premium": "Premium ✨",
         "vip": "VIP ⭐️",
@@ -100,14 +108,17 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
     }
 
     # Prioritize label from user_data (which comes from get_effective_user)
-    system_role_text = user_data.get("status_label") or roles_display.get(level_key, "Lector")
+    system_role_text = (
+        user_data.get("status_label")
+        or ("Admin 🛠️" if is_admin else roles_display.get(level_key, level_key))
+    )
 
     # 1. Use Unified Download Limiter
     left = await downloads_left(user_id)
     used = st.get("downloads_used", 0)
 
     # Calculate max based on what's left + what's used, but only if not unlimited
-    if isinstance(left, int):
+    if isinstance(left, int) and not is_admin:
         max_dl = left + used
         has_unlimited = False
     else:
@@ -126,10 +137,11 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
     # Obtener foto del usuario desde el bot de Telegram
     photo_url = None
     bot = None
-    
+
     # Intentamos obtener la instancia del bot a partir de request_state o global
     try:
         from api.main import bot as global_bot
+
         bot = global_bot.app.bot
     except Exception:
         pass
@@ -149,7 +161,7 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
             "id": user_id,
             "username": user_data.get("nickname") or user_data.get("name") or f"User_{user_id}",
             "level": level_key or "free",
-            "role": user_data.get("role") or "",
+            "role": user_data.get("role") or ("admin" if is_admin else "free"),
             "status_label": system_role_text or "Lector",
             "has_library_access": bool(
                 (user_data.get("has_library_access", True) is not False)
@@ -161,18 +173,22 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
             ),
             "can_download": bool(level_info.get("canDownload", True) is not False),
             "can_read": bool(level_info.get("canRead", True) is not False),
-            "can_upload_epub": bool(user_data.get("can_upload_epub", False) or level_info.get("canUploadEpub", False)),
-            "is_real_admin": user_data.get("is_real_admin", False),
+            "can_upload_epub": bool(
+                is_admin
+                or user_data.get("can_upload_epub", False)
+                or level_info.get("canUploadEpub", False)
+            ),
+            "is_real_admin": is_admin,
             "downloads": {
                 "used": int(used or 0),
                 "limit": max_dl,
             },
-            "photo_url": photo_url or user_data.get("photo_url")
+            "photo_url": photo_url or user_data.get("photo_url"),
         },
         "timeUntilReset": f"{hours}h {minutes}m",
-        "hasUnlimitedDownloads": has_unlimited,
+        "hasUnlimitedDownloads": has_unlimited or is_admin,
         "isBanned": level_key == "banned",
-        "isAdmin": level_key == "admin",
+        "isAdmin": is_admin,
     }
 
 
