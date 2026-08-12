@@ -15,6 +15,7 @@ async def get_telegram_user_id(
     authorization: Annotated[str | None, Header()] = None,
     cf_access_authenticated_user_email: Annotated[str | None, Header(alias="Cf-Access-Authenticated-User-Email")] = None,
     cf_access_user_email: Annotated[str | None, Header(alias="cf-access-authenticated-user-email")] = None,
+    cf_access_jwt_assertion: Annotated[str | None, Header(alias="Cf-Access-Jwt-Assertion")] = None,
     x_telegram_init_data: Annotated[str | None, Header(alias="x-telegram-init-data")] = None,
     x_telegram_data: Annotated[str | None, Header(alias="X-Telegram-Data")] = None,
     uid: Annotated[int | None, Query()] = None,
@@ -25,6 +26,21 @@ async def get_telegram_user_id(
     """
     # 0. Cloudflare Access Email Auth (Highest Priority for Web Standalone)
     cf_email = (cf_access_authenticated_user_email or cf_access_user_email or "").strip().lower()
+
+    if not cf_email and cf_access_jwt_assertion:
+        try:
+            import base64
+            import json
+
+            parts = cf_access_jwt_assertion.split(".")
+            if len(parts) >= 2:
+                payload_b64 = parts[1]
+                payload_b64 += "=" * (-len(payload_b64) % 4)
+                payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+                cf_email = (payload.get("email") or "").strip().lower()
+        except Exception as e:
+            logger.debug(f"Failed to parse Cloudflare JWT assertion: {e}")
+
     if cf_email:
         if config.ADMIN_EMAILS and cf_email in config.ADMIN_EMAILS:
             admin_id = list(config.ADMIN_USERS)[0] if config.ADMIN_USERS else 133994080
@@ -32,6 +48,7 @@ async def get_telegram_user_id(
 
         try:
             from services.user_service import get_user_by_email
+
             db_user = await get_user_by_email(cf_email)
             if db_user and db_user.get("telegram_id"):
                 return db_user.get("telegram_id")

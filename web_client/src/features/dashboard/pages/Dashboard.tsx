@@ -52,8 +52,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return () => setVisible(true);
   }, [setVisible]);
 
-  const userName = extendedInfo?.nickname || extendedInfo?.name || (tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : (status?.user?.username && !status?.user?.username.startsWith('User_') ? status.user.username : "Administrador"));
-  const userLevel = isAdmin ? "Administrador" : (status?.user?.status_label || "Lector");
+  const userName = status?.user?.name || (status?.user?.username && !status?.user?.username.startsWith('User_') ? status.user.username : (tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : "Administrador"));
+  const userLevel = status?.user?.status_label || (isAdmin ? "Admin 🛠️" : "Lector 📚");
+  const displayUsername = status?.user?.username ? `@${status.user.username}` : (tgUser?.username ? `@${tgUser.username}` : "@Admin");
+  const displayPhoto = status?.user?.photo_url || tgUser?.photo_url;
   const downloadsUsed = status?.user?.downloads?.used || 0;
   const downloadsLimit = status?.user?.downloads?.limit || 0;
   const isUnlimited = status?.user?.downloads?.limit === -1 || status?.hasUnlimitedDownloads;
@@ -138,9 +140,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         <div className="lg:col-span-4 space-y-6">
           <StatsWidget
             userLevel={userLevel}
-            role={status?.user?.role || "Free Member"}
-            username={tgUser?.username ? `@${tgUser.username}` : `ID: ${tgUser?.id}`}
-            photoUrl={tgUser?.photo_url}
+            role={status?.user?.role || (isAdmin ? "admin" : "free")}
+            username={displayUsername}
+            photoUrl={displayPhoto}
             downloadsUsed={downloadsUsed}
             limitDisplay={limitDisplay}
             progressPercent={progressPercent}
