@@ -156,10 +156,16 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
         except Exception as e:
             logger.warning(f"Could not fetch profile photo for user {user_id}: {e}")
 
+    user_email = user_data.get("email")
+    is_linked = bool(user_id and user_id > 0 and user_data.get("photo_url") or is_admin or (user_data.get("username") and not str(user_data.get("username")).startswith("User_")))
+
     return {
         "user": {
             "id": user_id,
             "username": user_data.get("nickname") or user_data.get("name") or f"User_{user_id}",
+            "email": user_email,
+            "is_telegram_linked": is_linked,
+            "needs_telegram_link": not is_linked and not is_admin,
             "level": level_key or "free",
             "role": user_data.get("role") or ("admin" if is_admin else "free"),
             "status_label": system_role_text or "Lector",
@@ -190,6 +196,33 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
         "isBanned": level_key == "banned",
         "isAdmin": is_admin,
     }
+
+
+async def handle_link_telegram(data: dict[str, Any], user_data: dict[str, Any], request=None):
+    """Vincular cuenta de correo actual con ID o @username de Telegram."""
+    user_id = user_data.get("user_id")
+    telegram_identifier = data.get("telegram_id") or data.get("telegram_identifier") or data.get("username")
+    if not telegram_identifier:
+        raise HTTPException(status_code=400, detail="Debes proporcionar un ID de Telegram o tu @usuario.")
+
+    bot = None
+    if request and hasattr(request.app.state, "bot_instance"):
+        bot = request.app.state.bot_instance.app.bot
+
+    if not bot:
+        try:
+            from api.main import bot as global_bot
+
+            bot = global_bot.app.bot
+        except Exception:
+            pass
+
+    from services.user_service import get_user_service
+
+    async with get_user_service() as service:
+        result = await service.link_telegram_to_user(user_id, str(telegram_identifier), bot=bot)
+
+    return result
 
 
 async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]):

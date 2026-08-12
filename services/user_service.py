@@ -153,7 +153,7 @@ class UserService:
         }
 
     async def get_user_by_email(self, email: str) -> dict | None:
-        """Helper for Supabase auth fallback."""
+        """Helper for Cloudflare / Supabase auth fallback."""
         from sqlalchemy import select
         from sqlalchemy.orm import joinedload
 
@@ -162,8 +162,116 @@ class UserService:
         user = result.scalar_one_or_none()
 
         if user:
-            return {"telegram_id": user.telegram_id, "email": email}
+            return {
+                "telegram_id": user.telegram_id,
+                "email": user.email,
+                "name": user.name,
+                "username": user.username,
+                "role": user.role,
+                "level_id": user.level_id,
+            }
         return None
+
+    async def get_or_create_user_by_email(self, email: str) -> int:
+        """Obtiene o crea un usuario registrado mediante correo (Cloudflare Access)."""
+        import zlib
+        clean_email = email.strip().lower()
+        existing = await self.get_user_by_email(clean_email)
+        if existing and existing.get("telegram_id"):
+            return existing["telegram_id"]
+
+        synthetic_id = abs(zlib.crc32(clean_email.encode("utf-8")))
+
+        from sqlalchemy import select
+        query = select(User).where(User.telegram_id == synthetic_id)
+        res = await self.session.execute(query)
+        u = res.scalar_one_or_none()
+
+        if not u:
+            name_part = clean_email.split("@")[0]
+            u = User(
+                telegram_id=synthetic_id,
+                email=clean_email,
+                name=name_part,
+                username=name_part,
+                role="user",
+                level_id=6,
+                is_beta=False,
+                can_upload=False,
+                can_upload_epub=False,
+            )
+            self.session.add(u)
+            await self.session.commit()
+
+        return synthetic_id
+
+    async def link_telegram_to_user(self, current_user_id: int, telegram_identifier: str, bot=None) -> dict:
+        """Vinsula la cuenta de correo actual con un ID o Username de Telegram."""
+        from sqlalchemy import select
+
+        ident = telegram_identifier.strip().lstrip("@")
+        if not ident:
+            raise ValueError("El identificador de Telegram no puede estar vacío.")
+
+        # Buscar usuario destino por ID numérico o Username
+        target_user = None
+        if ident.isdigit():
+            tg_id = int(ident)
+            query = select(User).where(User.telegram_id == tg_id)
+            res = await self.session.execute(query)
+            target_user = res.scalar_one_or_none()
+        else:
+            query = select(User).where(User.username.ilike(ident))
+            res = await self.session.execute(query)
+            target_user = res.scalar_one_or_none()
+
+        # Obtener el registro del usuario web actual
+        query_curr = select(User).where(User.telegram_id == current_user_id)
+        res_curr = await self.session.execute(query_curr)
+        curr_user = res_curr.scalar_one_or_none()
+
+        if not curr_user:
+            raise ValueError("Usuario web actual no encontrado.")
+
+        email_to_link = curr_user.email
+
+        if target_user:
+            # Si el usuario de Telegram ya existe en la DB, asociarle el correo
+            target_user.email = email_to_link
+            # Si curr_user es una cuenta sintética separada, eliminarla o desvincularla
+            if curr_user.telegram_id != target_user.telegram_id:
+                await self.session.delete(curr_user)
+
+            final_user = target_user
+        else:
+            # Si no existía en DB pero nos dieron un ID numérico nuevo
+            if ident.isdigit():
+                new_tg_id = int(ident)
+                curr_user.telegram_id = new_tg_id
+                final_user = curr_user
+            else:
+                curr_user.username = ident
+                final_user = curr_user
+
+        # Intentar obtener foto de Telegram si bot está disponible
+        if bot and final_user.telegram_id:
+            try:
+                photos = await bot.get_user_profile_photos(final_user.telegram_id, limit=1)
+                if photos.photos:
+                    file_id = photos.photos[0][0].file_id
+                    final_user.photo_url = f"/api/bot/avatar?file_id={file_id}"
+            except Exception:
+                pass
+
+        await self.session.commit()
+        return {
+            "success": True,
+            "telegram_id": final_user.telegram_id,
+            "username": final_user.username,
+            "email": final_user.email,
+            "name": final_user.name,
+            "photo_url": final_user.photo_url,
+        }
 
     async def get_user_settings(self, telegram_id: int) -> dict:
         """Obtiene todas las configuraciones del usuario."""

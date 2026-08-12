@@ -47,13 +47,13 @@ async def get_telegram_user_id(
             return admin_id
 
         try:
-            from services.user_service import get_user_by_email
+            from services.user_service import get_user_service
 
-            db_user = await get_user_by_email(cf_email)
-            if db_user and db_user.get("telegram_id"):
-                return db_user.get("telegram_id")
+            async with get_user_service() as service:
+                user_id = await service.get_or_create_user_by_email(cf_email)
+                return user_id
         except Exception as e:
-            logger.debug(f"Cloudflare email DB lookup failed: {e}")
+            logger.error(f"Cloudflare email DB lookup/creation failed: {e}")
 
     init_data = x_telegram_init_data or x_telegram_data
     bot_token = config.TELEGRAM_TOKEN

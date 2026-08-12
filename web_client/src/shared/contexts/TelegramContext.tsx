@@ -6,6 +6,8 @@ import { preloadCriticalResources } from '@telegram/utils/telegramOptimizations'
 import { syncTelegramTheme } from '@telegram/utils/themeSync';
 
 
+import { TelegramLinkModal } from '@shared/components/TelegramLinkModal';
+
 interface TelegramUser {
   id: number;
   first_name: string;
@@ -32,6 +34,9 @@ export interface UserStatus {
   user: {
     id: number;
     username: string;
+    email?: string;
+    is_telegram_linked?: boolean;
+    needs_telegram_link?: boolean;
     level: string;
     role: string | null;
     status_label: string;
@@ -43,8 +48,9 @@ export interface UserStatus {
     downloads: {
       used: number;
       limit: number | null;
-      total: number;
+      total?: number;
     };
+    photo_url?: string;
   };
   hasUnlimitedDownloads: boolean;
 }
@@ -55,6 +61,8 @@ interface TelegramContextType {
   status: UserStatus | null;
   isAdmin: boolean;
   isRealAdmin: boolean;
+  isLinkModalOpen: boolean;
+  setIsLinkModalOpen: (open: boolean) => void;
 
   isBetaTester: boolean;  // Controls new vs old UI
   customThemes: boolean;  // Controls if user can personalize UI
@@ -338,6 +346,14 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Admins are always beta testers
   const effectiveBetaTester = isAdmin || isBetaTester;
 
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (status?.user?.needs_telegram_link) {
+      setIsLinkModalOpen(true);
+    }
+  }, [status?.user?.needs_telegram_link]);
+
   return (
     <TelegramContext.Provider value={{
       webApp,
@@ -345,6 +361,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       status,
       isAdmin,
       isRealAdmin,
+      isLinkModalOpen,
+      setIsLinkModalOpen,
       isBetaTester: effectiveBetaTester,
 
       customThemes: isAdmin || customThemes,
@@ -364,6 +382,12 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }}>
 
       {children}
+      <TelegramLinkModal
+        isOpen={isLinkModalOpen}
+        email={status?.user?.email}
+        onClose={() => setIsLinkModalOpen(false)}
+        onSuccess={() => refreshStatus()}
+      />
     </TelegramContext.Provider>
   );
 };

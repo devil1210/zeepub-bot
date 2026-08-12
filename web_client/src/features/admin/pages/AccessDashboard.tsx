@@ -330,7 +330,6 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                                 ) : (
                                                     user.username?.charAt(0).toUpperCase() || '?'
                                                 )}
-
                                                 {scanningUser === user.id && (
                                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm">
                                                         <Loader2 className="w-6 h-6 text-white animate-spin" />
@@ -343,8 +342,13 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                                         {user.display_name || user.name || `@${user.username}` || `Usuario ${user.id.slice(-4)}`}
                                                     </p>
                                                     {user.username && user.username !== 'unknown' && (
-                                                        <p className="text-[10px] text-gray-500 font-bold tracking-tight mt-0.5">
+                                                        <p className="text-[10px] text-gray-400 font-bold tracking-tight mt-0.5">
                                                             @{user.username} {user.name && user.name !== user.display_name && user.name !== 'unknown' && `• ${user.name}`}
+                                                        </p>
+                                                    )}
+                                                    {user.email && (
+                                                        <p className="text-[11px] text-blue-400 font-medium tracking-tight mt-0.5 flex items-center gap-1">
+                                                            <span>📧</span> {user.email}
                                                         </p>
                                                     )}
                                                 </div>
@@ -353,7 +357,7 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                                         onClick={(e) => handleSyncUserPhoto(e, user.id)}
                                                         disabled={scanningUser === user.id}
                                                         className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-primary transition-all active:scale-90"
-                                                        title="Sincronizar foto de perfil"
+                                                        title="Sincronizar foto de perfil desde Telegram"
                                                     >
                                                         {scanningUser === user.id ? (
                                                             <Loader2 className="w-3 h-3 animate-spin" />
@@ -361,6 +365,11 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                                             <RefreshCw className="w-3 h-3" />
                                                         )}
                                                     </button>
+                                                    {user.email && (
+                                                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                                                            {user.id && user.id.length > 5 && !user.id.startsWith('synthetic') ? '🟢 Vinculado' : '🟡 Correo Registrado'}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <p className="text-[10px] text-gray-600 font-mono tracking-tighter mt-1">ID: {user.id}</p>
                                             </div>

@@ -116,6 +116,7 @@ export const uploadFile = async <T = any>(url: string, file: File, onProgress?: 
 export const api = {
     // Status & User
     getUserStatus: (signal?: AbortSignal) => rpc('user_status', {}, signal),
+    linkTelegram: (telegramIdOrUsername: string) => rpc('link_telegram', { telegram_id: telegramIdOrUsername }),
     getDownloadHistory: () => rpc('user_downloads_history'),
 
     // Search & Content

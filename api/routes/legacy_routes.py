@@ -29,6 +29,8 @@ class LegacyRoutes:
             "user_status": miniapp_handlers.handle_user_status,
             "status": miniapp_handlers.handle_status,
             "feedback": miniapp_handlers.handle_feedback,
+            "link_telegram": miniapp_handlers.handle_link_telegram,
+            "link-telegram": miniapp_handlers.handle_link_telegram,
             "bot_info": miniapp_handlers.handle_bot_info,
             "user_downloads_history": miniapp_handlers.handle_user_downloads_history,
             "recommendations": miniapp_handlers.handle_recommendations,
