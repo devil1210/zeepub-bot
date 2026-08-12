@@ -663,7 +663,7 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
                     { key: 'betaTester', label: 'Beta Engine', desc: 'Acceso a nuevas funciones', icon: History, color: 'text-blue-400', bg: 'bg-blue-500/10', badge: 'NEW UI' },
                     { key: 'hasLibraryAccess', label: 'Mi Biblioteca', desc: 'Panel de libros locales', icon: Library, color: 'text-purple-400', bg: 'bg-purple-500/10' },
                     { key: 'canRequestBooks', label: 'Pedidos Web', desc: 'Solicitud de contenido', icon: BookOpen, color: 'text-green-400', bg: 'bg-green-500/10' },
-                    { key: 'canUploadEpub', label: 'Socio de Datos', desc: 'Subida directa de archivos', icon: Upload, color: 'text-orange-400', bg: 'bg-orange-500/10' },
+                    { key: 'canUploadEpub', label: 'Publicar Contenido', desc: 'Subida y publicación directa de libros', icon: Upload, color: 'text-orange-400', bg: 'bg-orange-500/10', badge: 'PUBLICAR' },
                     { key: 'allowThemeTemplates', label: 'Estética Libre', desc: 'Uso de temas de autor', icon: Palette, color: 'text-pink-400', bg: 'bg-pink-500/10' },
                   ].map((opt) => (
                     <div

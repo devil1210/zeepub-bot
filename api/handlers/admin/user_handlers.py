@@ -130,6 +130,7 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
 
             user_batch = []
             for u in users:
+                u_settings = getattr(u, "settings", None) or {}
                 u_data = {
                     "telegram_id": u.telegram_id,
                     "username": u.username,
@@ -138,14 +139,14 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
                     "photo_url": u.photo_url,
                     "level_id": u.level_id,
                     "role": u.role,
-                    "beta_tester": u.beta_tester,
-                    "has_library_access": u.has_library_access,
-                    "can_request_books": u.can_request_books,
-                    "can_upload_epub": u.can_upload_epub,
-                    "total_downloads": u.total_downloads,
-                    "insignias": u.insignias,
-                    "settings": u.settings,
-                    "expires_at": u.expires_at.isoformat() if u.expires_at else None,
+                    "beta_tester": getattr(u, "beta_tester", None) or getattr(u, "is_beta", False),
+                    "has_library_access": getattr(u, "has_library_access", u_settings.get("has_library_access", True)),
+                    "can_request_books": getattr(u, "can_request_books", u_settings.get("can_request_books", True)),
+                    "can_upload_epub": getattr(u, "can_upload_epub", False) or getattr(u, "can_upload", False),
+                    "total_downloads": getattr(u, "total_downloads", None) or 0,
+                    "insignias": getattr(u, "insignias", None) or [],
+                    "settings": u_settings,
+                    "expires_at": getattr(u, "expires_at", None) and u.expires_at.isoformat() if getattr(u, "expires_at", None) else None,
                 }
                 user_batch.append(u_data)
 
@@ -185,7 +186,7 @@ async def handle_admin_sync_users_cloud(data: dict[str, Any], user_data: dict[st
 
 
 async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: dict[str, Any]):
-    """Guarda los permisos de un usuario específico."""
+    """Guarda los permisos de un usuario específico de forma segura."""
     from models.users import User
 
     target_id = data.get("userId")
@@ -197,20 +198,41 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
-        if "levelId" in data:
+        if "levelId" in data and data["levelId"] is not None:
             user.level_id = int(data["levelId"])
 
-        user.has_library_access = data.get("hasLibraryAccess", user.has_library_access)
-        user.can_request_books = data.get("canRequestBooks", user.can_request_books)
-        user.can_upload_epub = data.get("canUploadEpub", user.can_upload_epub)
-        user.beta_tester = data.get("betaTester", user.beta_tester)
-        user.allow_theme_templates = data.get("allowThemeTemplates", user.allow_theme_templates)
-        user.role = data.get("role", user.role)
+        if "role" in data and data["role"]:
+            user.role = str(data["role"])
+
+        # Actualizar campos nativos del modelo User si aplican
+        if "canUploadEpub" in data:
+            val = bool(data["canUploadEpub"])
+            user.can_upload_epub = val
+            user.can_upload = val
+
+        if "betaTester" in data:
+            user.is_beta = bool(data["betaTester"])
+
+        # Actualizar configuraciones extra en el dict JSONB (user.settings)
+        user_settings = dict(user.settings or {})
+        for key, payload_key in [
+            ("has_library_access", "hasLibraryAccess"),
+            ("can_request_books", "canRequestBooks"),
+            ("allow_theme_templates", "allowThemeTemplates"),
+            ("bypass_limits", "bypassLimits"),
+            ("can_report", "canReport"),
+        ]:
+            if payload_key in data:
+                bool_val = bool(data[payload_key])
+                user_settings[key] = bool_val
+                if hasattr(user, key):
+                    setattr(user, key, bool_val)
+
+        user.settings = user_settings
 
         expires_str = data.get("expiresAt") or data.get("expires_at")
-        if expires_str:
+        if expires_str and hasattr(user, "expires_at"):
             from datetime import datetime
-
             try:
                 user.expires_at = datetime.fromisoformat(expires_str.replace("Z", "+00:00"))
             except Exception:
@@ -221,7 +243,7 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
 
 
 async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dict[str, Any]):
-    """Obtiene los permisos de un usuario específico."""
+    """Obtiene los permisos de un usuario específico de forma segura."""
     from models.users import User
 
     target_id = data.get("userId")
@@ -238,6 +260,8 @@ async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dic
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
+        u_settings = getattr(user, "settings", None) or {}
+
         return {
             "success": True,
             "user": {
@@ -249,18 +273,18 @@ async def handle_admin_get_user_permissions(data: dict[str, Any], user_data: dic
                 "levelId": user.level_id,
                 "levelName": user.level.name if user.level else "Básico",
                 "levelColor": user.level.color if user.level else "#3b82f6",
-                "hasLibraryAccess": getattr(user, "has_library_access", True),
-                "canRequestBooks": getattr(user, "can_request_books", True),
+                "hasLibraryAccess": getattr(user, "has_library_access", u_settings.get("has_library_access", True)),
+                "canRequestBooks": getattr(user, "can_request_books", u_settings.get("can_request_books", True)),
                 "canUploadEpub": getattr(user, "can_upload_epub", False) or getattr(user, "can_upload", False),
                 "betaTester": getattr(user, "beta_tester", None) or getattr(user, "is_beta", False),
                 "role": user.role,
                 "expiresAt": getattr(user, "expires_at", None) and user.expires_at.isoformat() if getattr(user, "expires_at", None) else None,
                 "photo_url": user.photo_url,
                 "insignias": getattr(user, "insignias", None) or [],
-                "settings": getattr(user, "settings", None) or {},
-                "allowThemeTemplates": getattr(user, "allow_theme_templates", False),
-                "canReport": True,  # Fallback as not in schema yet
-                "bypassLimits": getattr(user, "bypass_limits", False),
+                "settings": u_settings,
+                "allowThemeTemplates": getattr(user, "allow_theme_templates", u_settings.get("allow_theme_templates", False)),
+                "canReport": u_settings.get("can_report", True),
+                "bypassLimits": getattr(user, "bypass_limits", u_settings.get("bypass_limits", False)),
             },
         }
 
