@@ -18,9 +18,8 @@ RUN apt-get update && apt-get install -y postgresql-client curl git && \
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install cloudflared
-RUN curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb && \
-    dpkg -i cloudflared.deb && \
-    rm cloudflared.deb
+RUN curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared && \
+    chmod +x /usr/local/bin/cloudflared
 
 # Bake git hash
 ARG GIT_COMMIT=unknown
