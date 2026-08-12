@@ -3,6 +3,8 @@
 .venv
 node_modules
 pgdata
+pgdata*
+tailscale*
 data
 web_client/node_modules
 web_client/dist
