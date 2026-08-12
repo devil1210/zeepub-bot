@@ -48,7 +48,7 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
         const script = document.createElement('script');
         script.src = 'https://telegram.org/js/telegram-widget.js?22';
         script.async = true;
-        script.setAttribute('data-telegram-login', 'ZeePubBot');
+        script.setAttribute('data-telegram-login', 'spcore_bot');
         script.setAttribute('data-size', 'large');
         script.setAttribute('data-radius', '12');
         script.setAttribute('data-onauth', 'onTelegramAuth(user)');
@@ -165,7 +165,7 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
                                 type="text"
                                 value={telegramInput}
                                 onChange={(e) => setTelegramInput(e.target.value)}
-                                placeholder="Ej. 133994080 o @mi_usuario"
+                                placeholder="Ej. 123456789 o @mi_usuario"
                                 className="w-full px-4 py-2.5 text-sm text-white placeholder-slate-500 bg-slate-800/80 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                             />
                         </div>
