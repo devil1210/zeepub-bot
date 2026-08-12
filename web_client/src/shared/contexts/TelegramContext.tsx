@@ -326,7 +326,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } else {
       // Standalone Web App Mode (Cloudflare Access / Web)
       const adminUser: TelegramUser = {
-        id: 133994080,
+        id: 1,
         first_name: 'Admin',
         username: 'admin',
       };

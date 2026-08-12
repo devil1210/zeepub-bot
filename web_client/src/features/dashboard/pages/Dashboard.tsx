@@ -52,8 +52,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     return () => setVisible(true);
   }, [setVisible]);
 
-  const userName = extendedInfo?.nickname || extendedInfo?.name || (tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : (status?.user?.username || "Lector"));
-  const userLevel = status?.user?.status_label || "Lector";
+  const userName = extendedInfo?.nickname || extendedInfo?.name || (tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : (status?.user?.username && !status?.user?.username.startsWith('User_') ? status.user.username : "Administrador"));
+  const userLevel = isAdmin ? "Administrador" : (status?.user?.status_label || "Lector");
   const downloadsUsed = status?.user?.downloads?.used || 0;
   const downloadsLimit = status?.user?.downloads?.limit || 0;
   const isUnlimited = status?.user?.downloads?.limit === -1 || status?.hasUnlimitedDownloads;
