@@ -86,11 +86,38 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Sign the resulting Docker image digest except on PRs.
-      # This will only write to the public Rekor transparency log when the Docker
-      # repository is public to avoid leaking data.  If you would like to publish
-      # transparency data even for private images, pass --force to cosign below.
-      # https://github.com/sigstore/cosign
+      # Extract metadata for Web App
+      - name: Extract Web Docker metadata
+        id: meta-web
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/devil1210/zeepub-web
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || github.ref == 'refs/heads/feat/integrate-web-client' }}
+          labels: |
+            org.opencontainers.image.title=ZeePub Web Client
+            org.opencontainers.image.description=Cliente Web SPA para ZeePub Bot
+            org.opencontainers.image.vendor=devil1210
+
+      # Build and push Web Docker image
+      - name: Build and push Web Docker image
+        id: build-and-push-web
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web_client
+          file: ./web_client/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Sign the published Docker image
       - name: Sign the published Docker image
         if: ${{ github.event_name != 'pull_request' }}
         env:
