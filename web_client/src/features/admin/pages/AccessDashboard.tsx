@@ -31,6 +31,7 @@ interface UserLevel {
 interface AdminUser {
     id: string;
     username: string;
+    tg_username?: string;       // @username real de Telegram (puede ser null)
     name?: string;
     nickname?: string;
     display_name?: string;
@@ -367,10 +368,12 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                                             <RefreshCw className="w-3 h-3" />
                                                         )}
                                                     </button>
-                                                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${user.is_telegram_linked || (user.id && !user.id.startsWith('synthetic') && Number(user.id) > 0) ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-amber-500/10 text-amber-300 border-amber-500/20'}`}>
-                                                         {user.is_telegram_linked || (user.id && !user.id.startsWith('synthetic') && Number(user.id) > 0)
-                                                             ? `🟢 Telegram: ${user.username && !user.username.startsWith('User_') ? `@${user.username}` : `ID ${user.id}`}`
-                                                             : '⚠️ Telegram No Vinculado'}
+                                                     <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md border ${user.tg_username || user.is_telegram_linked ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : 'bg-amber-500/10 text-amber-300 border-amber-500/20'}`}>
+                                                         {user.tg_username
+                                                             ? `🟢 @${user.tg_username}`
+                                                             : user.is_telegram_linked
+                                                                 ? '🟢 Telegram Vinculado'
+                                                                 : '⚠️ Sin Telegram'}
                                                      </span>
                                                 </div>
                                                 <p className="text-[10px] text-gray-600 font-mono tracking-tighter mt-1">ID: {user.id}</p>

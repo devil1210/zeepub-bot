@@ -119,12 +119,13 @@ class UserRepository(BaseRepository[User]):
                     settings[key] = val
 
         # Limpiar datos para el frontend
+        _debug_vals = {"unknown", "none", "", "admin_debug", "admin.debug"}
         raw_username = user.username
-        if raw_username and raw_username.lower() in ("unknown", "none", ""):
+        if not raw_username or raw_username.lower() in _debug_vals or raw_username.startswith("User_"):
             raw_username = None
 
         raw_name = user.name
-        if raw_name and raw_name.lower() in ("unknown", "none", ""):
+        if raw_name and raw_name.lower() in ("unknown", "none", "", "admin (debug)"):
             raw_name = None
 
         raw_nickname = user.nickname
@@ -136,13 +137,14 @@ class UserRepository(BaseRepository[User]):
         return {
             "id": str(user.telegram_id),
             "username": raw_username or (user.email.split("@")[0] if user.email else f"User_{user.telegram_id}"),
+            "tg_username": raw_username,  # @username real de Telegram (puede ser None si no tiene)
             "name": raw_name or raw_username or user.email or f"User_{user.telegram_id}",
             "nickname": raw_nickname,
             "display_name": display_name,
             "role": user.role or "user",
             "photo_url": user.photo_url,
             "email": user.email,
-            "is_telegram_linked": bool(user.telegram_id and user.telegram_id > 0 and (user.username or user.photo_url or not user.email)),
+            "is_telegram_linked": bool(user.telegram_id and user.telegram_id > 0 and (raw_username or user.photo_url or not user.email)),
             "level": {
                 "name": user.level.name if user.level else "free",
                 "color": user.level.color if user.level else "#3b82f6",

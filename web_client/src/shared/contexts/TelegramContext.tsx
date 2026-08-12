@@ -34,6 +34,8 @@ export interface UserStatus {
   user: {
     id: number;
     username: string;
+    tg_username?: string;       // @username real de Telegram (sin @)
+    telegram_id?: number;
     email?: string;
     is_telegram_linked?: boolean;
     needs_telegram_link?: boolean;

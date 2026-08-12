@@ -157,12 +157,25 @@ async def handle_user_status(data: dict[str, Any], user_data: dict[str, Any]):
             logger.warning(f"Could not fetch profile photo for user {user_id}: {e}")
 
     user_email = user_data.get("email")
-    is_linked = bool(user_id and user_id > 0 and user_data.get("photo_url") or is_admin or (user_data.get("username") and not str(user_data.get("username")).startswith("User_")))
+    # username real de Telegram (filtrar valores debug/sinteticos)
+    raw_tg_username = user_data.get("username")
+    _debug_usernames = {"admin_debug", "admin.debug", "unknown", "none", ""}
+    tg_username = None
+    if raw_tg_username and str(raw_tg_username).lower() not in _debug_usernames and not str(raw_tg_username).startswith("User_"):
+        tg_username = str(raw_tg_username)
+
+    is_linked = bool(
+        is_admin
+        or (user_id and user_id > 0 and tg_username)
+        or user_data.get("photo_url")
+    )
 
     return {
         "user": {
             "id": user_id,
             "username": user_data.get("nickname") or user_data.get("name") or f"User_{user_id}",
+            "tg_username": tg_username,  # @username real de Telegram (sin @)
+            "telegram_id": user_id,
             "email": user_email,
             "is_telegram_linked": is_linked,
             "needs_telegram_link": not is_linked and not is_admin,
