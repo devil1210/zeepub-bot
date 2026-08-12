@@ -217,11 +217,9 @@ async def handle_link_telegram(data: dict[str, Any], user_data: dict[str, Any], 
         except Exception:
             pass
 
-    from services.user_service import get_user_service
+    from services.user_service import link_telegram_to_user
 
-    async with get_user_service() as service:
-        result = await service.link_telegram_to_user(user_id, str(telegram_identifier), bot=bot)
-
+    result = await link_telegram_to_user(user_id, str(telegram_identifier), bot=bot)
     return result
 
 
@@ -244,16 +242,14 @@ async def handle_telegram_widget_auth(data: dict[str, Any], user_data: dict[str,
     username = validated.get("username", "")
     photo_url = validated.get("photo_url")
 
-    from services.user_service import get_user_service
+    from services.user_service import upsert_user
 
-    async with get_user_service() as service:
-        user = await service.upsert_user(
-            telegram_id=tg_id,
-            name=full_name or username or f"User_{tg_id}",
-            username=username,
-            photo_url=photo_url,
-        )
-        await service.commit_changes()
+    await upsert_user(
+        telegram_id=tg_id,
+        name=full_name or username or f"User_{tg_id}",
+        username=username,
+        photo_url=photo_url,
+    )
 
     return {
         "success": True,

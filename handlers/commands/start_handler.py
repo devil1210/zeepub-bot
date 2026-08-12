@@ -39,6 +39,49 @@ class StartHandler(BaseCommandHandler):
                 # If topics exist, redirect welcome message to "System" topic
                 thread_id = topic_ids.get("sistema", thread_id)
 
+        # Check for deep-linking arguments (e.g. /start link_b64email)
+        if context.args and len(context.args) > 0:
+            arg = context.args[0]
+            if arg.startswith("link_"):
+                import base64
+                encoded_email = arg[5:]
+                try:
+                    padded = encoded_email + "=" * (-len(encoded_email) % 4)
+                    email = base64.urlsafe_b64decode(padded.encode()).decode("utf-8")
+                    
+                    from services.user_service import link_telegram_to_user
+                    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+                    await link_telegram_to_user(
+                        current_user_id=uid,
+                        telegram_identifier=str(uid),
+                        bot=context.bot
+                    )
+
+                    tg_user = update.effective_user
+                    from repositories.user_repository import user_repo
+                    await user_repo.update_profile(
+                        uid,
+                        username=tg_user.username,
+                        first_name=tg_user.first_name,
+                        last_name=tg_user.last_name,
+                        email=email
+                    )
+
+                    text = (
+                        f"🎉 <b>¡Cuenta de Telegram Vinculada!</b>\n\n"
+                        f"Hola <b>{tg_user.first_name}</b>, tu cuenta de Telegram (@{tg_user.username or uid}) "
+                        f"ha sido vinculada exitosamente con tu sesión web (<b>{email}</b>).\n\n"
+                        f"Ya puedes volver a la web y disfrutar de tus descargas y beneficios."
+                    )
+                    reply_markup = InlineKeyboardMarkup([[
+                        InlineKeyboardButton("🌐 Volver a ZeePub Web", url="https://zp-dev.sp-core.vip")
+                    ]])
+                    await update.effective_message.reply_text(text, parse_mode="HTML", reply_markup=reply_markup)
+                    return
+                except Exception as e:
+                    logger.error(f"Error procesando deep link de vinculacion: {e}")
+
         welcome_text = await self._get_welcome_text(update)
         await self._send_message(update, welcome_text, thread_id)
 
