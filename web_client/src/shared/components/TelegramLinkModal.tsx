@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Send, CheckCircle2, AlertCircle, Loader2, Sparkles, X } from 'lucide-react';
 import { api } from '@shared/services/api';
 
@@ -20,53 +20,12 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!isOpen) return;
-
-        // Callback invocado por el script oficial de Telegram
-        (window as any).onTelegramAuth = async (user: any) => {
-            try {
-                setLoading(true);
-                setError(null);
-                const res = await api.telegramWidgetAuth(user);
-                if (res.success || res.user_id) {
-                    setSuccessMessage('¡Autenticación con Telegram exitosa! Sincronizando...');
-                    setTimeout(() => {
-                        onSuccess();
-                        onClose();
-                    }, 1000);
-                } else {
-                    setError(res.message || res.error || 'Error al validar la firma de Telegram.');
-                }
-            } catch (err: any) {
-                setError(err.message || 'Error al autenticar con Telegram.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const script = document.createElement('script');
-        script.src = 'https://telegram.org/js/telegram-widget.js?22';
-        script.async = true;
-        script.setAttribute('data-telegram-login', 'spcore_bot');
-        script.setAttribute('data-size', 'large');
-        script.setAttribute('data-radius', '12');
-        script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-        script.setAttribute('data-request-access', 'write');
-
-        const widgetContainer = document.getElementById('telegram-widget-container');
-        if (widgetContainer) {
-            widgetContainer.innerHTML = '';
-            widgetContainer.appendChild(script);
-        }
-    }, [isOpen]);
-
     if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!telegramInput.trim()) {
-            setError('Ingresa tu ID de Telegram o tu @usuario.');
+            setError('Ingresa tu @usuario o ID numérico de Telegram.');
             return;
         }
 
@@ -76,13 +35,13 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
             const res = await api.linkTelegram(telegramInput.trim());
 
             if (res.success || res.telegram_id) {
-                setSuccessMessage('¡Cuenta vinculada con éxito! Sincronizando perfil...');
+                setSuccessMessage('¡Cuenta de Telegram vinculada con éxito!');
                 setTimeout(() => {
                     onSuccess();
                     onClose();
-                }, 1200);
+                }, 1000);
             } else {
-                setError(res.error || res.message || 'No se pudo vincular la cuenta. Verifica los datos.');
+                setError(res.error || res.message || 'No se pudo vincular la cuenta. Verifica tus datos.');
             }
         } catch (err: any) {
             setError(err.message || 'Error de conexión al vincular la cuenta.');
@@ -125,7 +84,7 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
                     </div>
 
                     <p className="text-xs text-slate-300 leading-relaxed">
-                        Para sincronizar tus descargas diarias, foto de perfil y privilegios, conecta tu cuenta de Telegram.
+                        Conecta tu sesión activa de Telegram para sincronizar tus descargas diarias, foto de perfil y rango.
                     </p>
 
                     {error && (
@@ -142,30 +101,41 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
                         </div>
                     )}
 
-                    {/* Official Telegram Login Widget */}
-                    <div className="flex flex-col items-center justify-center p-4 bg-slate-800/40 border border-white/5 rounded-xl space-y-3">
-                        <p className="text-xs font-semibold text-slate-300">
-                            Opción 1: Iniciar sesión en 1 clic con Telegram ✈️
+                    {/* Direct Telegram Session Button */}
+                    <div className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600/15 to-purple-600/15 border border-blue-500/20 rounded-xl space-y-3 text-center">
+                        <p className="text-xs font-semibold text-slate-200">
+                            Método Directo: Usa tu Sesión de Telegram ✈️
                         </p>
-                        <div id="telegram-widget-container" className="min-h-[40px] flex items-center justify-center" />
+                        <a
+                            href="https://t.me/spcore_bot"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center space-x-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-500 hover:bg-blue-400 rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all"
+                        >
+                            <Send className="w-4 h-4" />
+                            <span>Abrir Bot en Telegram</span>
+                        </a>
+                        <p className="text-[11px] text-slate-400">
+                            Abre el bot directamente en tu app de Telegram sin ingresar número de teléfono.
+                        </p>
                     </div>
 
                     <div className="relative flex items-center justify-center my-2">
                         <div className="border-t border-white/10 w-full" />
-                        <span className="bg-slate-900 px-3 text-[10px] text-slate-500 font-bold uppercase tracking-wider">o ingresar datos</span>
+                        <span className="bg-slate-900 px-3 text-[10px] text-slate-500 font-bold uppercase tracking-wider">o vincular por alias</span>
                         <div className="border-t border-white/10 w-full" />
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4 pt-1">
                         <div>
                             <label className="block mb-1.5 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                                Opción 2: ID de Telegram o Alias (@usuario)
+                                Tu Alias de Telegram (@usuario) o ID
                             </label>
                             <input
                                 type="text"
                                 value={telegramInput}
                                 onChange={(e) => setTelegramInput(e.target.value)}
-                                placeholder="Ej. 123456789 o @mi_usuario"
+                                placeholder="Ej. @mi_usuario o 123456789"
                                 className="w-full px-4 py-2.5 text-sm text-white placeholder-slate-500 bg-slate-800/80 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                             />
                         </div>
@@ -186,7 +156,7 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
                                 {loading ? (
                                     <>
                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                        <span>Cargando...</span>
+                                        <span>Vinculando...</span>
                                     </>
                                 ) : (
                                     <span>Vincular Cuenta</span>

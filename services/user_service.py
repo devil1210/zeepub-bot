@@ -492,3 +492,19 @@ async def check_milestones(telegram_id: int, context=None) -> str | None:
         return f"🎉 ¡Felicidades! Has alcanzado un hito de <b>{downloads} descargas</b> en ZeePub."
     return None
 
+
+async def get_or_create_user_by_email(email: str) -> int:
+    from core.db_manager_pg import pg_manager
+
+    async with pg_manager.get_session() as session:
+        service = UserService(session)
+        return await service.get_or_create_user_by_email(email)
+
+
+async def link_telegram_to_user(current_user_id: int, telegram_identifier: str, bot=None) -> dict:
+    from core.db_manager_pg import pg_manager
+
+    async with pg_manager.get_session() as session:
+        service = UserService(session)
+        return await service.link_telegram_to_user(current_user_id, telegram_identifier, bot=bot)
+
