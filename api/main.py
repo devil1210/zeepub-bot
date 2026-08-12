@@ -248,7 +248,7 @@ if enable_miniapp:
     # Montar portadas de la librería local
     from utils.library_db import COVERS_DIR, PROFILES_DIR
 
-    @app.get("/api/library/covers/{filename:path}")
+    @app.api_route("/api/library/covers/{filename:path}", methods=["GET", "HEAD"])
     async def get_cover_image(filename: str):
         filepath = os.path.join(COVERS_DIR, filename)
         if os.path.exists(filepath):
