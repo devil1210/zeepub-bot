@@ -29,7 +29,18 @@ services:
       driver: "json-file"
       options:
         max-size: "10m"
-        max-file: "3"
+  # Servicio Frontend Web (Nginx + React SPA)
+  zeepubs_web:
+    build:
+      context: ./web_client
+      dockerfile: Dockerfile
+    image: ghcr.io/devil1210/zeepub-web:latest
+    container_name: zeepub_web_v6
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3000}:80"
+    depends_on:
+      - zeepubs_bot
 
   # Servicio de Base de Datos PostgreSQL
   db:
