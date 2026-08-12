@@ -62,6 +62,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
     const [isImmediate, setIsImmediate] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
     const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
     const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
