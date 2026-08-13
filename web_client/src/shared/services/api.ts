@@ -27,8 +27,12 @@ const getInitData = () => {
     if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData) {
         return (window as any).Telegram.WebApp.initData || '';
     }
-    // Standalone Web App Mode (Cloudflare Access / Web)
-    return 'debug_admin';
+    // Only return 'debug_admin' when running on localhost for local dev
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        return 'debug_admin';
+    }
+    // Standalone Web App Mode (Cloudflare Access / Production Web)
+    return '';
 };
 
 const apiClient = axios.create({
