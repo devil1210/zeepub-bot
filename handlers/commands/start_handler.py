@@ -42,6 +42,34 @@ class StartHandler(BaseCommandHandler):
         # Check for deep-linking arguments (e.g. /start link_b64email)
         if context.args and len(context.args) > 0:
             arg = context.args[0]
+            if arg.startswith("auth_"):
+                try:
+                    from services.user_service import confirm_qr_auth_session
+                    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+                    tg_user = update.effective_user
+                    ok = await confirm_qr_auth_session(
+                        token=arg,
+                        telegram_id=uid,
+                        telegram_username=tg_user.username,
+                        first_name=tg_user.first_name,
+                        bot=context.bot,
+                    )
+                    if ok:
+                        text = (
+                            f"🎉 <b>¡Vinculación Autorizada!</b>\n\n"
+                            f"Hola <b>{tg_user.first_name}</b>, tu cuenta de Telegram (@{tg_user.username or uid}) "
+                            f"ha sido autorizada y vinculada en tiempo real con tu navegador web.\n\n"
+                            f"Ya puedes regresar a la pantalla de tu navegador."
+                        )
+                        reply_markup = InlineKeyboardMarkup([[
+                            InlineKeyboardButton("🌐 Volver a ZeePub Web", url="https://zp-dev.sp-core.vip")
+                        ]])
+                        await update.effective_message.reply_text(text, parse_mode="HTML", reply_markup=reply_markup)
+                        return
+                except Exception as e:
+                    logger.error(f"Error procesando token QR auth: {e}")
+
             if arg.startswith("link_"):
                 import base64
                 encoded_email = arg[5:]

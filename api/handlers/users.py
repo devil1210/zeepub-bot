@@ -242,6 +242,30 @@ async def handle_link_telegram(data: dict[str, Any], user_data: dict[str, Any], 
         raise HTTPException(status_code=500, detail=f"Error al vincular Telegram: {str(e)}")
 
 
+async def handle_generate_qr_auth(data: dict[str, Any], user_data: dict[str, Any]):
+    """Genera una sesión de autenticación por Código QR para la cuenta web activa."""
+    user_id = user_data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Usuario no autenticado.")
+
+    from services.user_service import create_qr_auth_session
+
+    res = create_qr_auth_session(user_id)
+    return {"success": True, **res}
+
+
+async def handle_check_qr_auth(data: dict[str, Any], user_data: dict[str, Any]):
+    """Consulta el estado en tiempo real de una sesión de Código QR."""
+    token = data.get("token")
+    if not token:
+        raise HTTPException(status_code=400, detail="Token requerido.")
+
+    from services.user_service import get_qr_auth_session
+
+    res = get_qr_auth_session(token)
+    return {"success": True, **res}
+
+
 async def handle_telegram_widget_auth(data: dict[str, Any], user_data: dict[str, Any], request=None):
     """Procesa y valida la autenticación nativa desde el Telegram Login Widget."""
     auth_data = data.get("auth_data") or data

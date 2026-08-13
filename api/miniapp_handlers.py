@@ -116,11 +116,13 @@ from api.handlers.settings import (
 from api.handlers.stars import handle_create_stars_invoice
 from api.handlers.users import (
     handle_bot_info,
+    handle_check_qr_auth,
     handle_feedback,
+    handle_generate_qr_auth,
     handle_link_telegram,
-    handle_unlink_telegram,
     handle_status,
     handle_telegram_widget_auth,
+    handle_unlink_telegram,
     handle_user_status,
 )
 
@@ -229,4 +231,6 @@ __all__ = [
     "handle_link_telegram",
     "handle_unlink_telegram",
     "handle_telegram_widget_auth",
+    "handle_generate_qr_auth",
+    "handle_check_qr_auth",
 ]

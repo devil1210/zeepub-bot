@@ -636,3 +636,67 @@ async def link_telegram_to_user(current_user_id: int, telegram_identifier: str, 
         service = UserService(session)
         return await service.link_telegram_to_user(current_user_id, telegram_identifier, bot=bot)
 
+
+import secrets
+import time
+
+_QR_AUTH_SESSIONS: dict[str, dict[str, Any]] = {}
+
+
+def create_qr_auth_session(user_id: int) -> dict[str, Any]:
+    """Crea una sesión de autenticación QR efímera (válida por 5 minutos)."""
+    now = time.time()
+    expired = [k for k, v in _QR_AUTH_SESSIONS.items() if now - v.get("created_at", 0) > 300]
+    for k in expired:
+        _QR_AUTH_SESSIONS.pop(k, None)
+
+    token = f"auth_{secrets.token_hex(4)}"
+    _QR_AUTH_SESSIONS[token] = {
+        "token": token,
+        "user_id": user_id,
+        "status": "pending",
+        "created_at": now,
+        "telegram_user": None,
+    }
+    return {
+        "token": token,
+        "status": "pending",
+        "expires_in": 300,
+        "bot_username": "spcore_bot",
+        "bot_link": f"https://t.me/spcore_bot?start={token}",
+    }
+
+
+def get_qr_auth_session(token: str) -> dict[str, Any]:
+    """Obtiene el estado actual de una sesión QR."""
+    sess = _QR_AUTH_SESSIONS.get(token)
+    if not sess:
+        return {"status": "expired"}
+    if time.time() - sess.get("created_at", 0) > 300:
+        _QR_AUTH_SESSIONS.pop(token, None)
+        return {"status": "expired"}
+    return {
+        "status": sess.get("status", "pending"),
+        "telegram_user": sess.get("telegram_user"),
+        "user_id": sess.get("user_id"),
+    }
+
+
+async def confirm_qr_auth_session(token: str, telegram_id: int, telegram_username: str = None, first_name: str = None, bot=None) -> bool:
+    """Confirma la vinculación de Telegram desde el bot usando el token del QR/Deep-link."""
+    sess = _QR_AUTH_SESSIONS.get(token)
+    if not sess or time.time() - sess.get("created_at", 0) > 300:
+        return False
+
+    web_user_id = sess["user_id"]
+    res = await link_telegram_to_user(current_user_id=web_user_id, telegram_identifier=str(telegram_id), bot=bot)
+
+    sess["status"] = "authenticated"
+    sess["telegram_user"] = {
+        "telegram_id": telegram_id,
+        "username": telegram_username,
+        "name": first_name,
+        "photo_url": res.get("photo_url"),
+    }
+    return True
+

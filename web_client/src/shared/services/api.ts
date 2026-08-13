@@ -119,6 +119,8 @@ export const api = {
     linkTelegram: (telegramIdOrUsername: string) => rpc('link_telegram', { telegram_id: telegramIdOrUsername }),
     unlinkTelegram: () => rpc('unlink_telegram'),
     telegramWidgetAuth: (authData: any) => rpc('telegram_widget_auth', { auth_data: authData }),
+    generateQrAuth: () => rpc('generate_qr_auth'),
+    checkQrAuth: (token: string) => rpc('check_qr_auth', { token }),
     getDownloadHistory: () => rpc('user_downloads_history'),
 
     // Search & Content
