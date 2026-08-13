@@ -9,6 +9,14 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --prefer-offline --no-audit
 
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_ENABLE_DEBUG_ADMIN
+
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
+ENV VITE_ENABLE_DEBUG_ADMIN=$VITE_ENABLE_DEBUG_ADMIN
+
 # Copiar el código fuente y construir la distribución estática
 COPY . .
 RUN npm run build

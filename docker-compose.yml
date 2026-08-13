@@ -34,6 +34,10 @@ services:
     build:
       context: ./web_client
       dockerfile: Dockerfile
+      args:
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        - VITE_ENABLE_DEBUG_ADMIN=${VITE_ENABLE_DEBUG_ADMIN}
     image: ghcr.io/devil1210/zeepub-web:latest
     container_name: zeepub_web_v6
     restart: unless-stopped
