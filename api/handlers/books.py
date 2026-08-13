@@ -63,6 +63,10 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
             "title": (series.series_english or series.series_name)
             if series
             else (rep.get("series") or rep.get("title")),
+            "english_title": (series.series_english or series.name_english) if series else rep.get("english_title"),
+            "spanish_title": (series.series_spanish or series.name_spanish) if series else rep.get("spanish_title"),
+            "romaji_title": (series.name or series.series_name) if series else rep.get("romaji_title"),
+            "romaji": (series.name or series.series_name) if series else rep.get("romaji"),
             "author": series.author if series else rep.get("author"),
             "summary": series.description if series else rep.get("description"),
             "cover": series.cover_url if series else rep.get("cover"),
@@ -108,14 +112,26 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
                 f"[book-detail] Found local book: {local_book['title']} (series_hash: {local_book.get('series_hash')})"
             )
 
-            # If part of a series, ALWAYS include volumes to avoid "empty volumes list" in frontend
+            # If part of a series, ALWAYS include volumes and sync series title fields
             s_hash = local_book.get("series_hash")
             if s_hash:
                 v_limit = data.get("limit", 100)
                 v_offset = data.get("offset", 0)
-                volumes = await LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
+                series_meta_task = LibraryService.get_series_metadata(s_hash)
+                volumes_task = LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
+                series_meta, volumes = await asyncio.gather(series_meta_task, volumes_task)
+
                 local_book["volumes"] = volumes
                 local_book["series_hash"] = s_hash
+
+                if series_meta:
+                    if not local_book.get("romaji_title") and not local_book.get("romaji"):
+                        local_book["romaji_title"] = series_meta.name or series_meta.series_name
+                        local_book["romaji"] = series_meta.name or series_meta.series_name
+                    if not local_book.get("english_title"):
+                        local_book["english_title"] = series_meta.series_english or series_meta.name_english
+                    if not local_book.get("spanish_title"):
+                        local_book["spanish_title"] = series_meta.series_spanish or series_meta.name_spanish
             else:
                 local_book["volumes"] = [local_book]
 
