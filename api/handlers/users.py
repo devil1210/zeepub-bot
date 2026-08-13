@@ -232,8 +232,14 @@ async def handle_link_telegram(data: dict[str, Any], user_data: dict[str, Any], 
 
     from services.user_service import link_telegram_to_user
 
-    result = await link_telegram_to_user(user_id, str(telegram_identifier), bot=bot)
-    return result
+    try:
+        result = await link_telegram_to_user(user_id, str(telegram_identifier), bot=bot)
+        return result
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Error al vincular Telegram: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error al vincular Telegram: {str(e)}")
 
 
 async def handle_telegram_widget_auth(data: dict[str, Any], user_data: dict[str, Any], request=None):

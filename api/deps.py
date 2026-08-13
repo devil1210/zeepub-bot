@@ -42,10 +42,6 @@ async def get_telegram_user_id(
             logger.debug(f"Failed to parse Cloudflare JWT assertion: {e}")
 
     if cf_email:
-        if config.ADMIN_EMAILS and cf_email in config.ADMIN_EMAILS:
-            admin_id = list(config.ADMIN_USERS)[0] if config.ADMIN_USERS else 133994080
-            return admin_id
-
         try:
             from services.user_service import get_user_service
 

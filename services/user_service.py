@@ -176,8 +176,19 @@ class UserService:
         """Obtiene o crea un usuario registrado mediante correo (Cloudflare Access)."""
         import zlib
         clean_email = email.strip().lower()
+        is_admin = bool(config.ADMIN_EMAILS and clean_email in config.ADMIN_EMAILS)
+
         existing = await self.get_user_by_email(clean_email)
         if existing and existing.get("telegram_id"):
+            if is_admin and existing.get("role") != "admin":
+                from sqlalchemy import select
+                query = select(User).where(User.email == clean_email)
+                res = await self.session.execute(query)
+                u_obj = res.scalar_one_or_none()
+                if u_obj:
+                    u_obj.role = "admin"
+                    u_obj.level_id = 1
+                    await self.session.commit()
             return existing["telegram_id"]
 
         synthetic_id = abs(zlib.crc32(clean_email.encode("utf-8")))
@@ -194,30 +205,56 @@ class UserService:
                 email=clean_email,
                 name=name_part,
                 username=name_part,
-                role="user",
-                level_id=6,
+                role="admin" if is_admin else "user",
+                level_id=1 if is_admin else 6,
                 is_beta=False,
                 can_upload=False,
                 can_upload_epub=False,
             )
             self.session.add(u)
             await self.session.commit()
+        else:
+            if is_admin and u.role != "admin":
+                u.role = "admin"
+                u.level_id = 1
+                await self.session.commit()
 
         return synthetic_id
 
+    async def _reassign_user_references(self, old_id: int, new_id: int):
+        """Reasigna referencias de tablas secundarias de old_id a new_id."""
+        from sqlalchemy import text
+        tables_and_cols = [
+            ("user_downloads", "user_id"),
+            ("user_activity_logs", "user_id"),
+            ("user_activity_logs", "changed_by_id"),
+            ("user_history", "user_id"),
+            ("user_books", "user_id"),
+            ("operations", "user_id"),
+        ]
+        for tbl, col in tables_and_cols:
+            try:
+                await self.session.execute(
+                    text(f"UPDATE {tbl} SET {col} = :new_id WHERE {col} = :old_id"),
+                    {"new_id": new_id, "old_id": old_id},
+                )
+            except Exception as e:
+                logger.debug(f"Could not update {tbl}.{col} from {old_id} to {new_id}: {e}")
+
     async def link_telegram_to_user(self, current_user_id: int, telegram_identifier: str, bot=None) -> dict:
-        """Vinsula la cuenta de correo actual con un ID o Username de Telegram."""
+        """Vincular la cuenta de correo actual con un ID o Username de Telegram."""
         from sqlalchemy import select
 
         ident = telegram_identifier.strip().lstrip("@")
         if not ident:
             raise ValueError("El identificador de Telegram no puede estar vacío.")
 
-        # Buscar usuario destino por ID numérico o Username
+        resolved_tg_id: int | None = None
         target_user = None
+
         if ident.isdigit():
-            tg_id = int(ident)
-            query = select(User).where(User.telegram_id == tg_id)
+            resolved_tg_id = int(ident)
+            query = select(User).where(User.telegram_id == resolved_tg_id)
             res = await self.session.execute(query)
             target_user = res.scalar_one_or_none()
         else:
@@ -225,7 +262,19 @@ class UserService:
             res = await self.session.execute(query)
             target_user = res.scalar_one_or_none()
 
-        # Obtener el registro del usuario web actual
+            # Si no está en DB por username y tenemos la instancia del bot, intentar resolver el username con get_chat
+            if not target_user and bot:
+                try:
+                    chat = await bot.get_chat(f"@{ident}")
+                    if chat and chat.id:
+                        resolved_tg_id = chat.id
+                        query_by_id = select(User).where(User.telegram_id == resolved_tg_id)
+                        res_by_id = await self.session.execute(query_by_id)
+                        target_user = res_by_id.scalar_one_or_none()
+                except Exception as e:
+                    logger.warning(f"No se pudo resolver @{ident} mediante Telegram Bot API: {e}")
+
+        # Obtener el usuario actual (sesión web)
         query_curr = select(User).where(User.telegram_id == current_user_id)
         res_curr = await self.session.execute(query_curr)
         curr_user = res_curr.scalar_one_or_none()
@@ -234,34 +283,69 @@ class UserService:
             raise ValueError("Usuario web actual no encontrado.")
 
         email_to_link = curr_user.email
+        is_admin = curr_user.role == "admin"
 
         if target_user:
-            # Si el usuario de Telegram ya existe en la DB, asociarle el correo
-            target_user.email = email_to_link
-            # Si curr_user es una cuenta sintética separada, eliminarla o desvincularla
+            # Si el usuario de Telegram ya existe en la DB
             if curr_user.telegram_id != target_user.telegram_id:
-                await self.session.delete(curr_user)
+                if email_to_link:
+                    curr_user.email = None
+                    await self.session.flush()
+                target_user.email = email_to_link
+
+                if is_admin:
+                    target_user.role = "admin"
+                    target_user.level_id = 1
+
+                await self._reassign_user_references(curr_user.telegram_id, target_user.telegram_id)
+                try:
+                    await self.session.delete(curr_user)
+                except Exception as e:
+                    logger.warning(f"No se pudo eliminar el usuario sintético anterior {curr_user.telegram_id}: {e}")
+            else:
+                if email_to_link and target_user.email != email_to_link:
+                    target_user.email = email_to_link
 
             final_user = target_user
         else:
-            # Si no existía en DB pero nos dieron un ID numérico nuevo
-            if ident.isdigit():
-                new_tg_id = int(ident)
-                curr_user.telegram_id = new_tg_id
-                final_user = curr_user
+            # Si el usuario destino no existía en la DB
+            if resolved_tg_id and curr_user.telegram_id != resolved_tg_id:
+                if email_to_link:
+                    curr_user.email = None
+                    await self.session.flush()
+
+                target_user = User(
+                    telegram_id=resolved_tg_id,
+                    email=email_to_link,
+                    name=curr_user.name,
+                    username=ident,
+                    role=curr_user.role,
+                    level_id=curr_user.level_id,
+                    is_beta=curr_user.is_beta,
+                    can_upload=curr_user.can_upload,
+                    can_upload_epub=curr_user.can_upload_epub,
+                )
+                self.session.add(target_user)
+                await self.session.flush()
+                await self._reassign_user_references(curr_user.telegram_id, resolved_tg_id)
+                try:
+                    await self.session.delete(curr_user)
+                except Exception as e:
+                    logger.warning(f"No se pudo eliminar el usuario sintético {curr_user.telegram_id}: {e}")
+                final_user = target_user
             else:
                 curr_user.username = ident
                 final_user = curr_user
 
-        # Intentar obtener foto de Telegram si bot está disponible
+        # Intentar obtener foto de perfil si bot está disponible
         if bot and final_user.telegram_id:
             try:
                 photos = await bot.get_user_profile_photos(final_user.telegram_id, limit=1)
-                if photos.photos:
+                if photos and photos.photos:
                     file_id = photos.photos[0][0].file_id
                     final_user.photo_url = f"/api/bot/avatar?file_id={file_id}"
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Error obteniendo foto de perfil de Telegram: {e}")
 
         await self.session.commit()
         return {
