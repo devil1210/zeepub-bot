@@ -104,7 +104,8 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
                 setError(res.error || res.message || 'No se pudo vincular la cuenta. Verifica tus datos.');
             }
         } catch (err: any) {
-            setError(err.message || 'Error de conexión al vincular la cuenta.');
+            const detailMsg = err.response?.data?.detail || err.message;
+            setError(detailMsg || 'Error de conexión al vincular la cuenta.');
         } finally {
             setLoading(false);
         }
