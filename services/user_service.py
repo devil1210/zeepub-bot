@@ -234,10 +234,11 @@ class UserService:
         ]
         for tbl, col in tables_and_cols:
             try:
-                await self.session.execute(
-                    text(f"UPDATE {tbl} SET {col} = :new_id WHERE {col} = :old_id"),
-                    {"new_id": new_id, "old_id": old_id},
-                )
+                async with self.session.begin_nested():
+                    await self.session.execute(
+                        text(f"UPDATE {tbl} SET {col} = :new_id WHERE {col} = :old_id"),
+                        {"new_id": new_id, "old_id": old_id},
+                    )
             except Exception as e:
                 logger.debug(f"Could not update {tbl}.{col} from {old_id} to {new_id}: {e}")
 
@@ -289,8 +290,12 @@ class UserService:
             # Si el usuario de Telegram ya existe en la DB
             if curr_user.telegram_id != target_user.telegram_id:
                 if email_to_link:
-                    curr_user.email = None
-                    await self.session.flush()
+                    try:
+                        async with self.session.begin_nested():
+                            curr_user.email = None
+                            await self.session.flush()
+                    except Exception:
+                        pass
                 target_user.email = email_to_link
 
                 if is_admin:
@@ -299,7 +304,8 @@ class UserService:
 
                 await self._reassign_user_references(curr_user.telegram_id, target_user.telegram_id)
                 try:
-                    await self.session.delete(curr_user)
+                    async with self.session.begin_nested():
+                        await self.session.delete(curr_user)
                 except Exception as e:
                     logger.warning(f"No se pudo eliminar el usuario sintético anterior {curr_user.telegram_id}: {e}")
             else:
@@ -311,8 +317,12 @@ class UserService:
             # Si el usuario destino no existía en la DB
             if resolved_tg_id and curr_user.telegram_id != resolved_tg_id:
                 if email_to_link:
-                    curr_user.email = None
-                    await self.session.flush()
+                    try:
+                        async with self.session.begin_nested():
+                            curr_user.email = None
+                            await self.session.flush()
+                    except Exception:
+                        pass
 
                 target_user = User(
                     telegram_id=resolved_tg_id,
@@ -329,7 +339,8 @@ class UserService:
                 await self.session.flush()
                 await self._reassign_user_references(curr_user.telegram_id, resolved_tg_id)
                 try:
-                    await self.session.delete(curr_user)
+                    async with self.session.begin_nested():
+                        await self.session.delete(curr_user)
                 except Exception as e:
                     logger.warning(f"No se pudo eliminar el usuario sintético {curr_user.telegram_id}: {e}")
                 final_user = target_user
@@ -337,8 +348,12 @@ class UserService:
                 new_tg_id = int(ident)
                 if curr_user.telegram_id != new_tg_id:
                     if email_to_link:
-                        curr_user.email = None
-                        await self.session.flush()
+                        try:
+                            async with self.session.begin_nested():
+                                curr_user.email = None
+                                await self.session.flush()
+                        except Exception:
+                            pass
                     target_user = User(
                         telegram_id=new_tg_id,
                         email=email_to_link,
@@ -354,7 +369,8 @@ class UserService:
                     await self.session.flush()
                     await self._reassign_user_references(curr_user.telegram_id, new_tg_id)
                     try:
-                        await self.session.delete(curr_user)
+                        async with self.session.begin_nested():
+                            await self.session.delete(curr_user)
                     except Exception as e:
                         logger.warning(f"No se pudo eliminar el usuario sintético {curr_user.telegram_id}: {e}")
                     final_user = target_user
