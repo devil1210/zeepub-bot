@@ -368,6 +368,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       localStorage.clear();
       sessionStorage.clear();
+      document.cookie = "tg_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       if (supabase) {
         await supabase.auth.signOut().catch(() => {});
       }
@@ -376,8 +377,8 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setStatus(null);
       setUser(null);
-      // Redirect to Cloudflare Access logout page to clear SSO session cookies
-      window.location.href = '/cdn-cgi/access/logout';
+      // Redirect to backend logout route which clears tg_session cookie & Cloudflare Access session
+      window.location.href = '/api/oauth/logout';
     }
   };
 

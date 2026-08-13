@@ -132,6 +132,12 @@ class AuthRoutes:
             methods=["GET"],
             summary="Telegram OAuth 2.0 Callback",
         )
+        self.router.add_api_route(
+            "/oauth/logout",
+            self.telegram_oauth_logout,
+            methods=["GET", "POST"],
+            summary="Logout and Clear Session",
+        )
 
     async def telegram_oauth_login(self, request: Request):
         """Redirige al usuario al portal oficial de autenticación de Telegram OAuth 2.0 / OpenID Connect."""
@@ -224,7 +230,26 @@ class AuthRoutes:
 
                         await link_telegram_to_user(current_user_id, str(tg_user_id))
 
+                    response = RedirectResponse(url="/?oauth_success=true")
+                    response.set_cookie(
+                        key="tg_session",
+                        value=str(tg_user_id),
+                        max_age=86400 * 30,
+                        httponly=False,
+                        samesite="lax",
+                    )
+                    return response
+
                 return RedirectResponse(url="/?oauth_success=true")
         except Exception as e:
             logger.error(f"Excepción en callback de Telegram OAuth: {e}", exc_info=True)
             return RedirectResponse(url="/?oauth_error=exception")
+
+    async def telegram_oauth_logout(self, request: Request):
+        """Cierra sesión eliminando la cookie tg_session y redirige a la página principal."""
+        from fastapi.responses import RedirectResponse
+        host = request.headers.get("host", config.PUBLIC_DOMAIN or "zp-dev.sp-core.vip")
+        redirect_url = f"https://{host}/cdn-cgi/access/logout" if "sp-core.vip" in host else "/"
+        response = RedirectResponse(url=redirect_url)
+        response.delete_cookie(key="tg_session")
+        return response

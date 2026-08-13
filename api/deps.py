@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated, Any
 
-from fastapi import Depends, Header, HTTPException, Query
+from fastapi import Depends, Header, HTTPException, Query, Cookie
 
 from config.config_settings import config
 from services.rbac_service import Permission
@@ -18,13 +18,18 @@ async def get_telegram_user_id(
     cf_access_jwt_assertion: Annotated[str | None, Header(alias="Cf-Access-Jwt-Assertion")] = None,
     x_telegram_init_data: Annotated[str | None, Header(alias="x-telegram-init-data")] = None,
     x_telegram_data: Annotated[str | None, Header(alias="X-Telegram-Data")] = None,
+    tg_session: Annotated[str | None, Cookie()] = None,
     uid: Annotated[int | None, Query()] = None,
 ) -> int:
     """
-    Dependency that extracts and validates the Telegram User ID from headers or query.
-    Supports Cloudflare Access Email, Telegram WebApp initData, and Supabase Auth.
+    Dependency that extracts and validates the Telegram User ID from headers, cookies or query.
+    Supports Cloudflare Access Email, Telegram OAuth Cookie, Telegram WebApp initData, and Supabase Auth.
     """
-    # 0. Cloudflare Access Email Auth (Highest Priority for Web Standalone)
+    # 0. Telegram OAuth Direct Session Cookie (Highest Priority for Web Authenticated via Telegram)
+    if tg_session and str(tg_session).isdigit():
+        return int(tg_session)
+
+    # 0.1 Cloudflare Access Email Auth (Web Standalone)
     cf_email = (cf_access_authenticated_user_email or cf_access_user_email or "").strip().lower()
 
     if not cf_email and cf_access_jwt_assertion:
