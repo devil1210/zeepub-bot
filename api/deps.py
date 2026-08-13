@@ -43,11 +43,10 @@ async def get_telegram_user_id(
 
     if cf_email:
         try:
-            from services.user_service import get_user_service
+            from services.user_service import get_or_create_user_by_email
 
-            async with get_user_service() as service:
-                user_id = await service.get_or_create_user_by_email(cf_email)
-                return user_id
+            user_id = await get_or_create_user_by_email(cf_email)
+            return user_id
         except Exception as e:
             logger.error(f"Cloudflare email DB lookup/creation failed: {e}")
 
