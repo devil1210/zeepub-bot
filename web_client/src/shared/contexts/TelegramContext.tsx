@@ -353,10 +353,16 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
 
   useEffect(() => {
-    if (status?.user?.needs_telegram_link) {
+    const dismissed = sessionStorage.getItem('dismissed_telegram_link_modal');
+    if (status?.user?.needs_telegram_link && !dismissed) {
       setIsLinkModalOpen(true);
     }
   }, [status?.user?.needs_telegram_link]);
+
+  const handleCloseLinkModal = () => {
+    sessionStorage.setItem('dismissed_telegram_link_modal', 'true');
+    setIsLinkModalOpen(false);
+  };
 
   const handleLogout = async () => {
     try {
@@ -417,8 +423,11 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       <TelegramLinkModal
         isOpen={isLinkModalOpen}
         email={status?.user?.email}
-        onClose={() => setIsLinkModalOpen(false)}
-        onSuccess={() => refreshStatus()}
+        onClose={handleCloseLinkModal}
+        onSuccess={() => {
+          sessionStorage.removeItem('dismissed_telegram_link_modal');
+          refreshStatus();
+        }}
       />
     </TelegramContext.Provider>
   );
