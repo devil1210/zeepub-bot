@@ -1,17 +1,13 @@
 #!/bin/bash
-echo "🔄 Actualizando ZeePub Bot..."
+echo "🔄 Actualizando ZeePub Bot y WebApp..."
 
-# Build/Image update
 echo "📥 Descargando última versión del código..."
-git pull
+git pull origin feat/integrate-web-client
 
-echo "🐳 Descargando imágenes Docker actualizadas..."
-docker-compose pull
-
-echo "🚀 Reiniciando contenedores..."
-docker-compose up -d --remove-orphans
+echo "🔨 Compilando e instalando contenedores actualizados..."
+docker compose -f docker-compose.prod-lib.yml up -d --build --remove-orphans
 
 echo "🧹 Limpiando imágenes antiguas..."
 docker image prune -f
 
-echo "✅ ¡Actualización completada!"
+echo "✅ ¡Actualización de WebApp y Bot completada exitosamente!"
