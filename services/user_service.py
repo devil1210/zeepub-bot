@@ -333,9 +333,37 @@ class UserService:
                 except Exception as e:
                     logger.warning(f"No se pudo eliminar el usuario sintético {curr_user.telegram_id}: {e}")
                 final_user = target_user
+            elif ident.isdigit():
+                new_tg_id = int(ident)
+                if curr_user.telegram_id != new_tg_id:
+                    if email_to_link:
+                        curr_user.email = None
+                        await self.session.flush()
+                    target_user = User(
+                        telegram_id=new_tg_id,
+                        email=email_to_link,
+                        name=curr_user.name,
+                        username=curr_user.username or f"User_{new_tg_id}",
+                        role=curr_user.role,
+                        level_id=curr_user.level_id,
+                        is_beta=curr_user.is_beta,
+                        can_upload=curr_user.can_upload,
+                        can_upload_epub=curr_user.can_upload_epub,
+                    )
+                    self.session.add(target_user)
+                    await self.session.flush()
+                    await self._reassign_user_references(curr_user.telegram_id, new_tg_id)
+                    try:
+                        await self.session.delete(curr_user)
+                    except Exception as e:
+                        logger.warning(f"No se pudo eliminar el usuario sintético {curr_user.telegram_id}: {e}")
+                    final_user = target_user
+                else:
+                    final_user = curr_user
             else:
-                curr_user.username = ident
-                final_user = curr_user
+                raise ValueError(
+                    f"No se pudo encontrar a @{ident} en Telegram. Para vincular por alias, abre primero el bot en Telegram (@spcore_bot) y presiona /start o utiliza el botón 'Abrir Bot en Telegram'."
+                )
 
         # Intentar obtener foto de perfil si bot está disponible
         if bot and final_user.telegram_id:

@@ -102,23 +102,29 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
                     )}
 
                     {/* Direct Telegram Session Button */}
-                    <div className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600/15 to-purple-600/15 border border-blue-500/20 rounded-xl space-y-3 text-center">
-                        <p className="text-xs font-semibold text-slate-200">
-                            Método Directo: Usa tu Sesión de Telegram ✈️
-                        </p>
-                        <a
-                            href="https://t.me/spcore_bot"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center space-x-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-500 hover:bg-blue-400 rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all"
-                        >
-                            <Send className="w-4 h-4" />
-                            <span>Abrir Bot en Telegram</span>
-                        </a>
-                        <p className="text-[11px] text-slate-400">
-                            Abre el bot directamente en tu app de Telegram sin ingresar número de teléfono.
-                        </p>
-                    </div>
+                    {(() => {
+                        const startParam = email ? `?start=link_${btoa(email).replace(/=/g, '')}` : '';
+                        const botLink = `https://t.me/spcore_bot${startParam}`;
+                        return (
+                            <div className="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-600/15 to-purple-600/15 border border-blue-500/20 rounded-xl space-y-3 text-center">
+                                <p className="text-xs font-semibold text-slate-200">
+                                    Método Directo: Usa tu Sesión de Telegram ✈️
+                                </p>
+                                <a
+                                    href={botLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center space-x-2 px-5 py-2.5 text-xs font-bold text-white bg-blue-500 hover:bg-blue-400 rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all"
+                                >
+                                    <Send className="w-4 h-4" />
+                                    <span>Abrir Bot en Telegram</span>
+                                </a>
+                                <p className="text-[11px] text-slate-400">
+                                    Abre el bot directamente en tu app de Telegram sin ingresar número de teléfono.
+                                </p>
+                            </div>
+                        );
+                    })()}
 
                     <div className="relative flex items-center justify-center my-2">
                         <div className="border-t border-white/10 w-full" />
