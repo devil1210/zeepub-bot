@@ -1,4 +1,22 @@
 services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: zeepub_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-zeepub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zeepub}
+      POSTGRES_DB: ${POSTGRES_DB:-zeepub}
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zeepub}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+
   zeepubs_bot:
     build:
       context: .
@@ -6,6 +24,9 @@ services:
     image: zeepub-bot:local
     container_name: zeepubs_bot_v6
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     env_file:
       - .env
     volumes:
