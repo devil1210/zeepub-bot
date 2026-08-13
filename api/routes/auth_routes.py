@@ -140,13 +140,15 @@ class AuthRoutes:
         scheme = "https" if "sp-core.vip" in host or request.headers.get("x-forwarded-proto") == "https" else "http"
         redirect_uri = f"{scheme}://{host}/api/oauth/telegram/callback"
 
-        telegram_auth_url = (
-            f"https://oauth.telegram.org/auth?"
-            f"client_id={client_id}&"
-            f"redirect_uri={redirect_uri}&"
-            f"response_type=code&"
-            f"scope=openid%20profile"
-        )
+        from urllib.parse import urlencode
+
+        params = {
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": "openid profile",
+        }
+        telegram_auth_url = f"https://oauth.telegram.org/auth?{urlencode(params)}"
         from fastapi.responses import RedirectResponse
 
         return RedirectResponse(url=telegram_auth_url)
