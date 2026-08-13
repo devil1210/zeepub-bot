@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense, useCallback } from 'react';
-import { MemoryRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useNavigate, useLocation, useParams, Navigate, NavigationType, useNavigationType } from 'react-router-dom';
 import { ThemeProvider } from '@shared/contexts/ThemeContext';
 import { TelegramProvider, useTelegram } from '@shared/contexts/TelegramContext';
 import { NavigationProvider, useNavigation } from '@shared/contexts/NavigationContext';
@@ -110,13 +110,11 @@ const TelegramNavigationHandler: React.FC = () => {
   return null;
 };
 
-import { NavigationType, useNavigationType } from 'react-router-dom';
-
 // Syncs MemoryRouter events with our internal stack context
 const HistoryTracker: React.FC = () => {
   const location = useLocation();
   const navType = useNavigationType();
-  const { pushHistory, popHistory, resetHistory } = useNavigation();
+  const { pushHistory, popHistory } = useNavigation();
 
   useEffect(() => {
     if (navType === NavigationType.Push) {
@@ -124,14 +122,11 @@ const HistoryTracker: React.FC = () => {
     } else if (navType === NavigationType.Pop) {
       popHistory();
     } else if (navType === NavigationType.Replace) {
-      // Replace: usually swaps the current top.
-      // We'll simplisticly pop then push, or just do nothing if it's strictly replacing content.
-      // For now, let's treat it as a no-op on stack size, but update top?
-      // Simply: do nothing on stack size, assume same depth.
+      popHistory();
+      pushHistory(location.pathname);
     }
   }, [location.pathname, navType]);
 
-  // Reset on mount if at root? No, context persists.
   return null;
 };
 
@@ -221,16 +216,22 @@ const AppContent: React.FC = () => {
 const UniversalDetailWrapper = () => {
   const navigate = useNavigate();
   const onNavigate = useLegacyNavigation();
-  const { pathname } = useLocation();
+  const params = useParams<{
+    bookId?: string;
+    seriesId?: string;
+    volumeId?: string;
+  }>();
 
-  // Extract ID:
-  // /book/ID -> parts[2]
-  // /series/ID -> parts[2]
-  // /read/SID/VID -> parts[3] (prefer volume ID for fetching)
-  const parts = pathname.split('/');
-  const id = parts[parts.length - 1]; // Current logic: take the last part as primary ID
+  // Precedence: explicit bookId > volumeId (for /read) > seriesId
+  const id = params.bookId ?? params.volumeId ?? params.seriesId ?? '';
 
-  return <BookDetailById bookId={id} onBack={() => navigate(-1)} onNavigate={onNavigate} />;
+  return (
+    <BookDetailById
+      bookId={id}
+      onBack={() => navigate(-1)}
+      onNavigate={onNavigate}
+    />
+  );
 };
 
 

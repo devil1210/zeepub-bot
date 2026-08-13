@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useTheme } from './ThemeContext';
-import { setSimulatedLevelHeader } from '@shared/services/api';
+import { api, setSimulatedLevelHeader } from '@shared/services/api';
 import { supabase } from '@shared/services/supabase';
 import { preloadCriticalResources } from '@telegram/utils/telegramOptimizations';
 import { syncTelegramTheme } from '@telegram/utils/themeSync';
@@ -39,6 +39,7 @@ export interface UserStatus {
     email?: string;
     is_telegram_linked?: boolean;
     needs_telegram_link?: boolean;
+    is_real_admin?: boolean;
     level: string;
     role: string | null;
     status_label: string;
@@ -343,8 +344,15 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const isRealAdmin = isAdminFromAccess || (status as any)?.user?.is_real_admin || status?.user?.role === 'admin' || (status?.user?.level === 'admin' && simulatedLevel === null);
-  const isAdmin = isAdminFromAccess || (status as any)?.user?.is_real_admin || status?.user?.level === 'admin' || status?.user?.level === 'Administrador' || status?.user?.role === 'admin' || (status as any)?.isAdmin === true;
+  const isRealAdmin =
+    isAdminFromAccess ||
+    status?.user?.is_real_admin === true ||
+    status?.user?.role === 'admin' ||
+    (status?.user?.level === 'admin' && simulatedLevel === null);
+
+  const isAdmin =
+    isRealAdmin ||
+    status?.user?.level === 'Administrador';
 
 
   // Admins are always beta testers

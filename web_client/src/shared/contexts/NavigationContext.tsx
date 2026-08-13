@@ -99,44 +99,22 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
     const [callbacks, setCallbacks] = useState<any>(null);
 
     const pushHistory = React.useCallback((path: string) => {
-        console.log('🔍 [DEBUG] NavigationContext.pushHistory called', {
-            path,
-            currentStack: state.historyStack
-        });
-
         setState(prev => {
-            // Avoid dupes if just refreshing or same path
             if (prev.historyStack[prev.historyStack.length - 1] === path) {
-                console.log('🚫 [DEBUG] Duplicate path detected, not pushing');
                 return prev;
             }
-            const newStack = [...prev.historyStack, path];
-            console.log('✅ [DEBUG] Pushed to history stack', {
-                newStack,
-                stackLength: newStack.length
-            });
-            return { ...prev, historyStack: newStack };
+            return { ...prev, historyStack: [...prev.historyStack, path] };
         });
-    }, [state.historyStack]);
+    }, []);
 
     const popHistory = React.useCallback(() => {
-        console.log('🔍 [DEBUG] NavigationContext.popHistory called', {
-            currentStack: state.historyStack
-        });
-
         setState(prev => {
             if (prev.historyStack.length <= 1) {
-                console.log('🚫 [DEBUG] Cannot pop: stack length <= 1');
                 return prev;
             }
-            const newStack = prev.historyStack.slice(0, -1);
-            console.log('✅ [DEBUG] Popped from history stack', {
-                newStack,
-                stackLength: newStack.length
-            });
-            return { ...prev, historyStack: newStack };
+            return { ...prev, historyStack: prev.historyStack.slice(0, -1) };
         });
-    }, [state.historyStack]);
+    }, []);
 
     const resetHistory = React.useCallback(() => {
         setState(prev => ({ ...prev, historyStack: ['/'] }));
@@ -255,8 +233,6 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         setViewMode,
         setLoading,
         setCustomActions,
-        pushHistory,
-        popHistory,
         resetHistory,
         handlePrevPage,
         handleNextPage,
