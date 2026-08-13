@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ImageOff } from 'lucide-react';
 
 interface ProgressiveImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
     src: string;
@@ -16,6 +17,7 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
     ...props
 }) => {
     const [isLoaded, setIsLoaded] = useState(false);
+    const [hasError, setHasError] = useState(false);
     const [isInView, setIsInView] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -48,36 +50,46 @@ export const ProgressiveImage: React.FC<ProgressiveImageProps> = ({
 
     useEffect(() => {
         setCurrentSrc(src);
+        setHasError(!src);
+        setIsLoaded(false);
     }, [src]);
 
     return (
         <div
             ref={containerRef}
-            className={`relative overflow-hidden ${containerClassName || 'w-full h-full'}`}
+            className={`relative overflow-hidden flex items-center justify-center ${containerClassName || 'w-full h-full'}`}
             style={{ backgroundColor: placeholderColor }}
         >
             {/* Loading Skeleton / Pulse */}
-            {!isLoaded && (
+            {!isLoaded && !hasError && (
                 <div className="absolute inset-0 animate-pulse bg-white/5" />
             )}
 
-            {isInView && (
-                <img
-                    src={currentSrc}
-                    alt={alt}
-                    loading="lazy"
-                    className={`transition-all duration-700 ease-out ${isLoaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-md scale-105'
-                        } ${className}`}
-                    onLoad={() => setIsLoaded(true)}
-                    onError={() => {
-                        setIsLoaded(true);
-                        // If low/medium variant failed, fallback to base src without suffix
-                        if (currentSrc.includes('_medium.jpg') || currentSrc.includes('_high.jpg')) {
-                            setCurrentSrc(currentSrc.replace(/_(medium|high)\.jpg$/, '_low.jpg'));
-                        }
-                    }}
-                    {...props}
-                />
+            {hasError ? (
+                <div className="flex flex-col items-center justify-center p-2 text-gray-500 text-center select-none">
+                    <ImageOff className="w-6 h-6 mb-1 opacity-40" />
+                    <span className="text-[9px] font-bold uppercase tracking-widest opacity-40">Sin Portada</span>
+                </div>
+            ) : (
+                isInView && (
+                    <img
+                        src={currentSrc}
+                        alt={alt}
+                        loading="lazy"
+                        className={`transition-all duration-700 ease-out ${isLoaded ? 'opacity-100 blur-0 scale-100' : 'opacity-0 blur-md scale-105'
+                            } ${className}`}
+                        onLoad={() => setIsLoaded(true)}
+                        onError={() => {
+                            if (currentSrc.includes('_medium.jpg') || currentSrc.includes('_high.jpg')) {
+                                setCurrentSrc(currentSrc.replace(/_(medium|high)\.jpg$/, '_low.jpg'));
+                            } else {
+                                setHasError(true);
+                                setIsLoaded(true);
+                            }
+                        }}
+                        {...props}
+                    />
+                )
             )}
         </div>
     );

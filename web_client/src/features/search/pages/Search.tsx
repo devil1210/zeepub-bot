@@ -221,7 +221,13 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
         }
 
         if (page < (res.totalPages || 1)) {
-          api.searchBooks(query, page + 1, searchScope, activeSort).then(nextRes => {
+          api.searchBooks(
+            query,
+            page + 1,
+            searchScope,
+            activeSort,
+            abortControllerRef.current?.signal
+          ).then(nextRes => {
             if (nextRes && nextRes.results) {
               const nextCovers = nextRes.results
                 .map((item: any) => {
@@ -231,6 +237,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
                 .filter(Boolean);
               preloadImages(nextCovers as string[]);
             }
+          }).catch(() => {
+            // Ignore cancellation error
           });
         }
       } else {

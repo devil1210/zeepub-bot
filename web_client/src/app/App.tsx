@@ -149,16 +149,35 @@ const ScrollToTop = () => {
   return null;
 };
 
+const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAdmin, ready, status } = useTelegram();
+
+  if (!ready || (status === null && typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData)) {
+    return <PageLoader />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const AppContent: React.FC = () => {
   const onNavigate = useLegacyNavigation();
   const location = useLocation();
-  const { isAdmin } = useTelegram();
+  const { user, status, ready } = useTelegram();
 
   // Determine active tab for Layout
   const getActiveTab = (pathname: string) => {
     if (pathname === '/') return 'dashboard';
     return pathname.substring(1).split('/')[0]; // e.g. /search -> search
   };
+
+  const isWebStandalone = typeof window !== 'undefined' && !(window as any).Telegram?.WebApp?.initData;
+  if (isWebStandalone && ready && !user && !status?.user) {
+    return <LoginGate />;
+  }
 
   return (
     <>
@@ -188,16 +207,24 @@ const AppContent: React.FC = () => {
             } />
             <Route path="/upload" element={<PageWrapper Component={UploadEpub} />} />
             <Route path="/ai" element={
-              isAdmin ? <PageWrapper Component={AIHub} /> : <Navigate to="/" replace />
+              <ProtectedAdminRoute>
+                <PageWrapper Component={AIHub} />
+              </ProtectedAdminRoute>
             } />
             <Route path="/admin" element={
-              isAdmin ? <PageWrapper Component={Admin} /> : <Navigate to="/" replace />
+              <ProtectedAdminRoute>
+                <PageWrapper Component={Admin} />
+              </ProtectedAdminRoute>
             } />
             <Route path="/admin/templates/new" element={
-              isAdmin ? <PageWrapper Component={TemplateEditorPage} /> : <Navigate to="/" replace />
+              <ProtectedAdminRoute>
+                <PageWrapper Component={TemplateEditorPage} />
+              </ProtectedAdminRoute>
             } />
             <Route path="/admin/templates/:id" element={
-              isAdmin ? <PageWrapper Component={TemplateEditorPage} /> : <Navigate to="/" replace />
+              <ProtectedAdminRoute>
+                <PageWrapper Component={TemplateEditorPage} />
+              </ProtectedAdminRoute>
             } />
 
             {/* Details Routes - All consolidated to use IDs from URL */}
@@ -205,6 +232,7 @@ const AppContent: React.FC = () => {
             <Route path="/series/:seriesId" element={<UniversalDetailWrapper />} />
             <Route path="/read/:seriesId/:volumeId" element={<UniversalDetailWrapper />} />
             <Route path="/reader" element={<Reader onClose={() => onNavigate('dashboard')} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </Layout>
@@ -223,7 +251,11 @@ const UniversalDetailWrapper = () => {
   }>();
 
   // Precedence: explicit bookId > volumeId (for /read) > seriesId
-  const id = params.bookId ?? params.volumeId ?? params.seriesId ?? '';
+  let id = params.bookId ?? params.volumeId ?? params.seriesId ?? '';
+  // Ensure seriesId has expected series_ prefix if coming from /series route
+  if (params.seriesId && !id.startsWith('series_') && !id.startsWith('local_')) {
+    id = `series_${params.seriesId}`;
+  }
 
   return (
     <BookDetailById
@@ -235,10 +267,12 @@ const UniversalDetailWrapper = () => {
 };
 
 
+const initialPath = typeof window !== 'undefined' ? (window.location.pathname + window.location.search) : '/';
+
 const AppContentWrapper: React.FC = () => {
   return (
     <NavigationProvider>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialPath]}>
         <AppContent />
       </MemoryRouter>
     </NavigationProvider>

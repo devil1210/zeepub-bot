@@ -23,6 +23,7 @@ import { useTheme } from '@shared/contexts/ThemeContext';
 import { useNavigation } from '@shared/contexts/NavigationContext';
 import { useTelegram } from '@shared/contexts/TelegramContext';
 import { getCoverUrl } from '@shared/utils/imageUtils';
+import { ProposalModal } from '../components/ProposalModal';
 
 export const AIHub: React.FC = () => {
     const { settings } = useTheme();
@@ -795,278 +796,29 @@ export const AIHub: React.FC = () => {
                 </div>
             )}
 
-            {/* Proposal Modal (New) */}
-            {showProposal && proposal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-4xl bg-[#0a0a0c] border border-white/10 rounded-premium overflow-hidden flex flex-col max-h-[90vh] shadow-2xl">
-                        {/* Modal Header */}
-                        <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <div>
-                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                                    <Sparkles className="w-5 h-5 text-purple-400" />
-                                    Propuesta de Estandarización
-                                </h3>
-                                <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider font-bold">
-                                    Confianza IA: {(proposal.confidence * 100).toFixed(0)}%
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setShowProposal(false)}
-                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-all"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Modal Body */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-
-                            {/* Series Name Proposal */}
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide">Nombre de la Serie (Identificación)</h4>
-                                    <label className="flex items-center gap-2 text-xs font-bold text-primary cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={applyMeta}
-                                            onChange={(e) => setApplyMeta(e.target.checked)}
-                                            className="rounded border-white/20 bg-white/5"
-                                        />
-                                        Aplicar cambio
-                                    </label>
-                                </div>
-                                <div className="grid grid-cols-1 gap-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {/* Current Name Card */}
-                                        <div className="p-5 rounded-premium-sm bg-red-500/5 border border-red-500/10">
-                                            <p className="text-[10px] text-red-400 font-black uppercase mb-3 tracking-widest">Estado Actual en DB</p>
-                                            <p className="text-lg font-medium text-white break-words leading-relaxed whitespace-pre-wrap">
-                                                {proposal.current_series}
-                                            </p>
-                                            {proposal.current_spanish && (
-                                                <p className="text-sm text-red-500/50 mt-2 flex items-center gap-2">
-                                                    <span className="text-[10px] font-black bg-red-500/10 px-1.5 rounded text-red-500/70">ES</span>
-                                                    {proposal.current_spanish}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        {/* Proposed Name Card */}
-                                        <div className="p-5 rounded-premium-sm bg-green-500/5 border border-green-500/10 relative group">
-                                            <ArrowRight className="absolute -left-6 top-1/2 -translate-y-1/2 w-8 h-8 text-white/10 hidden md:block" />
-                                            <div className="flex justify-between items-start mb-3">
-                                                <p className="text-[10px] text-green-400 font-black uppercase tracking-widest text-glow-green">Propuesta IA</p>
-                                                {!isEditingSeries ? (
-                                                    <button
-                                                        onClick={() => setIsEditingSeries(true)}
-                                                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                                                        title="Editar propuesta"
-                                                    >
-                                                        <Edit2 className="w-4 h-4" />
-                                                    </button>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => setIsEditingSeries(false)}
-                                                        className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-primary/20 text-primary border border-primary/30"
-                                                    >
-                                                        <Save className="w-4 h-4" />
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {isEditingSeries ? (
-                                                <div className="space-y-4 animate-in fade-in duration-300">
-                                                    <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
-                                                        <div className="p-3 rounded-lg bg-blue-500/10">
-                                                            <BrainCircuit className="w-6 h-6 text-blue-400" />
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm text-gray-400">Modelo Activo</p>
-                                                            <p className="font-medium text-white">Gemini 3 Flash Preview</p>
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Nombre Inglés (Serie)</label>
-                                                        <input
-                                                            type="text"
-                                                            value={editedSeries}
-                                                            onChange={(e) => setEditedSeries(e.target.value)}
-                                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="text-[10px] text-gray-500 uppercase font-bold mb-1 block">Nombre Español (Visualización)</label>
-                                                        <input
-                                                            type="text"
-                                                            value={editedSpanish}
-                                                            onChange={(e) => setEditedSpanish(e.target.value)}
-                                                            className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <p className="text-lg font-bold text-green-100 break-words leading-relaxed whitespace-pre-wrap">
-                                                            <DiffHighlighter
-                                                                oldText={proposal.current_series}
-                                                                newText={editedSeries}
-                                                            />
-                                                        </p>
-                                                        {editedSpanish !== editedSeries && (
-                                                            <p className="text-sm text-gray-400 mt-2 flex items-center gap-2">
-                                                                <span className="text-[10px] font-black bg-white/5 px-1.5 rounded text-gray-500">ES</span>
-                                                                {editedSpanish}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    {proposal.reason && (
-                                                        <div className="bg-white/5 p-3 rounded-premium-sm border border-white/5">
-                                                            <p className="text-xs text-gray-400 leading-relaxed italic">
-                                                                "{proposal.reason}"
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Tags Detected */}
-                            {proposal.global_tags?.length > 0 && (
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide mb-3">Tags Detectados</h4>
-                                    <div className="flex gap-2">
-                                        {proposal.global_tags?.map((tag: string) => (
-                                            <span key={tag} className="px-3 py-1 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-300 text-xs font-bold">
-                                                {tag}
-                                            </span>
-                                        ))}
-                                        {proposal.is_uncensored_series && (
-                                            <span className="px-3 py-1 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-bold">
-                                                Uncensored
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* File Renames */}
-                            <div>
-                                <div className="flex items-center justify-between mb-4">
-                                    <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide">
-                                        Archivos a Renombrar ({approvedChanges.length}/{proposal.changes?.length || 0})
-                                    </h4>
-                                    <label className="flex items-center gap-2 text-xs font-bold text-primary cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={applyRenames}
-                                            onChange={(e) => setApplyRenames(e.target.checked)}
-                                            className="rounded border-white/20 bg-white/5"
-                                        />
-                                        Habilitar Renombrado
-                                    </label>
-                                </div>
-
-                                <div className="space-y-2">
-                                    {proposal.changes?.map((change: any) => {
-                                        const isSelected = approvedChanges.some(c => c.book_id === change.book_id);
-                                        return (
-                                            <div
-                                                key={change.book_id}
-                                                className={`p-3 rounded-premium-sm border flex items-center gap-4 text-sm transition-all group ${isSelected && applyRenames
-                                                    ? 'bg-white/5 border-white/10 opacity-100'
-                                                    : 'bg-black/20 border-white/5 opacity-40 grayscale'
-                                                    }`}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isSelected}
-                                                    onChange={() => toggleChange(change.book_id)}
-                                                    disabled={!applyRenames}
-                                                    className="w-5 h-5 rounded-lg border-white/20 bg-white/5 cursor-pointer accent-primary"
-                                                />
-                                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                                                    <div className="text-red-300/50 break-words line-through decoration-red-500/30 text-[11px] leading-tight">
-                                                        {change.current_filename}
-                                                    </div>
-                                                    <div className="flex items-center gap-2 group/field">
-                                                        {editingBookId === change.book_id ? (
-                                                            <div className="flex-1 flex items-center gap-2 animate-in slide-in-from-right-2 duration-200">
-                                                                <input
-                                                                    type="text"
-                                                                    autoFocus
-                                                                    value={change.proposed_filename}
-                                                                    onChange={(e) => handleEditFilename(change.book_id, e.target.value)}
-                                                                    onKeyDown={(e) => e.key === 'Enter' && setEditingBookId(null)}
-                                                                    onBlur={() => setEditingBookId(null)}
-                                                                    className="flex-1 bg-black/60 border border-primary/50 rounded px-2 py-1 text-xs text-white outline-none focus:ring-1 ring-primary"
-                                                                />
-                                                                <button
-                                                                    onClick={() => setEditingBookId(null)}
-                                                                    className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-green-400 hover:text-green-300 transition-colors"
-                                                                >
-                                                                    <Check className="w-4 h-4" />
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                <div className="flex-1 text-green-300 font-medium break-words leading-tight text-[13px]">
-                                                                    <DiffHighlighter
-                                                                        oldText={change.current_filename}
-                                                                        newText={change.proposed_filename}
-                                                                    />
-                                                                </div>
-                                                                <button
-                                                                    onClick={() => setEditingBookId(change.book_id)}
-                                                                    className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                                                                    title="Editar nombre"
-                                                                >
-                                                                    <Edit2 className="w-3.5 h-3.5" />
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                        </div>
-
-                        {/* Footer */}
-                        <div className="p-6 border-t border-white/10 bg-white/5 flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowProposal(false)}
-                                className="min-h-[44px] flex items-center justify-center px-6 py-3 rounded-premium-sm font-bold text-gray-400 hover:bg-white/5 transition-all"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleApplyChanges}
-                                disabled={processingProposal}
-                                className="min-h-[44px] flex items-center justify-center px-8 py-3 rounded-premium-sm font-bold bg-primary hover:bg-primary/90 text-white gap-2 transition-all shadow-lg shadow-primary/20"
-                            >
-                                {processingProposal ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        Aplicando...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save className="w-4 h-4" />
-                                        Aplicar Cambios
-                                    </>
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Proposal Modal */}
+            <ProposalModal
+                isOpen={showProposal}
+                proposal={proposal}
+                approvedChanges={approvedChanges}
+                applyRenames={applyRenames}
+                applyMeta={applyMeta}
+                editedSeries={editedSeries}
+                editedSpanish={editedSpanish}
+                isEditingSeries={isEditingSeries}
+                editingBookId={editingBookId}
+                processingProposal={processingProposal}
+                onClose={() => setShowProposal(false)}
+                onApply={handleApplyChanges}
+                setApplyRenames={setApplyRenames}
+                setApplyMeta={setApplyMeta}
+                setEditedSeries={setEditedSeries}
+                setEditedSpanish={setEditedSpanish}
+                setIsEditingSeries={setIsEditingSeries}
+                toggleChange={toggleChange}
+                handleEditFilename={handleEditFilename}
+                setEditingBookId={setEditingBookId}
+            />
 
             {/* Search Modal */}
             {showSearch && (

@@ -1,12 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://qouajkqgieynczayrkam.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_iKKTE7z0kV2WMqaPTUqpcg_dC4e0T0o';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error(
-    'Missing required env vars: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY'
+  console.warn(
+    '⚠️ Advertencia: VITE_SUPABASE_URL y/o VITE_SUPABASE_ANON_KEY no están definidas en el entorno. Supabase Auth operará en modo stub.'
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = (supabaseUrl && supabaseKey)
+  ? createClient(supabaseUrl, supabaseKey)
+  : createClient('https://placeholder.supabase.co', 'placeholder_anon_key');
+

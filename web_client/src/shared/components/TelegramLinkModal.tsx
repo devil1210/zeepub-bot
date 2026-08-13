@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, CheckCircle2, AlertCircle, Loader2, Sparkles, X, QrCode, Smartphone, RefreshCw } from 'lucide-react';
 import { api } from '@shared/services/api';
+import { useTelegram } from '@shared/contexts/TelegramContext';
 
 interface TelegramLinkModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
     onClose,
     onSuccess
 }) => {
+    const { botInfo } = useTelegram();
     const [activeTab, setActiveTab] = useState<'qr' | 'alias'>('qr');
     const [qrToken, setQrToken] = useState<string | null>(null);
     const [botLink, setBotLink] = useState<string | null>(null);
@@ -111,9 +113,11 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
         }
     };
 
+    const botUsername = botInfo?.username ? botInfo.username.replace(/^@/, '') : 'zeepub_bot';
+
     const defaultFallbackLink = email
-        ? `https://t.me/spcore_bot?start=link_${btoa(email).replace(/=/g, '')}`
-        : 'https://t.me/spcore_bot';
+        ? `https://t.me/${botUsername}?start=link_${btoa(email).replace(/=/g, '')}`
+        : `https://t.me/${botUsername}`;
 
     const activeBotLink = botLink || defaultFallbackLink;
 

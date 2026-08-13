@@ -9,7 +9,7 @@ import { syncTelegramTheme } from '@telegram/utils/themeSync';
 import { TelegramLinkModal } from '@shared/components/TelegramLinkModal';
 
 interface TelegramUser {
-  id: number;
+  id: number | string;
   first_name: string;
   last_name?: string;
   username?: string;
@@ -32,10 +32,10 @@ export interface TelegramExtendedInfo {
 
 export interface UserStatus {
   user: {
-    id: number;
+    id: number | string;
     username: string;
     tg_username?: string;       // @username real de Telegram (sin @)
-    telegram_id?: number;
+    telegram_id?: number | string;
     email?: string;
     is_telegram_linked?: boolean;
     needs_telegram_link?: boolean;
@@ -114,8 +114,10 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const saved = localStorage.getItem('simulatedLevel');
     if (saved && saved !== 'null') {
       const levelId = parseInt(saved);
-      setSimulatedLevel(levelId);
-      setSimulatedLevelHeader(levelId);
+      if (!isNaN(levelId)) {
+        setSimulatedLevel(levelId);
+        setSimulatedLevelHeader(levelId);
+      }
     }
   }, []);
 
@@ -123,15 +125,16 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session && !isTelegram) {
-        // Map Supabase User to TelegramUser format for compatibility
+        // Map Supabase User to TelegramUser format cleanly
         const sbUser = session.user;
         setUser({
-          id: parseInt(sbUser.id.substring(0, 8), 16) || 0, // Mocked ID from UUID
+          id: sbUser.id,
           first_name: sbUser.user_metadata.full_name || sbUser.email?.split('@')[0] || 'Web User',
           username: sbUser.email || 'web_user',
           photo_url: sbUser.user_metadata.avatar_url
         });
         refreshStatus();
+        fetchBetaTesterStatus(sbUser.id);
       }
     });
 
@@ -139,12 +142,13 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (event === 'SIGNED_IN' && session && !isTelegram) {
         const sbUser = session.user;
         setUser({
-          id: parseInt(sbUser.id.substring(0, 8), 16) || 0,
+          id: sbUser.id,
           first_name: sbUser.user_metadata.full_name || sbUser.email?.split('@')[0] || 'Web User',
           username: sbUser.email || 'web_user',
           photo_url: sbUser.user_metadata.avatar_url
         });
         refreshStatus();
+        fetchBetaTesterStatus(sbUser.id);
       } else if (event === 'SIGNED_OUT') {
         if (!isTelegram) setUser(null);
       }
@@ -202,14 +206,22 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   // Fetch beta tester status from access endpoint
-  const fetchBetaTesterStatus = async (userId: number) => {
+  const fetchBetaTesterStatus = async (userId: number | string) => {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': (window as any).Telegram?.WebApp?.initData || ''
+      };
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+        headers['X-Auth-Method'] = 'supabase';
+      }
+
       const response = await fetch('/api/user/access', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Telegram-Init-Data': (window as any).Telegram?.WebApp?.initData || ''
-        },
+        headers,
         body: JSON.stringify({ user_id: userId, force: false })
       });
       if (response.ok) {
@@ -219,14 +231,12 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setShowRecommendations(data.show_recommendations !== false);
         setAllowThemeTemplates(data.allow_theme_templates || data.allowThemeTemplates || false);
         setIsAdminFromAccess(data.isAdmin || false);
-        console.log("Access response data:", data);
         setTitlePreference(data.titlePreference || 'romaji');
 
         if (data.ui_exported_settings) {
           setUiExportedSettings(data.ui_exported_settings);
         }
 
-        // Update theme settings if server provided them (initial load or refresh):
         setExtendedInfo({
           nickname: data.nickname,
           name: data.name,
@@ -273,38 +283,25 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsTelegram(true);
 
       // --- INITIAL THEME SYNC ---
-      // We sync immediately to prevent flash of wrong theme
       syncTelegramTheme(tg);
 
-      // Listen for theme changes (e.g. user toggles dark mode in Telegram)
       const onThemeChanged = () => syncTelegramTheme(tg);
       tg.onEvent('themeChanged', onThemeChanged);
 
-      // Telegram Mini App Optimizations
       try {
-        // Expand to full viewport height (critical for mobile)
         tg.expand();
-
-        // Enable closing confirmation to prevent accidental exits
         tg.enableClosingConfirmation();
 
-        // Set header color to match theme (Handled by syncTelegramTheme now, but backup here)
-        // tg.setHeaderColor('#0f172a'); // Removed in favor of dynamic sync
-
-        // Enable vertical swipes (better mobile UX)
         if (tg.isVerticalSwipesEnabled !== undefined) {
           tg.disableVerticalSwipes();
         }
 
-        // Optimize viewport for safe areas (notches, etc)
         if (tg.viewportStableHeight) {
           document.documentElement.style.setProperty(
             '--tg-viewport-stable-height',
             `${tg.viewportStableHeight}px`
           );
         }
-
-        console.log('✅ Telegram Mini App optimizations applied');
       } catch (e) {
         console.warn('⚠️ Some Telegram optimizations failed:', e);
       }
@@ -326,18 +323,16 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       tg.ready();
       setReady(true);
 
-      // Preload critical resources for better performance
       preloadCriticalResources();
 
       refreshStatus();
       refreshBotInfo();
 
-      // Cleanup
       return () => {
         tg.offEvent('themeChanged', onThemeChanged);
       };
     } else {
-      // Standalone Web App Mode (Cloudflare Access / Web)
+      // Standalone Web App Mode
       setReady(true);
       refreshStatus();
       refreshBotInfo();
@@ -348,11 +343,13 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     isAdminFromAccess ||
     status?.user?.is_real_admin === true ||
     status?.user?.role === 'admin' ||
-    (status?.user?.level === 'admin' && simulatedLevel === null);
+    status?.user?.level === 'admin' ||
+    status?.user?.level === 'Administrador';
 
   const isAdmin =
-    isRealAdmin ||
-    status?.user?.level === 'Administrador';
+    simulatedLevel !== null
+      ? false
+      : isRealAdmin;
 
 
   // Admins are always beta testers

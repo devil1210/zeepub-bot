@@ -27,8 +27,13 @@ const getInitData = () => {
     if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData) {
         return (window as any).Telegram.WebApp.initData || '';
     }
-    // Only return 'debug_admin' when running on localhost for local dev
-    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    // Only return 'debug_admin' in local development IF explicitly enabled via env flag
+    if (
+        import.meta.env.DEV &&
+        import.meta.env.VITE_ENABLE_DEBUG_ADMIN === 'true' &&
+        typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ) {
         return 'debug_admin';
     }
     // Standalone Web App Mode (Cloudflare Access / Production Web)
