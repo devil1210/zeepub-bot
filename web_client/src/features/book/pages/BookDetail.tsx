@@ -377,45 +377,15 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     return text.trim();
   };
 
-  // Función para intentar extraer romaji del título si no hay romajiTitle válido
-  const extractRomajiFromTitle = (title: string): string => {
-    if (!title) return '';
-
-    // Patrones comunes de títulos japoneses con romaji
-    // Ej: "Kagurabachi: Yuugen no Ma" -> "Kagurabachi: Yuugen no Ma"
-    const romajiPatterns = [
-      /([a-zA-Z\s\-\:]+)/,  // Extraer caracteres latinos
-      /([^\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]+)/  // Extraer lo que no es japonés
-    ];
-
-    for (const pattern of romajiPatterns) {
-      const match = title.match(pattern);
-      if (match) {
-        const extracted = match[1].trim();
-        if (extracted && extracted.length > 2) { // Mínimo 3 caracteres para ser válido
-          console.log('Romaji extraído del título:', extracted);
-          return extracted;
-        }
-      }
-    }
-
-    return '';
-  };
-
   // Intentar obtener romaji de múltiples fuentes
   const getRomajiTitle = (): string => {
     // 1. Usar romaji_title del volumen (LocalBook) - PRIORIDAD MÁXIMA
-    const volumeRomaji = cleanRomajiText(String(curVolume.romaji_title || ''));
+    const volumeRomaji = cleanRomajiText(String(curVolume.romaji_title || curVolume.romajiTitle || ''));
     if (volumeRomaji) return volumeRomaji;
 
     // 2. Usar romajiTitle de la serie (fallback)
-    const seriesRomaji = cleanRomajiText(String(curSeries?.romajiTitle || ''));
+    const seriesRomaji = cleanRomajiText(String(curSeries?.romajiTitle || curSeries?.romaji || ''));
     if (seriesRomaji) return seriesRomaji;
-
-    // 3. Intentar extraer del título principal
-    const mainTitle = String(curSeries?.title || curVolume.series || '');
-    const extractedRomaji = extractRomajiFromTitle(mainTitle);
-    if (extractedRomaji) return extractedRomaji;
 
     return ''; // No se encontró romaji válido
   };

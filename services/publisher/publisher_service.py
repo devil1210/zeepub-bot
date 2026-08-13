@@ -215,26 +215,19 @@ class TelegramPublisherProvider(PublisherProvider):
             # Títulos en cascada
             from utils.metadata_utils import is_romaji_string
 
-            title_en = book_data.get("english_title") or book_data.get("title") or book_data.get("titulo") or "Sin título"
-            title_jp = book_data.get("romaji_title") or book_data.get("title_japanese") or book_data.get("title_jp")
-            title_es = book_data.get("spanish_title") or book_data.get("title_spanish") or book_data.get("title_es")
+            title_en = book_data.get("english_title") or book_data.get("series_english")
+            title_jp = book_data.get("romaji_title") or book_data.get("romaji") or book_data.get("title_japanese") or book_data.get("title_jp")
+            title_es = book_data.get("spanish_title") or book_data.get("series_spanish") or book_data.get("title_spanish") or book_data.get("title")
 
-            # Autocorrección de campos permutados
-            if title_es and is_romaji_string(title_es):
-                if not title_jp or title_jp == title_en:
-                    title_jp = title_es
+            if not title_en and title_es:
+                title_en = title_es
                 title_es = None
 
-            if title_jp and (title_jp == title_en or not is_romaji_string(title_jp)):
-                title_jp = None
-
-            if title_es and (title_es == title_en or is_romaji_string(title_es)):
-                title_es = None
-
-            html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
-            if title_jp:
+            if title_en:
+                html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
+            if title_jp and title_jp != title_en:
                 html_parts.append(f'<h4>🇯🇵 {title_jp}</h4>')
-            if title_es:
+            if title_es and title_es != title_en:
                 html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
                 
             volume = book_data.get("volume")
@@ -645,9 +638,18 @@ class PublisherService:
                     if item.book_hash:
                         book = await self.book_repo.get_by_hash(item.book_hash)
                         if book:
-                            # Extraer metadatos para el template engine
+                            english_t = (book.series.series_english if book.series else None) or getattr(book, "series_english", None) or getattr(book, "english_title", None) or ""
+                            spanish_t = (book.series.series_spanish if book.series else None) or getattr(book, "series_spanish", None) or getattr(book, "spanish_title", None) or book.title or ""
+                            romaji_t = (book.series.romaji if book.series else None) or getattr(book, "romaji", None) or getattr(book, "romaji_title", None) or ""
+                            s_slug = (book.series.slug if book.series else None) or getattr(book, "slug", None) or ""
+
                             book_data = {
                                 "title": book.title,
+                                "english_title": english_t,
+                                "spanish_title": spanish_t,
+                                "romaji_title": romaji_t,
+                                "romaji": romaji_t,
+                                "slug": s_slug,
                                 "author": book.author
                                 or (book.series.author if book.series else ""),
                                 "volume": book.volume,
@@ -658,32 +660,12 @@ class PublisherService:
                                 "portada": book.series.cover_url
                                 if book.series
                                 else (book.cover_medium or book.cover_low or ""),
-                                "serie": (
-                                    book.series.series_english if book.series else None
-                                )
-                                or book.series_english
-                                or "",
-                                "series_english": (
-                                    book.series.series_english if book.series else None
-                                )
-                                or book.series_english
-                                or "",
+                                "serie": english_t or spanish_t,
+                                "series_english": english_t,
+                                "series_spanish": spanish_t,
                                 "series": (book.series.name if book.series else None)
-                                or book.series_english
-                                or "",
-                                "romaji_title": (
-                                    book.series.name if book.series else None
-                                )
-                                or book.romaji_title
-                                or "",
-                                "romaji": (book.series.name if book.series else None)
-                                or book.romaji_title
-                                or "",
-                                "series_spanish": (
-                                    book.series.series_spanish if book.series else None
-                                )
-                                or book.series_spanish
-                                or book.title,
+                                or english_t
+                                or spanish_t,
                                 "sinopsis": (
                                     book.series.description if book.series else None
                                 )
