@@ -13,6 +13,8 @@ load_dotenv(override=False)
 @dataclass
 class BotConfig:
     TELEGRAM_TOKEN: str = field(default_factory=lambda: os.getenv("TELEGRAM_TOKEN", ""))
+    TELEGRAM_CLIENT_ID: str = os.getenv("TELEGRAM_CLIENT_ID", "8180322203")
+    TELEGRAM_CLIENT_SECRET: str = os.getenv("TELEGRAM_CLIENT_SECRET", "")
     VERSION: str = "v8.5.0-PG-STABLE"
 
     # Dominio público (ej: zp-dev.sp-core.vip o zeepub-bot.sp-core.vip)

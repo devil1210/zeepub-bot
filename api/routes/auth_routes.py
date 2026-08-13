@@ -107,7 +107,6 @@ class AuthRoutes:
 
             logger.info("✅ Token enriched successfully")
             return enriched_data
-
         except Exception as e:
             logger.error(f"❌ Error enriching token data: {e}")
             return {"token": token, "enriched": False, "error": "Error en el enriquecimiento"}
@@ -121,3 +120,109 @@ class AuthRoutes:
             summary="Zitadel token enrichment",
             description="Enrich Zitadel token with user roles and preferences",
         )
+        self.router.add_api_route(
+            "/oauth/telegram/login",
+            self.telegram_oauth_login,
+            methods=["GET"],
+            summary="Telegram OAuth 2.0 Login Redirect",
+        )
+        self.router.add_api_route(
+            "/oauth/telegram/callback",
+            self.telegram_oauth_callback,
+            methods=["GET"],
+            summary="Telegram OAuth 2.0 Callback",
+        )
+
+    async def telegram_oauth_login(self, request: Request):
+        """Redirige al usuario al portal oficial de autenticación de Telegram OAuth 2.0 / OpenID Connect."""
+        client_id = config.TELEGRAM_CLIENT_ID or "8180322203"
+        host = request.headers.get("host", config.PUBLIC_DOMAIN or "zp-dev.sp-core.vip")
+        scheme = "https" if "sp-core.vip" in host or request.headers.get("x-forwarded-proto") == "https" else "http"
+        redirect_uri = f"{scheme}://{host}/api/oauth/telegram/callback"
+
+        telegram_auth_url = (
+            f"https://oauth.telegram.org/auth?"
+            f"client_id={client_id}&"
+            f"redirect_uri={redirect_uri}&"
+            f"response_type=code&"
+            f"scope=openid%20profile"
+        )
+        from fastapi.responses import RedirectResponse
+
+        return RedirectResponse(url=telegram_auth_url)
+
+    async def telegram_oauth_callback(self, request: Request, code: str | None = None, error: str | None = None):
+        """Callback que procesa el código de autorización devuelto por Telegram OAuth 2.0."""
+        from fastapi.responses import RedirectResponse
+
+        if error or not code:
+            logger.warning(f"Telegram OAuth cancelado o con error: {error}")
+            return RedirectResponse(url="/?oauth_error=cancelled")
+
+        client_id = config.TELEGRAM_CLIENT_ID or "8180322203"
+        client_secret = config.TELEGRAM_CLIENT_SECRET
+        host = request.headers.get("host", config.PUBLIC_DOMAIN or "zp-dev.sp-core.vip")
+        scheme = "https" if "sp-core.vip" in host or request.headers.get("x-forwarded-proto") == "https" else "http"
+        redirect_uri = f"{scheme}://{host}/api/oauth/telegram/callback"
+
+        import httpx
+
+        token_url = "https://oauth.telegram.org/token"
+
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.post(
+                    token_url,
+                    data={
+                        "grant_type": "authorization_code",
+                        "code": code,
+                        "client_id": client_id,
+                        "client_secret": client_secret,
+                        "redirect_uri": redirect_uri,
+                    },
+                    timeout=10.0,
+                )
+
+                if res.status_code != 200:
+                    logger.error(f"Fallo en token exchange de Telegram OAuth ({res.status_code}): {res.text}")
+                    return RedirectResponse(url="/?oauth_error=token_failed")
+
+                data = res.json()
+                id_token = data.get("id_token") or data.get("access_token")
+
+                tg_user_id = None
+                tg_username = None
+                if id_token and "." in str(id_token):
+                    import base64
+                    import json
+
+                    parts = str(id_token).split(".")
+                    if len(parts) >= 2:
+                        payload_b64 = parts[1] + "=" * (-len(parts[1]) % 4)
+                        payload = json.loads(base64.urlsafe_b64decode(payload_b64))
+                        tg_user_id = payload.get("sub") or payload.get("id")
+                        tg_username = payload.get("preferred_username") or payload.get("username")
+
+                if not tg_user_id and data.get("user"):
+                    user_obj = data["user"]
+                    tg_user_id = user_obj.get("id")
+                    tg_username = user_obj.get("username")
+
+                if tg_user_id:
+                    from api.deps import get_telegram_user_id
+
+                    current_user_id = await get_telegram_user_id(
+                        cf_access_authenticated_user_email=request.headers.get("Cf-Access-Authenticated-User-Email"),
+                        cf_access_user_email=request.headers.get("cf-access-authenticated-user-email"),
+                        cf_access_jwt_assertion=request.headers.get("Cf-Access-Jwt-Assertion"),
+                    )
+
+                    if current_user_id and current_user_id != 0:
+                        from services.user_service import link_telegram_to_user
+
+                        await link_telegram_to_user(current_user_id, str(tg_user_id))
+
+                return RedirectResponse(url="/?oauth_success=true")
+        except Exception as e:
+            logger.error(f"Excepción en callback de Telegram OAuth: {e}", exc_info=True)
+            return RedirectResponse(url="/?oauth_error=exception")

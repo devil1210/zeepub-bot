@@ -232,8 +232,8 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
                                 <span>Escanea con tu cámara o usa el botón directo</span>
                             </div>
 
-                            {/* Direct Telegram Button */}
-                            <div className="pt-1">
+                            {/* Direct Telegram & OAuth Buttons */}
+                            <div className="pt-1 space-y-2">
                                 <a
                                     href={activeBotLink}
                                     target="_blank"
@@ -242,6 +242,12 @@ export const TelegramLinkModal: React.FC<TelegramLinkModalProps> = ({
                                 >
                                     <Send className="w-4 h-4" />
                                     <span>Abrir Bot en Telegram 🚀</span>
+                                </a>
+                                <a
+                                    href="/api/oauth/telegram/login"
+                                    className="w-full flex items-center justify-center space-x-2 px-5 py-2.5 text-xs font-semibold text-sky-400 bg-sky-500/10 border border-sky-500/20 hover:bg-sky-500/20 rounded-xl active:scale-95 transition-all"
+                                >
+                                    <span>🔑 Usar Telegram OAuth 2.0 / OpenID</span>
                                 </a>
                                 <p className="text-[11px] text-slate-400 mt-2">
                                     Sin ingresar número de teléfono. Presiona <strong className="text-slate-200">INICIAR</strong> en Telegram para confirmar.
