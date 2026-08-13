@@ -310,18 +310,13 @@ async def handle_unlink_telegram(data: dict[str, Any], user_data: dict[str, Any]
         raise HTTPException(status_code=401, detail="Usuario no autenticado.")
 
     from core.db_manager_pg import pg_manager
-    from sqlalchemy import update
-    from models.users import User
+    from services.user_service import UserService
 
     async with pg_manager.get_session() as session:
-        stmt = update(User).where(User.telegram_id == user_id).values(
-            telegram_id=None,
-            username=None
-        )
-        await session.execute(stmt)
-        await session.commit()
+        service = UserService(session)
+        result = await service.unlink_telegram_account(user_id)
 
-    return {"success": True, "message": "Cuenta de Telegram desvinculada exitosamente."}
+    return result
 
 
 async def handle_recommendations(data: dict[str, Any], user_data: dict[str, Any]):

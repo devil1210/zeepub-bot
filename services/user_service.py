@@ -402,6 +402,48 @@ class UserService:
             "photo_url": final_user.photo_url,
         }
 
+    async def unlink_telegram_account(self, current_user_id: int) -> dict:
+        """Desvincula Telegram de la cuenta actual."""
+        from sqlalchemy import select
+        import zlib
+
+        query = select(User).where(User.telegram_id == current_user_id)
+        res = await self.session.execute(query)
+        user = res.scalar_one_or_none()
+
+        if not user:
+            raise ValueError("Usuario no encontrado.")
+
+        if not user.email:
+            raise ValueError("No puedes desvincular Telegram sin contar con un correo alternativo vinculado a tu cuenta.")
+
+        clean_email = user.email.strip().lower()
+        synthetic_id = abs(zlib.crc32(clean_email.encode("utf-8")))
+
+        if user.telegram_id == synthetic_id:
+            user.username = None
+            user.nickname = None
+            user.photo_url = None
+            await self.session.commit()
+            return {"success": True, "message": "Telegram desvinculado exitosamente."}
+
+        # Transfer email to synthetic user or create synthetic user
+        query_synth = select(User).where(User.telegram_id == synthetic_id)
+        res_synth = await self.session.execute(query_synth)
+        synth_user = res_synth.scalar_one_or_none()
+
+        if synth_user:
+            user.email = None
+            synth_user.email = clean_email
+            await self.session.commit()
+        else:
+            user.username = None
+            user.nickname = None
+            user.photo_url = None
+            await self.session.commit()
+
+        return {"success": True, "message": "Cuenta de Telegram desvinculada exitosamente."}
+
     async def get_user_settings(self, telegram_id: int) -> dict:
         """Obtiene todas las configuraciones del usuario."""
         user_data = await self.get_effective_user(telegram_id)
