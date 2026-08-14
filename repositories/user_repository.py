@@ -591,20 +591,17 @@ class UserRepository(BaseRepository[User]):
             logger.error(f"Error updating user profile for {telegram_id}: {e}")
 
     async def increment_download_count(self, telegram_id: int) -> int:
-        """Incrementa el contador total de descargas de un usuario en PostgreSQL."""
+        """Incrementa o cuenta el total de descargas de un usuario en PostgreSQL."""
         try:
             async with pg_manager.get_session() as session:
-                stmt = select(User).where(User.telegram_id == telegram_id)
-                result = await session.execute(stmt)
-                user = result.scalar_one_or_none()
-                if user:
-                    user.total_downloads = (user.total_downloads or 0) + 1
-                    current_count = user.total_downloads
-                    await session.commit()
-                    await cache_manager.delete_user(telegram_id)
-                    return current_count
+                from models.users import DownloadHistory
+                stmt = select(func.count(DownloadHistory.id)).where(DownloadHistory.user_id == telegram_id)
+                res = await session.execute(stmt)
+                count = res.scalar() or 0
+                await cache_manager.delete_user(telegram_id)
+                return count
         except Exception as e:
-            logger.error(f"Error incrementing download count for {telegram_id}: {e}")
+            logger.error(f"Error counting downloads for {telegram_id}: {e}")
         return 0
 
     async def get_by_level(self, level_name: str) -> list[dict[str, Any]]:

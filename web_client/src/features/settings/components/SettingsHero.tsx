@@ -121,13 +121,25 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
                                     ADMIN
                                 </div>
                             )}
-                            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border ${status?.user?.tg_username || status?.user?.is_telegram_linked ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
-                                {status?.user?.tg_username
-                                    ? `🟢 TELEGRAM: @${status.user.tg_username}`
-                                    : status?.user?.is_telegram_linked
-                                        ? `🟢 TELEGRAM VINCULADO`
-                                        : '⚠️ TELEGRAM NO VINCULADO'}
-                            </div>
+                            {(() => {
+                                const tgId = status?.user?.telegram_id || tgUser?.id;
+                                const isLinked = Boolean(
+                                    status?.user?.tg_username ||
+                                    status?.user?.is_telegram_linked ||
+                                    (tgId && tgId > 0 && tgId < 2000000000)
+                                );
+                                const tgHandle = status?.user?.tg_username || (tgUser?.username && !tgUser.username.startsWith('USER_') && !tgUser.username.startsWith('User_') ? tgUser.username : null);
+
+                                return (
+                                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border ${isLinked ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
+                                        {tgHandle
+                                            ? `🟢 TELEGRAM: @${tgHandle}`
+                                            : isLinked
+                                                ? `🟢 TELEGRAM VINCULADO`
+                                                : '⚠️ TELEGRAM NO VINCULADO'}
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         <div className="w-full space-y-3">

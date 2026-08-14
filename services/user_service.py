@@ -105,6 +105,8 @@ class UserService:
             "username": user.username,
             "nickname": user.nickname,
             "name": user.name,
+            "email": user.email,
+            "photo_url": user.photo_url,
             "role": user.role,
             "level": user.level.name if user.level else "free",
             "level_info": {

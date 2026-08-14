@@ -127,12 +127,10 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
         await cache_manager.invalidate_user(telegram_id)
         try:
             async with pg_manager.get_session() as session:
-                stmt = select(User).where(User.telegram_id == telegram_id)
-                result = await session.execute(stmt)
-                user = result.scalar_one_or_none()
-                if user:
-                    user.total_downloads = (user.total_downloads or 0) + 1
-                    await session.commit()
+                from models.users import DownloadHistory
+                stmt = select(func.count(DownloadHistory.id)).where(DownloadHistory.user_id == telegram_id)
+                res = await session.execute(stmt)
+                return res.scalar() or 0
         except Exception as e:
             logger.error(f"Postgres increment_download_count error: {e}")
 
