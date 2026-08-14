@@ -75,6 +75,7 @@ class MetadataOrchestrator:
                     series = lb.series_info
                     if series:
                         res.update({
+                            "slug": series.slug or getattr(lb, "slug", "") or "",
                             "series_name": series.name or lb.series_english or "",
                             "serie": series.series_english or lb.series_english or series.name or "",
                             "series": series.name or lb.series_english or "",
@@ -101,6 +102,7 @@ class MetadataOrchestrator:
                         })
                     else:
                         res.update({
+                            "slug": getattr(lb, "slug", "") or "",
                             "series_name": lb.series_spanish or lb.title,
                             "serie": lb.series_english or lb.series_spanish or lb.title,
                             "series": lb.series_spanish or lb.title,
