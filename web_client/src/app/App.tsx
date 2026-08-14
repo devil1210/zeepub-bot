@@ -250,11 +250,13 @@ const UniversalDetailWrapper = () => {
     volumeId?: string;
   }>();
 
-  // Precedence: explicit bookId > volumeId (for /read) > seriesId
-  let id = params.bookId ?? params.volumeId ?? params.seriesId ?? '';
-  // Ensure seriesId has expected series_ prefix if coming from /series route
-  if (params.seriesId && !id.startsWith('series_') && !id.startsWith('local_')) {
-    id = `series_${params.seriesId}`;
+  let id = '';
+  if (params.volumeId) {
+    id = params.volumeId;
+  } else if (params.seriesId) {
+    id = params.seriesId.startsWith('series_') ? params.seriesId : `series_${params.seriesId}`;
+  } else if (params.bookId) {
+    id = params.bookId;
   }
 
   return (
