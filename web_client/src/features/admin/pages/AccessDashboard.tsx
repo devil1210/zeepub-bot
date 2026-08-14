@@ -9,7 +9,8 @@ import {
     RefreshCw,
     Settings,
     Zap,
-    LayoutGrid
+    LayoutGrid,
+    Trash2
 } from 'lucide-react';
 import { UserPermissions } from './UserPermissions';
 import { TierConfiguration } from './TierConfiguration';
@@ -78,6 +79,27 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
     const [searchQuery, setSearchQuery] = useState('');
 
     const [scanningUser, setScanningUser] = useState<string | null>(null);
+    const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
+    const [deletingUser, setDeletingUser] = useState(false);
+
+    const handleDeleteUser = async () => {
+        if (!userToDelete) return;
+        try {
+            setDeletingUser(true);
+            const res = await api.adminDeleteUser(userToDelete.id);
+            if (res.success) {
+                setUsers(prev => prev.filter(u => u.id !== userToDelete.id));
+                setUserToDelete(null);
+            } else {
+                alert(res.message || "Error al eliminar usuario");
+            }
+        } catch (error: any) {
+            console.error("Error deleting user:", error);
+            alert("Error al eliminar usuario");
+        } finally {
+            setDeletingUser(false);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -405,11 +427,22 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                                         </div>
 
                                         {/* Stats & Action */}
-                                        <div className="flex items-center justify-between lg:justify-end gap-10 lg:min-w-[180px] relative z-10">
-                                            <div className="text-right">
+                                        <div className="flex items-center justify-between lg:justify-end gap-3 lg:min-w-[220px] relative z-10">
+                                            <div className="text-right mr-2">
                                                 <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest mb-1">Total DLS</p>
                                                 <p className="text-lg font-black text-white tabular-nums">{user.downloads.total}</p>
                                             </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setUserToDelete(user);
+                                                }}
+                                                className="px-3 py-2.5 bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white rounded-[1rem] transition-all duration-300 shadow-lg border border-red-500/20 flex items-center gap-1.5 text-xs font-bold active:scale-95 z-20"
+                                                title="Eliminar usuario y registros asociados"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                                <span className="text-[11px] font-black uppercase tracking-wider">Borrar</span>
+                                            </button>
                                             <div className="p-3.5 bg-white/5 rounded-[1.25rem] text-gray-500 group-hover:text-white group-hover:bg-primary transition-all duration-300 shadow-lg">
                                                 <ChevronRight className="w-5 h-5" strokeWidth={3} />
                                             </div>
@@ -423,6 +456,47 @@ export const AccessDashboard: React.FC<AccessDashboardProps> = ({
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Modal Confirmación de Eliminación de Usuario */}
+            {userToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in">
+                    <div className="glass-panel border border-red-500/30 bg-slate-900/90 rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-6 relative overflow-hidden">
+                        <div className="w-12 h-12 rounded-2xl bg-red-500/20 text-red-400 flex items-center justify-center mx-auto border border-red-500/30">
+                            <Trash2 className="w-6 h-6" />
+                        </div>
+                        <div className="text-center space-y-2">
+                            <h3 className="text-xl font-bold text-white">¿Eliminar Usuario?</h3>
+                            <p className="text-sm text-gray-300">
+                                ¿Estás seguro de que deseas eliminar permanentemente a <span className="font-bold text-white">{userToDelete.display_name || userToDelete.username || userToDelete.id}</span>?
+                            </p>
+                            <p className="text-xs text-red-400/80 italic mt-2 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                                ⚠️ Se borrarán todos los registros asociados en la base de datos sin bloquear la cuenta.
+                            </p>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => setUserToDelete(null)}
+                                disabled={deletingUser}
+                                className="flex-1 py-3 px-4 rounded-xl border border-white/10 text-gray-300 font-bold text-sm hover:bg-white/5 transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleDeleteUser}
+                                disabled={deletingUser}
+                                className="flex-1 py-3 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2"
+                            >
+                                {deletingUser ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                )}
+                                <span>Eliminar</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

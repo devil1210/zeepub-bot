@@ -31,5 +31,11 @@ class StateManager:
         return self.user_state[uid]
 
 
+    def clear_user_state(self, uid: int) -> None:
+        if uid in self.user_state:
+            del self.user_state[uid]
+
+
 # Instancia global
 state_manager = StateManager()
+

@@ -312,3 +312,18 @@ async def handle_get_user_audit_history(data: dict[str, Any], user_data: dict[st
 
     logs = UserAuditService.get_user_history(str(target_id))
     return {"success": True, "history": logs, "logs": logs}
+
+
+async def handle_admin_delete_user(data: dict[str, Any], user_data: dict[str, Any]):
+    """Elimina completamente a un usuario y todos sus registros asociados sin bloquearlo."""
+    check_staff(user_data)
+    target_id = data.get("userId") or data.get("user_id") or data.get("id")
+    if not target_id:
+        raise HTTPException(status_code=400, detail="Falta parámetro userId")
+
+    success = await user_repo.delete_user_cascade(target_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="No se pudo eliminar el usuario o no fue encontrado")
+
+    return {"success": True, "message": "Usuario y registros asociados eliminados correctamente"}
+

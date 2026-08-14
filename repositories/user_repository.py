@@ -46,16 +46,54 @@ class UserRepository(BaseRepository[User]):
 
     async def delete(self, id: Any) -> bool:
         """Elimina un usuario por su Telegram ID."""
+        return await self.delete_user_cascade(id)
+
+    async def delete_user_cascade(self, telegram_id: Any) -> bool:
+        """
+        Elimina un usuario y de forma limpia todos sus registros asociados en BD y caché.
+        Sin bloquear al usuario, solo eliminando sus datos asociados.
+        """
         from sqlalchemy import delete
+        from models.users import User, UserUISettings
+        from models.download_models import DownloadHistory
+        from models.user_audit_models import UserAuditLog
+        from models.operations import Operation
+        from models.library import UserBookProgress, UserFavorite, UserRating, BookRequest
+
+        try:
+            tid = int(telegram_id)
+        except (ValueError, TypeError):
+            logger.error(f"ID de usuario inválido para eliminación: {telegram_id}")
+            return False
 
         async with pg_manager.get_session() as session:
             try:
-                stmt = delete(User).where(User.telegram_id == id)
+                # 1. Eliminar registros dependientes en cascada explícita
+                await session.execute(delete(UserUISettings).where(UserUISettings.user_id == tid))
+                await session.execute(delete(DownloadHistory).where(DownloadHistory.user_id == tid))
+                await session.execute(delete(UserAuditLog).where((UserAuditLog.user_id == tid) | (UserAuditLog.changed_by_id == tid)))
+                await session.execute(delete(Operation).where(Operation.user_id == tid))
+                await session.execute(delete(UserBookProgress).where(UserBookProgress.user_id == tid))
+                await session.execute(delete(UserFavorite).where(UserFavorite.user_id == tid))
+                await session.execute(delete(UserRating).where(UserRating.user_id == tid))
+                await session.execute(delete(BookRequest).where(BookRequest.user_id == tid))
+
+                # 2. Eliminar el usuario principal
+                stmt = delete(User).where(User.telegram_id == tid)
                 result = await session.execute(stmt)
                 await session.commit()
+
+                # 3. Limpieza de memoria y caché
+                await cache_manager.delete_user(tid)
+                try:
+                    state_manager.clear_user_state(tid)
+                except Exception:
+                    pass
+
+                logger.info(f"✅ Usuario {tid} y registros asociados eliminados correctamente.")
                 return result.rowcount > 0
             except Exception as e:
-                logger.error(f"Error deleting user {id}: {e}")
+                logger.error(f"Error al eliminar en cascada el usuario {tid}: {e}")
                 await session.rollback()
                 return False
 

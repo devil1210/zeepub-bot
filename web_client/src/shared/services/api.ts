@@ -174,6 +174,7 @@ export const api = {
         rpc('admin_get_users', { limit, offset, search }),
     setAdminUserLevel: (userId: string, levelId: number) =>
         rpc('admin_set_user_level', { userId, levelId }),
+    adminDeleteUser: (userId: string | number) => rpc('admin_delete_user', { userId }),
     adminBackupLibrary: () => rpc('admin_backup_library'),
     adminSyncUsersCloud: () => rpc('admin_sync_users_cloud'),
     adminSyncLibraryCloud: () => rpc('admin_sync_library_cloud'),

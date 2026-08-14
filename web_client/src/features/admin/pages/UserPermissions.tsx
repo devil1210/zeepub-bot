@@ -21,7 +21,8 @@ import {
   RefreshCw,
   Download,
   Activity,
-  Shield
+  Shield,
+  Trash2
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 import { useTheme } from '@shared/contexts/ThemeContext';
@@ -115,6 +116,28 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
       setError(err.message || 'Error de conexión al sincronizar');
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingUser, setDeletingUser] = useState(false);
+
+  const handleDeleteUser = async () => {
+    const idToDelete = userId || displayId;
+    if (!idToDelete) return;
+    try {
+      setDeletingUser(true);
+      const res = await api.adminDeleteUser(idToDelete);
+      if (res.success) {
+        onBack();
+      } else {
+        setError(res.message || "Error al eliminar usuario");
+      }
+    } catch (err: any) {
+      setError(err.message || "Error al eliminar usuario");
+    } finally {
+      setDeletingUser(false);
+      setShowDeleteModal(false);
     }
   };
 
@@ -459,21 +482,31 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
           </div>
         )}
 
-        <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={onBack}
-            className="p-2 -ml-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <div>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <span>Gestión de Usuarios</span>
-              <ChevronRight className="w-4 h-4" />
-              <span>Editor de Permisos</span>
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="p-2 -ml-2 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div>
+              <div className="flex items-center gap-2 text-sm text-gray-400">
+                <span>Gestión de Usuarios</span>
+                <ChevronRight className="w-4 h-4" />
+                <span>Editor de Permisos</span>
+              </div>
+              <h1 className="text-2xl font-bold text-white">Editar Permisos de Usuario</h1>
             </div>
-            <h1 className="text-2xl font-bold text-white">Editar Permisos de Usuario</h1>
           </div>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-premium-sm text-xs font-bold transition-all border border-red-500/20 shadow-md active:scale-95"
+            title="Eliminar usuario"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Eliminar Usuario</span>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -950,6 +983,47 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Delete User Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in">
+          <div className="glass-panel border border-red-500/30 bg-slate-900/90 rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-6 relative overflow-hidden">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/20 text-red-400 flex items-center justify-center mx-auto border border-red-500/30">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-bold text-white">¿Eliminar Usuario?</h3>
+              <p className="text-sm text-gray-300">
+                ¿Estás seguro de que deseas eliminar permanentemente a <span className="font-bold text-white">{permissions.name || permissions.username || displayName}</span>?
+              </p>
+              <p className="text-xs text-red-400/80 italic mt-2 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                ⚠️ Se borrarán todos los registros asociados en la base de datos sin bloquear la cuenta.
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deletingUser}
+                className="flex-1 py-3 px-4 rounded-xl border border-white/10 text-gray-300 font-bold text-sm hover:bg-white/5 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                disabled={deletingUser}
+                className="flex-1 py-3 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-2"
+              >
+                {deletingUser ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                <span>Eliminar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -63,6 +63,7 @@ class LegacyRoutes:
             "admin_scan_status": miniapp_handlers.handle_admin_scan_status,
             "admin_save_tier": miniapp_handlers.handle_admin_save_tier,
             "admin_set_user_level": miniapp_handlers.handle_admin_set_user_level,
+            "admin_delete_user": miniapp_handlers.handle_admin_delete_user,
             "admin_backup_library": miniapp_handlers.handle_admin_backup_library,
             "admin_sync_users_cloud": miniapp_handlers.handle_admin_sync_users_cloud,
             "admin_sync_library_cloud": miniapp_handlers.handle_admin_sync_library_cloud,
