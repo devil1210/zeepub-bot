@@ -178,11 +178,6 @@ const AppContent: React.FC = () => {
     return <PageLoader />;
   }
 
-  const isWebStandalone = typeof window !== 'undefined' && !(window as any).Telegram?.WebApp?.initData;
-  if (isWebStandalone && !user && !status?.user) {
-    return <LoginGate />;
-  }
-
   return (
     <>
       <ScrollToTop />
