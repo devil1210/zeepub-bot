@@ -342,6 +342,29 @@ export const api = {
     getGenreAudits: () => rpc('admin_get_genre_audits'),
     resolveGenreAudit: (auditId: number) => rpc('admin_resolve_genre_audit', { audit_id: auditId }),
 
+    // Library Data Grid / Excel Editor
+    getLibraryGrid: (params?: {
+        query?: string;
+        missing_filter?: string;
+        demography?: string;
+        book_type?: string;
+        page?: number;
+        limit?: number;
+        sort_by?: string;
+    }) => rpc('admin_get_library_grid', params || {}),
+
+    updateSeriesGrid: (seriesId: string, data: any) =>
+        rpc('admin_update_series_grid', { series_id: seriesId, ...data }),
+
+    updateBookGrid: (bookId: string, data: any) =>
+        rpc('admin_update_book_grid', { book_id: bookId, ...data }),
+
+    bulkSaveGrid: (seriesUpdates: any[], bookUpdates: any[]) =>
+        rpc('admin_bulk_save_grid', { series_updates: seriesUpdates, book_updates: bookUpdates }),
+
+    recalculateSeriesSlug: (seriesId: string) =>
+        rpc('admin_recalculate_series_slug', { series_id: seriesId }),
+
     // Raw RPC Access
     rpc: rpc
 };

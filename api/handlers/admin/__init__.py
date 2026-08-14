@@ -1,3 +1,10 @@
+from .grid_handlers import (
+    handle_admin_bulk_save_grid,
+    handle_admin_get_library_grid,
+    handle_admin_recalculate_series_slug,
+    handle_admin_update_book_grid,
+    handle_admin_update_series_grid,
+)
 from .library_handlers import (
     handle_admin_ai_series_duplicate_scan,
     handle_admin_backup_library,
@@ -108,4 +115,9 @@ __all__ = [
     "handle_admin_stop_scan",
     "handle_admin_get_genre_audits",
     "handle_admin_resolve_genre_audit",
+    "handle_admin_get_library_grid",
+    "handle_admin_update_series_grid",
+    "handle_admin_update_book_grid",
+    "handle_admin_bulk_save_grid",
+    "handle_admin_recalculate_series_slug",
 ]

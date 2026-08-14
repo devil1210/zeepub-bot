@@ -14,7 +14,8 @@ import {
   Send,
   Activity,
   Database,
-  History
+  History,
+  Table
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { useNavigation } from '@shared/contexts/NavigationContext';
@@ -29,6 +30,7 @@ import { PublisherDashboard } from '@features/publisher/pages/PublisherDashboard
 import { ObservatoryPage } from './ObservatoryPage';
 import { BulkReviewPage } from './BulkReviewPage';
 import { MetadataAuditPage } from './MetadataAuditPage';
+import { DataGridEditor } from './DataGridEditor';
 import { useTelegram } from '@shared/contexts/TelegramContext';
 
 interface AdminProps {
@@ -45,7 +47,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const setIsViewSelectorOpen = setMenuOpen;
 
   // Derived state from URL
-  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads' | 'publisher' | 'observatory' | 'bulk-review' | 'audit') || 'monitor';
+  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads' | 'publisher' | 'observatory' | 'bulk-review' | 'audit' | 'datagrid') || 'monitor';
   const selectedUserId = searchParams.get('userId');
   const tierName = searchParams.get('tierName');
   const tierColor = searchParams.get('tierColor');
@@ -101,6 +103,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
 
     const views = [
       { id: 'monitor', label: 'Monitor', icon: BarChart3 },
+      { id: 'datagrid', label: 'Editor Data Grid', icon: Table },
       { id: 'observatory', label: 'Observatorio', icon: Activity },
       { id: 'bulk-review', label: 'Revisión Masiva', icon: Database },
       { id: 'system', label: 'Sistema', icon: Server },
@@ -209,6 +212,7 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
       case 'observatory': return <ObservatoryPage />;
       case 'bulk-review': return <BulkReviewPage />;
       case 'audit': return <MetadataAuditPage />;
+      case 'datagrid': return <DataGridEditor />;
       default: return <MonitorDashboard />;
     }
   };
