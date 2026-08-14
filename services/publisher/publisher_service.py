@@ -637,11 +637,10 @@ class PublisherService:
                     book_data = {}
                     if item.book_hash:
                         book = await self.book_repo.get_by_hash(item.book_hash)
-                        if book:
-                            english_t = (book.series.series_english if book.series else None) or getattr(book, "series_english", None) or getattr(book, "english_title", None) or ""
-                            spanish_t = (book.series.series_spanish if book.series else None) or getattr(book, "series_spanish", None) or getattr(book, "spanish_title", None) or book.title or ""
-                            romaji_t = (book.series.romaji if book.series else None) or getattr(book, "romaji", None) or getattr(book, "romaji_title", None) or ""
-                            s_slug = (book.series.slug if book.series else None) or getattr(book, "slug", None) or ""
+                            english_t = (getattr(book.series, "series_english", None) if book.series else None) or getattr(book, "series_english", None) or getattr(book, "english_title", None) or ""
+                            spanish_t = (getattr(book.series, "series_spanish", None) if book.series else None) or getattr(book, "series_spanish", None) or getattr(book, "spanish_title", None) or book.title or ""
+                            romaji_t = (getattr(book.series, "romaji", None) or getattr(book.series, "name", None) if book.series else None) or getattr(book, "romaji", None) or getattr(book, "romaji_title", None) or ""
+                            s_slug = (getattr(book.series, "slug", None) if book.series else None) or getattr(book, "slug", None) or ""
 
                             book_data = {
                                 "title": book.title,
