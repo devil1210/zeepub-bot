@@ -47,6 +47,7 @@ from .tier_handlers import (
     handle_admin_save_tier_config,
 )
 from .user_handlers import (
+    handle_admin_delete_user,
     handle_admin_get_recent_audit_logs,
     handle_admin_get_user_permissions,
     handle_admin_get_users,
@@ -61,6 +62,7 @@ __all__ = [
     "handle_admin_stats",
     "handle_admin_get_users",
     "handle_admin_set_user_level",
+    "handle_admin_delete_user",
     "handle_admin_scan_user",
     "handle_admin_sync_users_cloud",
     "handle_admin_save_user_permissions",
