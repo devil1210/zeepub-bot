@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 
 from dateutil import parser
-from sqlalchemy import String, cast, select
+from sqlalchemy import String, cast, func, select
 from sqlalchemy.orm import selectinload
 
 from config.config_settings import config
