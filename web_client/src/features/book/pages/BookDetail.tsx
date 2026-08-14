@@ -240,13 +240,35 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     }
   };
 
-  const handleDownload = async () => {
+  const [downloadingTelegram, setDownloadingTelegram] = useState(false);
+
+  const handleDirectDownload = async () => {
+    if (!curVolume) return;
+    try {
+      webApp?.HapticFeedback?.impactOccurred('medium');
+      const targetBookId = curVolume.id || bookId;
+      const downloadUrl = `/api/bot/download_file/${targetBookId}`;
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.setAttribute('download', `${curVolume.title || 'libro'}.epub`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setLocalDownloadCount(prev => prev + 1);
+    } catch (err: any) {
+      console.error("Error triggering direct download", err);
+      webApp?.showAlert?.("❌ Error al iniciar la descarga directa: " + (err as Error).message);
+    }
+  };
+
+  const handleTelegramDownload = async () => {
     if (!curVolume) return;
     if (status?.user?.needs_telegram_link) {
       setIsLinkModalOpen(true);
       return;
     }
     try {
+      setDownloadingTelegram(true);
       webApp?.HapticFeedback?.impactOccurred('medium');
       await api.requestDownload(curVolume.id);
       setHasDownloaded(true);
@@ -254,13 +276,15 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       webApp?.HapticFeedback?.notificationOccurred('success');
       webApp?.showAlert?.("📚 ¡Libro enviado! Revisa tu chat privado con el bot.");
     } catch (err: any) {
-      console.error("Error downloading book", err);
+      console.error("Error sending book to Telegram", err);
       if (err?.message?.includes("vincular tu cuenta de Telegram")) {
         setIsLinkModalOpen(true);
       } else {
         webApp?.HapticFeedback?.notificationOccurred('error');
         webApp?.showAlert?.("❌ Error: " + (err as Error).message);
       }
+    } finally {
+      setDownloadingTelegram(false);
     }
   };
 
@@ -507,11 +531,13 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
               <BookActions
                 hasDownloaded={hasDownloaded}
-                onDownload={handleDownload}
+                onDirectDownload={handleDirectDownload}
+                onTelegramDownload={handleTelegramDownload}
                 onOpenRating={() => setIsRatingModalOpen(true)}
                 onOpenReport={() => setIsReportModalOpen(true)}
                 onOpenSchedule={() => setIsScheduleModalOpen(true)}
                 rating={localRating}
+                downloadingTelegram={downloadingTelegram}
               />
 
               {/* Stats Block (Sidebar - Desktop) */}

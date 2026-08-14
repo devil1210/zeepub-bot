@@ -1,14 +1,15 @@
-# api/routes/legacy_routes.py
-
+import os
 import logging
 from typing import Annotated, Any
+import aiofiles
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from api import miniapp_handlers
 from api.deps import require_mini_app_access
+from services.library_service import LibraryService
 
 logger = logging.getLogger(__name__)
 
@@ -230,6 +231,40 @@ class LegacyRoutes:
             logger.error(f"❌ Error in legacy access endpoint: {e}")
             return JSONResponse(content={"error": str(e)}, status_code=500)
 
+    async def handle_direct_download(
+        self,
+        book_id: str,
+        request: Request,
+        user_data: Annotated[dict[str, Any], Depends(require_mini_app_access)],
+    ):
+        """Descarga directa de un EPUB en el navegador."""
+        book_hash = book_id.replace("local_", "").replace("series_", "")
+        book = await LibraryService.get_book_by_hash(book_hash)
+        if not book:
+            volumes = await LibraryService.get_series_volumes(book_hash, limit=1)
+            if volumes:
+                book = volumes[0]
+        if not book or not book.get("file_path") or not os.path.exists(book["file_path"]):
+            raise HTTPException(status_code=404, detail="Archivo EPUB no encontrado en el servidor")
+
+        file_path = book["file_path"]
+        title = book.get("title") or book.get("clean_title") or "libro"
+        safe_title = "".join([c for c in title if c.isalnum() or c in (" ", "_", "-")]).rstrip()
+
+        async def iterfile_async():
+            async with aiofiles.open(file_path, mode="rb") as f:
+                while chunk := await f.read(64 * 1024):
+                    yield chunk
+
+        return StreamingResponse(
+            content=iterfile_async(),
+            media_type="application/epub+zip",
+            headers={
+                "Content-Disposition": f'attachment; filename="{safe_title}.epub"',
+                "Cache-Control": "public, max-age=3600",
+            },
+        )
+
     def register_routes(self):
         """Register endpoints."""
         self.router.add_api_route(
@@ -243,4 +278,10 @@ class LegacyRoutes:
             self.get_user_access_legacy,
             methods=["POST"],
             summary="Legacy User Access",
+        )
+        self.router.add_api_route(
+            "/bot/download_file/{book_id}",
+            self.handle_direct_download,
+            methods=["GET"],
+            summary="Direct EPUB File Download",
         )

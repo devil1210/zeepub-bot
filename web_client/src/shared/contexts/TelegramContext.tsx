@@ -396,10 +396,28 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const handleUnlinkTelegram = async () => {
     try {
-      await api.unlinkTelegram();
-      await refreshStatus();
-    } catch (e) {
+      const { api } = await import('@shared/services/api');
+      const res = await api.unlinkTelegram();
+      if (res && res.success !== false) {
+        webApp?.HapticFeedback?.notificationOccurred('success');
+        if (webApp?.showAlert) {
+          webApp.showAlert('✅ Cuenta de Telegram desvinculada con éxito.');
+        } else {
+          alert('✅ Cuenta de Telegram desvinculada con éxito.');
+        }
+        await refreshStatus();
+      } else {
+        webApp?.HapticFeedback?.notificationOccurred('error');
+        const errStr = res?.error || res?.message || 'No se pudo desvincular la cuenta.';
+        if (webApp?.showAlert) webApp.showAlert('❌ ' + errStr);
+        else alert('❌ ' + errStr);
+      }
+    } catch (e: any) {
       console.error('Unlink error:', e);
+      webApp?.HapticFeedback?.notificationOccurred('error');
+      const msg = e.message || 'Error de servidor';
+      if (webApp?.showAlert) webApp.showAlert('❌ Error al desvincular: ' + msg);
+      else alert('❌ Error al desvincular: ' + msg);
     }
   };
 

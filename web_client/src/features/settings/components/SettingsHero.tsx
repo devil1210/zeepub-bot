@@ -79,7 +79,10 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
                                 <img
                                     alt="Avatar"
                                     className="h-32 w-32 rounded-full ring-[6px] ring-[#0a0a0c] shadow-[0_0_50px_rgba(0,0,0,0.5)] object-cover z-10 scale-100 group-hover:scale-105 transition-transform duration-700"
-                                    src={tgUser?.photo_url || "https://lh3.googleusercontent.com/aida-public/AB6AXuD2rcMIxLOx5eu6yRpav3Y8qGpkFD2kC_fFSpyVjNI_zmfvjfPwU7tT0o4IWo8bJUd_Zt_ZE-XvtCRq0VFH6xkeCOZ6RNUSwUMkYvnq49dlaImBSvbx2y0LQ2ZShi-zZJ9SOX46KZQVmAqGJjihqPPZMUyxWkrYEvOQ0wjuaZfwx1Ux3D3P5FEFAo_3D3gvoUpdmv1x-qcgKh0DHSyh9-GHQ9EN3s9kFdAWafA1e_VN0XlAN9MZ3UD7h_56GH1_qsJ9cFtwIf5rKrw"}
+                                    src={status?.user?.photo_url || tgUser?.photo_url || "https://api.dicebear.com/7.x/bottts/svg?seed=zeepub"}
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = "https://api.dicebear.com/7.x/bottts/svg?seed=zeepub";
+                                    }}
                                 />
                                 <div className="absolute inset-0 rounded-full border border-white/20 z-20 pointer-events-none"></div>
                             </div>
@@ -90,10 +93,22 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
 
                         <div className="space-y-1 mb-6">
                             <h2 className="text-3xl font-black text-white tracking-tighter drop-shadow-lg">
-                                {tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}` : 'Lectores'}
+                                {status?.user?.username && !status.user.username.startsWith('USER_') && !status.user.username.startsWith('User_')
+                                    ? status.user.username
+                                    : tgUser?.first_name
+                                        ? `${tgUser.first_name} ${tgUser.last_name || ''}`.trim()
+                                        : 'Administrador'}
                             </h2>
                             <p className="text-[11px] text-primary font-black uppercase tracking-[0.4em] opacity-80">
-                                {tgUser?.username ? `@${tgUser.username}` : `UID: ${tgUser?.id}`}
+                                {status?.user?.tg_username
+                                    ? `@${status.user.tg_username}`
+                                    : (tgUser?.username && !tgUser.username.startsWith('USER_') && !tgUser.username.startsWith('User_'))
+                                        ? `@${tgUser.username}`
+                                        : (status?.user?.username && !status.user.username.startsWith('USER_') && !status.user.username.startsWith('User_'))
+                                            ? `@${status.user.username}`
+                                            : (status?.user?.telegram_id || tgUser?.id)
+                                                ? `ID TELEGRAM: ${status?.user?.telegram_id || tgUser?.id}`
+                                                : 'SIN VINCULAR'}
                             </p>
                         </div>
 
@@ -118,16 +133,16 @@ export const SettingsHero: React.FC<SettingsHeroProps> = ({
                         <div className="w-full space-y-3">
                             <button
                                 onClick={() => setIsLinkModalOpen(true)}
-                                className="w-full py-3.5 px-6 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 border border-blue-500/30 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.25em] text-blue-400 hover:text-white transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-500/10"
+                                className="w-full py-3.5 px-6 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 border border-blue-500/30 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.25em] text-blue-400 hover:text-white transition-all flex items-center justify-center gap-3 shadow-lg shadow-blue-500/10 cursor-pointer"
                             >
                                 <Send className="w-4 h-4" />
-                                {tgUser?.id || status?.user?.telegram_id ? 'Cambiar / Vincular Telegram ✈️' : 'Vincular Telegram ✈️'}
+                                {tgUser?.id || status?.user?.telegram_id || status?.user?.is_telegram_linked ? 'Cambiar / Vincular Telegram ✈️' : 'Vincular Telegram ✈️'}
                             </button>
 
-                            {(tgUser?.id || status?.user?.telegram_id) && (
+                            {(tgUser?.id || status?.user?.telegram_id || status?.user?.is_telegram_linked) && (
                                 <button
                                     onClick={unlinkTelegram}
-                                    className="w-full py-3.5 px-6 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.25em] text-amber-400 hover:text-amber-300 transition-all flex items-center justify-center gap-3"
+                                    className="w-full py-3.5 px-6 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 rounded-[1.5rem] text-[11px] font-black uppercase tracking-[0.25em] text-amber-400 hover:text-amber-300 transition-all flex items-center justify-center gap-3 cursor-pointer"
                                 >
                                     <Unlink className="w-4 h-4" />
                                     Desvincular Telegram 🔗
