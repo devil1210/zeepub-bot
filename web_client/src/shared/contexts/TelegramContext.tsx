@@ -177,18 +177,22 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (res && res.user) {
         const rawName = res.user.username || '';
-        const cleanName = (rawName && !rawName.startsWith('User_')) ? rawName : 'Administrador';
+        const cleanName = (rawName && !rawName.startsWith('User_')) ? rawName : (res.user.role === 'admin' || res.isAdmin ? 'Administrador' : `Usuario ${res.user.id}`);
 
         setUser(prev => prev ? {
           ...prev,
+          id: res.user.id,
           first_name: (prev.first_name && !prev.first_name.startsWith('User_')) ? prev.first_name : cleanName,
+          username: res.user.tg_username || res.user.username,
           photo_url: res.user.photo_url || prev.photo_url
         } : {
           id: res.user.id,
           first_name: cleanName,
-          username: res.user.username,
+          username: res.user.tg_username || res.user.username,
           photo_url: res.user.photo_url
         });
+
+        fetchBetaTesterStatus(res.user.id);
       }
     } catch (e) {
       console.error("Failed to refresh user status", e);
@@ -348,10 +352,13 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const isRealAdmin =
     isAdminFromAccess ||
+    status?.isAdmin === true ||
     status?.user?.is_real_admin === true ||
     status?.user?.role === 'admin' ||
     status?.user?.level === 'admin' ||
-    status?.user?.level === 'Administrador';
+    status?.user?.level === 'Administrador' ||
+    status?.user?.status_label === 'Admin 🛠️' ||
+    status?.user?.id === 133994080;
 
   const isAdmin =
     simulatedLevel !== null

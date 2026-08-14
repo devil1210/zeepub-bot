@@ -147,8 +147,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-black text-white truncate leading-tight">{tgUser?.first_name ? `${tgUser.first_name} ${tgUser.last_name || ''}` : 'Usuario'}</p>
-              <p className="text-[10px] text-primary font-black truncate uppercase tracking-widest mt-1 opacity-80">{status?.user?.status_label || 'Visitante'}</p>
+              <p className="text-sm font-black text-white truncate leading-tight">
+                {tgUser?.first_name ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : (status?.user?.username && !status.user.username.startsWith('User_') ? status.user.username : (isAdmin ? 'Administrador' : 'Usuario'))}
+              </p>
+              <p className="text-[10px] text-primary font-black truncate uppercase tracking-widest mt-1 opacity-80">
+                {status?.user?.status_label || (isAdmin ? 'Admin 🛠️' : 'Visitante')}
+              </p>
             </div>
           </div>
         </div>
