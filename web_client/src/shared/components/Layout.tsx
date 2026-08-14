@@ -26,7 +26,7 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
   const { settings } = useTheme();
-  const { user: tgUser, status, isAdmin, botInfo, canUploadEpub } = useTelegram();
+  const { user: tgUser, status, isAdmin, botInfo, canUploadEpub, extendedInfo } = useTelegram();
   const {
     state: navState,
     handleSearchChange,
@@ -35,10 +35,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
     setViewMode
   } = useNavigation();
 
+  const hasLibrary = status?.user?.has_library_access !== false && extendedInfo?.hasLibraryAccess !== false;
+
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Inicio' },
     { id: 'search', icon: Search, label: 'Búsqueda y Catálogos' },
-    { id: 'library', icon: Library, label: 'Mi Biblioteca' },
+    ...(hasLibrary ? [{ id: 'library', icon: Library, label: 'Mi Biblioteca' }] : []),
     { id: 'settings', icon: Settings, label: 'Ajustes' },
     ...(isAdmin ? [
       { id: 'ai', icon: BrainCircuit, label: 'AI Hub' },

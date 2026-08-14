@@ -18,12 +18,13 @@ interface MobileBottomNavProps {
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeTab, onTabChange }) => {
     const { settings } = useTheme();
-    const { isAdmin, canUploadEpub } = useTelegram();
+    const { isAdmin, canUploadEpub, status, extendedInfo } = useTelegram();
+    const hasLibrary = status?.user?.has_library_access !== false && extendedInfo?.hasLibraryAccess !== false;
 
     const navItems = [
         { id: 'dashboard', icon: LayoutDashboard, label: 'Inicio' },
         { id: 'search', icon: Search, label: 'Catálogo' },
-        { id: 'library', icon: Library, label: 'Mi Lib' },
+        ...(hasLibrary ? [{ id: 'library', icon: Library, label: 'Mi Lib' }] : []),
         { id: 'settings', icon: Settings, label: 'Ajustes' },
     ];
 

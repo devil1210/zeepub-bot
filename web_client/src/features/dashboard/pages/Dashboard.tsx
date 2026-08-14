@@ -30,6 +30,7 @@ import { QuoteWidget } from '../components/QuoteWidget';
 
 import { RequestBookModal } from '@shared/components/RequestBookModal';
 import { ReportIssueModal } from '@shared/components/ReportIssueModal';
+import { PublisherWidget } from '@features/publisher/components/PublisherWidget';
 import { MessageSquarePlus } from 'lucide-react';
 
 interface DashboardProps {
@@ -51,6 +52,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     setVisible(false);
     return () => setVisible(true);
   }, [setVisible]);
+
+  const isPublisher = Boolean(
+    isAdmin ||
+    status?.user?.role === 'admin' ||
+    status?.user?.role === 'Publicador' ||
+    status?.user?.can_upload_epub ||
+    extendedInfo?.canUploadEpub
+  );
 
   const userName = status?.user?.name || (status?.user?.username && !status?.user?.username.startsWith('User_') ? status.user.username : (tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : "Administrador"));
   const userLevel = status?.user?.status_label || (isAdmin ? "Admin 🛠️" : "Lector 📚");
@@ -77,9 +86,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }
   };
 
+  const hasLibrary = status?.user?.has_library_access !== false && extendedInfo?.hasLibraryAccess !== false;
+
   const mainActions = [
     { id: 'search', icon: Search, label: 'Catálogo', desc: 'Explorar Todo', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', visible: true },
-    { id: 'library', icon: Library, label: 'Biblioteca', desc: 'Mis Libros', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: status?.user?.has_library_access !== false },
+    { id: 'library', icon: Library, label: 'Biblioteca', desc: 'Mis Libros', color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', visible: hasLibrary },
     { id: 'requests', icon: BookOpen, label: 'Pedidos', desc: 'Solicitar Libros', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', visible: status?.user?.can_request_books !== false },
     { id: 'feedback', icon: MessageSquarePlus, label: 'Feedback', desc: 'Sugerencias/Bugs', color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20', visible: true },
   ].filter(a => a.visible);
@@ -150,6 +161,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             isUnlimited={isUnlimited}
             settings={settings}
           />
+
+          {isPublisher && (
+            <PublisherWidget onNavigate={handleAction} />
+          )}
 
           <ActivityFeed activities={recentActivities} />
 
