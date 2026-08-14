@@ -174,8 +174,12 @@ const AppContent: React.FC = () => {
     return pathname.substring(1).split('/')[0]; // e.g. /search -> search
   };
 
+  if (!ready) {
+    return <PageLoader />;
+  }
+
   const isWebStandalone = typeof window !== 'undefined' && !(window as any).Telegram?.WebApp?.initData;
-  if (isWebStandalone && ready && !user && !status?.user) {
+  if (isWebStandalone && !user && !status?.user) {
     return <LoginGate />;
   }
 

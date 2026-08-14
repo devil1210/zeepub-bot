@@ -333,9 +333,16 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       };
     } else {
       // Standalone Web App Mode
-      setReady(true);
-      refreshStatus();
-      refreshBotInfo();
+      const initWeb = async () => {
+        try {
+          await Promise.all([refreshStatus(), refreshBotInfo()]);
+        } catch (e) {
+          console.error("Standalone web init error", e);
+        } finally {
+          setReady(true);
+        }
+      };
+      initWeb();
     }
   }, []);
 
