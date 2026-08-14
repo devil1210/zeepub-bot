@@ -244,10 +244,9 @@ class LegacyRoutes:
             volumes = await LibraryService.get_series_volumes(book_hash, limit=1)
             if volumes:
                 book = volumes[0]
-        if not book or not book.get("file_path") or not os.path.exists(book["file_path"]):
+        file_path = book.get("filepath") or book.get("file_path") if book else None
+        if not book or not file_path or not os.path.exists(file_path):
             raise HTTPException(status_code=404, detail="Archivo EPUB no encontrado en el servidor")
-
-        file_path = book["file_path"]
         title = book.get("title") or book.get("clean_title") or "libro"
         safe_title = "".join([c for c in title if c.isalnum() or c in (" ", "_", "-")]).rstrip()
 
