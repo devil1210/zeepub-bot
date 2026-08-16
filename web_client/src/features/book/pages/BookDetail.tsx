@@ -252,44 +252,20 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       const targetBookId = curVolume.id || bookId;
       const downloadUrl = `/api/bot/download_file/${targetBookId}`;
 
-      const headers: Record<string, string> = {};
-      const tgData = (window as any).Telegram?.WebApp?.initData;
-      if (tgData) {
-        headers['X-Telegram-Init-Data'] = tgData;
-      }
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-        headers['X-Auth-Method'] = 'supabase';
-      }
-
-      const response = await fetch(downloadUrl, { headers });
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.detail || errJson.error || `HTTP ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
+      // Crear iframe temporal o redirección nativa para activar la descarga del navegador
       const link = document.createElement('a');
-      link.href = blobUrl;
-      const rawTitle = curVolume.title || 'libro';
-      const safeName = rawTitle.replace(/[^\w\s\-\.]/gi, '').trim() || 'libro';
-      link.setAttribute('download', `${safeName}.epub`);
+      link.href = downloadUrl;
+      link.setAttribute('download', `${curVolume.title || 'libro'}.epub`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
 
       setLocalDownloadCount(prev => prev + 1);
       webApp?.HapticFeedback?.notificationOccurred('success');
     } catch (err: any) {
       console.error("Error triggering direct download", err);
-      if (webApp?.showAlert) {
-        webApp.showAlert("❌ Error al descargar el libro: " + (err as Error).message);
-      } else {
-        alert("❌ Error al descargar el libro: " + (err as Error).message);
-      }
+      const targetBookId = curVolume.id || bookId;
+      window.location.href = `/api/bot/download_file/${targetBookId}`;
     } finally {
       setIsDownloadingDirect(false);
     }
