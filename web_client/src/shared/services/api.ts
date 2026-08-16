@@ -336,6 +336,9 @@ export const api = {
     publishToChannel: (bookId: string, channelId: number) =>
         rpc('pub_quick_post', { book_id: bookId, channel_id: channelId }),
 
+    updatePublishedPost: (bookId: string, caption?: string, platforms: string[] = ['facebook']) =>
+        rpc('pub_update_post', { book_id: bookId, caption, platforms }),
+
     getUploadHistory: (limit: number = 100, offset: number = 0) =>
         apiClient.get(`/api/admin/upload-history?limit=${limit}&offset=${offset}`).then(res => res.data),
 

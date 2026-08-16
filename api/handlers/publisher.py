@@ -440,3 +440,34 @@ async def handle_pub_quick_post(data: dict[str, Any], user_data: dict[str, Any])
     asyncio.create_task(publisher_service.process_queue())
 
     return {"success": True}
+
+
+async def handle_pub_update_post(data: dict[str, Any], user_data: dict[str, Any]):
+    """
+    Paso 2: Actualiza la publicación existente de un libro (en Facebook u otras redes)
+    sin crear un post duplicado.
+    """
+    check_staff(user_data)
+    book_id = data.get("book_id") or data.get("book_hash") or data.get("id")
+    if not book_id:
+        raise HTTPException(status_code=400, detail="Missing book_id")
+
+    new_caption = data.get("caption")
+    platforms = data.get("platforms") or ["facebook"]
+
+    result = await publisher_service.update_published_book(
+        book_hash=str(book_id),
+        new_caption=new_caption,
+        platforms=platforms,
+    )
+
+    if not result.get("success"):
+        error_msg = (
+            result.get("error")
+            or result.get("facebook_note")
+            or "No se pudo actualizar la publicación en Facebook"
+        )
+        return {"success": False, "error": error_msg, "result": result}
+
+    return {"success": True, "result": result}
+

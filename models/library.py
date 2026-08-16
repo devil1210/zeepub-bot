@@ -256,6 +256,10 @@ class Book(Base):
         """Alias de compatibilidad para series_info."""
         return self.series_info
 
+    @series.setter
+    def series(self, value: "Series"):
+        self.series_info = value
+
     # Relaciones
     translator_group: Mapped["TranslatorsGroup | None"] = relationship(
         foreign_keys=[translator_group_id], lazy="selectin"

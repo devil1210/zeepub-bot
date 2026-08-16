@@ -110,6 +110,7 @@ from api.handlers.publisher import (
     handle_pub_save_template,
     handle_pub_schedule,
     handle_pub_toggle_favorite,
+    handle_pub_update_post,
     handle_pub_update_queue_item,
 )
 from api.handlers.recommendations import handle_recommendations
@@ -178,6 +179,7 @@ __all__ = [
     "handle_pub_restore_templates",
     "handle_pub_schedule",
     "handle_pub_update_queue_item",
+    "handle_pub_update_post",
     "handle_pub_quick_post",
     "handle_admin_stats",
     "handle_admin_get_tiers",

@@ -1140,9 +1140,94 @@ class PublisherService:
         await self.session.flush()
         return True
 
+    async def update_published_book(
+        self,
+        book_hash: str,
+        new_caption: str | None = None,
+        platforms: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Paso 2: Edita y sincroniza publicaciones existentes (en Facebook, etc.)
+        sin duplicar la foto ni crear un nuevo post.
+        """
+        results = {"success": False, "platforms": {}}
+        book = await self.book_repo.get_by_hash(book_hash)
+        if not book:
+            logger.warning(
+                f"Libro no encontrado para actualizar publicación: {book_hash}"
+            )
+            results["error"] = "Libro no encontrado"
+            return results
+
+        # 1. Resolver metadatos y créditos actualizados del libro por UUID
+        from services.workgroup_service import workgroup_service
+
+        book_data = {
+            "title": book.title,
+            "volume": book.volume,
+            "series": (book.series.name if book.series else None)
+            or getattr(book, "series_english", None)
+            or book.title,
+            "series_spanish": (
+                book.series.series_spanish if book.series else None
+            )
+            or book.title,
+            "author": book.author or (book.series.author if book.series else ""),
+            "description": (book.series.description if book.series else None)
+            or book.description
+            or "",
+            "short_link": book.short_link or "",
+            "book_hash": book.id,
+            "hash": book.id,
+        }
+        credits_meta = await workgroup_service.resolve_book_workgroup_credits(
+            book_id=book.id, book_obj=book, raw_meta=book_data
+        )
+        book_data.update(credits_meta)
+
+        # 2. Generar caption por defecto si no se especificó uno
+        if not new_caption:
+            from utils.helpers import clean_caption_for_facebook
+            from utils.template_engine import apply_publication_template
+
+            raw_caption = apply_publication_template(
+                TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
+            )
+            new_caption = clean_caption_for_facebook(raw_caption)
+
+        target_platforms = platforms or ["facebook"]
+
+        # 3. Sincronizar en Facebook
+        if "facebook" in target_platforms:
+            fb_target_post = book.fb_post_id or book.fb_photo_id
+            if fb_target_post:
+                fb_provider = self.providers.get("facebook")
+                if fb_provider and hasattr(fb_provider, "update_post_message"):
+                    fb_ok = await fb_provider.update_post_message(
+                        post_id=fb_target_post,
+                        new_message=new_caption,
+                    )
+                    results["platforms"]["facebook"] = fb_ok
+                    if fb_ok:
+                        results["success"] = True
+                        logger.info(
+                            f"✅ Publicación {fb_target_post} de Facebook actualizada con éxito para libro {book_hash}"
+                        )
+                else:
+                    results["platforms"]["facebook"] = False
+            else:
+                results["platforms"]["facebook"] = False
+                results["facebook_note"] = (
+                    "El libro no tiene un post_id de Facebook registrado."
+                )
+
+        return results
+
     async def upsert_chat(self, chat_id: str, title: str, chat_type: str, **kwargs):
         """Descubrimiento de chats."""
-        return await self.repo.save_discovered_chat(chat_id, title, chat_type, **kwargs)
+        return await self.repo.save_discovered_chat(
+            chat_id, title, chat_type, **kwargs
+        )
 
 
 # --- Wrappers para compatibilidad global ---
@@ -1196,6 +1281,23 @@ class PublisherServiceWrapper:
         async with pg_manager.get_session() as session:
             service = PublisherService(session)
             await service.process_queue()
+
+    @classmethod
+    async def update_published_book(
+        cls,
+        book_hash: str,
+        new_caption: str | None = None,
+        platforms: list[str] | None = None,
+    ) -> dict[str, Any]:
+        from core.db_manager_pg import pg_manager
+
+        async with pg_manager.get_session() as session:
+            service = PublisherService(session)
+            return await service.update_published_book(
+                book_hash=book_hash,
+                new_caption=new_caption,
+                platforms=platforms,
+            )
 
 
 # Instancia exportada para compatibilidad con handlers v3.x

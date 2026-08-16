@@ -139,6 +139,8 @@ class LegacyRoutes:
             "pub_delete_queue_item": miniapp_handlers.handle_pub_delete_queue_item,
             "pub_restore_templates": miniapp_handlers.handle_pub_restore_templates,
             "pub_quick_post": miniapp_handlers.handle_pub_quick_post,
+            "pub_update_post": miniapp_handlers.handle_pub_update_post,
+            "pub-update-post": miniapp_handlers.handle_pub_update_post,
         }
 
     def get_router(self) -> APIRouter:
