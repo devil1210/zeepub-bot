@@ -247,6 +247,7 @@ class WorkgroupService:
         book_id: str | None = None,
         book_obj: Any | None = None,
         raw_meta: dict[str, Any] | None = None,
+        public_link: str | None = None,
     ) -> dict[str, Any]:
         """
         Resuelve todos los créditos y enlaces por UUID de libro para plantillas:
