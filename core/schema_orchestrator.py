@@ -40,94 +40,94 @@ class SchemaOrchestrator:
                 # Create all tables defined in SQLAlchemy models
                 # This only creates tables that don't exist; it won't update existing frames
                 await conn.run_sync(Base.metadata.create_all)
-                logger.info("Base tables creation/verification completed.")
+            logger.info("Base tables creation/verification completed.")
 
-                # Auto-Migration for UserLevel (Add missing columns to existing table)
-                await SchemaOrchestrator._check_and_add_column("user_levels", "color", "VARCHAR(20) DEFAULT '#607D8B'")
-                await SchemaOrchestrator._check_and_add_column("user_levels", "ui_font_size", "INTEGER DEFAULT 14")
-                await SchemaOrchestrator._check_and_add_column("user_levels", "ui_glass_blur", "INTEGER DEFAULT 12")
-                await SchemaOrchestrator._check_and_add_column("user_levels", "ui_cover_width", "INTEGER DEFAULT 120")
-                await SchemaOrchestrator._check_and_add_column("user_levels", "ui_accent_opacity", "INTEGER DEFAULT 20")
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "panel_transparency", "INTEGER DEFAULT 60"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "background_color", "VARCHAR(20) DEFAULT '#0f172a'"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "card_color", "VARCHAR(20) DEFAULT '#1e293b'"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "banner_content_offset", "INTEGER DEFAULT 0"
-                )
-                await SchemaOrchestrator._check_and_add_column("user_levels", "force_settings", "BOOLEAN DEFAULT FALSE")
-                await SchemaOrchestrator._check_and_add_column("user_levels", "price", "INTEGER DEFAULT 0")
-                await SchemaOrchestrator._check_and_add_column("user_levels", "can_read", "BOOLEAN DEFAULT TRUE")
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "has_library_access", "BOOLEAN DEFAULT TRUE"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "can_request_books", "BOOLEAN DEFAULT TRUE"
-                )
-                await SchemaOrchestrator._check_and_add_column("user_levels", "early_access", "BOOLEAN DEFAULT FALSE")
-                await SchemaOrchestrator._check_and_add_column("user_levels", "custom_themes", "BOOLEAN DEFAULT FALSE")
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "show_recommendations", "BOOLEAN DEFAULT TRUE"
-                )
+            # Auto-Migration for UserLevel (Add missing columns to existing table)
+            await SchemaOrchestrator._check_and_add_column("user_levels", "color", "VARCHAR(20) DEFAULT '#607D8B'")
+            await SchemaOrchestrator._check_and_add_column("user_levels", "ui_font_size", "INTEGER DEFAULT 14")
+            await SchemaOrchestrator._check_and_add_column("user_levels", "ui_glass_blur", "INTEGER DEFAULT 12")
+            await SchemaOrchestrator._check_and_add_column("user_levels", "ui_cover_width", "INTEGER DEFAULT 120")
+            await SchemaOrchestrator._check_and_add_column("user_levels", "ui_accent_opacity", "INTEGER DEFAULT 20")
+            await SchemaOrchestrator._check_and_add_column(
+                "user_levels", "panel_transparency", "INTEGER DEFAULT 60"
+            )
+            await SchemaOrchestrator._check_and_add_column(
+                "user_levels", "background_color", "VARCHAR(20) DEFAULT '#0f172a'"
+            )
+            await SchemaOrchestrator._check_and_add_column(
+                "user_levels", "card_color", "VARCHAR(20) DEFAULT '#1e293b'"
+            )
+            await SchemaOrchestrator._check_and_add_column(
+                "user_levels", "banner_content_offset", "INTEGER DEFAULT 0"
+            )
+            await SchemaOrchestrator._check_and_add_column("user_levels", "force_settings", "BOOLEAN DEFAULT FALSE")
+            await SchemaOrchestrator._check_and_add_column("user_levels", "price", "INTEGER DEFAULT 0")
+            await SchemaOrchestrator._check_and_add_column("user_levels", "can_read", "BOOLEAN DEFAULT TRUE")
+            await SchemaOrchestrator._check_and_add_column(
+                "user_levels", "has_library_access", "BOOLEAN DEFAULT TRUE"
+            )
+            await SchemaOrchestrator._check_and_add_column(
+                "user_levels", "can_request_books", "BOOLEAN DEFAULT TRUE"
+            )
+            await SchemaOrchestrator._check_and_add_column("user_levels", "early_access", "BOOLEAN DEFAULT FALSE")
+            await SchemaOrchestrator._check_and_add_column("user_levels", "custom_themes", "BOOLEAN DEFAULT FALSE")
+            await SchemaOrchestrator._check_and_add_column(
+                "user_levels", "show_recommendations", "BOOLEAN DEFAULT TRUE"
+            )
 
-                # Auto-Migration for UserUISettings
-                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "font_size", "INTEGER")
-                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "nav_opacity", "INTEGER")
-                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "accent_opacity", "INTEGER")
-                await SchemaOrchestrator._check_and_add_column("user_ui_settings", "show_recommendations", "BOOLEAN")
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_ui_settings", "title_language", "VARCHAR(20) DEFAULT 'romaji'"
-                )
+            # Auto-Migration for UserUISettings
+            await SchemaOrchestrator._check_and_add_column("user_ui_settings", "font_size", "INTEGER")
+            await SchemaOrchestrator._check_and_add_column("user_ui_settings", "nav_opacity", "INTEGER")
+            await SchemaOrchestrator._check_and_add_column("user_ui_settings", "accent_opacity", "INTEGER")
+            await SchemaOrchestrator._check_and_add_column("user_ui_settings", "show_recommendations", "BOOLEAN")
+            await SchemaOrchestrator._check_and_add_column(
+                "user_ui_settings", "title_language", "VARCHAR(20) DEFAULT 'romaji'"
+            )
 
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "allow_theme_templates", "BOOLEAN DEFAULT FALSE"
-                )
-                await SchemaOrchestrator._check_and_add_column(
-                    "user_levels", "can_upload_epub", "BOOLEAN DEFAULT FALSE"
-                )
+            await SchemaOrchestrator._check_and_add_column(
+                "user_levels", "allow_theme_templates", "BOOLEAN DEFAULT FALSE"
+            )
+            await SchemaOrchestrator._check_and_add_column(
+                "user_levels", "can_upload_epub", "BOOLEAN DEFAULT FALSE"
+            )
 
-                # Auto-Migration for Users (Ensure created_at and email exists)
-                await SchemaOrchestrator._check_and_add_column("users", "email", "VARCHAR(255) UNIQUE")
-                await SchemaOrchestrator._check_and_add_column("users", "can_upload_epub", "BOOLEAN DEFAULT FALSE")
-                await SchemaOrchestrator._check_and_add_column(
-                    "users",
-                    "updated_at",
-                    "TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())",
-                )
-                await SchemaOrchestrator._check_and_add_column("users", "created_at", "TIMESTAMP DEFAULT NOW()")
+            # Auto-Migration for Users (Ensure created_at and email exists)
+            await SchemaOrchestrator._check_and_add_column("users", "email", "VARCHAR(255) UNIQUE")
+            await SchemaOrchestrator._check_and_add_column("users", "can_upload_epub", "BOOLEAN DEFAULT FALSE")
+            await SchemaOrchestrator._check_and_add_column(
+                "users",
+                "updated_at",
+                "TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())",
+            )
+            await SchemaOrchestrator._check_and_add_column("users", "created_at", "TIMESTAMP DEFAULT NOW()")
 
-                # Auto-Migration for SeriesMetadata (Fix missing columns reported in logs)
-                await SchemaOrchestrator._check_and_add_column("series", "series_spanish", "VARCHAR(512)")
-                await SchemaOrchestrator._check_and_add_column("series", "series_english", "VARCHAR(512)")
-                await SchemaOrchestrator._check_and_add_column("series", "fb_album_id", "VARCHAR(128)")
+            # Auto-Migration for SeriesMetadata (Fix missing columns reported in logs)
+            await SchemaOrchestrator._check_and_add_column("series", "series_spanish", "VARCHAR(512)")
+            await SchemaOrchestrator._check_and_add_column("series", "series_english", "VARCHAR(512)")
+            await SchemaOrchestrator._check_and_add_column("series", "fb_album_id", "VARCHAR(128)")
 
-                # Auto-Migration for Books (Facebook & Workgroups)
-                await SchemaOrchestrator._check_and_add_column("books", "fb_post_id", "VARCHAR(128)")
-                await SchemaOrchestrator._check_and_add_column("books", "fb_photo_id", "VARCHAR(128)")
-                await SchemaOrchestrator._check_and_add_column("books", "editor", "VARCHAR(255)")
-                await SchemaOrchestrator._check_and_add_column("books", "translator_group_id", "INTEGER")
-                await SchemaOrchestrator._check_and_add_column("books", "editor_group_id", "INTEGER")
-                await SchemaOrchestrator._check_and_add_column("books", "layout_group_id", "INTEGER")
+            # Auto-Migration for Books (Facebook & Workgroups)
+            await SchemaOrchestrator._check_and_add_column("books", "fb_post_id", "VARCHAR(128)")
+            await SchemaOrchestrator._check_and_add_column("books", "fb_photo_id", "VARCHAR(128)")
+            await SchemaOrchestrator._check_and_add_column("books", "editor", "VARCHAR(255)")
+            await SchemaOrchestrator._check_and_add_column("books", "translator_group_id", "INTEGER")
+            await SchemaOrchestrator._check_and_add_column("books", "editor_group_id", "INTEGER")
+            await SchemaOrchestrator._check_and_add_column("books", "layout_group_id", "INTEGER")
 
-                # Auto-Migration for TranslatorsGroup
-                await SchemaOrchestrator._check_and_add_column("translators_groups", "description", "TEXT")
-                await SchemaOrchestrator._check_and_add_column("translators_groups", "siglas", "VARCHAR(50)")
+            # Auto-Migration for TranslatorsGroup
+            await SchemaOrchestrator._check_and_add_column("translators_groups", "description", "TEXT")
+            await SchemaOrchestrator._check_and_add_column("translators_groups", "siglas", "VARCHAR(50)")
 
-                # Auto-Migration for Download History (Fix series_hash missing)
-                await SchemaOrchestrator._check_and_add_column("download_history", "series_hash", "VARCHAR(64)")
-                await SchemaOrchestrator._check_and_add_column("user_downloads", "series_hash", "VARCHAR(64)")
-                await SchemaOrchestrator._check_and_add_column("download_history", "clean_title", "VARCHAR(512)")
+            # Auto-Migration for Download History (Fix series_hash missing)
+            await SchemaOrchestrator._check_and_add_column("download_history", "series_hash", "VARCHAR(64)")
+            await SchemaOrchestrator._check_and_add_column("user_downloads", "series_hash", "VARCHAR(64)")
+            await SchemaOrchestrator._check_and_add_column("download_history", "clean_title", "VARCHAR(512)")
 
-                # IMPORTANT: Wait a bit for Postgres to stabilize metadata
-                await asyncio.sleep(1)
+            # IMPORTANT: Wait a bit for Postgres to stabilize metadata
+            await asyncio.sleep(1)
 
-                # Seed Initial Data
-                await SchemaOrchestrator._seed_initial_data()
+            # Seed Initial Data
+            await SchemaOrchestrator._seed_initial_data()
 
         except Exception as e:
             logger.critical(f"Failed to initialize schema: {e}")
