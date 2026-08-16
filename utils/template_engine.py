@@ -99,24 +99,21 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
             tags = [t.name if hasattr(t, "name") else str(t) for t in tags]
 
         # Pre-formatear campos numéricos
-        size_mb_val = data.get("size_mb") or data.get("size") or 0.0
-        if not size_mb_val or (
-            isinstance(size_mb_val, str) and "mb" in size_mb_val.lower()
-        ):
-            file_size = data.get("file_size") or data.get("fileSize") or 0
+        size_mb_val = data.get("size_mb") or data.get("size") or data.get("tamaño") or 0.0
+        if isinstance(size_mb_val, str) and "mb" in size_mb_val.lower():
+            size_mb_formatted = size_mb_val.strip()
+        else:
+            file_size = data.get("file_size") or data.get("fileSize")
             if file_size:
-                size_mb_val = file_size / (1024 * 1024)
-            elif isinstance(size_mb_val, str):
-                # Intentar limpiar el string si viene con "MB"
                 try:
-                    size_mb_val = float(re.sub(r"[^\d.]", "", size_mb_val))
+                    size_mb_formatted = f"{float(file_size) / (1024 * 1024):.2f} MB"
                 except (ValueError, TypeError):
-                    size_mb_val = 0.0
-
-        try:
-            size_mb_formatted = f"{float(size_mb_val):.2f} MB"
-        except (ValueError, TypeError):
-            size_mb_formatted = "0.00 MB"
+                    size_mb_formatted = str(file_size)
+            else:
+                try:
+                    size_mb_formatted = f"{float(size_mb_val):.2f} MB"
+                except (ValueError, TypeError):
+                    size_mb_formatted = "0.00 MB"
 
         rating_average = data.get("rating_average") or 0.0
         rating_count = data.get("rating_count") or 0
@@ -138,12 +135,14 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
             )
             slug = generate_slug_from_title(slug_source)
 
-        published_at_raw = str(data.get("published_at") or "")
+        published_at_raw = str(data.get("published_at") or data.get("fecha_publicacion") or data.get("fecha_publ") or "")
         published_at_formatted = format_published_date(published_at_raw)
 
         # Formatear fecha_modificacion también
         fecha_mod_raw = str(
-            data.get("fecha_modificacion")
+            data.get("fecha")
+            or data.get("fecha_actualizacion")
+            or data.get("fecha_modificacion")
             or data.get("updated_at")
             or data.get("modified_at")
             or data.get("modified_at_opf")
@@ -303,7 +302,9 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "demography": demography_raw,
                 "demographics": demographics_raw,
                 "published_at": published_at_formatted,
-                "fecha": fecha_mod_formatted,
+                "fecha_publicacion": published_at_formatted,
+                "fecha_publ": published_at_formatted,
+                "fecha": fecha_mod_formatted or str(data.get("fecha", "")),
                 "fecha_modificacion": fecha_mod_formatted,
                 "updated_at": fecha_mod_formatted,
                 "edition": data.get("edition") or "",
@@ -311,12 +312,17 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "is_uncensored": "Sí" if data.get("is_uncensored") else "No",
                 "isbn": data.get("isbn") or "",
                 "asin": data.get("asin") or "",
+                "palabras": str(data.get("palabras") or data.get("words") or data.get("word_count") or ""),
+                "words": str(data.get("words") or data.get("palabras") or data.get("word_count") or ""),
+                "paginas": str(data.get("paginas") or data.get("pages") or data.get("page_count") or ""),
+                "pages": str(data.get("pages") or data.get("paginas") or data.get("page_count") or ""),
                 "archivo": "__ATTACH_FILE_SIGNAL__",  # Marcador para que el Publisher sepa que debe adjuntar el archivo
                 "nombre_archivo": (lambda f: f[: f.rfind(".")] if "." in f else f)(
                     data.get("filename") or "archivo.epub"
                 ),
                 "titulo_serie": data.get("series") or data.get("titulo_serie") or "",
-                "fecha_actualizacion": data.get("updated_at")
+                "fecha_actualizacion": data.get("fecha_actualizacion")
+                or data.get("updated_at")
                 or data.get("fecha_modificacion")
                 or fecha_mod_formatted,
                 "descargas_globales": str(
