@@ -80,10 +80,18 @@ class BookRepository(BaseRepository[LocalBook]):
                 return False
 
     async def get_by_hash(self, book_hash: str) -> LocalBook | None:
-        """Busca un libro por su hash único."""
+        """Busca un libro por su hash único, ID o short_link."""
         async with pg_manager.get_session() as session:
             stmt = (
-                select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.book_hash == book_hash)
+                select(LocalBook)
+                .options(selectinload(LocalBook.series_info))
+                .where(
+                    or_(
+                        LocalBook.book_hash == book_hash,
+                        LocalBook.id == book_hash,
+                        LocalBook.short_link == book_hash,
+                    )
+                )
             )
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
