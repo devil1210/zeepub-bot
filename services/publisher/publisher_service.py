@@ -1008,24 +1008,17 @@ class PublisherService:
                                 "short_link": book.short_link or "",
                             }
 
-                            # Enriquecer con metadatos y enlaces de grupo traductor
+                            # Enriquecer con metadatos y enlaces de grupo traductor, editor y maquetador por UUID de libro
                             from services.workgroup_service import workgroup_service
 
-                            group_id = getattr(book, "translator_group_id", None) or (
-                                getattr(book.series, "translator_group_id", None)
-                                if book.series
-                                else None
-                            )
-                            translator_str = book_data.get("traductor") or getattr(
-                                book, "translator", None
-                            )
-                            translator_meta = (
-                                await workgroup_service.resolve_translator_metadata(
-                                    translator_name=translator_str,
-                                    group_id=group_id,
+                            credits_meta = (
+                                await workgroup_service.resolve_book_workgroup_credits(
+                                    book_id=book.id,
+                                    book_obj=book,
+                                    raw_meta=book_data,
                                 )
                             )
-                            book_data.update(translator_meta)
+                            book_data.update(credits_meta)
                     if item.payload:
                         book_data.update(item.payload)
 

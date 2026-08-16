@@ -87,3 +87,81 @@ def test_template_engine_with_translator_tags():
     assert "👥 Traductor: <a href=\"https://hunterscans.com\">Hunter Scans</a>" in rendered
     assert "💬 Discord: https://discord.gg/hunter" in rendered
     assert "📘 FB:" not in rendered  # Condicional se ocultó porque estaba vacío
+
+
+@pytest.mark.asyncio
+async def test_resolve_book_workgroup_credits_all_roles():
+    group_t = TranslatorsGroup(name="Translator Group")
+    group_t.contact_links = [GroupContactLink(platform="web", url="https://trans.com")]
+
+    group_e = TranslatorsGroup(name="Editor Pro")
+    group_e.contact_links = [GroupContactLink(platform="facebook", url="https://fb.com/editor")]
+
+    group_m = TranslatorsGroup(name="Layout Master")
+    group_m.contact_links = [GroupContactLink(platform="discord", url="https://discord.gg/layout")]
+
+    def fake_get_by_name(name):
+        if name == "Translator Group":
+            return group_t
+        if name == "Editor Pro":
+            return group_e
+        if name == "Layout Master":
+            return group_m
+        return None
+
+    with patch.object(WorkgroupService, "get_by_name", side_effect=fake_get_by_name), \
+         patch.object(WorkgroupService, "get_by_id", return_value=None):
+        raw = {
+            "traductor": "Translator Group",
+            "editor": "Editor Pro",
+            "maquetador": "Layout Master",
+        }
+        res = await WorkgroupService.resolve_book_workgroup_credits(
+            book_id="book_uuid_12345",
+            raw_meta=raw,
+        )
+        assert res["traductor"] == "Translator Group"
+        assert res["traductor_link"] == "https://trans.com"
+        assert res["editor"] == "Editor Pro"
+        assert res["editor_link"] == "https://fb.com/editor"
+        assert res["maquetador"] == "Layout Master"
+        assert res["maquetador_link"] == "https://discord.gg/layout"
+
+
+@pytest.mark.asyncio
+async def test_distinct_individual_translator_and_group_template():
+    group_fansub = TranslatorsGroup(name="Novelas Ligera Fansub")
+    group_fansub.contact_links = [
+        GroupContactLink(platform="website", url="https://novelasligera.com"),
+        GroupContactLink(platform="discord", url="https://discord.gg/novelas"),
+        GroupContactLink(platform="facebook", url="https://fb.com/novelasligera"),
+    ]
+
+    with patch.object(WorkgroupService, "get_by_name", return_value=group_fansub), \
+         patch.object(WorkgroupService, "get_by_id", return_value=None):
+        raw = {
+            "traductor": "Kiri (Traductor Individual)",
+            "grupo": "Novelas Ligera Fansub",
+        }
+        res = await WorkgroupService.resolve_book_workgroup_credits(
+            book_id="book_uuid_999",
+            raw_meta=raw,
+        )
+
+        template = (
+            "📖 <b>{titulo}</b>\n"
+            "👤 Traductor: {traductor}\n"
+            "👥 Fansub: <a href=\"{grupo_link}\">{grupo}</a>\n"
+            "🌐 Web Grupo: {grupo_web}\n"
+            "💬 Discord Grupo: {grupo_discord}"
+        )
+        data = {"titulo": "Re:Zero Vol 1"}
+        data.update(res)
+
+        rendered = apply_publication_template(template, data)
+        assert "👤 Traductor: Kiri (Traductor Individual)" in rendered
+        assert "👥 Fansub: <a href=\"https://novelasligera.com\">Novelas Ligera Fansub</a>" in rendered
+        assert "🌐 Web Grupo: https://novelasligera.com" in rendered
+        assert "💬 Discord Grupo: https://discord.gg/novelas" in rendered
+
+

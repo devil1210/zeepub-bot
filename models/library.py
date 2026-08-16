@@ -124,8 +124,6 @@ class Series(Base):
         return cls.name_english
 
     # Relaciones
-    translator_group_id: Mapped[int | None] = mapped_column(ForeignKey("translators_groups.id"), nullable=True)
-    translator_group: Mapped["TranslatorsGroup | None"] = relationship(lazy="selectin")
     books: Mapped[list["Book"]] = relationship(back_populates="series_info", cascade="all, delete-orphan")
     genres: Mapped[list[Genre]] = relationship(secondary=series_genres, lazy="selectin")
     demographics: Mapped[list[Demographic]] = relationship(secondary=series_demographics, lazy="selectin")
@@ -144,9 +142,10 @@ class LibrarySource(Base):
     __tablename__ = "library_sources"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    path: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
-    last_scanned: Mapped[datetime | None] = mapped_column(default=None)
+    name: Mapped[str] = mapped_column(String(255))
+    path: Mapped[str] = mapped_column(String(1024), unique=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
     books: Mapped[list["Book"]] = relationship(back_populates="source", cascade="all, delete-orphan")
 
@@ -158,7 +157,7 @@ class Book(Base):
 
     __tablename__ = "books"
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True, autoincrement=False, nullable=False)  # Hash del libro
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, autoincrement=False, nullable=False)  # Hash / UUID del libro
     series_id: Mapped[str] = mapped_column(ForeignKey("series.id"), index=True)
     source_id: Mapped[int] = mapped_column(ForeignKey("library_sources.id"))
 
@@ -172,8 +171,15 @@ class Book(Base):
     volume: Mapped[float | None] = mapped_column(Float)
     edition: Mapped[str | None] = mapped_column(String(255))
 
+    # Créditos individuales en texto
     translator: Mapped[str | None] = mapped_column(String(255))
     layout_by: Mapped[str | None] = mapped_column(String(255))
+    editor: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Vinculación por UUID de Libro a Grupos Oficiales
+    translator_group_id: Mapped[int | None] = mapped_column(ForeignKey("translators_groups.id"), nullable=True)
+    editor_group_id: Mapped[int | None] = mapped_column(ForeignKey("translators_groups.id"), nullable=True)
+    layout_group_id: Mapped[int | None] = mapped_column(ForeignKey("translators_groups.id"), nullable=True)
 
     author_jap: Mapped[str | None] = mapped_column(String(255))
     illustrator: Mapped[str | None] = mapped_column(String(255))
@@ -218,9 +224,10 @@ class Book(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     indexed_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 
+    # Propiedades híbridas
     @hybrid_property
     def book_hash(self) -> str:
-        """Alias para el hash del libro (id) para compatibilidad v3/Legacy."""
+        """Alias semántico para el hash del libro."""
         return self.id
 
     @book_hash.setter
@@ -250,8 +257,18 @@ class Book(Base):
         return self.series_info
 
     # Relaciones
-    translator_group_id: Mapped[int | None] = mapped_column(ForeignKey("translators_groups.id"), nullable=True)
-    translator_group: Mapped["TranslatorsGroup | None"] = relationship(lazy="selectin")
+    translator_group: Mapped["TranslatorsGroup | None"] = relationship(
+        foreign_keys=[translator_group_id], lazy="selectin"
+    )
+    editor_group: Mapped["TranslatorsGroup | None"] = relationship(
+        foreign_keys=[editor_group_id], lazy="selectin"
+    )
+    layout_group: Mapped["TranslatorsGroup | None"] = relationship(
+        foreign_keys=[layout_group_id], lazy="selectin"
+    )
+    workgroups: Mapped[list["BookWorkgroup"]] = relationship(
+        back_populates="book", cascade="all, delete-orphan", lazy="selectin"
+    )
     series_info: Mapped[Series] = relationship(back_populates="books")
     genres: Mapped[list[Genre]] = relationship(secondary="book_genres", lazy="selectin")
     demographics: Mapped[list[Demographic]] = relationship(secondary="book_demographics", lazy="selectin")
@@ -320,6 +337,29 @@ class UserDownload(Base):
 
     book: Mapped[Book | None] = relationship(back_populates="downloads")
     series: Mapped[Series | None] = relationship()
+
+
+class BookWorkgroup(Base):
+    """
+    Asociación de grupos traductores/editores/maquetadores vinculados directamente por UUID de Libro
+    (ERD zeepubs_server: VOLUME_WORKGROUP).
+    Roles soportados: 'translator', 'editor', 'layout', 'proofreader', 'raw', etc.
+    """
+
+    __tablename__ = "book_workgroups"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    book_id: Mapped[str] = mapped_column(
+        ForeignKey("books.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    workgroup_id: Mapped[int] = mapped_column(
+        ForeignKey("translators_groups.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    role: Mapped[str] = mapped_column(String(50), default="translator", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    book: Mapped["Book"] = relationship(back_populates="workgroups")
+    workgroup: Mapped["TranslatorsGroup"] = relationship(lazy="selectin")
 
 
 class GroupContactLink(Base):
