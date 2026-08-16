@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,1063 +12,33 @@ from models.communications import (
 )
 from repositories.book_repository import BookRepository
 from repositories.publication_repository import PublicationRepository
+from services.publisher.base import PublisherProvider
+from services.publisher.facebook_provider import FacebookPublisherProvider
+from services.publisher.telegram_provider import TelegramPublisherProvider
+from services.publisher.twitter_provider import TwitterPublisherProvider
 from utils.http_client import fetch_bytes
 from utils.template_engine import apply_publication_template
 
 logger = logging.getLogger(__name__)
 
-
-class PublisherProvider:
-    """Clase base para proveedores de publicación (Telegram, Facebook, etc)."""
-
-    async def announce_book(
-        self,
-        target_id: str | int,
-        book_data: dict[str, Any],
-        options: dict[str, Any] | None = None,
-    ) -> bool:
-        raise NotImplementedError
-
-
-class TelegramPublisherProvider(PublisherProvider):
-    # (Mantenemos las plantillas pero las usamos vía el engine)
-    COVER_TEMPLATE = (
-        "📚 {serie} ║ {romaji_title} ║ {titulo}"
-        "[?volumen]\n📖 Volumen {volumen}[/?]"
-        "\n#{slug}\n"
-        "[?layout_by]\n🎨 <b>Maquetado por:</b> #{layout_by}[/?]"
-        "[?tipo]\n🏷️ <b>Categoría:</b> {tipo}[/?]"
-        "[?demography]\n👥 <b>Demografía:</b> {demography}[/?]"
-        "[?genres]\n🎭 <b>Géneros:</b> {genres}[/?]"
-        "[?autor]\n✍️ <b>Autor:</b> {autor}[/?]"
-        "[?illustrator]\n🎨 <b>Ilustrador:</b> {illustrator}[/?]"
-        "[?published_at]\n📅 <b>Publicado:</b> {published_at}[/?]"
-        "[?traductor]\n🌐 <b>Traductor:</b> {traductor}[/?]"
-        "[?editorial]\n🏢 <b>Grupo Traductor:</b> {editorial}[/?]"
-    )
-    SYNOPSIS_TEMPLATE = (
-        "📝 <b>Sinopsis:</b>\n\n<blockquote>{sinopsis}</blockquote>\n\n#{slug}"
-    )
-    INFO_TEMPLATE = "📂 <b>{titulo}</b>\nℹ️ Versión Epub: {version}\n📅 Actualizado: {fecha}\n📦 Tamaño: {tamaño}\n\n#{slug}{archivo}"
-    FULL_TEMPLATE = (
-        COVER_TEMPLATE + "\n<hr/>\n" + SYNOPSIS_TEMPLATE + "\n<hr/>\n" + INFO_TEMPLATE
-    )
-
-    FB_CAPTION_TEMPLATE = (
-        "📚 {serie} ║ {romaji_title} ║ {titulo}\n"
-        "[?volumen]📖 Volumen {volumen}\n[/?]"
-        "[?download_link]⬇️ Descarga: {download_link}\n[/?]"
-        "[?fecha]📅 Actualizado: {fecha}\n[/?]"
-        "[?tamaño]📦 Tamaño: {tamaño}\n[/?]"
-        "[?layout_by]🎨 Maquetado por: {layout_by}\n[/?]"
-        "[?tipo]🏷️ Categoría: {tipo}\n[/?]"
-        "[?demography]👥 Demografía: {demography}\n[/?]"
-        "[?genres]🎭 Géneros: {genres}\n[/?]"
-        "[?autor]✍️ Autor: {autor}\n[/?]"
-        "[?illustrator]🎨 Ilustrador: {illustrator}\n[/?]"
-        "[?traductor]🌐 Traducción: {traductor}\n[/?]"
-        "[?editorial]🏢 Grupo: {editorial}\n[/?]"
-        "\n[?sinopsis]📝 Sinopsis:\n{sinopsis}\n[/?]"
-        "\n[?slug]#{slug}[/?]"
-    )
-
-    def __init__(self, bot=None):
-        self.bot = bot
-
-    async def announce_book(
-        self,
-        target_id: str | int,
-        book_data: dict[str, Any],
-        options: dict[str, Any] | None = None,
-    ) -> bool:
-        from services.cover_service import send_doc_bytes, send_photo_bytes
-
-        if not self.bot:
-            from api.main import bot as main_bot
-
-            self.bot = main_bot.app.bot
-
-        options = options or {}
-        thread_id = options.get("message_thread_id")
-
-        def sanitize_tg_html(t: str) -> str:
-            if not t:
-                return ""
-            t = re.sub(r"<(p|div|h\d)[^>]*>", "", t, flags=re.IGNORECASE)
-            t = re.sub(r"</(p|div|h\d)>", "\n", t, flags=re.IGNORECASE)
-            t = re.sub(r"<br\s*/?>", "\n", t, flags=re.IGNORECASE)
-            t = re.sub(r"<hr\s*/?>", "\n---MSG_SPLIT---\n", t, flags=re.IGNORECASE)
-            t = re.sub(r"\n{3,}", "\n\n", t).strip()
-            return t
-
-        caption_raw = options.get("caption") or apply_publication_template(
-            self.COVER_TEMPLATE, book_data
-        )
-        msg_parts = re.split(r"<hr\s*/?>|---next---|---", caption_raw)
-        msg_parts = [sanitize_tg_html(p) for p in msg_parts if p.strip()]
-
-        # 1. Foto / Portada
-        cover_quality = options.get("cover_quality", "high")
-
-        # Determinar orden de fallback según la calidad de portada solicitada
-        if cover_quality == "high":
-            fallback_order = [
-                "cover_high",
-                "cover_original",
-                "cover_medium",
-                "cover_low",
-            ]
-        elif cover_quality == "medium":
-            fallback_order = [
-                "cover_medium",
-                "cover_low",
-                "cover_high",
-                "cover_original",
-            ]
-        elif cover_quality == "low":
-            fallback_order = [
-                "cover_low",
-                "cover_medium",
-                "cover_high",
-                "cover_original",
-            ]
-        elif cover_quality == "original":
-            fallback_order = [
-                "cover_original",
-                "cover_high",
-                "cover_medium",
-                "cover_low",
-            ]
-        else:
-            fallback_order = [
-                f"cover_{cover_quality}",
-                "cover_high",
-                "cover_medium",
-                "cover_low",
-                "cover_original",
-            ]
-
-        cover_source = None
-        for key in fallback_order:
-            val = book_data.get(key)
-            if val:
-                cover_source = val
-                break
-
-        if not cover_source:
-            cover_source = book_data.get("cover") or book_data.get("portada")
-
-        cover_data = book_data.get("cover_bytes")
-        if (
-            not cover_data
-            and isinstance(cover_source, str)
-            and cover_source.startswith("http")
-        ):
-            cover_data = await fetch_bytes(cover_source)
-        elif not cover_data:
-            cover_data = cover_source
-
-        # Resolver portada (bytes o ruta de archivo local) de forma asíncrona
-        from services.cover_service import resolve_cover_data
-
-        resolved_cover = (
-            await resolve_cover_data(cover_data)
-            if isinstance(cover_data, str)
-            else cover_data
-        )
-
-        # --- CONSTRUIR RENDER RICH HTML (Telegram Premium) ---
-        media = None
-        files = None
-        if resolved_cover:
-            if isinstance(resolved_cover, bytes):
-                files = {"tomozaki_cover": ("cover.jpg", resolved_cover, "image/jpeg")}
-            elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
-                try:
-                    with open(resolved_cover, "rb") as f:
-                        files = {"tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")}
-                except Exception as e:
-                    logger.warning(f"Error al leer archivo de portada local para anuncio: {e}")
-
-            if files:
-                media = [
-                    {
-                        "id": "tomozaki_cover",
-                        "media": {
-                            "type": "photo",
-                            "media": "attach://tomozaki_cover"
-                        }
-                    }
-                ]
-
-        # Si se proporcionó una plantilla personalizada (caption), usarla directamente para RichMessage
-        if options and options.get("caption"):
-            if media:
-                html_content = f'<img src="tg://photo?id=tomozaki_cover" />\n{caption_raw}'
-            else:
-                html_content = caption_raw
-        else:
-            html_parts = []
-            if media:
-                html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
-
-            # Títulos en cascada
-            title_en = book_data.get("english_title") or book_data.get("series_english")
-            title_jp = book_data.get("romaji_title") or book_data.get("romaji") or book_data.get("title_japanese") or book_data.get("title_jp")
-            title_es = book_data.get("spanish_title") or book_data.get("series_spanish") or book_data.get("title_spanish") or book_data.get("title")
-
-            if not title_en and title_es:
-                title_en = title_es
-                title_es = None
-
-            if title_en:
-                html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
-            if title_jp and title_jp != title_en:
-                html_parts.append(f'<h4>🇯🇵 {title_jp}</h4>')
-            if title_es and title_es != title_en:
-                html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
-                
-            volume = book_data.get("volume")
-            if volume:
-                html_parts.append(f'<h6>📚 Volumen {volume}</h6>\n')
-
-            # TABLA 1: Ficha artística y literaria
-            tabla_literaria = '<table bordered striped>\n'
-            autor = book_data.get("author") or book_data.get("autor") or "Desconocido"
-            tabla_literaria += f'  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n'
-            
-            ilustrador = book_data.get("illustrator") or book_data.get("ilustrador")
-            if ilustrador:
-                tabla_literaria += f'  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n'
-                
-            layout_by = book_data.get("layout_by") or book_data.get("maquetador")
-            if layout_by:
-                layout_val = layout_by if layout_by.startswith("#") else f"#{layout_by}"
-                tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
-                
-            categoria = book_data.get("book_type") or book_data.get("tipo") or "Novela"
-            tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n'
-            
-            demo = book_data.get("demographics_json") or book_data.get("demographics") or book_data.get("demografia")
-            if demo:
-                demo_val = ", ".join(demo) if isinstance(demo, list) else demo
-                tabla_literaria += f'  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n'
-                
-            generos = book_data.get("tags_json") or book_data.get("tags") or book_data.get("generos")
-            if generos:
-                generos_val = ", ".join(generos) if isinstance(generos, list) else generos
-                tabla_literaria += f'  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n'
-                
-            traductor = book_data.get("translator") or book_data.get("traductor")
-            if traductor:
-                tabla_literaria += f'  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n'
-                
-            grupo_trad = book_data.get("publisher") or book_data.get("translation_group") or book_data.get("grupo_traductor")
-            if grupo_trad:
-                grupo_trad_val = grupo_trad
-                if book_data.get("translation_group_url"):
-                    url_g = book_data.get("translation_group_url")
-                    grupo_trad_val = f'<a href="{url_g}">{grupo_trad}</a>'
-                tabla_literaria += f'  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n'
-                
-            tabla_literaria += '</table>\n'
-            html_parts.append(tabla_literaria)
-
-            # SINOPSIS: Acordeón colapsable
-            sinopsis_raw = book_data.get("sinopsis") or book_data.get("description") or "Sin sinopsis disponible."
-            html_parts.append(
-                '<details>\n'
-                '  <summary>📖 Ver Sinopsis</summary>\n'
-                '  <blockquote>\n'
-                f'    {sinopsis_raw}\n'
-                '  </blockquote>\n'
-                '</details>\n'
-            )
-
-            # TABLA 2: Detalles del archivo
-            size_val = book_data.get("size")
-            if not size_val and book_data.get("file_size"):
-                try:
-                    size_bytes = int(book_data.get("file_size"))
-                    size_val = f"{size_bytes / (1024 * 1024):.2f} MB"
-                except Exception:
-                    size_val = "Desconocido"
-            if not size_val:
-                size_val = "Desconocido"
-
-            version_val = book_data.get("epub_version") or book_data.get("version") or "3.0"
-
-            tabla_archivo = (
-                '<details>\n'
-                '  <summary>📂 Ver Detalles del Archivo</summary>\n'
-                '  <table bordered striped>\n'
-                f'    <tr><td><b>📂 Nombre</b></td><td>{book_data.get("title") or "Desconocido"}</td></tr>\n'
-            )
-            if volume:
-                tabla_archivo += f'    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n'
-            
-            tabla_archivo += f'    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n'
-            
-            fecha = book_data.get("updated_at") or book_data.get("actualizado") or book_data.get("indexed_at")
-            if fecha:
-                if hasattr(fecha, "strftime"):
-                    fecha_str = fecha.strftime("%d-%m-%Y")
-                elif isinstance(fecha, str):
-                    try:
-                        dt = datetime.fromisoformat(fecha)
-                        fecha_str = dt.strftime("%d-%m-%Y")
-                    except Exception:
-                        fecha_str = fecha
-                else:
-                    fecha_str = str(fecha)
-                tabla_archivo += f'    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n'
-                
-            tabla_archivo += f'    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n'
-                
-            tabla_archivo += (
-                '  </table>\n'
-                '</details>\n'
-            )
-            html_parts.append(tabla_archivo)
-
-            # Línea divisoria y pie
-            html_parts.append('<hr/>')
-            
-            slug = book_data.get("slug")
-            if slug:
-                hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
-                html_parts.append(f'{hashtag_serie}\n\n\n')
-            else:
-                clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
-                html_parts.append(f'#{clean_title}\n\n\n')
-
-            html_content = "\n".join(html_parts)
-
-        # A. Intentar enviar Rich Message unificado a través de Telegram API 10.2
-        from services.rich_message_service import RichMessageService
-        fname = book_data.get("filename", "libro.epub")
-        try:
-            res = await RichMessageService.send_rich_message(
-                chat_id=target_id,
-                html=html_content,
-                media=media,
-                files=files if files else None,
-                message_thread_id=thread_id
-            )
-            if res and res.get("ok"):
-                # B. Si el Rich Message se envió con éxito, enviar el documento ePub abajo con únicamente su hashtag
-                epub_data = book_data.get("epub_bytes") or book_data.get("filepath")
-                if epub_data:
-                    if slug:
-                        final_caption = slug if slug.startswith("#") else f"#{slug}"
-                    else:
-                        clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
-                        final_caption = f"#{clean_title}"
-
-                    await send_doc_bytes(
-                        self.bot,
-                        target_id,
-                        final_caption,
-                        epub_data,
-                        filename=fname,
-                        parse_mode="HTML",
-                        message_thread_id=thread_id,
-                    )
-                return True
-        except Exception as e:
-            logger.warning(f"Error al enviar Rich Message en announce_book: {e}")
-
-        # Fallback tradicional si falla
-        logger.info("Ejecutando fallback tradicional en TelegramPublisherProvider.announce_book")
-        photo_sent = False
-        for part in msg_parts:
-            if not part.strip():
-                continue
-
-            if "__ATTACH_FILE_SIGNAL__" in part or "{archivo}" in part:
-                part = (
-                    part.replace("__ATTACH_FILE_SIGNAL__", "")
-                    .replace("{archivo}", "")
-                    .strip()
-                )
-                epub_data = book_data.get("epub_bytes") or book_data.get("filepath")
-                await send_doc_bytes(
-                    self.bot,
-                    target_id,
-                    part,
-                    epub_data,
-                    filename=fname,
-                    parse_mode="HTML",
-                    message_thread_id=thread_id,
-                )
-            else:
-                sent_photo = None
-                if resolved_cover and not photo_sent:
-                    try:
-                        sent_photo = await send_photo_bytes(
-                            self.bot,
-                            target_id,
-                            part,
-                            resolved_cover,
-                            parse_mode="HTML",
-                            message_thread_id=thread_id,
-                        )
-                        if sent_photo:
-                            photo_sent = True
-                    except Exception as e:
-                        logger.warning(f"Error al enviar portada como foto: {e}")
-
-                if not sent_photo:
-                    await self.bot.send_message(
-                        chat_id=target_id,
-                        text=part,
-                        parse_mode="HTML",
-                        message_thread_id=thread_id,
-                    )
-
-        return True
-
-
-class FacebookPublisherProvider(PublisherProvider):
-    """
-    Proveedor para publicación en Facebook Pages/Groups:
-    - Agrupación automática en Álbumes por Serie (POST /{album_id}/photos)
-    - Fallback a Feed general con foto adjunta
-    - Persistencia de fb_post_id y fb_photo_id en BD
-    - Capacidad de edición de publicaciones (POST /{post_id})
-    """
-
-    async def _resolve_credentials(
-        self, target_id: str | int | None, token: str
-    ) -> tuple[str, str]:
-        """Resuelve el Page ID y Page Access Token si se proveyó un User Token."""
-        import httpx
-        from config.config_settings import config
-
-        target_page_id = str(target_id) if target_id else config.FACEBOOK_GROUP_ID
-        page_token = token
-
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(
-                    "https://graph.facebook.com/v19.0/me/accounts",
-                    params={"access_token": token},
-                    timeout=10,
-                )
-                if resp.status_code == 200:
-                    accounts = resp.json().get("data", [])
-                    found = False
-                    for acc in accounts:
-                        if str(acc.get("id")) == str(target_page_id):
-                            page_token = acc.get("access_token", token)
-                            found = True
-                            break
-                    if not found and len(accounts) == 1:
-                        target_page_id = str(accounts[0].get("id"))
-                        page_token = accounts[0].get("access_token", token)
-        except Exception as e:
-            logger.debug(f"No se pudo resolver Page Token vía /me/accounts: {e}")
-
-        return target_page_id, page_token
-
-    async def get_or_create_series_album(
-        self,
-        target_page_id: str,
-        token: str,
-        series_name: str,
-        series_id: str | None = None,
-        alt_names: list[str] | None = None,
-    ) -> str | None:
-        """
-        Obtiene el ID del álbum de la serie o lo busca en Facebook con soporte de nombres alternativos.
-        Persiste el fb_album_id en el registro de Series.
-        """
-        if not series_name or not series_name.strip():
-            return None
-
-        clean_series_name = series_name.strip()
-        all_candidates = [clean_series_name]
-        if alt_names:
-            for an in alt_names:
-                if an and an.strip() and an.strip() not in all_candidates:
-                    all_candidates.append(an.strip())
-
-        # 1. Verificar si ya tenemos el fb_album_id en la base de datos
-        if series_id:
-            try:
-                from sqlalchemy import select
-                from core.db_manager_pg import pg_manager
-                from models.library import Series
-
-                async with pg_manager.get_session() as session:
-                    stmt = select(Series.fb_album_id).where(Series.id == series_id)
-                    result = await session.execute(stmt)
-                    cached_album_id = result.scalar_one_or_none()
-                    if cached_album_id:
-                        logger.info(
-                            f"Álbum en caché para '{clean_series_name}': {cached_album_id}"
-                        )
-                        return str(cached_album_id)
-            except Exception as e:
-                logger.debug(f"Error consultando fb_album_id en BD: {e}")
-
-        import httpx
-
-        # 2. Buscar en la lista de álbumes de la página vía Graph API
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(
-                    f"https://graph.facebook.com/v19.0/{target_page_id}/albums",
-                    params={"access_token": token, "fields": "id,name", "limit": 100},
-                    timeout=20,
-                )
-                if resp.status_code == 200:
-                    albums = resp.json().get("data", [])
-                    # Paso A: Coincidencia exacta (case-insensitive) con cualquiera de los candidatos
-                    for album in albums:
-                        alb_name = album.get("name", "").strip().lower()
-                        for cand in all_candidates:
-                            if alb_name == cand.lower():
-                                found_id = str(album.get("id"))
-                                logger.info(
-                                    f"Álbum exacto encontrado en Facebook: '{cand}' -> {album.get('name')} (ID: {found_id})"
-                                )
-                                await self._persist_series_album_id(series_id, found_id)
-                                return found_id
-
-                    # Paso B: Coincidencia parcial / substring si el nombre es representativo (>= 4 caracteres)
-                    for album in albums:
-                        alb_name = album.get("name", "").strip().lower()
-                        if alb_name in ("fotos", "fotos del perfil", "fotos de portada", "mobile uploads"):
-                            continue
-                        for cand in all_candidates:
-                            c_low = cand.lower()
-                            if len(c_low) >= 4 and (c_low in alb_name or alb_name in c_low):
-                                found_id = str(album.get("id"))
-                                logger.info(
-                                    f"Álbum parcial encontrado en Facebook: '{cand}' -> {album.get('name')} (ID: {found_id})"
-                                )
-                                await self._persist_series_album_id(series_id, found_id)
-                                return found_id
-
-                # 3. Si no existe, intentar crear nuevo álbum
-                payload_create = {
-                    "name": clean_series_name,
-                    "message": f"Álbum oficial de la serie: {clean_series_name}",
-                }
-                create_resp = await client.post(
-                    f"https://graph.facebook.com/v19.0/{target_page_id}/albums",
-                    params={"access_token": token},
-                    data=payload_create,
-                    timeout=25,
-                )
-                if create_resp.status_code in (200, 201):
-                    new_album_id = str(create_resp.json().get("id"))
-                    logger.info(
-                        f"✅ Nuevo álbum creado en Facebook: '{clean_series_name}' -> {new_album_id}"
-                    )
-                    await self._persist_series_album_id(series_id, new_album_id)
-                    return new_album_id
-                else:
-                    logger.warning(
-                        f"⚠️ Álbum para '{clean_series_name}' no existe en Facebook. Para que se agrupen los libros, crea un álbum en tu Página con el nombre exacto: '{clean_series_name}'"
-                    )
-        except Exception as e:
-            logger.error(f"Excepción al gestionar álbum de Facebook: {e}")
-
-        return None
-
-    async def check_album_exists(
-        self,
-        target_page_id: str | int | None,
-        token: str,
-        series_name: str,
-        series_id: str | None = None,
-        alt_names: list[str] | None = None,
-    ) -> dict[str, Any]:
-        """
-        Verifica si existe el álbum en Facebook y entrega el nombre específico recomendado.
-        """
-        resolved_page_id, page_token = await self._resolve_credentials(
-            target_page_id, token
-        )
-
-        clean_series_name = series_name.strip() if series_name else ""
-        all_candidates = [clean_series_name] if clean_series_name else []
-        if alt_names:
-            for an in alt_names:
-                if an and an.strip() and an.strip() not in all_candidates:
-                    all_candidates.append(an.strip())
-
-        recommended_name = clean_series_name or (alt_names[0] if alt_names else "Serie")
-
-        if not resolved_page_id or not page_token:
-            return {
-                "exists": False,
-                "album_id": None,
-                "album_name": None,
-                "recommended_name": recommended_name,
-                "candidates": all_candidates,
-                "error": "Credenciales de Facebook no configuradas",
-            }
-
-        import httpx
-
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(
-                    f"https://graph.facebook.com/v19.0/{resolved_page_id}/albums",
-                    params={"access_token": page_token, "fields": "id,name", "limit": 100},
-                    timeout=15,
-                )
-                if resp.status_code == 200:
-                    albums = resp.json().get("data", [])
-                    available_albums = [
-                        {
-                            "id": str(alb.get("id")),
-                            "name": str(alb.get("name")),
-                        }
-                        for alb in albums
-                        if alb.get("name")
-                    ]
-                    # Exact match
-                    for album in albums:
-                        alb_name = album.get("name", "").strip().lower()
-                        for cand in all_candidates:
-                            if alb_name == cand.lower():
-                                found_id = str(album.get("id"))
-                                await self._persist_series_album_id(series_id, found_id)
-                                return {
-                                    "exists": True,
-                                    "album_id": found_id,
-                                    "album_name": album.get("name"),
-                                    "recommended_name": recommended_name,
-                                    "candidates": all_candidates,
-                                    "available_albums": available_albums,
-                                    "page_id": resolved_page_id,
-                                }
-                    # Partial match
-                    for album in albums:
-                        alb_name = album.get("name", "").strip().lower()
-                        if alb_name in ("fotos", "fotos del perfil", "fotos de portada", "mobile uploads"):
-                            continue
-                        for cand in all_candidates:
-                            c_low = cand.lower()
-                            if len(c_low) >= 4 and (c_low in alb_name or alb_name in c_low):
-                                found_id = str(album.get("id"))
-                                await self._persist_series_album_id(series_id, found_id)
-                                return {
-                                    "exists": True,
-                                    "album_id": found_id,
-                                    "album_name": album.get("name"),
-                                    "recommended_name": recommended_name,
-                                    "candidates": all_candidates,
-                                    "available_albums": available_albums,
-                                    "page_id": resolved_page_id,
-                                }
-
-                    return {
-                        "exists": False,
-                        "album_id": None,
-                        "album_name": None,
-                        "recommended_name": recommended_name,
-                        "candidates": all_candidates,
-                        "available_albums": available_albums,
-                        "page_id": resolved_page_id,
-                    }
-                else:
-                    return {
-                        "exists": False,
-                        "album_id": None,
-                        "album_name": None,
-                        "recommended_name": recommended_name,
-                        "candidates": all_candidates,
-                        "available_albums": [],
-                        "error": f"Facebook API error: {resp.status_code}",
-                    }
-        except Exception as e:
-            return {
-                "exists": False,
-                "album_id": None,
-                "album_name": None,
-                "recommended_name": recommended_name,
-                "candidates": all_candidates,
-                "available_albums": [],
-                "error": str(e),
-            }
-
-    async def _persist_series_album_id(
-        self, series_id: str | None, album_id: str
-    ) -> None:
-        """Helper para guardar fb_album_id en Series."""
-        if not series_id or not album_id:
-            return
-        try:
-            from sqlalchemy import update
-            from core.db_manager_pg import pg_manager
-            from models.library import Series
-
-            async with pg_manager.get_session() as session:
-                await session.execute(
-                    update(Series)
-                    .where(Series.id == series_id)
-                    .values(fb_album_id=album_id)
-                )
-                await session.commit()
-        except Exception as e:
-            logger.debug(f"No se pudo persistir fb_album_id en Series: {e}")
-
-    async def _persist_book_fb_ids(
-        self, book_hash: str | None, post_id: str | None, photo_id: str | None
-    ) -> None:
-        """Helper para guardar fb_post_id y fb_photo_id en Book."""
-        if not book_hash or (not post_id and not photo_id):
-            return
-        try:
-            from sqlalchemy import update
-            from core.db_manager_pg import pg_manager
-            from models.library import Book
-
-            async with pg_manager.get_session() as session:
-                values = {}
-                if post_id:
-                    values["fb_post_id"] = str(post_id)
-                if photo_id:
-                    values["fb_photo_id"] = str(photo_id)
-                await session.execute(
-                    update(Book).where(Book.id == book_hash).values(**values)
-                )
-                await session.commit()
-        except Exception as e:
-            logger.debug(f"No se pudo persistir fb_post_id en Book: {e}")
-
-    async def publish_photo_to_album(
-        self,
-        album_id: str,
-        resolved_cover: Any,
-        cover_source: Any,
-        caption: str,
-        token: str,
-    ) -> dict[str, Any] | None:
-        """Sube una foto directamente dentro de un álbum específico con su caption."""
-        import httpx
-
-        url_upload = f"https://graph.facebook.com/v19.0/{album_id}/photos"
-        params_upload = {
-            "access_token": token,
-            "message": caption,
-        }
-
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = None
-                if isinstance(resolved_cover, bytes):
-                    files = {"source": ("cover.jpg", resolved_cover, "image/jpeg")}
-                    resp = await client.post(
-                        url_upload, params=params_upload, files=files, timeout=45
-                    )
-                elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
-                    with open(resolved_cover, "rb") as f:
-                        files = {"source": ("cover.jpg", f.read(), "image/jpeg")}
-                        resp = await client.post(
-                            url_upload, params=params_upload, files=files, timeout=45
-                        )
-                elif cover_source and str(cover_source).startswith("http"):
-                    params_upload["url"] = str(cover_source)
-                    resp = await client.post(
-                        url_upload, params=params_upload, timeout=45
-                    )
-
-                if resp and resp.status_code in (200, 201):
-                    data = resp.json()
-                    photo_id = data.get("id")
-                    post_id = data.get("post_id") or photo_id
-                    return {"photo_id": photo_id, "post_id": post_id}
-                elif resp:
-                    logger.warning(
-                        f"Error subiendo foto al álbum {album_id}: {resp.text}"
-                    )
-        except Exception as e:
-            logger.error(f"Excepción subiendo foto al álbum {album_id}: {e}")
-
-        return None
-
-    async def update_post_message(
-        self,
-        post_id: str,
-        new_message: str,
-        token: str | None = None,
-        target_id: str | int | None = None,
-    ) -> bool:
-        """
-        Edita el mensaje/texto y enlaces de una publicación o foto existente en Facebook.
-        Graph API: POST /{post-id} con parámetro 'message'.
-        """
-        if not post_id or not new_message:
-            return False
-
-        import httpx
-        from config.config_settings import config
-
-        base_token = token or config.FACEBOOK_PAGE_ACCESS_TOKEN
-        _, page_token = await self._resolve_credentials(target_id, base_token)
-
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    f"https://graph.facebook.com/v19.0/{post_id}",
-                    params={"access_token": page_token},
-                    data={"message": new_message},
-                    timeout=30,
-                )
-                if resp.status_code in (200, 201):
-                    logger.info(
-                        f"✅ Publicación {post_id} actualizada exitosamente en Facebook."
-                    )
-                    return True
-                else:
-                    logger.error(f"Error actualizando post {post_id}: {resp.text}")
-                    return False
-        except Exception as e:
-            logger.error(f"Excepción actualizando post {post_id}: {e}")
-            return False
-
-    async def announce_book(
-        self,
-        target_id: str | int,
-        book_data: dict[str, Any],
-        options: dict[str, Any] | None = None,
-    ) -> bool:
-        options = options or {}
-        caption = options.get("caption")
-
-        if not caption:
-            # Intentar resolver la plantilla por defecto de Facebook configurada en BD
-            try:
-                from core.db_manager_pg import pg_manager
-                from models.communications import PublicationTemplate
-                from sqlalchemy import select
-                from utils.template_engine import apply_publication_template
-
-                async with pg_manager.get_session() as session:
-                    stmt = select(PublicationTemplate).where(PublicationTemplate.platform == "facebook").order_by(PublicationTemplate.is_default.desc(), PublicationTemplate.id.asc())
-                    res = await session.execute(stmt)
-                    tpl = res.scalar_one_or_none()
-                    if tpl and tpl.content:
-                        caption = apply_publication_template(tpl.content, book_data)
-            except Exception as e:
-                logger.debug(f"No se pudo cargar plantilla de BD para Facebook: {e}")
-
-        if not caption:
-            caption = apply_publication_template(
-                TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
-            )
-
-        from utils.helpers import clean_caption_for_facebook
-
-        fb_caption = clean_caption_for_facebook(caption)
-
-        cover_source = (
-            book_data.get("cover_high")
-            or book_data.get("cover_original")
-            or book_data.get("portada")
-        )
-
-        from config.config_settings import config
-        from utils.helpers import validate_facebook_credentials
-
-        is_valid, error_msg = validate_facebook_credentials(config)
-        if not is_valid:
-            logger.error(f"Error publicando en Facebook: {error_msg}")
-            return False
-
-        target_group_id, token = await self._resolve_credentials(
-            target_id, config.FACEBOOK_PAGE_ACCESS_TOKEN
-        )
-
-        from services.cover_service import resolve_cover_data
-
-        resolved_cover = (
-            await resolve_cover_data(cover_source) if cover_source else None
-        )
-
-        book_hash = book_data.get("id") or book_data.get("book_hash")
-        series_spanish = book_data.get("series_spanish")
-        series_orig = book_data.get("series_name") or book_data.get("series")
-        title = book_data.get("title")
-
-        alt_names = []
-        for n in [series_spanish, series_orig, title]:
-            if n and n.strip() and n.strip() not in alt_names:
-                alt_names.append(n.strip())
-            if n and ":" in n:
-                prefix = n.split(":")[0].strip()
-                if prefix and prefix not in alt_names:
-                    alt_names.append(prefix)
-            if n and " - " in n:
-                prefix = n.split(" - ")[0].strip()
-                if prefix and prefix not in alt_names:
-                    alt_names.append(prefix)
-            if n and "." in n:
-                prefix = n.split(".")[0].strip()
-                if prefix and prefix not in alt_names:
-                    alt_names.append(prefix)
-
-        series_name = series_spanish or series_orig or title
-        series_id = book_data.get("series_id") or book_data.get("series_hash")
-
-        chosen_album_id = options.get("fb_album_id") or options.get("album_id")
-
-        # 1. Caso A: Si se seleccionó expresamente "none" o "wall", no usar ningún álbum
-        if chosen_album_id in ("none", "wall", "feed"):
-            logger.info("Publicación en Facebook configurada expresamente para Muro principal (sin álbum).")
-        # 2. Caso B: Si se seleccionó un álbum específico de la lista
-        elif chosen_album_id and chosen_album_id != "auto":
-            logger.info(f"Subiendo foto a álbum de Facebook seleccionado: {chosen_album_id}")
-            upload_res = await self.publish_photo_to_album(
-                str(chosen_album_id), resolved_cover, cover_source, fb_caption, token
-            )
-            if upload_res:
-                photo_id = upload_res.get("photo_id")
-                post_id = upload_res.get("post_id") or photo_id
-                await self._persist_book_fb_ids(book_hash, post_id, photo_id)
-                if series_id:
-                    await self._persist_series_album_id(series_id, str(chosen_album_id))
-                logger.info(
-                    f"✅ Publicado exitosamente en Álbum seleccionado {chosen_album_id} de Facebook (Post: {post_id})"
-                )
-                return True
-            else:
-                logger.warning(
-                    f"Fallo al publicar en álbum seleccionado {chosen_album_id}, recurriendo a feed principal..."
-                )
-        # 3. Caso C: Detección automática habitual por nombre de serie
-        elif series_name:
-            album_id = await self.get_or_create_series_album(
-                target_group_id, token, series_name, series_id, alt_names=alt_names
-            )
-            if album_id:
-                upload_res = await self.publish_photo_to_album(
-                    album_id, resolved_cover, cover_source, fb_caption, token
-                )
-                if upload_res:
-                    photo_id = upload_res.get("photo_id")
-                    post_id = upload_res.get("post_id") or photo_id
-                    await self._persist_book_fb_ids(book_hash, post_id, photo_id)
-                    logger.info(
-                        f"✅ Publicado exitosamente en Álbum '{series_name}' de Facebook (Post: {post_id})"
-                    )
-                    return True
-                else:
-                    logger.warning(
-                        f"Fallo al publicar en álbum '{series_name}', recurriendo a feed principal..."
-                    )
-
-        # 2. Fallback al muro / feed principal
-        import httpx
-
-        url_upload = f"https://graph.facebook.com/v19.0/{target_group_id}/photos"
-        params_upload = {
-            "access_token": token,
-            "published": "false",
-        }
-
-        try:
-            async with httpx.AsyncClient() as client:
-                photo_id = None
-                if isinstance(resolved_cover, bytes):
-                    files = {"source": ("cover.jpg", resolved_cover, "image/jpeg")}
-                    resp_up = await client.post(
-                        url_upload, params=params_upload, files=files, timeout=45
-                    )
-                    if resp_up.status_code in (200, 201):
-                        photo_id = resp_up.json().get("id")
-                elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
-                    with open(resolved_cover, "rb") as f:
-                        files = {"source": ("cover.jpg", f.read(), "image/jpeg")}
-                        resp_up = await client.post(
-                            url_upload, params=params_upload, files=files, timeout=45
-                        )
-                        if resp_up.status_code in (200, 201):
-                            photo_id = resp_up.json().get("id")
-                elif cover_source and str(cover_source).startswith("http"):
-                    params_upload["url"] = str(cover_source)
-                    resp_up = await client.post(
-                        url_upload, params=params_upload, timeout=45
-                    )
-                    if resp_up.status_code in (200, 201):
-                        photo_id = resp_up.json().get("id")
-
-                url_feed = f"https://graph.facebook.com/v19.0/{target_group_id}/feed"
-                payload_feed: dict[str, Any] = {"message": fb_caption}
-                if photo_id:
-                    payload_feed["attached_media"] = [{"media_fbid": str(photo_id)}]
-
-                resp_feed = await client.post(
-                    url_feed,
-                    params={"access_token": token},
-                    json=payload_feed,
-                    timeout=45,
-                )
-
-                if resp_feed.status_code not in (200, 201):
-                    logger.error(f"FB Feed Error: {resp_feed.text}")
-                    return False
-
-                feed_data = resp_feed.json()
-                post_id = feed_data.get("id")
-                await self._persist_book_fb_ids(book_hash, post_id, photo_id)
-
-            logger.info(
-                f"✅ Publicado exitosamente en el Muro de Facebook (Página {target_group_id}, Post {post_id})"
-            )
-            return True
-        except Exception as e:
-            logger.error(f"Excepción al publicar en Facebook: {e}")
-            return False
-
-
-class TwitterPublisherProvider(PublisherProvider):
-    TWITTER_TEMPLATE = (
-        "📚 {serie} ║ {titulo}\n"
-        "[?volumen]📖 Vol. {volumen}[/?]\n"
-        "[?download_link]⬇️ {download_link}[/?]\n"
-        "\n#{slug}"
-    )
-
-    async def announce_book(
-        self,
-        target_id: str | int,
-        book_data: dict[str, Any],
-        options: dict[str, Any] | None = None,
-    ) -> bool:
-        from services.publisher.twitter_publisher import post_to_twitter
-
-        options = options or {}
-        caption = options.get("caption")
-        if not caption:
-            caption = apply_publication_template(self.TWITTER_TEMPLATE, book_data)
-
-        cover_source = (
-            book_data.get("cover_high")
-            or book_data.get("cover_original")
-            or book_data.get("portada")
-        )
-        from services.cover_service import resolve_cover_data
-
-        resolved_cover = (
-            await resolve_cover_data(cover_source)
-            if isinstance(cover_source, str)
-            else cover_source
-        )
-
-        return await post_to_twitter(text_content=caption, cover_data=resolved_cover)
+# Re-exportar clases para mantener 100% de compatibilidad en imports de todo el proyecto
+BasePublisherProvider = PublisherProvider
+__all__ = [
+    "PublisherProvider",
+    "BasePublisherProvider",
+    "TelegramPublisherProvider",
+    "FacebookPublisherProvider",
+    "TwitterPublisherProvider",
+    "PublisherService",
+    "PublisherServiceWrapper",
+    "publisher_service",
+]
 
 
 class PublisherService:
     """
     Servicio Central de Publicación v4.0.
-    Maneja la lógica de negocio, colas y proveedores.
+    Maneja la lógica de negocio, colas y orquestación de proveedores.
     """
 
     _queue_lock = asyncio.Lock()
@@ -1120,10 +90,27 @@ class PublisherService:
                     if item.book_hash:
                         book = await self.book_repo.get_by_hash(item.book_hash)
                         if book:
-                            english_t = (getattr(book.series, "series_english", None) if book.series else None) or getattr(book, "series_english", None) or getattr(book, "english_title", None) or ""
-                            spanish_t = (getattr(book.series, "series_spanish", None) if book.series else None) or getattr(book, "series_spanish", None) or getattr(book, "spanish_title", None) or book.title or ""
-                            romaji_t = (getattr(book.series, "romaji", None) or getattr(book.series, "name", None) if book.series else None) or getattr(book, "romaji", None) or getattr(book, "romaji_title", None) or ""
-                            s_slug = (getattr(book.series, "slug", None) if book.series else None) or getattr(book, "slug", None) or ""
+                            english_t = (
+                                getattr(book.series, "series_english", None)
+                                if book.series
+                                else None
+                            ) or getattr(book, "series_english", None) or getattr(book, "english_title", None) or ""
+                            spanish_t = (
+                                getattr(book.series, "series_spanish", None)
+                                if book.series
+                                else None
+                            ) or getattr(book, "series_spanish", None) or getattr(book, "spanish_title", None) or book.title or ""
+                            romaji_t = (
+                                getattr(book.series, "romaji", None)
+                                or getattr(book.series, "name", None)
+                                if book.series
+                                else None
+                            ) or getattr(book, "romaji", None) or getattr(book, "romaji_title", None) or ""
+                            s_slug = (
+                                getattr(book.series, "slug", None)
+                                if book.series
+                                else None
+                            ) or getattr(book, "slug", None) or ""
 
                             book_data = {
                                 "title": book.title,
@@ -1214,6 +201,7 @@ class PublisherService:
                                     book_id=book.id,
                                     book_obj=book,
                                     raw_meta=book_data,
+                                    public_link=f"https://dl.zeepubs.com/{book.short_link}" if book.short_link else None,
                                 )
                             )
                             book_data.update(credits_meta)
@@ -1269,7 +257,7 @@ class PublisherService:
                             item.channel.target_id,
                             book_data,
                             options={
-                                "template_id": item.template_id,
+                                "template_id": template_id_to_use,
                                 "caption": caption,
                                 "cover_quality": cover_quality,
                                 "message_thread_id": thread_id,
@@ -1284,25 +272,25 @@ class PublisherService:
                     item.published_at = datetime.utcnow()
                     await self.session.commit()
                 except Exception as e:
-                    logger.error(f"Error processing queue item {item.id}: {e}")
+                    logger.error(f"Error procesando publicación {item.id}: {e}")
                     item.status = "failed"
                     item.error_message = str(e)
                     await self.session.commit()
 
-    async def get_channels(self, active_only: bool = True):
-        return await self.repo.get_channels(active_only)
+    async def get_channels_with_discovery(
+        self, active_only: bool = True
+    ) -> dict[str, list]:
+        """Obtiene la lista de canales registrados y los chats descubiertos."""
+        channels = await self.repo.get_channels(active_only=active_only)
+        discovered = await self.repo.get_discovered_chats()
 
-    async def get_channels_with_discovery(self, active_only: bool = True) -> dict:
-        """Obtiene canales oficiales y chats descubiertos (v3.x compat)."""
-        channels = await self.repo.get_channels(active_only)
-        discovered = await self.repo.get_discovered_chats(limit=50)
         return {
             "channels": [
                 {
                     "id": c.id,
                     "name": c.name,
-                    "platform": c.platform,
                     "target_id": c.target_id,
+                    "platform": c.platform,
                     "is_active": c.is_active,
                     "is_favorite": c.is_favorite,
                     "config": c.config or {},
@@ -1311,6 +299,7 @@ class PublisherService:
             ],
             "discovered": [
                 {
+                    "id": d.id,
                     "chat_id": d.chat_id,
                     "title": d.title,
                     "type": d.type,
@@ -1356,7 +345,7 @@ class PublisherService:
         template_id: int | None = None,
     ) -> dict[str, Any]:
         """
-        Paso 2: Edita y sincroniza publicaciones existentes (en Facebook, etc.)
+        Edita y sincroniza publicaciones existentes (en Facebook, etc.)
         sin duplicar la foto ni crear un nuevo post.
         """
         results = {"success": False, "platforms": {}}
@@ -1404,8 +393,10 @@ class PublisherService:
             or book.description
             or "",
             "short_link": book.short_link or "",
+            "download_link": f"https://dl.zeepubs.com/{book.short_link}" if book.short_link else "",
             "book_hash": book.id,
             "hash": book.id,
+            "slug": (series_info.series_spanish if series_info else None) or book.title,
         }
         credits_meta = await workgroup_service.resolve_book_workgroup_credits(
             book_id=book.id, book_obj=book, raw_meta=book_data
@@ -1422,6 +413,15 @@ class PublisherService:
                 tpl = await self.repo.get_template_by_id(template_id)
                 if tpl and tpl.content:
                     raw_caption = apply_publication_template(tpl.content, book_data)
+
+            if not raw_caption:
+                try:
+                    platform_templates = await self.repo.get_templates(platform="facebook")
+                    def_tpl = next((t for t in platform_templates if t.is_default), None) or (platform_templates[0] if platform_templates else None)
+                    if def_tpl and def_tpl.content:
+                        raw_caption = apply_publication_template(def_tpl.content, book_data)
+                except Exception:
+                    pass
 
             if not raw_caption:
                 raw_caption = apply_publication_template(
@@ -1460,17 +460,19 @@ class PublisherService:
 
     async def upsert_chat(self, chat_id: str, title: str, chat_type: str, **kwargs):
         """Descubrimiento de chats."""
+        return await self.repo.upsert_discovered_chat(
+            chat_id, title, chat_type, **kwargs
+        )
+
     async def check_facebook_album(
         self,
         book_hash: str,
         channel_id: int | None = None,
     ) -> dict[str, Any]:
         """
-        Verifica si existe el álbum de Facebook para la serie de un libro dado.
-        Retorna status, nombres recomendados y candidatos.
+        Verifica el estado del álbum de Facebook para un libro específico por su hash o ID.
         """
         from config.config_settings import config
-        from models.communications import PublicationChannel
         from models.library import LocalBook
         from sqlalchemy import or_, select
         from sqlalchemy.orm import selectinload
@@ -1489,14 +491,21 @@ class PublisherService:
         res = await self.session.execute(stmt)
         book = res.scalar_one_or_none()
         if not book:
-            return {"exists": False, "error": "Libro no encontrado"}
+            return {
+                "exists": False,
+                "album_id": None,
+                "album_name": None,
+                "recommended_name": "Serie",
+                "candidates": [],
+                "error": "Libro no encontrado",
+            }
 
         series_info = getattr(book, "series_info", None)
         series_name = (
             (series_info.series_spanish if series_info else None)
-            or getattr(book, "series_spanish", None)
             or (series_info.series_name if series_info else None)
-            or book.title
+            or getattr(book, "series_spanish", None)
+            or getattr(book, "series_english", None)
         )
         series_orig = series_info.series_name if series_info else None
         series_id = str(book.series_id) if getattr(book, "series_id", None) else None
@@ -1603,6 +612,7 @@ class PublisherServiceWrapper:
                 book_hash=book_hash,
                 new_caption=new_caption,
                 platforms=platforms,
+                template_id=template_id,
             )
 
     @classmethod
