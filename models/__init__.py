@@ -16,6 +16,7 @@ from .library import (
     ArchivedSeries,
     Demographic,
     Genre,
+    GroupContactLink,
     LibraryCleanupLog,
     LibrarySource,
     LocalBook,
@@ -27,6 +28,7 @@ from .library import (
     UploadHistory,
     UserDownload,
     UserRating,
+    Workgroup,
 )
 from .theme_sync_models import ThemeSyncLog
 from .user_audit_models import UserAuditLog
@@ -42,6 +44,8 @@ __all__ = [
     "SeriesMetadata",
     "LocalBook",
     "TranslatorsGroup",
+    "Workgroup",
+    "GroupContactLink",
     "LibrarySource",
     "UploadBook",
     "UploadHistory",

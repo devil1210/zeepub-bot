@@ -1005,10 +1005,27 @@ class PublisherService:
                                 if book.file_modified_at
                                 else "",
                                 "filename": book.filename or "",
-                                "filepath": book.filepath or "",
-                                "file_size": book.file_size or 0,
                                 "short_link": book.short_link or "",
                             }
+
+                            # Enriquecer con metadatos y enlaces de grupo traductor
+                            from services.workgroup_service import workgroup_service
+
+                            group_id = getattr(book, "translator_group_id", None) or (
+                                getattr(book.series, "translator_group_id", None)
+                                if book.series
+                                else None
+                            )
+                            translator_str = book_data.get("traductor") or getattr(
+                                book, "translator", None
+                            )
+                            translator_meta = (
+                                await workgroup_service.resolve_translator_metadata(
+                                    translator_name=translator_str,
+                                    group_id=group_id,
+                                )
+                            )
+                            book_data.update(translator_meta)
                     if item.payload:
                         book_data.update(item.payload)
 

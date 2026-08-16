@@ -124,6 +124,8 @@ class Series(Base):
         return cls.name_english
 
     # Relaciones
+    translator_group_id: Mapped[int | None] = mapped_column(ForeignKey("translators_groups.id"), nullable=True)
+    translator_group: Mapped["TranslatorsGroup | None"] = relationship(lazy="selectin")
     books: Mapped[list["Book"]] = relationship(back_populates="series_info", cascade="all, delete-orphan")
     genres: Mapped[list[Genre]] = relationship(secondary=series_genres, lazy="selectin")
     demographics: Mapped[list[Demographic]] = relationship(secondary=series_demographics, lazy="selectin")
@@ -248,6 +250,8 @@ class Book(Base):
         return self.series_info
 
     # Relaciones
+    translator_group_id: Mapped[int | None] = mapped_column(ForeignKey("translators_groups.id"), nullable=True)
+    translator_group: Mapped["TranslatorsGroup | None"] = relationship(lazy="selectin")
     series_info: Mapped[Series] = relationship(back_populates="books")
     genres: Mapped[list[Genre]] = relationship(secondary="book_genres", lazy="selectin")
     demographics: Mapped[list[Demographic]] = relationship(secondary="book_demographics", lazy="selectin")
@@ -318,17 +322,87 @@ class UserDownload(Base):
     series: Mapped[Series | None] = relationship()
 
 
+class GroupContactLink(Base):
+    """
+    Enlaces de contacto oficiales de grupos traductores (ERD zeepubs_server: GROUP_CONTACT_LINK).
+    """
+
+    __tablename__ = "group_contact_links"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    group_id: Mapped[int] = mapped_column(
+        ForeignKey("translators_groups.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    platform: Mapped[str] = mapped_column(String(50), nullable=False)  # website, facebook, discord, patreon, twitter
+    url: Mapped[str] = mapped_column(String(1024), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    group: Mapped["TranslatorsGroup"] = relationship(back_populates="contact_links")
+
+
 class TranslatorsGroup(Base):
     """
-    Grupos de traducción y sus siglas para normalización de nombres de archivo.
+    Grupos de traducción y enlaces oficiales (ERD zeepubs_server: WORKGROUP).
     """
 
     __tablename__ = "translators_groups"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    siglas: Mapped[str | None] = mapped_column(String(50))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    siglas: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    contact_links: Mapped[list[GroupContactLink]] = relationship(
+        back_populates="group", cascade="all, delete-orphan", lazy="selectin"
+    )
+
+    def get_preferred_link(self) -> str | None:
+        """
+        Devuelve el enlace preferido según el orden de prioridad:
+        1. Website / Web Oficial
+        2. Facebook
+        3. Discord
+        4. Patreon / Otros
+        """
+        priority = ["web", "site", "pagina", "face", "fb", "disc", "patr", "twit", "x"]
+        links = {
+            link.platform.lower().strip(): link.url
+            for link in self.contact_links
+            if link.url
+        }
+        for p in priority:
+            for platform, url in links.items():
+                if p in platform:
+                    return url
+        if self.contact_links:
+            return self.contact_links[0].url
+        return None
+
+    def get_links_dict(self) -> dict[str, str]:
+        """Devuelve diccionario con claves estandarizadas: web, fb, discord, patreon, twitter."""
+        result: dict[str, str] = {}
+        for link in self.contact_links:
+            if not link.url:
+                continue
+            plat = link.platform.lower().strip()
+            if any(k in plat for k in ["web", "site", "pagina"]):
+                result["web"] = link.url
+            elif any(k in plat for k in ["face", "fb"]):
+                result["fb"] = link.url
+            elif "disc" in plat:
+                result["discord"] = link.url
+            elif "patr" in plat:
+                result["patreon"] = link.url
+            elif any(k in plat for k in ["twit", "x"]):
+                result["twitter"] = link.url
+            else:
+                result[plat] = link.url
+        return result
+
+
+# Alias para alineación con el ERD de zeepubs_server
+Workgroup = TranslatorsGroup
 
 
 class UploadBook(Base):
