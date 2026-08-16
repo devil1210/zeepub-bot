@@ -267,7 +267,7 @@ class ZeePubBot:
                 )
 
                 # Notify admins of Safe Mode
-                for admin_id in config.ADMIN_USERS:
+                for admin_id in config.status_notification_users:
                     try:
                         await self.app.bot.send_message(
                             chat_id=admin_id,

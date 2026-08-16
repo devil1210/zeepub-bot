@@ -28,8 +28,8 @@ async def send_daily_backups(bot):
             return
 
         sent_count = 0
-        # Enviar a todos los admins
-        for admin_id in config.ADMIN_USERS:
+        # Enviar solo a administradores autorizados para backups
+        for admin_id in config.status_notification_users:
             try:
                 with open(db_file, "rb") as f:
                     await bot.send_document(

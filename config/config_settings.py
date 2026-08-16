@@ -28,6 +28,9 @@ class BotConfig:
 
     SECRET_SEED: str = os.getenv("SECRET_SEED", "")
 
+    # Administrador principal (Root Admin)
+    SUPER_ADMIN_ID: int = int(os.getenv("SUPER_ADMIN_ID", "133994080"))
+
     # Administradores (no tienen descargas ilimitadas aquí)
     ADMIN_USERS: set[int] = field(
         default_factory=lambda: {
@@ -35,6 +38,18 @@ class BotConfig:
             for x in os.getenv("ADMIN_USERS", "").split(",")
             if x.strip().isdigit()
         }
+    )
+
+    # Destinatarios de mensajes de estado del sistema, reportes automáticos y alertas críticas
+    STATUS_ALERT_USERS: set[int] = field(
+        default_factory=lambda: {
+            int(x.strip())
+            for x in os.getenv(
+                "STATUS_ALERT_USERS", os.getenv("SUPER_ADMIN_ID", "133994080")
+            ).split(",")
+            if x.strip().isdigit()
+        }
+        or {133994080}
     )
 
     # Correos de Administradores (Cloudflare Access / Auth)
@@ -190,6 +205,15 @@ class BotConfig:
     @property
     def OPDS_AUTH(self) -> None:
         return None
+
+    @property
+    def status_notification_users(self) -> set[int]:
+        """Devuelve los IDs que deben recibir notificaciones de estado y mantenimiento (solo el admin principal)."""
+        if self.STATUS_ALERT_USERS:
+            return self.STATUS_ALERT_USERS
+        if self.SUPER_ADMIN_ID:
+            return {self.SUPER_ADMIN_ID}
+        return {133994080}
 
     def validate(self) -> tuple[bool, list[str]]:
         errors: list[str] = []

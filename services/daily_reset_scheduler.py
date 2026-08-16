@@ -48,7 +48,7 @@ async def daily_reset_loop(bot=None):
                         "🔄 <i>Reseteando contadores...</i>"
                     )
 
-                    for admin_id in config.ADMIN_USERS:
+                    for admin_id in config.status_notification_users:
                         try:
                             await bot.send_message(chat_id=admin_id, text=report_text, parse_mode="HTML")
                         except Exception as e:

@@ -55,15 +55,15 @@ async def send_weekly_reports(bot):
             logger.error("No se pudo generar el reporte semanal")
             return
 
-        # Enviar a todos los publishers
+        # Enviar únicamente a administradores de alerta de estado
         sent_count = 0
-        for publisher_id in config.FACEBOOK_PUBLISHERS:
+        for publisher_id in config.status_notification_users:
             try:
                 await bot.send_message(chat_id=publisher_id, text=report, parse_mode="HTML")
                 sent_count += 1
-                logger.info(f"Reporte semanal enviado a publisher {publisher_id}")
+                logger.info(f"Reporte semanal enviado a admin {publisher_id}")
             except Exception as e:
-                logger.error(f"Error enviando reporte a publisher {publisher_id}: {e}")
+                logger.error(f"Error enviando reporte a admin {publisher_id}: {e}")
 
         logger.info(f"Reportes semanales enviados a {sent_count} publishers")
 

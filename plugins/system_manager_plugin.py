@@ -83,7 +83,7 @@ class SystemManagerPlugin(BasePlugin):
                     f"Usa /update_system para aplicar cambios."
                 )
 
-                for admin_id in config.ADMIN_USERS:
+                for admin_id in config.status_notification_users:
                     try:
                         await context.bot.send_message(chat_id=admin_id, text=msg, parse_mode="HTML")
                     except Exception as e:

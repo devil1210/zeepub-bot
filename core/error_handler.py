@@ -59,9 +59,9 @@ class ErrorHandler:
 
     @staticmethod
     async def notify_admins(bot, error, update):
-        """Notifica errores críticos a administradores."""
+        """Notifica errores críticos a administradores de alerta de estado."""
         error_msg = f"🚨 <b>Error Crítico</b>\n\n<code>{type(error).__name__}</code>\n{str(error)[:500]}"
-        for admin_id in config.ADMIN_USERS:
+        for admin_id in config.status_notification_users:
             try:
                 await bot.send_message(chat_id=admin_id, text=error_msg, parse_mode="HTML")
             except Exception:
