@@ -33,31 +33,52 @@ class LibraryRoutes:
 
     async def short_download(self, url_hash: str):
         """
-        Endpoint acortado para descargas usando hash SHA256.
-        Garantiza compatibilidad 100% con URLs remotas y archivos locales.
+        Endpoint acortado para descargas usando hash SHA256 / short_link / book_id.
+        Garantiza entrega directa de archivo EPUB para descarga en el navegador.
         """
         try:
             logger.info(f"📥 Short download request: {url_hash}")
 
-            # Get URL from hash
+            # 1. Get URL from hash table (url_mappings)
             source_url = get_url_from_hash(url_hash)
-            if not source_url:
-                logger.warning(f"❌ No URL found for hash: {url_hash}")
-                return JSONResponse(content={"error": "URL no encontrada o expirada"}, status_code=404)
 
-            # Extraer título legible de la URL o archivo de manera segura
-            from urllib.parse import unquote, urlparse
-            try:
-                parsed = urlparse(source_url)
-                title = unquote(parsed.path.split("/")[-1]).replace(".epub", "")
-            except Exception:
-                title = "libro"
+            if source_url:
+                if source_url.startswith("/") or source_url.startswith("./"):
+                    if os.path.exists(source_url):
+                        filename = os.path.basename(source_url).replace(".epub", "")
+                        return await self._serve_local_file(source_url, title=filename)
+                else:
+                    from urllib.parse import unquote, urlparse
+                    try:
+                        parsed = urlparse(source_url)
+                        title = unquote(parsed.path.split("/")[-1]).replace(".epub", "")
+                    except Exception:
+                        title = "libro"
 
-            if not title:
-                title = "libro"
+                    return await self.public_download(url=source_url, title=title, url_hash=url_hash)
 
-            # Delegar la descarga/entrega al método público incluyendo el url_hash para Self-Healing
-            return await self.public_download(url=source_url, title=title, url_hash=url_hash)
+            # 2. Buscar por id, short_link o hash_md5 en la base de datos PostgreSQL (tabla books)
+            from core.db_manager_pg import pg_manager
+            from models.library import Book
+            from sqlalchemy import select
+
+            async with pg_manager.get_session() as session:
+                stmt = select(Book).where(
+                    (Book.id == url_hash)
+                    | (Book.short_link.like(f"%{url_hash}%"))
+                    | (Book.hash_md5 == url_hash)
+                    | (Book.id.like(f"{url_hash}%"))
+                )
+                result = await session.execute(stmt)
+                book = result.scalars().first()
+
+                if book and book.filepath and os.path.exists(book.filepath):
+                    filename = os.path.basename(book.filepath).replace(".epub", "")
+                    logger.info(f"✅ Found book file for hash {url_hash}: {book.filepath}")
+                    return await self._serve_local_file(book.filepath, title=filename)
+
+            logger.warning(f"❌ No URL or book file found for hash: {url_hash}")
+            return JSONResponse(content={"error": "Archivo no encontrado o expirado"}, status_code=404)
 
         except Exception as e:
             logger.error(f"❌ Error in short download resolver: {e}", exc_info=True)
