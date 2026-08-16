@@ -69,6 +69,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [successMsg, setSuccessMsg] = useState('¡Programado con éxito!');
+    const [customCaption, setCustomCaption] = useState('');
     const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
     const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
@@ -125,6 +126,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                 const platform = chan ? chan.platform : 'facebook';
                 const res = await publisherApi.updatePublishedPost({
                     book_id: bookHash,
+                    caption: customCaption.trim() ? customCaption.trim() : undefined,
                     template_id: selectedTemplates.length > 0 ? selectedTemplates[0] : undefined,
                     platforms: [platform]
                 });
@@ -345,6 +347,23 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                                 })}
                             </div>
                         </div>
+
+                        {/* Texto Personalizado Opcional para Edición */}
+                        {isSentItem && actionType === 'update_existing' && (
+                            <div className="flex flex-col gap-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-primary/80 flex items-center justify-between">
+                                    <span>Texto Personalizado (Opcional)</span>
+                                    <span className="text-[8px] text-gray-400">Si lo dejas vacío, usa la plantilla</span>
+                                </label>
+                                <textarea
+                                    rows={4}
+                                    value={customCaption}
+                                    onChange={(e) => setCustomCaption(e.target.value)}
+                                    placeholder="Escribe un texto específico si deseas sobrescribir la plantilla..."
+                                    className="w-full p-3 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors resize-y custom-scrollbar"
+                                />
+                            </div>
+                        )}
 
                         {/* Opciones de Publicación Programada / Inmediata (Solo cuando no es actualización directa en vivo) */}
                         {(!isSentItem || actionType === 'create_new') && (

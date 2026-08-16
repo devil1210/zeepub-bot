@@ -678,7 +678,7 @@ class FacebookPublisherProvider(PublisherProvider):
                 resp = await client.post(
                     f"https://graph.facebook.com/v19.0/{post_id}",
                     params={"access_token": page_token},
-                    json={"message": new_message},
+                    data={"message": new_message},
                     timeout=30,
                 )
                 if resp.status_code in (200, 201):
