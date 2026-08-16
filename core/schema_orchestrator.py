@@ -118,6 +118,9 @@ class SchemaOrchestrator:
             await SchemaOrchestrator._check_and_add_column("translators_groups", "description", "TEXT")
             await SchemaOrchestrator._check_and_add_column("translators_groups", "siglas", "VARCHAR(50)")
 
+            # Auto-Migration for LibrarySources
+            await SchemaOrchestrator._check_and_add_column("library_sources", "is_active", "BOOLEAN DEFAULT TRUE")
+
             # Auto-Migration for Download History (Fix series_hash missing)
             await SchemaOrchestrator._check_and_add_column("download_history", "series_hash", "VARCHAR(64)")
             await SchemaOrchestrator._check_and_add_column("user_downloads", "series_hash", "VARCHAR(64)")
