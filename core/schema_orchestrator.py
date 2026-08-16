@@ -120,6 +120,7 @@ class SchemaOrchestrator:
 
             # Auto-Migration for LibrarySources
             await SchemaOrchestrator._check_and_add_column("library_sources", "is_active", "BOOLEAN DEFAULT TRUE")
+            await SchemaOrchestrator._check_and_add_column("library_sources", "created_at", "TIMESTAMP DEFAULT NOW()")
 
             # Auto-Migration for Download History (Fix series_hash missing)
             await SchemaOrchestrator._check_and_add_column("download_history", "series_hash", "VARCHAR(64)")
