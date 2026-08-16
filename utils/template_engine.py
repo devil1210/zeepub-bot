@@ -385,6 +385,8 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
 
         return html.unescape(result_str)
 
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).exception(f"Error aplicando plantilla de publicación: {e}")
         # Fallback silencioso al string original
         return template_str
