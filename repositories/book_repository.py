@@ -87,9 +87,8 @@ class BookRepository(BaseRepository[LocalBook]):
                 .options(selectinload(LocalBook.series_info))
                 .where(
                     or_(
-                        LocalBook.book_hash == book_hash,
-                        LocalBook.id == book_hash,
-                        LocalBook.short_link == book_hash,
+                        LocalBook.id == str(book_hash),
+                        LocalBook.short_link == str(book_hash),
                     )
                 )
             )
