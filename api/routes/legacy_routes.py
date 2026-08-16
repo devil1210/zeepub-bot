@@ -241,7 +241,6 @@ class LegacyRoutes:
         self,
         book_id: str,
         request: Request,
-        user_data: Annotated[dict[str, Any], Depends(require_mini_app_access)],
     ):
         """Descarga directa de un EPUB en el navegador."""
         book_hash = book_id.replace("local_", "").replace("series_", "")
