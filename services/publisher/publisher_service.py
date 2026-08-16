@@ -1394,14 +1394,15 @@ class PublisherService:
         if not book:
             return {"exists": False, "error": "Libro no encontrado"}
 
+        series_info = getattr(book, "series_info", None)
         series_name = (
-            (book.series.series_spanish if book.series else None)
-            or (book.series.name if book.series else None)
-            or getattr(book, "series_english", None)
+            (series_info.series_spanish if series_info else None)
+            or getattr(book, "series_spanish", None)
+            or (series_info.series_name if series_info else None)
             or book.title
         )
-        series_orig = book.series.name if book.series else None
-        series_id = str(book.series_id) if book.series_id else None
+        series_orig = series_info.series_name if series_info else None
+        series_id = str(book.series_id) if getattr(book, "series_id", None) else None
 
         recommended = series_name or book.title
 
