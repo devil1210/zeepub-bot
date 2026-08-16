@@ -195,6 +195,7 @@ async def handle_pub_get_templates(data: dict[str, Any], user_data: dict[str, An
                 "name": t.name,
                 "content": t.content,
                 "platform": t.platform,
+                "is_default": bool(t.is_default),
                 "extra_config": t.extra_config or {},
             }
             for t in templates
@@ -212,6 +213,8 @@ async def handle_pub_save_template(data: dict[str, Any], user_data: dict[str, An
         "platform": data["platform"],
         "extra_config": data.get("extra_config", {}),
     }
+    if "is_default" in data:
+        template_data["is_default"] = bool(data["is_default"])
 
     if template_id:
         existing = await pub_repo.get_template_by_id(template_id)
@@ -219,6 +222,8 @@ async def handle_pub_save_template(data: dict[str, Any], user_data: dict[str, An
             merged_config = (existing.extra_config or {}).copy()
             merged_config.update(data.get("extra_config", {}))
             template_data["extra_config"] = merged_config
+            if "is_default" not in data:
+                template_data["is_default"] = existing.is_default
         await pub_repo.update_template(template_id, template_data)
     else:
         template = PublicationTemplate(**template_data)
