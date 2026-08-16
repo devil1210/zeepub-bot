@@ -1295,7 +1295,23 @@ class PublisherService:
         sin duplicar la foto ni crear un nuevo post.
         """
         results = {"success": False, "platforms": {}}
-        book = await self.book_repo.get_by_hash(book_hash)
+        from models.library import LocalBook
+        from sqlalchemy import or_, select
+        from sqlalchemy.orm import selectinload
+
+        stmt = (
+            select(LocalBook)
+            .options(selectinload(LocalBook.series_info))
+            .where(
+                or_(
+                    LocalBook.id == str(book_hash),
+                    LocalBook.short_link == str(book_hash),
+                    LocalBook.book_hash == str(book_hash),
+                )
+            )
+        )
+        res = await self.session.execute(stmt)
+        book = res.scalar_one_or_none()
         if not book:
             logger.warning(
                 f"Libro no encontrado para actualizar publicación: {book_hash}"
@@ -1306,15 +1322,17 @@ class PublisherService:
         # 1. Resolver metadatos y créditos actualizados del libro por UUID
         from services.workgroup_service import workgroup_service
 
+        series_info = getattr(book, "series_info", None)
         book_data = {
             "title": book.title,
             "volume": book.volume,
-            "series": (book.series.name if book.series else None)
+            "series": (series_info.series_name if series_info else None)
             or getattr(book, "series_english", None)
             or book.title,
             "series_spanish": (
-                book.series.series_spanish if book.series else None
+                series_info.series_spanish if series_info else None
             )
+            or getattr(book, "series_spanish", None)
             or book.title,
             "author": book.author or (book.series.author if book.series else ""),
             "description": (book.series.description if book.series else None)
@@ -1388,9 +1406,23 @@ class PublisherService:
         """
         from config.config_settings import config
         from models.communications import PublicationChannel
-        from models.library import Book
+        from models.library import LocalBook
+        from sqlalchemy import or_, select
+        from sqlalchemy.orm import selectinload
 
-        book = await self.book_repo.get_by_hash(book_hash)
+        stmt = (
+            select(LocalBook)
+            .options(selectinload(LocalBook.series_info))
+            .where(
+                or_(
+                    LocalBook.id == str(book_hash),
+                    LocalBook.short_link == str(book_hash),
+                    LocalBook.book_hash == str(book_hash),
+                )
+            )
+        )
+        res = await self.session.execute(stmt)
+        book = res.scalar_one_or_none()
         if not book:
             return {"exists": False, "error": "Libro no encontrado"}
 
