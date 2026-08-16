@@ -213,8 +213,6 @@ class TelegramPublisherProvider(PublisherProvider):
                 html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
 
             # Títulos en cascada
-            from utils.metadata_utils import is_romaji_string
-
             title_en = book_data.get("english_title") or book_data.get("series_english")
             title_jp = book_data.get("romaji_title") or book_data.get("romaji") or book_data.get("title_japanese") or book_data.get("title_jp")
             title_es = book_data.get("spanish_title") or book_data.get("series_spanish") or book_data.get("title_spanish") or book_data.get("title")
@@ -432,6 +430,269 @@ class TelegramPublisherProvider(PublisherProvider):
 
 
 class FacebookPublisherProvider(PublisherProvider):
+    """
+    Proveedor para publicación en Facebook Pages/Groups:
+    - Agrupación automática en Álbumes por Serie (POST /{album_id}/photos)
+    - Fallback a Feed general con foto adjunta
+    - Persistencia de fb_post_id y fb_photo_id en BD
+    - Capacidad de edición de publicaciones (POST /{post_id})
+    """
+
+    async def _resolve_credentials(
+        self, target_id: str | int | None, token: str
+    ) -> tuple[str, str]:
+        """Resuelve el Page ID y Page Access Token si se proveyó un User Token."""
+        import httpx
+        from config.config_settings import config
+
+        target_page_id = str(target_id) if target_id else config.FACEBOOK_GROUP_ID
+        page_token = token
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    "https://graph.facebook.com/v19.0/me/accounts",
+                    params={"access_token": token},
+                    timeout=10,
+                )
+                if resp.status_code == 200:
+                    accounts = resp.json().get("data", [])
+                    found = False
+                    for acc in accounts:
+                        if str(acc.get("id")) == str(target_page_id):
+                            page_token = acc.get("access_token", token)
+                            found = True
+                            break
+                    if not found and len(accounts) == 1:
+                        target_page_id = str(accounts[0].get("id"))
+                        page_token = accounts[0].get("access_token", token)
+        except Exception as e:
+            logger.debug(f"No se pudo resolver Page Token vía /me/accounts: {e}")
+
+        return target_page_id, page_token
+
+    async def get_or_create_series_album(
+        self,
+        target_page_id: str,
+        token: str,
+        series_name: str,
+        series_id: str | None = None,
+    ) -> str | None:
+        """
+        Obtiene el ID del álbum de la serie o lo crea automáticamente si no existe.
+        Persiste el fb_album_id en el registro de Series.
+        """
+        if not series_name or not series_name.strip():
+            return None
+
+        clean_series_name = series_name.strip()
+
+        # 1. Verificar si ya tenemos el fb_album_id en la base de datos
+        if series_id:
+            try:
+                from sqlalchemy import select
+                from core.db_manager_pg import pg_manager
+                from models.library import Series
+
+                async with pg_manager.get_session() as session:
+                    stmt = select(Series.fb_album_id).where(Series.id == series_id)
+                    result = await session.execute(stmt)
+                    cached_album_id = result.scalar_one_or_none()
+                    if cached_album_id:
+                        logger.info(
+                            f"Álbum en caché para '{clean_series_name}': {cached_album_id}"
+                        )
+                        return str(cached_album_id)
+            except Exception as e:
+                logger.debug(f"Error consultando fb_album_id en BD: {e}")
+
+        import httpx
+
+        # 2. Buscar en la lista de álbumes de la página vía Graph API
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    f"https://graph.facebook.com/v19.0/{target_page_id}/albums",
+                    params={"access_token": token, "fields": "id,name", "limit": 100},
+                    timeout=20,
+                )
+                if resp.status_code == 200:
+                    albums = resp.json().get("data", [])
+                    for album in albums:
+                        if (
+                            album.get("name", "").strip().lower()
+                            == clean_series_name.lower()
+                        ):
+                            found_id = str(album.get("id"))
+                            logger.info(
+                                f"Álbum encontrado en Facebook: '{clean_series_name}' -> {found_id}"
+                            )
+                            await self._persist_series_album_id(series_id, found_id)
+                            return found_id
+
+                # 3. Si no existe, crear nuevo álbum
+                payload_create = {
+                    "name": clean_series_name,
+                    "message": f"Álbum oficial de la serie: {clean_series_name}",
+                }
+                create_resp = await client.post(
+                    f"https://graph.facebook.com/v19.0/{target_page_id}/albums",
+                    params={"access_token": token},
+                    json=payload_create,
+                    timeout=25,
+                )
+                if create_resp.status_code in (200, 201):
+                    new_album_id = str(create_resp.json().get("id"))
+                    logger.info(
+                        f"✅ Nuevo álbum creado en Facebook: '{clean_series_name}' -> {new_album_id}"
+                    )
+                    await self._persist_series_album_id(series_id, new_album_id)
+                    return new_album_id
+                else:
+                    logger.warning(
+                        f"No se pudo crear álbum para '{clean_series_name}': {create_resp.text}"
+                    )
+        except Exception as e:
+            logger.error(f"Excepción al gestionar álbum de Facebook: {e}")
+
+        return None
+
+    async def _persist_series_album_id(
+        self, series_id: str | None, album_id: str
+    ) -> None:
+        """Helper para guardar fb_album_id en Series."""
+        if not series_id or not album_id:
+            return
+        try:
+            from sqlalchemy import update
+            from core.db_manager_pg import pg_manager
+            from models.library import Series
+
+            async with pg_manager.get_session() as session:
+                await session.execute(
+                    update(Series)
+                    .where(Series.id == series_id)
+                    .values(fb_album_id=album_id)
+                )
+                await session.commit()
+        except Exception as e:
+            logger.debug(f"No se pudo persistir fb_album_id en Series: {e}")
+
+    async def _persist_book_fb_ids(
+        self, book_hash: str | None, post_id: str | None, photo_id: str | None
+    ) -> None:
+        """Helper para guardar fb_post_id y fb_photo_id en Book."""
+        if not book_hash or (not post_id and not photo_id):
+            return
+        try:
+            from sqlalchemy import update
+            from core.db_manager_pg import pg_manager
+            from models.library import Book
+
+            async with pg_manager.get_session() as session:
+                values = {}
+                if post_id:
+                    values["fb_post_id"] = str(post_id)
+                if photo_id:
+                    values["fb_photo_id"] = str(photo_id)
+                await session.execute(
+                    update(Book).where(Book.id == book_hash).values(**values)
+                )
+                await session.commit()
+        except Exception as e:
+            logger.debug(f"No se pudo persistir fb_post_id en Book: {e}")
+
+    async def publish_photo_to_album(
+        self,
+        album_id: str,
+        resolved_cover: Any,
+        cover_source: Any,
+        caption: str,
+        token: str,
+    ) -> dict[str, Any] | None:
+        """Sube una foto directamente dentro de un álbum específico con su caption."""
+        import httpx
+
+        url_upload = f"https://graph.facebook.com/v19.0/{album_id}/photos"
+        params_upload = {
+            "access_token": token,
+            "message": caption,
+        }
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = None
+                if isinstance(resolved_cover, bytes):
+                    files = {"source": ("cover.jpg", resolved_cover, "image/jpeg")}
+                    resp = await client.post(
+                        url_upload, params=params_upload, files=files, timeout=45
+                    )
+                elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
+                    with open(resolved_cover, "rb") as f:
+                        files = {"source": ("cover.jpg", f.read(), "image/jpeg")}
+                        resp = await client.post(
+                            url_upload, params=params_upload, files=files, timeout=45
+                        )
+                elif cover_source and str(cover_source).startswith("http"):
+                    params_upload["url"] = str(cover_source)
+                    resp = await client.post(
+                        url_upload, params=params_upload, timeout=45
+                    )
+
+                if resp and resp.status_code in (200, 201):
+                    data = resp.json()
+                    photo_id = data.get("id")
+                    post_id = data.get("post_id") or photo_id
+                    return {"photo_id": photo_id, "post_id": post_id}
+                elif resp:
+                    logger.warning(
+                        f"Error subiendo foto al álbum {album_id}: {resp.text}"
+                    )
+        except Exception as e:
+            logger.error(f"Excepción subiendo foto al álbum {album_id}: {e}")
+
+        return None
+
+    async def update_post_message(
+        self,
+        post_id: str,
+        new_message: str,
+        token: str | None = None,
+        target_id: str | int | None = None,
+    ) -> bool:
+        """
+        Edita el mensaje/texto y enlaces de una publicación o foto existente en Facebook.
+        Graph API: POST /{post-id} con parámetro 'message'.
+        """
+        if not post_id or not new_message:
+            return False
+
+        import httpx
+        from config.config_settings import config
+
+        base_token = token or config.FACEBOOK_PAGE_ACCESS_TOKEN
+        _, page_token = await self._resolve_credentials(target_id, base_token)
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    f"https://graph.facebook.com/v19.0/{post_id}",
+                    params={"access_token": page_token},
+                    json={"message": new_message},
+                    timeout=30,
+                )
+                if resp.status_code in (200, 201):
+                    logger.info(
+                        f"✅ Publicación {post_id} actualizada exitosamente en Facebook."
+                    )
+                    return True
+                else:
+                    logger.error(f"Error actualizando post {post_id}: {resp.text}")
+                    return False
+        except Exception as e:
+            logger.error(f"Excepción actualizando post {post_id}: {e}")
+            return False
+
     async def announce_book(
         self,
         target_id: str | int,
@@ -446,8 +707,8 @@ class FacebookPublisherProvider(PublisherProvider):
                 TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
             )
 
-        # Limpiar y formatear caption para Facebook eliminando 'Pulsa aquí' y convirtiendo links a texto plano
         from utils.helpers import clean_caption_for_facebook
+
         fb_caption = clean_caption_for_facebook(caption)
 
         cover_source = (
@@ -464,31 +725,49 @@ class FacebookPublisherProvider(PublisherProvider):
             logger.error(f"Error publicando en Facebook: {error_msg}")
             return False
 
-        target_group_id = str(target_id) if target_id else config.FACEBOOK_GROUP_ID
-        token = config.FACEBOOK_PAGE_ACCESS_TOKEN
-
-        import httpx
-
-        # Intentar resolver Page Access Token dinámicamente si token es User Token
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get("https://graph.facebook.com/v19.0/me/accounts", params={"access_token": token}, timeout=10)
-                if resp.status_code == 200:
-                    accounts = resp.json().get("data", [])
-                    found = False
-                    for acc in accounts:
-                        if str(acc.get("id")) == str(target_group_id):
-                            token = acc.get("access_token", token)
-                            found = True
-                            break
-                    if not found and len(accounts) == 1:
-                        target_group_id = str(accounts[0].get("id"))
-                        token = accounts[0].get("access_token", token)
-        except Exception:
-            pass
+        target_group_id, token = await self._resolve_credentials(
+            target_id, config.FACEBOOK_PAGE_ACCESS_TOKEN
+        )
 
         from services.cover_service import resolve_cover_data
-        resolved_cover = await resolve_cover_data(cover_source) if cover_source else None
+
+        resolved_cover = (
+            await resolve_cover_data(cover_source) if cover_source else None
+        )
+
+        book_hash = book_data.get("id") or book_data.get("book_hash")
+        series_name = (
+            book_data.get("series_spanish")
+            or book_data.get("series_name")
+            or book_data.get("series")
+            or book_data.get("title")
+        )
+        series_id = book_data.get("series_id") or book_data.get("series_hash")
+
+        # 1. Intentar publicar en el álbum de la serie si aplica
+        if series_name:
+            album_id = await self.get_or_create_series_album(
+                target_group_id, token, series_name, series_id
+            )
+            if album_id:
+                upload_res = await self.publish_photo_to_album(
+                    album_id, resolved_cover, cover_source, fb_caption, token
+                )
+                if upload_res:
+                    photo_id = upload_res.get("photo_id")
+                    post_id = upload_res.get("post_id") or photo_id
+                    await self._persist_book_fb_ids(book_hash, post_id, photo_id)
+                    logger.info(
+                        f"✅ Publicado exitosamente en Álbum '{series_name}' de Facebook (Post: {post_id})"
+                    )
+                    return True
+                else:
+                    logger.warning(
+                        f"Fallo al publicar en álbum '{series_name}', recurriendo a feed principal..."
+                    )
+
+        # 2. Fallback al muro / feed principal
+        import httpx
 
         url_upload = f"https://graph.facebook.com/v19.0/{target_group_id}/photos"
         params_upload = {
@@ -501,22 +780,27 @@ class FacebookPublisherProvider(PublisherProvider):
                 photo_id = None
                 if isinstance(resolved_cover, bytes):
                     files = {"source": ("cover.jpg", resolved_cover, "image/jpeg")}
-                    resp_up = await client.post(url_upload, params=params_upload, files=files, timeout=45)
+                    resp_up = await client.post(
+                        url_upload, params=params_upload, files=files, timeout=45
+                    )
                     if resp_up.status_code in (200, 201):
                         photo_id = resp_up.json().get("id")
                 elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
                     with open(resolved_cover, "rb") as f:
                         files = {"source": ("cover.jpg", f.read(), "image/jpeg")}
-                        resp_up = await client.post(url_upload, params=params_upload, files=files, timeout=45)
+                        resp_up = await client.post(
+                            url_upload, params=params_upload, files=files, timeout=45
+                        )
                         if resp_up.status_code in (200, 201):
                             photo_id = resp_up.json().get("id")
                 elif cover_source and str(cover_source).startswith("http"):
-                    params_upload["url"] = cover_source
-                    resp_up = await client.post(url_upload, params=params_upload, timeout=45)
+                    params_upload["url"] = str(cover_source)
+                    resp_up = await client.post(
+                        url_upload, params=params_upload, timeout=45
+                    )
                     if resp_up.status_code in (200, 201):
                         photo_id = resp_up.json().get("id")
 
-                # Publicar en el muro ("Publicaciones") vía /feed
                 url_feed = f"https://graph.facebook.com/v19.0/{target_group_id}/feed"
                 payload_feed: dict[str, Any] = {"message": fb_caption}
                 if photo_id:
@@ -532,8 +816,13 @@ class FacebookPublisherProvider(PublisherProvider):
                 if resp_feed.status_code not in (200, 201):
                     logger.error(f"FB Feed Error: {resp_feed.text}")
                     return False
+
+                feed_data = resp_feed.json()
+                post_id = feed_data.get("id")
+                await self._persist_book_fb_ids(book_hash, post_id, photo_id)
+
             logger.info(
-                f"✅ Publicado exitosamente en el Muro de Facebook (Página {target_group_id})"
+                f"✅ Publicado exitosamente en el Muro de Facebook (Página {target_group_id}, Post {post_id})"
             )
             return True
         except Exception as e:

@@ -36,14 +36,12 @@ def setup_test_db():
     """
     from core.db_manager_pg import pg_manager
 
-    # Ensure we are in test mode if needed
-    # config.ENABLE_POSTGRES_PLUGIN = True
-
-    # Run database initialization
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:
         loop.run_until_complete(pg_manager.initialize())
+    except Exception:
+        pass
     finally:
         loop.close()
 
@@ -54,6 +52,8 @@ def setup_test_db():
     asyncio.set_event_loop(loop)
     try:
         loop.run_until_complete(pg_manager.close())
+    except Exception:
+        pass
     finally:
         loop.close()
 

@@ -1,14 +1,12 @@
 import logging
-import os
-import re
 from typing import Any
 
-import httpx
-
-from config.settings import config
+from config.config_settings import config
 from services.cover_service import send_photo_bytes
-from services.publisher.publisher_service import TelegramPublisherProvider
-from utils.helpers import validate_facebook_credentials
+from services.publisher.publisher_service import (
+    FacebookPublisherProvider,
+    TelegramPublisherProvider,
+)
 from utils.template_engine import apply_publication_template
 from utils.url_cache import create_short_url
 
@@ -34,7 +32,11 @@ async def handle_facebook_publication(
     if not dl_domain.startswith("http"):
         dl_domain = f"https://{dl_domain}"
     try:
-        url_hash = create_short_url(download_url, book_title=title) if download_url else "N/A"
+        url_hash = (
+            create_short_url(download_url, book_title=title)
+            if download_url
+            else "N/A"
+        )
         public_link = f"{dl_domain}/api/dl/{url_hash}"
     except Exception as e:
         logger.error("Error creating short URL: %s", e)
@@ -53,13 +55,18 @@ async def handle_facebook_publication(
 
     # Limpiar y formatear caption para Facebook eliminando 'Pulsa aquí' y convirtiendo links a texto plano
     from utils.helpers import clean_caption_for_facebook
+
     fb_caption = clean_caption_for_facebook(fb_caption, public_link=public_link)
 
-    logger.debug(f"Caption FB generado vía template engine, longitud: {len(fb_caption)}")
+    logger.debug(
+        f"Caption FB generado vía template engine, longitud: {len(fb_caption)}"
+    )
 
     if format_type == "fb_preview":
         if portada_data:
-            await send_photo_bytes(bot, user_id, None, portada_data, filename="cover.jpg")
+            await send_photo_bytes(
+                bot, user_id, None, portada_data, filename="cover.jpg"
+            )
         await bot.send_message(
             chat_id=user_id,
             text=fb_caption,
@@ -68,85 +75,42 @@ async def handle_facebook_publication(
         return True
 
     elif format_type == "fb_direct":
-        is_valid, error_msg = validate_facebook_credentials(config)
-        if not is_valid:
-            await bot.send_message(chat_id=user_id, text=error_msg, parse_mode="HTML")
-            return False
+        provider = FacebookPublisherProvider()
 
-        target_id = config.FACEBOOK_GROUP_ID
-        token = config.FACEBOOK_PAGE_ACCESS_TOKEN
-
-        # Intentar resolver Page Access Token si es un User Token
-        try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.get("https://graph.facebook.com/v19.0/me/accounts", params={"access_token": token}, timeout=10)
-                if resp.status_code == 200:
-                    accounts = resp.json().get("data", [])
-                    found = False
-                    for acc in accounts:
-                        if str(acc.get("id")) == str(target_id):
-                            token = acc.get("access_token", token)
-                            found = True
-                            break
-                    if not found and len(accounts) == 1:
-                        target_id = str(accounts[0].get("id"))
-                        token = accounts[0].get("access_token", token)
-        except Exception:
-            pass
-
-        fb_cover_url = cover_url or meta.get("portada")
-        from services.cover_service import resolve_cover_data
-        resolved_cover = await resolve_cover_data(fb_cover_url) if fb_cover_url else None
-
-        url_upload = f"https://graph.facebook.com/v19.0/{target_id}/photos"
-        params_upload = {
-            "access_token": token,
-            "published": "false",
+        book_data = {
+            "id": meta.get("id") or meta.get("book_hash") or meta.get("hash"),
+            "book_hash": meta.get("book_hash") or meta.get("hash"),
+            "title": title,
+            "series": meta.get("series") or meta.get("series_name"),
+            "series_spanish": meta.get("series_spanish")
+            or meta.get("series_name")
+            or meta.get("series"),
+            "series_id": meta.get("series_id") or meta.get("series_hash"),
+            "cover_high": cover_url or meta.get("portada"),
+            "cover_original": cover_url or meta.get("portada"),
+            "portada": cover_url or meta.get("portada"),
+            "public_link": public_link,
+            "download_link": public_link,
         }
+        book_data.update(meta)
 
-        try:
-            async with httpx.AsyncClient() as client:
-                photo_id = None
-                if isinstance(resolved_cover, bytes):
-                    files = {"source": ("cover.jpg", resolved_cover, "image/jpeg")}
-                    resp_up = await client.post(url_upload, params=params_upload, files=files, timeout=45)
-                    if resp_up.status_code in (200, 201):
-                        photo_id = resp_up.json().get("id")
-                elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
-                    with open(resolved_cover, "rb") as f:
-                        files = {"source": ("cover.jpg", f.read(), "image/jpeg")}
-                        resp_up = await client.post(url_upload, params=params_upload, files=files, timeout=45)
-                        if resp_up.status_code in (200, 201):
-                            photo_id = resp_up.json().get("id")
-                elif fb_cover_url and fb_cover_url.startswith("http"):
-                    params_upload["url"] = fb_cover_url
-                    resp_up = await client.post(url_upload, params=params_upload, timeout=45)
-                    if resp_up.status_code in (200, 201):
-                        photo_id = resp_up.json().get("id")
+        success = await provider.announce_book(
+            target_id=config.FACEBOOK_GROUP_ID,
+            book_data=book_data,
+            options={"caption": fb_caption},
+        )
 
-                # Publicar en el muro ("Publicaciones") vía /feed
-                url_feed = f"https://graph.facebook.com/v19.0/{target_id}/feed"
-                payload_feed: dict[str, Any] = {"message": fb_caption}
-                if photo_id:
-                    payload_feed["attached_media"] = [{"media_fbid": str(photo_id)}]
-
-                resp_feed = await client.post(
-                    url_feed,
-                    params={"access_token": token},
-                    json=payload_feed,
-                    timeout=45,
-                )
-
-                if resp_feed.status_code not in (200, 201):
-                    logger.error(f"FB Feed Error: {resp_feed.text}")
-                    await bot.send_message(chat_id=user_id, text=f"❌ Error publicando en el muro de Facebook: {resp_feed.text}")
-                    return False
-
-            await bot.send_message(chat_id=user_id, text="✅ Publicado exitosamente en el muro de Facebook.")
+        if success:
+            await bot.send_message(
+                chat_id=user_id,
+                text="✅ Publicado exitosamente en Facebook (organizado en álbum de serie si aplica).",
+            )
             return True
-        except Exception as e:
-            logger.error(f"Excepción publicando en Facebook: {e}")
-            await bot.send_message(chat_id=user_id, text=f"❌ Excepción publicando en Facebook: {e}")
+        else:
+            await bot.send_message(
+                chat_id=user_id,
+                text="❌ Error al procesar la publicación en Facebook. Revisa los logs o credenciales.",
+            )
             return False
 
     return False

@@ -67,6 +67,7 @@ class Series(Base):
     demographics_json: Mapped[list | None] = mapped_column(JSONB)
 
     cover_url: Mapped[str | None] = mapped_column(String(1024))
+    fb_album_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -209,6 +210,8 @@ class Book(Base):
 
     short_link: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
     uuid: Mapped[str | None] = mapped_column(String(255), index=True)
+    fb_post_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    fb_photo_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     indexed_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
