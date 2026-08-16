@@ -843,6 +843,23 @@ class FacebookPublisherProvider(PublisherProvider):
         caption = options.get("caption")
 
         if not caption:
+            # Intentar resolver la plantilla por defecto de Facebook configurada en BD
+            try:
+                from core.db_manager_pg import pg_manager
+                from models.communications import PublicationTemplate
+                from sqlalchemy import select
+                from utils.template_engine import apply_publication_template
+
+                async with pg_manager.get_session() as session:
+                    stmt = select(PublicationTemplate).where(PublicationTemplate.platform == "facebook").order_by(PublicationTemplate.is_default.desc(), PublicationTemplate.id.asc())
+                    res = await session.execute(stmt)
+                    tpl = res.scalar_one_or_none()
+                    if tpl and tpl.content:
+                        caption = apply_publication_template(tpl.content, book_data)
+            except Exception as e:
+                logger.debug(f"No se pudo cargar plantilla de BD para Facebook: {e}")
+
+        if not caption:
             caption = apply_publication_template(
                 TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
             )
@@ -1207,12 +1224,19 @@ class PublisherService:
                     platform = item.channel.platform if item.channel else "telegram"
                     provider = self.providers.get(platform)
 
-                    # Cargar plantilla personalizada si existe
+                    # Cargar plantilla personalizada si existe o buscar la predeterminada de la plataforma
                     caption = None
                     cover_quality = "high"
-                    if item.template_id:
-                        template = await self.repo.get_template_by_id(item.template_id)
-                        if template:
+                    template_id_to_use = item.template_id
+                    if not template_id_to_use and item.channel:
+                        platform_templates = await self.repo.get_templates(platform=item.channel.platform)
+                        def_tpl = next((t for t in platform_templates if t.is_default), None) or (platform_templates[0] if platform_templates else None)
+                        if def_tpl:
+                            template_id_to_use = def_tpl.id
+
+                    if template_id_to_use:
+                        template = await self.repo.get_template_by_id(template_id_to_use)
+                        if template and template.content:
                             # Compilar plantilla con los datos del libro
                             caption = apply_publication_template(
                                 template.content, book_data

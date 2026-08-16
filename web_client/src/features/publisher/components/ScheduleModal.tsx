@@ -45,12 +45,33 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
     const [selectedFbAlbumId, setSelectedFbAlbumId] = useState<string>('auto');
 
+    const autoSelectDefaultTemplate = (chanId: number | '', isEdit: boolean) => {
+        if (isEdit && editingItem?.template_id) {
+            setSelectedTemplates([editingItem.template_id]);
+            return;
+        }
+        if (!chanId) {
+            setSelectedTemplates([]);
+            return;
+        }
+        const chanObj = channels.find(c => c.id === Number(chanId));
+        if (chanObj) {
+            const matchingTemplates = templates.filter(t => t.platform === chanObj.platform);
+            const defTpl = matchingTemplates.find(t => t.is_default) || matchingTemplates[0];
+            if (defTpl) {
+                setSelectedTemplates([defTpl.id]);
+                return;
+            }
+        }
+        setSelectedTemplates([]);
+    };
+
     useEffect(() => {
         if (isOpen) {
             setBookHash(editingItem?.book_hash || initialBookHash);
             const defaultChan = editingItem?.channel_id || (channels.find(c => c.is_favorite)?.id || (channels.length > 0 ? channels[0].id : ''));
             setSelectedChannel(defaultChan);
-            setSelectedTemplates(editingItem?.template_id ? [editingItem.template_id] : []);
+            autoSelectDefaultTemplate(defaultChan, Boolean(editingItem));
             setActionType(editingItem?.status === 'sent' ? 'update_existing' : 'create_new');
             setSelectedFbAlbumId(editingItem?.payload?.fb_album_id || 'auto');
             if (editingItem) {
@@ -66,7 +87,14 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             setIsImmediate(false);
             setIsSuccess(false);
         }
-    }, [isOpen, editingItem, initialBookHash, channels]);
+    }, [isOpen, editingItem, initialBookHash, channels, templates]);
+
+    const handleChannelChange = (newChanId: number | '') => {
+        setSelectedChannel(newChanId);
+        if (!editingItem) {
+            autoSelectDefaultTemplate(newChanId, false);
+        }
+    };
 
     const [isImmediate, setIsImmediate] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -356,7 +384,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                                 ) : (
                                     <select
                                         value={selectedChannel}
-                                        onChange={(e) => setSelectedChannel(e.target.value ? Number(e.target.value) : '')}
+                                        onChange={(e) => handleChannelChange(e.target.value ? Number(e.target.value) : '')}
                                         className="w-full p-3 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors"
                                     >
                                         <option value="" className="bg-gray-900">Seleccionar canal...</option>
@@ -472,7 +500,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                                 <span>Plantilla(s) de Texto</span>
                                 {!editingItem && <span className="text-[8px] text-gray-500">Secuencial</span>}
                             </label>
-                            <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto w-full p-2 glass-panel rounded-premium-sm border border-white/10 bg-black/20 custom-scrollbar">
+                            <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto w-full p-2 glass-panel rounded-premium-sm border border-white/10 bg-black/20 custom-scrollbar">
                                 <div
                                     className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-all ${selectedTemplates.length === 0 ? 'bg-primary/20 text-primary border border-primary/30' : 'text-white/60 hover:bg-white/5 border border-transparent'}`}
                                     onClick={() => setSelectedTemplates([])}
@@ -480,14 +508,15 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                                     <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center transition-all ${selectedTemplates.length === 0 ? 'bg-primary border-primary' : 'border-white/20'}`}>
                                         {selectedTemplates.length === 0 && <div className="w-1.5 h-1.5 bg-black rounded-full" />}
                                     </div>
-                                    <span className="text-xs font-semibold">Sin plantilla (Predeterminado)</span>
+                                    <span className="text-xs font-semibold">Sin plantilla (Texto directo predeterminado)</span>
                                 </div>
                                 {templates.map(t => {
                                     const isSelected = selectedTemplates.includes(t.id);
+                                    const isCurrentPlatform = isFacebookChannel ? t.platform === 'facebook' : t.platform === 'telegram';
                                     return (
                                         <div
                                             key={t.id}
-                                            className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-primary/20 text-primary border border-primary/30' : 'text-white/60 hover:bg-white/5 border border-transparent'}`}
+                                            className={`flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-primary/20 text-primary border border-primary/30' : 'text-white/60 hover:bg-white/5 border border-transparent'}`}
                                             onClick={() => {
                                                 if (editingItem || actionType === 'update_existing') {
                                                     setSelectedTemplates([t.id]);
@@ -500,10 +529,22 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                                                 }
                                             }}
                                         >
-                                            <div className={`w-3.5 h-3.5 rounded border transition-all ${isSelected ? 'bg-primary border-primary flex items-center justify-center' : 'border-white/20'}`}>
-                                                {isSelected && <CheckCircle className="w-2.5 h-2.5 text-black" />}
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className={`w-3.5 h-3.5 rounded border transition-all shrink-0 ${isSelected ? 'bg-primary border-primary flex items-center justify-center' : 'border-white/20'}`}>
+                                                    {isSelected && <CheckCircle className="w-2.5 h-2.5 text-black" />}
+                                                </div>
+                                                <span className="text-xs truncate font-medium">{t.name}</span>
                                             </div>
-                                            <span className="text-xs">{t.name} {isSelected && !editingItem && <span className="ml-1 text-[10px] px-1.5 py-0.5 bg-primary/30 rounded-full text-primary-light">#{selectedTemplates.indexOf(t.id) + 1}</span>}</span>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                {t.is_default && (
+                                                    <span className="text-[8px] px-1.5 py-0.5 rounded bg-primary/30 text-primary font-black uppercase tracking-wider">
+                                                        Predeterminada
+                                                    </span>
+                                                )}
+                                                <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${isCurrentPlatform ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-white/10 text-gray-400'}`}>
+                                                    {t.platform}
+                                                </span>
+                                            </div>
                                         </div>
                                     )
                                 })}
