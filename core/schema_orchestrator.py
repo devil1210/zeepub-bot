@@ -104,6 +104,19 @@ class SchemaOrchestrator:
                 # Auto-Migration for SeriesMetadata (Fix missing columns reported in logs)
                 await SchemaOrchestrator._check_and_add_column("series", "series_spanish", "VARCHAR(512)")
                 await SchemaOrchestrator._check_and_add_column("series", "series_english", "VARCHAR(512)")
+                await SchemaOrchestrator._check_and_add_column("series", "fb_album_id", "VARCHAR(128)")
+
+                # Auto-Migration for Books (Facebook & Workgroups)
+                await SchemaOrchestrator._check_and_add_column("books", "fb_post_id", "VARCHAR(128)")
+                await SchemaOrchestrator._check_and_add_column("books", "fb_photo_id", "VARCHAR(128)")
+                await SchemaOrchestrator._check_and_add_column("books", "editor", "VARCHAR(255)")
+                await SchemaOrchestrator._check_and_add_column("books", "translator_group_id", "INTEGER")
+                await SchemaOrchestrator._check_and_add_column("books", "editor_group_id", "INTEGER")
+                await SchemaOrchestrator._check_and_add_column("books", "layout_group_id", "INTEGER")
+
+                # Auto-Migration for TranslatorsGroup
+                await SchemaOrchestrator._check_and_add_column("translators_groups", "description", "TEXT")
+                await SchemaOrchestrator._check_and_add_column("translators_groups", "siglas", "VARCHAR(50)")
 
                 # Auto-Migration for Download History (Fix series_hash missing)
                 await SchemaOrchestrator._check_and_add_column("download_history", "series_hash", "VARCHAR(64)")
