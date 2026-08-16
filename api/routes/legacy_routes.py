@@ -141,6 +141,7 @@ class LegacyRoutes:
             "pub_quick_post": miniapp_handlers.handle_pub_quick_post,
             "pub_update_post": miniapp_handlers.handle_pub_update_post,
             "pub-update-post": miniapp_handlers.handle_pub_update_post,
+            "pub_check_facebook_album": miniapp_handlers.handle_pub_check_facebook_album,
         }
 
     def get_router(self) -> APIRouter:

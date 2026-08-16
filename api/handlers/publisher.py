@@ -473,3 +473,24 @@ async def handle_pub_update_post(data: dict[str, Any], user_data: dict[str, Any]
 
     return {"success": True, "result": result}
 
+
+async def handle_pub_check_facebook_album(data: dict[str, Any], user_data: dict[str, Any]):
+    """
+    Verifica si el álbum de Facebook para la serie de un libro existe en la página de destino.
+    Retorna el estado de existencia y el nombre exacto recomendado para crearlo si falta.
+    """
+    check_staff(user_data)
+    book_id = data.get("book_id") or data.get("book_hash") or data.get("id")
+    if not book_id:
+        raise HTTPException(status_code=400, detail="Missing book_id")
+
+    channel_id = data.get("channel_id")
+
+    result = await publisher_service.check_facebook_album(
+        book_hash=str(book_id),
+        channel_id=int(channel_id) if channel_id else None,
+    )
+
+    return {"success": True, **result}
+
+

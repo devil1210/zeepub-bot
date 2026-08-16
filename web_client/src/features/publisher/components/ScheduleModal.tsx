@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
-import { X, Send, Calendar, Clock, CheckCircle, Hash, Edit3, RefreshCw, Sparkles } from 'lucide-react';
+import { X, Send, Calendar, Clock, CheckCircle, Hash, Edit3, RefreshCw, Sparkles, Copy, Check, AlertTriangle, FolderCheck, FolderPlus } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { usePublisher } from '../hooks/usePublisher';
 import { publisherApi, PublicationQueueItem } from '../services/publisherApi';
@@ -70,6 +70,62 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     const [isSuccess, setIsSuccess] = useState(false);
     const [successMsg, setSuccessMsg] = useState('¡Programado con éxito!');
     const [customCaption, setCustomCaption] = useState('');
+    const [albumCheck, setAlbumCheck] = useState<{
+        loading: boolean;
+        exists?: boolean;
+        album_name?: string;
+        album_id?: string;
+        recommended_name?: string;
+        candidates?: string[];
+        error?: string;
+    } | null>(null);
+    const [copiedAlbumName, setCopiedAlbumName] = useState(false);
+
+    const selectedChanObj = channels.find(c => c.id === Number(selectedChannel));
+    const isFacebookChannel = selectedChanObj?.platform === 'facebook';
+
+    useEffect(() => {
+        if (!isOpen || !bookHash || !isFacebookChannel) {
+            setAlbumCheck(null);
+            return;
+        }
+
+        let isMounted = true;
+        setAlbumCheck({ loading: true });
+
+        publisherApi.checkFacebookAlbum(bookHash, Number(selectedChannel))
+            .then((res: any) => {
+                if (!isMounted) return;
+                setAlbumCheck({
+                    loading: false,
+                    exists: res.exists,
+                    album_name: res.album_name,
+                    album_id: res.album_id,
+                    recommended_name: res.recommended_name,
+                    candidates: res.candidates,
+                    error: res.error,
+                });
+            })
+            .catch((err: any) => {
+                if (!isMounted) return;
+                setAlbumCheck({
+                    loading: false,
+                    exists: false,
+                    error: err.message,
+                });
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [isOpen, bookHash, selectedChannel, isFacebookChannel]);
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        setCopiedAlbumName(true);
+        setTimeout(() => setCopiedAlbumName(false), 2000);
+    };
+
     const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
     const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
@@ -303,6 +359,63 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                                 )}
                             </div>
                         </div>
+
+                        {/* Detector de Álbum en Facebook */}
+                        {isFacebookChannel && (
+                            <div className="flex flex-col gap-2 animate-in fade-in duration-300">
+                                {albumCheck?.loading ? (
+                                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 text-xs text-gray-400">
+                                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                                        <span>Comprobando álbum en la página de Facebook...</span>
+                                    </div>
+                                ) : albumCheck?.exists ? (
+                                    <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/25 flex items-center justify-between gap-2 text-green-300">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-[10px] font-black uppercase tracking-wider text-green-400">Álbum Detectado en Facebook</p>
+                                                <p className="text-xs text-white font-bold truncate">"{albumCheck.album_name}"</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 border border-green-500/30 shrink-0 font-bold">
+                                            Auto-agrupado
+                                        </span>
+                                    </div>
+                                ) : albumCheck && !albumCheck.loading && !albumCheck.exists ? (
+                                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-2.5 text-amber-200">
+                                        <div className="flex items-start gap-2">
+                                            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                                            <div className="flex flex-col gap-0.5 w-full">
+                                                <p className="text-[10px] font-black uppercase tracking-wider text-amber-400">
+                                                    Álbum no encontrado en Facebook
+                                                </p>
+                                                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                                                    Para agrupar las portadas de esta serie, crea un álbum en Facebook con este <strong>nombre exacto</strong>:
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-2 p-2 bg-black/40 rounded-lg border border-amber-500/20">
+                                            <span className="text-xs font-black text-white px-1 select-all truncate">
+                                                {albumCheck.recommended_name || bookTitle}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(albumCheck.recommended_name || bookTitle)}
+                                                className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-md border border-amber-500/30 flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                                            >
+                                                {copiedAlbumName ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                                {copiedAlbumName ? '¡Copiado!' : 'Copiar'}
+                                            </button>
+                                        </div>
+
+                                        <p className="text-[9px] text-amber-300/70 italic leading-tight">
+                                            💡 Si publicas sin crearlo, el bot publicará en el muro principal como fallback.
+                                        </p>
+                                    </div>
+                                ) : null}
+                            </div>
+                        )}
 
                         {/* Plantilla (Multi-select) */}
                         <div className="flex flex-col gap-2">

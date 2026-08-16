@@ -107,6 +107,9 @@ export const publisherApi = {
         platforms?: string[];
     }) => api.rpc('pub_update_post', data),
 
+    checkFacebookAlbum: (bookId: string, channelId?: number) =>
+        api.rpc('pub_check_facebook_album', { book_id: bookId, channel_id: channelId }),
+
     restoreTemplates: (platform: string = 'telegram') =>
         api.rpc('pub_restore_templates', { platform }),
 };

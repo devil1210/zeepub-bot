@@ -477,15 +477,21 @@ class FacebookPublisherProvider(PublisherProvider):
         token: str,
         series_name: str,
         series_id: str | None = None,
+        alt_names: list[str] | None = None,
     ) -> str | None:
         """
-        Obtiene el ID del álbum de la serie o lo crea automáticamente si no existe.
+        Obtiene el ID del álbum de la serie o lo busca en Facebook con soporte de nombres alternativos.
         Persiste el fb_album_id en el registro de Series.
         """
         if not series_name or not series_name.strip():
             return None
 
         clean_series_name = series_name.strip()
+        all_candidates = [clean_series_name]
+        if alt_names:
+            for an in alt_names:
+                if an and an.strip() and an.strip() not in all_candidates:
+                    all_candidates.append(an.strip())
 
         # 1. Verificar si ya tenemos el fb_album_id en la base de datos
         if series_id:
@@ -518,19 +524,34 @@ class FacebookPublisherProvider(PublisherProvider):
                 )
                 if resp.status_code == 200:
                     albums = resp.json().get("data", [])
+                    # Paso A: Coincidencia exacta (case-insensitive) con cualquiera de los candidatos
                     for album in albums:
-                        if (
-                            album.get("name", "").strip().lower()
-                            == clean_series_name.lower()
-                        ):
-                            found_id = str(album.get("id"))
-                            logger.info(
-                                f"Álbum encontrado en Facebook: '{clean_series_name}' -> {found_id}"
-                            )
-                            await self._persist_series_album_id(series_id, found_id)
-                            return found_id
+                        alb_name = album.get("name", "").strip().lower()
+                        for cand in all_candidates:
+                            if alb_name == cand.lower():
+                                found_id = str(album.get("id"))
+                                logger.info(
+                                    f"Álbum exacto encontrado en Facebook: '{cand}' -> {album.get('name')} (ID: {found_id})"
+                                )
+                                await self._persist_series_album_id(series_id, found_id)
+                                return found_id
 
-                # 3. Si no existe, crear nuevo álbum
+                    # Paso B: Coincidencia parcial / substring si el nombre es representativo (>= 4 caracteres)
+                    for album in albums:
+                        alb_name = album.get("name", "").strip().lower()
+                        if alb_name in ("fotos", "fotos del perfil", "fotos de portada", "mobile uploads"):
+                            continue
+                        for cand in all_candidates:
+                            c_low = cand.lower()
+                            if len(c_low) >= 4 and (c_low in alb_name or alb_name in c_low):
+                                found_id = str(album.get("id"))
+                                logger.info(
+                                    f"Álbum parcial encontrado en Facebook: '{cand}' -> {album.get('name')} (ID: {found_id})"
+                                )
+                                await self._persist_series_album_id(series_id, found_id)
+                                return found_id
+
+                # 3. Si no existe, intentar crear nuevo álbum
                 payload_create = {
                     "name": clean_series_name,
                     "message": f"Álbum oficial de la serie: {clean_series_name}",
@@ -550,12 +571,118 @@ class FacebookPublisherProvider(PublisherProvider):
                     return new_album_id
                 else:
                     logger.warning(
-                        f"No se pudo crear álbum para '{clean_series_name}': {create_resp.text}"
+                        f"⚠️ Álbum para '{clean_series_name}' no existe en Facebook. Para que se agrupen los libros, crea un álbum en tu Página con el nombre exacto: '{clean_series_name}'"
                     )
         except Exception as e:
             logger.error(f"Excepción al gestionar álbum de Facebook: {e}")
 
         return None
+
+    async def check_album_exists(
+        self,
+        target_page_id: str | int | None,
+        token: str,
+        series_name: str,
+        series_id: str | None = None,
+        alt_names: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """
+        Verifica si existe el álbum en Facebook y entrega el nombre específico recomendado.
+        """
+        resolved_page_id, page_token = await self._resolve_credentials(
+            target_page_id, token
+        )
+
+        clean_series_name = series_name.strip() if series_name else ""
+        all_candidates = [clean_series_name] if clean_series_name else []
+        if alt_names:
+            for an in alt_names:
+                if an and an.strip() and an.strip() not in all_candidates:
+                    all_candidates.append(an.strip())
+
+        recommended_name = clean_series_name or (alt_names[0] if alt_names else "Serie")
+
+        if not resolved_page_id or not page_token:
+            return {
+                "exists": False,
+                "album_id": None,
+                "album_name": None,
+                "recommended_name": recommended_name,
+                "candidates": all_candidates,
+                "error": "Credenciales de Facebook no configuradas",
+            }
+
+        import httpx
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    f"https://graph.facebook.com/v19.0/{resolved_page_id}/albums",
+                    params={"access_token": page_token, "fields": "id,name", "limit": 100},
+                    timeout=15,
+                )
+                if resp.status_code == 200:
+                    albums = resp.json().get("data", [])
+                    # Exact match
+                    for album in albums:
+                        alb_name = album.get("name", "").strip().lower()
+                        for cand in all_candidates:
+                            if alb_name == cand.lower():
+                                found_id = str(album.get("id"))
+                                await self._persist_series_album_id(series_id, found_id)
+                                return {
+                                    "exists": True,
+                                    "album_id": found_id,
+                                    "album_name": album.get("name"),
+                                    "recommended_name": recommended_name,
+                                    "candidates": all_candidates,
+                                    "page_id": resolved_page_id,
+                                }
+                    # Partial match
+                    for album in albums:
+                        alb_name = album.get("name", "").strip().lower()
+                        if alb_name in ("fotos", "fotos del perfil", "fotos de portada", "mobile uploads"):
+                            continue
+                        for cand in all_candidates:
+                            c_low = cand.lower()
+                            if len(c_low) >= 4 and (c_low in alb_name or alb_name in c_low):
+                                found_id = str(album.get("id"))
+                                await self._persist_series_album_id(series_id, found_id)
+                                return {
+                                    "exists": True,
+                                    "album_id": found_id,
+                                    "album_name": album.get("name"),
+                                    "recommended_name": recommended_name,
+                                    "candidates": all_candidates,
+                                    "page_id": resolved_page_id,
+                                }
+
+                    return {
+                        "exists": False,
+                        "album_id": None,
+                        "album_name": None,
+                        "recommended_name": recommended_name,
+                        "candidates": all_candidates,
+                        "page_id": resolved_page_id,
+                    }
+                else:
+                    return {
+                        "exists": False,
+                        "album_id": None,
+                        "album_name": None,
+                        "recommended_name": recommended_name,
+                        "candidates": all_candidates,
+                        "error": f"Facebook API error: {resp.status_code}",
+                    }
+        except Exception as e:
+            return {
+                "exists": False,
+                "album_id": None,
+                "album_name": None,
+                "recommended_name": recommended_name,
+                "candidates": all_candidates,
+                "error": str(e),
+            }
 
     async def _persist_series_album_id(
         self, series_id: str | None, album_id: str
@@ -736,18 +863,34 @@ class FacebookPublisherProvider(PublisherProvider):
         )
 
         book_hash = book_data.get("id") or book_data.get("book_hash")
-        series_name = (
-            book_data.get("series_spanish")
-            or book_data.get("series_name")
-            or book_data.get("series")
-            or book_data.get("title")
-        )
+        series_spanish = book_data.get("series_spanish")
+        series_orig = book_data.get("series_name") or book_data.get("series")
+        title = book_data.get("title")
+
+        alt_names = []
+        for n in [series_spanish, series_orig, title]:
+            if n and n.strip() and n.strip() not in alt_names:
+                alt_names.append(n.strip())
+            if n and ":" in n:
+                prefix = n.split(":")[0].strip()
+                if prefix and prefix not in alt_names:
+                    alt_names.append(prefix)
+            if n and " - " in n:
+                prefix = n.split(" - ")[0].strip()
+                if prefix and prefix not in alt_names:
+                    alt_names.append(prefix)
+            if n and "." in n:
+                prefix = n.split(".")[0].strip()
+                if prefix and prefix not in alt_names:
+                    alt_names.append(prefix)
+
+        series_name = series_spanish or series_orig or title
         series_id = book_data.get("series_id") or book_data.get("series_hash")
 
         # 1. Intentar publicar en el álbum de la serie si aplica
         if series_name:
             album_id = await self.get_or_create_series_album(
-                target_group_id, token, series_name, series_id
+                target_group_id, token, series_name, series_id, alt_names=alt_names
             )
             if album_id:
                 upload_res = await self.publish_photo_to_album(
@@ -1234,8 +1377,63 @@ class PublisherService:
 
     async def upsert_chat(self, chat_id: str, title: str, chat_type: str, **kwargs):
         """Descubrimiento de chats."""
-        return await self.repo.save_discovered_chat(
-            chat_id, title, chat_type, **kwargs
+    async def check_facebook_album(
+        self,
+        book_hash: str,
+        channel_id: int | None = None,
+    ) -> dict[str, Any]:
+        """
+        Verifica si existe el álbum de Facebook para la serie de un libro dado.
+        Retorna status, nombres recomendados y candidatos.
+        """
+        from config.config_settings import config
+        from models.communications import PublicationChannel
+        from models.library import Book
+
+        book = await self.book_repo.get_by_hash(book_hash)
+        if not book:
+            return {"exists": False, "error": "Libro no encontrado"}
+
+        series_name = (
+            (book.series.series_spanish if book.series else None)
+            or (book.series.name if book.series else None)
+            or getattr(book, "series_english", None)
+            or book.title
+        )
+        series_orig = book.series.name if book.series else None
+        series_id = str(book.series_id) if book.series_id else None
+
+        recommended = series_name or book.title
+
+        raw_candidates = [series_name, series_orig, book.title]
+        if series_name and ":" in series_name:
+            raw_candidates.append(series_name.split(":")[0].strip())
+        if series_name and " - " in series_name:
+            raw_candidates.append(series_name.split(" - ")[0].strip())
+        if series_name and "." in series_name:
+            raw_candidates.append(series_name.split(".")[0].strip())
+
+        candidates = []
+        for c in raw_candidates:
+            if c and c.strip() and c.strip() not in candidates:
+                candidates.append(c.strip())
+
+        target_page_id = None
+        if channel_id:
+            chan = await self.repo.get_channel_by_id(channel_id)
+            if chan and chan.target_id:
+                target_page_id = chan.target_id
+
+        fb_provider = self.providers.get("facebook")
+        if not fb_provider:
+            fb_provider = FacebookPublisherProvider()
+
+        return await fb_provider.check_album_exists(
+            target_page_id=target_page_id,
+            token=config.FACEBOOK_PAGE_ACCESS_TOKEN,
+            series_name=recommended,
+            series_id=series_id,
+            alt_names=candidates,
         )
 
 
@@ -1307,6 +1505,21 @@ class PublisherServiceWrapper:
                 book_hash=book_hash,
                 new_caption=new_caption,
                 platforms=platforms,
+            )
+
+    @classmethod
+    async def check_facebook_album(
+        cls,
+        book_hash: str,
+        channel_id: int | None = None,
+    ) -> dict[str, Any]:
+        from core.db_manager_pg import pg_manager
+
+        async with pg_manager.get_session() as session:
+            service = PublisherService(session)
+            return await service.check_facebook_album(
+                book_hash=book_hash,
+                channel_id=channel_id,
             )
 
 

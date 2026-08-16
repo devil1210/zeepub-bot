@@ -97,6 +97,7 @@ from api.handlers.observatory import (
     handle_observatory_publications,
 )
 from api.handlers.publisher import (
+    handle_pub_check_facebook_album,
     handle_pub_delete_channel,
     handle_pub_delete_queue_item,
     handle_pub_delete_template,
