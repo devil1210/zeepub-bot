@@ -11,7 +11,6 @@ from typing import Any
 import httpx
 
 from config.config_settings import config
-from utils.template_engine import apply_publication_template
 
 logger = logging.getLogger(__name__)
 

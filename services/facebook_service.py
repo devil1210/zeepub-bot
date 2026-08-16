@@ -8,7 +8,6 @@ Contains all Facebook-related flows:
 """
 
 import logging
-import re
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.error import BadRequest
@@ -73,6 +72,7 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     # Generar caption FB usando plantilla unificada
     from services.publisher.publisher_service import TelegramPublisherProvider
     from utils.helpers import clean_caption_for_facebook
+    from utils.template_engine import apply_publication_template
 
     raw_fb_caption = apply_publication_template(TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta)
     fb_caption_text = clean_caption_for_facebook(raw_fb_caption, public_link=public_link)
