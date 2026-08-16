@@ -54,6 +54,179 @@ class PublisherService:
             "x": TwitterPublisherProvider(),
         }
 
+    @staticmethod
+    def _build_book_data_dict(book: Any) -> dict[str, Any]:
+        """Extrae y formatea un diccionario exhaustivo de metadatos para plantillas."""
+        if not book:
+            return {}
+
+        series_info = getattr(book, "series_info", None) or getattr(book, "series", None)
+
+        english_t = (
+            (getattr(series_info, "series_english", None) if series_info else None)
+            or getattr(book, "series_english", None)
+            or getattr(book, "english_title", None)
+            or ""
+        )
+        spanish_t = (
+            (getattr(series_info, "series_spanish", None) if series_info else None)
+            or getattr(book, "series_spanish", None)
+            or getattr(book, "spanish_title", None)
+            or book.title
+            or ""
+        )
+        romaji_t = (
+            (getattr(series_info, "romaji", None) or getattr(series_info, "name", None) if series_info else None)
+            or getattr(book, "romaji", None)
+            or getattr(book, "romaji_title", None)
+            or ""
+        )
+        s_slug = (
+            (getattr(series_info, "slug", None) if series_info else None)
+            or (getattr(series_info, "series_spanish", None) if series_info else None)
+            or getattr(book, "slug", None)
+            or spanish_t
+            or book.title
+            or ""
+        )
+
+        vol = getattr(book, "volume", None)
+        vol_str = ""
+        if vol is not None:
+            vol_str = str(int(vol)) if hasattr(vol, "is_integer") and vol.is_integer() else str(vol)
+
+        # Formateo de fechas
+        fecha_act = ""
+        if getattr(book, "file_modified_at", None):
+            fecha_act = book.file_modified_at.strftime("%d/%m/%Y")
+        elif getattr(book, "updated_at", None):
+            fecha_act = book.updated_at.strftime("%d/%m/%Y")
+        elif getattr(book, "created_at", None):
+            fecha_act = book.created_at.strftime("%d/%m/%Y")
+
+        fecha_pub = ""
+        if getattr(book, "modified_at_opf", None):
+            fecha_pub = book.modified_at_opf.strftime("%d/%m/%Y")
+
+        # Formateo de tamaño
+        size_str = ""
+        if getattr(book, "file_size", None):
+            size_str = f"{book.file_size / (1024 * 1024):.2f} MB"
+
+        # Formateo de palabras y páginas
+        palabras_str = ""
+        if getattr(book, "word_count", None):
+            palabras_str = f"{book.word_count:,}".replace(",", ".")
+
+        paginas_str = str(book.page_count) if getattr(book, "page_count", None) else ""
+
+        # Formateo de géneros y demografías
+        genres_list = (getattr(series_info, "tags_json", None) if series_info else None) or getattr(book, "tags_json", None) or []
+        genres_str = ", ".join(genres_list) if isinstance(genres_list, list) else str(genres_list or "")
+
+        demo_list = (getattr(series_info, "demographics_json", None) if series_info else None) or getattr(book, "demographics_json", None) or []
+        demo_str = ", ".join(demo_list) if isinstance(demo_list, list) else str(demo_list or "")
+
+        dl_link = f"https://dl.zeepubs.com/{book.short_link}" if getattr(book, "short_link", None) else ""
+
+        return {
+            # Títulos y Series
+            "title": book.title or "",
+            "titulo": book.title or "",
+            "english_title": english_t,
+            "title_english": english_t,
+            "spanish_title": spanish_t,
+            "title_spanish": spanish_t,
+            "romaji_title": romaji_t,
+            "romaji": romaji_t,
+            "title_romaji": romaji_t,
+            "jap_title": getattr(book, "author_jap", "") or getattr(book, "illustrator_jap", "") or "",
+            "serie": english_t or spanish_t or book.title or "",
+            "series": (getattr(series_info, "name", None) if series_info else None) or english_t or spanish_t or book.title or "",
+            "series_name": (getattr(series_info, "name", None) if series_info else None) or english_t or "",
+            "series_english": english_t,
+            "series_spanish": spanish_t,
+            "slug": s_slug,
+            # Volumen
+            "volume": vol_str or (vol if vol is not None else ""),
+            "volumen": vol_str or (vol if vol is not None else ""),
+            "vol": vol_str or (vol if vol is not None else ""),
+            # Créditos y Personas
+            "author": book.author or (getattr(series_info, "author", None) if series_info else "") or "",
+            "autor": book.author or (getattr(series_info, "author", None) if series_info else "") or "",
+            "illustrator": getattr(book, "illustrator", "") or (getattr(series_info, "illustrator", None) if series_info else "") or "",
+            "ilustrador": getattr(book, "illustrator", "") or (getattr(series_info, "illustrator", None) if series_info else "") or "",
+            "author_jap": getattr(book, "author_jap", "") or (getattr(series_info, "author_jap", None) if series_info else "") or "",
+            "illustrator_jap": getattr(book, "illustrator_jap", "") or (getattr(series_info, "illustrator_jap", None) if series_info else "") or "",
+            "layout_by": getattr(book, "layout_by", "") or "",
+            "maquetador": getattr(book, "layout_by", "") or "",
+            "traductor": getattr(book, "translator", "") or "",
+            "translator": getattr(book, "translator", "") or "",
+            "editor": getattr(book, "editor", "") or "",
+            # Textos descriptivos
+            "sinopsis": (getattr(series_info, "description", None) if series_info else None) or book.description or "",
+            "description": (getattr(series_info, "description", None) if series_info else None) or book.description or "",
+            "resumen": (getattr(series_info, "description", None) if series_info else None) or book.description or "",
+            # Metadatos del libro
+            "tipo": (getattr(series_info, "book_type", None) if series_info else None) or "Novela Ligera",
+            "book_type": (getattr(series_info, "book_type", None) if series_info else None) or "Novela Ligera",
+            "categoria": (getattr(series_info, "book_type", None) if series_info else None) or "Novela Ligera",
+            "publisher": getattr(book, "publisher", "") or (getattr(series_info, "publisher", None) if series_info else "") or "",
+            "editorial": getattr(book, "publisher", "") or (getattr(series_info, "publisher", None) if series_info else "") or "",
+            "genres": genres_str,
+            "generos": genres_str,
+            "tags": genres_str,
+            "demography": demo_str,
+            "demographics": demo_str,
+            "demografia": demo_str,
+            # Números, Fechas y Tamaños
+            "size_mb": size_str,
+            "tamaño": size_str,
+            "file_size": size_str,
+            "size": size_str,
+            "fecha": fecha_act,
+            "fecha_actualizacion": fecha_act,
+            "updated_at": fecha_act,
+            "published_at": fecha_pub,
+            "fecha_publicacion": fecha_pub,
+            "fecha_publ": fecha_pub,
+            "modified_at_opf": fecha_pub,
+            "palabras": palabras_str,
+            "words": palabras_str,
+            "paginas": paginas_str,
+            "pages": paginas_str,
+            "isbn": getattr(book, "isbn", "") or "",
+            "asin": getattr(book, "asin", "") or "",
+            "edition": getattr(book, "edition", "") or "",
+            "edicion": getattr(book, "edition", "") or "",
+            "epub_version": getattr(book, "epub_version", "") or "v3.0",
+            "version": getattr(book, "epub_version", "") or "v3.0",
+            "language": getattr(book, "language", "") or "es",
+            "idioma": getattr(book, "language", "") or "es",
+            "is_uncensored": "Sí" if getattr(book, "is_uncensored", False) else "No",
+            "color_mode": getattr(book, "color_mode", "") or "",
+            "rating": str(getattr(book, "rating_average", 0.0) or 0.0),
+            "votes": str(getattr(book, "rating_count", 0) or 0),
+            "reading_time": f"{book.reading_time} min" if getattr(book, "reading_time", None) else "",
+            # Enlaces y Archivo
+            "download_link": dl_link,
+            "enlace_descarga": dl_link,
+            "link": dl_link,
+            "short_link": getattr(book, "short_link", "") or "",
+            "filename": getattr(book, "filename", "") or "",
+            "archivo": getattr(book, "filename", "") or "",
+            "book_hash": str(book.id),
+            "hash": str(book.id),
+            "id": str(book.id),
+            # Portadas
+            "cover_original": getattr(book, "cover_original", None),
+            "cover_high": getattr(book, "cover_high", None),
+            "cover_medium": getattr(book, "cover_medium", None),
+            "cover_low": getattr(book, "cover_low", None),
+            "portada": (getattr(series_info, "cover_url", None) if series_info else None)
+            or (getattr(book, "cover_medium", None) or getattr(book, "cover_low", None) or ""),
+        }
+
     async def schedule_publication(
         self,
         book_hash: str,
@@ -90,108 +263,7 @@ class PublisherService:
                     if item.book_hash:
                         book = await self.book_repo.get_by_hash(item.book_hash)
                         if book:
-                            english_t = (
-                                getattr(book.series, "series_english", None)
-                                if book.series
-                                else None
-                            ) or getattr(book, "series_english", None) or getattr(book, "english_title", None) or ""
-                            spanish_t = (
-                                getattr(book.series, "series_spanish", None)
-                                if book.series
-                                else None
-                            ) or getattr(book, "series_spanish", None) or getattr(book, "spanish_title", None) or book.title or ""
-                            romaji_t = (
-                                getattr(book.series, "romaji", None)
-                                or getattr(book.series, "name", None)
-                                if book.series
-                                else None
-                            ) or getattr(book, "romaji", None) or getattr(book, "romaji_title", None) or ""
-                            s_slug = (
-                                getattr(book.series, "slug", None)
-                                if book.series
-                                else None
-                            ) or getattr(book, "slug", None) or ""
-
-                            book_data = {
-                                "title": book.title,
-                                "english_title": english_t,
-                                "spanish_title": spanish_t,
-                                "romaji_title": romaji_t,
-                                "romaji": romaji_t,
-                                "slug": s_slug,
-                                "author": book.author
-                                or (book.series.author if book.series else ""),
-                                "volume": book.volume,
-                                "cover_original": book.cover_original,
-                                "cover_high": book.cover_high,
-                                "cover_medium": book.cover_medium,
-                                "cover_low": book.cover_low,
-                                "portada": book.series.cover_url
-                                if book.series
-                                else (book.cover_medium or book.cover_low or ""),
-                                "serie": english_t or spanish_t,
-                                "series_english": english_t,
-                                "series_spanish": spanish_t,
-                                "series": (book.series.name if book.series else None)
-                                or english_t
-                                or spanish_t,
-                                "sinopsis": (
-                                    book.series.description if book.series else None
-                                )
-                                or book.description
-                                or "",
-                                "generos": book.series.tags_json
-                                if book.series
-                                else (book.tags_json or []),
-                                "tags": book.series.tags_json
-                                if book.series
-                                else (book.tags_json or []),
-                                "demographics": book.series.demographics_json
-                                if book.series
-                                else (book.demographics_json or []),
-                                "demography": book.series.demographics_json
-                                if book.series
-                                else (book.demographics_json or []),
-                                "illustrator": (
-                                    book.series.illustrator if book.series else None
-                                )
-                                or book.illustrator
-                                or "",
-                                "author_jap": (
-                                    book.series.author_jap if book.series else None
-                                )
-                                or book.author_jap
-                                or "",
-                                "illustrator_jap": (
-                                    book.series.illustrator_jap if book.series else None
-                                )
-                                or book.illustrator_jap
-                                or "",
-                                "series_name": (
-                                    book.series.name if book.series else None
-                                )
-                                or book.series_english
-                                or "",
-                                "layout_by": book.layout_by if book.layout_by else "",
-                                "book_type": book.series.book_type
-                                if book.series
-                                else "Light Novel",
-                                "publisher": book.series.publisher if book.series else "",
-                                "book_hash": book.book_hash,
-                                "traductor": book.translator if book.translator else "",
-                                "editorial": book.publisher
-                                or (book.series.publisher if book.series else ""),
-                                "epub_version": book.epub_version or "",
-                                "version": book.epub_version or "",
-                                "modified_at_opf": book.modified_at_opf.isoformat()
-                                if book.modified_at_opf
-                                else "",
-                                "updated_at": book.file_modified_at.isoformat()
-                                if book.file_modified_at
-                                else "",
-                                "filename": book.filename or "",
-                                "short_link": book.short_link or "",
-                            }
+                            book_data = self._build_book_data_dict(book)
 
                             # Enriquecer con metadatos y enlaces de grupo traductor, editor y maquetador por UUID de libro
                             from services.workgroup_service import workgroup_service
@@ -201,7 +273,7 @@ class PublisherService:
                                     book_id=book.id,
                                     book_obj=book,
                                     raw_meta=book_data,
-                                    public_link=f"https://dl.zeepubs.com/{book.short_link}" if book.short_link else None,
+                                    public_link=book_data.get("download_link"),
                                 )
                             )
                             book_data.update(credits_meta)
@@ -376,30 +448,12 @@ class PublisherService:
         # 1. Resolver metadatos y créditos actualizados del libro por UUID
         from services.workgroup_service import workgroup_service
 
-        series_info = getattr(book, "series_info", None)
-        book_data = {
-            "title": book.title,
-            "volume": book.volume,
-            "series": (series_info.series_name if series_info else None)
-            or getattr(book, "series_english", None)
-            or book.title,
-            "series_spanish": (
-                series_info.series_spanish if series_info else None
-            )
-            or getattr(book, "series_spanish", None)
-            or book.title,
-            "author": book.author or (book.series.author if book.series else ""),
-            "description": (book.series.description if book.series else None)
-            or book.description
-            or "",
-            "short_link": book.short_link or "",
-            "download_link": f"https://dl.zeepubs.com/{book.short_link}" if book.short_link else "",
-            "book_hash": book.id,
-            "hash": book.id,
-            "slug": (series_info.series_spanish if series_info else None) or book.title,
-        }
+        book_data = self._build_book_data_dict(book)
         credits_meta = await workgroup_service.resolve_book_workgroup_credits(
-            book_id=book.id, book_obj=book, raw_meta=book_data
+            book_id=book.id,
+            book_obj=book,
+            raw_meta=book_data,
+            public_link=book_data.get("download_link"),
         )
         book_data.update(credits_meta)
 
