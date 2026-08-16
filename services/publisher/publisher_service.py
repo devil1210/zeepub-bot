@@ -538,7 +538,7 @@ class FacebookPublisherProvider(PublisherProvider):
                 create_resp = await client.post(
                     f"https://graph.facebook.com/v19.0/{target_page_id}/albums",
                     params={"access_token": token},
-                    json=payload_create,
+                    data=payload_create,
                     timeout=25,
                 )
                 if create_resp.status_code in (200, 201):
