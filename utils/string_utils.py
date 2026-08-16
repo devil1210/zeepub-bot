@@ -90,3 +90,53 @@ def get_translator_acronym(translator: str | None) -> str:
 
     acronym = "".join([p[0].upper() for p in parts if p and p[0].isalpha()])
     return acronym or "?"
+
+
+def clean_caption_for_facebook(caption: str, public_link: str | None = None) -> str:
+    """
+    Formatea y limpia el texto para publicaciones de Facebook:
+    - Elimina textos de ancla redundantes como 'Pulsa aquí', 'Pulsa aqui', 'Click aquí', dejando la URL limpia.
+    - Convierte hipervínculos HTML (<a href="...">) y Markdown ([...](...)) a texto plano.
+    - Preserva el formato limpio y respeta límites de caracteres de Facebook.
+    """
+    if not caption:
+        caption = ""
+
+    # 1. Reemplazar enlaces Markdown [anchor](url)
+    def repl_md(match):
+        anchor, url = match.group(1).strip(), match.group(2).strip()
+        if not anchor or anchor.lower() in ("pulsa aquí", "pulsa aqui", "click aquí", "click aqui", "aquí", "aqui", "link", "descarga", "descargar"):
+            return url
+        return f"{anchor}: {url}"
+
+    fb_caption = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', repl_md, caption)
+
+    # 2. Reemplazar enlaces HTML <a href="url">anchor</a>
+    def repl_html(match):
+        url, anchor = match.group(1).strip(), match.group(2).strip()
+        if not anchor or anchor.lower() in ("pulsa aquí", "pulsa aqui", "click aquí", "click aqui", "aquí", "aqui", "link", "descarga", "descargar"):
+            return url
+        return f"{anchor}: {url}"
+
+    fb_caption = re.sub(r'<a\s+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', repl_html, fb_caption, flags=re.IGNORECASE)
+
+    # 3. Limpiar saltos de línea HTML y etiquetas restantes
+    fb_caption = re.sub(r'<(br|/p|/div|hr)\s*/?>', '\n', fb_caption, flags=re.IGNORECASE)
+    fb_caption = re.sub(r'<p[^>]*>', '', fb_caption, flags=re.IGNORECASE)
+    fb_caption = re.sub(r'<[^>]+>', '', fb_caption).strip()
+
+    # 4. Eliminar "Pulsa aquí" si venía como texto plano previo ("Descarga: Pulsa aquí: https://...")
+    fb_caption = re.sub(r'(Descarga:\s*)Pulsa aqu[íi]:?\s*', r'\1', fb_caption, flags=re.IGNORECASE)
+    fb_caption = re.sub(r'Pulsa aqu[íi]:?\s*', '', fb_caption, flags=re.IGNORECASE)
+    fb_caption = re.sub(r'Descarga:\s*:\s*', 'Descarga: ', fb_caption, flags=re.IGNORECASE)
+
+    # 5. Añadir enlace público si existe y no está ya en la descripción
+    if public_link and public_link not in fb_caption and "http" not in fb_caption:
+        fb_caption = f"{fb_caption}\n\n⬇️ Descarga: {public_link}"
+
+    # 6. Normalizar saltos de línea y longitud
+    fb_caption = re.sub(r'\n{3,}', '\n\n', fb_caption)
+    if len(fb_caption) > 2100:
+        fb_caption = fb_caption[:2097] + "..."
+
+    return fb_caption

@@ -51,20 +51,9 @@ async def handle_facebook_publication(
             TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta
         )
 
-    # Convertir hipervínculos HTML y etiquetas de salto de línea a texto plano con saltos reales para Facebook
-    fb_caption = re.sub(r'<a\s+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', r'\2: \1', fb_caption, flags=re.IGNORECASE)
-    fb_caption = re.sub(r'<(br|/p|/div|hr)\s*/?>', '\n', fb_caption, flags=re.IGNORECASE)
-    fb_caption = re.sub(r'<p[^>]*>', '', fb_caption, flags=re.IGNORECASE)
-    fb_caption = re.sub(r'<[^>]+>', '', fb_caption).strip()
-    fb_caption = re.sub(r'\n{3,}', '\n\n', fb_caption)
-
-    # Añadir link de descarga si existe y no está incluido en la plantilla
-    if public_link and public_link not in fb_caption and "http" not in fb_caption:
-        fb_caption = f"{fb_caption}\n\n⬇️ Descarga: {public_link}"
-
-    # Truncar si excede el límite de FB
-    if len(fb_caption) > 2100:
-        fb_caption = fb_caption[:2097] + "..."
+    # Limpiar y formatear caption para Facebook eliminando 'Pulsa aquí' y convirtiendo links a texto plano
+    from utils.helpers import clean_caption_for_facebook
+    fb_caption = clean_caption_for_facebook(fb_caption, public_link=public_link)
 
     logger.debug(f"Caption FB generado vía template engine, longitud: {len(fb_caption)}")
 

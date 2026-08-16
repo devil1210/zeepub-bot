@@ -72,12 +72,11 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
 
     # Generar caption FB usando plantilla unificada
     from services.publisher.publisher_service import TelegramPublisherProvider
-    from utils.template_engine import apply_publication_template
+    from utils.helpers import clean_caption_for_facebook
 
-    fb_caption = apply_publication_template(TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta)
-    # Limpiar HTML residual (FB no soporta)
-    fb_caption = re.sub(r"<[^>]+>", "", fb_caption)
-    fb_caption = f"<b>Vista Previa Facebook:</b>\n\n{fb_caption}\n\n⬇️ Descarga: {public_link}"
+    raw_fb_caption = apply_publication_template(TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta)
+    fb_caption_text = clean_caption_for_facebook(raw_fb_caption, public_link=public_link)
+    fb_caption = f"<b>Vista Previa Facebook:</b>\n\n{fb_caption_text}"
 
     # Guardar en estado para publicación
     user_state["fb_caption"] = fb_caption

@@ -20,6 +20,7 @@ from utils.metadata_utils import (
 
 # --- string_utils ---
 from utils.string_utils import (
+    clean_caption_for_facebook,  # noqa: F401
     escapar_html,  # noqa: F401
     get_translator_acronym,  # noqa: F401
     limpiar_html_basico,  # noqa: F401
