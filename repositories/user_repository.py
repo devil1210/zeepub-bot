@@ -91,7 +91,7 @@ class UserRepository(BaseRepository[User]):
                     pass
 
                 logger.info(f"✅ Usuario {tid} y registros asociados eliminados correctamente.")
-                return result.rowcount > 0
+                return True
             except Exception as e:
                 logger.error(f"Error al eliminar en cascada el usuario {tid}: {e}")
                 await session.rollback()

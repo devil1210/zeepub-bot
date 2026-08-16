@@ -548,9 +548,9 @@ async def handle_admin_get_genre_audits(data: dict[str, Any], user_data: dict[st
     try:
         async with pg_manager.get_session() as session:
             stmt = text("""
-                SELECT id, series_hash, series_name, change_type, old_value, new_value, created_at
+                SELECT id, series_hash, series_name, change_type, old_value, new_value, created_at, status
                 FROM metadata_audits
-                WHERE resolved = FALSE
+                WHERE status = 'pending' OR status IS NULL
                 ORDER BY created_at DESC
             """)
             result = await session.execute(stmt)
@@ -586,7 +586,7 @@ async def handle_admin_resolve_genre_audit(data: dict[str, Any], user_data: dict
 
     try:
         async with pg_manager.get_session() as session:
-            stmt = text("UPDATE metadata_audits SET resolved = TRUE, resolved_at = NOW() WHERE id = :id")
+            stmt = text("UPDATE metadata_audits SET status = 'reviewed', reviewed_at = NOW() WHERE id = :id")
             await session.execute(stmt, {"id": audit_id})
             await session.commit()
             return {"success": True, "message": "Auditoría marcada como revisada."}
