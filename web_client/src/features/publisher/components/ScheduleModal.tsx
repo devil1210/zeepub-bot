@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
-import { X, Send, Calendar, Clock, CheckCircle, Hash } from 'lucide-react';
+import { X, Send, Calendar, Clock, CheckCircle, Hash, Edit3, RefreshCw, Sparkles } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { usePublisher } from '../hooks/usePublisher';
 import { publisherApi, PublicationQueueItem } from '../services/publisherApi';
@@ -40,12 +40,16 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
         return new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
     });
 
+    const isSentItem = Boolean(editingItem && editingItem.status === 'sent');
+    const [actionType, setActionType] = useState<'update_existing' | 'create_new'>('update_existing');
+
     useEffect(() => {
         if (isOpen) {
             setBookHash(editingItem?.book_hash || initialBookHash);
             const defaultChan = editingItem?.channel_id || (channels.find(c => c.is_favorite)?.id || (channels.length > 0 ? channels[0].id : ''));
             setSelectedChannel(defaultChan);
             setSelectedTemplates(editingItem?.template_id ? [editingItem.template_id] : []);
+            setActionType(editingItem?.status === 'sent' ? 'update_existing' : 'create_new');
             if (editingItem) {
                 const date = new Date(editingItem.scheduled_for);
                 const tzOffset = date.getTimezoneOffset() * 60000;
@@ -64,6 +68,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     const [isImmediate, setIsImmediate] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [successMsg, setSuccessMsg] = useState('¡Programado con éxito!');
     const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
     const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
@@ -111,11 +116,30 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
     const handleSchedule = async () => {
         if (!selectedChannel) return;
-        if (!isImmediate && !scheduledFor) return;
+        if (actionType !== 'update_existing' && !isImmediate && !scheduledFor) return;
 
         setIsSubmitting(true);
         try {
-            if (editingItem) {
+            if (isSentItem && actionType === 'update_existing') {
+                const chan = channels.find(c => c.id === Number(selectedChannel));
+                const platform = chan ? chan.platform : 'facebook';
+                const res = await publisherApi.updatePublishedPost({
+                    book_id: bookHash,
+                    template_id: selectedTemplates.length > 0 ? selectedTemplates[0] : undefined,
+                    platforms: [platform]
+                });
+
+                if (res.success) {
+                    setSuccessMsg('¡Publicación actualizada con éxito en ' + platform.toUpperCase() + '!');
+                    setIsSuccess(true);
+                    setTimeout(() => {
+                        setIsSuccess(false);
+                        onClose();
+                    }, 1500);
+                } else {
+                    alert("No se pudo actualizar: " + (res.error || "Error desconocido"));
+                }
+            } else if (editingItem && !isSentItem) {
                 const res = await updateQueueItem({
                     id: editingItem.id,
                     book_hash: bookHash,
@@ -127,6 +151,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                 });
 
                 if (res.success) {
+                    setSuccessMsg('¡Programación actualizada con éxito!');
                     setIsSuccess(true);
                     setTimeout(() => {
                         setIsSuccess(false);
@@ -143,6 +168,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                 });
 
                 if (res.success) {
+                    setSuccessMsg(isImmediate ? '¡Publicado con éxito!' : '¡Programado con éxito!');
                     setIsSuccess(true);
                     setTimeout(() => {
                         setIsSuccess(false);
@@ -173,10 +199,16 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                 <div className="p-6 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-primary/10 to-transparent">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-primary/20 rounded-xl text-primary">
-                            <Send className="w-5 h-5" />
+                            {isSentItem && actionType === 'update_existing' ? <Edit3 className="w-5 h-5" /> : <Send className="w-5 h-5" />}
                         </div>
                         <div>
-                            <h2 className="text-sm font-black uppercase tracking-widest">Programar Publicación</h2>
+                            <h2 className="text-sm font-black uppercase tracking-widest">
+                                {isSentItem && actionType === 'update_existing'
+                                    ? 'Editar Publicación Enviada'
+                                    : editingItem
+                                        ? 'Editar Programación'
+                                        : 'Programar Publicación'}
+                            </h2>
                             <p className="text-[10px] text-gray-400 font-bold uppercase truncate max-w-[200px]">{bookTitle}</p>
                         </div>
                     </div>
@@ -190,10 +222,49 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                         <div className="p-4 bg-green-500/20 rounded-full text-green-500">
                             <CheckCircle className="w-12 h-12" />
                         </div>
-                        <p className="text-sm font-black uppercase tracking-widest text-green-500">¡Programado con éxito!</p>
+                        <p className="text-sm font-black uppercase tracking-widest text-green-500 text-center">{successMsg}</p>
                     </div>
                 ) : (
-                    <div className="p-6 flex flex-col gap-6">
+                    <div className="p-6 flex flex-col gap-5">
+                        {/* Selector de Acción cuando el item ya fue enviado */}
+                        {isSentItem && (
+                            <div className="flex rounded-xl p-1 bg-black/40 border border-white/10 gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setActionType('update_existing')}
+                                    className={`flex-1 py-2.5 px-3 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                        actionType === 'update_existing'
+                                            ? 'bg-primary text-white shadow-lg'
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                    Editar Post Existente
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActionType('create_new')}
+                                    className={`flex-1 py-2.5 px-3 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                        actionType === 'create_new'
+                                            ? 'bg-primary text-white shadow-lg'
+                                            : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    <Send className="w-3.5 h-3.5" />
+                                    Publicar de Nuevo
+                                </button>
+                            </div>
+                        )}
+
+                        {isSentItem && actionType === 'update_existing' && (
+                            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-2.5 text-blue-300 text-[11px] leading-relaxed">
+                                <Sparkles className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                                <span>
+                                    Esta acción actualizará el texto de la publicación en Facebook directamente con la plantilla seleccionada o los datos actualizados del libro <strong>sin duplicar fotos</strong>.
+                                </span>
+                            </div>
+                        )}
+
                         {/* Book Hash (Editable) */}
                         <div className="flex flex-col gap-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-primary/80 flex items-center gap-2">
@@ -254,7 +325,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                                             key={t.id}
                                             className={`flex items-center gap-2 p-2.5 rounded-lg cursor-pointer transition-all ${isSelected ? 'bg-primary/20 text-primary border border-primary/30' : 'text-white/60 hover:bg-white/5 border border-transparent'}`}
                                             onClick={() => {
-                                                if (editingItem) {
+                                                if (editingItem || actionType === 'update_existing') {
                                                     setSelectedTemplates([t.id]);
                                                 } else {
                                                     if (isSelected) {
@@ -275,149 +346,163 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                             </div>
                         </div>
 
-                        {/* Opción Inmediata */}
-                        <div className="flex items-center gap-2 p-3 glass-panel rounded-premium-sm border border-white/5 bg-white/2 cursor-pointer transition-all hover:bg-white/5" onClick={() => setIsImmediate(!isImmediate)}>
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isImmediate ? 'bg-primary border-primary' : 'border-white/20'}`}>
-                                {isImmediate && <CheckCircle className="w-3 h-3 text-white" />}
-                            </div>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Publicar inmediatamente</span>
-                        </div>
-
-                        {/* Fecha y Hora */}
-                        {!isImmediate && (
-                            <div className="flex flex-col gap-3 animate-in slide-in-from-top-2 duration-300">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary/80">
-                                        Fecha y Hora de Publicación
-                                    </label>
-                                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                                        {getFormattedPreview()}
-                                    </span>
+                        {/* Opciones de Publicación Programada / Inmediata (Solo cuando no es actualización directa en vivo) */}
+                        {(!isSentItem || actionType === 'create_new') && (
+                            <>
+                                <div className="flex items-center gap-2 p-3 glass-panel rounded-premium-sm border border-white/5 bg-white/2 cursor-pointer transition-all hover:bg-white/5" onClick={() => setIsImmediate(!isImmediate)}>
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isImmediate ? 'bg-primary border-primary' : 'border-white/20'}`}>
+                                        {isImmediate && <CheckCircle className="w-3 h-3 text-white" />}
+                                    </div>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-white/80">Publicar inmediatamente</span>
                                 </div>
 
-                                {/* Presets Rápidos */}
-                                <div className="flex flex-wrap gap-1.5">
-                                    <button
-                                        type="button"
-                                        onClick={() => applyPreset(10)}
-                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
-                                    >
-                                        +10m
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => applyPreset(30)}
-                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
-                                    >
-                                        +30m
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => applyPreset(60)}
-                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
-                                    >
-                                        +1h
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => applyPreset(180)}
-                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
-                                    >
-                                        +3h
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => applyPreset(1, 9)}
-                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
-                                    >
-                                        Mañana 9:00 AM
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => applyPreset(1, 18)}
-                                        className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
-                                    >
-                                        Mañana 6:00 PM
-                                    </button>
-                                </div>
+                                {!isImmediate && (
+                                    <div className="flex flex-col gap-3 animate-in slide-in-from-top-2 duration-300">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-primary/80">
+                                                Fecha y Hora de Publicación
+                                            </label>
+                                            <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                                                {getFormattedPreview()}
+                                            </span>
+                                        </div>
 
-                                {/* Grid de Fecha, Hora y Minutos */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                    {/* Campo Fecha */}
-                                    <div className="sm:col-span-1 flex flex-col gap-1">
-                                        <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
-                                            <Calendar className="w-2.5 h-2.5" /> Fecha
-                                        </span>
-                                        <input
-                                            type="date"
-                                            value={datePart}
-                                            onChange={(e) => updateDateTime(e.target.value, hourPart, minutePart)}
-                                            className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors [color-scheme:dark]"
-                                        />
-                                    </div>
+                                        {/* Presets Rápidos */}
+                                        <div className="flex flex-wrap gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => applyPreset(10)}
+                                                className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                            >
+                                                +10m
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => applyPreset(30)}
+                                                className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                            >
+                                                +30m
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => applyPreset(60)}
+                                                className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                            >
+                                                +1h
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => applyPreset(180)}
+                                                className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                            >
+                                                +3h
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => applyPreset(1, 9)}
+                                                className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                            >
+                                                Mañana 9:00 AM
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => applyPreset(1, 18)}
+                                                className="px-2.5 py-1 text-[10px] font-bold rounded-lg glass-panel bg-white/5 hover:bg-primary/20 hover:text-primary text-white/80 transition-all border border-white/5"
+                                            >
+                                                Mañana 6:00 PM
+                                            </button>
+                                        </div>
 
-                                    {/* Selector Hora */}
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
-                                            <Clock className="w-2.5 h-2.5" /> Hora
-                                        </span>
-                                        <select
-                                            value={hourPart}
-                                            onChange={(e) => updateDateTime(datePart, e.target.value, minutePart)}
-                                            className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors cursor-pointer"
-                                        >
-                                            {HOURS.map((h) => {
-                                                const hNum = parseInt(h, 10);
-                                                const ampm = hNum >= 12 ? 'PM' : 'AM';
-                                                const displayHour = hNum % 12 === 0 ? 12 : hNum % 12;
-                                                return (
-                                                    <option key={h} value={h} className="bg-gray-900 text-white">
-                                                        {h}:00 ({displayHour} {ampm})
-                                                    </option>
-                                                );
-                                            })}
-                                        </select>
-                                    </div>
+                                        {/* Grid de Fecha, Hora y Minutos */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            {/* Campo Fecha */}
+                                            <div className="sm:col-span-1 flex flex-col gap-1">
+                                                <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
+                                                    <Calendar className="w-2.5 h-2.5" /> Fecha
+                                                </span>
+                                                <input
+                                                    type="date"
+                                                    value={datePart}
+                                                    onChange={(e) => updateDateTime(e.target.value, hourPart, minutePart)}
+                                                    className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors [color-scheme:dark]"
+                                                />
+                                            </div>
 
-                                    {/* Selector Minutos */}
-                                    <div className="flex flex-col gap-1">
-                                        <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
-                                            <Clock className="w-2.5 h-2.5 text-gray-500" /> Minutos
-                                        </span>
-                                        <select
-                                            value={minutePart}
-                                            onChange={(e) => updateDateTime(datePart, hourPart, e.target.value)}
-                                            className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors cursor-pointer"
-                                        >
-                                            {MINUTES.map((m) => (
-                                                <option key={m} value={m} className="bg-gray-900 text-white">
-                                                    :{m}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            {/* Selector Hora */}
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
+                                                    <Clock className="w-2.5 h-2.5" /> Hora
+                                                </span>
+                                                <select
+                                                    value={hourPart}
+                                                    onChange={(e) => updateDateTime(datePart, e.target.value, minutePart)}
+                                                    className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors cursor-pointer"
+                                                >
+                                                    {HOURS.map((h) => {
+                                                        const hNum = parseInt(h, 10);
+                                                        const ampm = hNum >= 12 ? 'PM' : 'AM';
+                                                        const displayHour = hNum % 12 === 0 ? 12 : hNum % 12;
+                                                        return (
+                                                            <option key={h} value={h} className="bg-gray-900 text-white">
+                                                                {h}:00 ({displayHour} {ampm})
+                                                            </option>
+                                                        );
+                                                    })}
+                                                </select>
+                                            </div>
+
+                                            {/* Selector Minutos */}
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[9px] uppercase font-bold text-gray-400 flex items-center gap-1">
+                                                    <Clock className="w-2.5 h-2.5 text-gray-500" /> Minutos
+                                                </span>
+                                                <select
+                                                    value={minutePart}
+                                                    onChange={(e) => updateDateTime(datePart, hourPart, e.target.value)}
+                                                    className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/20 text-white focus:outline-none focus:border-primary/50 transition-colors cursor-pointer"
+                                                >
+                                                    {MINUTES.map((m) => (
+                                                        <option key={m} value={m} className="bg-gray-900 text-white">
+                                                            :{m}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
+                                )}
+                            </>
                         )}
 
                         {/* Actions */}
                         <div className="flex gap-3 pt-2">
                             <button
                                 onClick={onClose}
-                                className="flex-1 p-3 glass-panel rounded-premium-sm text-[10px] font-black uppercase tracking-widest border border-white/5 hover:bg-white/5 transition-all"
+                                className="flex-1 p-3 glass-panel rounded-premium-sm text-[10px] font-black uppercase tracking-widest border border-white/5 hover:bg-white/5 transition-all cursor-pointer"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleSchedule}
-                                disabled={isSubmitting || !selectedChannel || (!isImmediate && !scheduledFor)}
-                                className={`flex-[2] p-3 text-white rounded-premium-sm text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2 ${isImmediate
-                                    ? 'bg-green-600 shadow-green-600/20 hover:bg-green-500'
-                                    : 'bg-primary shadow-primary/20 hover:opacity-90'
-                                    } disabled:opacity-50 disabled:grayscale`}
+                                disabled={isSubmitting || !selectedChannel || (actionType !== 'update_existing' && !isImmediate && !scheduledFor)}
+                                className={`flex-[2] p-3 text-white rounded-premium-sm text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                    isSentItem && actionType === 'update_existing'
+                                        ? 'bg-blue-600 shadow-blue-600/20 hover:bg-blue-500'
+                                        : isImmediate
+                                            ? 'bg-green-600 shadow-green-600/20 hover:bg-green-500'
+                                            : 'bg-primary shadow-primary/20 hover:opacity-90'
+                                } disabled:opacity-50 disabled:grayscale`}
                             >
-                                {isSubmitting ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                                {isSubmitting ? (isImmediate ? 'Publicando...' : 'Programando...') : (isImmediate ? 'Publicar Ahora' : 'Programar Ahora')}
+                                {isSubmitting ? (
+                                    <Clock className="w-3.5 h-3.5 animate-spin" />
+                                ) : isSentItem && actionType === 'update_existing' ? (
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                ) : (
+                                    <Send className="w-3.5 h-3.5" />
+                                )}
+                                {isSubmitting
+                                    ? (isSentItem && actionType === 'update_existing' ? 'Actualizando Post...' : isImmediate ? 'Publicando...' : 'Programando...')
+                                    : (isSentItem && actionType === 'update_existing' ? 'Actualizar Post en Facebook' : isImmediate ? 'Publicar Ahora' : 'Programar Ahora')}
                             </button>
                         </div>
 

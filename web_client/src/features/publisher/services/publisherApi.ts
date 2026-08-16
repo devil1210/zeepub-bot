@@ -100,6 +100,13 @@ export const publisherApi = {
     deleteQueueItem: (id: number) =>
         api.rpc('pub_delete_queue_item', { id }),
 
+    updatePublishedPost: (data: {
+        book_id: string;
+        caption?: string;
+        template_id?: number;
+        platforms?: string[];
+    }) => api.rpc('pub_update_post', data),
+
     restoreTemplates: (platform: string = 'telegram') =>
         api.rpc('pub_restore_templates', { platform }),
 };

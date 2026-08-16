@@ -1145,6 +1145,7 @@ class PublisherService:
         book_hash: str,
         new_caption: str | None = None,
         platforms: list[str] | None = None,
+        template_id: int | None = None,
     ) -> dict[str, Any]:
         """
         Paso 2: Edita y sincroniza publicaciones existentes (en Facebook, etc.)
@@ -1185,14 +1186,22 @@ class PublisherService:
         )
         book_data.update(credits_meta)
 
-        # 2. Generar caption por defecto si no se especificó uno
+        # 2. Generar caption si no se especificó uno directamente
         if not new_caption:
             from utils.helpers import clean_caption_for_facebook
             from utils.template_engine import apply_publication_template
 
-            raw_caption = apply_publication_template(
-                TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
-            )
+            raw_caption = ""
+            if template_id:
+                tpl = await self.repo.get_template_by_id(template_id)
+                if tpl and tpl.content:
+                    raw_caption = apply_publication_template(tpl.content, book_data)
+
+            if not raw_caption:
+                raw_caption = apply_publication_template(
+                    TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
+                )
+
             new_caption = clean_caption_for_facebook(raw_caption)
 
         target_platforms = platforms or ["facebook"]
@@ -1288,6 +1297,7 @@ class PublisherServiceWrapper:
         book_hash: str,
         new_caption: str | None = None,
         platforms: list[str] | None = None,
+        template_id: int | None = None,
     ) -> dict[str, Any]:
         from core.db_manager_pg import pg_manager
 

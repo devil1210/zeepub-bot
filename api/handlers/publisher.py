@@ -453,11 +453,13 @@ async def handle_pub_update_post(data: dict[str, Any], user_data: dict[str, Any]
         raise HTTPException(status_code=400, detail="Missing book_id")
 
     new_caption = data.get("caption")
+    template_id = data.get("template_id")
     platforms = data.get("platforms") or ["facebook"]
 
     result = await publisher_service.update_published_book(
         book_hash=str(book_id),
         new_caption=new_caption,
+        template_id=int(template_id) if template_id else None,
         platforms=platforms,
     )
 

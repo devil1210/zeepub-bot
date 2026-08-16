@@ -210,8 +210,8 @@ export const PublisherDashboard: React.FC = () => {
                                             </div>
                                             <button
                                                 onClick={() => handleEditQueueItem(item)}
-                                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-white transition-colors"
-                                                title="Editar"
+                                                className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-white transition-colors cursor-pointer"
+                                                title={item.status === 'sent' ? 'Editar / Actualizar Publicación Enviada' : 'Editar'}
                                             >
                                                 <Edit3 className="w-4 h-4" />
                                             </button>
