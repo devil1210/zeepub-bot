@@ -623,6 +623,14 @@ class FacebookPublisherProvider(PublisherProvider):
                 )
                 if resp.status_code == 200:
                     albums = resp.json().get("data", [])
+                    available_albums = [
+                        {
+                            "id": str(alb.get("id")),
+                            "name": str(alb.get("name")),
+                        }
+                        for alb in albums
+                        if alb.get("name")
+                    ]
                     # Exact match
                     for album in albums:
                         alb_name = album.get("name", "").strip().lower()
@@ -636,6 +644,7 @@ class FacebookPublisherProvider(PublisherProvider):
                                     "album_name": album.get("name"),
                                     "recommended_name": recommended_name,
                                     "candidates": all_candidates,
+                                    "available_albums": available_albums,
                                     "page_id": resolved_page_id,
                                 }
                     # Partial match
@@ -654,6 +663,7 @@ class FacebookPublisherProvider(PublisherProvider):
                                     "album_name": album.get("name"),
                                     "recommended_name": recommended_name,
                                     "candidates": all_candidates,
+                                    "available_albums": available_albums,
                                     "page_id": resolved_page_id,
                                 }
 
@@ -663,6 +673,7 @@ class FacebookPublisherProvider(PublisherProvider):
                         "album_name": None,
                         "recommended_name": recommended_name,
                         "candidates": all_candidates,
+                        "available_albums": available_albums,
                         "page_id": resolved_page_id,
                     }
                 else:
@@ -672,6 +683,7 @@ class FacebookPublisherProvider(PublisherProvider):
                         "album_name": None,
                         "recommended_name": recommended_name,
                         "candidates": all_candidates,
+                        "available_albums": [],
                         "error": f"Facebook API error: {resp.status_code}",
                     }
         except Exception as e:
@@ -681,6 +693,7 @@ class FacebookPublisherProvider(PublisherProvider):
                 "album_name": None,
                 "recommended_name": recommended_name,
                 "candidates": all_candidates,
+                "available_albums": [],
                 "error": str(e),
             }
 
@@ -887,8 +900,33 @@ class FacebookPublisherProvider(PublisherProvider):
         series_name = series_spanish or series_orig or title
         series_id = book_data.get("series_id") or book_data.get("series_hash")
 
-        # 1. Intentar publicar en el álbum de la serie si aplica
-        if series_name:
+        chosen_album_id = options.get("fb_album_id") or options.get("album_id")
+
+        # 1. Caso A: Si se seleccionó expresamente "none" o "wall", no usar ningún álbum
+        if chosen_album_id in ("none", "wall", "feed"):
+            logger.info("Publicación en Facebook configurada expresamente para Muro principal (sin álbum).")
+        # 2. Caso B: Si se seleccionó un álbum específico de la lista
+        elif chosen_album_id and chosen_album_id != "auto":
+            logger.info(f"Subiendo foto a álbum de Facebook seleccionado: {chosen_album_id}")
+            upload_res = await self.publish_photo_to_album(
+                str(chosen_album_id), resolved_cover, cover_source, fb_caption, token
+            )
+            if upload_res:
+                photo_id = upload_res.get("photo_id")
+                post_id = upload_res.get("post_id") or photo_id
+                await self._persist_book_fb_ids(book_hash, post_id, photo_id)
+                if series_id:
+                    await self._persist_series_album_id(series_id, str(chosen_album_id))
+                logger.info(
+                    f"✅ Publicado exitosamente en Álbum seleccionado {chosen_album_id} de Facebook (Post: {post_id})"
+                )
+                return True
+            else:
+                logger.warning(
+                    f"Fallo al publicar en álbum seleccionado {chosen_album_id}, recurriendo a feed principal..."
+                )
+        # 3. Caso C: Detección automática habitual por nombre de serie
+        elif series_name:
             album_id = await self.get_or_create_series_album(
                 target_group_id, token, series_name, series_id, alt_names=alt_names
             )
@@ -1201,6 +1239,8 @@ class PublisherService:
                         if item.channel and item.channel.config:
                             thread_id = item.channel.config.get("message_thread_id")
 
+                        item_payload = item.payload if isinstance(item.payload, dict) else {}
+
                         success = await provider.announce_book(
                             item.channel.target_id,
                             book_data,
@@ -1209,6 +1249,7 @@ class PublisherService:
                                 "caption": caption,
                                 "cover_quality": cover_quality,
                                 "message_thread_id": thread_id,
+                                "fb_album_id": item_payload.get("fb_album_id"),
                             },
                         )
                         item.status = "sent" if success else "failed"

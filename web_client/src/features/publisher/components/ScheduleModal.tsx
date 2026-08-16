@@ -43,6 +43,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     const isSentItem = Boolean(editingItem && editingItem.status === 'sent');
     const [actionType, setActionType] = useState<'update_existing' | 'create_new'>('update_existing');
 
+    const [selectedFbAlbumId, setSelectedFbAlbumId] = useState<string>('auto');
+
     useEffect(() => {
         if (isOpen) {
             setBookHash(editingItem?.book_hash || initialBookHash);
@@ -50,6 +52,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
             setSelectedChannel(defaultChan);
             setSelectedTemplates(editingItem?.template_id ? [editingItem.template_id] : []);
             setActionType(editingItem?.status === 'sent' ? 'update_existing' : 'create_new');
+            setSelectedFbAlbumId(editingItem?.payload?.fb_album_id || 'auto');
             if (editingItem) {
                 const date = new Date(editingItem.scheduled_for);
                 const tzOffset = date.getTimezoneOffset() * 60000;
@@ -77,6 +80,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
         album_id?: string;
         recommended_name?: string;
         candidates?: string[];
+        available_albums?: Array<{ id: string; name: string }>;
         error?: string;
     } | null>(null);
     const [copiedAlbumName, setCopiedAlbumName] = useState(false);
@@ -103,6 +107,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                     album_id: res.album_id,
                     recommended_name: res.recommended_name,
                     candidates: res.candidates,
+                    available_albums: res.available_albums || [],
                     error: res.error,
                 });
             })
@@ -111,6 +116,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                 setAlbumCheck({
                     loading: false,
                     exists: false,
+                    available_albums: [],
                     error: err.message,
                 });
             });
@@ -177,6 +183,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
 
         setIsSubmitting(true);
         try {
+            const fbAlbumIdParam = isFacebookChannel && selectedFbAlbumId !== 'auto' ? selectedFbAlbumId : undefined;
+
             if (isSentItem && actionType === 'update_existing') {
                 const chan = channels.find(c => c.id === Number(selectedChannel));
                 const platform = chan ? chan.platform : 'facebook';
@@ -205,6 +213,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                     scheduled_for: isImmediate ? new Date().toISOString() : new Date(scheduledFor).toISOString(),
                     template_id: selectedTemplates.length > 0 ? selectedTemplates[0] : undefined,
                     immediate: isImmediate,
+                    fb_album_id: fbAlbumIdParam,
                     status: 'pending' // Al editar, volvemos a ponerlo en pending por si estaba fallido
                 });
 
@@ -222,7 +231,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                     channel_id: Number(selectedChannel),
                     scheduled_for: isImmediate ? new Date().toISOString() : new Date(scheduledFor).toISOString(),
                     template_ids: selectedTemplates.length > 0 ? selectedTemplates : undefined,
-                    immediate: isImmediate
+                    immediate: isImmediate,
+                    fb_album_id: fbAlbumIdParam,
                 });
 
                 if (res.success) {
@@ -360,37 +370,37 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                             </div>
                         </div>
 
-                        {/* Detector de Álbum en Facebook */}
+                        {/* Detector y Selector de Álbum en Facebook */}
                         {isFacebookChannel && (
-                            <div className="flex flex-col gap-2 animate-in fade-in duration-300">
+                            <div className="flex flex-col gap-2.5 p-3 rounded-xl bg-white/[0.03] border border-white/10 animate-in fade-in duration-300">
                                 {albumCheck?.loading ? (
-                                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-2 text-xs text-gray-400">
+                                    <div className="p-2.5 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2 text-xs text-gray-400">
                                         <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
-                                        <span>Comprobando álbum en la página de Facebook...</span>
+                                        <span>Consultando álbumes de la página de Facebook...</span>
                                     </div>
                                 ) : albumCheck?.exists ? (
                                     <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/25 flex items-center justify-between gap-2 text-green-300">
                                         <div className="flex items-center gap-2 min-w-0">
                                             <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
                                             <div className="min-w-0">
-                                                <p className="text-[10px] font-black uppercase tracking-wider text-green-400">Álbum Detectado en Facebook</p>
+                                                <p className="text-[10px] font-black uppercase tracking-wider text-green-400">Álbum Detectado para la Serie</p>
                                                 <p className="text-xs text-white font-bold truncate">"{albumCheck.album_name}"</p>
                                             </div>
                                         </div>
                                         <span className="text-[9px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-300 border border-green-500/30 shrink-0 font-bold">
-                                            Auto-agrupado
+                                            Auto-detectado
                                         </span>
                                     </div>
                                 ) : albumCheck && !albumCheck.loading && !albumCheck.exists ? (
-                                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-2.5 text-amber-200">
+                                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-2 text-amber-200">
                                         <div className="flex items-start gap-2">
                                             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                                             <div className="flex flex-col gap-0.5 w-full">
                                                 <p className="text-[10px] font-black uppercase tracking-wider text-amber-400">
-                                                    Álbum no encontrado en Facebook
+                                                    Álbum no encontrado para esta serie
                                                 </p>
                                                 <p className="text-[11px] text-amber-200/90 leading-relaxed">
-                                                    Para agrupar las portadas de esta serie, crea un álbum en Facebook con este <strong>nombre exacto</strong>:
+                                                    Para crear el álbum en Facebook, usa este <strong>nombre exacto</strong>:
                                                 </p>
                                             </div>
                                         </div>
@@ -408,12 +418,51 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                                                 {copiedAlbumName ? '¡Copiado!' : 'Copiar'}
                                             </button>
                                         </div>
-
-                                        <p className="text-[9px] text-amber-300/70 italic leading-tight">
-                                            💡 Si publicas sin crearlo, el bot publicará en el muro principal como fallback.
-                                        </p>
                                     </div>
                                 ) : null}
+
+                                {/* Desplegable para seleccionar álbum de la lista */}
+                                <div className="flex flex-col gap-1.5 mt-0.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary/80 flex items-center justify-between">
+                                        <span>📂 Asignar a Álbum de Facebook</span>
+                                        {selectedFbAlbumId !== 'auto' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedFbAlbumId('auto')}
+                                                className="text-[9px] text-primary hover:underline cursor-pointer"
+                                            >
+                                                Restablecer a automático
+                                            </button>
+                                        )}
+                                    </label>
+                                    <select
+                                        value={selectedFbAlbumId}
+                                        onChange={(e) => setSelectedFbAlbumId(e.target.value)}
+                                        className="w-full p-2.5 glass-panel rounded-premium-sm border border-white/10 text-xs bg-black/30 text-white focus:outline-none focus:border-primary/50 transition-colors"
+                                    >
+                                        <option value="auto" className="bg-gray-900 text-white">
+                                            ✨ Detección automática {albumCheck?.exists ? `(Usar "${albumCheck.album_name}")` : '(Buscar por nombre de serie)'}
+                                        </option>
+                                        <option value="wall" className="bg-gray-900 text-amber-300 font-semibold">
+                                            🚫 Muro Principal (No publicar en ningún álbum)
+                                        </option>
+                                        {albumCheck?.available_albums && albumCheck.available_albums.length > 0 && (
+                                            <optgroup label="── Álbumes creados en tu Página de Facebook ──" className="bg-gray-900 text-primary font-bold">
+                                                {albumCheck.available_albums.map((alb: any) => (
+                                                    <option key={alb.id} value={alb.id} className="bg-gray-900 text-white font-normal">
+                                                        📁 {alb.name}
+                                                    </option>
+                                                ))}
+                                            </optgroup>
+                                        )}
+                                    </select>
+                                    {selectedFbAlbumId !== 'auto' && selectedFbAlbumId !== 'wall' && (
+                                        <div className="flex items-center gap-1.5 text-[10px] text-green-300/90 font-medium px-1">
+                                            <CheckCircle className="w-3 h-3 text-green-400 shrink-0" />
+                                            <span>Asignado expresamente al álbum: <strong>{albumCheck?.available_albums?.find((a: any) => a.id === selectedFbAlbumId)?.name || selectedFbAlbumId}</strong></span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
 

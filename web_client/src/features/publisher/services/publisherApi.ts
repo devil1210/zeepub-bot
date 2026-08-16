@@ -84,6 +84,7 @@ export const publisherApi = {
         template_ids?: number[];
         payload?: any;
         immediate?: boolean;
+        fb_album_id?: string;
     }) => api.rpc('pub_schedule', data),
 
 
@@ -95,6 +96,8 @@ export const publisherApi = {
         template_id?: number;
         status?: string;
         immediate?: boolean;
+        fb_album_id?: string;
+        payload?: any;
     }) => api.rpc('pub_update_queue_item', data),
 
     deleteQueueItem: (id: number) =>

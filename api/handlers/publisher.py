@@ -319,6 +319,10 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
         logger.error(f"Error parsing date {scheduled_for_str}: {e}")
         raise HTTPException(status_code=400, detail="Formato de fecha inválido") from e
 
+    payload = data.get("payload") or {}
+    if "fb_album_id" in data and data["fb_album_id"]:
+        payload["fb_album_id"] = data["fb_album_id"]
+
     if not template_ids:
         await publisher_service.schedule_publication(
             book_hash=book_hash,
@@ -378,6 +382,11 @@ async def handle_pub_update_queue_item(data: dict[str, Any], user_data: dict[str
 
             if "payload" in data:
                 item.payload = data["payload"]
+
+            if "fb_album_id" in data:
+                current_payload = dict(item.payload) if isinstance(item.payload, dict) else {}
+                current_payload["fb_album_id"] = data["fb_album_id"]
+                item.payload = current_payload
 
             if "template_id" in data:
                 item.template_id = int(data["template_id"]) if data["template_id"] else None
