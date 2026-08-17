@@ -234,7 +234,9 @@ class TelegramPublisherProvider(PublisherProvider):
                 
             layout_by = book_data.get("layout_by") or book_data.get("maquetador")
             if layout_by:
-                layout_val = layout_by if layout_by.startswith("#") else f"#{layout_by}"
+                # Puede contener múltiples maquetadores separados por ", "
+                maqs = [m.strip() for m in layout_by.split(",") if m.strip()]
+                layout_val = ", ".join(m if m.startswith("#") else f"#{m}" for m in maqs)
                 tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
                 
             categoria = book_data.get("book_type") or book_data.get("tipo") or "Novela"

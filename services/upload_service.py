@@ -205,7 +205,7 @@ class UploadService:
             "translator": enriched.get("traductor", ""),
             "category": enriched.get("categoria", ""),
             "demography": enriched.get("demografia", []),
-            "layout_by": enriched.get("maquetadores", [""])[0] if enriched.get("maquetadores") else "",
+            "layout_by": ", ".join(enriched.get("maquetadores", [])) if enriched.get("maquetadores") else "",
             "book_type": enriched.get("categoria", ""),
             "original_filename": original_filename,
         }
