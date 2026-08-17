@@ -21,35 +21,45 @@ export const TemplateEditorPage: React.FC = () => {
     const { webApp } = useTelegram();
     const { settings } = useTheme();
 
-    const DEFAULT_TELEGRAM_TEMPLATE = `[?series_english]🇬🇧 <b>{series_english}</b>
-[/?][?romaji_title]🇯🇵 <b>{romaji_title}</b>
-[/?][?series_spanish]🇪🇸 <b>{series_spanish}</b>
-[/?][?!series_spanish][?!series_english]📚 <b>{serie}</b>
-[/?][?volumen]📚 <b>Volumen {volumen}</b>
+    const DEFAULT_TELEGRAM_TEMPLATE = `<img src="tg://photo?id=tomozaki_cover" />
+[?series_english]<h3>🇬🇧 {series_english}</h3>
+[/?][?romaji_title]<h4>🇯🇵 {romaji_title}</h4>
+[/?][?series_spanish]<h5>🇪🇸 {series_spanish}</h5>
+[/?][?!series_spanish][?!series_english]<h3>📚 {serie}</h3>
+[/?][?volumen]<h6>📚 Volumen {volumen}</h6>
 [/?]
-[?autor]👤 <b>Autor:</b> {autor}
-[/?][?illustrator]🎨 <b>Ilustrador:</b> {illustrator}
-[/?][?layout_by]📠 <b>Maquetador:</b> #{layout_by}
-[/?][?tipo]📦 <b>Categoría:</b> {tipo}
-[/?][?demography]👥 <b>Demografía:</b> {demography}
-[/?][?genres]🎭 <b>Géneros:</b> {genres}
-[/?][?traductor]🌐 <b>Traductor:</b> {traductor}
-[/?][?grupo_traductor]🏢 <b>Grupo Traductor:</b> {grupo_traductor}
-[/?][?!grupo_traductor][?editorial]🏢 <b>Grupo Traductor:</b> {editorial}
-[/?]
-[?sinopsis]<blockquote expandable>📖 <b>Ver Sinopsis</b>
+<table bordered striped>
+[?autor]  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>
+[/?][?illustrator]  <tr><td><b>🎨 Ilustrador</b></td><td>{illustrator}</td></tr>
+[/?][?layout_by]  <tr><td><b>💻 Maquetador</b></td><td>#{layout_by}</td></tr>
+[/?][?tipo]  <tr><td><b>📦 Categoría</b></td><td>{tipo}</td></tr>
+[/?][?demography]  <tr><td><b>👥 Demografía</b></td><td>{demography}</td></tr>
+[/?][?genres]  <tr><td><b>🎭 Géneros</b></td><td>{genres}</td></tr>
+[/?][?traductor]  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>
+[/?][?grupo_traductor]  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_traductor}</td></tr>
+[/?][?!grupo_traductor][?editorial]  <tr><td><b>🏢 Grupo Traductor</b></td><td>{editorial}</td></tr>
+[/?]</table>
 
-{sinopsis}</blockquote>
-[/?]<blockquote expandable>📁 <b>Ver Detalles del Archivo</b>
+[?sinopsis]<details>
+  <summary>📖 Ver Sinopsis</summary>
+  <blockquote>
+    {sinopsis}
+  </blockquote>
+</details>
+[/?]<details>
+  <summary>📂 Ver Detalles del Archivo</summary>
+  <table bordered striped>
+    <tr><td><b>📂 Nombre</b></td><td>{titulo}</td></tr>
+[?volumen]    <tr><td><b>📖 Volumen</b></td><td>Volumen {volumen}</td></tr>
+[/?][?version]    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version}</td></tr>
+[/?][?fecha]    <tr><td><b>📅 Actualizado</b></td><td>{fecha}</td></tr>
+[/?][?size_mb]    <tr><td><b>💾 Tamaño</b></td><td>{size_mb}</td></tr>
+[/?]  </table>
+</details>
 
-[?titulo]📁 <b>Nombre:</b> {titulo}
-[/?][?volumen]📖 <b>Volumen:</b> Volumen {volumen}
-[/?][?version]ℹ️ <b>Versión Epub:</b> {version}
-[/?][?fecha]📅 <b>Actualizado:</b> {fecha}
-[/?][?tamaño]💾 <b>Tamaño:</b> {tamaño}
-[/?]</blockquote>
-
+<hr/>
 #{slug}
+
 {archivo}`;
 
     // Form state
