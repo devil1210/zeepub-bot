@@ -350,16 +350,16 @@ class FacebookPublisherProvider(PublisherProvider):
         caption: str,
         token: str,
     ) -> dict[str, Any] | None:
-        """Sube una foto directamente dentro de un álbum específico con su caption."""
+        """Sube una foto dentro de un álbum y luego aplica el caption por separado.
+
+        Se hace en dos pasos para evitar corrupción de emojis UTF-8 en multipart/form-data:
+        1. Subir la foto (sin mensaje para evitar encoding issues)
+        2. Actualizar el caption con update_post_message (POST simple sin files)
+        """
         import httpx
 
         url_upload = f"https://graph.facebook.com/v19.0/{album_id}/photos"
-        params_upload = {
-            "access_token": token,
-        }
-        data_upload = {
-            "message": caption,
-        }
+        params_upload = {"access_token": token}
 
         try:
             async with httpx.AsyncClient() as client:
@@ -369,7 +369,6 @@ class FacebookPublisherProvider(PublisherProvider):
                     resp = await client.post(
                         url_upload,
                         params=params_upload,
-                        data=data_upload,
                         files=files,
                         timeout=45,
                     )
@@ -379,16 +378,15 @@ class FacebookPublisherProvider(PublisherProvider):
                         resp = await client.post(
                             url_upload,
                             params=params_upload,
-                            data=data_upload,
                             files=files,
                             timeout=45,
                         )
                 elif cover_source and str(cover_source).startswith("http"):
-                    data_upload["url"] = str(cover_source)
+                    # Para URLs remotas: enviar directamente con message (no hay archivo)
                     resp = await client.post(
                         url_upload,
                         params=params_upload,
-                        data=data_upload,
+                        data={"url": str(cover_source), "message": caption},
                         timeout=45,
                     )
 
@@ -396,6 +394,24 @@ class FacebookPublisherProvider(PublisherProvider):
                     data = resp.json()
                     photo_id = data.get("id")
                     post_id = data.get("post_id") or photo_id
+
+                    # Paso 2: Aplicar caption correctamente en POST separado (sin files)
+                    # Esto evita corrupción de emojis en multipart/form-data
+                    if caption and post_id and not (cover_source and str(cover_source).startswith("http")):
+                        try:
+                            caption_resp = await client.post(
+                                f"https://graph.facebook.com/v19.0/{photo_id}",
+                                params={"access_token": token},
+                                data={"caption": caption},
+                                timeout=30,
+                            )
+                            if caption_resp.status_code not in (200, 201):
+                                logger.warning(
+                                    f"No se pudo aplicar caption al photo {photo_id}: {caption_resp.text}"
+                                )
+                        except Exception as ce:
+                            logger.warning(f"Error aplicando caption: {ce}")
+
                     return {"photo_id": photo_id, "post_id": post_id}
                 elif resp:
                     logger.warning(
