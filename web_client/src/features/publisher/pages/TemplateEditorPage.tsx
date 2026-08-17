@@ -21,21 +21,33 @@ export const TemplateEditorPage: React.FC = () => {
     const { webApp } = useTelegram();
     const { settings } = useTheme();
 
-    const DEFAULT_TELEGRAM_TEMPLATE = `Epub de: {serie} ║ {series_spanish} ║ {titulo}
-[?volumen]Volumen {volumen}[/?]
-#{hash}
+    const DEFAULT_TELEGRAM_TEMPLATE = `[?series_english]🇬🇧 <b>{series_english}</b>
+[/?][?romaji_title]🇯🇵 <b>{romaji_title}</b>
+[/?][?series_spanish]🇪🇸 <b>{series_spanish}</b>
+[/?][?!series_spanish][?!series_english]📚 <b>{serie}</b>
+[/?][/?][?volumen]📚 <b>Volumen {volumen}</b>
+[/?]
+[?autor]👤 <b>Autor:</b> {autor}
+[/?][?illustrator]🎨 <b>Ilustrador:</b> {illustrator}
+[/?][?layout_by]📠 <b>Maquetador:</b> #{layout_by}
+[/?][?tipo]📦 <b>Categoría:</b> {tipo}
+[/?][?demography]👥 <b>Demografía:</b> {demography}
+[/?][?genres]🎭 <b>Géneros:</b> {genres}
+[/?][?traductor]🌐 <b>Traductor:</b> {traductor}
+[/?][?grupo_traductor]🏢 <b>Grupo Traductor:</b> {grupo_traductor}
+[/?][?!grupo_traductor][?editorial]🏢 <b>Grupo Traductor:</b> {editorial}
+[/?][/?]
+[?sinopsis]<blockquote expandable>📖 <b>Ver Sinopsis</b>
 
-<b>Maquetado por:</b> #{layout_by}
-<b>Categoría:</b> {tipo}
-[?demography]<b>Demografía:</b> {demography}[/?]
-[?genres]<b>Géneros:</b> {genres}[/?]
-[?autor]<b>Autor:</b> {autor}[/?]
-[?illustrator]<b>Ilustrador:</b> {illustrator}[/?]
-[?published_at]<b>Publicado:</b> {published_at}[/?]
-[?traductor]<b>Traducción:</b> {traductor}[/?]
-[?fecha_actualizacion]📅 <b>Actualizado:</b> {fecha_actualizacion}[/?]
-[?descargas_globales]📥 <b>Descargas:</b> {descargas_globales}[/?]
+{sinopsis}</blockquote>
+[/?]<blockquote expandable>📁 <b>Ver Detalles del Archivo</b>
 
+[?version]ℹ️ <b>Versión Epub:</b> {version}
+[/?][?fecha]📅 <b>Actualizado:</b> {fecha}
+[/?][?tamaño]📦 <b>Tamaño:</b> {tamaño}
+[/?]</blockquote>
+
+#{slug}
 {archivo}`;
 
     // Form state

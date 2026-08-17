@@ -339,10 +339,12 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
             elif not isinstance(v, str):
                 mapping[k] = str(v)
 
-        # 2. Evaluar condicionales: [?variable]...[/?]
+        # 2. Evaluar condicionales: [?variable]...[/?] y [?!variable]...[/?]
         def evaluate_conditional(match):
-            var_name = match.group(1).lower()
+            raw_var = match.group(1).lower()
             content = match.group(2)
+            is_negated = raw_var.startswith("!")
+            var_name = raw_var[1:] if is_negated else raw_var
             value = mapping.get(var_name, "").strip()
 
             # Considerar vacío si es Desconocido, 0.0, 0 MB o string vacío
@@ -358,17 +360,25 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "none",
                 "no",
             ]
-            if not value or value.lower() in not_found_values:
-                return ""
-            return content
+            is_empty = not value or value.lower() in not_found_values
 
-        # Regex DOTALL para permitir saltos de línea dentro del condicional
-        result_str = re.sub(
-            r"\[\?(\w+)\](.*?)\[/\?\]",
-            evaluate_conditional,
-            template_str,
-            flags=re.IGNORECASE | re.DOTALL,
-        )
+            if is_negated:
+                return content if is_empty else ""
+            else:
+                return "" if is_empty else content
+
+        # Permitir condicionales anidados evaluando en loop hasta que no queden
+        result_str = template_str
+        for _ in range(5):
+            new_str = re.sub(
+                r"\[\?(!?\w+)\](.*?)\[/\?\]",
+                evaluate_conditional,
+                result_str,
+                flags=re.IGNORECASE | re.DOTALL,
+            )
+            if new_str == result_str:
+                break
+            result_str = new_str
 
         # 3. Reemplazos directos {var}
         # Manejar {var:.2f} y similares eliminando el formato (ya que pre-formateamos)
