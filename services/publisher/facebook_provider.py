@@ -395,19 +395,23 @@ class FacebookPublisherProvider(PublisherProvider):
                     photo_id = data.get("id")
                     post_id = data.get("post_id") or photo_id
 
-                    # Paso 2: Aplicar caption correctamente en POST separado (sin files)
-                    # Esto evita corrupción de emojis en multipart/form-data
-                    if caption and post_id and not (cover_source and str(cover_source).startswith("http")):
+                    # Paso 2: Aplicar caption correctamente en POST /{post_id} con "message" (form-urlencoded)
+                    # Esto garantiza 100% preservación de emojis UTF-8 en Facebook Graph API
+                    if caption and post_id:
                         try:
                             caption_resp = await client.post(
-                                f"https://graph.facebook.com/v19.0/{photo_id}",
+                                f"https://graph.facebook.com/v19.0/{post_id}",
                                 params={"access_token": token},
-                                data={"caption": caption},
+                                data={"message": caption},
                                 timeout=30,
                             )
                             if caption_resp.status_code not in (200, 201):
                                 logger.warning(
-                                    f"No se pudo aplicar caption al photo {photo_id}: {caption_resp.text}"
+                                    f"No se pudo aplicar caption al post {post_id}: {caption_resp.text}"
+                                )
+                            else:
+                                logger.info(
+                                    f"✅ Caption con emojis aplicado con éxito al post {post_id} en Facebook."
                                 )
                         except Exception as ce:
                             logger.warning(f"Error aplicando caption: {ce}")

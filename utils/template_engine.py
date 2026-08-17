@@ -394,8 +394,8 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 val = "0.00 MB"
             result_str = result_str.replace(f"{{{p}}}", val)
 
-        # Limpiar saltos de línea triples generados por condicionales vacíos
-        result_str = re.sub(r"\n{3,}", "\n\n", result_str).strip()
+        # Normalizar hashtags duplicados (ej: ##Zack -> #Zack)
+        result_str = re.sub(r"#+#", "#", result_str)
 
         import html
 
