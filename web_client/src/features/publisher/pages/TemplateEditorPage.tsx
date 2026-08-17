@@ -42,9 +42,11 @@ export const TemplateEditorPage: React.FC = () => {
 {sinopsis}</blockquote>
 [/?]<blockquote expandable>📁 <b>Ver Detalles del Archivo</b>
 
-[?version]ℹ️ <b>Versión Epub:</b> {version}
+[?titulo]📁 <b>Nombre:</b> {titulo}
+[/?][?volumen]📖 <b>Volumen:</b> Volumen {volumen}
+[/?][?version]ℹ️ <b>Versión Epub:</b> {version}
 [/?][?fecha]📅 <b>Actualizado:</b> {fecha}
-[/?][?tamaño]📦 <b>Tamaño:</b> {tamaño}
+[/?][?tamaño]💾 <b>Tamaño:</b> {tamaño}
 [/?]</blockquote>
 
 #{slug}
