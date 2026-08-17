@@ -158,8 +158,16 @@ class PublisherService:
             "ilustrador": getattr(book, "illustrator", "") or (getattr(series_info, "illustrator", None) if series_info else "") or "",
             "author_jap": getattr(book, "author_jap", "") or (getattr(series_info, "author_jap", None) if series_info else "") or "",
             "illustrator_jap": getattr(book, "illustrator_jap", "") or (getattr(series_info, "illustrator_jap", None) if series_info else "") or "",
-            "layout_by": getattr(book, "layout_by", "") or "",
-            "maquetador": getattr(book, "layout_by", "") or "",
+            "layout_by": " ".join(
+                m.strip() if m.strip().startswith("#") else f"#{m.strip()}"
+                for m in (getattr(book, "layout_by", "") or "").split(",")
+                if m.strip()
+            ),
+            "maquetador": " ".join(
+                m.strip() if m.strip().startswith("#") else f"#{m.strip()}"
+                for m in (getattr(book, "layout_by", "") or "").split(",")
+                if m.strip()
+            ),
             "traductor": getattr(book, "translator", "") or "",
             "translator": getattr(book, "translator", "") or "",
             "editor": getattr(book, "editor", "") or "",

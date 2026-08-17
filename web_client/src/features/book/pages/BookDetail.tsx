@@ -523,7 +523,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     { label: 'Versión Epub', value: `v${displayData.epubVersion}` },
     { label: 'Palabras', value: (displayData.wordCount !== undefined && displayData.wordCount !== null) ? displayData.wordCount.toLocaleString() : 'N/A' },
     { label: 'Páginas', value: (displayData.pages !== undefined && displayData.pages !== null) ? displayData.pages : 'N/A' },
-    { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter' },
+    { label: 'Maquetador', value: displayData.typesetter, highlight: true, clickable: true, type: 'typesetter', isMulti: true },
     { label: 'Lectura Aprox.', value: displayData.readTime },
     { label: 'Tamaño', value: displayData.size, highlight: true, font: 'mono' },
     { label: 'Uploader', value: displayData.uploader, color: 'text-purple-600 dark:text-purple-400', clickable: true, type: 'uploader' },
@@ -693,10 +693,24 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                         {specItems.map((item, idx) => (
                           <div key={idx} className="flex flex-col gap-1 border-b border-white/5 pb-2 last:border-0">
                             <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">{item.label}</span>
-                            <span className={`text-sm font-medium ${item.highlight ? 'text-white' : 'text-gray-300'} ${item.clickable ? 'hover:text-primary cursor-pointer transition-colors' : ''} ${item.font === 'mono' ? 'font-mono' : ''}`}
-                              onClick={() => item.clickable && item.value && onSearch && onSearch(String(item.value), item.type)}>
-                              {item.value || 'N/A'}
-                            </span>
+                            {item.isMulti && item.value && item.value !== 'N/A' ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {String(item.value).split(',').map((v, i) => (
+                                  <span
+                                    key={i}
+                                    onClick={() => item.clickable && onSearch && onSearch(v.trim(), item.type)}
+                                    className="text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 cursor-pointer hover:bg-primary/20 transition-colors"
+                                  >
+                                    {v.trim()}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className={`text-sm font-medium ${item.highlight ? 'text-white' : 'text-gray-300'} ${item.clickable ? 'hover:text-primary cursor-pointer transition-colors' : ''} ${item.font === 'mono' ? 'font-mono' : ''}`}
+                                onClick={() => item.clickable && item.value && onSearch && onSearch(String(item.value), item.type)}>
+                                {item.value || 'N/A'}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
