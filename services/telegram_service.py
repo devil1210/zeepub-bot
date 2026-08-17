@@ -510,8 +510,16 @@ async def enviar_libro_directo(
             html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
             
         volume = meta.get("volume")
-        if volume:
-            html_parts.append(f'<h6>📚 Volumen {volume}</h6>\n')
+        vol_str = ""
+        if volume is not None and volume != "":
+            try:
+                v_float = float(volume)
+                vol_str = str(int(v_float)) if v_float.is_integer() else str(v_float)
+            except Exception:
+                vol_str = str(volume)
+
+        if vol_str:
+            html_parts.append(f'<h6>📚 Volumen {vol_str}</h6>\n')
 
         # TABLA 1: Ficha artística y literaria
         tabla_literaria = '<table bordered striped>\n'
@@ -585,8 +593,8 @@ async def enviar_libro_directo(
             '  <table bordered striped>\n'
             f'    <tr><td><b>📂 Nombre</b></td><td>{meta.get("title") or "Desconocido"}</td></tr>\n'
         )
-        if volume:
-            tabla_archivo += f'    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n'
+        if vol_str:
+            tabla_archivo += f'    <tr><td><b>📖 Volumen</b></td><td>Volumen {vol_str}</td></tr>\n'
         
         tabla_archivo += f'    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n'
         
