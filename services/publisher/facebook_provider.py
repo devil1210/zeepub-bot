@@ -356,6 +356,8 @@ class FacebookPublisherProvider(PublisherProvider):
         url_upload = f"https://graph.facebook.com/v19.0/{album_id}/photos"
         params_upload = {
             "access_token": token,
+        }
+        data_upload = {
             "message": caption,
         }
 
@@ -365,18 +367,29 @@ class FacebookPublisherProvider(PublisherProvider):
                 if isinstance(resolved_cover, bytes):
                     files = {"source": ("cover.jpg", resolved_cover, "image/jpeg")}
                     resp = await client.post(
-                        url_upload, params=params_upload, files=files, timeout=45
+                        url_upload,
+                        params=params_upload,
+                        data=data_upload,
+                        files=files,
+                        timeout=45,
                     )
                 elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
                     with open(resolved_cover, "rb") as f:
                         files = {"source": ("cover.jpg", f.read(), "image/jpeg")}
                         resp = await client.post(
-                            url_upload, params=params_upload, files=files, timeout=45
+                            url_upload,
+                            params=params_upload,
+                            data=data_upload,
+                            files=files,
+                            timeout=45,
                         )
                 elif cover_source and str(cover_source).startswith("http"):
-                    params_upload["url"] = str(cover_source)
+                    data_upload["url"] = str(cover_source)
                     resp = await client.post(
-                        url_upload, params=params_upload, timeout=45
+                        url_upload,
+                        params=params_upload,
+                        data=data_upload,
+                        timeout=45,
                     )
 
                 if resp and resp.status_code in (200, 201):
