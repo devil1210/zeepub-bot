@@ -217,6 +217,14 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 base_url = f"https://{base_url}"
             download_link = f"{base_url}/{short_link}"
 
+        # Formatear maquetadores como hashtags individuales (ej: "Zack, Saosora" -> "#Zack #Saosora")
+        raw_layout = str(data.get("layout_by") or data.get("maquetador") or "").strip()
+        if raw_layout:
+            parts = [p.strip() for p in re.split(r"[,;]+|\s+(?=#)", raw_layout) if p.strip()]
+            formatted_layout = " ".join(p if p.startswith("#") else f"#{p}" for p in parts)
+        else:
+            formatted_layout = ""
+
         mapping.update(
             {
                 "titulo": data.get("title") or data.get("titulo") or "",
@@ -280,8 +288,8 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "editor_patreon": data.get("editor_patreon") or "",
                 "editor_twitter": data.get("editor_twitter") or "",
                 "editor_links": data.get("editor_links") or "",
-                "maquetador": data.get("maquetador") or data.get("layout_by") or "",
-                "layout_by": data.get("layout_by") or data.get("maquetador") or "",
+                "maquetador": formatted_layout,
+                "layout_by": formatted_layout,
                 "maquetador_link": data.get("maquetador_link") or data.get("layout_link") or "",
                 "maquetador_web": data.get("maquetador_web") or data.get("layout_web") or "",
                 "maquetador_fb": data.get("maquetador_fb") or data.get("layout_fb") or "",
