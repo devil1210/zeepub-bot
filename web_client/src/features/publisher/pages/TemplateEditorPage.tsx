@@ -25,7 +25,7 @@ export const TemplateEditorPage: React.FC = () => {
 [/?][?romaji_title]🇯🇵 <b>{romaji_title}</b>
 [/?][?series_spanish]🇪🇸 <b>{series_spanish}</b>
 [/?][?!series_spanish][?!series_english]📚 <b>{serie}</b>
-[/?][/?][?volumen]📚 <b>Volumen {volumen}</b>
+[/?][?volumen]📚 <b>Volumen {volumen}</b>
 [/?]
 [?autor]👤 <b>Autor:</b> {autor}
 [/?][?illustrator]🎨 <b>Ilustrador:</b> {illustrator}
@@ -36,7 +36,7 @@ export const TemplateEditorPage: React.FC = () => {
 [/?][?traductor]🌐 <b>Traductor:</b> {traductor}
 [/?][?grupo_traductor]🏢 <b>Grupo Traductor:</b> {grupo_traductor}
 [/?][?!grupo_traductor][?editorial]🏢 <b>Grupo Traductor:</b> {editorial}
-[/?][/?]
+[/?]
 [?sinopsis]<blockquote expandable>📖 <b>Ver Sinopsis</b>
 
 {sinopsis}</blockquote>
