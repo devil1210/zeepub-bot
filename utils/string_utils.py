@@ -102,6 +102,10 @@ def clean_caption_for_facebook(caption: str, public_link: str | None = None) -> 
     if not caption:
         caption = ""
 
+    # 0. Decodificar entidades HTML (&lt; &gt; &amp; &quot; etc.)
+    # El editor TipTap guarda el contenido con entidades escapadas que hay que revertir
+    fb_caption = html.unescape(caption)
+
     # 1. Reemplazar enlaces Markdown [anchor](url)
     def repl_md(match):
         anchor, url = match.group(1).strip(), match.group(2).strip()
@@ -109,7 +113,7 @@ def clean_caption_for_facebook(caption: str, public_link: str | None = None) -> 
             return url
         return f"{anchor}: {url}"
 
-    fb_caption = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', repl_md, caption)
+    fb_caption = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', repl_md, fb_caption)
 
     # 2. Reemplazar enlaces HTML <a href="url">anchor</a>
     def repl_html(match):
