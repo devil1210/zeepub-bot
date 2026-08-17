@@ -128,6 +128,7 @@ class EpubMetadataExtractor:
                     self.metadata["author_jap"] = None
                     self.metadata["illustrator"] = None
                     self.metadata["illustrator_jap"] = None
+                    layout_by_list = []  # Acumular todos los maquetadores
 
                     for cid, text in creators.items():
                         role = role_map.get(cid, "aut")
@@ -146,12 +147,18 @@ class EpubMetadataExtractor:
                         if role == "trl":
                             self.metadata["translator"] = text
                         elif role == "mrk":
-                            self.metadata["layout_by"] = text
+                            # Acumular todos los maquetadores, no sobrescribir
+                            if text and text not in layout_by_list:
+                                layout_by_list.append(text)
                         elif role == "ill":
                             if not self.metadata.get("illustrator"):
                                 self.metadata["illustrator"] = text
                             if not self.metadata.get("illustrator_jap"):
                                 self.metadata["illustrator_jap"] = jap_name
+
+                    # Guardar todos los maquetadores como string "Zack, Saosora"
+                    if layout_by_list:
+                        self.metadata["layout_by"] = ", ".join(layout_by_list)
 
                     # 3.2 Identificadores (ISBN, ASIN, URI, UUID)
                     uuid_val = None
