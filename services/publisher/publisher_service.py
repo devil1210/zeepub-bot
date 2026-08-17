@@ -300,10 +300,14 @@ class PublisherService:
                     if template_id_to_use:
                         template = await self.repo.get_template_by_id(template_id_to_use)
                         if template and template.content:
-                            # Compilar plantilla con los datos del libro
-                            caption = apply_publication_template(
-                                template.content, book_data
-                            )
+                            # Para Telegram, si es la plantilla por defecto, dejar que TelegramPublisherProvider
+                            # use su generador dinámico nativo idéntico al de enviar_libro_directo
+                            if platform == "telegram" and template.is_default:
+                                caption = None
+                            else:
+                                caption = apply_publication_template(
+                                    template.content, book_data
+                                )
                             if (
                                 template.extra_config
                                 and "cover_quality" in template.extra_config

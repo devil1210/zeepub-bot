@@ -184,10 +184,20 @@ class TelegramPublisherProvider(PublisherProvider):
 
         # Si se proporcionó una plantilla personalizada (caption), usarla directamente para RichMessage
         if options and options.get("caption"):
+            clean_user_caption = (
+                caption_raw.replace("__ATTACH_FILE_SIGNAL__", "")
+                .replace("{archivo}", "")
+                .strip()
+            )
+            clean_user_caption = re.sub(
+                r"<img\s+src=[^>]*>", "", clean_user_caption, flags=re.IGNORECASE
+            ).strip()
             if media:
-                html_content = f'<img src="tg://photo?id=tomozaki_cover" />\n{caption_raw}'
+                html_content = (
+                    f'<img src="tg://photo?id=tomozaki_cover" />\n{clean_user_caption}'
+                )
             else:
-                html_content = caption_raw
+                html_content = clean_user_caption
         else:
             html_parts = []
             if media:
