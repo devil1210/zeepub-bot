@@ -100,7 +100,7 @@ class UploadRoutes:
         self,
         request: Request,
         file: UploadFile = File(...),
-        _auth=Depends(require_mini_app_access),
+        user_data: dict[str, Any] = Depends(require_mini_app_access),
     ):
         """
         Recibe un EPUB, lo guarda temporalmente, lo analiza con UploadService
@@ -108,8 +108,7 @@ class UploadRoutes:
         """
         from services.upload_service import upload_service
 
-        user_data = self._get_user_data(request)
-        user_id = user_data.get("telegram_id", 0)
+        user_id = user_data.get("telegram_id", 0) or user_data.get("user_id", 0)
 
         # Verificar permisos de upload
         can_upload = (
@@ -144,7 +143,7 @@ class UploadRoutes:
         self,
         request: Request,
         files: list[UploadFile] = File(...),
-        _auth=Depends(require_mini_app_access),
+        user_data: dict[str, Any] = Depends(require_mini_app_access),
     ):
         """
         Recibe múltiples EPUBs y los analiza en paralelo.
@@ -152,8 +151,7 @@ class UploadRoutes:
         """
         from services.upload_service import upload_service
 
-        user_data = self._get_user_data(request)
-        user_id = user_data.get("telegram_id", 0)
+        user_id = user_data.get("telegram_id", 0) or user_data.get("user_id", 0)
 
         can_upload = (
             user_data.get("role") in ("admin", "mod")
@@ -186,7 +184,7 @@ class UploadRoutes:
     async def confirm_upload(
         self,
         request: Request,
-        _auth=Depends(require_mini_app_access),
+        user_data: dict[str, Any] = Depends(require_mini_app_access),
     ):
         """
         Confirma un upload individual: mueve el archivo al destino final
@@ -194,7 +192,6 @@ class UploadRoutes:
         """
         from api.handlers.admin.library_handlers import handle_upload_confirm_internal
 
-        user_data = self._get_user_data(request)
         data = await request.json()
 
         try:
@@ -209,14 +206,13 @@ class UploadRoutes:
     async def confirm_upload_bulk(
         self,
         request: Request,
-        _auth=Depends(require_mini_app_access),
+        user_data: dict[str, Any] = Depends(require_mini_app_access),
     ):
         """
         Confirma múltiples uploads en bloque.
         """
         from api.handlers.admin.library_handlers import handle_admin_bulk_upload_confirm
 
-        user_data = self._get_user_data(request)
         data = await request.json()
 
         try:
@@ -233,7 +229,7 @@ class UploadRoutes:
         request: Request,
         limit: int = 100,
         offset: int = 0,
-        _auth=Depends(require_mini_app_access),
+        user_data: dict[str, Any] = Depends(require_mini_app_access),
     ):
         """
         Retorna el historial de uploads de EPUBs.
@@ -241,7 +237,6 @@ class UploadRoutes:
         """
         from api.handlers.admin.library_handlers import handle_get_upload_history
 
-        user_data = self._get_user_data(request)
         try:
             result = await handle_get_upload_history(
                 {"limit": limit, "offset": offset}, user_data
@@ -252,4 +247,5 @@ class UploadRoutes:
         except Exception as e:
             logger.error(f"Error obteniendo historial de uploads: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail="Error al obtener el historial")
+
 
