@@ -606,7 +606,7 @@ class PublisherService:
 
         return await fb_provider.check_album_exists(
             target_page_id=target_page_id,
-            token=config.FACEBOOK_PAGE_ACCESS_TOKEN,
+            token=config.get_facebook_token(target_page_id),
             series_name=recommended,
             series_id=series_id,
             alt_names=candidates,

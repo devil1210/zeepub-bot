@@ -443,7 +443,7 @@ class FacebookPublisherProvider(PublisherProvider):
         import httpx
         from config.config_settings import config
 
-        base_token = token or config.FACEBOOK_PAGE_ACCESS_TOKEN
+        base_token = token or config.get_facebook_token(target_id)
         _, page_token = await self._resolve_credentials(target_id, base_token)
 
         try:
@@ -516,13 +516,14 @@ class FacebookPublisherProvider(PublisherProvider):
         from config.config_settings import config
         from utils.helpers import validate_facebook_credentials
 
-        is_valid, error_msg = validate_facebook_credentials(config)
+        is_valid, error_msg = validate_facebook_credentials(config, target_id=target_id)
         if not is_valid:
             logger.error(f"Error publicando en Facebook: {error_msg}")
             return False
 
+        resolved_raw_token = config.get_facebook_token(target_id)
         target_group_id, token = await self._resolve_credentials(
-            target_id, config.FACEBOOK_PAGE_ACCESS_TOKEN
+            target_id, resolved_raw_token
         )
 
         from services.cover_service import resolve_cover_data

@@ -286,7 +286,7 @@ async def publish_facebook_post(
         params = {
             "url": cover_url,
             "caption": caption.replace("<b>", "").replace("</b>", ""),  # FB no soporta HTML tags básicos así
-            "access_token": config.FACEBOOK_PAGE_ACCESS_TOKEN,
+            "access_token": config.get_facebook_token(config.FACEBOOK_GROUP_ID),
         }
 
         async with httpx.AsyncClient() as client:

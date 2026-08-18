@@ -95,7 +95,36 @@ class BotConfig:
 
     # Facebook Credentials
     FACEBOOK_PAGE_ACCESS_TOKEN: str = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN", "")
+    FACEBOOK_TEST_PAGE_ACCESS_TOKEN: str = os.getenv("FACEBOOK_TEST_PAGE_ACCESS_TOKEN", "")
+    FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN: str = os.getenv("FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN", "")
     FACEBOOK_GROUP_ID: str = os.getenv("FACEBOOK_GROUP_ID", "")
+
+    def get_facebook_token(self, target_id: str | int | None = None) -> str:
+        """
+        Resuelve el token de Facebook adecuado según el canal/página destino:
+        - Si el target es la página oficial (109113064138279): FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN
+        - Si el target es la página/grupo de pruebas (61593375352202 o FACEBOOK_GROUP_ID): FACEBOOK_TEST_PAGE_ACCESS_TOKEN
+        - Fallbacks en cascada si alguno no está definido.
+        """
+        tid_str = str(target_id) if target_id is not None else ""
+        
+        # 1. Caso Página Oficial
+        if tid_str in ("109113064138279",):
+            if self.FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN:
+                return self.FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN
+        
+        # 2. Caso Página de Pruebas
+        if tid_str in ("61593375352202", str(self.FACEBOOK_GROUP_ID)):
+            if self.FACEBOOK_TEST_PAGE_ACCESS_TOKEN:
+                return self.FACEBOOK_TEST_PAGE_ACCESS_TOKEN
+        
+        # 3. Fallbacks
+        return (
+            self.FACEBOOK_PAGE_ACCESS_TOKEN
+            or self.FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN
+            or self.FACEBOOK_TEST_PAGE_ACCESS_TOKEN
+        )
+
 
     # Twitter / X Credentials
     TWITTER_API_KEY: str = os.getenv("TWITTER_API_KEY", "")

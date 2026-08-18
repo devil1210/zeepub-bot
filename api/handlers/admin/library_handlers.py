@@ -593,3 +593,72 @@ async def handle_admin_resolve_genre_audit(data: dict[str, Any], user_data: dict
     except Exception as e:
         logger.error(f"Error resolving genre audit {audit_id}: {e}", exc_info=True)
         return {"success": False, "message": str(e)}
+
+
+async def handle_upload_confirm_internal(data: dict[str, Any], user_data: dict[str, Any]) -> dict[str, Any]:
+    """
+    Confirma un upload individual desde la Web App REST.
+    Mueve el archivo a su destino final (Nextcloud o disco local) y lo indexa.
+    Reutiliza la lógica de finalize_upload de UploadService.
+    """
+    from pathlib import Path
+
+    from handlers.epub_upload_handler import pending_uploads
+
+    upload_id = data.get("upload_id")
+    if not upload_id:
+        raise HTTPException(status_code=400, detail="upload_id es requerido")
+
+    # Buscar en memoria primero, luego en la DB
+    info = pending_uploads.get(str(upload_id))
+    if not info:
+        try:
+            db_id = int(str(upload_id)) if str(upload_id).isdigit() else None
+            if db_id:
+                record = await upload_repo.get_upload_by_id(db_id)
+                if record:
+                    info = {
+                        "file_path": record.temp_filepath,
+                        "metadata": record.upload_metadata or {},
+                        "user_id": record.telegram_id,
+                        "original_filename": record.original_filename,
+                    }
+        except Exception as e:
+            logger.error(f"Error recuperando upload {upload_id} de DB: {e}")
+
+    if not info:
+        raise HTTPException(status_code=404, detail=f"Upload ID {upload_id} no encontrado")
+
+    f_path = Path(info["file_path"])
+    meta = info.get("metadata") or {}
+
+    # Si el frontend mandó un path personalizado, usarlo
+    if data.get("path"):
+        meta["suggested_path"] = data["path"]
+
+    try:
+        success = await upload_service.finalize_upload(f_path, meta.get("suggested_path"), meta)
+
+        status = "success" if success else "error"
+        await upload_repo.log_history(
+            {
+                "user_id": info.get("user_id", 0),
+                "filename": info.get("original_filename", "unknown"),
+                "book_hash": meta.get("book_hash"),
+                "status": status,
+                "final_path": meta.get("suggested_path") if success else None,
+            }
+        )
+
+        if success and f_path.exists():
+            f_path.unlink(missing_ok=True)
+
+        if str(upload_id) in pending_uploads:
+            del pending_uploads[str(upload_id)]
+
+        return {"success": success, "upload_id": upload_id}
+
+    except Exception as e:
+        logger.error(f"Error finalizando upload {upload_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error al finalizar el upload: {str(e)}")
+

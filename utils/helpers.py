@@ -79,14 +79,26 @@ def generate_series_hash(**kwargs):
     return hash_service.generate_series_hash(**kwargs)
 
 
-def validate_facebook_credentials(config_obj):
+def validate_facebook_credentials(config_obj, target_id: str | int | None = None):
     missing = []
-    token = config_obj.FACEBOOK_PAGE_ACCESS_TOKEN
+    token = ""
+    if hasattr(config_obj, "get_facebook_token"):
+        token = config_obj.get_facebook_token(target_id)
+    else:
+        token = (
+            getattr(config_obj, "FACEBOOK_PAGE_ACCESS_TOKEN", "")
+            or getattr(config_obj, "FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN", "")
+            or getattr(config_obj, "FACEBOOK_TEST_PAGE_ACCESS_TOKEN", "")
+        )
+
     if not token or "your_token" in token or "token_falso" in token:
-        missing.append("FACEBOOK_PAGE_ACCESS_TOKEN")
-    group_id = config_obj.FACEBOOK_GROUP_ID
-    if not group_id or "id_del_grupo" in group_id or "your_group_id" in group_id:
+        missing.append("FACEBOOK_PAGE_ACCESS_TOKEN (o FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN / FACEBOOK_TEST_PAGE_ACCESS_TOKEN)")
+    
+    group_id = getattr(config_obj, "FACEBOOK_GROUP_ID", "")
+    # Si se pasa target_id explícito, no requerimos group_id en config
+    if not target_id and (not group_id or "id_del_grupo" in group_id or "your_group_id" in group_id):
         missing.append("FACEBOOK_GROUP_ID")
+
     if missing:
         msg = (
             "⚠️ <b>Configuración inválida</b>\n\n"
@@ -96,3 +108,4 @@ def validate_facebook_credentials(config_obj):
         )
         return False, msg
     return True, ""
+
