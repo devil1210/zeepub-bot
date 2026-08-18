@@ -333,10 +333,12 @@ class PublisherService:
                                 )
 
                     if provider:
-                        # Extraer message_thread_id del config del canal
+                        # Extraer message_thread_id y page_access_token del config del canal
                         thread_id = None
+                        channel_token = None
                         if item.channel and item.channel.config:
                             thread_id = item.channel.config.get("message_thread_id")
+                            channel_token = item.channel.config.get("page_access_token")
 
                         item_payload = item.payload if isinstance(item.payload, dict) else {}
 
@@ -348,6 +350,7 @@ class PublisherService:
                                 "caption": caption,
                                 "cover_quality": cover_quality,
                                 "message_thread_id": thread_id,
+                                "page_access_token": channel_token,
                                 "fb_album_id": item_payload.get("fb_album_id"),
                             },
                         )
@@ -595,10 +598,14 @@ class PublisherService:
                 candidates.append(c.strip())
 
         target_page_id = None
+        channel_token = None
         if channel_id:
             chan = await self.repo.get_channel_by_id(channel_id)
-            if chan and chan.target_id:
-                target_page_id = chan.target_id
+            if chan:
+                if chan.target_id:
+                    target_page_id = chan.target_id
+                if chan.config:
+                    channel_token = chan.config.get("page_access_token")
 
         fb_provider = self.providers.get("facebook")
         if not fb_provider:
@@ -606,7 +613,7 @@ class PublisherService:
 
         return await fb_provider.check_album_exists(
             target_page_id=target_page_id,
-            token=config.get_facebook_token(target_page_id),
+            token=channel_token or config.get_facebook_token(target_page_id),
             series_name=recommended,
             series_id=series_id,
             alt_names=candidates,

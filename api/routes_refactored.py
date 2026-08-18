@@ -2,10 +2,17 @@
 
 import logging
 
-from .routes import AdminRoutes, AgentRoutes, AuthRoutes, ConfigRoutes, LegacyRoutes, LibraryRoutes, MediaRoutes
+from .routes.admin_routes import AdminRoutes
+from .routes.agent_routes import AgentRoutes
+from .routes.auth_routes import AuthRoutes
+from .routes.config_routes import ConfigRoutes
+from .routes.legacy_routes import LegacyRoutes
+from .routes.library_routes import LibraryRoutes
+from .routes.media_routes import MediaRoutes
 from .routes.upload_routes import UploadRoutes
 
 logger = logging.getLogger(__name__)
+
 
 
 class RoutesManager:

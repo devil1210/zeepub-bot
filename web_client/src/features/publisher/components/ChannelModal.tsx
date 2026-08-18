@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
-import { X, Send, Facebook, Twitter, Loader2, Check, Save, Hash, Settings } from 'lucide-react';
+import { X, Send, Facebook, Twitter, Loader2, Check, Save, Hash, Settings, Key } from 'lucide-react';
 import { PublicationChannel } from '../services/publisherApi';
 
 interface ChannelModalProps {
@@ -15,6 +15,7 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onS
     const [platform, setPlatform] = useState('telegram');
     const [targetId, setTargetId] = useState('');
     const [threadId, setThreadId] = useState('');
+    const [pageAccessToken, setPageAccessToken] = useState('');
     const [isActive, setIsActive] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -25,12 +26,14 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onS
             setPlatform(editingChannel.platform);
             setTargetId(editingChannel.target_id);
             setThreadId(editingChannel.config?.message_thread_id || '');
+            setPageAccessToken(editingChannel.config?.page_access_token || '');
             setIsActive(editingChannel.is_active);
         } else {
             setName('');
             setPlatform('telegram');
             setTargetId('');
             setThreadId('');
+            setPageAccessToken('');
             setIsActive(true);
         }
     }, [editingChannel, isOpen]);
@@ -50,7 +53,8 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onS
                 is_active: isActive,
                 config: {
                     ...editingChannel?.config,
-                    message_thread_id: threadId && !isNaN(parseInt(threadId)) ? parseInt(threadId) : null
+                    message_thread_id: threadId && !isNaN(parseInt(threadId)) ? parseInt(threadId) : null,
+                    page_access_token: pageAccessToken.trim() ? pageAccessToken.trim() : null
                 }
             };
 
@@ -166,6 +170,24 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ isOpen, onClose, onS
                                     className="w-full bg-black/20 border border-white/10 rounded-premium-sm px-4 py-2.5 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                                 />
                                 <p className="text-[9px] text-gray-600 ml-1">Para publicar en un tópico específico de un supergrupo.</p>
+                            </div>
+                        )}
+
+                        {platform === 'facebook' && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1 flex items-center gap-1.5">
+                                    <Key className="w-3 h-3 text-primary" /> Page Access Token (Opcional)
+                                </label>
+                                <input
+                                    type="password"
+                                    value={pageAccessToken}
+                                    onChange={(e) => setPageAccessToken(e.target.value)}
+                                    placeholder="EAA..."
+                                    className="w-full bg-black/20 border border-white/10 rounded-premium-sm px-4 py-2.5 text-sm text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-mono"
+                                />
+                                <p className="text-[9px] text-gray-500 ml-1">
+                                    Token específico para esta página. Si se deja en blanco, usará el token configurado en las variables del servidor.
+                                </p>
                             </div>
                         )}
                     </div>

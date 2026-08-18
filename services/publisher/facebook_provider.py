@@ -516,12 +516,14 @@ class FacebookPublisherProvider(PublisherProvider):
         from config.config_settings import config
         from utils.helpers import validate_facebook_credentials
 
-        is_valid, error_msg = validate_facebook_credentials(config, target_id=target_id)
-        if not is_valid:
-            logger.error(f"Error publicando en Facebook: {error_msg}")
-            return False
+        explicit_token = options.get("page_access_token") or options.get("token")
+        if not explicit_token:
+            is_valid, error_msg = validate_facebook_credentials(config, target_id=target_id)
+            if not is_valid:
+                logger.error(f"Error publicando en Facebook: {error_msg}")
+                return False
 
-        resolved_raw_token = config.get_facebook_token(target_id)
+        resolved_raw_token = explicit_token or config.get_facebook_token(target_id)
         target_group_id, token = await self._resolve_credentials(
             target_id, resolved_raw_token
         )
