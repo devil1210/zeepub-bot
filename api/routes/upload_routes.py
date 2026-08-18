@@ -29,44 +29,39 @@ class UploadRoutes:
     """
 
     def __init__(self):
-        self.router = APIRouter(prefix="/api/library")
-        self.admin_router = APIRouter(prefix="/api/admin")  # Para /api/admin/upload-history
+        self.router = APIRouter(prefix="/api")
 
     def get_router(self) -> APIRouter:
         return self.router
 
-    def get_admin_router(self) -> APIRouter:
-        return self.admin_router
-
     def register_routes(self):
         """Registra todos los endpoints de upload."""
         self.router.add_api_route(
-            "/upload",
+            "/library/upload",
             self.upload_epub,
             methods=["POST"],
             summary="Subir EPUB individual",
         )
         self.router.add_api_route(
-            "/upload/bulk",
+            "/library/upload/bulk",
             self.upload_epub_bulk,
             methods=["POST"],
             summary="Subir múltiples EPUBs",
         )
         self.router.add_api_route(
-            "/upload/confirm",
+            "/library/upload/confirm",
             self.confirm_upload,
             methods=["POST"],
             summary="Confirmar upload individual",
         )
         self.router.add_api_route(
-            "/upload/bulk/confirm",
+            "/library/upload/bulk/confirm",
             self.confirm_upload_bulk,
             methods=["POST"],
             summary="Confirmar upload masivo",
         )
-        # Historial de uploads (ruta admin)
-        self.admin_router.add_api_route(
-            "/upload-history",
+        self.router.add_api_route(
+            "/admin/upload-history",
             self.get_upload_history,
             methods=["GET"],
             summary="Historial de uploads",

@@ -49,8 +49,7 @@ class RoutesManager:
             app.include_router(self.auth_routes.get_router())
             app.include_router(self.config_routes.get_router())
             app.include_router(self.legacy_routes.get_router())
-            app.include_router(self.upload_routes.get_router())  # 📤 Upload REST
-            app.include_router(self.upload_routes.get_admin_router())  # 📤 Admin upload history
+            app.include_router(self.upload_routes.get_router())  # 📤 Upload REST & history
             app.include_router(self.agent_routes.get_router())  # 🌉 Puente MCP
 
             logger.info("✅ All API routes registered successfully")
