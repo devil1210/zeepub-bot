@@ -137,6 +137,20 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
+# ==========================================
+# Security Headers Middleware
+# ==========================================
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    return response
+
+
 # Cache Control Middleware
 @app.middleware("http")
 async def add_cache_headers(request: Request, call_next):
@@ -192,8 +206,21 @@ if enable_miniapp:
     from core.db_manager_pg import pg_manager
     from services.library_service import LibraryService
 
-    # Almacén temporal en memoria para Rate Limiting
-    _rate_limit_data = {}  # {ip: [timestamps]}
+    # Rate limiting por IP: máx N descargas por ventana de tiempo
+    _rate_limit_data: dict[str, list[float]] = {}  # {ip: [timestamps]}
+    _RL_MAX_REQUESTS = 10   # máx descargas directas por IP
+    _RL_WINDOW_SECS = 3600  # ventana de 1 hora
+
+    def _check_ip_rate_limit(ip: str) -> bool:
+        """Retorna True si la IP está dentro del límite. Limpia entradas expiradas."""
+        now = time.time()
+        window_start = now - _RL_WINDOW_SECS
+        hits = [t for t in _rate_limit_data.get(ip, []) if t > window_start]
+        _rate_limit_data[ip] = hits
+        if len(hits) >= _RL_MAX_REQUESTS:
+            return False
+        _rate_limit_data[ip].append(now)
+        return True
 
     @app.get("/{short_link}")
     async def short_link_download(request: Request, short_link: str):
@@ -203,23 +230,29 @@ if enable_miniapp:
         if not short_link or not re.match(r"^[a-zA-Z0-9]{10}$", short_link):
             raise HTTPException(status_code=404)
 
+        # Bloquear bots y scrapers conocidos
         user_agent = request.headers.get("User-Agent", "").lower()
         blocked_bots = [
-            "googlebot",
-            "bingbot",
-            "slurp",
-            "duckduckbot",
-            "baiduspider",
-            "yandexbot",
-            "curl",
-            "python-requests",
-            "wget",
+            "googlebot", "bingbot", "slurp", "duckduckbot",
+            "baiduspider", "yandexbot", "curl", "python-requests", "wget",
+            "scrapy", "libwww-perl", "java/", "go-http-client",
         ]
         if not user_agent or any(bot in user_agent for bot in blocked_bots):
             logger.warning(f"⚠️ Bot bloqueado: {short_link} (UA: {user_agent})")
-            raise HTTPException(status_code=403, detail="Acceso denegado: Bots no permitidos")
+            raise HTTPException(status_code=403, detail="Acceso denegado")
 
-        client_ip = request.headers.get("X-Forwarded-For", request.client.host)
+        # Obtener IP real (respetando proxies de confianza como Cloudflare/nginx)
+        forwarded_for = request.headers.get("X-Forwarded-For", "")
+        client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else "unknown")
+
+        # Rate limiting por IP
+        if not _check_ip_rate_limit(client_ip):
+            logger.warning(f"🚦 Rate limit alcanzado para IP {client_ip} (short_link={short_link})")
+            raise HTTPException(
+                status_code=429,
+                detail="Has alcanzado el límite de descargas. Intenta de nuevo más tarde.",
+                headers={"Retry-After": "3600"},
+            )
 
         async with pg_manager.get_session() as session:
             library_service = LibraryService(session)
@@ -230,16 +263,34 @@ if enable_miniapp:
 
             filepath = book.filepath
             if not os.path.exists(filepath):
-                logger.error(f"Archivo no encontrado: {filepath}")
+                logger.error(f"Archivo no encontrado en disco: {filepath}")
                 raise HTTPException(status_code=404, detail="El archivo físico no está disponible")
 
-            logger.info(f"📥 Descarga iniciada: {book.title} (IP: {client_ip})")
+            logger.info(f"📥 Descarga directa: {book.title} | IP: {client_ip} | short_link: {short_link}")
+
+            # Registrar descarga en la base de datos (user_id=0 = descarga pública anónima)
+            try:
+                from repositories.metrics_repository import metrics_repo
+                asyncio.create_task(
+                    metrics_repo.add_download(
+                        user_id=0,
+                        book_hash=book.book_hash or short_link,
+                        series_hash=getattr(book, "series_hash", None),
+                        title=book.title,
+                    )
+                )
+            except Exception as e:
+                logger.warning(f"No se pudo registrar descarga directa: {e}")
 
             return FileResponse(
                 path=filepath,
                 media_type="application/epub+zip",
                 filename=os.path.basename(filepath),
                 content_disposition_type="attachment",
+                headers={
+                    "X-Content-Type-Options": "nosniff",
+                    "Cache-Control": "private, no-store",
+                },
             )
 
     # Montar archivos estáticos del frontend
