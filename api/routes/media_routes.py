@@ -5,9 +5,8 @@ import logging
 from fastapi import APIRouter, Query
 from fastapi.responses import RedirectResponse, Response
 
-from api.main import bot
-
 logger = logging.getLogger(__name__)
+
 
 
 class MediaRoutes:
@@ -29,6 +28,7 @@ class MediaRoutes:
         """
         try:
             logger.info(f"🖼️ Avatar proxy request: {file_id}")
+            from api.main import bot
 
             # Get file from Telegram bot
             file = await bot.app.bot.get_file(file_id)
