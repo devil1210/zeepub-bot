@@ -29,7 +29,7 @@ class UploadRoutes:
     """
 
     def __init__(self):
-        self.router = APIRouter(prefix="/api")
+        self.router = APIRouter()
 
     def get_router(self) -> APIRouter:
         return self.router
@@ -37,31 +37,31 @@ class UploadRoutes:
     def register_routes(self):
         """Registra todos los endpoints de upload."""
         self.router.add_api_route(
-            "/library/upload",
+            "/api/library/upload",
             self.upload_epub,
             methods=["POST"],
             summary="Subir EPUB individual",
         )
         self.router.add_api_route(
-            "/library/upload/bulk",
+            "/api/library/upload/bulk",
             self.upload_epub_bulk,
             methods=["POST"],
             summary="Subir múltiples EPUBs",
         )
         self.router.add_api_route(
-            "/library/upload/confirm",
+            "/api/library/upload/confirm",
             self.confirm_upload,
             methods=["POST"],
             summary="Confirmar upload individual",
         )
         self.router.add_api_route(
-            "/library/upload/bulk/confirm",
+            "/api/library/upload/bulk/confirm",
             self.confirm_upload_bulk,
             methods=["POST"],
             summary="Confirmar upload masivo",
         )
         self.router.add_api_route(
-            "/admin/upload-history",
+            "/api/admin/upload-history",
             self.get_upload_history,
             methods=["GET"],
             summary="Historial de uploads",
