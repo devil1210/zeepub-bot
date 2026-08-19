@@ -241,9 +241,10 @@ if enable_miniapp:
             logger.warning(f"⚠️ Bot bloqueado: {short_link} (UA: {user_agent})")
             raise HTTPException(status_code=403, detail="Acceso denegado")
 
-        # Obtener IP real (respetando proxies de confianza como Cloudflare/nginx)
+        # Obtener IP real (priorizando Cloudflare CF-Connecting-IP, luego proxies de confianza y host)
+        cf_ip = request.headers.get("CF-Connecting-IP")
         forwarded_for = request.headers.get("X-Forwarded-For", "")
-        client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else "unknown")
+        client_ip = cf_ip.strip() if cf_ip else (forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else "unknown"))
 
         # Rate limiting por IP
         if not _check_ip_rate_limit(client_ip):
