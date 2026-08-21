@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Search,
@@ -9,7 +10,9 @@ import {
   LogOut,
   ChevronRight,
   Upload,
-  BrainCircuit
+  BrainCircuit,
+  Building2,
+  Table
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { useTelegram } from '@shared/contexts/TelegramContext';
@@ -25,8 +28,10 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { settings } = useTheme();
-  const { user: tgUser, status, isAdmin, botInfo, canUploadEpub, extendedInfo } = useTelegram();
+  const { user: tgUser, status, isAdmin, isStaff, botInfo, canUploadEpub, extendedInfo } = useTelegram();
   const {
     state: navState,
     handleSearchChange,
@@ -115,18 +120,53 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
             );
           })}
 
-          {isAdmin && (
-            <div className="pt-6 pb-2">
-              <p className="px-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Administración</p>
+          {(isAdmin || isStaff) && (
+            <div className="pt-6 pb-2 space-y-1">
+              <p className="px-4 text-[10px] font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Administración
+              </p>
+
               <button
-                onClick={() => onTabChange('admin')}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-premium-sm transition-all duration-200 group ${activeTab === 'admin'
-                  ? 'bg-primary/20 text-white'
+                onClick={() => {
+                  onTabChange('admin');
+                  navigate('/admin');
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all duration-200 group ${activeTab === 'admin' && location.pathname === '/admin'
+                  ? 'bg-primary/20 text-white font-bold'
                   : 'text-gray-400 hover:text-white hover:bg-[var(--panel-bg-subtle)]'
                   }`}
               >
-                <ShieldCheck className="w-5 h-5 group-hover:text-red-400 transition-colors" />
+                <ShieldCheck className="w-5 h-5 text-primary group-hover:text-primary transition-colors" />
                 <span className="text-sm font-medium">Panel Admin</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onTabChange('admin');
+                  navigate('/admin/grid');
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all duration-200 group ${location.pathname === '/admin/grid'
+                  ? 'bg-primary/20 text-white font-bold'
+                  : 'text-gray-400 hover:text-white hover:bg-[var(--panel-bg-subtle)]'
+                  }`}
+              >
+                <Table className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
+                <span className="text-sm font-medium">Editor de Catálogo</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onTabChange('admin');
+                  navigate('/admin/fansubs');
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all duration-200 group ${location.pathname.includes('/admin/fansubs')
+                  ? 'bg-primary/20 text-white font-bold'
+                  : 'text-gray-400 hover:text-white hover:bg-[var(--panel-bg-subtle)]'
+                  }`}
+              >
+                <Building2 className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
+                <span className="text-sm font-medium">Fansubs / Grupos</span>
               </button>
             </div>
           )}
