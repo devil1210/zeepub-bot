@@ -62,6 +62,9 @@ export const SeriesDetailPage: React.FC = () => {
     const [illustrator, setIllustrator] = useState('');
     const [description, setDescription] = useState('');
     const [bookType, setBookType] = useState('Novela Ligera');
+    const [demography, setDemography] = useState('Seinen');
+    const [tags, setTags] = useState<string[]>([]);
+    const [newTagInput, setNewTagInput] = useState('');
     const [coverUrl, setCoverUrl] = useState('');
     const [aliases, setAliases] = useState<Array<{ id: number; alias: string }>>([]);
 
@@ -116,6 +119,11 @@ export const SeriesDetailPage: React.FC = () => {
                 setIllustrator(seriesItem.illustrator || '');
                 setDescription(seriesItem.description || '');
                 setBookType(seriesItem.book_type || 'Novela Ligera');
+                const loadedDemo = Array.isArray(seriesItem.demographics) && seriesItem.demographics.length > 0
+                    ? seriesItem.demographics[0]
+                    : (seriesItem.demography || 'Seinen');
+                setDemography(loadedDemo);
+                setTags(Array.isArray(seriesItem.tags) ? seriesItem.tags : []);
                 setCoverUrl(seriesItem.cover_url || '');
                 setAliases(seriesItem.aliases || []);
                 setBooks(booksItem);
@@ -150,6 +158,8 @@ export const SeriesDetailPage: React.FC = () => {
                 illustrator: illustrator.trim() || undefined,
                 description: description.trim() || undefined,
                 book_type: bookType,
+                demographics: [demography],
+                tags: tags,
                 cover_url: coverUrl.trim() || undefined,
             });
 

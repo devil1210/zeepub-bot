@@ -233,6 +233,16 @@ async def handle_admin_update_series_grid(data: dict[str, Any], user_data: dict[
         if "book_type" in data:
             val = data.get("book_type")
             series.book_type = str(val).strip() if val else "Novela Ligera"
+        if "demographics" in data or "demographics_json" in data:
+            val = data.get("demographics") or data.get("demographics_json")
+            from utils.metadata_utils import normalize_demographics_list
+            series.demographics_json = normalize_demographics_list(val)
+        if "tags" in data or "tags_json" in data or "genres" in data:
+            val = data.get("tags") or data.get("tags_json") or data.get("genres")
+            if isinstance(val, str):
+                series.tags_json = [t.strip() for t in val.split(",") if t.strip()]
+            elif isinstance(val, list):
+                series.tags_json = [str(t).strip() for t in val if str(t).strip()]
 
         await session.commit()
         await cache_manager.delete_series(series_id)

@@ -527,58 +527,69 @@ class TelegramPublisherProvider(PublisherProvider):
         chat_id: str | int,
         message_id: str | int,
         new_message: str,
+        cover: Any = None,
     ) -> bool:
         """
         Edita el mensaje/ficha existente de una publicación en Telegram.
+        Limpia señales internas de archivos (__ATTACH_FILE_SIGNAL__) y actualiza portada si corresponde.
         """
         if not chat_id or not message_id or not new_message:
             return False
 
-        from services.rich_message_service import RichMessageService
+        clean_message = (
+            new_message.replace("__ATTACH_FILE_SIGNAL__", "")
+            .replace("{archivo}", "")
+            .strip()
+        )
 
-        try:
-            res = await RichMessageService.edit_rich_message(
-                chat_id=chat_id,
-                message_id=int(message_id),
-                html=new_message,
-            )
-            if res and res.get("ok"):
-                logger.info(
-                    f"✅ Publicación {message_id} de Telegram en {chat_id} actualizada."
-                )
-                return True
-        except Exception as e:
-            logger.debug(f"Aviso edit_rich_message en Telegram: {e}")
-
-        # Fallback estándar vía bot.edit_message_text o edit_message_caption
         try:
             if not self.bot:
                 from api.main import bot as main_bot
-
                 self.bot = main_bot.app.bot
 
+            # Si se proporciona portada o ruta de portada, intentar edit_message_media
+            if cover:
+                from telegram import InputMediaPhoto
+                from services.cover_service import resolve_cover_data
+                resolved_cover = await resolve_cover_data(cover)
+                if resolved_cover:
+                    try:
+                        if isinstance(resolved_cover, bytes):
+                            media = InputMediaPhoto(media=resolved_cover, caption=clean_message, parse_mode="HTML")
+                            await self.bot.edit_message_media(chat_id=chat_id, message_id=int(message_id), media=media)
+                            logger.info(f"✅ Portada y caption {message_id} en Telegram ({chat_id}) actualizados.")
+                            return True
+                        elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
+                            with open(resolved_cover, "rb") as f:
+                                media = InputMediaPhoto(media=f, caption=clean_message, parse_mode="HTML")
+                                await self.bot.edit_message_media(chat_id=chat_id, message_id=int(message_id), media=media)
+                            logger.info(f"✅ Portada y caption {message_id} en Telegram ({chat_id}) actualizados.")
+                            return True
+                    except Exception as e:
+                        logger.debug(f"Aviso edit_message_media en Telegram: {e}")
+
+            # Intentar edit_message_caption (para mensajes con foto existentes)
             try:
                 await self.bot.edit_message_caption(
                     chat_id=chat_id,
                     message_id=int(message_id),
-                    caption=new_message,
+                    caption=clean_message,
                     parse_mode="HTML",
                 )
-                logger.info(
-                    f"✅ Caption de publicación {message_id} en Telegram editado."
-                )
+                logger.info(f"✅ Caption de publicación {message_id} en Telegram editado.")
                 return True
             except Exception:
-                await self.bot.edit_message_text(
-                    chat_id=chat_id,
-                    message_id=int(message_id),
-                    text=new_message,
-                    parse_mode="HTML",
-                )
-                logger.info(
-                    f"✅ Texto de publicación {message_id} en Telegram editado."
-                )
-                return True
+                pass
+
+            # Fallback a edit_message_text (para mensajes de texto estándar)
+            await self.bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=int(message_id),
+                text=clean_message,
+                parse_mode="HTML",
+            )
+            logger.info(f"✅ Texto de publicación {message_id} en Telegram editado.")
+            return True
         except Exception as e:
             logger.error(
                 f"Error editando publicación {message_id} en Telegram ({chat_id}): {e}"

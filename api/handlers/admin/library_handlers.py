@@ -826,6 +826,8 @@ async def handle_admin_get_series_detail(data: dict[str, Any], user_data: dict[s
                 "description": series.description or "",
                 "publisher": series.publisher or "",
                 "book_type": series.book_type or "Novela Ligera",
+                "demographics": series.demographics_json or [],
+                "tags": series.tags_json or [],
                 "cover_url": series.cover_url or "",
                 "book_count": series.book_count or len(series.books or []),
                 "aliases": [{"id": a.id, "alias": a.alias} for a in (series.aliases or [])],
