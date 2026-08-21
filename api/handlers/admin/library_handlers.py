@@ -774,3 +774,67 @@ async def handle_upload_confirm_internal(
         raise HTTPException(
             status_code=500, detail=f"Error al finalizar el upload: {str(e)}"
         )
+
+
+async def handle_admin_get_series_detail(data: dict[str, Any], user_data: dict[str, Any]) -> dict[str, Any]:
+    """Retorna los datos completos de una serie (metadatos, alias y volúmenes) para edición."""
+    check_staff(user_data)
+    series_id = (data.get("series_id") or data.get("id") or data.get("series_hash") or "").strip()
+    if not series_id:
+        return {"success": False, "message": "ID de serie requerido"}
+
+    from sqlalchemy import or_
+    from sqlalchemy.orm import selectinload
+    from models.library import Series, Book
+
+    async with pg_manager.get_session() as session:
+        stmt = (
+            select(Series)
+            .options(
+                selectinload(Series.aliases),
+                selectinload(Series.books)
+            )
+            .where(
+                or_(
+                    Series.id == series_id,
+                    Series.series_hash == series_id,
+                    Series.slug == series_id
+                )
+            )
+        )
+        result = await session.execute(stmt)
+        series = result.scalar_one_or_none()
+        if not series:
+            return {"success": False, "message": "Serie no encontrada"}
+
+        return {
+            "success": True,
+            "series": {
+                "id": series.id,
+                "series_hash": series.series_hash or series.id,
+                "name": series.name or series.series_name or "Sin Título",
+                "series_spanish": series.series_spanish or series.name_spanish or "",
+                "series_english": series.series_english or series.name_english or "",
+                "slug": series.slug or "",
+                "author": series.author or "",
+                "illustrator": series.illustrator or "",
+                "description": series.description or "",
+                "publisher": series.publisher or "",
+                "book_type": series.book_type or "Novela Ligera",
+                "cover_url": series.cover_url or "",
+                "book_count": series.book_count or len(series.books or []),
+                "aliases": [{"id": a.id, "alias": a.alias} for a in (series.aliases or [])],
+                "books": [
+                    {
+                        "id": b.id,
+                        "title": b.title,
+                        "volume": b.volume,
+                        "translator": b.translator or "",
+                        "layout_by": b.layout_by or "",
+                        "cover_url": b.cover_low or b.cover_medium
+                    }
+                    for b in (series.books or [])
+                ]
+            }
+        }
+

@@ -92,18 +92,18 @@ export const SeriesDetailPage: React.FC = () => {
         if (!id) return;
         try {
             setLoading(true);
-            const gridRes = await api.getLibraryGrid({ query: id, limit: 1 });
+            const res = await (api as any).adminGetSeriesDetail(id);
             let seriesItem: any = null;
             let booksItem: any[] = [];
 
-            if (gridRes && gridRes.series && gridRes.series.length > 0) {
-                seriesItem = gridRes.series.find((s: any) => s.id === id || s.series_hash === id || s.slug === id) || gridRes.series[0];
-                booksItem = seriesItem.books || [];
+            if (res && res.success && res.series) {
+                seriesItem = res.series;
+                booksItem = res.series.books || [];
             } else {
-                const detailRes = await api.getSeriesDetails(id);
-                if (detailRes) {
-                    seriesItem = detailRes;
-                    booksItem = detailRes.volumes || [];
+                const gridRes = await api.getLibraryGrid({ query: id, limit: 1 });
+                if (gridRes && gridRes.series && gridRes.series.length > 0) {
+                    seriesItem = gridRes.series.find((s: any) => s.id === id || s.series_hash === id || s.slug === id) || gridRes.series[0];
+                    booksItem = seriesItem.books || [];
                 }
             }
 
@@ -116,7 +116,7 @@ export const SeriesDetailPage: React.FC = () => {
                 setIllustrator(seriesItem.illustrator || '');
                 setDescription(seriesItem.description || '');
                 setBookType(seriesItem.book_type || 'Novela Ligera');
-                setCoverUrl(seriesItem.cover_url || (seriesItem.coverUrl ? (typeof seriesItem.coverUrl === 'string' ? seriesItem.coverUrl : seriesItem.coverUrl.medium) : ''));
+                setCoverUrl(seriesItem.cover_url || '');
                 setAliases(seriesItem.aliases || []);
                 setBooks(booksItem);
             }

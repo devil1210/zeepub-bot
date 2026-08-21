@@ -360,6 +360,9 @@ export const api = {
         sort_by?: string;
     }) => rpc('admin_get_library_grid', params || {}),
 
+    adminGetSeriesDetail: (seriesId: string) =>
+        rpc('admin_get_series_detail', { series_id: seriesId }),
+
     updateSeriesGrid: (seriesId: string, data: any) =>
         rpc('admin_update_series_grid', { series_id: seriesId, ...data }),
 

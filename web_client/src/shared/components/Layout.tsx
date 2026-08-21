@@ -130,10 +130,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
 
               <button
                 onClick={() => {
-                  onTabChange('admin');
                   navigate('/admin?view=monitor');
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all duration-200 group ${activeTab === 'admin' && (!location.search || location.search.includes('view=monitor'))
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all duration-200 group ${location.pathname === '/admin' && (!location.search || location.search.includes('view=monitor'))
                   ? 'bg-primary/20 text-white font-bold'
                   : 'text-gray-400 hover:text-white hover:bg-[var(--panel-bg-subtle)]'
                   }`}
@@ -144,7 +143,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
 
               <button
                 onClick={() => {
-                  onTabChange('admin');
                   navigate('/admin/series-manager');
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all duration-200 group ${location.pathname.includes('/admin/series-manager')
@@ -158,7 +156,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
 
               <button
                 onClick={() => {
-                  onTabChange('admin');
                   navigate('/admin?view=publisher');
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all duration-200 group ${location.search.includes('view=publisher')
