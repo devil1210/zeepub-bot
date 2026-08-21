@@ -91,7 +91,9 @@ async def publicar_libro(
 
             if epub_downloaded:
                 # Use orchestrator for enrichment
-                meta = await metadata_orchestrator.get_enriched_metadata(book_id=epub_url, epub_bytes=epub_downloaded)
+                meta = await metadata_orchestrator.get_enriched_metadata(
+                    book_id=epub_url, epub_bytes=epub_downloaded
+                )
 
                 # Maintain state for subsequent download click
                 user_state["epub_buffer"] = epub_downloaded
@@ -113,7 +115,9 @@ async def publicar_libro(
         # 3. Cleanup "Preparing" message
         if menu_prep:
             try:
-                await context.bot.delete_message(chat_id=menu_prep[0], message_id=menu_prep[1])
+                await context.bot.delete_message(
+                    chat_id=menu_prep[0], message_id=menu_prep[1]
+                )
             except Exception:
                 pass
 
@@ -134,7 +138,9 @@ async def publicar_libro(
             )
 
 
-async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int, job_queue=None):
+async def descargar_epub_pendiente(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, uid: int, job_queue=None
+):
     """
     Función llamada cuando el usuario presiona "Descargar" en el menú intermedio.
     """
@@ -144,7 +150,9 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
 
     bot = context.bot
 
-    thread_id_origen = user_state.get("message_thread_id")  # Usar el guardado en el estado
+    thread_id_origen = user_state.get(
+        "message_thread_id"
+    )  # Usar el guardado en el estado
 
     epub_buffer = user_state.pop("epub_buffer", None)
     epub_url = user_state.pop("epub_url", "")
@@ -250,10 +258,17 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
 
     try:
         db_templates = await pub_repo.get_templates(platform="telegram")
-        info_t = next((t for t in db_templates if (t.extra_config or {}).get("type") == "info"), None)
-        info_template = info_t.content if info_t else TelegramPublisherProvider.INFO_TEMPLATE
+        info_t = next(
+            (t for t in db_templates if (t.extra_config or {}).get("type") == "info"),
+            None,
+        )
+        info_template = (
+            info_t.content if info_t else TelegramPublisherProvider.INFO_TEMPLATE
+        )
     except Exception as e:
-        logger.warning(f"Error cargando plantilla de info de base de datos en descargar_epub_pendiente: {e}")
+        logger.warning(
+            f"Error cargando plantilla de info de base de datos en descargar_epub_pendiente: {e}"
+        )
         info_template = TelegramPublisherProvider.INFO_TEMPLATE
 
     # Botones de navegación integrados
@@ -262,12 +277,22 @@ async def descargar_epub_pendiente(update: Update, context: ContextTypes.DEFAULT
     if restantes != "ilimitadas":
         quota_text = f"\n\n📥 Te quedan {restantes} descargas disponibles para hoy."
 
-    gratitude = "\n\n✨ ¡Disfruta de tu lectura! Gracias por ser parte de nuestra comunidad. ❤️"
+    gratitude = (
+        "\n\n✨ ¡Disfruta de tu lectura! Gracias por ser parte de nuestra comunidad. ❤️"
+    )
     compact_caption = f"<hr><hr>{info_template}{quota_text}{gratitude}"
 
     keyboard = [
-        [InlineKeyboardButton("📚 Volver a categorías", callback_data="volver_colecciones")],
-        [InlineKeyboardButton("↩️ Volver a la página anterior", callback_data="volver_ultima")],
+        [
+            InlineKeyboardButton(
+                "📚 Volver a categorías", callback_data="volver_colecciones"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "↩️ Volver a la página anterior", callback_data="volver_ultima"
+            )
+        ],
         [InlineKeyboardButton("❌ Cerrar", callback_data="cerrar")],
     ]
 
@@ -343,7 +368,9 @@ async def enviar_libro_directo(
     try:
         # 1. Verificar límite
         if not await can_download(user_id):
-            await bot.send_message(chat_id=user_id, text="🚫 Has alcanzado tu límite de descargas por hoy.")
+            await bot.send_message(
+                chat_id=user_id, text="🚫 Has alcanzado tu límite de descargas por hoy."
+            )
             return False
 
         # 2. Mensaje de preparación (siempre al usuario que interactúa)
@@ -393,7 +420,9 @@ async def enviar_libro_directo(
         # 4. Parsear metadatos del EPUB
         if metadata_override:
             logger.info(f"Usando metadatos proporcionados para: {title}")
-            logger.debug(f"metadata_override book_hash: {metadata_override.get('hash')}")
+            logger.debug(
+                f"metadata_override book_hash: {metadata_override.get('hash')}"
+            )
             meta = metadata_override
         else:
             meta = {
@@ -437,14 +466,22 @@ async def enviar_libro_directo(
             try:
                 if isinstance(epub_bytes, bytes | bytearray):
                     meta["file_size"] = len(epub_bytes)
-                elif isinstance(epub_bytes, str) and await asyncio.to_thread(os.path.exists, epub_bytes):
-                    meta["file_size"] = await asyncio.to_thread(os.path.getsize, epub_bytes)
+                elif isinstance(epub_bytes, str) and await asyncio.to_thread(
+                    os.path.exists, epub_bytes
+                ):
+                    meta["file_size"] = await asyncio.to_thread(
+                        os.path.getsize, epub_bytes
+                    )
             except Exception as e:
-                logger.warning(f"No se pudo calcular el tamaño del archivo para meta: {e}")
+                logger.warning(
+                    f"No se pudo calcular el tamaño del archivo para meta: {e}"
+                )
 
         # --- LOGICA FACEBOOK (Unificada con Template Engine) ---
         if format_type in ["fb_preview", "fb_direct"]:
-            from services.publisher.facebook_publisher import handle_facebook_publication
+            from services.publisher.facebook_publisher import (
+                handle_facebook_publication,
+            )
 
             return await handle_facebook_publication(
                 bot=bot,
@@ -466,7 +503,9 @@ async def enviar_libro_directo(
             elif isinstance(portada_data, str) and os.path.exists(portada_data):
                 try:
                     with open(portada_data, "rb") as f:
-                        files = {"tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")}
+                        files = {
+                            "tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")
+                        }
                 except Exception as e:
                     logger.warning(f"Error al leer archivo de portada local: {e}")
 
@@ -474,10 +513,7 @@ async def enviar_libro_directo(
                 media = [
                     {
                         "id": "tomozaki_cover",
-                        "media": {
-                            "type": "photo",
-                            "media": "attach://tomozaki_cover"
-                        }
+                        "media": {"type": "photo", "media": "attach://tomozaki_cover"},
                     }
                 ]
 
@@ -486,30 +522,16 @@ async def enviar_libro_directo(
             html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
 
         # Títulos en cascada
-        from utils.metadata_utils import is_romaji_string
+        from utils.metadata_utils import resolve_title_cascade
 
-        title_en = meta.get("english_title") or meta.get("title") or meta.get("titulo") or "Sin título"
-        title_jp = meta.get("romaji_title") or meta.get("title_japanese") or meta.get("title_jp")
-        title_es = meta.get("spanish_title") or meta.get("title_spanish") or meta.get("title_es")
+        title_en, title_jp, title_es = resolve_title_cascade(meta)
 
-        # Autocorrección de campos permutados
-        if title_es and is_romaji_string(title_es):
-            if not title_jp or title_jp == title_en:
-                title_jp = title_es
-            title_es = None
-
-        if title_jp and (title_jp == title_en or not is_romaji_string(title_jp)):
-            title_jp = None
-
-        if title_es and (title_es == title_en or is_romaji_string(title_es)):
-            title_es = None
-
-        html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
+        html_parts.append(f"<h3>🇬🇧 {title_en}</h3>")
         if title_jp:
-            html_parts.append(f'<h4>🇯🇵 {title_jp}</h4>')
+            html_parts.append(f"<h4>🇯🇵 {title_jp}</h4>")
         if title_es:
-            html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
-            
+            html_parts.append(f"<h5>🇪🇸 {title_es}</h5>")
+
         volume = meta.get("volume")
         vol_str = ""
         if volume is not None and volume != "":
@@ -520,61 +542,89 @@ async def enviar_libro_directo(
                 vol_str = str(volume)
 
         if vol_str:
-            html_parts.append(f'<h6>📚 Volumen {vol_str}</h6>\n')
+            html_parts.append(f"<h6>📚 Volumen {vol_str}</h6>\n")
 
         # TABLA 1: Ficha artística y literaria
-        tabla_literaria = '<table bordered striped>\n'
+        tabla_literaria = "<table bordered striped>\n"
         autor = meta.get("author") or meta.get("autor") or "Desconocido"
-        tabla_literaria += f'  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n'
-        
+        tabla_literaria += f"  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n"
+
         ilustrador = meta.get("illustrator") or meta.get("ilustrador")
         if ilustrador:
-            tabla_literaria += f'  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n'
-            
+            tabla_literaria += (
+                f"  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n"
+            )
+
         layout_by = meta.get("layout_by") or meta.get("maquetador")
         if layout_by:
             # Múltiples maquetadores separados por coma, punto y coma o espacio (ej: "Meng Zhi", "Meng, Zhi" -> "#Meng #Zhi")
-            maqs = [m.strip() for m in re.split(r"[,;]+|\s+(?=#)|\s+", str(layout_by)) if m.strip()]
+            maqs = [
+                m.strip()
+                for m in re.split(r"[,;]+|\s+(?=#)|\s+", str(layout_by))
+                if m.strip()
+            ]
             layout_val = " ".join(m if m.startswith("#") else f"#{m}" for m in maqs)
-            tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
-            
+            tabla_literaria += (
+                f"  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n"
+            )
+
         categoria = meta.get("book_type") or meta.get("tipo") or "Novela"
-        tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n'
-        
-        demo = meta.get("demographics_json") or meta.get("demographics") or meta.get("demografia")
+        tabla_literaria += (
+            f"  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n"
+        )
+
+        demo = (
+            meta.get("demographics_json")
+            or meta.get("demographics")
+            or meta.get("demografia")
+        )
         demo_val = normalize_demography(demo)
         if demo_val:
-            tabla_literaria += f'  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n'
-            
+            tabla_literaria += (
+                f"  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n"
+            )
+
         generos = meta.get("tags_json") or meta.get("tags") or meta.get("generos")
         if generos:
             generos_val = ", ".join(generos) if isinstance(generos, list) else generos
-            tabla_literaria += f'  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n'
-            
+            tabla_literaria += (
+                f"  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n"
+            )
+
         traductor = meta.get("translator") or meta.get("traductor")
         if traductor:
-            tabla_literaria += f'  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n'
-            
-        grupo_trad = meta.get("publisher") or meta.get("translation_group") or meta.get("grupo_traductor")
+            tabla_literaria += (
+                f"  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n"
+            )
+
+        grupo_trad = (
+            meta.get("publisher")
+            or meta.get("translation_group")
+            or meta.get("grupo_traductor")
+        )
         if grupo_trad:
             grupo_trad_val = grupo_trad
             if meta.get("translation_group_url"):
                 url_g = meta.get("translation_group_url")
                 grupo_trad_val = f'<a href="{url_g}">{grupo_trad}</a>'
-            tabla_literaria += f'  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n'
-            
-        tabla_literaria += '</table>\n'
+            tabla_literaria += f"  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n"
+
+        tabla_literaria += "</table>\n"
         html_parts.append(tabla_literaria)
 
         # SINOPSIS: Acordeón colapsable
-        sinopsis_raw = meta.get("sinopsis") or meta.get("description") or "Sin sinopsis disponible."
+        sinopsis_raw = (
+            meta.get("sinopsis")
+            or meta.get("description")
+            or "Sin sinopsis disponible."
+        )
         html_parts.append(
-            '<details>\n'
-            '  <summary>📖 Ver Sinopsis</summary>\n'
-            '  <blockquote>\n'
-            f'    {sinopsis_raw}\n'
-            '  </blockquote>\n'
-            '</details>\n'
+            "<details>\n"
+            "  <summary>📖 Ver Sinopsis</summary>\n"
+            "  <blockquote>\n"
+            f"    {sinopsis_raw}\n"
+            "  </blockquote>\n"
+            "</details>\n"
         )
 
         # TABLA 2: Detalles del archivo
@@ -591,48 +641,54 @@ async def enviar_libro_directo(
         version_val = meta.get("epub_version") or meta.get("version") or "3.0"
 
         tabla_archivo = (
-            '<details>\n'
-            '  <summary>📂 Ver Detalles del Archivo</summary>\n'
-            '  <table bordered striped>\n'
-            f'    <tr><td><b>📂 Nombre</b></td><td>{meta.get("title") or "Desconocido"}</td></tr>\n'
+            "<details>\n"
+            "  <summary>📂 Ver Detalles del Archivo</summary>\n"
+            "  <table bordered striped>\n"
+            f"    <tr><td><b>📂 Nombre</b></td><td>{meta.get('title') or 'Desconocido'}</td></tr>\n"
         )
         if vol_str:
-            tabla_archivo += f'    <tr><td><b>📖 Volumen</b></td><td>Volumen {vol_str}</td></tr>\n'
-        
-        tabla_archivo += f'    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n'
-        
-        fecha = meta.get("updated_at") or meta.get("actualizado") or meta.get("indexed_at")
+            tabla_archivo += (
+                f"    <tr><td><b>📖 Volumen</b></td><td>Volumen {vol_str}</td></tr>\n"
+            )
+
+        tabla_archivo += (
+            f"    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n"
+        )
+
+        fecha = (
+            meta.get("updated_at") or meta.get("actualizado") or meta.get("indexed_at")
+        )
         if fecha:
             if hasattr(fecha, "strftime"):
                 fecha_str = fecha.strftime("%d-%m-%Y")
             else:
                 fecha_str = str(fecha)
-            tabla_archivo += f'    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n'
-            
-        tabla_archivo += f'    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n'
-            
-        tabla_archivo += (
-            '  </table>\n'
-            '</details>\n'
-        )
+            tabla_archivo += (
+                f"    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n"
+            )
+
+        tabla_archivo += f"    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n"
+
+        tabla_archivo += "  </table>\n</details>\n"
         html_parts.append(tabla_archivo)
 
         # Línea divisoria y pie
-        html_parts.append('<hr/>')
-        
+        html_parts.append("<hr/>")
+
         slug = meta.get("slug")
         if slug:
             hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
-            html_parts.append(f'{hashtag_serie}\n\n\n')
+            html_parts.append(f"{hashtag_serie}\n\n\n")
         else:
-            clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
-            html_parts.append(f'#{clean_title}\n\n\n')
+            clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
+            html_parts.append(f"#{clean_title}\n\n\n")
 
         html_content = "\n".join(html_parts)
 
         # Intentar enviar Rich Message unificado
         rich_sent = False
         from services.rich_message_service import RichMessageService
+
         try:
             res = await RichMessageService.send_rich_message(
                 chat_id=destino,
@@ -640,30 +696,46 @@ async def enviar_libro_directo(
                 media=media,
                 files=files if files else None,
                 reply_markup=reply_markup,
-                message_thread_id=message_thread_id
+                message_thread_id=message_thread_id,
             )
             if res and res.get("ok"):
                 rich_sent = True
         except Exception as e:
-            logger.warning(f"Error al enviar Rich Message unificado en enviar_libro_directo: {e}")
+            logger.warning(
+                f"Error al enviar Rich Message unificado en enviar_libro_directo: {e}"
+            )
 
         # Fallback tradicional si falla
         if not rich_sent:
             logger.info("Ejecutando fallback tradicional en enviar_libro_directo")
-            from services.presentation.delivery_formatter import build_telegram_delivery_parts
-            msg_parts, fallback_caption, should_send_file_by_template = build_telegram_delivery_parts(
-                meta=meta, custom_caption=custom_caption, caption_template=caption_template
+            from services.presentation.delivery_formatter import (
+                build_telegram_delivery_parts,
+            )
+
+            msg_parts, fallback_caption, should_send_file_by_template = (
+                build_telegram_delivery_parts(
+                    meta=meta,
+                    custom_caption=custom_caption,
+                    caption_template=caption_template,
+                )
             )
             if len(msg_parts) > 0:
                 mensaje_portada = msg_parts[0]
                 if portada_data and mensaje_portada:
                     await send_photo_bytes(
-                        bot, destino, mensaje_portada, portada_data, filename="cover.jpg",
-                        parse_mode="HTML", message_thread_id=message_thread_id,
+                        bot,
+                        destino,
+                        mensaje_portada,
+                        portada_data,
+                        filename="cover.jpg",
+                        parse_mode="HTML",
+                        message_thread_id=message_thread_id,
                     )
                 elif mensaje_portada:
                     await bot.send_message(
-                        chat_id=destino, text=mensaje_portada, parse_mode="HTML",
+                        chat_id=destino,
+                        text=mensaje_portada,
+                        parse_mode="HTML",
                         message_thread_id=message_thread_id,
                     )
 
@@ -671,7 +743,9 @@ async def enviar_libro_directo(
                 sinopsis_to_send = msg_parts[1]
                 if sinopsis_to_send:
                     await bot.send_message(
-                        chat_id=destino, text=sinopsis_to_send, parse_mode="HTML",
+                        chat_id=destino,
+                        text=sinopsis_to_send,
+                        parse_mode="HTML",
                         message_thread_id=message_thread_id,
                     )
 
@@ -679,7 +753,7 @@ async def enviar_libro_directo(
         if slug:
             final_caption = slug if slug.startswith("#") else f"#{slug}"
         else:
-            clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
+            clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
             final_caption = f"#{clean_title}"
 
         if auto_delete_seconds > 0:
@@ -717,7 +791,9 @@ async def enviar_libro_directo(
         if sent_doc and auto_delete_seconds > 0:
             if job_queue:
                 job_queue.run_once(
-                    lambda ctx: ctx.bot.delete_message(chat_id=destino, message_id=sent_doc.message_id),
+                    lambda ctx: ctx.bot.delete_message(
+                        chat_id=destino, message_id=sent_doc.message_id
+                    ),
                     when=auto_delete_seconds,
                 )
             else:
@@ -728,13 +804,20 @@ async def enviar_libro_directo(
             from services.download_history import register_book_download
 
             await register_book_download(
-                bot=bot, user_id=user_id, meta=meta, sent_doc=sent_doc, download_url=download_url, title=title
+                bot=bot,
+                user_id=user_id,
+                meta=meta,
+                sent_doc=sent_doc,
+                download_url=download_url,
+                title=title,
             )
 
         # Limpieza
         try:
             if prep_msg:
-                await bot.delete_message(chat_id=user_id, message_id=prep_msg.message_id)
+                await bot.delete_message(
+                    chat_id=user_id, message_id=prep_msg.message_id
+                )
         except Exception as e:
             logger.debug(
                 "Could not delete prep_msg %s: %s",
@@ -746,7 +829,9 @@ async def enviar_libro_directo(
 
     except Exception as e:
         logger.error(f"Error en enviar_libro_directo: {e}", exc_info=True)
-        await bot.send_message(chat_id=user_id, text=f"❌ Ocurrió un error interno: {str(e)}")
+        await bot.send_message(
+            chat_id=user_id, text=f"❌ Ocurrió un error interno: {str(e)}"
+        )
         return False
 
 
@@ -758,7 +843,9 @@ from services.facebook_service import (  # noqa: F401, E402
 )
 
 
-async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, uid: int):
+async def _publish_choice_telegram(
+    update, context: ContextTypes.DEFAULT_TYPE, uid: int
+):
     """Continue publish flow for Telegram: send portada, sinopsis, info and buttons (omit FB post option)."""
     bot = context.bot
 
@@ -804,7 +891,9 @@ async def _publish_choice_telegram(update, context: ContextTypes.DEFAULT_TYPE, u
     )
 
     if not success:
-        await bot.send_message(chat_id=chat_origen, text="❌ Error al procesar la publicación.")
+        await bot.send_message(
+            chat_id=chat_origen, text="❌ Error al procesar la publicación."
+        )
         return
 
     # El bloque de sinopsis e info ya fue manejado por enviar_libro_directo vía msg_parts

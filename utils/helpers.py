@@ -16,10 +16,13 @@ from utils.metadata_utils import (
     generar_slug_from_meta,  # noqa: F401
     get_series_spanish_from_api,  # noqa: F401
     is_demographic_tag,  # noqa: F401
+    is_romaji_string,  # noqa: F401
+    is_spanish_string,  # noqa: F401
     normalize_demographics_list,  # noqa: F401
     normalize_demography,  # noqa: F401
     parse_metadata_from_title,  # noqa: F401
     process_book_identity_comprehensive,  # noqa: F401
+    resolve_title_cascade,  # noqa: F401
 )
 
 # --- string_utils ---

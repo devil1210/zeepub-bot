@@ -168,18 +168,19 @@ class TelegramPublisherProvider(PublisherProvider):
             elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
                 try:
                     with open(resolved_cover, "rb") as f:
-                        files = {"tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")}
+                        files = {
+                            "tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")
+                        }
                 except Exception as e:
-                    logger.warning(f"Error al leer archivo de portada local para anuncio: {e}")
+                    logger.warning(
+                        f"Error al leer archivo de portada local para anuncio: {e}"
+                    )
 
             if files:
                 media = [
                     {
                         "id": "tomozaki_cover",
-                        "media": {
-                            "type": "photo",
-                            "media": "attach://tomozaki_cover"
-                        }
+                        "media": {"type": "photo", "media": "attach://tomozaki_cover"},
                     }
                 ]
 
@@ -205,78 +206,107 @@ class TelegramPublisherProvider(PublisherProvider):
                 html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
 
             # Títulos en cascada
-            title_en = book_data.get("english_title") or book_data.get("series_english")
-            title_jp = book_data.get("romaji_title") or book_data.get("romaji") or book_data.get("title_japanese") or book_data.get("title_jp")
-            title_es = book_data.get("spanish_title") or book_data.get("series_spanish") or book_data.get("title_spanish") or book_data.get("title")
+            from utils.metadata_utils import resolve_title_cascade
 
-            if not title_en and title_es:
-                title_en = title_es
-                title_es = None
+            title_en, title_jp, title_es = resolve_title_cascade(book_data)
 
-            if title_en:
-                html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
-            if title_jp and title_jp != title_en:
-                html_parts.append(f'<h4>🇯🇵 {title_jp}</h4>')
-            if title_es and title_es != title_en:
-                html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
-                
+            html_parts.append(f"<h3>🇬🇧 {title_en}</h3>")
+            if title_jp:
+                html_parts.append(f"<h4>🇯🇵 {title_jp}</h4>")
+            if title_es:
+                html_parts.append(f"<h5>🇪🇸 {title_es}</h5>")
+
             volume = book_data.get("volume")
             if volume:
-                html_parts.append(f'<h6>📚 Volumen {volume}</h6>\n')
+                html_parts.append(f"<h6>📚 Volumen {volume}</h6>\n")
 
             # TABLA 1: Ficha artística y literaria
-            tabla_literaria = '<table bordered striped>\n'
+            tabla_literaria = "<table bordered striped>\n"
             autor = book_data.get("author") or book_data.get("autor") or "Desconocido"
-            tabla_literaria += f'  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n'
-            
+            tabla_literaria += f"  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n"
+
             ilustrador = book_data.get("illustrator") or book_data.get("ilustrador")
             if ilustrador:
-                tabla_literaria += f'  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n'
-                
+                tabla_literaria += (
+                    f"  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n"
+                )
+
             layout_by = book_data.get("layout_by") or book_data.get("maquetador")
             if layout_by:
                 # Múltiples maquetadores separados por coma, punto y coma o espacio (ej: "Meng Zhi", "Meng, Zhi" -> "#Meng #Zhi")
-                maqs = [m.strip() for m in re.split(r"[,;]+|\s+(?=#)|\s+", str(layout_by)) if m.strip()]
+                maqs = [
+                    m.strip()
+                    for m in re.split(r"[,;]+|\s+(?=#)|\s+", str(layout_by))
+                    if m.strip()
+                ]
                 layout_val = " ".join(m if m.startswith("#") else f"#{m}" for m in maqs)
-                tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
-                
+                tabla_literaria += (
+                    f"  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n"
+                )
+
             categoria = book_data.get("book_type") or book_data.get("tipo") or "Novela"
-            tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n'
-            
-            demo = book_data.get("demographics_json") or book_data.get("demographics") or book_data.get("demografia")
+            tabla_literaria += (
+                f"  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n"
+            )
+
+            demo = (
+                book_data.get("demographics_json")
+                or book_data.get("demographics")
+                or book_data.get("demografia")
+            )
             demo_val = normalize_demography(demo)
             if demo_val:
-                tabla_literaria += f'  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n'
-                
-            generos = book_data.get("tags_json") or book_data.get("tags") or book_data.get("generos")
+                tabla_literaria += (
+                    f"  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n"
+                )
+
+            generos = (
+                book_data.get("tags_json")
+                or book_data.get("tags")
+                or book_data.get("generos")
+            )
             if generos:
-                generos_val = ", ".join(generos) if isinstance(generos, list) else generos
-                tabla_literaria += f'  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n'
-                
+                generos_val = (
+                    ", ".join(generos) if isinstance(generos, list) else generos
+                )
+                tabla_literaria += (
+                    f"  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n"
+                )
+
             traductor = book_data.get("translator") or book_data.get("traductor")
             if traductor:
-                tabla_literaria += f'  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n'
-                
-            grupo_trad = book_data.get("publisher") or book_data.get("translation_group") or book_data.get("grupo_traductor")
+                tabla_literaria += (
+                    f"  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n"
+                )
+
+            grupo_trad = (
+                book_data.get("publisher")
+                or book_data.get("translation_group")
+                or book_data.get("grupo_traductor")
+            )
             if grupo_trad:
                 grupo_trad_val = grupo_trad
                 if book_data.get("translation_group_url"):
                     url_g = book_data.get("translation_group_url")
                     grupo_trad_val = f'<a href="{url_g}">{grupo_trad}</a>'
-                tabla_literaria += f'  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n'
-                
-            tabla_literaria += '</table>\n'
+                tabla_literaria += f"  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n"
+
+            tabla_literaria += "</table>\n"
             html_parts.append(tabla_literaria)
 
             # SINOPSIS: Acordeón colapsable
-            sinopsis_raw = book_data.get("sinopsis") or book_data.get("description") or "Sin sinopsis disponible."
+            sinopsis_raw = (
+                book_data.get("sinopsis")
+                or book_data.get("description")
+                or "Sin sinopsis disponible."
+            )
             html_parts.append(
-                '<details>\n'
-                '  <summary>📖 Ver Sinopsis</summary>\n'
-                '  <blockquote>\n'
-                f'    {sinopsis_raw}\n'
-                '  </blockquote>\n'
-                '</details>\n'
+                "<details>\n"
+                "  <summary>📖 Ver Sinopsis</summary>\n"
+                "  <blockquote>\n"
+                f"    {sinopsis_raw}\n"
+                "  </blockquote>\n"
+                "</details>\n"
             )
 
             # TABLA 2: Detalles del archivo
@@ -290,20 +320,28 @@ class TelegramPublisherProvider(PublisherProvider):
             if not size_val:
                 size_val = "Desconocido"
 
-            version_val = book_data.get("epub_version") or book_data.get("version") or "3.0"
+            version_val = (
+                book_data.get("epub_version") or book_data.get("version") or "3.0"
+            )
 
             tabla_archivo = (
-                '<details>\n'
-                '  <summary>📂 Ver Detalles del Archivo</summary>\n'
-                '  <table bordered striped>\n'
-                f'    <tr><td><b>📂 Nombre</b></td><td>{book_data.get("title") or "Desconocido"}</td></tr>\n'
+                "<details>\n"
+                "  <summary>📂 Ver Detalles del Archivo</summary>\n"
+                "  <table bordered striped>\n"
+                f"    <tr><td><b>📂 Nombre</b></td><td>{book_data.get('title') or 'Desconocido'}</td></tr>\n"
             )
             if volume:
-                tabla_archivo += f'    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n'
-            
-            tabla_archivo += f'    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n'
-            
-            fecha = book_data.get("updated_at") or book_data.get("actualizado") or book_data.get("indexed_at")
+                tabla_archivo += f"    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n"
+
+            tabla_archivo += (
+                f"    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n"
+            )
+
+            fecha = (
+                book_data.get("updated_at")
+                or book_data.get("actualizado")
+                or book_data.get("indexed_at")
+            )
             if fecha:
                 if hasattr(fecha, "strftime"):
                     fecha_str = fecha.strftime("%d-%m-%Y")
@@ -315,31 +353,33 @@ class TelegramPublisherProvider(PublisherProvider):
                         fecha_str = fecha
                 else:
                     fecha_str = str(fecha)
-                tabla_archivo += f'    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n'
-                
-            tabla_archivo += f'    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n'
-                
+                tabla_archivo += (
+                    f"    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n"
+                )
+
             tabla_archivo += (
-                '  </table>\n'
-                '</details>\n'
+                f"    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n"
             )
+
+            tabla_archivo += "  </table>\n</details>\n"
             html_parts.append(tabla_archivo)
 
             # Línea divisoria y pie
-            html_parts.append('<hr/>')
-            
+            html_parts.append("<hr/>")
+
             slug = book_data.get("slug")
             if slug:
                 hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
-                html_parts.append(f'{hashtag_serie}\n\n\n')
+                html_parts.append(f"{hashtag_serie}\n\n\n")
             else:
-                clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
-                html_parts.append(f'#{clean_title}\n\n\n')
+                clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
+                html_parts.append(f"#{clean_title}\n\n\n")
 
             html_content = "\n".join(html_parts)
 
         # A. Intentar enviar Rich Message unificado a través de Telegram API 10.2
         from services.rich_message_service import RichMessageService
+
         fname = book_data.get("filename", "libro.epub")
         try:
             res = await RichMessageService.send_rich_message(
@@ -347,7 +387,7 @@ class TelegramPublisherProvider(PublisherProvider):
                 html=html_content,
                 media=media,
                 files=files if files else None,
-                message_thread_id=thread_id
+                message_thread_id=thread_id,
             )
             if res and res.get("ok"):
                 sent_msg = res.get("result")
@@ -360,17 +400,27 @@ class TelegramPublisherProvider(PublisherProvider):
                 # Persistir tg_message_id y tg_chat_id en Book
                 book_id_val = book_data.get("id") or book_data.get("book_hash")
                 if book_id_val and tg_msg_id:
-                    await self._persist_book_tg_ids(book_id_val, str(tg_msg_id), str(target_id))
+                    await self._persist_book_tg_ids(
+                        book_id_val, str(tg_msg_id), str(target_id)
+                    )
 
                 # B. Si el Rich Message se envió con éxito, enviar el documento ePub abajo con únicamente su hashtag
-                epub_data = book_data.get("epub_bytes") or book_data.get("filepath") or book_data.get("file_path")
+                epub_data = (
+                    book_data.get("epub_bytes")
+                    or book_data.get("filepath")
+                    or book_data.get("file_path")
+                )
                 if epub_data:
                     slug = book_data.get("slug")
                     if slug:
                         final_caption = slug if slug.startswith("#") else f"#{slug}"
                     else:
-                        title_en = book_data.get("english_title") or book_data.get("series_english") or "book"
-                        clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
+                        title_en = (
+                            book_data.get("english_title")
+                            or book_data.get("series_english")
+                            or "book"
+                        )
+                        clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
                         final_caption = f"#{clean_title}"
 
                     await send_doc_bytes(
@@ -387,7 +437,9 @@ class TelegramPublisherProvider(PublisherProvider):
             logger.warning(f"Error al enviar Rich Message en announce_book: {e}")
 
         # Fallback tradicional si falla
-        logger.info("Ejecutando fallback tradicional en TelegramPublisherProvider.announce_book")
+        logger.info(
+            "Ejecutando fallback tradicional en TelegramPublisherProvider.announce_book"
+        )
         photo_sent = False
         last_sent_msg_id = None
         for part in msg_parts:
@@ -400,7 +452,11 @@ class TelegramPublisherProvider(PublisherProvider):
                     .replace("{archivo}", "")
                     .strip()
                 )
-                epub_data = book_data.get("epub_bytes") or book_data.get("filepath") or book_data.get("file_path")
+                epub_data = (
+                    book_data.get("epub_bytes")
+                    or book_data.get("filepath")
+                    or book_data.get("file_path")
+                )
                 await send_doc_bytes(
                     self.bot,
                     target_id,
@@ -441,7 +497,9 @@ class TelegramPublisherProvider(PublisherProvider):
 
         book_id_val = book_data.get("id") or book_data.get("book_hash")
         if book_id_val and last_sent_msg_id:
-            await self._persist_book_tg_ids(book_id_val, str(last_sent_msg_id), str(target_id))
+            await self._persist_book_tg_ids(
+                book_id_val, str(last_sent_msg_id), str(target_id)
+            )
 
         return True
 
@@ -477,6 +535,7 @@ class TelegramPublisherProvider(PublisherProvider):
             return False
 
         from services.rich_message_service import RichMessageService
+
         try:
             res = await RichMessageService.edit_rich_message(
                 chat_id=chat_id,
@@ -484,7 +543,9 @@ class TelegramPublisherProvider(PublisherProvider):
                 html=new_message,
             )
             if res and res.get("ok"):
-                logger.info(f"✅ Publicación {message_id} de Telegram en {chat_id} actualizada.")
+                logger.info(
+                    f"✅ Publicación {message_id} de Telegram en {chat_id} actualizada."
+                )
                 return True
         except Exception as e:
             logger.debug(f"Aviso edit_rich_message en Telegram: {e}")
@@ -493,6 +554,7 @@ class TelegramPublisherProvider(PublisherProvider):
         try:
             if not self.bot:
                 from api.main import bot as main_bot
+
                 self.bot = main_bot.app.bot
 
             try:
@@ -502,7 +564,9 @@ class TelegramPublisherProvider(PublisherProvider):
                     caption=new_message,
                     parse_mode="HTML",
                 )
-                logger.info(f"✅ Caption de publicación {message_id} en Telegram editado.")
+                logger.info(
+                    f"✅ Caption de publicación {message_id} en Telegram editado."
+                )
                 return True
             except Exception:
                 await self.bot.edit_message_text(
@@ -511,8 +575,12 @@ class TelegramPublisherProvider(PublisherProvider):
                     text=new_message,
                     parse_mode="HTML",
                 )
-                logger.info(f"✅ Texto de publicación {message_id} en Telegram editado.")
+                logger.info(
+                    f"✅ Texto de publicación {message_id} en Telegram editado."
+                )
                 return True
         except Exception as e:
-            logger.error(f"Error editando publicación {message_id} en Telegram ({chat_id}): {e}")
+            logger.error(
+                f"Error editando publicación {message_id} en Telegram ({chat_id}): {e}"
+            )
             return False

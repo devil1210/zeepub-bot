@@ -1,7 +1,11 @@
 import logging
 from typing import Any
 
-from utils.helpers import normalize_demographics_list
+from utils.helpers import (
+    is_romaji_string,
+    is_spanish_string,
+    normalize_demographics_list,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +36,9 @@ class MetadataOrchestrator:
 
                 # Check if it's a known hash
                 stmt_hash = (
-                    select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.book_hash == book_id)
+                    select(LocalBook)
+                    .options(selectinload(LocalBook.series_info))
+                    .where(LocalBook.book_hash == book_id)
                 )
                 res_hash = await session.execute(stmt_hash)
                 lb = res_hash.scalar_one_or_none()
@@ -76,49 +82,108 @@ class MetadataOrchestrator:
                     res = lb.to_dict()
                     series = lb.series_info
                     if series:
-                        res.update({
-                            "slug": series.slug or getattr(lb, "slug", "") or "",
-                            "series_name": series.name or lb.series_english or "",
-                            "serie": series.series_english or lb.series_english or series.name or "",
-                            "series": series.name or lb.series_english or "",
-                            "series_spanish": series.series_spanish or lb.series_spanish or series.name or "",
-                            "series_english": series.series_english or lb.series_english or series.name or "",
-                            "romaji_title": series.name or lb.romaji_title or "",
-                            "romaji": series.name or lb.romaji_title or "",
-                            "author": series.author or lb.author or "",
-                            "autor": series.author or lb.author or "",
-                            "author_jap": series.author_jap or lb.author_jap or "",
-                            "illustrator": series.illustrator or lb.illustrator or "",
-                            "illustrator_jap": series.illustrator_jap or lb.illustrator_jap or "",
-                            "description": lb.description or series.description or "",
-                            "sinopsis": lb.description or series.description or "",
-                            "publisher": series.publisher or lb.publisher or "",
-                            "editorial": lb.publisher or series.publisher or "",
-                            "book_type": series.book_type or "Light Novel",
-                            "tipo": series.book_type or "Light Novel",
-                            "tags": series.tags_json or lb.tags_json or [],
-                            "generos": series.tags_json or lb.tags_json or [],
-                            "etiquetas": ", ".join(series.tags_json) if series.tags_json else "",
-                            "demographics": normalize_demographics_list(series.demographics_json or lb.demographics_json or []),
-                            "demography": normalize_demographics_list(series.demographics_json or lb.demographics_json or []),
-                        })
+                        s_name = series.name or ""
+                        s_sp = (
+                            series.series_spanish
+                            or lb.series_spanish
+                            or (s_name if is_spanish_string(s_name) else "")
+                        )
+                        s_en = (
+                            series.series_english
+                            or lb.series_english
+                            or (
+                                s_name
+                                if not is_spanish_string(s_name)
+                                and not is_romaji_string(s_name)
+                                else ""
+                            )
+                        )
+                        r_title = lb.romaji_title or (
+                            s_name if is_romaji_string(s_name) else ""
+                        )
+                        res.update(
+                            {
+                                "slug": series.slug or getattr(lb, "slug", "") or "",
+                                "series_name": s_sp
+                                or s_name
+                                or lb.series_english
+                                or "",
+                                "serie": s_en or s_sp or s_name or "",
+                                "series": s_sp or s_name or "",
+                                "series_spanish": s_sp,
+                                "series_english": s_en,
+                                "romaji_title": r_title,
+                                "romaji": r_title,
+                                "author": series.author or lb.author or "",
+                                "autor": series.author or lb.author or "",
+                                "author_jap": series.author_jap or lb.author_jap or "",
+                                "illustrator": series.illustrator
+                                or lb.illustrator
+                                or "",
+                                "illustrator_jap": series.illustrator_jap
+                                or lb.illustrator_jap
+                                or "",
+                                "description": lb.description
+                                or series.description
+                                or "",
+                                "sinopsis": lb.description or series.description or "",
+                                "publisher": series.publisher or lb.publisher or "",
+                                "editorial": lb.publisher or series.publisher or "",
+                                "book_type": series.book_type or "Light Novel",
+                                "tipo": series.book_type or "Light Novel",
+                                "tags": series.tags_json or lb.tags_json or [],
+                                "generos": series.tags_json or lb.tags_json or [],
+                                "etiquetas": ", ".join(series.tags_json)
+                                if series.tags_json
+                                else "",
+                                "demographics": normalize_demographics_list(
+                                    series.demographics_json
+                                    or lb.demographics_json
+                                    or []
+                                ),
+                                "demography": normalize_demographics_list(
+                                    series.demographics_json
+                                    or lb.demographics_json
+                                    or []
+                                ),
+                            }
+                        )
                     else:
-                        res.update({
-                            "slug": getattr(lb, "slug", "") or "",
-                            "series_name": lb.series_spanish or lb.title,
-                            "serie": lb.series_english or lb.series_spanish or lb.title,
-                            "series": lb.series_spanish or lb.title,
-                            "series_spanish": lb.series_spanish or lb.title,
-                            "series_english": lb.series_english or lb.series_spanish or lb.title,
-                            "romaji_title": lb.romaji_title or "",
-                            "romaji": lb.romaji_title or "",
-                            "autor": lb.author or "",
-                            "sinopsis": lb.description or "",
-                            "tipo": "Light Novel",
-                            "generos": lb.tags_json or [],
-                            "demographics": normalize_demographics_list(lb.demographics_json or []),
-                            "demography": normalize_demographics_list(lb.demographics_json or []),
-                        })
+                        t_raw = lb.title or ""
+                        s_sp = lb.series_spanish or (
+                            t_raw if is_spanish_string(t_raw) else ""
+                        )
+                        s_en = lb.series_english or (
+                            t_raw
+                            if not is_spanish_string(t_raw)
+                            and not is_romaji_string(t_raw)
+                            else ""
+                        )
+                        r_title = lb.romaji_title or (
+                            t_raw if is_romaji_string(t_raw) else ""
+                        )
+                        res.update(
+                            {
+                                "slug": getattr(lb, "slug", "") or "",
+                                "series_name": s_sp or t_raw,
+                                "serie": s_en or s_sp or t_raw,
+                                "series": s_sp or t_raw,
+                                "series_spanish": s_sp,
+                                "series_english": s_en,
+                                "romaji_title": r_title,
+                                "romaji": r_title,
+                                "autor": lb.author or "",
+                                "sinopsis": lb.description or "",
+                                "tipo": "Light Novel",
+                                "generos": lb.tags_json or [],
+                                "demographics": normalize_demographics_list(
+                                    lb.demographics_json or []
+                                ),
+                                "demography": normalize_demographics_list(
+                                    lb.demographics_json or []
+                                ),
+                            }
+                        )
                     return res
         except Exception as e:
             logger.error(f"MetadataOrchestrator error resolving book {book_id}: {e}")

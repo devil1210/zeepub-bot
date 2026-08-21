@@ -4,14 +4,122 @@ from typing import Any
 
 from utils.string_utils import normalize_author_name
 
-ROMAJI_PARTICLES = {
-    "no",
-    "to",
-    "ga",
+SPANISH_ACCENTS_REGEX = re.compile(r"[áéíóúñüÁÉÍÓÚÑÜ¿¡]")
+
+SPANISH_WORDS = {
+    "el",
+    "la",
+    "los",
+    "las",
+    "un",
+    "una",
+    "unos",
+    "unas",
+    "del",
+    "al",
+    "en",
+    "por",
+    "para",
+    "con",
+    "sin",
+    "sobre",
+    "entre",
+    "hacia",
+    "hasta",
+    "desde",
+    "que",
+    "como",
+    "pero",
+    "mas",
+    "más",
+    "muy",
+    "mi",
+    "tu",
+    "su",
+    "sus",
+    "mis",
+    "tus",
+    "nuestro",
+    "nuestra",
+    "nuestros",
+    "nuestras",
+    "chico",
+    "chica",
+    "chicos",
+    "chicas",
+    "vida",
+    "mundo",
+    "paz",
+    "siendo",
+    "corriente",
+    "solo",
+    "sola",
+    "me",
+    "se",
+    "te",
+    "le",
+    "les",
+    "nos",
+    "yo",
+    "tu",
+    "tú",
+    "él",
+    "ella",
+    "ellos",
+    "ellas",
+    "novela",
+    "ligera",
+    "artes",
+    "escenicas",
+    "escénicas",
+    "dejan",
+    "deja",
+    "dejaron",
+    "princesa",
+    "demonio",
+    "reino",
+    "magico",
+    "mágico",
+    "magia",
+    "heroe",
+    "héroe",
+    "rey",
+    "reina",
+    "caballero",
+    "mazmorra",
+    "reencarnado",
+    "reencarnada",
+    "reencarnacion",
+    "reencarnación",
+    "otro",
+    "otra",
+    "otros",
+    "otras",
+    "cuando",
+    "donde",
+    "dónde",
+    "quien",
+    "quién",
+    "porque",
+    "por qué",
+    "esto",
+    "esta",
+    "este",
+    "estos",
+    "estas",
+    "aquel",
+    "aquella",
+    "todo",
+    "toda",
+    "todos",
+    "todas",
+}
+
+DISTINCT_ROMAJI_WORDS = {
     "wa",
-    "ni",
-    "de",
+    "ga",
     "wo",
+    "ni",
     "ka",
     "mo",
     "ya",
@@ -39,22 +147,142 @@ ROMAJI_PARTICLES = {
     "dereru",
     "bosotto",
     "arya",
+    "yuusha",
+    "maou",
+    "konyakusha",
+    "shoujo",
+    "shounen",
+    "seinen",
+    "mahou",
+    "ken",
+    "tsukai",
+    "tsundere",
+    "gakuen",
+    "senshi",
+    "hime",
+    "oujo",
+    "kami",
+    "tenshi",
+    "akuma",
+    "koushaku",
+    "reijou",
+    "otome",
+    "harem",
+    "yome",
+    "kanojo",
+    "dake",
+    "haireru",
+    "kakushi",
+    "dungeon",
+    "shikimori",
+    "tomozaki",
+    "danmachi",
+    "rokudenashi",
+    "konosuba",
+    "rezero",
+    "oregairu",
+    "saekano",
+    "toradora",
+    "kokoro",
+    "mushoku",
+    "tenki",
+    "koisuru",
+    "astrea",
 }
+
+
+def is_spanish_string(text: str) -> bool:
+    """Verifica si una cadena dada es predominantemente en Español."""
+    if not text or not isinstance(text, str):
+        return False
+    if SPANISH_ACCENTS_REGEX.search(text):
+        return True
+    words = [w.lower() for w in re.findall(r"\b[a-zA-ZáéíóúñüÁÉÍÓÚÑÜ]+\b", text)]
+    if not words:
+        return False
+    sp_matches = sum(1 for w in words if w in SPANISH_WORDS)
+    if sp_matches >= 2:
+        return True
+    if len(words) >= 3 and (sp_matches / len(words)) >= 0.15:
+        return True
+    return False
 
 
 def is_romaji_string(text: str) -> bool:
     """Verifica si una cadena dada es predominantemente Romaji / Japonés romanizado."""
     if not text or not isinstance(text, str):
         return False
+    if is_spanish_string(text):
+        return False
     if re.search(r"[\u3040-\u30ff\u4e00-\u9faf]", text):
         return True
     words = [w.lower() for w in re.findall(r"\b[a-zA-Z]+\b", text)]
     if not words:
         return False
-    romaji_matches = sum(1 for w in words if w in ROMAJI_PARTICLES)
+    romaji_matches = sum(1 for w in words if w in DISTINCT_ROMAJI_WORDS)
+    if "no" in words or "to" in words or "de" in words:
+        if romaji_matches >= 1:
+            return True
     return romaji_matches >= 2 or (
-        len(words) >= 3 and (romaji_matches / len(words)) >= 0.2
+        len(words) >= 3 and (romaji_matches / len(words)) >= 0.25
     )
+
+
+def resolve_title_cascade(data: dict[str, Any]) -> tuple[str, str | None, str | None]:
+    """
+    Resuelve de forma robusta la jerarquía de títulos:
+    (title_en [🇬🇧], title_jp [🇯🇵], title_es [🇪🇸]).
+    Garantiza que un título en español nunca se marque como japonés/romaji,
+    y evita duplicaciones entre banderas.
+    """
+    t_en = (
+        data.get("english_title")
+        or data.get("series_english")
+        or data.get("title")
+        or data.get("titulo")
+        or "Sin título"
+    )
+    t_jp = (
+        data.get("romaji_title")
+        or data.get("title_japanese")
+        or data.get("title_jp")
+        or data.get("romaji")
+        or data.get("original_title")
+    )
+    t_es = (
+        data.get("spanish_title")
+        or data.get("title_spanish")
+        or data.get("title_es")
+        or data.get("series_spanish")
+    )
+
+    # 1. Si t_jp es en realidad español, reasignarlo a t_es
+    if t_jp and is_spanish_string(t_jp):
+        if not t_es or t_es == t_en:
+            t_es = t_jp
+        t_jp = None
+
+    # 2. Si t_es es en realidad romaji o japonés, reasignarlo a t_jp
+    if t_es and is_romaji_string(t_es):
+        if not t_jp or t_jp == t_en:
+            t_jp = t_es
+        t_es = None
+
+    # 3. Validar autenticidad de t_jp (debe ser romaji o japonés y distinto a t_en)
+    if t_jp and (t_jp == t_en or not is_romaji_string(t_jp)):
+        t_jp = None
+
+    # 4. Descartar t_es si es idéntico a t_en
+    if t_es and t_es == t_en:
+        t_es = None
+
+    # 5. Si t_es sigue vacío pero data contiene un título en español
+    if not t_es:
+        candidate_es = data.get("series_name") or data.get("title")
+        if candidate_es and candidate_es != t_en and is_spanish_string(candidate_es):
+            t_es = candidate_es
+
+    return t_en, t_jp, t_es
 
 
 def clean_romaji_title(title: str) -> str:

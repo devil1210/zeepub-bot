@@ -10,7 +10,12 @@ from telegram.ext import ContextTypes
 from core.state_manager import state_manager
 from services.library_service import LibraryService
 from services.rich_message_service import RichMessageService
-from utils.helpers import get_thread_id, get_translator_acronym, normalize_demography
+from utils.helpers import (
+    get_thread_id,
+    get_translator_acronym,
+    normalize_demography,
+    resolve_title_cascade,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -474,33 +479,14 @@ async def mostrar_detalles_libro(
         libro["sinopsis"] = "Sin sinopsis disponible."
 
     # Mapeo manual para asegurar que todas las variables del template están presentes
-    from utils.metadata_utils import is_romaji_string
-
-    t_en = (
-        libro.get("english_title")
-        or libro.get("series_english")
-        or libro.get("title")
-        or "Sin título"
-    )
-    t_jp = libro.get("romaji_title") or libro.get("romaji")
-    t_es = libro.get("spanish_title") or libro.get("series_spanish")
-
-    if t_es and is_romaji_string(t_es):
-        if not t_jp or t_jp == t_en:
-            t_jp = t_es
-        t_es = None
-
-    if t_jp and (t_jp == t_en or not is_romaji_string(t_jp)):
-        t_jp = None
-
-    if t_es and (t_es == t_en or is_romaji_string(t_es)):
-        t_es = None
+    t_en, t_jp, t_es = resolve_title_cascade(libro)
 
     libro_map = libro.copy()
     libro_map.update(
         {
             "series_english": t_en,
             "romaji_title": t_jp or "",
+            "romaji": t_jp or "",
             "series_spanish": t_es or "",
             "spanish_title": t_es or "",
             "slug": libro.get("slug") or "",
@@ -619,29 +605,10 @@ async def mostrar_detalles_libro(
         html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
 
     # 2. Títulos en cascada
-    title_en = (
-        libro.get("english_title")
-        or libro.get("title")
-        or libro.get("titulo")
-        or "Sin título"
-    )
+    title_en, title_jp, title_es = resolve_title_cascade(libro)
     html_parts.append(f"<h3>🇬🇧 {title_en}</h3>")
-
-    title_jp = (
-        libro.get("romaji_title")
-        or libro.get("title_japanese")
-        or libro.get("title_jp")
-        or libro.get("original_title")
-    )
     if title_jp:
         html_parts.append(f"<h4>🇯🇵 {title_jp}</h4>")
-
-    title_es = (
-        libro.get("spanish_title")
-        or libro.get("title_spanish")
-        or libro.get("title_es")
-        or libro.get("spanish_title")
-    )
     if title_es:
         html_parts.append(f"<h5>🇪🇸 {title_es}</h5>")
 
