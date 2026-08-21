@@ -653,25 +653,31 @@ export const DataGridEditor: React.FC = () => {
                                                     </button>
                                                 </td>
 
-                                                {/* Cover Thumbnail */}
+                                                {/* Cover Thumbnail (Click to open full SeriesDetailPage) */}
                                                 <td className="py-3 px-2 text-center">
-                                                    {series.cover_url ? (
-                                                        <img
-                                                            src={series.cover_url}
-                                                            alt={series.name}
-                                                            className="w-9 h-12 object-cover rounded-md border border-white/10 shadow-sm mx-auto"
-                                                            loading="lazy"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-9 h-12 rounded-md bg-slate-800 border border-white/5 flex items-center justify-center text-slate-500 text-[10px] mx-auto">
-                                                            N/A
-                                                        </div>
-                                                    )}
+                                                    <div 
+                                                        onClick={() => navigate(`/admin/series/${series.id}`)}
+                                                        className="cursor-pointer group relative inline-block"
+                                                        title="Haga clic para abrir el Editor Completo de Serie"
+                                                    >
+                                                        {series.cover_url ? (
+                                                            <img
+                                                                src={series.cover_url}
+                                                                alt={series.name}
+                                                                className="w-9 h-12 object-cover rounded-md border border-white/10 shadow-sm mx-auto group-hover:border-indigo-400 group-hover:scale-105 transition-all"
+                                                                loading="lazy"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-9 h-12 rounded-md bg-slate-800 border border-white/5 flex items-center justify-center text-slate-500 text-[10px] mx-auto group-hover:border-indigo-400 transition-all">
+                                                                N/A
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </td>
 
                                                 {/* Series Romaji Name */}
                                                 <td className="py-3 px-3 font-medium text-slate-100">
-                                                    <div className="space-y-1">
+                                                    <div className="space-y-1.5">
                                                         <input
                                                             type="text"
                                                             value={currentSeries.name || ''}
@@ -679,21 +685,25 @@ export const DataGridEditor: React.FC = () => {
                                                             className="w-full bg-transparent hover:bg-slate-800/70 focus:bg-slate-900 border border-transparent focus:border-primary rounded-md px-2 py-1 font-semibold text-white transition-all outline-none"
                                                             title="Nombre Canónico de la serie"
                                                         />
-                                                        <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                                        <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-400">
                                                             <span className="px-1.5 py-0.5 rounded bg-slate-800/90 text-primary border border-primary/20 font-bold">
                                                                 {series.book_count} vol.
                                                             </span>
                                                             <button
-                                                                onClick={() => handleCopy(series.id, series.id)}
-                                                                className="flex items-center gap-1 font-mono text-[9px] text-slate-400 hover:text-slate-200 transition-colors"
-                                                                title="Copiar hash de la serie"
+                                                                onClick={() => navigate(`/admin/series/${series.id}`)}
+                                                                className="px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95 shadow-sm shadow-indigo-600/30"
+                                                                title="Abrir Editor Completo de Serie"
                                                             >
-                                                                {copiedHash === series.id ? (
-                                                                    <Check className="w-3 h-3 text-emerald-400" />
-                                                                ) : (
-                                                                    <Copy className="w-3 h-3" />
-                                                                )}
-                                                                {series.id.substring(0, 8)}...
+                                                                <ExternalLink className="w-3 h-3" />
+                                                                Editar
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setSelectedSeriesForAlias(series)}
+                                                                className="px-2 py-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95"
+                                                                title="Gestionar alias y fusionar series"
+                                                            >
+                                                                <Tag className="w-3 h-3" />
+                                                                Alias
                                                             </button>
                                                         </div>
                                                     </div>
