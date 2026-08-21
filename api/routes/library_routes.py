@@ -72,10 +72,22 @@ class LibraryRoutes:
                 result = await session.execute(stmt)
                 book = result.scalars().first()
 
-                if book and book.filepath and os.path.exists(book.filepath):
-                    filename = os.path.basename(book.filepath).replace(".epub", "")
-                    logger.info(f"✅ Found book file for hash {url_hash}: {book.filepath}")
-                    return await self._serve_local_file(book.filepath, title=filename)
+                if book:
+                    target_path = book.filepath
+                    if target_path and not os.path.exists(target_path):
+                        import glob
+                        fname = book.filename or os.path.basename(target_path)
+                        matches = glob.glob(f"/library/**/{glob.escape(fname)}", recursive=True)
+                        if matches:
+                            target_path = matches[0]
+                            book.filepath = target_path
+                            await session.commit()
+                            logger.info(f"🔄 Auto-recuperado filepath para '{fname}': {target_path}")
+
+                    if target_path and os.path.exists(target_path):
+                        filename = os.path.basename(target_path).replace(".epub", "")
+                        logger.info(f"✅ Found book file for hash {url_hash}: {target_path}")
+                        return await self._serve_local_file(target_path, title=filename)
 
             logger.warning(f"❌ No URL or book file found for hash: {url_hash}")
             return JSONResponse(content={"error": "Archivo no encontrado o expirado"}, status_code=404)
@@ -86,6 +98,8 @@ class LibraryRoutes:
 
     async def _serve_local_file(self, filepath: str, title: str):
         """Helper para servir un archivo local como streaming de forma asíncrona."""
+        from urllib.parse import quote
+
         async def iterfile_async():
             try:
                 async with aiofiles.open(filepath, mode="rb") as f:
@@ -95,11 +109,15 @@ class LibraryRoutes:
                 logger.error(f"❌ Error reading local file: {e}")
                 return
 
+        # Sanitizar título para HTTP Header (RFC 5987 + ASCII fallback)
+        ascii_title = title.encode("ascii", "replace").decode("ascii").replace("?", "_").replace('"', "")
+        encoded_title = quote(f"{title}.epub")
+
         return StreamingResponse(
             content=iterfile_async(),
             media_type="application/epub+zip",
             headers={
-                "Content-Disposition": f'attachment; filename="{title}.epub"',
+                "Content-Disposition": f'attachment; filename="{ascii_title}.epub"; filename*=UTF-8\'\'{encoded_title}',
                 "Cache-Control": "public, max-age=31536000",
             },
         )
@@ -123,11 +141,15 @@ class LibraryRoutes:
                 if not data:
                     return Response(content={"error": "No se pudo descargar el archivo"}, status_code=404)
 
+                from urllib.parse import quote
+                ascii_title = title.encode("ascii", "replace").decode("ascii").replace("?", "_").replace('"', "")
+                encoded_title = quote(f"{title}.epub")
+
                 return StreamingResponse(
                     content=iter([data]),
                     media_type="application/epub+zip",
                     headers={
-                        "Content-Disposition": f'attachment; filename="{title}.epub"',
+                        "Content-Disposition": f'attachment; filename="{ascii_title}.epub"; filename*=UTF-8\'\'{encoded_title}',
                         "Cache-Control": "public, max-age=31536000",
                     },
                 )

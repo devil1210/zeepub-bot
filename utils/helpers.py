@@ -12,8 +12,12 @@ from utils.identity_utils import generate_short_link  # noqa: F401
 
 # --- metadata_utils ---
 from utils.metadata_utils import (
+    CANONICAL_DEMOGRAPHICS,  # noqa: F401
     generar_slug_from_meta,  # noqa: F401
     get_series_spanish_from_api,  # noqa: F401
+    is_demographic_tag,  # noqa: F401
+    normalize_demographics_list,  # noqa: F401
+    normalize_demography,  # noqa: F401
     parse_metadata_from_title,  # noqa: F401
     process_book_identity_comprehensive,  # noqa: F401
 )
@@ -25,6 +29,8 @@ from utils.string_utils import (
     get_translator_acronym,  # noqa: F401
     limpiar_html_basico,  # noqa: F401
 )
+
+escape_html = escapar_html
 
 # --- system_utils ---
 from utils.system_utils import (
@@ -92,11 +98,15 @@ def validate_facebook_credentials(config_obj, target_id: str | int | None = None
         )
 
     if not token or "your_token" in token or "token_falso" in token:
-        missing.append("FACEBOOK_PAGE_ACCESS_TOKEN (o FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN / FACEBOOK_TEST_PAGE_ACCESS_TOKEN)")
-    
+        missing.append(
+            "FACEBOOK_PAGE_ACCESS_TOKEN (o FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN / FACEBOOK_TEST_PAGE_ACCESS_TOKEN)"
+        )
+
     group_id = getattr(config_obj, "FACEBOOK_GROUP_ID", "")
     # Si se pasa target_id explícito, no requerimos group_id en config
-    if not target_id and (not group_id or "id_del_grupo" in group_id or "your_group_id" in group_id):
+    if not target_id and (
+        not group_id or "id_del_grupo" in group_id or "your_group_id" in group_id
+    ):
         missing.append("FACEBOOK_GROUP_ID")
 
     if missing:
@@ -108,4 +118,3 @@ def validate_facebook_credentials(config_obj, target_id: str | int | None = None
         )
         return False, msg
     return True, ""
-

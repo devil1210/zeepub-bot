@@ -217,9 +217,10 @@ class Book(Base):
     cover_original: Mapped[str | None] = mapped_column(String(1024))
 
     short_link: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
-    uuid: Mapped[str | None] = mapped_column(String(255), index=True)
     fb_post_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     fb_photo_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    tg_message_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    tg_chat_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     indexed_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)

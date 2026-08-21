@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from services.publisher.base import PublisherProvider
+from utils.helpers import normalize_demography
 from utils.http_client import fetch_bytes
 from utils.template_engine import apply_publication_template
 
@@ -234,8 +235,8 @@ class TelegramPublisherProvider(PublisherProvider):
                 
             layout_by = book_data.get("layout_by") or book_data.get("maquetador")
             if layout_by:
-                # Múltiples maquetadores separados por ", " → cada uno como hashtag independiente
-                maqs = [m.strip() for m in layout_by.split(",") if m.strip()]
+                # Múltiples maquetadores separados por coma, punto y coma o espacio (ej: "Meng Zhi", "Meng, Zhi" -> "#Meng #Zhi")
+                maqs = [m.strip() for m in re.split(r"[,;]+|\s+(?=#)|\s+", str(layout_by)) if m.strip()]
                 layout_val = " ".join(m if m.startswith("#") else f"#{m}" for m in maqs)
                 tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
                 
@@ -243,8 +244,8 @@ class TelegramPublisherProvider(PublisherProvider):
             tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n'
             
             demo = book_data.get("demographics_json") or book_data.get("demographics") or book_data.get("demografia")
-            if demo:
-                demo_val = ", ".join(demo) if isinstance(demo, list) else demo
+            demo_val = normalize_demography(demo)
+            if demo_val:
                 tabla_literaria += f'  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n'
                 
             generos = book_data.get("tags_json") or book_data.get("tags") or book_data.get("generos")
@@ -349,6 +350,18 @@ class TelegramPublisherProvider(PublisherProvider):
                 message_thread_id=thread_id
             )
             if res and res.get("ok"):
+                sent_msg = res.get("result")
+                tg_msg_id = None
+                if isinstance(sent_msg, dict):
+                    tg_msg_id = sent_msg.get("message_id")
+                elif hasattr(sent_msg, "message_id"):
+                    tg_msg_id = sent_msg.message_id
+
+                # Persistir tg_message_id y tg_chat_id en Book
+                book_id_val = book_data.get("id") or book_data.get("book_hash")
+                if book_id_val and tg_msg_id:
+                    await self._persist_book_tg_ids(book_id_val, str(tg_msg_id), str(target_id))
+
                 # B. Si el Rich Message se envió con éxito, enviar el documento ePub abajo con únicamente su hashtag
                 epub_data = book_data.get("epub_bytes") or book_data.get("filepath") or book_data.get("file_path")
                 if epub_data:
@@ -376,6 +389,7 @@ class TelegramPublisherProvider(PublisherProvider):
         # Fallback tradicional si falla
         logger.info("Ejecutando fallback tradicional en TelegramPublisherProvider.announce_book")
         photo_sent = False
+        last_sent_msg_id = None
         for part in msg_parts:
             if not part.strip():
                 continue
@@ -410,15 +424,95 @@ class TelegramPublisherProvider(PublisherProvider):
                         )
                         if sent_photo:
                             photo_sent = True
+                            if hasattr(sent_photo, "message_id"):
+                                last_sent_msg_id = sent_photo.message_id
                     except Exception as e:
                         logger.warning(f"Error al enviar portada como foto: {e}")
 
                 if not sent_photo:
-                    await self.bot.send_message(
+                    sm = await self.bot.send_message(
                         chat_id=target_id,
                         text=part,
                         parse_mode="HTML",
                         message_thread_id=thread_id,
                     )
+                    if sm and hasattr(sm, "message_id"):
+                        last_sent_msg_id = sm.message_id
+
+        book_id_val = book_data.get("id") or book_data.get("book_hash")
+        if book_id_val and last_sent_msg_id:
+            await self._persist_book_tg_ids(book_id_val, str(last_sent_msg_id), str(target_id))
 
         return True
+
+    async def _persist_book_tg_ids(
+        self, book_hash: str, message_id: str, chat_id: str
+    ) -> None:
+        """Helper para guardar tg_message_id y tg_chat_id en Book."""
+        try:
+            from core.db_manager_pg import pg_manager
+            from models.library import Book
+            from sqlalchemy import update
+
+            async with pg_manager.get_session() as session:
+                await session.execute(
+                    update(Book)
+                    .where(Book.id == str(book_hash))
+                    .values(tg_message_id=str(message_id), tg_chat_id=str(chat_id))
+                )
+                await session.commit()
+        except Exception as e:
+            logger.debug(f"No se pudo persistir tg_message_id en Book: {e}")
+
+    async def update_post_message(
+        self,
+        chat_id: str | int,
+        message_id: str | int,
+        new_message: str,
+    ) -> bool:
+        """
+        Edita el mensaje/ficha existente de una publicación en Telegram.
+        """
+        if not chat_id or not message_id or not new_message:
+            return False
+
+        from services.rich_message_service import RichMessageService
+        try:
+            res = await RichMessageService.edit_rich_message(
+                chat_id=chat_id,
+                message_id=int(message_id),
+                html=new_message,
+            )
+            if res and res.get("ok"):
+                logger.info(f"✅ Publicación {message_id} de Telegram en {chat_id} actualizada.")
+                return True
+        except Exception as e:
+            logger.debug(f"Aviso edit_rich_message en Telegram: {e}")
+
+        # Fallback estándar vía bot.edit_message_text o edit_message_caption
+        try:
+            if not self.bot:
+                from api.main import bot as main_bot
+                self.bot = main_bot.app.bot
+
+            try:
+                await self.bot.edit_message_caption(
+                    chat_id=chat_id,
+                    message_id=int(message_id),
+                    caption=new_message,
+                    parse_mode="HTML",
+                )
+                logger.info(f"✅ Caption de publicación {message_id} en Telegram editado.")
+                return True
+            except Exception:
+                await self.bot.edit_message_text(
+                    chat_id=chat_id,
+                    message_id=int(message_id),
+                    text=new_message,
+                    parse_mode="HTML",
+                )
+                logger.info(f"✅ Texto de publicación {message_id} en Telegram editado.")
+                return True
+        except Exception as e:
+            logger.error(f"Error editando publicación {message_id} en Telegram ({chat_id}): {e}")
+            return False

@@ -19,6 +19,7 @@ const UploadEpub = React.lazy(() => import('@features/upload/pages/Upload').then
 const AIHub = React.lazy(() => import('@features/ai/pages/AIHub').then(m => ({ default: m.AIHub })));
 const BookDetailById = React.lazy(() => import('@features/book/pages/BookDetailById').then(m => ({ default: m.BookDetailById })));
 const TemplateEditorPage = React.lazy(() => import('@features/publisher/pages/TemplateEditorPage').then(m => ({ default: m.TemplateEditorPage })));
+const FansubDetailPage = React.lazy(() => import('@features/publisher/pages/FansubDetailPage').then(m => ({ default: m.FansubDetailPage })));
 
 import { Series, Volume } from '@shared/types';
 import { LoginGate } from '@components/LoginGate';
@@ -223,6 +224,11 @@ const AppContent: React.FC = () => {
             <Route path="/admin/templates/:id" element={
               <ProtectedAdminRoute>
                 <PageWrapper Component={TemplateEditorPage} />
+              </ProtectedAdminRoute>
+            } />
+            <Route path="/admin/fansubs/:id" element={
+              <ProtectedAdminRoute>
+                <PageWrapper Component={FansubDetailPage} />
               </ProtectedAdminRoute>
             } />
 

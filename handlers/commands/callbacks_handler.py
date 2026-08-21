@@ -1,6 +1,7 @@
 # handlers/commands/callbacks_handler.py
 
 import logging
+import re
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
@@ -185,7 +186,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                     await context.bot.edit_message_reply_markup(
                         chat_id=update.effective_chat.id,
                         message_id=query.message.message_id,
-                        reply_markup=None
+                        reply_markup=None,
                     )
                 except Exception as e:
                     logger.warning(f"Error removiendo botones del Rich Message: {e}")
@@ -195,8 +196,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                 if slug:
                     caption = slug if slug.startswith("#") else f"#{slug}"
                 else:
-                    import re
-                    clean_title = re.sub(r'[^\w\s]', '', title).replace(" ", "_")
+                    clean_title = re.sub(r"[^\w\s]", "", title).replace(" ", "_")
                     caption = f"#{clean_title}"
 
                 try:

@@ -1,4 +1,7 @@
+import io
 import logging
+import os
+import re
 import uuid
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -7,7 +10,7 @@ from telegram.ext import ContextTypes
 from core.state_manager import state_manager
 from services.library_service import LibraryService
 from services.rich_message_service import RichMessageService
-from utils.helpers import get_thread_id, get_translator_acronym
+from utils.helpers import get_thread_id, get_translator_acronym, normalize_demography
 
 logger = logging.getLogger(__name__)
 
@@ -473,7 +476,12 @@ async def mostrar_detalles_libro(
     # Mapeo manual para asegurar que todas las variables del template están presentes
     from utils.metadata_utils import is_romaji_string
 
-    t_en = libro.get("english_title") or libro.get("series_english") or libro.get("title") or "Sin título"
+    t_en = (
+        libro.get("english_title")
+        or libro.get("series_english")
+        or libro.get("title")
+        or "Sin título"
+    )
     t_jp = libro.get("romaji_title") or libro.get("romaji")
     t_es = libro.get("spanish_title") or libro.get("series_spanish")
 
@@ -509,7 +517,6 @@ async def mostrar_detalles_libro(
     def sanitize_tg_html(t: str) -> str:
         if not t:
             return ""
-        import re
 
         t = re.sub(r"<(/?p|/?div|/?h\d|/?span|/?a[^>]*)>", "\n", t, flags=re.IGNORECASE)
         t = re.sub(r"<br\s*/?>", "\n", t, flags=re.IGNORECASE)
@@ -557,8 +564,6 @@ async def mostrar_detalles_libro(
     )
     portada = await resolve_cover_data(portada_raw)
 
-    import os
-    import io
     files = {}
     media = None
 
@@ -568,24 +573,22 @@ async def mostrar_detalles_libro(
             media = [
                 {
                     "id": "tomozaki_cover",
-                    "media": {
-                        "type": "photo",
-                        "media": "attach://tomozaki_cover"
-                    }
+                    "media": {"type": "photo", "media": "attach://tomozaki_cover"},
                 }
             ]
         elif isinstance(portada, str) and os.path.exists(portada):
             try:
                 with open(portada, "rb") as f:
                     file_bytes = f.read()
-                files["tomozaki_cover"] = ("cover.png", io.BytesIO(file_bytes), "image/png")
+                files["tomozaki_cover"] = (
+                    "cover.png",
+                    io.BytesIO(file_bytes),
+                    "image/png",
+                )
                 media = [
                     {
                         "id": "tomozaki_cover",
-                        "media": {
-                            "type": "photo",
-                            "media": "attach://tomozaki_cover"
-                        }
+                        "media": {"type": "photo", "media": "attach://tomozaki_cover"},
                     }
                 ]
             except Exception as ex:
@@ -610,79 +613,119 @@ async def mostrar_detalles_libro(
 
     # C. Construir HTML dinámico para el Rich Message unificado
     html_parts = []
-    
+
     # 1. Imagen al inicio de todo
     if media:
         html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
 
     # 2. Títulos en cascada
-    title_en = libro.get("english_title") or libro.get("title") or libro.get("titulo") or "Sin título"
-    html_parts.append(f'<h3>🇬🇧 {title_en}</h3>')
-    
-    title_jp = libro.get("romaji_title") or libro.get("title_japanese") or libro.get("title_jp") or libro.get("original_title")
+    title_en = (
+        libro.get("english_title")
+        or libro.get("title")
+        or libro.get("titulo")
+        or "Sin título"
+    )
+    html_parts.append(f"<h3>🇬🇧 {title_en}</h3>")
+
+    title_jp = (
+        libro.get("romaji_title")
+        or libro.get("title_japanese")
+        or libro.get("title_jp")
+        or libro.get("original_title")
+    )
     if title_jp:
-        html_parts.append(f'<h4>🇯🇵 {title_jp}</h4>')
-        
-    title_es = libro.get("spanish_title") or libro.get("title_spanish") or libro.get("title_es") or libro.get("spanish_title")
+        html_parts.append(f"<h4>🇯🇵 {title_jp}</h4>")
+
+    title_es = (
+        libro.get("spanish_title")
+        or libro.get("title_spanish")
+        or libro.get("title_es")
+        or libro.get("spanish_title")
+    )
     if title_es:
-        html_parts.append(f'<h5>🇪🇸 {title_es}</h5>')
-        
+        html_parts.append(f"<h5>🇪🇸 {title_es}</h5>")
+
     volume = libro.get("volume")
     if volume:
-        html_parts.append(f'<h6>📚 Volumen {volume}</h6>\n')
+        html_parts.append(f"<h6>📚 Volumen {volume}</h6>\n")
 
     # 3. TABLA 1: Ficha artística y literaria
-    tabla_literaria = '<table bordered striped>\n'
-    
+    tabla_literaria = "<table bordered striped>\n"
+
     autor = libro.get("author") or libro.get("autor") or "Desconocido"
-    tabla_literaria += f'  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n'
-    
+    tabla_literaria += f"  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n"
+
     ilustrador = libro.get("illustrator") or libro.get("ilustrador")
     if ilustrador:
-        tabla_literaria += f'  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n'
-        
+        tabla_literaria += (
+            f"  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n"
+        )
+
     layout_by = libro.get("layout_by") or libro.get("maquetador")
     if layout_by:
-        layout_val = layout_by if layout_by.startswith("#") else f"#{layout_by}"
-        tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
-        
+        maqs = [
+            m.strip()
+            for m in re.split(r"[,;]+|\s+(?=#)|\s+", str(layout_by))
+            if m.strip()
+        ]
+        layout_val = " ".join(m if m.startswith("#") else f"#{m}" for m in maqs)
+        tabla_literaria += (
+            f"  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n"
+        )
+
     categoria = libro.get("book_type") or libro.get("tipo") or "Novela"
-    tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n'
-    
-    demo = libro.get("demographics_json") or libro.get("demographics") or libro.get("demografia")
-    if demo:
-        demo_val = ", ".join(demo) if isinstance(demo, list) else demo
-        tabla_literaria += f'  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n'
-        
+    tabla_literaria += f"  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n"
+
+    demo = (
+        libro.get("demographics_json")
+        or libro.get("demographics")
+        or libro.get("demografia")
+    )
+    demo_val = normalize_demography(demo)
+    if demo_val:
+        tabla_literaria += (
+            f"  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n"
+        )
+
     generos = libro.get("tags_json") or libro.get("tags") or libro.get("generos")
     if generos:
         generos_val = ", ".join(generos) if isinstance(generos, list) else generos
-        tabla_literaria += f'  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n'
-        
+        tabla_literaria += (
+            f"  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n"
+        )
+
     traductor = libro.get("translator") or libro.get("traductor")
     if traductor:
-        tabla_literaria += f'  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n'
-        
-    grupo_trad = libro.get("publisher") or libro.get("translation_group") or libro.get("grupo_traductor")
+        tabla_literaria += (
+            f"  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n"
+        )
+
+    grupo_trad = (
+        libro.get("publisher")
+        or libro.get("translation_group")
+        or libro.get("grupo_traductor")
+    )
     if grupo_trad:
         grupo_trad_val = grupo_trad
         if libro.get("translation_group_url"):
             url_g = libro.get("translation_group_url")
             grupo_trad_val = f'<a href="{url_g}">{grupo_trad}</a>'
-        tabla_literaria += f'  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n'
-        
-    tabla_literaria += '</table>\n'
+        tabla_literaria += (
+            f"  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n"
+        )
+
+    tabla_literaria += "</table>\n"
     html_parts.append(tabla_literaria)
 
     # 4. SINOPSIS: Acordeón colapsable
     sinopsis_raw = libro.get("sinopsis") or "Sin sinopsis disponible."
     html_parts.append(
-        '<details>\n'
-        '  <summary>📖 Ver Sinopsis</summary>\n'
-        '  <blockquote>\n'
-        f'    {sinopsis_raw}\n'
-        '  </blockquote>\n'
-        '</details>\n'
+        "<details>\n"
+        "  <summary>📖 Ver Sinopsis</summary>\n"
+        "  <blockquote>\n"
+        f"    {sinopsis_raw}\n"
+        "  </blockquote>\n"
+        "</details>\n"
     )
 
     # 5. TABLA 2: Detalles del archivo
@@ -691,7 +734,7 @@ async def mostrar_detalles_libro(
         try:
             size_bytes = int(libro.get("file_size"))
             size_val = f"{size_bytes / (1024 * 1024):.2f} MB"
-        except:
+        except Exception:
             size_val = "Desconocido"
     if not size_val:
         size_val = "Desconocido"
@@ -699,43 +742,47 @@ async def mostrar_detalles_libro(
     version_val = libro.get("epub_version") or libro.get("version") or "3.0"
 
     tabla_archivo = (
-        '<details>\n'
-        '  <summary>📂 Ver Detalles del Archivo</summary>\n'
-        '  <table bordered striped>\n'
-        f'    <tr><td><b>📂 Nombre</b></td><td>{libro.get("title") or "Desconocido"}</td></tr>\n'
+        "<details>\n"
+        "  <summary>📂 Ver Detalles del Archivo</summary>\n"
+        "  <table bordered striped>\n"
+        f"    <tr><td><b>📂 Nombre</b></td><td>{libro.get('title') or 'Desconocido'}</td></tr>\n"
     )
     if volume:
-        tabla_archivo += f'    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n'
-    
-    tabla_archivo += f'    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n'
-    
-    fecha = libro.get("updated_at") or libro.get("actualizado") or libro.get("indexed_at")
+        tabla_archivo += (
+            f"    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n"
+        )
+
+    tabla_archivo += (
+        f"    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n"
+    )
+
+    fecha = (
+        libro.get("updated_at") or libro.get("actualizado") or libro.get("indexed_at")
+    )
     if fecha:
         if hasattr(fecha, "strftime"):
             fecha_str = fecha.strftime("%d-%m-%Y")
         else:
             fecha_str = str(fecha)
-        tabla_archivo += f'    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n'
-        
-    tabla_archivo += f'    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n'
-        
-    tabla_archivo += (
-        '  </table>\n'
-        '</details>\n'
-    )
+        tabla_archivo += (
+            f"    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n"
+        )
+
+    tabla_archivo += f"    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n"
+
+    tabla_archivo += "  </table>\n</details>\n"
     html_parts.append(tabla_archivo)
 
     # 6. Línea divisoria y pie
-    html_parts.append('<hr/>')
-    
+    html_parts.append("<hr/>")
+
     slug = libro.get("slug")
     if slug:
         hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
-        html_parts.append(f'{hashtag_serie}\n\n\n')
+        html_parts.append(f"{hashtag_serie}\n\n\n")
     else:
-        import re
-        clean_title = re.sub(r'[^\w\s]', '', title_en).replace(" ", "_")
-        html_parts.append(f'#{clean_title}\n\n\n')
+        clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
+        html_parts.append(f"#{clean_title}\n\n\n")
 
     html_content = "\n".join(html_parts)
 
@@ -746,13 +793,15 @@ async def mostrar_detalles_libro(
         media=media,
         files=files if files else None,
         reply_markup=reply_markup,
-        message_thread_id=thread_id
+        message_thread_id=thread_id,
     )
 
     # E. Fallback tradicional si la API de Telegram o el transporte fallan
     if not res or not res.get("ok"):
-        logger.warning("[UI Service] Fallback a mensajes tradicionales en mostrar_detalles_libro")
-        
+        logger.warning(
+            "[UI Service] Fallback a mensajes tradicionales en mostrar_detalles_libro"
+        )
+
         # 1. Enviar portada tradicional
         msg_portada = None
         if portada:
@@ -767,7 +816,10 @@ async def mostrar_detalles_libro(
 
         if not msg_portada:
             msg_portada = await context.bot.send_message(
-                chat_id=chat_id, text=part0, parse_mode="HTML", message_thread_id=thread_id
+                chat_id=chat_id,
+                text=part0,
+                parse_mode="HTML",
+                message_thread_id=thread_id,
             )
 
         if msg_portada:

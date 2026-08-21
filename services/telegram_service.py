@@ -12,6 +12,7 @@ from telegram.ext import ContextTypes
 # from core.session_manager import session_manager (Moved to local scope)
 from config.config_settings import config
 from utils.download_limiter import can_download, downloads_left
+from utils.helpers import normalize_demography
 from utils.http_client import cleanup_tmp, fetch_bytes
 
 logger = logging.getLogger(__name__)
@@ -532,8 +533,8 @@ async def enviar_libro_directo(
             
         layout_by = meta.get("layout_by") or meta.get("maquetador")
         if layout_by:
-            # Múltiples maquetadores separados por ", " → cada uno como hashtag independiente
-            maqs = [m.strip() for m in layout_by.split(",") if m.strip()]
+            # Múltiples maquetadores separados por coma, punto y coma o espacio (ej: "Meng Zhi", "Meng, Zhi" -> "#Meng #Zhi")
+            maqs = [m.strip() for m in re.split(r"[,;]+|\s+(?=#)|\s+", str(layout_by)) if m.strip()]
             layout_val = " ".join(m if m.startswith("#") else f"#{m}" for m in maqs)
             tabla_literaria += f'  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n'
             
@@ -541,8 +542,8 @@ async def enviar_libro_directo(
         tabla_literaria += f'  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n'
         
         demo = meta.get("demographics_json") or meta.get("demographics") or meta.get("demografia")
-        if demo:
-            demo_val = ", ".join(demo) if isinstance(demo, list) else demo
+        demo_val = normalize_demography(demo)
+        if demo_val:
             tabla_literaria += f'  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n'
             
         generos = meta.get("tags_json") or meta.get("tags") or meta.get("generos")

@@ -50,6 +50,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleInitialPlatform, setScheduleInitialPlatform] = useState<string | undefined>(undefined);
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [localRating, setLocalRating] = useState(initialVolume?.rating || 0);
   const [localDownloadCount, setLocalDownloadCount] = useState(initialVolume?.downloadCount || 0);
@@ -290,6 +291,35 @@ export const BookDetail: React.FC<BookDetailProps> = ({
       window.location.href = `/api/bot/download_file/${targetBookId}`;
     } finally {
       setIsDownloadingDirect(false);
+    }
+  };
+
+  const [sendingTemplate, setSendingTemplate] = useState(false);
+
+  const handleSendTemplate = async () => {
+    if (!curVolume) return;
+    if (status?.user?.needs_telegram_link) {
+      setIsLinkModalOpen(true);
+      return;
+    }
+    try {
+      setSendingTemplate(true);
+      webApp?.HapticFeedback?.impactOccurred('medium');
+      const { publisherApi } = await import('@features/publisher/services/publisherApi');
+      const res = await publisherApi.sendTemplateToChat(curVolume.id);
+      if (res && res.success !== false) {
+        webApp?.HapticFeedback?.notificationOccurred('success');
+        webApp?.showAlert?.("📋 ¡Plantilla enviada a tu Telegram! Toca el recuadro en tu chat privado para copiarla.");
+      } else {
+        webApp?.HapticFeedback?.notificationOccurred('error');
+        webApp?.showAlert?.("❌ " + (res?.message || "No se pudo enviar la plantilla"));
+      }
+    } catch (err: any) {
+      console.error("Error sending template to Telegram", err);
+      webApp?.HapticFeedback?.notificationOccurred('error');
+      webApp?.showAlert?.("❌ Error: " + (err?.message || "Error al enviar la plantilla"));
+    } finally {
+      setSendingTemplate(false);
     }
   };
 
@@ -565,11 +595,13 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                 hasDownloaded={hasDownloaded}
                 onDirectDownload={handleDirectDownload}
                 onTelegramDownload={handleTelegramDownload}
+                onSendTemplate={handleSendTemplate}
                 onOpenRating={() => setIsRatingModalOpen(true)}
                 onOpenReport={() => setIsReportModalOpen(true)}
                 onOpenSchedule={() => setIsScheduleModalOpen(true)}
                 rating={localRating}
                 downloadingTelegram={downloadingTelegram}
+                sendingTemplate={sendingTemplate}
               />
 
               {/* Stats Block (Sidebar - Desktop) */}
@@ -726,9 +758,13 @@ export const BookDetail: React.FC<BookDetailProps> = ({
 
       <ScheduleModal
         isOpen={isScheduleModalOpen}
-        onClose={() => setIsScheduleModalOpen(false)}
+        onClose={() => {
+          setIsScheduleModalOpen(false);
+          setScheduleInitialPlatform(undefined);
+        }}
         bookHash={curVolume.book_hash || 'unknown'}
         bookTitle={displayData.title}
+        initialPlatform={scheduleInitialPlatform}
       />
     </div>
   );

@@ -18,6 +18,7 @@ from services.epub_service import enrich_metadata_from_epub
 from services.hash_service import hash_service
 from services.scanner.series_scanner import SeriesScanner
 from services.settings_service import get_setting
+from utils.helpers import normalize_demographics_list
 from utils.metadata_utils import process_book_identity_comprehensive
 
 logger = logging.getLogger(__name__)
@@ -204,7 +205,7 @@ class UploadService:
             "illustrator": enriched.get("ilustrador", ""),
             "translator": enriched.get("traductor", ""),
             "category": enriched.get("categoria", ""),
-            "demography": enriched.get("demografia", []),
+            "demography": normalize_demographics_list(enriched.get("demografia", [])),
             "layout_by": ", ".join(enriched.get("maquetadores", [])) if enriched.get("maquetadores") else "",
             "book_type": enriched.get("categoria", ""),
             "original_filename": original_filename,
@@ -231,7 +232,7 @@ class UploadService:
         if ai_data.get("genres"):
             metadata["tags"] = ", ".join(ai_data["genres"])
         if ai_data.get("demographics"):
-            metadata["demography"] = ai_data["demographics"]
+            metadata["demography"] = normalize_demographics_list(ai_data["demographics"])
         if ai_data.get("cleaned_description"):
             metadata["description"] = ai_data["cleaned_description"]
 

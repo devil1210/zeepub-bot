@@ -5,10 +5,40 @@ from typing import Any
 from utils.string_utils import normalize_author_name
 
 ROMAJI_PARTICLES = {
-    "no", "to", "ga", "wa", "ni", "de", "wo", "ka", "mo", "ya", "kara", "made",
-    "san", "chan", "kun", "sama", "tonari", "desu", "kuro", "shiro", "boku",
-    "ore", "watashi", "monogatari", "isekai", "tensei", "shinja", "kusuriya",
-    "hitorigoto", "rosia", "russiago", "dereru", "bosotto", "arya"
+    "no",
+    "to",
+    "ga",
+    "wa",
+    "ni",
+    "de",
+    "wo",
+    "ka",
+    "mo",
+    "ya",
+    "kara",
+    "made",
+    "san",
+    "chan",
+    "kun",
+    "sama",
+    "tonari",
+    "desu",
+    "kuro",
+    "shiro",
+    "boku",
+    "ore",
+    "watashi",
+    "monogatari",
+    "isekai",
+    "tensei",
+    "shinja",
+    "kusuriya",
+    "hitorigoto",
+    "rosia",
+    "russiago",
+    "dereru",
+    "bosotto",
+    "arya",
 }
 
 
@@ -22,7 +52,9 @@ def is_romaji_string(text: str) -> bool:
     if not words:
         return False
     romaji_matches = sum(1 for w in words if w in ROMAJI_PARTICLES)
-    return romaji_matches >= 2 or (len(words) >= 3 and (romaji_matches / len(words)) >= 0.2)
+    return romaji_matches >= 2 or (
+        len(words) >= 3 and (romaji_matches / len(words)) >= 0.2
+    )
 
 
 def clean_romaji_title(title: str) -> str:
@@ -404,7 +436,11 @@ def process_book_identity_comprehensive(
         "romaji_title": romaji_from_series
         or romaji_from_title
         or meta.get("romaji_title")
-        or (clean_romaji_title(meta.get("title")) if (meta.get("title") and is_romaji_string(meta.get("title"))) else None),
+        or (
+            clean_romaji_title(meta.get("title"))
+            if (meta.get("title") and is_romaji_string(meta.get("title")))
+            else None
+        ),
         "series_spanish": series_spanish or meta.get("series_spanish"),
         "series_english": series_english or meta.get("series_english"),
     }
@@ -438,3 +474,79 @@ async def get_series_spanish_from_api(
     except Exception:
         pass
     return None
+
+
+CANONICAL_DEMOGRAPHICS = ["Shounen", "Seinen", "Shoujo", "Josei", "Kodomo"]
+
+DEMOGRAPHY_REGEX_MAP = [
+    (
+        "Shounen",
+        re.compile(r"(?:^|[^\w])(?:shou?nen|shônen|chicos?)(?:$|[^\w])", re.IGNORECASE),
+    ),
+    (
+        "Seinen",
+        re.compile(
+            r"(?:^|[^\w])(?:seinen|seijin|adultos?|mature)(?:$|[^\w])", re.IGNORECASE
+        ),
+    ),
+    (
+        "Shoujo",
+        re.compile(r"(?:^|[^\w])(?:shou?jo|shôjo|chicas?)(?:$|[^\w])", re.IGNORECASE),
+    ),
+    ("Josei", re.compile(r"(?:^|[^\w])(?:josei|mujeres?)(?:$|[^\w])", re.IGNORECASE)),
+    (
+        "Kodomo",
+        re.compile(
+            r"(?:^|[^\w])(?:kodomo|niñ[oa]s?|nin[oa]s?|infantil|juvenil)(?:$|[^\w])",
+            re.IGNORECASE,
+        ),
+    ),
+]
+
+
+def normalize_demography(val: Any) -> str:
+    """
+    Normaliza cualquier valor (string, objeto, lista) a una única demografía canónica:
+    'Shounen', 'Seinen', 'Shoujo', 'Josei', 'Kodomo'.
+    Si se detectan múltiples valores, selecciona solo la primera válida (evita concatenar múltiples demografías).
+    """
+    if not val:
+        return ""
+
+    items = val if isinstance(val, (list, set, tuple)) else [val]
+
+    for item in items:
+        if not item:
+            continue
+        name = getattr(item, "name", None) or str(item)
+        name_clean = name.strip()
+        if not name_clean:
+            continue
+
+        # 1. Coincidencia exacta con canonicals
+        for canonical in CANONICAL_DEMOGRAPHICS:
+            if name_clean.lower() == canonical.lower():
+                return canonical
+
+        # 2. Búsqueda por subcadena / regex (ej: "Chicos/shounen" -> "Shounen", "Adultos/Seinen" -> "Seinen")
+        for canonical, pattern in DEMOGRAPHY_REGEX_MAP:
+            if pattern.search(name_clean):
+                return canonical
+
+    return ""
+
+
+def normalize_demographics_list(val: Any) -> list[str]:
+    """
+    Devuelve una lista con a lo sumo UNA demografía canónica normalizada.
+    Ejemplo: ["Chicos/shounen", "Adultos/Seinen"] -> ["Shounen"]
+    """
+    demo = normalize_demography(val)
+    return [demo] if demo else []
+
+
+def is_demographic_tag(tag: str) -> bool:
+    """Indica si un tag o subject corresponde a una demografía."""
+    if not tag or not isinstance(tag, str):
+        return False
+    return bool(normalize_demography(tag.strip()))

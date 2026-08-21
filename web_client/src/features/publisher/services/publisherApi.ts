@@ -32,6 +32,7 @@ export interface PublicationTemplate {
     name: string;
     content: string;
     platform: string;
+    is_default?: boolean;
     extra_config?: {
         cover_quality?: 'original' | 'grande' | 'mediana' | 'pequeña' | 'high' | 'medium' | 'low';
         [key: string]: any;
@@ -112,6 +113,12 @@ export const publisherApi = {
 
     checkFacebookAlbum: (bookId: string, channelId?: number) =>
         api.rpc('pub_check_facebook_album', { book_id: bookId, channel_id: channelId }),
+
+    sendTemplateToChat: (bookId: string, templateId?: number) =>
+        api.rpc('pub_send_template_to_chat', { book_id: bookId, template_id: templateId }),
+
+    createFacebookDraft: (bookId: string, templateId?: number) =>
+        api.rpc('pub_create_draft', { book_id: bookId, template_id: templateId }),
 
     restoreTemplates: (platform: string = 'telegram') =>
         api.rpc('pub_restore_templates', { platform }),

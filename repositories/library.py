@@ -28,17 +28,47 @@ class SeriesRepository(BaseRepository[Series]):
         Retorna (lista_de_series, total_count).
         """
         from sqlalchemy import func, or_
+        from models.library import Book, TranslatorsGroup
 
         stmt = select(Series)
 
         # Filtros
         if query:
             search = f"%{query}%"
+            # 1. Filtros a nivel de Serie (nombre, español, inglés, autor)
+            series_criteria = [
+                Series.series_name.ilike(search),
+                Series.series_spanish.ilike(search),
+                Series.series_english.ilike(search),
+                Series.author.ilike(search),
+            ]
+
+            # 2. Filtros a nivel de Libros de la Serie (publisher, translator, group, layout, etc.)
+            book_criteria = [
+                Book.publisher.ilike(search),
+                Book.translator.ilike(search),
+                Book.layout_by.ilike(search),
+                Book.title.ilike(search),
+                Book.filename.ilike(search),
+            ]
+
+            # 3. Filtros por nombre/siglas del Fansub / TranslatorsGroup vinculado
+            group_subq = (
+                select(Book.series_id)
+                .join(TranslatorsGroup, Book.translator_group_id == TranslatorsGroup.id)
+                .where(
+                    or_(
+                        TranslatorsGroup.name.ilike(search),
+                        TranslatorsGroup.siglas.ilike(search),
+                    )
+                )
+            )
+
             stmt = stmt.where(
                 or_(
-                    Series.series_name.ilike(search),
-                    Series.series_spanish.ilike(search),
-                    Series.series_english.ilike(search),
+                    *series_criteria,
+                    Series.books.any(or_(*book_criteria)),
+                    Series.id.in_(group_subq),
                 )
             )
 

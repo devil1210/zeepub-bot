@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import Any
 
 from sqlalchemy import func, select
@@ -29,17 +30,31 @@ class WorkgroupService:
 
     @staticmethod
     async def get_by_name(name: str) -> TranslatorsGroup | None:
-        """Busca un grupo traductor por nombre (case-insensitive)."""
+        """Busca un grupo traductor por nombre (case-insensitive y normalizado)."""
         if not name or not name.strip():
             return None
         try:
             async with pg_manager.get_session() as session:
-                clean_name = name.strip()
+                clean_name = name.strip().rstrip(".").strip()
+                # 1. Búsqueda exacta
                 stmt = select(TranslatorsGroup).where(
                     func.lower(TranslatorsGroup.name) == clean_name.lower()
                 )
                 res = await session.execute(stmt)
-                return res.scalar_one_or_none()
+                group = res.scalar_one_or_none()
+                if group:
+                    return group
+
+                # 2. Búsqueda normalizando comillas (' vs ’) y puntuación
+                normalized_search = re.sub(r"[’'´`.]", "", clean_name).lower()
+                all_groups = (
+                    (await session.execute(select(TranslatorsGroup))).scalars().all()
+                )
+                for g in all_groups:
+                    if re.sub(r"[’'´`.]", "", g.name).lower() == normalized_search:
+                        return g
+
+                return None
         except Exception as e:
             logger.debug(f"Error buscando grupo traductor por nombre '{name}': {e}")
             return None
@@ -72,7 +87,9 @@ class WorkgroupService:
                     session.add(group)
                     await session.flush()
                     await session.refresh(group)
-                    logger.info(f"✅ Grupo traductor registrado: '{clean_name}' (ID: {group.id})")
+                    logger.info(
+                        f"✅ Grupo traductor registrado: '{clean_name}' (ID: {group.id})"
+                    )
 
                 return group
         except Exception as e:
@@ -112,7 +129,9 @@ class WorkgroupService:
                     session.add(link)
 
                 await session.commit()
-                logger.info(f"✅ Enlace [{clean_platform}] guardado para grupo {group_id}: {clean_url}")
+                logger.info(
+                    f"✅ Enlace [{clean_platform}] guardado para grupo {group_id}: {clean_url}"
+                )
                 return True
         except Exception as e:
             logger.error(f"Error guardando enlace de contacto: {e}")
@@ -181,7 +200,7 @@ class WorkgroupService:
             if res_data["traductor_twitter"]:
                 formatted_links.append(f"🐦 Twitter: {res_data['traductor_twitter']}")
 
-            res_data["traductor_links"] = " | ".join(formatted_links)
+            res_data["traductor_links"] = "\n".join(formatted_links)
 
         return res_data
 
@@ -259,13 +278,42 @@ class WorkgroupService:
         res: dict[str, Any] = {}
 
         # 1. Resolver Traductor Individual y Grupo Traductor
-        t_individual = raw_meta.get("traductor") or raw_meta.get("translator") or (getattr(book_obj, "translator", None) if book_obj else None) or ""
+        t_individual = (
+            raw_meta.get("traductor")
+            or raw_meta.get("translator")
+            or (getattr(book_obj, "translator", None) if book_obj else None)
+            or ""
+        )
         g_name = raw_meta.get("grupo_traductor") or raw_meta.get("grupo")
+        publisher_name = (
+            raw_meta.get("publisher")
+            or raw_meta.get("editorial")
+            or (getattr(book_obj, "publisher", None) if book_obj else None)
+            or ""
+        )
         t_gid = getattr(book_obj, "translator_group_id", None) if book_obj else None
 
-        t_group = await WorkgroupService.get_by_id(t_gid) if t_gid else (await WorkgroupService.get_by_name(g_name) if g_name else (await WorkgroupService.get_by_name(t_individual) if t_individual else None))
+        t_group = (
+            await WorkgroupService.get_by_id(t_gid)
+            if t_gid
+            else (
+                await WorkgroupService.get_by_name(g_name)
+                if g_name
+                else (
+                    await WorkgroupService.get_by_name(publisher_name)
+                    if publisher_name
+                    else (
+                        await WorkgroupService.get_by_name(t_individual)
+                        if t_individual
+                        else None
+                    )
+                )
+            )
+        )
 
-        group_name = t_group.name if t_group else (g_name or t_individual)
+        group_name = (
+            t_group.name if t_group else (g_name or publisher_name or t_individual)
+        )
         preferred_group_link = t_group.get_preferred_link() if t_group else ""
         g_links = t_group.get_links_dict() if t_group else {}
 
@@ -290,7 +338,7 @@ class WorkgroupService:
             formatted_g.append(f"🧡 Patreon: {res['grupo_patreon']}")
         if res["grupo_twitter"]:
             formatted_g.append(f"🐦 Twitter: {res['grupo_twitter']}")
-        res["grupo_links"] = " | ".join(formatted_g)
+        res["grupo_links"] = "\n".join(formatted_g)
 
         # Tags de Traductor (Persona / Individual)
         res["traductor"] = t_individual or group_name
@@ -304,9 +352,15 @@ class WorkgroupService:
         res["traductor_links"] = res["grupo_links"]
 
         # 2. Resolver Editor
-        e_name = raw_meta.get("editor") or (getattr(book_obj, "editor", None) if book_obj else None)
+        e_name = raw_meta.get("editor") or (
+            getattr(book_obj, "editor", None) if book_obj else None
+        )
         e_gid = getattr(book_obj, "editor_group_id", None) if book_obj else None
-        e_group = await WorkgroupService.get_by_id(e_gid) if e_gid else (await WorkgroupService.get_by_name(e_name) if e_name else None)
+        e_group = (
+            await WorkgroupService.get_by_id(e_gid)
+            if e_gid
+            else (await WorkgroupService.get_by_name(e_name) if e_name else None)
+        )
 
         res["editor"] = e_group.name if e_group else (e_name or "")
         res["editor_link"] = e_group.get_preferred_link() if e_group else ""
@@ -323,12 +377,20 @@ class WorkgroupService:
             formatted_e.append(f"📘 Facebook: {res['editor_fb']}")
         if res["editor_discord"]:
             formatted_e.append(f"💬 Discord: {res['editor_discord']}")
-        res["editor_links"] = " | ".join(formatted_e)
+        res["editor_links"] = "\n".join(formatted_e)
 
         # 3. Resolver Maquetador
-        m_name = raw_meta.get("maquetador") or raw_meta.get("layout_by") or (getattr(book_obj, "layout_by", None) if book_obj else None)
+        m_name = (
+            raw_meta.get("maquetador")
+            or raw_meta.get("layout_by")
+            or (getattr(book_obj, "layout_by", None) if book_obj else None)
+        )
         m_gid = getattr(book_obj, "layout_group_id", None) if book_obj else None
-        m_group = await WorkgroupService.get_by_id(m_gid) if m_gid else (await WorkgroupService.get_by_name(m_name) if m_name else None)
+        m_group = (
+            await WorkgroupService.get_by_id(m_gid)
+            if m_gid
+            else (await WorkgroupService.get_by_name(m_name) if m_name else None)
+        )
 
         res["maquetador"] = m_group.name if m_group else (m_name or "")
         res["layout_by"] = res["maquetador"]
@@ -346,7 +408,7 @@ class WorkgroupService:
             formatted_m.append(f"📘 Facebook: {res['maquetador_fb']}")
         if res["maquetador_discord"]:
             formatted_m.append(f"💬 Discord: {res['maquetador_discord']}")
-        res["maquetador_links"] = " | ".join(formatted_m)
+        res["maquetador_links"] = "\n".join(formatted_m)
 
         return res
 

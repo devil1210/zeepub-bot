@@ -113,6 +113,8 @@ from api.handlers.publisher import (
     handle_pub_toggle_favorite,
     handle_pub_update_post,
     handle_pub_update_queue_item,
+    handle_pub_send_template_to_chat,
+    handle_pub_create_draft,
 )
 from api.handlers.recommendations import handle_recommendations
 from api.handlers.search import handle_search, handle_search_volumes
@@ -133,10 +135,24 @@ from api.handlers.users import (
     handle_unlink_telegram,
     handle_user_status,
 )
+from api.handlers.workgroup import (
+    handle_workgroup_delete,
+    handle_workgroup_get_all,
+    handle_workgroup_save,
+    handle_workgroup_get_detail,
+    handle_workgroup_attach_book,
+    handle_workgroup_detach_book,
+)
 
 __all__ = [
     "check_admin",
     "check_staff",
+    "handle_workgroup_get_all",
+    "handle_workgroup_save",
+    "handle_workgroup_delete",
+    "handle_workgroup_get_detail",
+    "handle_workgroup_attach_book",
+    "handle_workgroup_detach_book",
     "handle_search",
     "handle_search_volumes",
     "handle_book_detail",

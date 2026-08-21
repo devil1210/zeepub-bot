@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Send, Calendar, Clock, CheckCircle, Hash, Edit3, RefreshCw, Sparkles, Copy, Check, AlertTriangle, FolderCheck, FolderPlus } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { usePublisher } from '../hooks/usePublisher';
@@ -11,6 +12,7 @@ interface ScheduleModalProps {
     bookHash: string;
     bookTitle: string;
     editingItem?: PublicationQueueItem | null;
+    initialPlatform?: string;
 }
 
 export const ScheduleModal: React.FC<ScheduleModalProps> = ({
@@ -18,7 +20,8 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     onClose,
     bookHash: initialBookHash,
     bookTitle,
-    editingItem
+    editingItem,
+    initialPlatform
 }) => {
     const { settings } = useTheme();
     const { channels, templates, schedulePublication, updateQueueItem } = usePublisher();
@@ -69,7 +72,16 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     useEffect(() => {
         if (isOpen) {
             setBookHash(editingItem?.book_hash || initialBookHash);
-            const defaultChan = editingItem?.channel_id || (channels.find(c => c.is_favorite)?.id || (channels.length > 0 ? channels[0].id : ''));
+            let defaultChan = editingItem?.channel_id;
+            if (!defaultChan) {
+                if (initialPlatform) {
+                    const matchPlat = channels.find(c => c.platform.toLowerCase() === initialPlatform.toLowerCase());
+                    if (matchPlat) defaultChan = matchPlat.id;
+                }
+                if (!defaultChan) {
+                    defaultChan = channels.find(c => c.is_favorite)?.id || (channels.length > 0 ? channels[0].id : '');
+                }
+            }
             setSelectedChannel(defaultChan);
             autoSelectDefaultTemplate(defaultChan, Boolean(editingItem));
             setActionType(editingItem?.status === 'sent' ? 'update_existing' : 'create_new');
@@ -114,6 +126,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
     const [copiedAlbumName, setCopiedAlbumName] = useState(false);
 
     const selectedChanObj = channels.find(c => c.id === Number(selectedChannel));
+    const selectedChannelObj = selectedChanObj;
     const isFacebookChannel = selectedChanObj?.platform === 'facebook';
 
     useEffect(() => {
@@ -280,35 +293,33 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
         }
     };
 
-
-
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 sm:px-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/75 backdrop-blur-md animate-in fade-in duration-300">
             <div
-                className="w-full max-w-lg glass-panel rounded-premium overflow-hidden border border-white/10 shadow-2xl animate-in zoom-in-95 duration-300"
+                className="w-full max-w-lg glass-panel rounded-premium overflow-hidden border border-white/10 shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col"
                 style={{
-                    background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
-                    backdropFilter: `blur(${settings.glassBlur}px)`
+                    background: `rgba(var(--glass-rgb), 0.94)`,
+                    backdropFilter: `blur(${settings.glassBlur + 6}px)`
                 }}
             >
                 {/* Header */}
-                <div className="p-6 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-primary/10 to-transparent">
+                <div className="p-5 border-b border-white/5 flex justify-between items-center bg-gradient-to-r from-primary/10 to-transparent shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-primary/20 rounded-xl text-primary">
+                        <div className="p-2.5 bg-primary/20 rounded-xl text-primary shrink-0">
                             {isSentItem && actionType === 'update_existing' ? <Edit3 className="w-5 h-5" /> : <Send className="w-5 h-5" />}
                         </div>
-                        <div>
-                            <h2 className="text-sm font-black uppercase tracking-widest">
+                        <div className="min-w-0">
+                            <h2 className="text-sm font-black uppercase tracking-widest truncate">
                                 {isSentItem && actionType === 'update_existing'
                                     ? 'Editar Publicación Enviada'
                                     : editingItem
                                         ? 'Editar Programación'
                                         : 'Programar Publicación'}
                             </h2>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase truncate max-w-[200px]">{bookTitle}</p>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase truncate max-w-[280px]">{bookTitle}</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors shrink-0">
                         <X className="w-5 h-5 text-gray-400" />
                     </button>
                 </div>
@@ -321,7 +332,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                         <p className="text-sm font-black uppercase tracking-widest text-green-500 text-center">{successMsg}</p>
                     </div>
                 ) : (
-                    <div className="p-6 flex flex-col gap-5">
+                    <div className="p-5 flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1">
                         {/* Selector de Acción cuando el item ya fue enviado */}
                         {isSentItem && (
                             <div className="flex rounded-xl p-1 bg-black/40 border border-white/10 gap-1">
@@ -347,7 +358,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                                     }`}
                                 >
                                     <Send className="w-3.5 h-3.5" />
-                                    Publicar de Nuevo
+                                    Nueva Publicación
                                 </button>
                             </div>
                         )}
@@ -568,7 +579,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                             </div>
                         )}
 
-                        {/* Opciones de Publicación Programada / Inmediata (Solo cuando no es actualización directa en vivo) */}
+                        {/* Opciones de Publicación Programada / Inmediata */}
                         {(!isSentItem || actionType === 'create_new') && (
                             <>
                                 <div className="flex items-center gap-2 p-3 glass-panel rounded-premium-sm border border-white/5 bg-white/2 cursor-pointer transition-all hover:bg-white/5" onClick={() => setIsImmediate(!isImmediate)}>
@@ -727,10 +738,10 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                                     : (isSentItem && actionType === 'update_existing' ? 'Actualizar Post en Facebook' : isImmediate ? 'Publicar Ahora' : 'Programar Ahora')}
                             </button>
                         </div>
-
                     </div>
                 )}
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

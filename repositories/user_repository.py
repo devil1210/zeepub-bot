@@ -223,6 +223,10 @@ class UserRepository(BaseRepository[User]):
                 return self._to_dict(user)
             return user
 
+    async def get_by_telegram_id(self, telegram_id: int, as_dict: bool = False) -> User | dict[str, Any] | None:
+        """Alias para get_by_id para compatibilidad con handlers."""
+        return await self.get_by_id(telegram_id, as_dict=as_dict)
+
     async def get_by_email(self, email: str) -> User | None:
         """Busca un usuario por su correo electrónico."""
         async with pg_manager.get_session() as session:

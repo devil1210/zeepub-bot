@@ -69,8 +69,7 @@ export const TemplateEditorPage: React.FC = () => {
     const [coverQuality, setCoverQuality] = useState<'original' | 'grande' | 'mediana' | 'pequeña'>('grande');
     const [templateType, setTemplateType] = useState<'general' | 'cover' | 'synopsis' | 'info' | 'unified'>('general');
     const [extraConfig, setExtraConfig] = useState<any>({});
-
-
+    const [isDefault, setIsDefault] = useState(false);
 
     // UI state
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,6 +93,7 @@ export const TemplateEditorPage: React.FC = () => {
                 setName(template.name);
                 setContent(template.content || DEFAULT_TELEGRAM_TEMPLATE);
                 setPlatform(template.platform);
+                setIsDefault(!!template.is_default);
                 const savedQuality = template.extra_config?.cover_quality;
                 const mappedQuality = savedQuality === 'high' ? 'grande' :
                     savedQuality === 'medium' ? 'mediana' :
@@ -189,6 +189,7 @@ export const TemplateEditorPage: React.FC = () => {
                 name,
                 content,
                 platform,
+                is_default: isDefault,
                 extra_config: {
                     ...extraConfig,
                     cover_quality: coverQuality,
@@ -304,6 +305,30 @@ export const TemplateEditorPage: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Switch de Plantilla Predeterminada / Activa */}
+                        <div className="flex items-center justify-between p-4 bg-black/20 rounded-premium-sm border border-white/5">
+                            <div className="flex flex-col gap-0.5">
+                                <span className="text-xs font-black uppercase tracking-wider text-white">Plantilla Activa / Predeterminada</span>
+                                <span className="text-[11px] text-gray-400">Usar automáticamente esta plantilla en publicaciones de {platform} y en la Web App</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsDefault(!isDefault);
+                                    webApp?.HapticFeedback?.impactOccurred('medium');
+                                }}
+                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                    isDefault ? 'bg-primary' : 'bg-white/10 hover:bg-white/20'
+                                }`}
+                            >
+                                <span
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        isDefault ? 'translate-x-5' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
                         </div>
 
                         {platform === 'telegram' && (

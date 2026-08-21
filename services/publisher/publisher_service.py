@@ -16,6 +16,7 @@ from services.publisher.base import PublisherProvider
 from services.publisher.facebook_provider import FacebookPublisherProvider
 from services.publisher.telegram_provider import TelegramPublisherProvider
 from services.publisher.twitter_provider import TwitterPublisherProvider
+from utils.helpers import normalize_demography
 from utils.http_client import fetch_bytes
 from utils.template_engine import apply_publication_template
 
@@ -125,7 +126,7 @@ class PublisherService:
         genres_str = ", ".join(genres_list) if isinstance(genres_list, list) else str(genres_list or "")
 
         demo_list = (getattr(series_info, "demographics_json", None) if series_info else None) or getattr(book, "demographics_json", None) or []
-        demo_str = ", ".join(demo_list) if isinstance(demo_list, list) else str(demo_list or "")
+        demo_str = normalize_demography(demo_list)
 
         dl_link = f"https://dl.zeepubs.com/{book.short_link}" if getattr(book, "short_link", None) else ""
 
@@ -342,6 +343,8 @@ class PublisherService:
 
                         item_payload = item.payload if isinstance(item.payload, dict) else {}
 
+                        scheduled_time_ts = item_payload.get("scheduled_publish_time")
+
                         success = await provider.announce_book(
                             item.channel.target_id,
                             book_data,
@@ -352,6 +355,7 @@ class PublisherService:
                                 "message_thread_id": thread_id,
                                 "page_access_token": channel_token,
                                 "fb_album_id": item_payload.get("fb_album_id"),
+                                "scheduled_publish_time": scheduled_time_ts,
                             },
                         )
                         item.status = "sent" if success else "failed"
@@ -366,6 +370,83 @@ class PublisherService:
                     item.status = "failed"
                     item.error_message = str(e)
                     await self.session.commit()
+
+    async def process_queue_item_direct(self, queue_item_id: int, options_extra: dict[str, Any] | None = None) -> bool:
+        """Procesa directamente un ítem específico de la cola (ej. para scheduled post en Meta)."""
+        item = await self.repo.get_with_details(queue_item_id)
+        if not item or not item.channel:
+            logger.warning(f"process_queue_item_direct: item {queue_item_id} o canal no encontrado")
+            return False
+
+        try:
+            item.status = "publishing"
+            await self.session.commit()
+
+            book_data = {}
+            if item.book_hash:
+                book = await self.book_repo.get_by_hash(item.book_hash)
+                if book:
+                    book_data = self._build_book_data_dict(book)
+                    from services.workgroup_service import workgroup_service
+
+                    credits_meta = await workgroup_service.resolve_book_workgroup_credits(
+                        book_id=book.id,
+                        book_obj=book,
+                        raw_meta=book_data,
+                        public_link=book_data.get("download_link"),
+                    )
+                    book_data.update(credits_meta)
+
+            platform = item.channel.platform.lower()
+            provider = self.providers.get(platform)
+
+            caption = None
+            template_id_to_use = item.template_id
+            cover_quality = "high"
+            if item.template:
+                caption = apply_publication_template(item.template.content, book_data)
+                if item.template.extra_config and "cover_quality" in item.template.extra_config:
+                    saved_q = item.template.extra_config["cover_quality"]
+                    cover_quality = "high" if saved_q == "grande" else "medium" if saved_q == "mediana" else "low" if saved_q == "pequeña" else saved_q
+
+            if provider:
+                thread_id = None
+                channel_token = None
+                if item.channel and item.channel.config:
+                    thread_id = item.channel.config.get("message_thread_id")
+                    channel_token = item.channel.config.get("page_access_token")
+
+                item_payload = item.payload if isinstance(item.payload, dict) else {}
+                call_options = {
+                    "template_id": template_id_to_use,
+                    "caption": caption,
+                    "cover_quality": cover_quality,
+                    "message_thread_id": thread_id,
+                    "page_access_token": channel_token,
+                    "fb_album_id": item_payload.get("fb_album_id"),
+                }
+                if options_extra:
+                    call_options.update(options_extra)
+
+                success = await provider.announce_book(
+                    item.channel.target_id,
+                    book_data,
+                    options=call_options,
+                )
+                item.status = "sent" if success else "failed"
+            else:
+                item.status = "failed"
+                item.error_message = f"Provider {platform} not found"
+
+            item.published_at = datetime.utcnow()
+            await self.session.commit()
+            return item.status == "sent"
+        except Exception as e:
+            logger.error(f"Error procesando item directo {queue_item_id}: {e}")
+            item.status = "failed"
+            item.error_message = str(e)
+            await self.session.commit()
+            return False
 
     async def get_channels_with_discovery(
         self, active_only: bool = True
@@ -510,9 +591,33 @@ class PublisherService:
             if fb_target_post:
                 fb_provider = self.providers.get("facebook")
                 if fb_provider and hasattr(fb_provider, "update_post_message"):
+                    # Extraer page_id del post si existe
+                    target_page_id = None
+                    if "_" in str(fb_target_post):
+                        target_page_id = str(fb_target_post).split("_")[0]
+
+                    # Buscar canal correspondiente en la BD para obtener su token específico
+                    channel_token = None
+                    from models.communications import PublicationChannel
+                    stmt_ch = select(PublicationChannel).where(PublicationChannel.platform == "facebook")
+                    all_fb_chans = (await self.session.execute(stmt_ch)).scalars().all()
+                    if target_page_id:
+                        for ch in all_fb_chans:
+                            if str(ch.target_id) == str(target_page_id) and ch.config:
+                                channel_token = ch.config.get("page_access_token") or ch.config.get("access_token")
+                                break
+                    if not channel_token and all_fb_chans:
+                        for ch in all_fb_chans:
+                            if ch.is_active and ch.config:
+                                channel_token = ch.config.get("page_access_token") or ch.config.get("access_token")
+                                if channel_token:
+                                    break
+
                     fb_ok = await fb_provider.update_post_message(
                         post_id=fb_target_post,
                         new_message=new_caption,
+                        token=channel_token,
+                        target_id=target_page_id,
                     )
                     results["platforms"]["facebook"] = fb_ok
                     if fb_ok:
@@ -526,6 +631,39 @@ class PublisherService:
                 results["platforms"]["facebook"] = False
                 results["facebook_note"] = (
                     "El libro no tiene un post_id de Facebook registrado."
+                )
+
+        # 4. Sincronizar en Telegram
+        if "telegram" in target_platforms:
+            tg_msg_id = getattr(book, "tg_message_id", None)
+            tg_chat_id = getattr(book, "tg_chat_id", None)
+            if tg_msg_id and tg_chat_id:
+                tg_provider = self.providers.get("telegram")
+                if tg_provider and hasattr(tg_provider, "update_post_message"):
+                    # Generar texto de Telegram si la plantilla es distinta
+                    tg_caption = new_caption
+                    if template_id:
+                        tpl = await self.repo.get_template_by_id(template_id)
+                        if tpl and tpl.content:
+                            tg_caption = apply_publication_template(tpl.content, book_data)
+
+                    tg_ok = await tg_provider.update_post_message(
+                        chat_id=tg_chat_id,
+                        message_id=tg_msg_id,
+                        new_message=tg_caption,
+                    )
+                    results["platforms"]["telegram"] = tg_ok
+                    if tg_ok:
+                        results["success"] = True
+                        logger.info(
+                            f"✅ Publicación {tg_msg_id} de Telegram ({tg_chat_id}) actualizada con éxito para libro {book_hash}"
+                        )
+                else:
+                    results["platforms"]["telegram"] = False
+            else:
+                results["platforms"]["telegram"] = False
+                results["telegram_note"] = (
+                    "El libro no tiene un tg_message_id registrado para editar en Telegram."
                 )
 
         return results
@@ -673,6 +811,14 @@ class PublisherServiceWrapper:
             await service.process_queue()
 
     @classmethod
+    async def process_queue_item_direct(cls, queue_item_id: int, options_extra: dict[str, Any] | None = None) -> bool:
+        from core.db_manager_pg import pg_manager
+
+        async with pg_manager.get_session() as session:
+            service = PublisherService(session)
+            return await service.process_queue_item_direct(queue_item_id, options_extra=options_extra)
+
+    @classmethod
     async def update_published_book(
         cls,
         book_hash: str,
@@ -705,6 +851,10 @@ class PublisherServiceWrapper:
                 book_hash=book_hash,
                 channel_id=channel_id,
             )
+
+    @staticmethod
+    def _build_book_data_dict(book: Any) -> dict[str, Any]:
+        return PublisherService._build_book_data_dict(book)
 
 
 # Instancia exportada para compatibilidad con handlers v3.x

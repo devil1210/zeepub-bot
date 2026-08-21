@@ -2,16 +2,14 @@ import re
 from datetime import datetime
 from typing import Any
 
+from utils.metadata_utils import normalize_demography
+
 
 def extract_demography(tags: list) -> str:
     """Extrae la demografía de una lista de tags."""
     if not tags or not isinstance(tags, list):
         return ""
-    demography_map = ["Seinen", "Shounen", "Shoujo", "Josei", "Kodomo"]
-    for tag in tags:
-        if tag in demography_map:
-            return tag
-    return ""
+    return normalize_demography(tags)
 
 
 def generate_slug_from_title(title: str) -> str:
@@ -99,7 +97,9 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
             tags = [t.name if hasattr(t, "name") else str(t) for t in tags]
 
         # Pre-formatear campos numéricos
-        size_mb_val = data.get("size_mb") or data.get("size") or data.get("tamaño") or 0.0
+        size_mb_val = (
+            data.get("size_mb") or data.get("size") or data.get("tamaño") or 0.0
+        )
         if isinstance(size_mb_val, str) and "mb" in size_mb_val.lower():
             size_mb_formatted = size_mb_val.strip()
         else:
@@ -135,7 +135,12 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
             )
             slug = generate_slug_from_title(slug_source)
 
-        published_at_raw = str(data.get("published_at") or data.get("fecha_publicacion") or data.get("fecha_publ") or "")
+        published_at_raw = str(
+            data.get("published_at")
+            or data.get("fecha_publicacion")
+            or data.get("fecha_publ")
+            or ""
+        )
         published_at_formatted = format_published_date(published_at_raw)
 
         # Formatear fecha_modificacion también
@@ -170,26 +175,13 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         except (ValueError, TypeError):
             volume_clean = volume_str
 
-        # Sanitize demography and demographics (can be lists from JSONB)
-        demography_raw = (
+        # Sanitize demography and demographics (can be lists from JSONB, ensure single normalized canonical demography)
+        demography_clean = normalize_demography(
             data.get("demography")
             or data.get("demographics")
             or extract_demography(tags)
         )
-        if isinstance(demography_raw, list):
-            # Limpiar si contiene objetos Demographic u otros modelos de base de datos
-            demography_raw = [d.name if hasattr(d, "name") else str(d) for d in demography_raw]
-            demography_raw = ", ".join(demography_raw)
-
-        demographics_raw = (
-            data.get("demographics")
-            or data.get("demography")
-            or extract_demography(tags)
-        )
-        if isinstance(demographics_raw, list):
-            # Limpiar si contiene objetos Demographic u otros modelos de base de datos
-            demographics_raw = [d.name if hasattr(d, "name") else str(d) for d in demographics_raw]
-            demographics_raw = ", ".join(demographics_raw)
+        demographics_clean = demography_clean
 
         # Sanitize sinopsis - remove HTML tags not supported by Telegram
         sinopsis_raw = data.get("description") or data.get("sinopsis") or ""
@@ -220,8 +212,12 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         # Formatear maquetadores como hashtags individuales (ej: "Zack, Saosora" -> "#Zack #Saosora")
         raw_layout = str(data.get("layout_by") or data.get("maquetador") or "").strip()
         if raw_layout:
-            parts = [p.strip() for p in re.split(r"[,;]+|\s+(?=#)", raw_layout) if p.strip()]
-            formatted_layout = " ".join(p if p.startswith("#") else f"#{p}" for p in parts)
+            parts = [
+                p.strip() for p in re.split(r"[,;]+|\s+(?=#)", raw_layout) if p.strip()
+            ]
+            formatted_layout = " ".join(
+                p if p.startswith("#") else f"#{p}" for p in parts
+            )
         else:
             formatted_layout = ""
 
@@ -264,22 +260,46 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "idioma": data.get("language") or data.get("idioma") or "",
                 "traductor": data.get("traductor") or data.get("translator") or "",
                 "translator": data.get("translator") or data.get("traductor") or "",
-                "traductor_link": data.get("traductor_link") or data.get("grupo_link") or "",
-                "traductor_web": data.get("traductor_web") or data.get("grupo_web") or "",
+                "traductor_link": data.get("traductor_link")
+                or data.get("grupo_link")
+                or "",
+                "traductor_web": data.get("traductor_web")
+                or data.get("grupo_web")
+                or "",
                 "traductor_fb": data.get("traductor_fb") or data.get("grupo_fb") or "",
-                "traductor_discord": data.get("traductor_discord") or data.get("grupo_discord") or "",
-                "traductor_patreon": data.get("traductor_patreon") or data.get("grupo_patreon") or "",
-                "traductor_twitter": data.get("traductor_twitter") or data.get("grupo_twitter") or "",
-                "traductor_links": data.get("traductor_links") or data.get("grupo_links") or "",
+                "traductor_discord": data.get("traductor_discord")
+                or data.get("grupo_discord")
+                or "",
+                "traductor_patreon": data.get("traductor_patreon")
+                or data.get("grupo_patreon")
+                or "",
+                "traductor_twitter": data.get("traductor_twitter")
+                or data.get("grupo_twitter")
+                or "",
+                "traductor_links": data.get("traductor_links")
+                or data.get("grupo_links")
+                or "",
                 "grupo": data.get("grupo") or data.get("grupo_traductor") or "",
-                "grupo_traductor": data.get("grupo_traductor") or data.get("grupo") or "",
-                "grupo_link": data.get("grupo_link") or data.get("traductor_link") or "",
+                "grupo_traductor": data.get("grupo_traductor")
+                or data.get("grupo")
+                or "",
+                "grupo_link": data.get("grupo_link")
+                or data.get("traductor_link")
+                or "",
                 "grupo_web": data.get("grupo_web") or data.get("traductor_web") or "",
                 "grupo_fb": data.get("grupo_fb") or data.get("traductor_fb") or "",
-                "grupo_discord": data.get("grupo_discord") or data.get("traductor_discord") or "",
-                "grupo_patreon": data.get("grupo_patreon") or data.get("traductor_patreon") or "",
-                "grupo_twitter": data.get("grupo_twitter") or data.get("traductor_twitter") or "",
-                "grupo_links": data.get("grupo_links") or data.get("traductor_links") or "",
+                "grupo_discord": data.get("grupo_discord")
+                or data.get("traductor_discord")
+                or "",
+                "grupo_patreon": data.get("grupo_patreon")
+                or data.get("traductor_patreon")
+                or "",
+                "grupo_twitter": data.get("grupo_twitter")
+                or data.get("traductor_twitter")
+                or "",
+                "grupo_links": data.get("grupo_links")
+                or data.get("traductor_links")
+                or "",
                 "editor": data.get("editor") or data.get("corrector") or "",
                 "editor_link": data.get("editor_link") or "",
                 "editor_web": data.get("editor_web") or "",
@@ -290,13 +310,27 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "editor_links": data.get("editor_links") or "",
                 "maquetador": formatted_layout,
                 "layout_by": formatted_layout,
-                "maquetador_link": data.get("maquetador_link") or data.get("layout_link") or "",
-                "maquetador_web": data.get("maquetador_web") or data.get("layout_web") or "",
-                "maquetador_fb": data.get("maquetador_fb") or data.get("layout_fb") or "",
-                "maquetador_discord": data.get("maquetador_discord") or data.get("layout_discord") or "",
-                "maquetador_patreon": data.get("maquetador_patreon") or data.get("layout_patreon") or "",
-                "maquetador_twitter": data.get("maquetador_twitter") or data.get("layout_twitter") or "",
-                "maquetador_links": data.get("maquetador_links") or data.get("layout_links") or "",
+                "maquetador_link": data.get("maquetador_link")
+                or data.get("layout_link")
+                or "",
+                "maquetador_web": data.get("maquetador_web")
+                or data.get("layout_web")
+                or "",
+                "maquetador_fb": data.get("maquetador_fb")
+                or data.get("layout_fb")
+                or "",
+                "maquetador_discord": data.get("maquetador_discord")
+                or data.get("layout_discord")
+                or "",
+                "maquetador_patreon": data.get("maquetador_patreon")
+                or data.get("layout_patreon")
+                or "",
+                "maquetador_twitter": data.get("maquetador_twitter")
+                or data.get("layout_twitter")
+                or "",
+                "maquetador_links": data.get("maquetador_links")
+                or data.get("layout_links")
+                or "",
                 "tipo": data.get("book_type") or data.get("categoria") or "",
                 "tamaño": size_mb_formatted,
                 "size_mb": size_mb_formatted,
@@ -307,8 +341,8 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "version": data.get("epub_version") or "",
                 "tags": ", ".join(tags) if tags else "",
                 "genres": ", ".join(tags) if tags else "",
-                "demography": demography_raw,
-                "demographics": demographics_raw,
+                "demography": demography_clean,
+                "demographics": demographics_clean,
                 "published_at": published_at_formatted,
                 "fecha_publicacion": published_at_formatted,
                 "fecha_publ": published_at_formatted,
@@ -320,10 +354,30 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "is_uncensored": "Sí" if data.get("is_uncensored") else "No",
                 "isbn": data.get("isbn") or "",
                 "asin": data.get("asin") or "",
-                "palabras": str(data.get("palabras") or data.get("words") or data.get("word_count") or ""),
-                "words": str(data.get("words") or data.get("palabras") or data.get("word_count") or ""),
-                "paginas": str(data.get("paginas") or data.get("pages") or data.get("page_count") or ""),
-                "pages": str(data.get("pages") or data.get("paginas") or data.get("page_count") or ""),
+                "palabras": str(
+                    data.get("palabras")
+                    or data.get("words")
+                    or data.get("word_count")
+                    or ""
+                ),
+                "words": str(
+                    data.get("words")
+                    or data.get("palabras")
+                    or data.get("word_count")
+                    or ""
+                ),
+                "paginas": str(
+                    data.get("paginas")
+                    or data.get("pages")
+                    or data.get("page_count")
+                    or ""
+                ),
+                "pages": str(
+                    data.get("pages")
+                    or data.get("paginas")
+                    or data.get("page_count")
+                    or ""
+                ),
                 "archivo": "__ATTACH_FILE_SIGNAL__",  # Marcador para que el Publisher sepa que debe adjuntar el archivo
                 "nombre_archivo": (lambda f: f[: f.rfind(".")] if "." in f else f)(
                     data.get("filename") or "archivo.epub"
@@ -411,6 +465,9 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
 
     except Exception as e:
         import logging
-        logging.getLogger(__name__).exception(f"Error aplicando plantilla de publicación: {e}")
+
+        logging.getLogger(__name__).exception(
+            f"Error aplicando plantilla de publicación: {e}"
+        )
         # Fallback silencioso al string original
         return template_str

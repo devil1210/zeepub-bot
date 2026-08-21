@@ -130,7 +130,7 @@ class InlineQueryHandlerV6:
                         id=f"series_{s_id[:20]}_{str(uuid.uuid4())[:8]}",
                         title=f"📚 Serie: {title}",
                         description=f"Por {author} | {genres_str}",
-                        thumb_url=cover,
+                        thumbnail_url=cover,
                         input_message_content=InputTextMessageContent(
                             message_text=message_text,
                             parse_mode="HTML",
@@ -180,7 +180,7 @@ class InlineQueryHandlerV6:
                         id=f"book_{b_id[:20]}_{str(uuid.uuid4())[:8]}",
                         title=f"📖 {title} ({vol_str})",
                         description=f"Traducción: {group} | Enlace de descarga directa",
-                        thumb_url=cover,
+                        thumbnail_url=cover,
                         input_message_content=InputTextMessageContent(
                             message_text=message_text,
                             parse_mode="HTML",

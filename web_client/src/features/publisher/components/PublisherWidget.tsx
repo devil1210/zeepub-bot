@@ -58,8 +58,8 @@ export const PublisherWidget: React.FC<PublisherWidgetProps> = ({ onNavigate }) 
         const timer = setTimeout(async () => {
             setIsSearching(true);
             try {
-                const res = await api.rpc('search_books', { query: searchQuery, limit: 6 });
-                const books = res?.books || res || [];
+                const res: any = await api.rpc('search_books', { query: searchQuery, limit: 6 });
+                const books = res?.results || res?.items || res?.books || (Array.isArray(res) ? res : []);
                 setSearchResults(Array.isArray(books) ? books.slice(0, 6) : []);
             } catch (err) {
                 console.error("Error searching books for publisher", err);
@@ -104,27 +104,27 @@ export const PublisherWidget: React.FC<PublisherWidgetProps> = ({ onNavigate }) 
     const pendingQueue = queue.filter(q => q.status === 'pending' || q.status === 'processing');
 
     return (
-        <div className="glass-panel rounded-[3rem] p-8 relative overflow-hidden group hover:scale-[1.005] transition-all duration-700 shadow-premium border-white/10">
+        <div className="glass-panel rounded-premium p-6 relative overflow-hidden group hover:scale-[1.005] transition-all duration-500 shadow-premium border-white/10">
             {/* Background Glow */}
             <div
-                className="absolute -top-24 -right-24 w-72 h-72 bg-gradient-to-br from-purple-600/20 to-blue-500/20 rounded-full blur-[100px] pointer-events-none group-hover:opacity-100 transition-opacity duration-700"
+                className="absolute -top-24 -right-24 w-72 h-72 bg-gradient-to-br from-purple-600/20 to-blue-500/20 rounded-full blur-[100px] pointer-events-none group-hover:opacity-100 transition-opacity duration-500"
                 style={{ opacity: settings.cardGlowIntensity || 0.6 }}
             ></div>
 
             {/* Header */}
-            <div className="flex items-center justify-between gap-4 mb-6 relative z-10">
-                <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-lg shadow-purple-500/10">
-                        <Send className="w-6 h-6" />
+            <div className="flex items-center justify-between gap-3 mb-5 relative z-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-500/20 to-blue-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-lg shadow-purple-500/10">
+                        <Send className="w-5 h-5" />
                     </div>
                     <div>
-                        <h3 className="text-white font-black text-xl tracking-tight leading-tight flex items-center gap-2">
+                        <h3 className="text-white font-black text-base tracking-tight leading-tight flex items-center gap-2">
                             Publicador
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold uppercase tracking-wider border border-purple-500/20">
+                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold uppercase tracking-wider border border-purple-500/20">
                                 Express
                             </span>
                         </h3>
-                        <p className="text-xs text-gray-400 font-medium">
+                        <p className="text-[11px] text-gray-400 font-medium">
                             {channels.length} {channels.length === 1 ? 'canal conectado' : 'canales conectados'}
                         </p>
                     </div>
@@ -133,9 +133,9 @@ export const PublisherWidget: React.FC<PublisherWidgetProps> = ({ onNavigate }) 
                 <button
                     onClick={() => refresh()}
                     title="Actualizar Cola"
-                    className={`p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all duration-300 border border-white/5 ${loading ? 'animate-spin text-primary' : ''}`}
+                    className={`p-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all duration-300 border border-white/5 ${loading ? 'animate-spin text-primary' : ''}`}
                 >
-                    <RefreshCw className="w-4 h-4" />
+                    <RefreshCw className="w-3.5 h-3.5" />
                 </button>
             </div>
 

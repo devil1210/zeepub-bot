@@ -359,16 +359,20 @@ class FacebookPublisherProvider(PublisherProvider):
         import httpx
 
         url_upload = f"https://graph.facebook.com/v19.0/{album_id}/photos"
-        params_upload = {"access_token": token}
+        params_upload = {
+            "access_token": token,
+            "no_story": "false",  # Forzar a que Facebook genere la historia en el Muro / Feed principal
+        }
 
         try:
             async with httpx.AsyncClient() as client:
-                resp = None
+                upload_data = {"message": caption} if caption else {}
                 if isinstance(resolved_cover, bytes):
                     files = {"source": ("cover.jpg", resolved_cover, "image/jpeg")}
                     resp = await client.post(
                         url_upload,
                         params=params_upload,
+                        data=upload_data,
                         files=files,
                         timeout=45,
                     )
@@ -378,15 +382,16 @@ class FacebookPublisherProvider(PublisherProvider):
                         resp = await client.post(
                             url_upload,
                             params=params_upload,
+                            data=upload_data,
                             files=files,
                             timeout=45,
                         )
                 elif cover_source and str(cover_source).startswith("http"):
-                    # Para URLs remotas: enviar directamente con message (no hay archivo)
+                    upload_data["url"] = str(cover_source)
                     resp = await client.post(
                         url_upload,
                         params=params_upload,
-                        data={"url": str(cover_source), "message": caption},
+                        data=upload_data,
                         timeout=45,
                     )
 
@@ -395,8 +400,7 @@ class FacebookPublisherProvider(PublisherProvider):
                     photo_id = data.get("id")
                     post_id = data.get("post_id") or photo_id
 
-                    # Paso 2: Aplicar caption correctamente en POST /{post_id} con "message" (form-urlencoded)
-                    # Esto garantiza 100% preservación de emojis UTF-8 en Facebook Graph API
+                    # Asegurar/Actualizar caption en POST /{post_id} si es necesario
                     if caption and post_id:
                         try:
                             caption_resp = await client.post(
@@ -405,16 +409,12 @@ class FacebookPublisherProvider(PublisherProvider):
                                 data={"message": caption},
                                 timeout=30,
                             )
-                            if caption_resp.status_code not in (200, 201):
-                                logger.warning(
-                                    f"No se pudo aplicar caption al post {post_id}: {caption_resp.text}"
-                                )
-                            else:
+                            if caption_resp.status_code in (200, 201):
                                 logger.info(
-                                    f"✅ Caption con emojis aplicado con éxito al post {post_id} en Facebook."
+                                    f"✅ Caption con emojis verificado/aplicado al post {post_id} en Facebook."
                                 )
                         except Exception as ce:
-                            logger.warning(f"Error aplicando caption: {ce}")
+                            logger.debug(f"Aviso aplicando caption posterior: {ce}")
 
                     return {"photo_id": photo_id, "post_id": post_id}
                 elif resp:
@@ -442,9 +442,42 @@ class FacebookPublisherProvider(PublisherProvider):
 
         import httpx
         from config.config_settings import config
+        from core.db_manager_pg import pg_manager
+        from models.communications import PublicationChannel
+        from sqlalchemy import select
 
-        base_token = token or config.get_facebook_token(target_id)
-        _, page_token = await self._resolve_credentials(target_id, base_token)
+        page_token = token
+        resolved_target = str(target_id) if target_id else None
+
+        # Si el post_id tiene el formato {page_id}_{post_id}, extraer el page_id
+        if "_" in str(post_id) and not resolved_target:
+            resolved_target = str(post_id).split("_")[0]
+
+        # 1. Si no se pasó un token explícito, buscar el canal correspondiente en la BD
+        if not page_token:
+            try:
+                async with pg_manager.get_session() as session:
+                    stmt = select(PublicationChannel).where(PublicationChannel.platform == "facebook")
+                    chans = (await session.execute(stmt)).scalars().all()
+                    # Buscar coincidencia exacta por target_id
+                    if resolved_target:
+                        for ch in chans:
+                            if str(ch.target_id) == resolved_target and ch.config:
+                                page_token = ch.config.get("page_access_token") or ch.config.get("access_token")
+                                break
+                    # Si no se encontró o no había target, tomar el primer canal activo de facebook
+                    if not page_token and chans:
+                        for ch in chans:
+                            if ch.is_active and ch.config:
+                                page_token = ch.config.get("page_access_token") or ch.config.get("access_token")
+                                if page_token:
+                                    break
+            except Exception as e:
+                logger.debug(f"Error consultando canal de Facebook para update_post_message: {e}")
+
+        # Fallback a config global si no se encontró en BD
+        if not page_token:
+            page_token = config.get_facebook_token(resolved_target)
 
         try:
             async with httpx.AsyncClient() as client:
@@ -559,118 +592,79 @@ class FacebookPublisherProvider(PublisherProvider):
         series_name = series_spanish or series_orig or title
         series_id = book_data.get("series_id") or book_data.get("series_hash")
 
-        chosen_album_id = options.get("fb_album_id") or options.get("album_id")
+        # 1. Determinar si se publica en un Álbum o en el Muro Principal
+        chosen_album = options.get("fb_album_id")
+        target_upload_id = str(target_group_id)
 
-        # 1. Caso A: Si se seleccionó expresamente "none" o "wall", no usar ningún álbum
-        if chosen_album_id in ("none", "wall", "feed"):
-            logger.info(
-                "Publicación en Facebook configurada expresamente para Muro principal (sin álbum)."
-            )
-        # 2. Caso B: Si se seleccionó un álbum específico de la lista
-        elif chosen_album_id and chosen_album_id != "auto":
-            logger.info(
-                f"Subiendo foto a álbum de Facebook seleccionado: {chosen_album_id}"
-            )
-            upload_res = await self.publish_photo_to_album(
-                str(chosen_album_id), resolved_cover, cover_source, fb_caption, token
-            )
-            if upload_res:
-                photo_id = upload_res.get("photo_id")
-                post_id = upload_res.get("post_id") or photo_id
-                await self._persist_book_fb_ids(book_hash, post_id, photo_id)
-                if series_id:
-                    await self._persist_series_album_id(
-                        series_id, str(chosen_album_id)
-                    )
-                logger.info(
-                    f"✅ Publicado exitosamente en Álbum seleccionado {chosen_album_id} de Facebook (Post: {post_id})"
-                )
-                return True
-            else:
-                logger.warning(
-                    f"Fallo al publicar en álbum seleccionado {chosen_album_id}, recurriendo a feed principal..."
-                )
-        # 3. Caso C: Detección automática habitual por nombre de serie
-        elif series_name:
+        if chosen_album and str(chosen_album).lower() not in ("wall", "muro", "none", ""):
+            target_upload_id = str(chosen_album)
+            logger.info(f"📁 Publicando foto en Álbum específico de Facebook: {target_upload_id}")
+        elif chosen_album is None:
+            # Búsqueda automática de álbum si no se forzó "wall"
             album_id = await self.get_or_create_series_album(
-                target_group_id, token, series_name, series_id, alt_names=alt_names
+                target_page_id=target_group_id,
+                token=token,
+                series_name=series_name,
+                series_id=series_id,
+                alt_names=alt_names,
             )
             if album_id:
-                upload_res = await self.publish_photo_to_album(
-                    album_id, resolved_cover, cover_source, fb_caption, token
-                )
-                if upload_res:
-                    photo_id = upload_res.get("photo_id")
-                    post_id = upload_res.get("post_id") or photo_id
-                    await self._persist_book_fb_ids(book_hash, post_id, photo_id)
-                    logger.info(
-                        f"✅ Publicado exitosamente en Álbum '{series_name}' de Facebook (Post: {post_id})"
-                    )
-                    return True
-                else:
-                    logger.warning(
-                        f"Fallo al publicar en álbum '{series_name}', recurriendo a feed principal..."
-                    )
+                target_upload_id = str(album_id)
+                logger.info(f"📁 Publicando foto en Álbum automático de Facebook: {target_upload_id}")
+            else:
+                logger.info(f"🌐 Álbum no encontrado, publicando en Muro Principal de Facebook: {target_group_id}")
+        else:
+            logger.info(f"🌐 Publicando directamente en el Muro Principal de Facebook: {target_group_id}")
 
-        # 2. Fallback al muro / feed principal
         import httpx
 
-        url_upload = f"https://graph.facebook.com/v19.0/{target_group_id}/photos"
+        # 2. Publicación de Foto
+        url_upload = f"https://graph.facebook.com/v19.0/{target_upload_id}/photos"
         params_upload = {
             "access_token": token,
-            "published": "false",
         }
+        data_upload = {
+            "caption": fb_caption,
+            "published": "true",
+        }
+
+        if options.get("scheduled_publish_time"):
+            data_upload["published"] = "false"
+            data_upload["scheduled_publish_time"] = options.get("scheduled_publish_time")
 
         try:
             async with httpx.AsyncClient() as client:
-                photo_id = None
+                resp = None
                 if isinstance(resolved_cover, bytes):
                     files = {"source": ("cover.jpg", resolved_cover, "image/jpeg")}
-                    resp_up = await client.post(
-                        url_upload, params=params_upload, files=files, timeout=45
+                    resp = await client.post(
+                        url_upload, params=params_upload, data=data_upload, files=files, timeout=45
                     )
-                    if resp_up.status_code in (200, 201):
-                        photo_id = resp_up.json().get("id")
                 elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
                     with open(resolved_cover, "rb") as f:
                         files = {"source": ("cover.jpg", f.read(), "image/jpeg")}
-                        resp_up = await client.post(
-                            url_upload, params=params_upload, files=files, timeout=45
+                        resp = await client.post(
+                            url_upload, params=params_upload, data=data_upload, files=files, timeout=45
                         )
-                        if resp_up.status_code in (200, 201):
-                            photo_id = resp_up.json().get("id")
                 elif cover_source and str(cover_source).startswith("http"):
-                    params_upload["url"] = str(cover_source)
-                    resp_up = await client.post(
-                        url_upload, params=params_upload, timeout=45
+                    data_upload["url"] = str(cover_source)
+                    resp = await client.post(
+                        url_upload, params=params_upload, data=data_upload, timeout=45
                     )
-                    if resp_up.status_code in (200, 201):
-                        photo_id = resp_up.json().get("id")
 
-                url_feed = f"https://graph.facebook.com/v19.0/{target_group_id}/feed"
-                payload_feed: dict[str, Any] = {"message": fb_caption}
-                if photo_id:
-                    payload_feed["attached_media"] = [{"media_fbid": str(photo_id)}]
-
-                resp_feed = await client.post(
-                    url_feed,
-                    params={"access_token": token},
-                    json=payload_feed,
-                    timeout=45,
-                )
-
-                if resp_feed.status_code not in (200, 201):
-                    logger.error(f"FB Feed Error: {resp_feed.text}")
+                if not resp or resp.status_code not in (200, 201):
+                    err_msg = resp.text if resp else "No response"
+                    logger.error(f"FB Photo Post Error ({target_upload_id}): {err_msg}")
                     return False
 
-                feed_data = resp_feed.json()
-                post_id = feed_data.get("id")
+                res_data = resp.json()
+                photo_id = res_data.get("id")
+                post_id = res_data.get("post_id") or photo_id
                 await self._persist_book_fb_ids(book_hash, post_id, photo_id)
-
-            logger.info(
-                f"✅ Publicado exitosamente en el Muro de Facebook (Página {target_group_id}, Post {post_id})"
-            )
-            return True
+                logger.info(
+                    f"✅ Exitosamente publicado en Facebook (Target {target_upload_id}, Post {post_id}, Foto {photo_id})"
+                )
+                return True
         except Exception as e:
             logger.error(f"Excepción al publicar en Facebook: {e}")
             return False

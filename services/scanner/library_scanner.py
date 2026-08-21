@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from typing import Any
 
 from sqlalchemy import func, select, update, text
@@ -34,41 +35,43 @@ class LibraryScanner:
         # 1. Eliminar relaciones de muchos a muchos (genres y demographics)
         await session.execute(
             text("DELETE FROM book_genres WHERE book_id = :book_id"),
-            {"book_id": book_hash}
+            {"book_id": book_hash},
         )
         await session.execute(
             text("DELETE FROM book_demographics WHERE book_id = :book_id"),
-            {"book_id": book_hash}
+            {"book_id": book_hash},
         )
 
         # 2. Eliminar de la cola de publicación (campo book_hash no nulo con FK)
         await session.execute(
             text("DELETE FROM publication_queue WHERE book_hash = :book_id"),
-            {"book_id": book_hash}
+            {"book_id": book_hash},
         )
 
         # 3. Eliminar assets multimedia específicos del libro
         await session.execute(
             text("DELETE FROM media_assets WHERE book_id = :book_id"),
-            {"book_id": book_hash}
+            {"book_id": book_hash},
         )
 
         # 4. Eliminar calificaciones (campo book_id no nulo con FK)
         await session.execute(
             text("DELETE FROM user_ratings WHERE book_id = :book_id"),
-            {"book_id": book_hash}
+            {"book_id": book_hash},
         )
 
         # 5. Desvincular historial de descargas del usuario (nullable)
         await session.execute(
-            text("UPDATE user_downloads SET book_id = NULL, book_hash = NULL WHERE book_id = :book_id OR book_hash = :book_id"),
-            {"book_id": book_hash}
+            text(
+                "UPDATE user_downloads SET book_id = NULL, book_hash = NULL WHERE book_id = :book_id OR book_hash = :book_id"
+            ),
+            {"book_id": book_hash},
         )
 
         # 6. Desvincular historial global de descargas (nullable)
         await session.execute(
             text("UPDATE download_history SET book_id = NULL WHERE book_id = :book_id"),
-            {"book_id": book_hash}
+            {"book_id": book_hash},
         )
 
     @staticmethod
@@ -80,41 +83,45 @@ class LibraryScanner:
         # 1. Eliminar relaciones de muchos a muchos de la serie
         await session.execute(
             text("DELETE FROM series_genres WHERE series_id = :series_id"),
-            {"series_id": series_hash}
+            {"series_id": series_hash},
         )
         await session.execute(
             text("DELETE FROM series_demographics WHERE series_id = :series_id"),
-            {"series_id": series_hash}
+            {"series_id": series_hash},
         )
 
         # 2. Eliminar feedback de aprendizaje de IA
         await session.execute(
             text("DELETE FROM ai_learning_feedback WHERE series_hash = :series_id"),
-            {"series_id": series_hash}
+            {"series_id": series_hash},
         )
 
         # 3. Eliminar propuestas de metadatos
         await session.execute(
             text("DELETE FROM metadata_proposals WHERE series_hash = :series_id"),
-            {"series_id": series_hash}
+            {"series_id": series_hash},
         )
 
         # 4. Eliminar assets multimedia de la serie
         await session.execute(
             text("DELETE FROM media_assets WHERE series_id = :series_id"),
-            {"series_id": series_hash}
+            {"series_id": series_hash},
         )
 
         # 5. Desvincular de descargas de usuarios
         await session.execute(
-            text("UPDATE user_downloads SET series_id = NULL, series_hash = NULL WHERE series_id = :series_id OR series_hash = :series_id"),
-            {"series_id": series_hash}
+            text(
+                "UPDATE user_downloads SET series_id = NULL, series_hash = NULL WHERE series_id = :series_id OR series_hash = :series_id"
+            ),
+            {"series_id": series_hash},
         )
 
         # 6. Desvincular de historial de descargas
         await session.execute(
-            text("UPDATE download_history SET series_id = NULL, series_hash = NULL WHERE series_id = :series_id OR series_hash = :series_id"),
-            {"series_id": series_hash}
+            text(
+                "UPDATE download_history SET series_id = NULL, series_hash = NULL WHERE series_id = :series_id OR series_hash = :series_id"
+            ),
+            {"series_id": series_hash},
         )
 
     @staticmethod
@@ -122,10 +129,9 @@ class LibraryScanner:
         """
         Extrae traductor y asegura que exista en la tabla translators_groups.
         """
-        import re
-
-        translator = book.translator
-        if not translator or translator == "Unknown":
+        # Priorizar publisher/editorial como nombre de grupo si existe, si no usar translator
+        group_name = (book.publisher or "").strip() or (book.translator or "").strip()
+        if not group_name or group_name.lower() in ["unknown", "desconocido", "none"]:
             return
 
         siglas = None
@@ -137,24 +143,30 @@ class LibraryScanner:
                     siglas = last_tag
 
         try:
-            stmt = select(TranslatorsGroup).where(func.lower(TranslatorsGroup.name) == translator.lower())
+            stmt = select(TranslatorsGroup).where(
+                func.lower(TranslatorsGroup.name) == group_name.lower()
+            )
             result = await session.execute(stmt)
             existing = result.scalar_one_or_none()
 
             if existing:
-                if siglas and (not existing.siglas or len(siglas) < len(existing.siglas or "")):
+                if siglas and (
+                    not existing.siglas or len(siglas) < len(existing.siglas or "")
+                ):
                     existing.siglas = siglas
+                book.translator_group_id = existing.id
             else:
-                new_group = TranslatorsGroup(name=translator, siglas=siglas)
+                new_group = TranslatorsGroup(name=group_name, siglas=siglas)
                 session.add(new_group)
-
-            # Flush to get ID if needed, but usually we commit in batches elsewhere
-            await session.flush()
+                await session.flush()
+                book.translator_group_id = new_group.id
         except Exception as e:
             logger.warning(f"Error sincronizando grupo traductor: {e}")
 
     @staticmethod
-    async def prune_source(session: Any, source: LibrarySource, found_files: set[str]) -> tuple[int, int]:
+    async def prune_source(
+        session: Any, source: LibrarySource, found_files: set[str]
+    ) -> tuple[int, int]:
         """
         Archiva libros que están en la DB pero ya no existen físicamente en la fuente.
         """
@@ -163,7 +175,9 @@ class LibraryScanner:
 
         try:
             stmt = (
-                select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.source_id == source.id)
+                select(LocalBook)
+                .options(selectinload(LocalBook.series_info))
+                .where(LocalBook.source_id == source.id)
             )
             result = await session.execute(stmt)
             db_books = result.scalars().all()
@@ -174,7 +188,9 @@ class LibraryScanner:
             if not missing_paths:
                 return 0, 0
 
-            logger.info(f"Detectados {len(missing_paths)} libros eliminados en {source.name}. Archivando...")
+            logger.info(
+                f"Detectados {len(missing_paths)} libros eliminados en {source.name}. Archivando..."
+            )
 
             from models.download_models import DownloadHistory
             from models.library import UserDownload, UserRating
@@ -189,7 +205,9 @@ class LibraryScanner:
                         filename=b.filename,
                         last_filepath=b.filepath,
                         author=b.series_info.author if b.series_info else "Unknown",
-                        book_type=b.series_info.book_type if b.series_info else "Light Novel",
+                        book_type=b.series_info.book_type
+                        if b.series_info
+                        else "Light Novel",
                     )
                     session.add(archived)
                     archived_count += 1
@@ -208,7 +226,9 @@ class LibraryScanner:
             return 0, 0
 
     @staticmethod
-    async def resolve_orphans(session: Any, scanned_source_ids: list) -> tuple[int, int]:
+    async def resolve_orphans(
+        session: Any, scanned_source_ids: list
+    ) -> tuple[int, int]:
         """
         Detecta libros que pertenecen a fuentes no escaneadas o inexistentes.
         """
@@ -226,7 +246,9 @@ class LibraryScanner:
 
         count_moved = 0
         for orphan in orphans:
-            dup_stmt = select(DuplicateBook).where(DuplicateBook.duplicate_filepath == orphan.filepath)
+            dup_stmt = select(DuplicateBook).where(
+                DuplicateBook.duplicate_filepath == orphan.filepath
+            )
             dup_result = await session.execute(dup_stmt)
             exists = dup_result.scalar_one_or_none()
 
@@ -291,14 +313,20 @@ class LibraryScanner:
 
         # Limpieza de series vacías
         # Subquery for exists
-        lb_exists = select(LocalBook).where(LocalBook.series_hash == SeriesMetadata.series_hash).exists()
+        lb_exists = (
+            select(LocalBook)
+            .where(LocalBook.series_hash == SeriesMetadata.series_hash)
+            .exists()
+        )
         empty_series_stmt = select(SeriesMetadata).where(~lb_exists)
         empty_series_result = await session.execute(empty_series_stmt)
         empty_series = empty_series_result.scalars().all()
 
         for s in empty_series:
             # Verificar si ya existe en archived_series para evitar duplicate key
-            arch_stmt = select(ArchivedSeries).where(ArchivedSeries.series_hash == s.series_hash)
+            arch_stmt = select(ArchivedSeries).where(
+                ArchivedSeries.series_hash == s.series_hash
+            )
             arch_result = await session.execute(arch_stmt)
             existing = arch_result.scalar_one_or_none()
 

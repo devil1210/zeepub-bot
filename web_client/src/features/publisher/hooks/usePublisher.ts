@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { publisherApi, PublicationQueueItem, PublicationChannel, PublicationTemplate, DiscoveredChat } from '../services/publisherApi';
+import { workgroupsApi, TranslatorsGroupItem, GroupContactLinks } from '../services/workgroupsApi';
 
 export const usePublisher = () => {
     const [queue, setQueue] = useState<PublicationQueueItem[]>([]);
     const [channels, setChannels] = useState<PublicationChannel[]>([]);
     const [discoveredChats, setDiscoveredChats] = useState<DiscoveredChat[]>([]);
     const [templates, setTemplates] = useState<PublicationTemplate[]>([]);
+    const [workgroups, setWorkgroups] = useState<TranslatorsGroupItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -14,13 +16,14 @@ export const usePublisher = () => {
         setError(null);
         try {
             console.log("Fetching publisher data...");
-            const [qRes, cRes, tRes] = await Promise.all([
+            const [qRes, cRes, tRes, wRes] = await Promise.all([
                 publisherApi.getQueue(),
                 publisherApi.getChannels(),
-                publisherApi.getTemplates()
+                publisherApi.getTemplates(),
+                workgroupsApi.getAll().catch(() => [])
             ]);
 
-            console.log("Publisher data received:", { qRes, cRes, tRes });
+            console.log("Publisher data received:", { qRes, cRes, tRes, wRes });
 
             setQueue(qRes.items || []);
 
@@ -29,6 +32,7 @@ export const usePublisher = () => {
             setDiscoveredChats(cRes.discovered || []);
 
             setTemplates(tRes.templates || []);
+            setWorkgroups(wRes || []);
         } catch (err: any) {
             console.error("Error fetching publisher data:", err);
             setError(err.message || 'Error fetching publisher data');
@@ -91,11 +95,30 @@ export const usePublisher = () => {
         return res;
     };
 
+    const saveWorkgroup = async (group: {
+        id?: number;
+        name: string;
+        siglas?: string;
+        description?: string;
+        links: GroupContactLinks;
+    }) => {
+        const res = await workgroupsApi.save(group);
+        if (res.success) await fetchData();
+        return res;
+    };
+
+    const deleteWorkgroup = async (id: number) => {
+        const res = await workgroupsApi.delete(id);
+        if (res.success) await fetchData();
+        return res;
+    };
+
     return {
         queue,
         channels,
         discoveredChats,
         templates,
+        workgroups,
         loading,
         error,
         refresh: fetchData,
@@ -113,6 +136,8 @@ export const usePublisher = () => {
         promoteDiscovered,
         saveTemplate,
         deleteTemplate,
+        saveWorkgroup,
+        deleteWorkgroup,
         restoreTemplates: async (platform: string = 'telegram') => {
             if (!window.confirm('¿Estás seguro de restaurar todas las plantillas por defecto? Se perderán los cambios personalizados.')) return;
             const res = await publisherApi.restoreTemplates(platform);

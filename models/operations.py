@@ -7,17 +7,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 from models.base import Base
 
 
-class LibrarySource(Base):
-    __tablename__ = "library_sources"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(100))
-    path: Mapped[str] = mapped_column(String(500), unique=True)
-    last_scanned: Mapped[datetime | None] = mapped_column()
-
-
 class DownloadHistory(Base):
     __tablename__ = "download_history"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"), index=True)

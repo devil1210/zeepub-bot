@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from typing import Any
 
-from utils.helpers import limpiar_html_basico
+from utils.helpers import is_demographic_tag, limpiar_html_basico, normalize_demography
 
 
 def extract_internal_title(data_or_path: bytes | str) -> str | None:
@@ -317,12 +317,17 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
             for el in root.iter()
             if local_name(el).lower() in ("subject", "dc:subject") and el.text
         ]
-        dem_keys = {"seinen", "shounen", "shônen", "shoujo", "josei", "juvenil"}
         for s in subjects:
-            if any(k in s.lower() for k in dem_keys):
-                out["demografia"].append(s)
+            if is_demographic_tag(s):
+                demo_canon = normalize_demography(s)
+                if demo_canon and demo_canon not in out["demografia"]:
+                    out["demografia"].append(demo_canon)
             else:
                 out["generos"].append(s)
+
+        # Garantizar a lo sumo una única demografía canónica
+        if out["demografia"]:
+            out["demografia"] = [normalize_demography(out["demografia"])]
 
         # Edition characteristics (Options 1 & 3)
         all_subjects = " ".join(subjects).lower()

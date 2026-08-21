@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from models.library import ArchivedSeries, Demographic, Genre, LocalBook, MetadataProposal, SeriesMetadata
 from services.ai_service import AIService
 from services.scanner.scanner_helpers import ScannerHelpers
-from utils.helpers import generar_slug_from_meta
+from utils.helpers import generar_slug_from_meta, normalize_demographics_list
 from utils.logger import logger
 
 
@@ -63,7 +63,7 @@ class SeriesScanner:
                 illustrator_jap=identity.get("illustrator_jap"),
                 description=identity.get("description"),
                 tags_json=identity.get("tags") or [],
-                demographics_json=identity.get("demographics") or [],
+                demographics_json=normalize_demographics_list(identity.get("demographics") or []),
                 book_type=identity.get("book_type") or "Light Novel",
                 publisher=identity.get("publisher") or book.publisher,
                 cover_url=book.cover_low or book.cover_medium,
@@ -78,7 +78,7 @@ class SeriesScanner:
             # Relaciones Normalizadas (NUEVO)
             series.genres = await ScannerHelpers.sync_taxonomy(session, Genre, identity.get("tags") or [])
             series.demographics = await ScannerHelpers.sync_taxonomy(
-                session, Demographic, identity.get("demographics") or []
+                session, Demographic, series.demographics_json
             )
 
             series.slug = SlugManager.generate_valid_slug(series)
@@ -125,10 +125,9 @@ class SeriesScanner:
                     series.genres = await ScannerHelpers.sync_taxonomy(session, Genre, series.tags_json)
 
             if identity.get("demographics"):
-                existing_demo = set(series.demographics_json or [])
-                incoming_demo = set(identity["demographics"])
-                if not incoming_demo.issubset(existing_demo):
-                    series.demographics_json = list(existing_demo.union(incoming_demo))
+                incoming_demo = normalize_demographics_list(identity["demographics"])
+                if incoming_demo and (not series.demographics_json or series.demographics_json != incoming_demo):
+                    series.demographics_json = incoming_demo
                     # Actualizar Relación
                     series.demographics = await ScannerHelpers.sync_taxonomy(
                         session, Demographic, series.demographics_json
@@ -279,20 +278,25 @@ class SeriesScanner:
             return
 
         # CONSOLIDAR DEMOGRAFÍA
-        all_demographics = set()
+        all_demographics = []
         all_genres = set()
         for b in books:
             if b.demographics:
                 for d in b.demographics:
-                    all_demographics.add(d.name)
+                    all_demographics.append(d.name)
+            elif b.demographics_json:
+                all_demographics.extend(b.demographics_json)
             if b.genres:
                 for g in b.genres:
                     all_genres.add(g.name)
+            elif b.tags_json:
+                all_genres.update(b.tags_json)
 
-        if all_demographics:
-            series.demographics_json = list(all_demographics)
+        canonical_demo = normalize_demographics_list(all_demographics or series.demographics_json)
+        if canonical_demo:
+            series.demographics_json = canonical_demo
             # Sincronizar (Flush incluido)
-            series.demographics = await ScannerHelpers.sync_taxonomy(session, Demographic, list(all_demographics))
+            series.demographics = await ScannerHelpers.sync_taxonomy(session, Demographic, canonical_demo)
             logger.info(f"🧬 Auto-poblada demografía para {series.series_name}: {series.demographics_json}")
 
         if all_genres:

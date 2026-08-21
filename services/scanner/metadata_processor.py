@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from models.library import LocalBook, SeriesMetadata
-from utils.helpers import parse_metadata_from_title
+from utils.helpers import normalize_demographics_list, parse_metadata_from_title
 
 logger = logging.getLogger(__name__)
 
@@ -96,13 +96,12 @@ class MetadataProcessor:
                 series.description = book_metadata["description"]
                 logger.info(f"📝 Actualizada descripción: {series.description}")
 
-            # Handle demographics merge
+            # Handle demographics merge (ensure single normalized canonical demography)
             if book_metadata.get("demographics"):
-                existing_demos = set(series.demographics_json or [])
-                new_demos = set(book_metadata["demographics"])
-                merged_demos = existing_demos.union(new_demos)
-                series.demographics_json = list(merged_demos)
-                logger.info(f"📝 Actualizados demographics: {len(merged_demos)} géneros")
+                canonical_demo = normalize_demographics_list(book_metadata["demographics"] or series.demographics_json)
+                if canonical_demo:
+                    series.demographics_json = canonical_demo
+                    logger.info(f"📝 Actualizada demografía: {series.demographics_json}")
 
             return series
 

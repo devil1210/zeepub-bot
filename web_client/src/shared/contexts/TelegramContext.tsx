@@ -64,6 +64,7 @@ interface TelegramContextType {
   status: UserStatus | null;
   isAdmin: boolean;
   isRealAdmin: boolean;
+  isStaff: boolean;
   isLinkModalOpen: boolean;
   setIsLinkModalOpen: (open: boolean) => void;
 
@@ -366,6 +367,12 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       : isRealAdmin;
 
 
+  const isStaff =
+    isAdmin ||
+    status?.user?.role === 'staff' ||
+    status?.user?.level === 'staff' ||
+    status?.user?.level === 'Staff';
+
   // Admins are always beta testers
   const effectiveBetaTester = isAdmin || isBetaTester;
 
@@ -435,6 +442,7 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       status,
       isAdmin,
       isRealAdmin,
+      isStaff,
       isLinkModalOpen,
       setIsLinkModalOpen,
       isBetaTester: effectiveBetaTester,

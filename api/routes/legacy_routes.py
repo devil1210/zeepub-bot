@@ -26,6 +26,7 @@ class LegacyRoutes:
         self.action_map = {
             "search": miniapp_handlers.handle_search,
             "search_volumes": miniapp_handlers.handle_search_volumes,
+            "search_books": miniapp_handlers.handle_search_volumes,
             "book-detail": miniapp_handlers.handle_book_detail,
             "user_status": miniapp_handlers.handle_user_status,
             "status": miniapp_handlers.handle_status,
@@ -140,8 +141,18 @@ class LegacyRoutes:
             "pub_restore_templates": miniapp_handlers.handle_pub_restore_templates,
             "pub_quick_post": miniapp_handlers.handle_pub_quick_post,
             "pub_update_post": miniapp_handlers.handle_pub_update_post,
-            "pub-update-post": miniapp_handlers.handle_pub_update_post,
             "pub_check_facebook_album": miniapp_handlers.handle_pub_check_facebook_album,
+            "pub_send_template_to_chat": miniapp_handlers.handle_pub_send_template_to_chat,
+            "pub-send-template-to-chat": miniapp_handlers.handle_pub_send_template_to_chat,
+            "pub_create_draft": miniapp_handlers.handle_pub_create_draft,
+            "pub-create-draft": miniapp_handlers.handle_pub_create_draft,
+            # Workgroups / Fansubs Actions
+            "workgroup_get_all": miniapp_handlers.handle_workgroup_get_all,
+            "workgroup_save": miniapp_handlers.handle_workgroup_save,
+            "workgroup_delete": miniapp_handlers.handle_workgroup_delete,
+            "workgroup_get_detail": miniapp_handlers.handle_workgroup_get_detail,
+            "workgroup_attach_book": miniapp_handlers.handle_workgroup_attach_book,
+            "workgroup_detach_book": miniapp_handlers.handle_workgroup_detach_book,
         }
 
     def get_router(self) -> APIRouter:

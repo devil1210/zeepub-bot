@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from datetime import datetime
 from typing import Any
 
@@ -207,14 +208,29 @@ async def handle_pub_save_template(data: dict[str, Any], user_data: dict[str, An
     check_staff(user_data)
 
     template_id = data.get("id")
+    platform = data.get("platform", "telegram")
+    is_default = bool(data.get("is_default", False)) if "is_default" in data else None
+
+    # Si se marca como default, desmarcar las otras plantillas de esa misma plataforma
+    if is_default:
+        from core.db_manager_pg import pg_manager
+        from sqlalchemy import update
+        async with pg_manager.get_session() as session:
+            await session.execute(
+                update(PublicationTemplate)
+                .where(PublicationTemplate.platform == platform)
+                .values(is_default=False)
+            )
+            await session.commit()
+
     template_data = {
         "name": data["name"],
         "content": data["content"],
-        "platform": data["platform"],
+        "platform": platform,
         "extra_config": data.get("extra_config", {}),
     }
-    if "is_default" in data:
-        template_data["is_default"] = bool(data["is_default"])
+    if is_default is not None:
+        template_data["is_default"] = is_default
 
     if template_id:
         existing = await pub_repo.get_template_by_id(template_id)
@@ -222,7 +238,7 @@ async def handle_pub_save_template(data: dict[str, Any], user_data: dict[str, An
             merged_config = (existing.extra_config or {}).copy()
             merged_config.update(data.get("extra_config", {}))
             template_data["extra_config"] = merged_config
-            if "is_default" not in data:
+            if is_default is None:
                 template_data["is_default"] = existing.is_default
         await pub_repo.update_template(template_id, template_data)
     else:
@@ -329,7 +345,7 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
         payload["fb_album_id"] = data["fb_album_id"]
 
     if not template_ids:
-        await publisher_service.schedule_publication(
+        new_q_item = await publisher_service.schedule_publication(
             book_hash=book_hash,
             channel_id=channel_id,
             scheduled_for=scheduled_for,
@@ -341,7 +357,7 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
 
         for i, tid in enumerate(template_ids):
             staggered_time = scheduled_for + dt.timedelta(seconds=2 * i)
-            await publisher_service.schedule_publication(
+            new_q_item = await publisher_service.schedule_publication(
                 book_hash=book_hash,
                 channel_id=channel_id,
                 scheduled_for=staggered_time,
@@ -506,5 +522,253 @@ async def handle_pub_check_facebook_album(data: dict[str, Any], user_data: dict[
     )
 
     return {"success": True, **result}
+
+
+async def handle_pub_send_template_to_chat(data: dict[str, Any], user_data: dict[str, Any]):
+    """
+    Envía la plantilla de publicación de Facebook (resuelta con los datos del libro)
+    al chat privado de Telegram del admin/staff, envuelta en un Rich Message con <blockquote>
+    o <code> para copiar directamente.
+    """
+    check_staff(user_data)
+
+    target_chat_id = user_data.get("telegram_id") or user_data.get("user_id")
+    if not target_chat_id:
+        raise HTTPException(status_code=400, detail="No se identificó tu ID de Telegram")
+
+    book_id = data.get("book_id") or data.get("book_hash") or data.get("id")
+    if not book_id:
+        raise HTTPException(status_code=400, detail="Falta book_id")
+
+    # 1. Obtener libro y resolver metadatos
+    from core.db_manager_pg import pg_manager
+    from models.library import LocalBook
+    from services.workgroup_service import workgroup_service
+    from sqlalchemy import or_, select
+    from sqlalchemy.orm import selectinload
+    from utils.helpers import clean_caption_for_facebook, escape_html
+    from utils.template_engine import apply_publication_template
+
+    async with pg_manager.get_session() as session:
+        stmt = (
+            select(LocalBook)
+            .options(selectinload(LocalBook.series_info))
+            .where(
+                or_(
+                    LocalBook.id == str(book_id),
+                    LocalBook.short_link == str(book_id),
+                    LocalBook.book_hash == str(book_id),
+                )
+            )
+        )
+        book = (await session.execute(stmt)).scalar_one_or_none()
+        if not book:
+            raise HTTPException(status_code=404, detail="Libro no encontrado")
+
+        book_data = publisher_service._build_book_data_dict(book)
+        credits_meta = await workgroup_service.resolve_book_workgroup_credits(
+            book_id=book.id,
+            book_obj=book,
+            raw_meta=book_data,
+            public_link=book_data.get("download_link"),
+        )
+        book_data.update(credits_meta)
+
+        # 2. Obtener plantilla de Facebook (la default o la primera activa)
+        template_id = data.get("template_id")
+        raw_caption = ""
+        if template_id:
+            tpl = await pub_repo.get_template_by_id(int(template_id))
+            if tpl and tpl.content:
+                raw_caption = apply_publication_template(tpl.content, book_data)
+
+        if not raw_caption:
+            fb_templates = await pub_repo.get_templates(platform="facebook")
+            def_tpl = next((t for t in fb_templates if t.is_default), None) or (fb_templates[0] if fb_templates else None)
+            if def_tpl and def_tpl.content:
+                raw_caption = apply_publication_template(def_tpl.content, book_data)
+
+        if not raw_caption:
+            raw_caption = apply_publication_template(
+                TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
+            )
+
+        final_facebook_text = clean_caption_for_facebook(raw_caption)
+
+    # 3. Preparar portada si existe
+    cover_source = (
+        book_data.get("cover_high")
+        or book_data.get("cover_original")
+        or book_data.get("portada")
+    )
+    from services.cover_service import resolve_cover_data
+    resolved_cover = await resolve_cover_data(cover_source) if cover_source else None
+
+    files = None
+    media = None
+    if resolved_cover:
+        if isinstance(resolved_cover, bytes):
+            files = {"fb_cover": ("cover.jpg", resolved_cover, "image/jpeg")}
+        elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
+            try:
+                with open(resolved_cover, "rb") as f:
+                    files = {"fb_cover": ("cover.jpg", f.read(), "image/jpeg")}
+            except Exception as e:
+                logger.warning(f"Error al leer portada local para preview de plantilla: {e}")
+
+        if files:
+            media = [
+                {
+                    "id": "fb_cover",
+                    "media": {
+                        "type": "photo",
+                        "media": "attach://fb_cover",
+                    },
+                }
+            ]
+
+    # 4. Construir Rich Message con portada y el texto envuelto en bloque de código copiador
+    titulo_libro = book_data.get("spanish_title") or book_data.get("title") or "Libro"
+    vol_libro = f" - Vol. {book_data.get('volume')}" if book_data.get("volume") is not None else ""
+
+    html_parts = []
+    if media:
+        html_parts.append('<img src="tg://photo?id=fb_cover" />\n')
+
+    html_parts.append(f"<h3>📋 Plantilla de Publicación para Facebook</h3>")
+    html_parts.append(f"<p><b>📖 {escape_html(str(titulo_libro))}{vol_libro}</b></p>")
+    html_parts.append(f"<p><i>Toca el recuadro de abajo para copiar el texto con todos sus saltos de línea:</i></p>")
+    html_parts.append(f"<pre><code class=\"language-copy\">{escape_html(final_facebook_text)}</code></pre>")
+
+    html_content = "\n".join(html_parts)
+
+    # 5. Enviar vía RichMessageService
+    from services.rich_message_service import RichMessageService
+    rich_sent = False
+    try:
+        res = await RichMessageService.send_rich_message(
+            chat_id=target_chat_id,
+            html=html_content,
+            media=media,
+            files=files if files else None,
+        )
+        if res and res.get("ok"):
+            rich_sent = True
+    except Exception as e:
+        logger.warning(f"Error enviando Rich Message con plantilla a {target_chat_id}: {e}")
+
+    # Fallback tradicional si falla
+    if not rich_sent:
+        fallback_msg = (
+            f"📋 <b>Plantilla de Publicación (Facebook)</b>\n"
+            f"<b>{escape_html(str(titulo_libro))}{vol_libro}</b>\n\n"
+            f"<pre><code class=\"language-copy\">{escape_html(final_facebook_text)}</code></pre>"
+        )
+        try:
+            from services.cover_service import send_photo_bytes
+            from api.main import bot as main_bot
+            tg_bot = main_bot.app.bot
+
+            if resolved_cover:
+                await send_photo_bytes(
+                    tg_bot, target_chat_id, fallback_msg, resolved_cover, parse_mode="HTML"
+                )
+            else:
+                await tg_bot.send_message(
+                    chat_id=target_chat_id, text=fallback_msg, parse_mode="HTML"
+                )
+        except Exception as e:
+            logger.error(f"Error en fallback de envío de plantilla a Telegram: {e}")
+            raise HTTPException(status_code=500, detail=f"No se pudo enviar la plantilla a Telegram: {e}")
+
+    return {"success": True, "message": "Plantilla enviada exitosamente a tu chat de Telegram"}
+
+
+async def handle_pub_create_draft(data: dict[str, Any], user_data: dict[str, Any]) -> dict[str, Any]:
+    """Crea un borrador (DRAFT) directamente en Meta Business Suite / Facebook para el libro."""
+    book_id = data.get("book_id") or data.get("book_hash") or data.get("id")
+    if not book_id:
+        raise HTTPException(status_code=400, detail="Falta book_id")
+
+    from core.db_manager_pg import pg_manager
+    from models.library import LocalBook
+    from services.workgroup_service import workgroup_service
+    from sqlalchemy import or_, select
+    from sqlalchemy.orm import selectinload
+    from utils.helpers import clean_caption_for_facebook
+    from utils.template_engine import apply_publication_template
+    from services.publisher.facebook_provider import FacebookPublisherProvider
+
+    async with pg_manager.get_session() as session:
+        stmt = (
+            select(LocalBook)
+            .options(selectinload(LocalBook.series_info))
+            .where(
+                or_(
+                    LocalBook.id == str(book_id),
+                    LocalBook.short_link == str(book_id),
+                    LocalBook.book_hash == str(book_id),
+                )
+            )
+        )
+        book = (await session.execute(stmt)).scalar_one_or_none()
+        if not book:
+            raise HTTPException(status_code=404, detail="Libro no encontrado")
+
+        book_data = publisher_service._build_book_data_dict(book)
+        credits_meta = await workgroup_service.resolve_book_workgroup_credits(
+            book_id=book.id,
+            book_obj=book,
+            raw_meta=book_data,
+            public_link=book_data.get("download_link"),
+        )
+        book_data.update(credits_meta)
+
+        # Obtener canal de Facebook
+        fb_channels = await pub_repo.get_channels(platform="facebook")
+        if not fb_channels:
+            raise HTTPException(status_code=400, detail="No tienes ningún canal de Facebook configurado")
+        target_channel = fb_channels[0]
+
+        # Obtener plantilla de Facebook
+        template_id = data.get("template_id")
+        raw_caption = ""
+        if template_id:
+            tpl = await pub_repo.get_template_by_id(int(template_id))
+            if tpl and tpl.content:
+                raw_caption = apply_publication_template(tpl.content, book_data)
+
+        if not raw_caption:
+            fb_templates = await pub_repo.get_templates(platform="facebook")
+            def_tpl = next((t for t in fb_templates if t.is_default), None) or (fb_templates[0] if fb_templates else None)
+            if def_tpl and def_tpl.content:
+                raw_caption = apply_publication_template(def_tpl.content, book_data)
+
+        if not raw_caption:
+            raw_caption = apply_publication_template(
+                TelegramPublisherProvider.FB_CAPTION_TEMPLATE, book_data
+            )
+
+        final_facebook_text = clean_caption_for_facebook(raw_caption)
+
+    # Disparar creación de borrador en Facebook Provider
+    fb_provider = publisher_service.providers.get("facebook")
+    if not fb_provider:
+        raise HTTPException(status_code=500, detail="Proveedor de Facebook no disponible")
+
+    success = await fb_provider.announce_book(
+        target_channel.target_id,
+        book_data,
+        options={
+            "caption": final_facebook_text,
+            "page_access_token": target_channel.config.get("page_access_token") if target_channel.config else None,
+            "is_draft": True,
+        },
+    )
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Error al crear el borrador en Meta Business Suite")
+
+    return {"success": True, "message": "¡Borrador creado con éxito en Meta Business Suite!"}
 
 

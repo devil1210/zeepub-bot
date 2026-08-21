@@ -12,7 +12,7 @@ from models.library import Demographic, Genre, LocalBook
 from services.hash_service import hash_service
 from services.scanner.scanner_helpers import ScannerHelpers
 from utils.epub_extractor import EpubMetadataExtractor
-from utils.helpers import generate_short_link
+from utils.helpers import generate_short_link, is_demographic_tag, normalize_demographics_list
 from utils.library_db import COVERS_DIR, DB_DIR
 
 logger = logging.getLogger(__name__)
@@ -413,9 +413,9 @@ class EpubScanner:
 
                 # Tags y Clasificación (JSON - Legacy)
                 raw_tags = meta.get("tags", [])
-                known_demographics = ["shounen", "seinen", "shoujo", "josei", "kodomo", "seijin", "adultos", "mature"]
-                book_demographics = [t for t in raw_tags if any(d in t.lower() for d in known_demographics)]
-                book_tags = [t for t in raw_tags if t not in book_demographics]
+                raw_demo = meta.get("demographics") or meta.get("demografia") or [t for t in raw_tags if is_demographic_tag(t)]
+                book_demographics = normalize_demographics_list(raw_demo)
+                book_tags = [t for t in raw_tags if not is_demographic_tag(t)]
 
                 book.demographics_json = book_demographics
                 book.tags_json = book_tags

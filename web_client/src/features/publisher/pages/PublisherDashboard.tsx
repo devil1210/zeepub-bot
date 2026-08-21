@@ -19,12 +19,20 @@ import {
     Twitter,
     Send as TelegramIcon,
     RefreshCw,
-    Star
+    Star,
+    Building2,
+    Globe,
+    MessageSquare,
+    Heart,
+    Coffee,
+    BookOpen
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { ScheduleModal } from '../components/ScheduleModal';
 import { ChannelModal } from '../components/ChannelModal';
+import { WorkgroupModal } from '../components/WorkgroupModal';
 import { PublicationTemplate, PublicationQueueItem, PublicationChannel } from '../services/publisherApi';
+import { TranslatorsGroupItem } from '../services/workgroupsApi';
 
 export const PublisherDashboard: React.FC = () => {
     const { settings } = useTheme();
@@ -33,6 +41,7 @@ export const PublisherDashboard: React.FC = () => {
         channels,
         discoveredChats,
         templates,
+        workgroups,
         loading,
         error,
         refresh,
@@ -43,15 +52,19 @@ export const PublisherDashboard: React.FC = () => {
         deleteChannel,
         saveTemplate,
         deleteTemplate,
+        saveWorkgroup,
+        deleteWorkgroup,
         restoreTemplates
     } = usePublisher();
-    const [activeTab, setActiveTab] = useState<'queue' | 'channels' | 'templates'>('queue');
+    const [activeTab, setActiveTab] = useState<'queue' | 'channels' | 'templates' | 'workgroups'>('queue');
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
     const [editingQueueItem, setEditingQueueItem] = useState<PublicationQueueItem | null>(null);
     const [selectedBookHash, setSelectedBookHash] = useState('');
     const [selectedBookTitle, setSelectedBookTitle] = useState('');
     const [isChannelModalOpen, setIsChannelModalOpen] = useState(false);
     const [editingChannel, setEditingChannel] = useState<PublicationChannel | null>(null);
+    const [isWorkgroupModalOpen, setIsWorkgroupModalOpen] = useState(false);
+    const [editingWorkgroup, setEditingWorkgroup] = useState<TranslatorsGroupItem | null>(null);
     const navigate = useNavigate();
 
     const handleCreateTemplate = () => {
@@ -130,17 +143,18 @@ export const PublisherDashboard: React.FC = () => {
                     background: `rgba(var(--glass-rgb), ${settings.navOpacity})`,
                     backdropFilter: `blur(${settings.glassBlur}px)`
                 }}>
-                {(['queue', 'channels', 'templates'] as const).map((tab) => (
+                {(['queue', 'channels', 'templates', 'workgroups'] as const).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`min-h-[44px] flex-1 flex items-center justify-center gap-2 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        className={`min-h-[44px] flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-premium-sm text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         {tab === 'queue' && <Calendar className="w-3.5 h-3.5" />}
                         {tab === 'channels' && <Send className="w-3.5 h-3.5" />}
                         {tab === 'templates' && <Type className="w-3.5 h-3.5" />}
-                        {tab === 'queue' ? 'Cola' : tab === 'channels' ? 'Canales' : 'Plantillas'}
+                        {tab === 'workgroups' && <Building2 className="w-3.5 h-3.5" />}
+                        {tab === 'queue' ? 'Cola' : tab === 'channels' ? 'Canales' : tab === 'templates' ? 'Plantillas' : 'Fansubs'}
                     </button>
                 ))}
             </div>
@@ -375,13 +389,22 @@ export const PublisherDashboard: React.FC = () => {
                         </div>
 
                         {templates.map(template => (
-                            <div key={template.id} className="glass-panel rounded-premium p-4 border border-white/5 flex flex-col gap-3 group">
+                            <div key={template.id} className={`glass-panel rounded-premium p-4 border transition-all flex flex-col gap-3 group ${
+                                template.is_default 
+                                    ? 'border-primary/50 bg-primary/5 shadow-lg shadow-primary/5' 
+                                    : 'border-white/5'
+                            }`}>
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-2">
-                                        <Type className="w-4 h-4 text-primary" />
-                                        <span className="text-xs font-black uppercase tracking-wider">{template.name}</span>
+                                        <Type className={`w-4 h-4 ${template.is_default ? 'text-primary' : 'text-gray-400'}`} />
+                                        <span className="text-xs font-black uppercase tracking-wider text-white">{template.name}</span>
+                                        {template.is_default && (
+                                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[9px] font-black uppercase tracking-wider text-emerald-400">
+                                                Activa / Principal
+                                            </span>
+                                        )}
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex items-center gap-3">
                                         {template.extra_config?.type && template.extra_config.type !== 'general' && (
                                             <div className="px-2 py-0.5 rounded-full bg-primary/20 border border-primary/30 text-[9px] font-black uppercase tracking-wider text-primary">
                                                 {template.extra_config.type === 'cover' ? 'Envío: Portada' :
@@ -394,6 +417,36 @@ export const PublisherDashboard: React.FC = () => {
                                         <div className="px-2 py-0.5 rounded-full bg-white/5 text-[9px] font-black uppercase tracking-wider text-gray-400">
                                             {template.platform}
                                         </div>
+
+                                        {/* Switch para marcar como Plantilla Predeterminada / Activa */}
+                                        <button
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                try {
+                                                    await saveTemplate({
+                                                        id: template.id,
+                                                        name: template.name,
+                                                        content: template.content,
+                                                        platform: template.platform,
+                                                        extra_config: template.extra_config,
+                                                        is_default: !template.is_default,
+                                                    } as any);
+                                                    webApp?.HapticFeedback?.impactOccurred('medium');
+                                                } catch (err) {
+                                                    console.error("Error setting default template", err);
+                                                }
+                                            }}
+                                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                                template.is_default ? 'bg-primary' : 'bg-white/10 hover:bg-white/20'
+                                            }`}
+                                            title={template.is_default ? 'Plantilla activa por defecto (Toca para desactivar)' : 'Toca para activar como plantilla por defecto'}
+                                        >
+                                            <span
+                                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                                    template.is_default ? 'translate-x-4' : 'translate-x-0'
+                                                }`}
+                                            />
+                                        </button>
                                     </div>
                                 </div>
                                 <div
@@ -404,18 +457,191 @@ export const PublisherDashboard: React.FC = () => {
                                     <button
                                         onClick={() => handleEditTemplate(template)}
                                         className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-white transition-colors"
+                                        title="Editar Plantilla"
                                     >
                                         <Edit3 className="w-4 h-4" />
                                     </button>
                                     <button
                                         onClick={() => deleteTemplate(template.id)}
                                         className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-red-400 transition-colors"
+                                        title="Eliminar Plantilla"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
                         ))}
+                    </div>
+                )}
+
+                {activeTab === 'workgroups' && (
+                    <div className="flex flex-col gap-3">
+                        <div className="flex justify-between items-center px-1">
+                            <div>
+                                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-primary/80">Grupos Traductores / Fansubs</h2>
+                                <p className="text-[11px] text-gray-400">Gestiona los enlaces oficiales a sus redes que se inyectan en tus publicaciones</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setEditingWorkgroup(null);
+                                    setIsWorkgroupModalOpen(true);
+                                }}
+                                className="px-4 py-2 bg-primary hover:brightness-110 text-white rounded-premium text-xs font-bold shadow-lg shadow-primary/20 flex items-center gap-1.5 active:scale-95 transition-all"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Nuevo Grupo</span>
+                            </button>
+                        </div>
+
+                        {workgroups.length === 0 ? (
+                            <div className="glass-panel rounded-premium p-10 flex flex-col items-center gap-3 text-center">
+                                <div className="p-4 rounded-full bg-white/5 text-primary">
+                                    <Building2 className="w-8 h-8" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-white mb-1">No hay grupos traductores registrados</h3>
+                                    <p className="text-xs text-gray-400 max-w-xs mx-auto">
+                                        Registra tus fansubs favoritos para vincular sus redes sociales (Web, Facebook, Discord, Patreon) en tus posts automáticos.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setEditingWorkgroup(null);
+                                        setIsWorkgroupModalOpen(true);
+                                    }}
+                                    className="mt-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 rounded-premium text-xs font-semibold flex items-center gap-2 transition-all"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>Crear Primer Grupo</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {workgroups.map((group) => (
+                                    <div
+                                        key={group.id}
+                                        onClick={() => navigate(`/admin/fansubs/${group.id}`)}
+                                        className="glass-panel rounded-premium p-4 flex flex-col justify-between gap-3 border border-white/5 hover:border-primary/50 hover:bg-white/[0.04] transition-all group cursor-pointer"
+                                    >
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                                                        <Building2 className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="text-xs font-bold text-white group-hover:text-primary transition-colors">{group.name}</h3>
+                                                            {group.siglas && (
+                                                                <span className="px-2 py-0.5 rounded-full bg-white/10 text-[9px] font-bold text-gray-300">
+                                                                    {group.siglas}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {group.description && (
+                                                            <p className="text-[11px] text-gray-400 line-clamp-1 mt-0.5">
+                                                                {group.description}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                                    <button
+                                                        onClick={() => navigate(`/admin/fansubs/${group.id}`)}
+                                                        className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                                                        title="Ver y Editar Fansub"
+                                                    >
+                                                        <Edit3 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => deleteWorkgroup(group.id)}
+                                                        className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                                        title="Eliminar Grupo"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Links Badges */}
+                                            <div className="flex flex-wrap gap-1.5 pt-1">
+                                                {group.links?.web && (
+                                                    <a
+                                                        href={group.links.web}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-2 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-semibold flex items-center gap-1 transition-all"
+                                                    >
+                                                        <Globe className="w-3 h-3" /> Web
+                                                    </a>
+                                                )}
+                                                {group.links?.fb && (
+                                                    <a
+                                                        href={group.links.fb}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-2 py-1 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-300 text-[10px] font-semibold flex items-center gap-1 transition-all"
+                                                    >
+                                                        <Facebook className="w-3 h-3" /> Facebook
+                                                    </a>
+                                                )}
+                                                {group.links?.discord && (
+                                                    <a
+                                                        href={group.links.discord}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 text-[10px] font-semibold flex items-center gap-1 transition-all"
+                                                    >
+                                                        <MessageSquare className="w-3 h-3" /> Discord
+                                                    </a>
+                                                )}
+                                                {group.links?.patreon && (
+                                                    <a
+                                                        href={group.links.patreon}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-2 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 text-[10px] font-semibold flex items-center gap-1 transition-all"
+                                                    >
+                                                        <Heart className="w-3 h-3" /> Patreon
+                                                    </a>
+                                                )}
+                                                {group.links?.twitter && (
+                                                    <a
+                                                        href={group.links.twitter}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-2 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 text-[10px] font-semibold flex items-center gap-1 transition-all"
+                                                    >
+                                                        <Twitter className="w-3 h-3" /> Twitter
+                                                    </a>
+                                                )}
+                                                {group.links?.donations && (
+                                                    <a
+                                                        href={group.links.donations}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[10px] font-semibold flex items-center gap-1 transition-all"
+                                                    >
+                                                        <Coffee className="w-3 h-3" /> Donar
+                                                    </a>
+                                                )}
+                                                {!Object.values(group.links || {}).some(Boolean) && (
+                                                    <span className="text-[10px] text-gray-500 italic">Sin enlaces registrados</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex justify-between items-center pt-2 border-t border-white/5 text-[10px] text-gray-400">
+                                            <span className="flex items-center gap-1">
+                                                <BookOpen className="w-3 h-3 text-primary" /> {group.books_count} libros asociados
+                                            </span>
+                                            <span>ID: {group.id}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -433,6 +659,14 @@ export const PublisherDashboard: React.FC = () => {
                 onClose={() => setIsChannelModalOpen(false)}
                 onSave={saveChannel}
                 editingChannel={editingChannel}
+            />
+
+            <WorkgroupModal
+                isOpen={isWorkgroupModalOpen}
+                onClose={() => setIsWorkgroupModalOpen(false)}
+                onSave={saveWorkgroup}
+                onDelete={deleteWorkgroup}
+                group={editingWorkgroup}
             />
         </div>
     );

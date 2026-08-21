@@ -1,6 +1,8 @@
 import logging
 from typing import Any
 
+from utils.helpers import normalize_demographics_list
+
 logger = logging.getLogger(__name__)
 
 
@@ -97,8 +99,8 @@ class MetadataOrchestrator:
                             "tags": series.tags_json or lb.tags_json or [],
                             "generos": series.tags_json or lb.tags_json or [],
                             "etiquetas": ", ".join(series.tags_json) if series.tags_json else "",
-                            "demographics": series.demographics_json or lb.demographics_json or [],
-                            "demography": series.demographics_json or lb.demographics_json or [],
+                            "demographics": normalize_demographics_list(series.demographics_json or lb.demographics_json or []),
+                            "demography": normalize_demographics_list(series.demographics_json or lb.demographics_json or []),
                         })
                     else:
                         res.update({
@@ -114,8 +116,8 @@ class MetadataOrchestrator:
                             "sinopsis": lb.description or "",
                             "tipo": "Light Novel",
                             "generos": lb.tags_json or [],
-                            "demographics": lb.demographics_json or [],
-                            "demography": lb.demographics_json or [],
+                            "demographics": normalize_demographics_list(lb.demographics_json or []),
+                            "demography": normalize_demographics_list(lb.demographics_json or []),
                         })
                     return res
         except Exception as e:
