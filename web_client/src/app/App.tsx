@@ -58,6 +58,11 @@ const useLegacyNavigation = () => {
         return;
       }
 
+      if (tab === 'admin-datagrid') {
+        navigate('/admin?view=datagrid');
+        return;
+      }
+
       // Handle Main Tabs
       const path = tab === 'dashboard' ? '/' : `/${tab}`;
       navigate(path);

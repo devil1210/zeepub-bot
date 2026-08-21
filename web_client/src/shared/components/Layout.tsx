@@ -47,9 +47,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
     { id: 'search', icon: Search, label: 'Búsqueda y Catálogos' },
     ...(hasLibrary ? [{ id: 'library', icon: Library, label: 'Mi Biblioteca' }] : []),
     { id: 'settings', icon: Settings, label: 'Ajustes' },
-    ...(isAdmin ? [
+    ...((isAdmin || isStaff) ? [
       { id: 'ai', icon: BrainCircuit, label: 'AI Hub' },
-      { id: 'admin', icon: ShieldCheck, label: 'Admin' }
+      { id: 'admin', icon: ShieldCheck, label: 'Admin' },
+      { id: 'admin-datagrid', icon: BookOpen, label: 'Editor de Series' }
     ] : []),
     ...(canUploadEpub ? [{ id: 'upload', icon: Upload, label: 'Subir' }] : []),
   ];
