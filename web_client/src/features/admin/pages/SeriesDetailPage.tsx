@@ -298,7 +298,7 @@ export const SeriesDetailPage: React.FC = () => {
                 <h2 className="text-xl font-bold text-white mb-2">Serie No Encontrada</h2>
                 <p className="text-slate-400 text-xs mb-6">No se pudieron recuperar los detalles para la serie solicitada.</p>
                 <button
-                    onClick={() => navigate('/admin/grid')}
+                    onClick={() => navigate('/admin?view=datagrid')}
                     className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-2"
                 >
                     <ArrowLeft className="w-4 h-4" />
@@ -313,7 +313,7 @@ export const SeriesDetailPage: React.FC = () => {
             {/* Top Navigation & Info Bar */}
             <div className="flex flex-wrap items-center justify-between gap-4 max-w-7xl mx-auto">
                 <button
-                    onClick={() => navigate('/admin/grid')}
+                    onClick={() => navigate('/admin?view=datagrid')}
                     className="px-3.5 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-white/10 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-all active:scale-95 shadow-md"
                 >
                     <ArrowLeft className="w-4 h-4" />
