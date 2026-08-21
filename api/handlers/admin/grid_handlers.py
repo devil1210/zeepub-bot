@@ -59,6 +59,8 @@ async def handle_admin_get_library_grid(data: dict[str, Any], user_data: dict[st
             )
             base_stmt = base_stmt.where(
                 or_(
+                    Series.id == query_str,
+                    Series.id.ilike(term),
                     Series.name.ilike(term),
                     Series.name_english.ilike(term),
                     Series.name_spanish.ilike(term),

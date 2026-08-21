@@ -778,10 +778,11 @@ async def handle_upload_confirm_internal(
 
 async def handle_admin_get_series_detail(data: dict[str, Any], user_data: dict[str, Any]) -> dict[str, Any]:
     """Retorna los datos completos de una serie (metadatos, alias y volúmenes) para edición."""
-    check_staff(user_data)
     series_id = (data.get("series_id") or data.get("id") or data.get("series_hash") or "").strip()
     if not series_id:
         return {"success": False, "message": "ID de serie requerido"}
+
+    clean_id = series_id.replace("series_", "") if series_id.startswith("series_") else series_id
 
     from sqlalchemy import or_
     from sqlalchemy.orm import selectinload
@@ -797,13 +798,17 @@ async def handle_admin_get_series_detail(data: dict[str, Any], user_data: dict[s
             .where(
                 or_(
                     Series.id == series_id,
-                    Series.series_hash == series_id,
-                    Series.slug == series_id
+                    Series.id == clean_id,
+                    Series.slug == series_id,
+                    Series.slug == clean_id,
+                    Series.name.ilike(f"%{clean_id}%"),
+                    Series.name_spanish.ilike(f"%{clean_id}%"),
+                    Series.name_english.ilike(f"%{clean_id}%"),
                 )
             )
         )
         result = await session.execute(stmt)
-        series = result.scalar_one_or_none()
+        series = result.scalars().first()
         if not series:
             return {"success": False, "message": "Serie no encontrada"}
 
@@ -811,10 +816,10 @@ async def handle_admin_get_series_detail(data: dict[str, Any], user_data: dict[s
             "success": True,
             "series": {
                 "id": series.id,
-                "series_hash": series.series_hash or series.id,
-                "name": series.name or series.series_name or "Sin Título",
-                "series_spanish": series.series_spanish or series.name_spanish or "",
-                "series_english": series.series_english or series.name_english or "",
+                "series_hash": series.id,
+                "name": series.name or "Sin Título",
+                "series_spanish": series.series_spanish or getattr(series, "name_spanish", "") or "",
+                "series_english": series.series_english or getattr(series, "name_english", "") or "",
                 "slug": series.slug or "",
                 "author": series.author or "",
                 "illustrator": series.illustrator or "",
