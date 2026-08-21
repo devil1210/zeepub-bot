@@ -21,6 +21,7 @@ const BookDetailById = React.lazy(() => import('@features/book/pages/BookDetailB
 const TemplateEditorPage = React.lazy(() => import('@features/publisher/pages/TemplateEditorPage').then(m => ({ default: m.TemplateEditorPage })));
 const FansubDetailPage = React.lazy(() => import('@features/publisher/pages/FansubDetailPage').then(m => ({ default: m.FansubDetailPage })));
 const SeriesDetailPage = React.lazy(() => import('@features/admin/pages/SeriesDetailPage').then(m => ({ default: m.SeriesDetailPage })));
+const SeriesManagerPage = React.lazy(() => import('@features/admin/pages/SeriesManagerPage').then(m => ({ default: m.SeriesManagerPage })));
 
 import { Series, Volume } from '@shared/types';
 import { LoginGate } from '@components/LoginGate';
@@ -58,8 +59,8 @@ const useLegacyNavigation = () => {
         return;
       }
 
-      if (tab === 'admin-datagrid') {
-        navigate('/admin?view=datagrid');
+      if (tab === 'admin-datagrid' || tab === 'series-manager') {
+        navigate('/admin/series-manager');
         return;
       }
 
@@ -240,6 +241,11 @@ const AppContent: React.FC = () => {
             <Route path="/admin/series/:id" element={
               <ProtectedAdminRoute>
                 <PageWrapper Component={SeriesDetailPage} />
+              </ProtectedAdminRoute>
+            } />
+            <Route path="/admin/series-manager" element={
+              <ProtectedAdminRoute>
+                <PageWrapper Component={SeriesManagerPage} />
               </ProtectedAdminRoute>
             } />
 

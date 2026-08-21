@@ -145,15 +145,15 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
               <button
                 onClick={() => {
                   onTabChange('admin');
-                  navigate('/admin?view=datagrid');
+                  navigate('/admin/series-manager');
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all duration-200 group ${location.search.includes('view=datagrid')
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-premium-sm transition-all duration-200 group ${location.pathname.includes('/admin/series-manager')
                   ? 'bg-primary/20 text-white font-bold'
                   : 'text-gray-400 hover:text-white hover:bg-[var(--panel-bg-subtle)]'
                   }`}
               >
-                <Table className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
-                <span className="text-sm font-medium">Editor de Catálogo</span>
+                <BookOpen className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
+                <span className="text-sm font-medium">Editor de Series</span>
               </button>
 
               <button
