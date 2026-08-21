@@ -430,7 +430,7 @@ export const DataGridEditor: React.FC = () => {
     const totalPendingCount = pendingSeriesCount + pendingBooksCount;
 
     return (
-        <div className="w-full max-w-7xl mx-auto space-y-6 pb-28 px-2 sm:px-4 text-white">
+        <div className="w-full max-w-7xl mx-auto space-y-6 pb-44 px-2 sm:px-4 text-white">
             {/* Header Title */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-5 rounded-2xl border border-white/5 bg-slate-900/60 backdrop-blur-xl">
                 <div>
@@ -993,7 +993,7 @@ export const DataGridEditor: React.FC = () => {
 
             {/* Floating Batch Save Bar */}
             {totalPendingCount > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-xl glass-panel p-4 rounded-2xl border border-amber-500/30 bg-slate-900/95 backdrop-blur-2xl shadow-2xl flex items-center justify-between gap-4 animate-in slide-in-from-bottom-5 duration-300">
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-xl glass-panel p-4 rounded-2xl border border-amber-500/40 bg-slate-900/95 backdrop-blur-2xl shadow-2xl flex items-center justify-between gap-4 animate-in slide-in-from-bottom-5 duration-300">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse">
                             <SlidersHorizontal className="w-5 h-5" />
