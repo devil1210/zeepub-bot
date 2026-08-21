@@ -1,9 +1,17 @@
 from typing import Any
 
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import selectinload
 
-from models.library import ArchivedSeries, Demographic, Genre, LocalBook, MetadataProposal, SeriesMetadata
+from models.library import (
+    ArchivedSeries,
+    Demographic,
+    Genre,
+    LocalBook,
+    MetadataProposal,
+    SeriesAlias,
+    SeriesMetadata,
+)
 from services.ai_service import AIService
 from services.scanner.scanner_helpers import ScannerHelpers
 from utils.helpers import generar_slug_from_meta, normalize_demographics_list
@@ -27,7 +35,9 @@ class SeriesScanner:
     }
 
     @classmethod
-    async def get_or_create_series(cls, session: Any, book: LocalBook, skip_ai: bool = False) -> SeriesMetadata:
+    async def get_or_create_series(
+        cls, session: Any, book: LocalBook, skip_ai: bool = False
+    ) -> SeriesMetadata:
         """
         Obtiene o crea una entrada en SeriesMetadata para el libro.
         Usa los datos pre-extraídos de 'book.extracted_data'.
@@ -35,16 +45,70 @@ class SeriesScanner:
         identity = getattr(book, "extracted_data", {})
         series_hash = book.series_hash
 
+        # 1. Búsqueda por Hash directo
         stmt = (
             select(SeriesMetadata)
             .options(
                 selectinload(SeriesMetadata.genres),
                 selectinload(SeriesMetadata.demographics),
+                selectinload(SeriesMetadata.aliases),
             )
             .where(SeriesMetadata.series_hash == series_hash)
         )
         result = await session.execute(stmt)
         series = result.scalar_one_or_none()
+
+        candidate_titles = {
+            t.strip()
+            for t in [
+                identity.get("series"),
+                identity.get("series_spanish"),
+                identity.get("series_english"),
+                identity.get("romaji_title"),
+                book.series_spanish,
+                book.series_english,
+                book.romaji_title,
+            ]
+            if t and isinstance(t, str) and len(t.strip()) > 1
+        }
+
+        # 2. Búsqueda por Tabla de Alias (series_aliases)
+        if not series and candidate_titles:
+            alias_stmt = (
+                select(SeriesMetadata)
+                .options(
+                    selectinload(SeriesMetadata.genres),
+                    selectinload(SeriesMetadata.demographics),
+                    selectinload(SeriesMetadata.aliases),
+                )
+                .join(SeriesAlias, SeriesMetadata.id == SeriesAlias.series_id)
+                .where(
+                    func.lower(SeriesAlias.alias).in_(
+                        [t.lower() for t in candidate_titles]
+                    )
+                )
+            )
+            alias_res = await session.execute(alias_stmt)
+            series = alias_res.scalar_one_or_none()
+
+        # 3. Búsqueda por Coincidencia de Slug Normalizado
+        if not series and candidate_titles:
+            candidate_slugs = {
+                generar_slug_from_meta({"series": t}) for t in candidate_titles if t
+            }
+            candidate_slugs.discard("")
+            if candidate_slugs:
+                slug_stmt = (
+                    select(SeriesMetadata)
+                    .options(
+                        selectinload(SeriesMetadata.genres),
+                        selectinload(SeriesMetadata.demographics),
+                        selectinload(SeriesMetadata.aliases),
+                    )
+                    .where(SeriesMetadata.slug.in_(list(candidate_slugs)))
+                )
+                slug_res = await session.execute(slug_stmt)
+                series = slug_res.scalar_one_or_none()
 
         from services.scanner.slug_manager import SlugManager
 
@@ -63,7 +127,9 @@ class SeriesScanner:
                 illustrator_jap=identity.get("illustrator_jap"),
                 description=identity.get("description"),
                 tags_json=identity.get("tags") or [],
-                demographics_json=normalize_demographics_list(identity.get("demographics") or []),
+                demographics_json=normalize_demographics_list(
+                    identity.get("demographics") or []
+                ),
                 book_type=identity.get("book_type") or "Light Novel",
                 publisher=identity.get("publisher") or book.publisher,
                 cover_url=book.cover_low or book.cover_medium,
@@ -72,11 +138,14 @@ class SeriesScanner:
                 rating_count=0,
                 genres=[],
                 demographics=[],
+                aliases=[],
             )
             session.add(series)
 
             # Relaciones Normalizadas (NUEVO)
-            series.genres = await ScannerHelpers.sync_taxonomy(session, Genre, identity.get("tags") or [])
+            series.genres = await ScannerHelpers.sync_taxonomy(
+                session, Genre, identity.get("tags") or []
+            )
             series.demographics = await ScannerHelpers.sync_taxonomy(
                 session, Demographic, series.demographics_json
             )
@@ -88,13 +157,20 @@ class SeriesScanner:
                 f"   ├─ Inglés:  {series.series_english}\n"
                 f"   └─ Romaji:  {series.name} [{series.slug}]"
             )
+
         else:
             # ACTUALIZACIÓN DE SERIE EXISTENTE
-            if identity.get("series_spanish") and (not series.series_spanish or series.series_spanish == series.series_name):
+            if identity.get("series_spanish") and (
+                not series.series_spanish or series.series_spanish == series.series_name
+            ):
                 series.series_spanish = identity["series_spanish"]
-            if identity.get("series_english") and (not series.series_english or series.series_english == series.series_name):
+            if identity.get("series_english") and (
+                not series.series_english or series.series_english == series.series_name
+            ):
                 series.series_english = identity["series_english"]
-            if identity.get("romaji_title") and (not series.name or series.name == series.series_name):
+            if identity.get("romaji_title") and (
+                not series.name or series.name == series.series_name
+            ):
                 series.name = identity["romaji_title"]
 
             if not series.series_english:
@@ -111,7 +187,8 @@ class SeriesScanner:
                 series.author_jap = identity.get("author_jap")
 
             if identity.get("description") and (
-                not series.description or len(identity["description"]) > len(series.description)
+                not series.description
+                or len(identity["description"]) > len(series.description)
             ):
                 series.description = identity["description"]
 
@@ -122,11 +199,16 @@ class SeriesScanner:
                 if not incoming.issubset(existing):
                     series.tags_json = list(existing.union(incoming))
                     # Actualizar Relación
-                    series.genres = await ScannerHelpers.sync_taxonomy(session, Genre, series.tags_json)
+                    series.genres = await ScannerHelpers.sync_taxonomy(
+                        session, Genre, series.tags_json
+                    )
 
             if identity.get("demographics"):
                 incoming_demo = normalize_demographics_list(identity["demographics"])
-                if incoming_demo and (not series.demographics_json or series.demographics_json != incoming_demo):
+                if incoming_demo and (
+                    not series.demographics_json
+                    or series.demographics_json != incoming_demo
+                ):
                     series.demographics_json = incoming_demo
                     # Actualizar Relación
                     series.demographics = await ScannerHelpers.sync_taxonomy(
@@ -138,31 +220,80 @@ class SeriesScanner:
                 series.cover_url = book.cover_low
 
         # Romaji Title Preservation/Update
-        if identity.get("romaji_title") and (not book.romaji_title or book.romaji_title == "Unknown"):
+        if identity.get("romaji_title") and (
+            not book.romaji_title or book.romaji_title == "Unknown"
+        ):
             book.romaji_title = identity["romaji_title"]
 
         # Enriquecimiento completo de metadatos (Spanish, English y Romaji titles)
         # Omitimos la IA proactivamente si los metadatos nativos limpios ya están completamente poblados
         has_full_native_titles = (
-            series.series_spanish and series.series_spanish != "Unknown" and
-            series.series_english and series.series_english != "Unknown" and
-            series.name and series.name != "Unknown"
+            series.series_spanish
+            and series.series_spanish != "Unknown"
+            and series.series_english
+            and series.series_english != "Unknown"
+            and series.name
+            and series.name != "Unknown"
         )
         needs_enrichment = (
-            not series.series_spanish or 
-            not series.series_english or 
-            series.series_english == series.series_name
+            not series.series_spanish
+            or not series.series_english
+            or series.series_english == series.series_name
         ) and not has_full_native_titles
 
         if needs_enrichment and not skip_ai:
             await cls.enrich_series_metadata(session, series, skip_ai=skip_ai)
+
+        # Auto-registro de alias para evitar futuras duplicaciones
+        await cls.sync_series_aliases(session, series, candidate_titles)
 
         logger.debug(f"💾 Persistiendo serie: {series.series_name} (ID: {series.id})")
         await session.flush()
         return series
 
     @classmethod
-    async def enrich_series_metadata(cls, session: Any, series: SeriesMetadata, skip_ai: bool = False):
+    async def sync_series_aliases(
+        cls, session: Any, series: SeriesMetadata, candidate_titles: set[str]
+    ):
+        """
+        Sincroniza y registra automáticamente títulos alternativos como alias de la serie.
+        """
+        if not candidate_titles or not series or not series.id:
+            return
+
+        all_titles = set(candidate_titles)
+        if series.name:
+            all_titles.add(series.name.strip())
+        if series.series_spanish:
+            all_titles.add(series.series_spanish.strip())
+        if series.series_english:
+            all_titles.add(series.series_english.strip())
+
+        for t in all_titles:
+            if not t or len(t.strip()) <= 1 or t.lower() == "unknown":
+                continue
+
+            clean_t = t.strip()
+            # Verificar si ya está registrado en esta serie o en otra
+            stmt = select(SeriesAlias).where(
+                func.lower(SeriesAlias.alias) == clean_t.lower()
+            )
+            existing = (await session.execute(stmt)).scalar_one_or_none()
+
+            if not existing:
+                try:
+                    alias_obj = SeriesAlias(series_id=series.id, alias=clean_t)
+                    session.add(alias_obj)
+                    await session.flush()
+                except Exception as e:
+                    logger.debug(
+                        f"No se pudo guardar el alias '{clean_t}' para serie {series.id}: {e}"
+                    )
+
+    @classmethod
+    async def enrich_series_metadata(
+        cls, session: Any, series: SeriesMetadata, skip_ai: bool = False
+    ):
         """
         Enriquece una serie buscando metadatos en español, inglés y romaji/japonés.
         Usa IA avanzada de Gemini para una precisión absoluta de base de datos corporativa.
@@ -197,25 +328,26 @@ class SeriesScanner:
             if res:
                 import json
                 from services.ai_service import AIService as AI
-                
+
                 raw_json = AI._extract_json_from_text(res)
                 data = json.loads(raw_json)
-                
+
                 spanish = data.get("series_spanish")
                 english = data.get("series_english")
                 romaji = data.get("romaji_title")
-                
+
                 if spanish:
                     series.series_spanish = spanish
                 if english:
                     series.series_english = english
                 if romaji:
                     series.name = romaji
-                    
+
                 # Regenerar el slug e indicar el enriquecimiento en los logs
                 from services.scanner.slug_manager import SlugManager
+
                 series.slug = SlugManager.generate_valid_slug(series)
-                
+
                 logger.info(
                     f"🤖 Serie Enriquecida por IA: {series.series_name}\n"
                     f"   ├─ Español: {series.series_spanish}\n"
@@ -292,17 +424,27 @@ class SeriesScanner:
             elif b.tags_json:
                 all_genres.update(b.tags_json)
 
-        canonical_demo = normalize_demographics_list(all_demographics or series.demographics_json)
+        canonical_demo = normalize_demographics_list(
+            all_demographics or series.demographics_json
+        )
         if canonical_demo:
             series.demographics_json = canonical_demo
             # Sincronizar (Flush incluido)
-            series.demographics = await ScannerHelpers.sync_taxonomy(session, Demographic, canonical_demo)
-            logger.info(f"🧬 Auto-poblada demografía para {series.series_name}: {series.demographics_json}")
+            series.demographics = await ScannerHelpers.sync_taxonomy(
+                session, Demographic, canonical_demo
+            )
+            logger.info(
+                f"🧬 Auto-poblada demografía para {series.series_name}: {series.demographics_json}"
+            )
 
         if all_genres:
             series.tags_json = list(all_genres)
-            series.genres = await ScannerHelpers.sync_taxonomy(session, Genre, list(all_genres))
-            logger.info(f"🏷️ Auto-poblados géneros para {series.series_name}: {series.tags_json}")
+            series.genres = await ScannerHelpers.sync_taxonomy(
+                session, Genre, list(all_genres)
+            )
+            logger.info(
+                f"🏷️ Auto-poblados géneros para {series.series_name}: {series.tags_json}"
+            )
 
         if not series.slug or len(str(series.slug)) > 40:
             series.slug = generar_slug_from_meta(series.to_dict())
@@ -359,23 +501,30 @@ class SeriesScanner:
                     break
 
                 exists_pending_stmt = select(MetadataProposal).where(
-                    MetadataProposal.series_hash == s_hash, MetadataProposal.status == "pending"
+                    MetadataProposal.series_hash == s_hash,
+                    MetadataProposal.status == "pending",
                 )
                 exists_pending_res = await session.execute(exists_pending_stmt)
                 exists_pending = exists_pending_res.scalar_one_or_none()
 
                 reviewed_res = await session.execute(
-                    text("SELECT 1 FROM ai_learning_feedback WHERE series_hash = :h LIMIT 1"),
+                    text(
+                        "SELECT 1 FROM ai_learning_feedback WHERE series_hash = :h LIMIT 1"
+                    ),
                     {"h": s_hash},
                 )
                 reviewed = reviewed_res.first()
 
                 if not exists_pending and not reviewed:
-                    stmt_s = select(SeriesMetadata).where(SeriesMetadata.series_hash == s_hash)
+                    stmt_s = select(SeriesMetadata).where(
+                        SeriesMetadata.series_hash == s_hash
+                    )
                     res_s = await session.execute(stmt_s)
                     current_s = res_s.scalar_one_or_none()
 
-                    current_name = current_s.series_name if current_s else "Serie Desconocida"
+                    current_name = (
+                        current_s.series_name if current_s else "Serie Desconocida"
+                    )
 
                     from sqlalchemy.orm import selectinload
 

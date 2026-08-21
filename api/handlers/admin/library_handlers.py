@@ -48,12 +48,20 @@ async def handle_admin_backup_library(data: dict[str, Any], user_data: dict[str,
         return {
             "success": True,
             "message": "Respaldo completo realizado con éxito en Supabase.",
-            "details": {"users": res_users.get("stats"), "library": res_library.get("stats")},
+            "details": {
+                "users": res_users.get("stats"),
+                "library": res_library.get("stats"),
+            },
         }
-    return {"success": False, "message": "El respaldo se realizó parcialmente con errores."}
+    return {
+        "success": False,
+        "message": "El respaldo se realizó parcialmente con errores.",
+    }
 
 
-async def handle_admin_sync_library_cloud(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_admin_sync_library_cloud(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     """Sincroniza metadatos de series, propuestas IA, feedback, fuentes y libros locales con Supabase."""
     check_staff(user_data)
     return await SyncService.sync_library_to_cloud()
@@ -73,7 +81,10 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
     max_files = int(data.get("max_files", 0))
 
     if ScannerService._is_scanning:
-        return {"success": False, "message": "Ya hay un escaneo de libreria en progreso."}
+        return {
+            "success": False,
+            "message": "Ya hay un escaneo de libreria en progreso.",
+        }
 
     libs_json = os.getenv("LOCAL_LIBRARIES")
     if not libs_json:
@@ -82,7 +93,9 @@ async def handle_admin_scan_library(data: dict[str, Any], user_data: dict[str, A
     scanner = ScannerService(libs_json)
     if max_files > 0:
         logger.info(f"[quick-scan] Modo diagnostico: maximo {max_files} EPUBs.")
-    asyncio.create_task(scanner.sync_all(force_scan=force, soft_scan=soft, max_files=max_files))
+    asyncio.create_task(
+        scanner.sync_all(force_scan=force, soft_scan=soft, max_files=max_files)
+    )
     mode = f"diagnostico ({max_files} EPUBs)" if max_files > 0 else "completo"
     return {"success": True, "message": f"Escaneo {mode} iniciado en segundo plano."}
 
@@ -92,7 +105,9 @@ async def handle_admin_cleanup_library(data: dict[str, Any], user_data: dict[str
     check_staff(user_data)
     try:
         async with pg_manager.get_session() as session:
-            stats = await ScannerService.cleanup_library_orphans(session, user_id=user_data.get("user_id"))
+            stats = await ScannerService.cleanup_library_orphans(
+                session, user_id=user_data.get("user_id")
+            )
             return {
                 "success": True,
                 "message": f"Limpieza completada: Se eliminaron {stats['deleted_books']} libros.",
@@ -112,31 +127,48 @@ async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, An
         return {"success": False, "message": "series_hash es requerido."}
 
     if ScannerService._is_scanning:
-        return {"success": False, "message": "⚠️ Ya hay un escaneo de librería en progreso."}
+        return {
+            "success": False,
+            "message": "⚠️ Ya hay un escaneo de librería en progreso.",
+        }
 
     libs_json = os.getenv("LOCAL_LIBRARIES")
     scanner = ScannerService(libs_json or "{}")
     # 🛠️ CORRECCIÓN: Usar asyncio.create_task
     asyncio.create_task(scanner.sync_series(series_hash, force_scan=force))
-    return {"success": True, "message": "Sincronización de serie iniciada en segundo plano."}
+    return {
+        "success": True,
+        "message": "Sincronización de serie iniciada en segundo plano.",
+    }
 
 
 async def handle_admin_scan_status(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
-    return {"success": True, "is_scanning": ScannerService._is_scanning, "progress": ScannerService._current_progress}
+    return {
+        "success": True,
+        "is_scanning": ScannerService._is_scanning,
+        "progress": ScannerService._current_progress,
+    }
 
 
 async def handle_admin_stop_scan(data: dict[str, Any], user_data: dict[str, Any]):
     """Stops the current scan."""
     check_staff(user_data)
     success = ScannerService.stop_scan()
-    return {"success": success, "message": "Escaneo detenido." if success else "No hay escaneo en curso."}
+    return {
+        "success": success,
+        "message": "Escaneo detenido." if success else "No hay escaneo en curso.",
+    }
 
 
 async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
     if not data.get("confirmed", False):
-        return {"success": False, "message": "Confirmación requerida.", "requireConfirmation": True}
+        return {
+            "success": False,
+            "message": "Confirmación requerida.",
+            "requireConfirmation": True,
+        }
 
     try:
         items_deleted = []
@@ -166,7 +198,11 @@ async def handle_admin_reset_library(data: dict[str, Any], user_data: dict[str, 
         init_library_db()
         items_deleted.append("Esquema de base de datos verificado")
 
-        return {"success": True, "message": "Base de datos local reseteada exitosamente.", "details": items_deleted}
+        return {
+            "success": True,
+            "message": "Base de datos local reseteada exitosamente.",
+            "details": items_deleted,
+        }
     except Exception as e:
         logger.error(f"Error reset library: {e}", exc_info=True)
         return {"success": False, "message": str(e)}
@@ -203,7 +239,9 @@ async def handle_admin_find_duplicates(data: dict[str, Any], user_data: dict[str
                                 "filepath": b.filepath,
                                 "filename": b.filename,
                                 "file_size": b.file_size or 0,
-                                "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
+                                "indexed_at": b.indexed_at.isoformat()
+                                if b.indexed_at
+                                else None,
                             }
                             for b in books
                         ],
@@ -224,7 +262,9 @@ async def handle_admin_find_duplicates(data: dict[str, Any], user_data: dict[str
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_delete_duplicate(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_admin_delete_duplicate(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     check_staff(user_data)
     book_ids = data.get("book_ids", [])
     if not book_ids:
@@ -241,7 +281,9 @@ async def handle_admin_delete_duplicate(data: dict[str, Any], user_data: dict[st
                 try:
                     os.remove(book.filepath)
                 except Exception as fe:
-                    logger.warning(f"Could not delete physical file {book.filepath}: {fe}")
+                    logger.warning(
+                        f"Could not delete physical file {book.filepath}: {fe}"
+                    )
 
             success = await book_repo.delete(book_id)
             if success:
@@ -252,7 +294,9 @@ async def handle_admin_delete_duplicate(data: dict[str, Any], user_data: dict[st
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_delete_duplicate_item(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_admin_delete_duplicate_item(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     check_staff(user_data)
     dup_id, target = data.get("id"), data.get("target")
     try:
@@ -262,7 +306,11 @@ async def handle_admin_delete_duplicate_item(data: dict[str, Any], user_data: di
             if not dup:
                 return {"success": False, "message": "No encontrado"}
 
-            path = dup.original_filepath if target == "original" else dup.duplicate_filepath
+            path = (
+                dup.original_filepath
+                if target == "original"
+                else dup.duplicate_filepath
+            )
             if path and os.path.exists(path):
                 try:
                     os.remove(path)
@@ -317,7 +365,9 @@ async def handle_admin_get_duplicates(data: dict[str, Any], user_data: dict[str,
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_recheck_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_admin_recheck_duplicates(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     check_staff(user_data)
     try:
         async with pg_manager.get_session() as session:
@@ -325,7 +375,9 @@ async def handle_admin_recheck_duplicates(data: dict[str, Any], user_data: dict[
             dups = (await session.execute(stmt)).scalars().all()
             removed = 0
             for d in dups:
-                if not os.path.exists(d.duplicate_filepath or "") or not os.path.exists(d.original_filepath or ""):
+                if not os.path.exists(d.duplicate_filepath or "") or not os.path.exists(
+                    d.original_filepath or ""
+                ):
                     await session.delete(d)
                     removed += 1
             await session.commit()
@@ -335,7 +387,9 @@ async def handle_admin_recheck_duplicates(data: dict[str, Any], user_data: dict[
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_clear_duplicates(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_admin_clear_duplicates(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     check_staff(user_data)
     try:
         success = await duplicate_repo.clear_all()
@@ -345,7 +399,9 @@ async def handle_admin_clear_duplicates(data: dict[str, Any], user_data: dict[st
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_admin_ai_series_duplicate_scan(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     check_staff(user_data)
 
     if LibraryService._is_ai_scanning:
@@ -364,7 +420,9 @@ async def handle_admin_ai_series_duplicate_scan(data: dict[str, Any], user_data:
     return {"success": True, "message": "Iniciado en segundo plano."}
 
 
-async def handle_admin_get_ai_scan_status(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_admin_get_ai_scan_status(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     check_staff(user_data)
     return {"success": True, "is_scanning": LibraryService._is_ai_scanning}
 
@@ -382,7 +440,34 @@ async def handle_admin_merge_series(data: dict[str, Any], user_data: dict[str, A
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_admin_add_series_alias(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
+    check_staff(user_data)
+    series_id = data.get("series_id") or data.get("target_hash")
+    alias = data.get("alias")
+    res = await LibraryService.add_series_alias(series_id, alias)
+    if res.get("success"):
+        SyncService.trigger_auto_sync()
+    return res
+
+
+async def handle_admin_delete_series_alias(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
+    check_staff(user_data)
+    alias_id = data.get("alias_id")
+    if not alias_id:
+        return {"success": False, "message": "Falta alias_id"}
+    res = await LibraryService.delete_series_alias(int(alias_id))
+    if res.get("success"):
+        SyncService.trigger_auto_sync()
+    return res
+
+
+async def handle_admin_bulk_upload_confirm(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     check_staff(user_data)
     selected_ids = data.get("selected_ids", []) or data.get("upload_ids", [])
     discarded_ids = data.get("discarded_ids", [])
@@ -444,7 +529,9 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
 
         if not info:
             logger.warning(f"Upload ID {upload_id} no encontrado en memoria ni DB.")
-            results.append({"upload_id": upload_id, "success": False, "error": "No encontrado"})
+            results.append(
+                {"upload_id": upload_id, "success": False, "error": "No encontrado"}
+            )
             continue
 
         f_path = Path(info["file_path"])
@@ -452,7 +539,9 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
 
         try:
             # Use UploadService for robustness
-            success = await upload_service.finalize_upload(f_path, meta.get("suggested_path"), meta)
+            success = await upload_service.finalize_upload(
+                f_path, meta.get("suggested_path"), meta
+            )
 
             status = "success" if success else "error"
 
@@ -481,7 +570,9 @@ async def handle_admin_bulk_upload_confirm(data: dict[str, Any], user_data: dict
             results.append({"upload_id": upload_id, "success": success})
 
         except Exception as e:
-            logger.error(f"Error finalizing bulk upload {upload_id}: {e}", exc_info=True)
+            logger.error(
+                f"Error finalizing bulk upload {upload_id}: {e}", exc_info=True
+            )
             results.append({"upload_id": upload_id, "success": False, "error": str(e)})
 
     return {"success": True, "results": results}
@@ -527,7 +618,10 @@ async def handle_admin_update_covers(data: dict[str, Any], user_data: dict[str, 
     # Iniciar en segundo plano sin esperar
     asyncio.create_task(MaintenanceOrchestrator.run_tool("cover_refresh"))
 
-    return {"success": True, "message": "Actualización de portadas iniciada en segundo plano."}
+    return {
+        "success": True,
+        "message": "Actualización de portadas iniciada en segundo plano.",
+    }
 
 
 async def handle_admin_fix_integrity(data: dict[str, Any], user_data: dict[str, Any]):
@@ -539,10 +633,15 @@ async def handle_admin_fix_integrity(data: dict[str, Any], user_data: dict[str, 
     # Iniciar en segundo plano
     asyncio.create_task(MaintenanceOrchestrator.run_tool("db_integrity"))
 
-    return {"success": True, "message": "Corrección de integridad iniciada en segundo plano."}
+    return {
+        "success": True,
+        "message": "Corrección de integridad iniciada en segundo plano.",
+    }
 
 
-async def handle_admin_get_genre_audits(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_admin_get_genre_audits(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     """Returns all pending metadata audits (unresolved)."""
     check_staff(user_data)
     try:
@@ -568,7 +667,9 @@ async def handle_admin_get_genre_audits(data: dict[str, Any], user_data: dict[st
                         "new_value": row.new_value
                         if isinstance(row.new_value, dict)
                         else json.loads(row.new_value or "{}"),
-                        "created_at": row.created_at.isoformat() if row.created_at else None,
+                        "created_at": row.created_at.isoformat()
+                        if row.created_at
+                        else None,
                     }
                 )
             return {"success": True, "audits": audits}
@@ -577,7 +678,9 @@ async def handle_admin_get_genre_audits(data: dict[str, Any], user_data: dict[st
         return {"success": False, "message": str(e)}
 
 
-async def handle_admin_resolve_genre_audit(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_admin_resolve_genre_audit(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     """Marks an audit as resolved."""
     check_staff(user_data)
     audit_id = data.get("audit_id")
@@ -586,7 +689,9 @@ async def handle_admin_resolve_genre_audit(data: dict[str, Any], user_data: dict
 
     try:
         async with pg_manager.get_session() as session:
-            stmt = text("UPDATE metadata_audits SET status = 'reviewed', reviewed_at = NOW() WHERE id = :id")
+            stmt = text(
+                "UPDATE metadata_audits SET status = 'reviewed', reviewed_at = NOW() WHERE id = :id"
+            )
             await session.execute(stmt, {"id": audit_id})
             await session.commit()
             return {"success": True, "message": "Auditoría marcada como revisada."}
@@ -595,7 +700,9 @@ async def handle_admin_resolve_genre_audit(data: dict[str, Any], user_data: dict
         return {"success": False, "message": str(e)}
 
 
-async def handle_upload_confirm_internal(data: dict[str, Any], user_data: dict[str, Any]) -> dict[str, Any]:
+async def handle_upload_confirm_internal(
+    data: dict[str, Any], user_data: dict[str, Any]
+) -> dict[str, Any]:
     """
     Confirma un upload individual desde la Web App REST.
     Mueve el archivo a su destino final (Nextcloud o disco local) y lo indexa.
@@ -627,7 +734,9 @@ async def handle_upload_confirm_internal(data: dict[str, Any], user_data: dict[s
             logger.error(f"Error recuperando upload {upload_id} de DB: {e}")
 
     if not info:
-        raise HTTPException(status_code=404, detail=f"Upload ID {upload_id} no encontrado")
+        raise HTTPException(
+            status_code=404, detail=f"Upload ID {upload_id} no encontrado"
+        )
 
     f_path = Path(info["file_path"])
     meta = info.get("metadata") or {}
@@ -637,7 +746,9 @@ async def handle_upload_confirm_internal(data: dict[str, Any], user_data: dict[s
         meta["suggested_path"] = data["path"]
 
     try:
-        success = await upload_service.finalize_upload(f_path, meta.get("suggested_path"), meta)
+        success = await upload_service.finalize_upload(
+            f_path, meta.get("suggested_path"), meta
+        )
 
         status = "success" if success else "error"
         await upload_repo.log_history(
@@ -660,5 +771,6 @@ async def handle_upload_confirm_internal(data: dict[str, Any], user_data: dict[s
 
     except Exception as e:
         logger.error(f"Error finalizando upload {upload_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error al finalizar el upload: {str(e)}")
-
+        raise HTTPException(
+            status_code=500, detail=f"Error al finalizar el upload: {str(e)}"
+        )

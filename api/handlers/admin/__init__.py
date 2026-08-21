@@ -6,6 +6,7 @@ from .grid_handlers import (
     handle_admin_update_series_grid,
 )
 from .library_handlers import (
+    handle_admin_add_series_alias,
     handle_admin_ai_series_duplicate_scan,
     handle_admin_backup_library,
     handle_admin_bulk_upload_confirm,
@@ -13,6 +14,7 @@ from .library_handlers import (
     handle_admin_clear_duplicates,
     handle_admin_delete_duplicate,
     handle_admin_delete_duplicate_item,
+    handle_admin_delete_series_alias,
     handle_admin_enrich_metadata,
     handle_admin_find_duplicates,
     handle_admin_fix_integrity,

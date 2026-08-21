@@ -357,3 +357,196 @@ class LibraryService:
                 f"Error al obtener estadísticas globales de la biblioteca: {e}"
             )
             return {"series_count": 0, "books_count": 0}
+
+    @classmethod
+    async def merge_series(
+        cls, target_hash: str, source_hash: str, new_name: str | None = None
+    ) -> bool:
+        """
+        Fusiona una serie secundaria (source_hash) dentro de una serie principal (target_hash).
+        Re-vincula todos los libros, transfiere géneros, demografías y alias, y elimina la serie secundaria.
+        """
+        if not target_hash or not source_hash or target_hash == source_hash:
+            return False
+
+        from core.db_manager_pg import pg_manager
+        from models.library import SeriesAlias, SeriesMetadata
+        from services.maintenance.orchestrator import MaintenanceOrchestrator
+        from sqlalchemy import func, select, text
+
+        try:
+            async with pg_manager.get_session() as session:
+                target_stmt = select(SeriesMetadata).where(
+                    SeriesMetadata.id == target_hash
+                )
+                source_stmt = select(SeriesMetadata).where(
+                    SeriesMetadata.id == source_hash
+                )
+
+                target = (await session.execute(target_stmt)).scalar_one_or_none()
+                source = (await session.execute(source_stmt)).scalar_one_or_none()
+
+                if not target or not source:
+                    logger.error(
+                        f"Error fusionando series: target={target_hash}, source={source_hash} no encontrados"
+                    )
+                    return False
+
+                if new_name and new_name.strip():
+                    target.series_name = new_name.strip()
+
+                # Registrar los nombres de la serie origen como alias en la serie destino
+                source_names = {
+                    source.name,
+                    source.series_spanish,
+                    source.series_english,
+                    source.series_name,
+                }
+                for s_name in source_names:
+                    if (
+                        s_name
+                        and s_name.strip()
+                        and len(s_name.strip()) > 1
+                        and s_name.strip().lower() != "unknown"
+                    ):
+                        stmt_ex = select(SeriesAlias).where(
+                            func.lower(SeriesAlias.alias) == s_name.strip().lower()
+                        )
+                        ex_alias = (await session.execute(stmt_ex)).scalar_one_or_none()
+                        if not ex_alias:
+                            session.add(
+                                SeriesAlias(series_id=target.id, alias=s_name.strip())
+                            )
+
+                # Re-vincular alias de la serie origen
+                await session.execute(
+                    text("""
+                        UPDATE series_aliases 
+                        SET series_id = :tid 
+                        WHERE series_id = :sid 
+                          AND LOWER(alias) NOT IN (SELECT LOWER(alias) FROM series_aliases WHERE series_id = :tid)
+                    """),
+                    {"tid": target.id, "sid": source.id},
+                )
+                await session.execute(
+                    text("DELETE FROM series_aliases WHERE series_id = :sid"),
+                    {"sid": source.id},
+                )
+
+                # Re-vincular libros
+                await session.execute(
+                    text("""
+                        UPDATE books 
+                        SET series_id = :tid,
+                            series_english = :t_en,
+                            series_spanish = :t_es,
+                            romaji_title = :t_romaji
+                        WHERE series_id = :sid
+                    """),
+                    {
+                        "tid": target.id,
+                        "sid": source.id,
+                        "t_en": target.series_english,
+                        "t_es": target.series_spanish,
+                        "t_romaji": target.name,
+                    },
+                )
+
+                # Borrar relaciones de la serie origen y luego la serie misma
+                await session.execute(
+                    text("DELETE FROM series_demographics WHERE series_id = :sid"),
+                    {"sid": source.id},
+                )
+                await session.execute(
+                    text("DELETE FROM series_genres WHERE series_id = :sid"),
+                    {"sid": source.id},
+                )
+                await session.execute(
+                    text("DELETE FROM series WHERE id = :sid"),
+                    {"sid": source.id},
+                )
+
+                await session.commit()
+
+                # Recalcular conteo de libros en la base de datos
+                await session.execute(
+                    text("""
+                        UPDATE series s
+                        SET book_count = (SELECT COUNT(*) FROM books b WHERE b.series_id = s.id)
+                    """)
+                )
+                await session.commit()
+
+            # Ejecutar tareas de mantenimiento en segundo plano
+            await MaintenanceOrchestrator.run_tool("db_integrity")
+            await MaintenanceOrchestrator.run_tool("slug_recalculate")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error en merge_series ({source_hash} -> {target_hash}): {e}")
+            return False
+
+    @classmethod
+    async def add_series_alias(cls, series_id: str, alias: str) -> dict:
+        """Agrega un alias manualmente a una serie."""
+        if not series_id or not alias or len(alias.strip()) <= 1:
+            return {"success": False, "message": "Alias o ID de serie inválido"}
+
+        from core.db_manager_pg import pg_manager
+        from models.library import SeriesAlias, SeriesMetadata
+        from sqlalchemy import func, select
+
+        clean_alias = alias.strip()
+        try:
+            async with pg_manager.get_session() as session:
+                series = (
+                    await session.execute(
+                        select(SeriesMetadata).where(SeriesMetadata.id == series_id)
+                    )
+                ).scalar_one_or_none()
+                if not series:
+                    return {"success": False, "message": "Serie no encontrada"}
+
+                existing = (
+                    await session.execute(
+                        select(SeriesAlias).where(
+                            func.lower(SeriesAlias.alias) == clean_alias.lower()
+                        )
+                    )
+                ).scalar_one_or_none()
+                if existing:
+                    if existing.series_id == series_id:
+                        return {
+                            "success": True,
+                            "message": "El alias ya pertenece a esta serie",
+                        }
+                    return {
+                        "success": False,
+                        "message": f"El alias ya está asignado a otra serie (ID: {existing.series_id})",
+                    }
+
+                alias_obj = SeriesAlias(series_id=series_id, alias=clean_alias)
+                session.add(alias_obj)
+                await session.commit()
+                return {"success": True, "alias_id": alias_obj.id, "alias": clean_alias}
+        except Exception as e:
+            logger.error(f"Error añadiendo alias '{alias}' a serie '{series_id}': {e}")
+            return {"success": False, "message": str(e)}
+
+    @classmethod
+    async def delete_series_alias(cls, alias_id: int) -> dict:
+        """Elimina un alias de la base de datos."""
+        from core.db_manager_pg import pg_manager
+        from models.library import SeriesAlias
+        from sqlalchemy import delete
+
+        try:
+            async with pg_manager.get_session() as session:
+                await session.execute(
+                    delete(SeriesAlias).where(SeriesAlias.id == alias_id)
+                )
+                await session.commit()
+                return {"success": True}
+        except Exception as e:
+            logger.error(f"Error eliminando alias ID {alias_id}: {e}")
+            return {"success": False, "message": str(e)}
