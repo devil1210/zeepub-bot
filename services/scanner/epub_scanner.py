@@ -12,7 +12,11 @@ from models.library import Demographic, Genre, LocalBook
 from services.hash_service import hash_service
 from services.scanner.scanner_helpers import ScannerHelpers
 from utils.epub_extractor import EpubMetadataExtractor
-from utils.helpers import generate_short_link, is_demographic_tag, normalize_demographics_list
+from utils.helpers import (
+    generate_short_link,
+    is_demographic_tag,
+    normalize_demographics_list,
+)
 from utils.library_db import COVERS_DIR, DB_DIR
 
 logger = logging.getLogger(__name__)
@@ -146,7 +150,9 @@ class EpubScanner:
                         found_something = True
 
                     if found_something:
-                        logger.info(f"Metadatos extraídos para ISBN {isbn}: {api_title}")
+                        logger.info(
+                            f"Metadatos extraídos para ISBN {isbn}: {api_title}"
+                        )
                         return True
         except Exception as e:
             logger.error(f"Error enriqueciendo desde ISBN {book.isbn}: {e}")
@@ -225,21 +231,28 @@ class EpubScanner:
             try:
                 from services.epub_service import extract_internal_title
                 from utils.metadata_utils import is_romaji_string
+
                 internal_title = extract_internal_title(filepath)
                 if internal_title:
                     if is_romaji_string(internal_title):
                         meta["romaji_title"] = internal_title
-                        logger.info(f"📖 Título en Romaji extraído del HTML nativo: {internal_title}")
+                        logger.info(
+                            f"📖 Título en Romaji extraído del HTML nativo: {internal_title}"
+                        )
                     else:
                         meta["series_spanish"] = internal_title
-                        logger.info(f"📖 Título en Español extraído del HTML nativo: {internal_title}")
+                        logger.info(
+                            f"📖 Título en Español extraído del HTML nativo: {internal_title}"
+                        )
             except Exception as e:
                 logger.debug(f"No se pudo extraer el título interno de {filename}: {e}")
 
             # 4. PROCESAR IDENTIDAD (Sin redundancia de E/S)
             from utils.helpers import process_book_identity_comprehensive
 
-            identity = process_book_identity_comprehensive(meta=meta, original_filename=filename)
+            identity = process_book_identity_comprehensive(
+                meta=meta, original_filename=filename
+            )
             if not identity:
                 return False
 
@@ -267,9 +280,14 @@ class EpubScanner:
                 # Si existía un registro para este filepath pero su hash cambió, lo eliminamos para evitar
                 # actualizar la clave primaria (id/book_hash) en caliente, previniendo ForeignKeyViolationError.
                 if book and book.book_hash != target_book_hash:
-                    logger.info(f"🗑️ Reemplazando libro por cambio de hash sagrado: {book.book_hash} -> {target_book_hash}")
+                    logger.info(
+                        f"🗑️ Reemplazando libro por cambio de hash sagrado: {book.book_hash} -> {target_book_hash}"
+                    )
                     from services.scanner.library_scanner import LibraryScanner
-                    await LibraryScanner._cleanup_book_references(session, book.book_hash)
+
+                    await LibraryScanner._cleanup_book_references(
+                        session, book.book_hash
+                    )
                     await session.delete(book)
                     await session.flush()
                     book = None
@@ -281,14 +299,19 @@ class EpubScanner:
                         selectinload(LocalBook.genres),
                         selectinload(LocalBook.demographics),
                     )
-                    .where(LocalBook.book_hash == target_book_hash, LocalBook.filepath != filepath)
+                    .where(
+                        LocalBook.book_hash == target_book_hash,
+                        LocalBook.filepath != filepath,
+                    )
                 )
                 conflict_res = await session.execute(conflict_stmt)
                 hash_conflict = conflict_res.scalar_one_or_none()
 
                 if hash_conflict:
                     if not os.path.exists(hash_conflict.filepath):
-                        logger.info(f"🔄 Migración detectada: {hash_conflict.filepath} -> {filepath}")
+                        logger.info(
+                            f"🔄 Migración detectada: {hash_conflict.filepath} -> {filepath}"
+                        )
                         # Si 'book' ya existía pero con otro hash, lo eliminamos a favor del conflictivo que migramos
                         if book and book.book_hash != hash_conflict.book_hash:
                             await session.delete(book)
@@ -300,9 +323,12 @@ class EpubScanner:
                         hash_conflict.source = source
                         book = hash_conflict
                     else:
-                        logger.warning(f"📕 Duplicado ignorado (ya existe en DB): {filename}")
+                        logger.warning(
+                            f"📕 Duplicado ignorado (ya existe en DB): {filename}"
+                        )
                         # Registrar duplicado si es necesario
                         from models.library import DuplicateBook
+
                         dup_stmt = select(DuplicateBook).where(
                             DuplicateBook.duplicate_filepath == filepath
                         )
@@ -314,7 +340,7 @@ class EpubScanner:
                                 original_filepath=hash_conflict.filepath,
                                 duplicate_filepath=filepath,
                                 title=identity.get("title") or hash_conflict.title,
-                                author=identity.get("author") or hash_conflict.author
+                                author=identity.get("author") or hash_conflict.author,
                             )
                             session.add(new_duplicate)
                             await session.flush()
@@ -323,24 +349,30 @@ class EpubScanner:
                 # 6.2 Detección de Colisión de Metadatos Homólogos con UUIDs Distintos
                 if not hash_conflict:
                     target_series_hash = cls.generate_series_hash(
-                        series_name=identity["series"], author=identity["author"], book_type=identity["book_type"]
+                        series_name=identity["series"],
+                        author=identity["author"],
+                        book_type=identity["book_type"],
                     )
                     dup_meta_stmt = select(LocalBook).where(
                         LocalBook.series_id == target_series_hash,
                         LocalBook.volume == identity["volume"],
                         LocalBook.translator == identity["translator"],
                         LocalBook.layout_by == identity["layout_by"],
-                        LocalBook.edition == (identity["edition"] or meta.get("edition")),
+                        LocalBook.edition
+                        == (identity["edition"] or meta.get("edition")),
                         LocalBook.is_uncensored == bool(identity["is_uncensored"]),
                         LocalBook.color_mode == identity["color_mode"],
-                        LocalBook.id != target_book_hash
+                        LocalBook.id != target_book_hash,
                     )
                     dup_meta_res = await session.execute(dup_meta_stmt)
                     logical_conflict = dup_meta_res.scalar_one_or_none()
 
                     if logical_conflict:
-                        logger.warning(f"⚠️ Alerta [POR REVISAR]: Colisión de metadatos homólogos pero UUIDs distintos para {filename}")
+                        logger.warning(
+                            f"⚠️ Alerta [POR REVISAR]: Colisión de metadatos homólogos pero UUIDs distintos para {filename}"
+                        )
                         from models.library import DuplicateBook
+
                         dup_stmt = select(DuplicateBook).where(
                             DuplicateBook.duplicate_filepath == filepath
                         )
@@ -352,14 +384,21 @@ class EpubScanner:
                                 original_filepath=logical_conflict.filepath,
                                 duplicate_filepath=filepath,
                                 title=f"[POR REVISAR] {identity.get('title') or logical_conflict.title}",
-                                author=identity.get("author") or logical_conflict.author
+                                author=identity.get("author")
+                                or logical_conflict.author,
                             )
                             session.add(new_duplicate)
                             await session.flush()
 
                 if not book:
                     # Inicializamos colecciones vacías para evitar lazy-load al asignar después del flush
-                    book = LocalBook(id=target_book_hash, filepath=filepath, source=source, genres=[], demographics=[])
+                    book = LocalBook(
+                        id=target_book_hash,
+                        filepath=filepath,
+                        source=source,
+                        genres=[],
+                        demographics=[],
+                    )
                     session.add(book)
 
                 # Sincronizar campos principales desde Identity y Meta
@@ -375,29 +414,50 @@ class EpubScanner:
                 book.author = identity["author"]
                 book.book_type = identity["book_type"]
                 # Deferimos la asignación de series_hash hasta que el series_provider la valide
-                book.book_hash = target_book_hash
+                if not getattr(book, "id", None):
+                    book.id = target_book_hash
                 book.is_uncensored = identity["is_uncensored"]
                 book.color_mode = identity["color_mode"]
                 from utils.metadata_utils import is_romaji_string
 
                 sp_val = identity.get("series_spanish") or identity.get("spanish_title")
                 if sp_val and is_romaji_string(sp_val):
-                    if not book.romaji_title or book.romaji_title == identity.get("title"):
+                    if not book.romaji_title or book.romaji_title == identity.get(
+                        "title"
+                    ):
                         book.romaji_title = sp_val
                     sp_val = None
 
-                book.romaji_title = identity.get("romaji_title") or meta.get("romaji_title") or book.romaji_title
-                book.spanish_title = sp_val or (book.spanish_title if not is_romaji_string(book.spanish_title or "") else None)
-                book.english_title = identity.get("series_english") or book.english_title
-                book.series_spanish = sp_val or (book.series_spanish if not is_romaji_string(book.series_spanish or "") else None)
-                book.series_english = identity.get("series_english") or book.series_english
+                book.romaji_title = (
+                    identity.get("romaji_title")
+                    or meta.get("romaji_title")
+                    or book.romaji_title
+                )
+                book.spanish_title = sp_val or (
+                    book.spanish_title
+                    if not is_romaji_string(book.spanish_title or "")
+                    else None
+                )
+                book.english_title = (
+                    identity.get("series_english") or book.english_title
+                )
+                book.series_spanish = sp_val or (
+                    book.series_spanish
+                    if not is_romaji_string(book.series_spanish or "")
+                    else None
+                )
+                book.series_english = (
+                    identity.get("series_english") or book.series_english
+                )
                 book.uuid = identity.get("uuid") or book.uuid
 
                 # Campos adicionales desde OPF Meta
                 book.publisher = meta.get("publisher") or book.publisher
                 book.description = meta.get("description") or book.description
                 book.illustrator = meta.get("illustrator") or book.illustrator
-                book.illustrator_jap = meta.get("illustrator_jap") or book.illustrator_jap
+                book.illustrator_jap = (
+                    meta.get("illustrator_jap") or book.illustrator_jap
+                )
                 book.author_jap = meta.get("author_jap") or book.author_jap
                 book.isbn = meta.get("isbn") or book.isbn
                 book.asin = meta.get("asin") or book.asin
@@ -409,11 +469,17 @@ class EpubScanner:
                 # Parsear fecha de modificación de metadatos (evitar DataError con asyncpg si es string)
                 opf_date_str = meta.get("modified_at_opf")
                 if opf_date_str:
-                    book.modified_at_opf = cls.parse_opf_date(opf_date_str) or book.modified_at_opf
+                    book.modified_at_opf = (
+                        cls.parse_opf_date(opf_date_str) or book.modified_at_opf
+                    )
 
                 # Tags y Clasificación (JSON - Legacy)
                 raw_tags = meta.get("tags", [])
-                raw_demo = meta.get("demographics") or meta.get("demografia") or [t for t in raw_tags if is_demographic_tag(t)]
+                raw_demo = (
+                    meta.get("demographics")
+                    or meta.get("demografia")
+                    or [t for t in raw_tags if is_demographic_tag(t)]
+                )
                 book_demographics = normalize_demographics_list(raw_demo)
                 book_tags = [t for t in raw_tags if not is_demographic_tag(t)]
 
@@ -425,7 +491,9 @@ class EpubScanner:
                 if series_provider:
                     # Cálculo proactivo del hash de serie para evitar IntegrityErrors por IDs nulos
                     book.series_hash = cls.generate_series_hash(
-                        series_name=identity["series"], author=identity["author"], book_type=identity["book_type"]
+                        series_name=identity["series"],
+                        author=identity["author"],
+                        book_type=identity["book_type"],
                     )
 
                     # Adjuntamos datos extraídos al objeto temporalmente para el provider
@@ -446,8 +514,12 @@ class EpubScanner:
 
                 # Relaciones (NUEVO)
                 # Obtenemos los objetos de taxonomía (esto hace E/S asíncrona permitida)
-                genres_objs = await ScannerHelpers.sync_taxonomy(session, Genre, book_tags)
-                demo_objs = await ScannerHelpers.sync_taxonomy(session, Demographic, book_demographics)
+                genres_objs = await ScannerHelpers.sync_taxonomy(
+                    session, Genre, book_tags
+                )
+                demo_objs = await ScannerHelpers.sync_taxonomy(
+                    session, Demographic, book_demographics
+                )
 
                 # Asignamos las colecciones (ya cargadas o inicializadas, evitando lazy-load)
                 book.genres = genres_objs
@@ -473,9 +545,13 @@ class EpubScanner:
                 cover_paths = extractor.save_cover(cover_dest)
                 if cover_paths:
                     base_url = "/api/library/covers/"
-                    book.cover_original = base_url + os.path.basename(cover_paths["original"])
+                    book.cover_original = base_url + os.path.basename(
+                        cover_paths["original"]
+                    )
                     book.cover_high = base_url + os.path.basename(cover_paths["high"])
-                    book.cover_medium = base_url + os.path.basename(cover_paths["medium"])
+                    book.cover_medium = base_url + os.path.basename(
+                        cover_paths["medium"]
+                    )
                     book.cover_low = base_url + os.path.basename(cover_paths["low"])
 
             await session.flush()
@@ -490,7 +566,9 @@ class EpubScanner:
             return False
 
     @classmethod
-    async def refresh_book_cover(cls, filepath: str, book: LocalBook, session: Any) -> bool:
+    async def refresh_book_cover(
+        cls, filepath: str, book: LocalBook, session: Any
+    ) -> bool:
         """
         Extrae y guarda únicamente la portada de un libro existente.
         """
@@ -505,9 +583,13 @@ class EpubScanner:
                 cover_paths = extractor.save_cover(cover_dest)
                 if cover_paths:
                     base_url = "/api/library/covers/"
-                    book.cover_original = base_url + os.path.basename(cover_paths["original"])
+                    book.cover_original = base_url + os.path.basename(
+                        cover_paths["original"]
+                    )
                     book.cover_high = base_url + os.path.basename(cover_paths["high"])
-                    book.cover_medium = base_url + os.path.basename(cover_paths["medium"])
+                    book.cover_medium = base_url + os.path.basename(
+                        cover_paths["medium"]
+                    )
                     book.cover_low = base_url + os.path.basename(cover_paths["low"])
                     await session.flush()
                     return True
