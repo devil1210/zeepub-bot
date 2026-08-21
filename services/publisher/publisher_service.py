@@ -121,11 +121,11 @@ class PublisherService:
 
         paginas_str = str(book.page_count) if getattr(book, "page_count", None) else ""
 
-        # Formateo de géneros y demografías
-        genres_list = (getattr(series_info, "tags_json", None) if series_info else None) or getattr(book, "tags_json", None) or []
+        # Formateo de géneros y demografías (Prioridad al libro específico sobre el agregado de la serie)
+        genres_list = getattr(book, "tags_json", None) or (getattr(series_info, "tags_json", None) if series_info else None) or []
         genres_str = ", ".join(genres_list) if isinstance(genres_list, list) else str(genres_list or "")
 
-        demo_list = (getattr(series_info, "demographics_json", None) if series_info else None) or getattr(book, "demographics_json", None) or []
+        demo_list = getattr(book, "demographics_json", None) or (getattr(series_info, "demographics_json", None) if series_info else None) or []
         demo_str = normalize_demography(demo_list)
 
         dl_link = f"https://dl.zeepubs.com/{book.short_link}" if getattr(book, "short_link", None) else ""
