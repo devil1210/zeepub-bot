@@ -37,6 +37,7 @@ from api.handlers.admin import (
     handle_admin_get_tier_config,
     handle_admin_get_tiers,
     handle_admin_get_user_permissions,
+    handle_admin_get_users,
     handle_admin_add_series_alias,
     handle_admin_delete_series_alias,
     handle_admin_merge_series,
