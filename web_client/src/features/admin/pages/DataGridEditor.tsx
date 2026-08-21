@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Search,
     Filter,
@@ -73,6 +74,7 @@ interface SeriesGridItem {
 }
 
 export const DataGridEditor: React.FC = () => {
+    const navigate = useNavigate();
     const { settings } = useTheme();
     const { webApp } = useTelegram();
     const { setContextType, setCustomActions, setVisible } = useNavigation();
@@ -778,6 +780,14 @@ export const DataGridEditor: React.FC = () => {
                                                 {/* Series Actions */}
                                                 <td className="py-3 px-3 text-center">
                                                     <div className="flex items-center justify-center gap-1.5">
+                                                        <button
+                                                            onClick={() => navigate(`/admin/series/${series.id}`)}
+                                                            className="px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95 shadow-md shadow-indigo-600/20"
+                                                            title="Abrir Editor Completo de Serie (Información, Alias y Volúmenes)"
+                                                        >
+                                                            <ExternalLink className="w-3 h-3" />
+                                                            Editar Serie
+                                                        </button>
                                                         <button
                                                             onClick={() => setSelectedSeriesForAlias(series)}
                                                             className="px-2 py-1 rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95"

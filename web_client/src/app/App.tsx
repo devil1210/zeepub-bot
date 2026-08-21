@@ -20,6 +20,7 @@ const AIHub = React.lazy(() => import('@features/ai/pages/AIHub').then(m => ({ d
 const BookDetailById = React.lazy(() => import('@features/book/pages/BookDetailById').then(m => ({ default: m.BookDetailById })));
 const TemplateEditorPage = React.lazy(() => import('@features/publisher/pages/TemplateEditorPage').then(m => ({ default: m.TemplateEditorPage })));
 const FansubDetailPage = React.lazy(() => import('@features/publisher/pages/FansubDetailPage').then(m => ({ default: m.FansubDetailPage })));
+const SeriesDetailPage = React.lazy(() => import('@features/admin/pages/SeriesDetailPage').then(m => ({ default: m.SeriesDetailPage })));
 
 import { Series, Volume } from '@shared/types';
 import { LoginGate } from '@components/LoginGate';
@@ -229,6 +230,11 @@ const AppContent: React.FC = () => {
             <Route path="/admin/fansubs/:id" element={
               <ProtectedAdminRoute>
                 <PageWrapper Component={FansubDetailPage} />
+              </ProtectedAdminRoute>
+            } />
+            <Route path="/admin/series/:id" element={
+              <ProtectedAdminRoute>
+                <PageWrapper Component={SeriesDetailPage} />
               </ProtectedAdminRoute>
             } />
 
