@@ -129,6 +129,7 @@ export interface Series {
   color_mode?: string;
   demographics?: string[];
   tags?: string[];
+  aliases?: Array<{ id: number; alias: string }>;
   volumes: Volume[];
 }
 

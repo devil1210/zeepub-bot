@@ -267,6 +267,10 @@ export const api = {
     adminAiSeriesDuplicateScan: () => rpc('admin_ai_series_duplicate_scan'),
     adminMergeSeries: (targetHash: string, sourceHash: string, newName?: string) =>
         rpc('admin_merge_series', { target_hash: targetHash, source_hash: sourceHash, new_name: newName }),
+    adminAddSeriesAlias: (seriesId: string, alias: string) =>
+        rpc('admin_add_series_alias', { series_id: seriesId, alias }),
+    adminDeleteSeriesAlias: (aliasId: number) =>
+        rpc('admin_delete_series_alias', { alias_id: aliasId }),
     adminScanUser: (userId: string) => rpc('admin_scan_user', { userId }),
     getSystemLogs: (level: string = 'INFO', hours?: number) => rpc('admin_get_system_logs', { level, hours }),
     sendLogsToTelegram: (level: string = 'DEBUG', hours?: number) => rpc('admin_send_logs_telegram', { level, hours }),

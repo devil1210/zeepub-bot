@@ -21,6 +21,10 @@ import {
     CheckCircle2,
     SlidersHorizontal,
     Table,
+    Tag,
+    GitMerge,
+    Plus,
+    Trash2,
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 import { useTheme } from '@shared/contexts/ThemeContext';
@@ -61,6 +65,7 @@ interface SeriesGridItem {
     book_type: string;
     demographics: string[];
     tags: string[];
+    aliases?: Array<{ id: number; alias: string }>;
     cover_url: string;
     book_count: number;
     books: BookGridItem[];
@@ -98,6 +103,75 @@ export const DataGridEditor: React.FC = () => {
     const [modifiedSeries, setModifiedSeries] = useState<{ [seriesId: string]: Partial<SeriesGridItem> }>({});
     const [modifiedBooks, setModifiedBooks] = useState<{ [bookId: string]: Partial<BookGridItem> }>({});
     const [saving, setSaving] = useState(false);
+
+    // Alias & Fusion Modal State
+    const [selectedSeriesForAlias, setSelectedSeriesForAlias] = useState<SeriesGridItem | null>(null);
+    const [newAliasInput, setNewAliasInput] = useState('');
+    const [addingAlias, setAddingAlias] = useState(false);
+    const [mergeSourceHash, setMergeSourceHash] = useState('');
+    const [mergingSeries, setMergingSeries] = useState(false);
+
+    const handleAddAlias = async () => {
+        if (!selectedSeriesForAlias || !newAliasInput.trim()) return;
+        setAddingAlias(true);
+        try {
+            const res = await (api as any).adminAddSeriesAlias(selectedSeriesForAlias.id, newAliasInput.trim());
+            if (res.success) {
+                setToastMessage({ text: `Alias "${newAliasInput.trim()}" agregado exitosamente`, type: 'success' });
+                const newAliasObj = { id: res.alias_id || Date.now(), alias: newAliasInput.trim() };
+                setSelectedSeriesForAlias(prev => (prev ? { ...prev, aliases: [...(prev.aliases || []), newAliasObj] } : null));
+                setSeriesList(prev => prev.map(s => s.id === selectedSeriesForAlias.id ? { ...s, aliases: [...(s.aliases || []), newAliasObj] } : s));
+                setNewAliasInput('');
+            } else {
+                setToastMessage({ text: res.message || 'Error agregando alias', type: 'error' });
+            }
+        } catch (err: any) {
+            setToastMessage({ text: err.message || 'Error de conexión', type: 'error' });
+        } finally {
+            setAddingAlias(false);
+        }
+    };
+
+    const handleDeleteAlias = async (aliasId: number) => {
+        if (!selectedSeriesForAlias) return;
+        try {
+            const res = await (api as any).adminDeleteSeriesAlias(aliasId);
+            if (res.success) {
+                setToastMessage({ text: 'Alias eliminado exitosamente', type: 'success' });
+                setSelectedSeriesForAlias(prev => (prev ? { ...prev, aliases: (prev.aliases || []).filter(a => a.id !== aliasId) } : null));
+                setSeriesList(prev => prev.map(s => s.id === selectedSeriesForAlias.id ? { ...s, aliases: (s.aliases || []).filter(a => a.id !== aliasId) } : s));
+            }
+        } catch (err: any) {
+            setToastMessage({ text: 'Error eliminando alias', type: 'error' });
+        }
+    };
+
+    const handleMergeSeriesInModal = async () => {
+        if (!selectedSeriesForAlias || !mergeSourceHash.trim()) return;
+        if (selectedSeriesForAlias.id === mergeSourceHash.trim()) {
+            setToastMessage({ text: 'No puedes fusionar una serie consigo misma', type: 'error' });
+            return;
+        }
+        if (!confirm(`¿Estás seguro de fusionar la serie secundaria dentro de "${selectedSeriesForAlias.name}"?\nTodos los volúmenes pasarán a esta serie y la otra serie será eliminada.`)) {
+            return;
+        }
+        setMergingSeries(true);
+        try {
+            const res = await (api as any).adminMergeSeries(selectedSeriesForAlias.id, mergeSourceHash.trim());
+            if (res.success) {
+                setToastMessage({ text: 'Series fusionadas con éxito', type: 'success' });
+                setMergeSourceHash('');
+                setSelectedSeriesForAlias(null);
+                fetchData();
+            } else {
+                setToastMessage({ text: res.message || 'Error en fusión', type: 'error' });
+            }
+        } catch (err: any) {
+            setToastMessage({ text: 'Error fusionando series', type: 'error' });
+        } finally {
+            setMergingSeries(false);
+        }
+    };
 
     // Debounce query
     useEffect(() => {
@@ -704,6 +778,14 @@ export const DataGridEditor: React.FC = () => {
                                                 {/* Series Actions */}
                                                 <td className="py-3 px-3 text-center">
                                                     <div className="flex items-center justify-center gap-1.5">
+                                                        <button
+                                                            onClick={() => setSelectedSeriesForAlias(series)}
+                                                            className="px-2 py-1 rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold flex items-center gap-1 transition-all active:scale-95"
+                                                            title="Gestionar alias y fusionar series"
+                                                        >
+                                                            <Tag className="w-3 h-3" />
+                                                            Alias / Fusión
+                                                        </button>
                                                         {isSeriesDirty && (
                                                             <button
                                                                 onClick={() => handleSaveSeries(series.id)}
@@ -922,6 +1004,109 @@ export const DataGridEditor: React.FC = () => {
                             <Save className="w-4 h-4" />
                             {saving ? 'Guardando...' : 'Guardar Todo'}
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Alias & Fusion Modal */}
+            {selectedSeriesForAlias && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="w-full max-w-xl bg-slate-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-6 space-y-6">
+                        {/* Modal Header */}
+                        <div className="flex items-start justify-between border-b border-white/10 pb-4">
+                            <div>
+                                <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-wider">
+                                    <Tag className="w-4 h-4" />
+                                    Gestión de Alias y Fusión
+                                </div>
+                                <h3 className="text-lg font-bold text-white mt-1">
+                                    {selectedSeriesForAlias.name}
+                                </h3>
+                                <p className="text-xs font-mono text-slate-400 mt-0.5">
+                                    ID: {selectedSeriesForAlias.id}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedSeriesForAlias(null)}
+                                className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Section 1: Alias List & Add */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <Tag className="w-3.5 h-3.5 text-indigo-400" />
+                                Títulos Alias Registrados
+                            </h4>
+
+                            <div className="flex flex-wrap gap-1.5 min-h-[40px] p-3 rounded-xl bg-slate-950/60 border border-white/5">
+                                {(!selectedSeriesForAlias.aliases || selectedSeriesForAlias.aliases.length === 0) ? (
+                                    <span className="text-xs text-slate-500 italic">No hay alias asignados aún</span>
+                                ) : (
+                                    selectedSeriesForAlias.aliases.map(al => (
+                                        <span key={al.id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-200 text-xs font-medium">
+                                            {al.alias}
+                                            <button
+                                                onClick={() => handleDeleteAlias(al.id)}
+                                                className="hover:text-rose-400 transition-colors ml-0.5"
+                                                title="Eliminar alias"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    ))
+                                )}
+                            </div>
+
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Agregar un nuevo alias (ej. Título en Romaji o Fansub)..."
+                                    value={newAliasInput}
+                                    onChange={(e) => setNewAliasInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAddAlias()}
+                                    className="flex-1 px-3 py-2 text-xs rounded-xl bg-slate-950/80 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                                />
+                                <button
+                                    onClick={handleAddAlias}
+                                    disabled={addingAlias || !newAliasInput.trim()}
+                                    className="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1 transition-all active:scale-95 shadow-md shadow-indigo-600/20"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Añadir
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Section 2: Fusion / Merge */}
+                        <div className="space-y-3 pt-3 border-t border-white/10">
+                            <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <GitMerge className="w-3.5 h-3.5" />
+                                Fusionar Serie Secundaria aquí (1-Click Merge)
+                            </h4>
+                            <p className="text-xs text-slate-400">
+                                Ingrese el ID / Hash de otra serie duplicada para transferir todos sus volúmenes y alias a esta serie principal.
+                            </p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Hash / ID de la serie secundaria a eliminar..."
+                                    value={mergeSourceHash}
+                                    onChange={(e) => setMergeSourceHash(e.target.value)}
+                                    className="flex-1 px-3 py-2 text-xs font-mono rounded-xl bg-slate-950/80 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-colors"
+                                />
+                                <button
+                                    onClick={handleMergeSeriesInModal}
+                                    disabled={mergingSeries || !mergeSourceHash.trim()}
+                                    className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-md shadow-amber-600/20"
+                                >
+                                    <GitMerge className="w-4 h-4" />
+                                    {mergingSeries ? 'Fusionando...' : 'Fusionar'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
