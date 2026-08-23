@@ -449,3 +449,84 @@ def test_filename_and_path_sanitization_all_os_and_nextcloud():
     assert get_translator_acronym("Desconocido") == "Unknown"
     assert get_translator_acronym("?") == "Unknown"
     assert get_translator_acronym("Fan Translation Group") == "FTG"
+
+
+@pytest.mark.asyncio
+async def test_destination_path_matches_existing_series_and_spanish_filename(tmp_path: Path):
+    """
+    Verifica que:
+    1. Si una serie ya existe en la biblioteca, la ruta sugerida adopta EXACTAMENTE la carpeta existente.
+    2. El nombre de archivo se genera SIEMPRE en español.
+    """
+    epub_bytes = create_minimal_epub_bytes(
+        "Baka to Test to Shoukanjuu", "Kenji Inoue"
+    )
+    epub_file = tmp_path / "Baka_03.epub"
+    epub_file.write_bytes(epub_bytes)
+
+    # Simular libro previo existente de la serie en disco
+    existing_series_mock = MagicMock()
+    existing_series_mock.id = "series_baka_hash"
+    existing_series_mock.name = "Baka and Test. Summon the Beasts"
+    existing_series_mock.name_spanish = "Idiotas, pruebas y bestias invocadas"
+
+    existing_book_mock = MagicMock()
+    existing_book_mock.id = "hash_vol_01"
+    existing_book_mock.volume = 1.0
+    existing_book_mock.filepath = "/library/Baka and Test. Summon the Beasts - Kenji Inoue [NL]/Idiotas, pruebas y bestias invocadas - V01 [Ferindrad].epub"
+    existing_book_mock.series_info = existing_series_mock
+    existing_book_mock.title = "Idiotas, pruebas y bestias invocadas"
+
+    mock_record = MagicMock()
+    mock_record.id = 101
+
+    with (
+        patch(
+            "services.upload_service.enrich_metadata_from_epub",
+            new=AsyncMock(
+                return_value={
+                    "titulo_serie": "Baka to Test to Shoukanjuu",
+                    "titulo_volumen": "Baka to Test V03",
+                    "autor": "Kenji Inoue",
+                    "volume_index": 3.0,
+                    "publisher": "Ferindrad",
+                }
+            ),
+        ),
+        patch.object(
+            upload_repo, "create_upload_record", new=AsyncMock(return_value=mock_record)
+        ),
+        patch(
+            "services.upload_service.book_repo.get_by_hash",
+            new=AsyncMock(return_value=None),
+        ),
+        patch(
+            "services.upload_service.book_repo.get_by_series_and_volume",
+            new=AsyncMock(return_value=None),
+        ),
+        patch(
+            "services.upload_service.book_repo.get_one_by_attr",
+            new=AsyncMock(return_value=existing_book_mock),
+        ),
+        patch(
+            "repositories.series_repository.series_repo.find_by_title_or_alias",
+            new=AsyncMock(return_value=existing_series_mock),
+        ),
+        patch("services.upload_service.get_setting", return_value="false"),
+        patch.object(
+            upload_service,
+            "_get_library_base",
+            new=AsyncMock(return_value=Path("/library")),
+        ),
+    ):
+        metadata = await upload_service.analyze_epub(epub_file, "Baka_03.epub", 12345)
+
+        assert metadata is not None
+        # La carpeta debe ser exactamente la carpeta existente de la serie
+        assert metadata["suggested_path"].startswith(
+            "Baka and Test. Summon the Beasts - Kenji Inoue [NL]/"
+        )
+        # El nombre del archivo debe estar en español
+        assert "Idiotas, pruebas y bestias invocadas - V03" in metadata["suggested_path"]
+        assert metadata["suggested_path"].endswith(".epub")
+

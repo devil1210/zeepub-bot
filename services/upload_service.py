@@ -287,6 +287,8 @@ class UploadService:
         """Aplica las mejoras detectadas por la IA."""
         if ai_data.get("series_name"):
             metadata["series"] = ai_data["series_name"]
+        if ai_data.get("series_spanish"):
+            metadata["series_spanish"] = ai_data["series_spanish"]
         if ai_data.get("volume") is not None:
             metadata["volume"] = ai_data["volume"]
         if ai_data.get("group_full"):
@@ -361,28 +363,88 @@ class UploadService:
     async def _get_smart_destination(
         self, metadata: dict, original_filename: str
     ) -> str:
-        """Calcula la ruta de destino inteligente."""
-        series_hash = metadata.get("series_hash")
+        """
+        Calcula la ruta de destino inteligente.
+        - Si la serie ya existe en la biblioteca, utiliza la MISMA carpeta y formato exacto existente.
+        - El nombre del archivo se genera SIEMPRE en ESPAÑOL: {Título Español} - V{XX} [{Grupo}].epub
+        """
+        library_base = await self._get_library_base()
+        lib_base_str = str(library_base).replace("\\", "/")
+
         target_dir = None
         series_folder_name = None
-        library_base = await self._get_library_base()
+        existing_series_book = None
+        matched_series = None
 
-        # Buscar si la serie ya tiene carpeta
-        if series_hash:
-            existing_book = await book_repo.get_one_by_attr("series_hash", series_hash)
-            if existing_book and existing_book.filepath:
-                filepath_norm = existing_book.filepath.replace("\\", "/")
-                lib_base_str = str(library_base).replace("\\", "/")
+        # 1. Buscar si la serie ya existe en la base de datos
+        try:
+            from repositories.series_repository import series_repo
 
-                rel_path = filepath_norm.replace(lib_base_str, "").lstrip("/")
-                target_dir_rel = os.path.dirname(rel_path)
+            # A) Buscar por series_hash / series_id
+            series_hash = metadata.get("series_hash")
+            if series_hash:
+                existing_series_book = await book_repo.get_one_by_attr(
+                    "series_hash", series_hash
+                )
+                if not existing_series_book:
+                    existing_series_book = await book_repo.get_one_by_attr(
+                        "series_id", series_hash
+                    )
+                if not existing_series_book:
+                    matched_series = await series_repo.get_by_id(series_hash)
 
+            # B) Buscar por título o alias de la serie
+            if not existing_series_book and not matched_series:
+                s_query = metadata.get("series") or metadata.get("title")
+                if s_query:
+                    matched_series = await series_repo.find_by_title_or_alias(s_query)
+
+            # C) Buscar por título en español
+            if not existing_series_book and not matched_series and metadata.get("series_spanish"):
+                matched_series = await series_repo.find_by_title_or_alias(
+                    metadata["series_spanish"]
+                )
+
+            # Si encontramos la serie pero no el libro individual, buscar cualquier libro de esa serie
+            if matched_series and not existing_series_book:
+                existing_series_book = await book_repo.get_one_by_attr(
+                    "series_id", matched_series.id
+                )
+                if not existing_series_book:
+                    existing_series_book = await book_repo.get_one_by_attr(
+                        "series_hash", matched_series.id
+                    )
+        except Exception as e:
+            logger.debug(f"DB lookup in _get_smart_destination omitted or failed: {e}")
+
+        # 2. Si la serie YA EXISTE en la biblioteca:
+        # Usar la carpeta EXACTA donde residen los volúmenes de esa serie
+        if existing_series_book and existing_series_book.filepath:
+            filepath_norm = existing_series_book.filepath.replace("\\", "/")
+            rel_path = filepath_norm.replace(lib_base_str, "").lstrip("/")
+            target_dir_rel = os.path.dirname(rel_path)
+            if target_dir_rel:
+                series_folder_name = target_dir_rel
                 check_path = library_base / target_dir_rel
                 if check_path.exists():
                     target_dir = check_path
-                    series_folder_name = target_dir_rel
 
-        if not target_dir:
+            # Sincronizar nombres si existen en DB
+            if getattr(existing_series_book, "series_info", None):
+                if existing_series_book.series_info.name_spanish:
+                    metadata["series_spanish"] = existing_series_book.series_info.name_spanish
+                if existing_series_book.series_info.name:
+                    metadata["series"] = existing_series_book.series_info.name
+
+        elif matched_series:
+            if matched_series.name_spanish:
+                metadata["series_spanish"] = matched_series.name_spanish
+            if matched_series.name:
+                metadata["series"] = matched_series.name
+
+        # 3. Si la serie NO existe en la biblioteca, generar nombre de carpeta estándar:
+        # {Series Name} - {Author} [{Tag}]
+        if not series_folder_name:
             author = self._clean_fs_name(metadata.get("author", "Autor desconocido"))
             series = metadata.get("series", "")
             tag = self._determine_novel_type_tag(metadata, original_filename)
@@ -400,68 +462,112 @@ class UploadService:
             )
             target_dir = library_base / series_folder_name
 
-        # Nombre de archivo
-        if metadata.get("ai_filename"):
-            filename = self._clean_fs_name(metadata["ai_filename"])
-        else:
-            filename = await self._generate_pattern_filename(
-                target_dir, metadata, original_filename
-            )
+        # 4. Generar nombre de archivo SIEMPRE en español
+        filename = await self._generate_pattern_filename(
+            target_dir, metadata, original_filename, existing_series_book
+        )
 
         from utils.string_utils import sanitize_fs_path
 
         return sanitize_fs_path(f"{series_folder_name}/{filename}")
 
     async def _generate_pattern_filename(
-        self, target_dir: Path, metadata: dict, original_filename: str
+        self,
+        target_dir: Path | None,
+        metadata: dict,
+        original_filename: str,
+        existing_book: Any = None,
     ) -> str:
-        """Genera nombre de archivo basado en el patrón de la carpeta o el estándar."""
+        """
+        Genera el nombre de archivo SIEMPRE en español respetando el patrón estándar:
+        {Título en Español} - V{Volumen} [{Grupo}].epub
+        Si la serie ya existe, imita exactamente el formato y nombre en español usado previamente.
+        """
         from utils.string_utils import sanitize_fs_segment
 
-        series = metadata.get("series", "")
-        series_ok = (
-            re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE)
-            if series
-            else ""
+        # 1. Determinar el título en ESPAÑOL
+        spanish_title = (
+            metadata.get("series_spanish")
+            or metadata.get("spanish_title")
+            or (
+                existing_book.series_info.name_spanish
+                if existing_book
+                and getattr(existing_book, "series_info", None)
+                and existing_book.series_info.name_spanish
+                else None
+            )
+            or (
+                existing_book.title
+                if existing_book and getattr(existing_book, "title", None)
+                else None
+            )
+            or (
+                metadata.get("title")
+                if metadata.get("title") and not metadata.get("title").endswith(".epub")
+                else None
+            )
+            or metadata.get("series")
+            or "Libro"
         )
 
+        # Limpiar tags tipo [NL], [NW], volúmenes o extensiones residuales del título español
+        spanish_title_clean = re.sub(
+            r"\s*\[(?:NL|NW|Color|SC)\]\s*$", "", str(spanish_title), flags=re.IGNORECASE
+        )
+        spanish_title_clean = re.sub(
+            r"\s*-\s*V\d+.*$", "", spanish_title_clean, flags=re.IGNORECASE
+        ).strip()
+        spanish_title_clean = self._clean_fs_name(spanish_title_clean)
+
+        # 2. Formatear volumen
         volume = metadata.get("volume")
         vol_str = self._format_volume_str(volume)
 
-        # Detectar grupo
-        group = self._clean_fs_name(
-            metadata.get("publisher")
+        # 3. Detectar grupo / siglas
+        group = (
+            metadata.get("group_siglas")
+            or metadata.get("publisher")
             or (metadata.get("typesetters") or [""])[0]
             or metadata.get("translator")
-            or "Unknown"
+            or ""
         )
-        group = re.sub(r"https?://\S+", "", group).strip()
+        group = re.sub(r"https?://\S+", "", str(group)).strip()
+        group = self._clean_fs_name(group)
         if not group or group in ("?", "Unknown"):
-            group = "Unknown"
+            group = ""
 
-        # Fallback de nombre de serie
-        base_series_name = self._clean_fs_name(series_ok)
-
-        # Si la carpeta existe, intentar imitar el patrón
-        if target_dir.exists():
+        # 4. Si la carpeta existe en disco, verificar el patrón de los archivos existentes
+        if target_dir and target_dir.exists():
             try:
                 files = [
                     f for f in os.listdir(target_dir) if f.lower().endswith(".epub")
                 ]
                 for f in files:
                     if " - V" in f and "[" in f and "].epub" in f:
-                        fn = f"{base_series_name} - V{vol_str} [{group}].epub"
-                        return sanitize_fs_segment(fn)
+                        base_match = re.match(r"^(.*?)\s*-\s*V\d+", f, flags=re.IGNORECASE)
+                        if base_match:
+                            existing_base = base_match.group(1).strip()
+                            if existing_base:
+                                grp_to_use = group or "Unknown"
+                                fn = f"{existing_base} - V{vol_str} [{grp_to_use}].epub"
+                                return sanitize_fs_segment(fn)
             except Exception:
                 pass
 
-        if base_series_name:
-            fn = f"{base_series_name} - V{vol_str} [{group}].epub"
-            return sanitize_fs_segment(fn)
+        # 5. Si la IA proporcionó un ai_filename en español y no hay conflicto
+        if metadata.get("ai_filename"):
+            ai_fn = self._clean_fs_name(metadata["ai_filename"])
+            if ai_fn.lower().endswith(".epub"):
+                return ai_fn
 
-        clean_name = re.sub(r"\s*\[.*?\]\s*", "", original_filename.rsplit(".", 1)[0])
-        clean_name = sanitize_fs_segment(clean_name)
-        return f"{clean_name}.epub"
+        # 6. Construcción estándar en español
+        base_name = spanish_title_clean or "Libro"
+        if group:
+            fn = f"{base_name} - V{vol_str} [{group}].epub"
+        else:
+            fn = f"{base_name} - V{vol_str}.epub"
+
+        return sanitize_fs_segment(fn)
 
     def _format_volume_str(self, volume: Any) -> str:
         if volume is None:

@@ -209,7 +209,9 @@ class AIService:
              - Claridad Identificable: Si hay conflicto (mismas siglas), no uses números. Expande la sigla usando letras del nombre para que sea descriptiva (ej. Dark Translations = DARKT, Dragoon Translations = DRAGT).
              - Nombres como Siglas: Si el nombre del grupo tiene una sola palabra de 6 letras o menos (ej. "MiraiK"), la sigla puede ser el mismo nombre.
              - Consistencia: Si el nombre del grupo es casi idéntico (variaciones de espacios o mayúsculas), asígnales la misma sigla.
-        3. **Suggested Filename**: Genera el nombre EXACTO: "{{Prefix}}{{Series Name}} - {{Volumen}} [{{Siglas}}].epub".
+        3. **Suggested Filename (EN ESPAÑOL)**:
+           - **series_spanish**: Identifica o traduce de forma oficial/canónica el título de la serie al ESPAÑOL (ej: "Baka to Test to Shoukanjuu" -> "Idiotas, pruebas y bestias invocadas", "Sword Art Online" -> "Sword Art Online").
+           - **Suggested Filename**: Genera el nombre EXACTO EN ESPAÑOL usando el título en español: "{{Prefix}}{{Series Spanish Name}} - {{Volumen}} [{{Siglas}}].epub".
            - **Prefix (CRÍTICO)**:
              - Si el libro tiene "Ilustraciones a Color" en sus géneros: usa `[Color]`.
              - Si el libro tiene "Sin Censura" en sus géneros: usa `[SC]`.
@@ -236,6 +238,7 @@ class AIService:
         Devuelve SOLO un JSON:
         {{
             "series_name": "string",
+            "series_spanish": "string",
             "volume": float,
             "group_full": "string",
             "group_siglas": "string",
