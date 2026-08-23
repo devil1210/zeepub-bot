@@ -562,7 +562,7 @@ class UploadBook(Base):
     series_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     identity_match: Mapped[str] = mapped_column(String(10), default="False")
     path_collision: Mapped[str] = mapped_column(String(10), default="False")
-    processed: Mapped[str] = mapped_column(String(10), default="False")
+    processed: Mapped[bool] = mapped_column(Boolean, default=False)
     upload_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
