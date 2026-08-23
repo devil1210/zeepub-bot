@@ -114,16 +114,30 @@ class UploadService:
                 enriched_metadata, original_filename
             )
 
-            # 3. Integración con IA (Gemini)
-            bg_ai_enabled = (
-                get_setting("enable_background_ai_scan", "false").lower() == "true"
-            )
-            if bg_ai_enabled:
+            # 3. Integración con IA (Gemini) para normalización y título en español
+            try:
                 ai_data = await AIService.normalize_book_metadata(
                     original_filename, metadata
                 )
                 if ai_data:
                     self._apply_ai_enrichment(metadata, ai_data)
+            except Exception as e:
+                logger.warning(f"AI enrichment failed in analyze_epub: {e}")
+
+            # 3.1 Fallback si no hay título en español: intentar resolver vía API
+            if not metadata.get("series_spanish"):
+                try:
+                    from utils.metadata_utils import get_series_spanish_from_api
+
+                    s_name = metadata.get("series") or metadata.get("title")
+                    if s_name:
+                        api_es = await get_series_spanish_from_api(
+                            s_name, metadata.get("author")
+                        )
+                        if api_es:
+                            metadata["series_spanish"] = api_es
+                except Exception as e:
+                    logger.debug(f"API spanish title lookup failed: {e}")
 
             # 4. Lógica de Identidad (Hashes)
             identity = await self._determine_identity(
@@ -511,13 +525,7 @@ class UploadService:
         )
 
         # Limpiar tags tipo [NL], [NW], volúmenes o extensiones residuales del título español
-        spanish_title_clean = re.sub(
-            r"\s*\[(?:NL|NW|Color|SC)\]\s*$", "", str(spanish_title), flags=re.IGNORECASE
-        )
-        spanish_title_clean = re.sub(
-            r"\s*-\s*V\d+.*$", "", spanish_title_clean, flags=re.IGNORECASE
-        ).strip()
-        spanish_title_clean = self._clean_fs_name(spanish_title_clean)
+        spanish_title_clean = self._clean_series_base_title(str(spanish_title))
 
         # 2. Formatear volumen
         volume = metadata.get("volume")
@@ -526,6 +534,7 @@ class UploadService:
         # 3. Detectar grupo / siglas
         group = (
             metadata.get("group_siglas")
+            or metadata.get("group")
             or metadata.get("publisher")
             or (metadata.get("typesetters") or [""])[0]
             or metadata.get("translator")
@@ -558,7 +567,7 @@ class UploadService:
         if metadata.get("ai_filename"):
             ai_fn = self._clean_fs_name(metadata["ai_filename"])
             if ai_fn.lower().endswith(".epub"):
-                return ai_fn
+                return sanitize_fs_segment(ai_fn)
 
         # 6. Construcción estándar en español
         base_name = spanish_title_clean or "Libro"
@@ -568,6 +577,33 @@ class UploadService:
             fn = f"{base_name} - V{vol_str}.epub"
 
         return sanitize_fs_segment(fn)
+
+    def _clean_series_base_title(self, raw_title: str) -> str:
+        """Limpia un título eliminando tags de formato, grupos, sufijos de volumen y extensiones."""
+        if not raw_title:
+            return ""
+        t = re.sub(r"\.epub$", "", str(raw_title), flags=re.IGNORECASE).strip()
+        # Eliminar tags [NL], [NW], [Color], [SC], [Manga]
+        t = re.sub(r"\s*\[(?:NL|NW|Color|SC|Manga)\]\s*", " ", t, flags=re.IGNORECASE)
+        # Eliminar tags de grupo al final o si están entre corchetes
+        t = re.sub(r"\s*\[.*?\]\s*", " ", t)
+        # Eliminar sufijos de volumen tipo "- Volumen 12", "- Tomo 12", "- Vol. 12", "- V12", "Volumen 12", "Tomo 12"
+        t = re.sub(
+            r"\s*-\s*(?:Volumen|Volume|Tomo|Vol\.?|V)\s*\d+(?:\.\d+)?.*$",
+            "",
+            t,
+            flags=re.IGNORECASE,
+        )
+        t = re.sub(
+            r"\s+(?:Volumen|Volume|Tomo|Vol\.?|V)\s*\d+(?:\.\d+)?.*$",
+            "",
+            t,
+            flags=re.IGNORECASE,
+        )
+        # Eliminar sufijos numéricos tipo "- 12"
+        t = re.sub(r"\s*-\s*\d+(?:\.\d+)?\s*$", "", t)
+        t = re.sub(r"\s+", " ", t).strip()
+        return self._clean_fs_name(t)
 
     def _format_volume_str(self, volume: Any) -> str:
         if volume is None:
