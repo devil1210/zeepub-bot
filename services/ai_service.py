@@ -696,16 +696,10 @@ class AIService:
 
     @staticmethod
     def sanitize_filename(name: str) -> str:
-        """Elimina caracteres prohibidos para sistemas de archivos (\\ / : * ? " < > |)."""
-        if not name:
-            return ""
-        import re
+        """Elimina caracteres prohibidos para sistemas de archivos y Nextcloud (\\ / : * ? " < > | # % ^)."""
+        from utils.string_utils import sanitize_fs_segment
 
-        # Reemplazar caracteres prohibidos por guiones
-        forbidden = r'[\\/:*?"<>|]'
-        clean = re.sub(forbidden, "-", name)
-        # Limpiar espacios extra y puntos al final (prohibidos en Windows)
-        return clean.strip().strip(".")
+        return sanitize_fs_segment(name)
 
     @classmethod
     async def generate_recommendation_stream(cls, chat_id: int | str, user_history_summary: str, draft_id: str | None = None):

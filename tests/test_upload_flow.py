@@ -420,3 +420,32 @@ async def test_duplicate_detection_by_series_and_volume(tmp_path: Path):
         assert metadata["identity_match"]["exists"] is True
         assert metadata["identity_match"]["volume"] == 1.0
         assert metadata["identity_match"]["series"] == "Baka to Test"
+
+
+def test_filename_and_path_sanitization_all_os_and_nextcloud():
+    """Verifica que caracteres prohibidos (?, :, *, ", <, >, |, #, %, control, espacios/puntos al final) sean sanitizados."""
+    from utils.string_utils import (
+        get_translator_acronym,
+        sanitize_fs_path,
+        sanitize_fs_segment,
+    )
+
+    # 1. Signos de interrogación y dos puntos
+    assert sanitize_fs_segment("¿Acaso los idiotas van al festival? - V01") == "¿Acaso los idiotas van al festival - V01"
+    assert sanitize_fs_segment("Re:Zero kara Hajimeru Isekai Seikatsu") == "Re.Zero kara Hajimeru Isekai Seikatsu"
+    assert sanitize_fs_segment('Libro *Especial* "Edición" <Final> | #1%?') == "Libro Especial Edición Final 1"
+    assert sanitize_fs_segment("Carpeta con punto final.") == "Carpeta con punto final"
+    assert sanitize_fs_segment("   Espacios   ") == "Espacios"
+
+    # 2. Rutas relativas completas para Nextcloud y SO
+    dirty_path = "ZeePubs/01 En Revisión/¿Serie: Pregunta?/¿Libro: Especial? - V01 [Ferindrad].epub"
+    clean_path = sanitize_fs_path(dirty_path)
+    assert "?" not in clean_path
+    assert ":" not in clean_path
+    assert clean_path == "ZeePubs/01 En Revisión/¿Serie. Pregunta/¿Libro. Especial - V01 [Ferindrad].epub"
+
+    # 3. Siglas de traductor nunca devuelven '?'
+    assert get_translator_acronym(None) == "Unknown"
+    assert get_translator_acronym("Desconocido") == "Unknown"
+    assert get_translator_acronym("?") == "Unknown"
+    assert get_translator_acronym("Fan Translation Group") == "FTG"

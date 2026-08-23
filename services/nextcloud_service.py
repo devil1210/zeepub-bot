@@ -48,9 +48,12 @@ class NextcloudService:
             return False
 
         # Sanitizar y normalizar la ruta remota
-        clean_suggested = suggested_path.replace("\\", "/").strip("/")
+        from utils.string_utils import sanitize_fs_path
+
+        clean_suggested = sanitize_fs_path(suggested_path)
+        base_clean = sanitize_fs_path(self.base_path) if self.base_path else ""
         remote_rel_path = (
-            f"{self.base_path}/{clean_suggested}" if self.base_path else clean_suggested
+            f"{base_clean}/{clean_suggested}" if base_clean else clean_suggested
         )
 
         # Construir endpoint WebDAV de Nextcloud

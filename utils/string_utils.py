@@ -70,14 +70,62 @@ def escapar_html(texto: str) -> str:
     return html.escape(texto) if texto else ""
 
 
-def get_translator_acronym(translator: str | None) -> str:
-    """Extrae las siglas de un traductor."""
-    if not translator or translator == "Desconocido":
-        return "?"
+def sanitize_fs_segment(name: str, fallback: str = "") -> str:
+    """
+    Limpia y sanitiza un nombre de archivo o carpeta individual para compatibilidad
+    universal con todos los sistemas operativos (Windows, Linux, macOS, Android) y WebDAV/Nextcloud.
 
-    # Si ya es corto (siglas existentes), devolverlo tal cual
-    if len(translator) <= 5 and any(c.isupper() for c in translator):
-        return translator
+    Reglas:
+    - Elimina caracteres prohibidos por SO y WebDAV: < > : " / \\ | ? * # % ^ y de control (0-31).
+    - Para ':' lo reemplaza por '.' para preservar legibilidad en títulos tipo 'Re:Zero' -> 'Re.Zero'.
+    - Elimina espacios y puntos finales o iniciales (prohibidos en Windows/Nextcloud).
+    - Normaliza espacios múltiples.
+    - Limita la longitud máxima a 150 caracteres.
+    """
+    if not name:
+        return fallback
+
+    s = str(name)
+    # Reemplazar dos puntos por punto para títulos como Re:Zero -> Re.Zero
+    s = s.replace(":", ".")
+    # Eliminar caracteres de control (0-31)
+    s = "".join(ch for ch in s if ord(ch) >= 32)
+    # Eliminar caracteres prohibidos en Windows/Nextcloud/Linux: < > " / \ | ? * # % ^
+    forbidden = r'[<>"/\\|?*#%^]'
+    s = re.sub(forbidden, "", s)
+    # Limpiar espacios múltiples
+    s = re.sub(r"\s+", " ", s)
+    # Eliminar espacios y puntos al inicio y al final
+    s = s.strip(" .")
+    return s[:150] or fallback
+
+
+def sanitize_fs_path(path_str: str) -> str:
+    """
+    Sanitiza una ruta completa relativa (ej: 'Carpeta Serie/Volumen 01.epub'),
+    asegurando que cada componente individual sea 100% compatible con todos los SO y Nextcloud.
+    """
+    if not path_str:
+        return ""
+    norm = str(path_str).replace("\\", "/").strip("/")
+    parts = norm.split("/")
+    clean_parts = []
+    for p in parts:
+        clean_p = sanitize_fs_segment(p)
+        if clean_p:
+            clean_parts.append(clean_p)
+    return "/".join(clean_parts)
+
+
+def get_translator_acronym(translator: str | None) -> str:
+    """Extrae las siglas de un traductor sin caracteres prohibidos."""
+    if not translator or translator in ("Desconocido", "Unknown", "?"):
+        return "Unknown"
+
+    # Si ya es corto (siglas existentes), limpiarlo y devolverlo
+    cleaned_trans = sanitize_fs_segment(translator)
+    if len(cleaned_trans) <= 5 and any(c.isupper() for c in cleaned_trans):
+        return cleaned_trans
 
     # Limpiar tags y símbolos comunes
     name = re.sub(r"\[.*?\]", "", translator).strip()
@@ -86,10 +134,10 @@ def get_translator_acronym(translator: str | None) -> str:
     # Extraer letras iniciales de cada palabra
     parts = name.split()
     if not parts:
-        return "?"
+        return "Unknown"
 
-    acronym = "".join([p[0].upper() for p in parts if p and p[0].isalpha()])
-    return acronym or "?"
+    acronym = "".join([p[0].upper() for p in parts if p and p[0].isalnum()])
+    return acronym or "Unknown"
 
 
 def clean_caption_for_facebook(caption: str, public_link: str | None = None) -> str:

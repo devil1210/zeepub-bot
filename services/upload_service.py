@@ -402,18 +402,22 @@ class UploadService:
 
         # Nombre de archivo
         if metadata.get("ai_filename"):
-            filename = metadata["ai_filename"]
+            filename = self._clean_fs_name(metadata["ai_filename"])
         else:
             filename = await self._generate_pattern_filename(
                 target_dir, metadata, original_filename
             )
 
-        return f"{series_folder_name}/{filename}"
+        from utils.string_utils import sanitize_fs_path
+
+        return sanitize_fs_path(f"{series_folder_name}/{filename}")
 
     async def _generate_pattern_filename(
         self, target_dir: Path, metadata: dict, original_filename: str
     ) -> str:
         """Genera nombre de archivo basado en el patrón de la carpeta o el estándar."""
+        from utils.string_utils import sanitize_fs_segment
+
         series = metadata.get("series", "")
         series_ok = (
             re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE)
@@ -432,9 +436,11 @@ class UploadService:
             or "Unknown"
         )
         group = re.sub(r"https?://\S+", "", group).strip()
+        if not group or group in ("?", "Unknown"):
+            group = "Unknown"
 
         # Fallback de nombre de serie
-        base_series_name = series_ok
+        base_series_name = self._clean_fs_name(series_ok)
 
         # Si la carpeta existe, intentar imitar el patrón
         if target_dir.exists():
@@ -444,14 +450,17 @@ class UploadService:
                 ]
                 for f in files:
                     if " - V" in f and "[" in f and "].epub" in f:
-                        return f"{base_series_name} - V{vol_str} [{group}].epub"
+                        fn = f"{base_series_name} - V{vol_str} [{group}].epub"
+                        return sanitize_fs_segment(fn)
             except Exception:
                 pass
 
         if base_series_name:
-            return f"{base_series_name} - V{vol_str} [{group}].epub"
+            fn = f"{base_series_name} - V{vol_str} [{group}].epub"
+            return sanitize_fs_segment(fn)
 
         clean_name = re.sub(r"\s*\[.*?\]\s*", "", original_filename.rsplit(".", 1)[0])
+        clean_name = sanitize_fs_segment(clean_name)
         return f"{clean_name}.epub"
 
     def _format_volume_str(self, volume: Any) -> str:
@@ -467,10 +476,10 @@ class UploadService:
             return str(volume)
 
     def _clean_fs_name(self, name: str) -> str:
-        invalid_chars = '<>:"/\\|?*'
-        for char in invalid_chars:
-            name = name.replace(char, "_")
-        return name[:100].strip()
+        """Sanitiza nombres de archivos o carpetas con compatibilidad universal para todos los SO y Nextcloud."""
+        from utils.string_utils import sanitize_fs_segment
+
+        return sanitize_fs_segment(name)
 
     def _determine_novel_type_tag(self, metadata: dict, original_filename: str) -> str:
         fname_lower = original_filename.lower()
@@ -491,20 +500,15 @@ class UploadService:
                 return tag
         return "NL"
 
-    def _parse_volume(self, volume_str: Any) -> float | None:
-        if not volume_str:
-            return None
-        try:
-            match = re.search(r"(\d+(?:\.\d+)?)", str(volume_str))
-            return float(match.group(1)) if match else None
-        except Exception:
-            return None
-
     async def finalize_upload(
         self, epub_path: Path, suggested_path: str, metadata: dict
     ) -> bool:
         """Mueve el archivo a su ubicación final e indexa."""
         try:
+            from utils.string_utils import sanitize_fs_path
+
+            suggested_path = sanitize_fs_path(suggested_path)
+
             logger.info(
                 f"Finalizando upload: sugiera path '{suggested_path}' para {epub_path.name}"
             )

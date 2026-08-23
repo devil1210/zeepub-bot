@@ -31,6 +31,8 @@ from utils.string_utils import (
     escapar_html,  # noqa: F401
     get_translator_acronym,  # noqa: F401
     limpiar_html_basico,  # noqa: F401
+    sanitize_fs_path,  # noqa: F401
+    sanitize_fs_segment,  # noqa: F401
 )
 
 escape_html = escapar_html

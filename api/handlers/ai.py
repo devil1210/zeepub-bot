@@ -363,6 +363,9 @@ async def handle_ai_apply_changes(data: dict[str, Any], user_data: dict[str, Any
 
                 old_path = book.filepath
                 dir_name = os.path.dirname(old_path)
+                from utils.string_utils import sanitize_fs_segment
+
+                proposed_filename = sanitize_fs_segment(proposed_filename)
                 new_path = os.path.join(dir_name, proposed_filename)
 
                 if old_path != new_path:
