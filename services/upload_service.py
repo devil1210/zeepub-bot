@@ -179,6 +179,7 @@ class UploadService:
                     "series_hash": metadata["series_hash"],
                     "upload_metadata": metadata,
                     "identity_match": "True" if existing_book else "False",
+                    "processed": False,
                 }
             )
 
