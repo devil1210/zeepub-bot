@@ -210,8 +210,9 @@ class AIService:
              - Nombres como Siglas: Si el nombre del grupo tiene una sola palabra de 6 letras o menos (ej. "MiraiK"), la sigla puede ser el mismo nombre.
              - Consistencia: Si el nombre del grupo es casi idéntico (variaciones de espacios o mayúsculas), asígnales la misma sigla.
         3. **Suggested Filename (EN ESPAÑOL)**:
-           - **series_spanish**: Identifica o traduce de forma oficial/canónica el título de la serie al ESPAÑOL (ej: "Baka to Test to Shoukanjuu" -> "Idiotas, pruebas y bestias invocadas", "Sword Art Online" -> "Sword Art Online").
-           - **Suggested Filename**: Genera el nombre EXACTO EN ESPAÑOL usando el título en español: "{{Prefix}}{{Series Spanish Name}} - {{Volumen}} [{{Siglas}}].epub".
+           - **series_spanish**: Identifica o traduce de forma oficial/canónica el título principal de la serie al ESPAÑOL (ej: "Kuro no Shoukanshi / Black Summoner" -> "Invocador Oscuro", "Baka to Test to Shoukanjuu" -> "Idiotas, pruebas y bestias invocadas", "Sword Art Online" -> "Sword Art Online", "Dungeon ni Deai..." -> "Está Mal Desear un Encuentro en el Calabozo").
+           - **REGLA DE CONCISIÓN DE TÍTULO (CRÍTICO)**: `series_spanish` debe ser EXCLUSIVAMENTE el título principal de la franquicia. NUNCA incluyas subtítulos secundarios, eslóganes, ni textos entre virgulillas `~...~` (ej: descarta totalmente `~A combat maniac's ascension~`, `~La ascensión de un maníaco del combate~`, `~El ascenso de...~`).
+           - **Suggested Filename**: Genera el nombre EXACTO EN ESPAÑOL usando el título principal en español: "{{Prefix}}{{Series Spanish Name}} - {{Volumen}} [{{Siglas}}].epub".
            - **Prefix (CRÍTICO)**:
              - Si el libro tiene "Ilustraciones a Color" en sus géneros: usa `[Color]`.
              - Si el libro tiene "Sin Censura" en sus géneros: usa `[SC]`.

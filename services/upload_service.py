@@ -587,6 +587,8 @@ class UploadService:
         t = re.sub(r"\s*\[(?:NL|NW|Color|SC|Manga)\]\s*", " ", t, flags=re.IGNORECASE)
         # Eliminar tags de grupo al final o si están entre corchetes
         t = re.sub(r"\s*\[.*?\]\s*", " ", t)
+        # Eliminar subtítulos o eslóganes entre virgulillas tipo ~A combat maniac's ascension~
+        t = re.sub(r"\s*[~～].*?[~～]\s*", " ", t)
         # Eliminar sufijos de volumen tipo "- Volumen 12", "- Tomo 12", "- Vol. 12", "- V12", "Volumen 12", "Tomo 12"
         t = re.sub(
             r"\s*-\s*(?:Volumen|Volume|Tomo|Vol\.?|V)\s*\d+(?:\.\d+)?.*$",
