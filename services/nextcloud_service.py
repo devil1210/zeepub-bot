@@ -18,8 +18,11 @@ class NextcloudService:
         self.url = os.getenv("NEXTCLOUD_URL")
         self.user = os.getenv("NEXTCLOUD_USER")
         self.password = os.getenv("NEXTCLOUD_PASSWORD")
-        # Carpeta raíz base de subidas, por defecto "02-Publicaciones/Español"
-        self.base_path = os.getenv("NEXTCLOUD_UPLOAD_PATH", "02-Publicaciones/Español").strip("/")
+        # Carpeta raíz base de subidas, por defecto "ZeePubs/01 En Revisión/Bot [Revisar]"
+        raw_upload_path = os.getenv(
+            "NEXTCLOUD_UPLOAD_PATH", "ZeePubs/01 En Revisión/Bot [Revisar]"
+        )
+        self.base_path = raw_upload_path.replace("\\", "/").strip("/")
 
     @property
     def is_active(self) -> bool:
@@ -33,21 +36,29 @@ class NextcloudService:
         "Fujino Omori - DanMachi [NL]/DanMachi - V01.epub"
         """
         if not self.is_active:
-            logger.warning("⚠️ NextcloudService no está configurado en las variables de entorno.")
+            logger.warning(
+                "⚠️ NextcloudService no está configurado en las variables de entorno."
+            )
             return False
 
         if not local_path.exists():
-            logger.error(f"❌ El archivo local no existe para subir a Nextcloud: {local_path}")
+            logger.error(
+                f"❌ El archivo local no existe para subir a Nextcloud: {local_path}"
+            )
             return False
 
         # Sanitizar y normalizar la ruta remota
         clean_suggested = suggested_path.replace("\\", "/").strip("/")
-        remote_rel_path = f"{self.base_path}/{clean_suggested}" if self.base_path else clean_suggested
+        remote_rel_path = (
+            f"{self.base_path}/{clean_suggested}" if self.base_path else clean_suggested
+        )
 
         # Construir endpoint WebDAV de Nextcloud
         # https://<nextcloud-domain>/remote.php/dav/files/<username>/<path>
         base_url = self.url.rstrip("/")
-        webdav_url = f"{base_url}/remote.php/dav/files/{self.user}/{quote(remote_rel_path)}"
+        webdav_url = (
+            f"{base_url}/remote.php/dav/files/{self.user}/{quote(remote_rel_path)}"
+        )
 
         logger.info(f"☁️ Subiendo archivo a Nextcloud: {remote_rel_path}")
 
@@ -64,7 +75,9 @@ class NextcloudService:
                 if not part:
                     continue
                 current_path = f"{current_path}/{part}" if current_path else part
-                dir_url = f"{base_url}/remote.php/dav/files/{self.user}/{quote(current_path)}"
+                dir_url = (
+                    f"{base_url}/remote.php/dav/files/{self.user}/{quote(current_path)}"
+                )
 
                 try:
                     logger.debug(f"Asegurando directorio en Nextcloud: {current_path}")
@@ -75,7 +88,9 @@ class NextcloudService:
                             f"Aviso al crear directorio '{current_path}' (HTTP {res.status_code})"
                         )
                 except Exception as e:
-                    logger.warning(f"Excepción al asegurar directorio '{current_path}': {e}")
+                    logger.warning(
+                        f"Excepción al asegurar directorio '{current_path}': {e}"
+                    )
 
             # 2. Subir el archivo mediante PUT asíncrono
             try:
@@ -85,7 +100,9 @@ class NextcloudService:
 
                 # 201 (Created) o 204 (No Content/Actualizado con éxito)
                 if res.status_code in (201, 204):
-                    logger.info(f"✅ Archivo subido exitosamente a Nextcloud: {remote_rel_path}")
+                    logger.info(
+                        f"✅ Archivo subido exitosamente a Nextcloud: {remote_rel_path}"
+                    )
                     return True
                 else:
                     logger.error(
@@ -94,7 +111,10 @@ class NextcloudService:
                     return False
 
             except Exception as e:
-                logger.error(f"❌ Excepción crítica al subir archivo a Nextcloud: {e}", exc_info=True)
+                logger.error(
+                    f"❌ Excepción crítica al subir archivo a Nextcloud: {e}",
+                    exc_info=True,
+                )
                 return False
 
 
