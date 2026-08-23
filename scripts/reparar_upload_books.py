@@ -1,13 +1,13 @@
 import asyncio
 import logging
 from sqlalchemy import text
-from utils.postgres_manager import pg_manager
+from core.db_manager_pg import pg_manager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("schema_fix")
 
 async def fix_upload_books_schema():
-    await pg_manager.init_db()
+    await pg_manager.initialize()
     async with pg_manager.get_session() as session:
         # 1. Obtener columnas actuales
         result = await session.execute(
@@ -48,6 +48,7 @@ async def fix_upload_books_schema():
             """))
             await session.commit()
             logger.info("Tabla upload_books creada exitosamente.")
+            await pg_manager.close()
             return
 
         # 2. Si tiene user_id y no telegram_id, renombrar
@@ -86,6 +87,7 @@ async def fix_upload_books_schema():
 
         await session.commit()
         logger.info("✅ Esquema de upload_books actualizado y sincronizado exitosamente.")
+    await pg_manager.close()
 
 if __name__ == "__main__":
     asyncio.run(fix_upload_books_schema())
