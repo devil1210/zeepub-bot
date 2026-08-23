@@ -640,17 +640,28 @@ class PublisherService:
             if tg_msg_id and tg_chat_id:
                 tg_provider = self.providers.get("telegram")
                 if tg_provider and hasattr(tg_provider, "update_post_message"):
-                    # Generar texto de Telegram si la plantilla es distinta
-                    tg_caption = new_caption
+                    # Generar texto de Telegram
+                    tg_caption = None
                     if template_id:
                         tpl = await self.repo.get_template_by_id(template_id)
-                        if tpl and tpl.content:
+                        if tpl and tpl.content and not getattr(tpl, "is_default", False):
+                            from utils.template_engine import apply_publication_template
                             tg_caption = apply_publication_template(tpl.content, book_data)
+
+                    if not tg_caption and new_caption:
+                        tg_caption = new_caption
+
+                    cover_val = (
+                        getattr(book, "cover_original", None)
+                        or getattr(book, "cover_medium", None)
+                        or book_data.get("cover_original")
+                    )
 
                     tg_ok = await tg_provider.update_post_message(
                         chat_id=tg_chat_id,
                         message_id=tg_msg_id,
-                        new_message=tg_caption,
+                        new_message=tg_caption or "",
+                        cover=cover_val,
                     )
                     results["platforms"]["telegram"] = tg_ok
                     if tg_ok:

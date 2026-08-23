@@ -48,8 +48,12 @@ class UploadRepository(BaseRepository[UploadBook]):
 
     async def create_upload_record(self, upload_data: dict[str, Any]) -> UploadBook:
         """Crea un registro de libro pendiente de aprobación."""
+        data = dict(upload_data)
+        if "user_id" in data and "telegram_id" not in data:
+            data["telegram_id"] = data.pop("user_id")
+
         async with pg_manager.get_session() as session:
-            upload_record = UploadBook(**upload_data)
+            upload_record = UploadBook(**data)
             session.add(upload_record)
             await session.commit()
             await session.refresh(upload_record)
@@ -82,11 +86,18 @@ class UploadRepository(BaseRepository[UploadBook]):
                 await session.rollback()
                 raise
 
-    async def get_history(self, limit: int = 100, offset: int = 0) -> list[UploadHistory]:
+    async def get_history(
+        self, limit: int = 100, offset: int = 0
+    ) -> list[UploadHistory]:
         """Obtiene el historial de cargas paginado."""
         async with pg_manager.get_session() as session:
             try:
-                stmt = select(UploadHistory).order_by(desc(UploadHistory.created_at)).limit(limit).offset(offset)
+                stmt = (
+                    select(UploadHistory)
+                    .order_by(desc(UploadHistory.created_at))
+                    .limit(limit)
+                    .offset(offset)
+                )
                 result = await session.execute(stmt)
                 return result.scalars().all()
             except Exception as e:

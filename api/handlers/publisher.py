@@ -484,7 +484,7 @@ async def handle_pub_update_post(data: dict[str, Any], user_data: dict[str, Any]
 
     new_caption = data.get("caption")
     template_id = data.get("template_id")
-    platforms = data.get("platforms") or ["facebook"]
+    platforms = data.get("platforms") or ["telegram", "facebook"]
 
     result = await publisher_service.update_published_book(
         book_hash=str(book_id),
@@ -496,8 +496,9 @@ async def handle_pub_update_post(data: dict[str, Any], user_data: dict[str, Any]
     if not result.get("success"):
         error_msg = (
             result.get("error")
+            or result.get("telegram_note")
             or result.get("facebook_note")
-            or "No se pudo actualizar la publicación en Facebook"
+            or "No se pudo actualizar la publicación"
         )
         return {"success": False, "error": error_msg, "result": result}
 

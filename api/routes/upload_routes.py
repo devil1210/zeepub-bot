@@ -78,7 +78,9 @@ class UploadRoutes:
     async def _save_temp_file(self, file: UploadFile) -> Path:
         """Guarda el UploadFile en disco y devuelve la ruta temporal."""
         if not file.filename or not file.filename.lower().endswith(".epub"):
-            raise HTTPException(status_code=400, detail="Solo se aceptan archivos .epub")
+            raise HTTPException(
+                status_code=400, detail="Solo se aceptan archivos .epub"
+            )
 
         safe_name = Path(file.filename).name
         temp_path = TEMP_UPLOAD_DIR / f"{id(file)}_{safe_name}"
@@ -117,7 +119,9 @@ class UploadRoutes:
             or user_data.get("canUploadEpub")
         )
         if not can_upload:
-            raise HTTPException(status_code=403, detail="No tienes permiso para subir libros")
+            raise HTTPException(
+                status_code=403, detail="No tienes permiso para subir libros"
+            )
 
         temp_path = await self._save_temp_file(file)
         logger.info(f"📤 Upload recibido: {file.filename} | user_id={user_id}")
@@ -129,9 +133,19 @@ class UploadRoutes:
                 user_id=user_id,
             )
             if not metadata:
-                raise HTTPException(status_code=422, detail="No se pudo extraer metadata del EPUB")
-            return metadata
+                if temp_path.exists():
+                    temp_path.unlink(missing_ok=True)
+                raise HTTPException(
+                    status_code=422, detail="No se pudo extraer metadata del EPUB"
+                )
+            return {
+                "success": True,
+                "upload_id": str(metadata.get("upload_id")),
+                "metadata": metadata,
+            }
         except HTTPException:
+            if temp_path.exists():
+                temp_path.unlink(missing_ok=True)
             raise
         except Exception as e:
             logger.error(f"Error analizando EPUB: {e}", exc_info=True)
@@ -159,10 +173,13 @@ class UploadRoutes:
             or user_data.get("canUploadEpub")
         )
         if not can_upload:
-            raise HTTPException(status_code=403, detail="No tienes permiso para subir libros")
+            raise HTTPException(
+                status_code=403, detail="No tienes permiso para subir libros"
+            )
 
         results = []
         for file in files:
+            temp_path = None
             try:
                 temp_path = await self._save_temp_file(file)
                 metadata = await upload_service.analyze_epub(
@@ -171,14 +188,37 @@ class UploadRoutes:
                     user_id=user_id,
                 )
                 if metadata:
-                    results.append({"success": True, **metadata})
+                    results.append(
+                        {
+                            "success": True,
+                            "filename": file.filename,
+                            "upload_id": str(metadata.get("upload_id")),
+                            "metadata": metadata,
+                        }
+                    )
                 else:
-                    results.append({"success": False, "filename": file.filename, "error": "No se pudo extraer metadata"})
+                    if temp_path and temp_path.exists():
+                        temp_path.unlink(missing_ok=True)
+                    results.append(
+                        {
+                            "success": False,
+                            "filename": file.filename,
+                            "error": "No se pudo extraer metadata",
+                        }
+                    )
             except HTTPException as e:
-                results.append({"success": False, "filename": file.filename, "error": e.detail})
+                if temp_path and temp_path.exists():
+                    temp_path.unlink(missing_ok=True)
+                results.append(
+                    {"success": False, "filename": file.filename, "error": e.detail}
+                )
             except Exception as e:
                 logger.error(f"Error bulk upload {file.filename}: {e}", exc_info=True)
-                results.append({"success": False, "filename": file.filename, "error": str(e)})
+                if temp_path and temp_path.exists():
+                    temp_path.unlink(missing_ok=True)
+                results.append(
+                    {"success": False, "filename": file.filename, "error": str(e)}
+                )
         return results
 
     async def confirm_upload(
@@ -222,7 +262,9 @@ class UploadRoutes:
             raise
         except Exception as e:
             logger.error(f"Error confirmando bulk upload: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Error al confirmar el upload masivo")
+            raise HTTPException(
+                status_code=500, detail="Error al confirmar el upload masivo"
+            )
 
     async def get_upload_history(
         self,
@@ -247,5 +289,3 @@ class UploadRoutes:
         except Exception as e:
             logger.error(f"Error obteniendo historial de uploads: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail="Error al obtener el historial")
-
-

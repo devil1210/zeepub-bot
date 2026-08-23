@@ -1,11 +1,14 @@
 import html
 import io
+import logging
 import os
 import re
 import xml.etree.ElementTree as ET
 import zipfile
 
 from PIL import Image
+
+logger = logging.getLogger(__name__)
 
 
 def clean_metadata_tags(text):
@@ -17,7 +20,9 @@ def clean_metadata_tags(text):
     # 2. Quitar paréntesis comunes (Novela), (Manga), (Completo), etc.
     cleaned = re.sub(r"\s*\(.*?\)\s*", " ", cleaned)
     # 3. Quitar sufijos de volumen si se colaron (ej: - V01, : V01, - Vol. 1)
-    cleaned = re.sub(r"\s*[-:]\s*V(?:ol)?\.?\s*\d+\s*.*$", "", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(
+        r"\s*[-:]\s*V(?:ol)?\.?\s*\d+\s*.*$", "", cleaned, flags=re.IGNORECASE
+    )
     # 4. Quitar indicadores de volumen sueltos al final (ej: "Serie V01")
     cleaned = re.sub(r"\s+V\d+$", "", cleaned)
     # 5. Limpiar espacios múltiples y caracteres sueltos al final
@@ -50,7 +55,9 @@ class EpubMetadataExtractor:
                 # 1. Encontrar el archivo OPF
                 container_xml = z.read("META-INF/container.xml")
                 root = ET.fromstring(container_xml)
-                opf_path = root.find(".//container:rootfile", self.NAMESPACE).get("full-path")
+                opf_path = root.find(".//container:rootfile", self.NAMESPACE).get(
+                    "full-path"
+                )
 
                 # 2. Leer el OPF
                 opf_content = z.read(opf_path)
@@ -64,18 +71,37 @@ class EpubMetadataExtractor:
                     raw_title = self._get_dc_value(metadata_node, "title")
                     self.metadata["title"] = raw_title
                     if raw_title:
-                        from utils.metadata_utils import clean_romaji_title, is_romaji_string
+                        from utils.metadata_utils import (
+                            clean_romaji_title,
+                            is_romaji_string,
+                        )
+
                         if is_romaji_string(raw_title):
-                            self.metadata["romaji_title"] = clean_romaji_title(raw_title)
-                    self.metadata["publisher"] = self._get_dc_value(metadata_node, "publisher")
-                    self.metadata["language"] = self._get_dc_value(metadata_node, "language")
-                    self.metadata["description"] = self._get_dc_value(metadata_node, "description")
-                    self.metadata["book_type"] = self._get_dc_value(metadata_node, "type")
-                    self.metadata["published_at"] = self._get_dc_value(metadata_node, "date")
+                            self.metadata["romaji_title"] = clean_romaji_title(
+                                raw_title
+                            )
+                    self.metadata["publisher"] = self._get_dc_value(
+                        metadata_node, "publisher"
+                    )
+                    self.metadata["language"] = self._get_dc_value(
+                        metadata_node, "language"
+                    )
+                    self.metadata["description"] = self._get_dc_value(
+                        metadata_node, "description"
+                    )
+                    self.metadata["book_type"] = self._get_dc_value(
+                        metadata_node, "type"
+                    )
+                    self.metadata["published_at"] = self._get_dc_value(
+                        metadata_node, "date"
+                    )
 
                     # Extraer fecha de modificación de dc:date (específico de EPUB2/Calibre)
                     for date_node in metadata_node.findall("dc:date", self.NAMESPACE):
-                        if date_node.get("{http://www.idpf.org/2007/opf}event") == "modification":
+                        if (
+                            date_node.get("{http://www.idpf.org/2007/opf}event")
+                            == "modification"
+                        ):
                             self.metadata["modified_at_opf"] = date_node.text
                             break
 
@@ -97,7 +123,9 @@ class EpubMetadataExtractor:
                     # Extraer toda la info de los meta tags en una sola pasada
                     meta_tags = []
                     for child in metadata_node:
-                        tag_name = child.tag.split("}")[-1] if "}" in child.tag else child.tag
+                        tag_name = (
+                            child.tag.split("}")[-1] if "}" in child.tag else child.tag
+                        )
 
                         if tag_name == "creator":
                             cid = get_attr_agnostic(child, "id")
@@ -111,7 +139,9 @@ class EpubMetadataExtractor:
                             meta_tags.append(child)
                             refines = get_attr_agnostic(child, "refines")
                             # EPUB3 uses 'property', EPUB2 uses 'name'
-                            prop = get_attr_agnostic(child, "property") or get_attr_agnostic(child, "name")
+                            prop = get_attr_agnostic(
+                                child, "property"
+                            ) or get_attr_agnostic(child, "name")
 
                             if refines:
                                 cid = refines.replace("#", "")
@@ -119,12 +149,17 @@ class EpubMetadataExtractor:
                                     role_map[cid] = child.text
                                 elif prop == "alternate-script" and (
                                     get_attr_agnostic(child, "lang") in ("ja", "ja-JP")
-                                    or child.get("{http://www.w3.org/XML/1998/namespace}lang") in ("ja", "ja-JP")
+                                    or child.get(
+                                        "{http://www.w3.org/XML/1998/namespace}lang"
+                                    )
+                                    in ("ja", "ja-JP")
                                 ):
                                     creators_jap[cid] = child.text
 
                     # Asignar personas
-                    self.metadata["author"] = self._get_dc_value(metadata_node, "creator")  # Fallback
+                    self.metadata["author"] = self._get_dc_value(
+                        metadata_node, "creator"
+                    )  # Fallback
                     self.metadata["author_jap"] = None
                     self.metadata["illustrator"] = None
                     self.metadata["illustrator_jap"] = None
@@ -223,7 +258,10 @@ class EpubMetadataExtractor:
                         for meta in meta_tags:
                             name = get_attr_agnostic(meta, "name")
                             prop = get_attr_agnostic(meta, "property")
-                            if name in ("calibre:series", "series") or prop in ("calibre:series", "series"):
+                            if name in ("calibre:series", "series") or prop in (
+                                "calibre:series",
+                                "series",
+                            ):
                                 val = get_attr_agnostic(meta, "content") or meta.text
                                 if val:
                                     self.metadata["series"] = clean_metadata_tags(val)
@@ -242,12 +280,16 @@ class EpubMetadataExtractor:
                         ):
                             if not self.metadata.get("volume"):
                                 try:
-                                    self.metadata["volume"] = float(content or meta.text)
+                                    self.metadata["volume"] = float(
+                                        content or meta.text
+                                    )
                                 except (ValueError, TypeError, Exception):
                                     pass
 
                         elif prop == "group-position":
-                            ref = (get_attr_agnostic(meta, "refines") or "").replace("#", "")
+                            ref = (get_attr_agnostic(meta, "refines") or "").replace(
+                                "#", ""
+                            )
                             if ref == "serie" or ref in collection_ids:
                                 try:
                                     self.metadata["volume"] = float(meta.text)
@@ -271,20 +313,32 @@ class EpubMetadataExtractor:
                             break
 
                     # Option 1: Detection via tags/subjects
-                    if any(x in all_tags_text for x in ["sin censura", "uncensored", "no censura"]):
+                    if any(
+                        x in all_tags_text
+                        for x in ["sin censura", "uncensored", "no censura"]
+                    ):
                         self.metadata["is_uncensored"] = 1
 
                     # Also check in edition field if found
                     edition_text = (self.metadata.get("edition") or "").lower()
-                    if any(x in edition_text for x in ["sin censura", "uncensored", "no censura"]):
+                    if any(
+                        x in edition_text
+                        for x in ["sin censura", "uncensored", "no censura"]
+                    ):
                         self.metadata["is_uncensored"] = 1
 
                     if (
-                        any(x in all_tags_text for x in ["ilustraciones a color", "color", "full color"])
+                        any(
+                            x in all_tags_text
+                            for x in ["ilustraciones a color", "color", "full color"]
+                        )
                         or "color" in edition_text
                     ):
                         self.metadata["color_mode"] = "color"
-                    elif any(x in all_tags_text for x in ["blanco y negro", "b&w", "grayscale", "b/n"]):
+                    elif any(
+                        x in all_tags_text
+                        for x in ["blanco y negro", "b&w", "grayscale", "b/n"]
+                    ):
                         self.metadata["color_mode"] = "bw"
 
                     # Option 3: Detection via custom meta properties (Zeepub extensions)
@@ -313,14 +367,16 @@ class EpubMetadataExtractor:
                         self.metadata["title"] = clean_metadata_tags(raw_title)
 
                 # 4. Calcular métricas técnicas (palabras, páginas)
-                self._calculate_technical_metrics(z, opf_root, os.path.dirname(opf_path))
+                self._calculate_technical_metrics(
+                    z, opf_root, os.path.dirname(opf_path)
+                )
 
                 # 5. Encontrar la portada
                 self._extract_cover(z, opf_root, os.path.dirname(opf_path))
 
                 return self.metadata
         except Exception as e:
-            print(f"Error extrayendo metadata de {self.epub_path}: {e}")
+            logger.error(f"Error extrayendo metadata de {self.epub_path}: {e}")
             return None
 
     def _get_dc_value(self, node, tag):
@@ -349,7 +405,10 @@ class EpubMetadataExtractor:
                 idref = itemref.get("idref")
                 href = item_map.get(idref)
 
-                if href and any(href.lower().endswith(ext) for ext in [".xhtml", ".html", ".htm", ".xml", ".txt"]):
+                if href and any(
+                    href.lower().endswith(ext)
+                    for ext in [".xhtml", ".html", ".htm", ".xml", ".txt"]
+                ):
                     try:
                         raw_path = os.path.join(base_dir, href)
                         full_href = os.path.normpath(raw_path).replace("\\", "/")
@@ -483,7 +542,9 @@ class EpubMetadataExtractor:
                     ratio = 200 / float(low_img.width)
                     height = int(float(low_img.height) * float(ratio))
                     low_img = low_img.resize((200, height), Image.LANCZOS)
-                low_img.save(low_path, "JPEG", quality=70, optimize=True, progressive=True)
+                low_img.save(
+                    low_path, "JPEG", quality=70, optimize=True, progressive=True
+                )
 
                 return {
                     "original": original_path,
@@ -492,5 +553,5 @@ class EpubMetadataExtractor:
                     "low": low_path,
                 }
             except Exception as e:
-                print(f"Error guardando portada: {e}")
+                logger.error(f"Error guardando portada: {e}")
         return None

@@ -538,18 +538,46 @@ class UploadBook(Base):
     __tablename__ = "upload_books"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.telegram_id"))
+    telegram_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.telegram_id"), index=True
+    )
     original_filename: Mapped[str] = mapped_column(String(512))
     temp_filepath: Mapped[str] = mapped_column(String(1024))
 
     title: Mapped[str] = mapped_column(String(512))
-    volume: Mapped[float | None] = mapped_column(Float)
-    series_id: Mapped[str | None] = mapped_column(String(64))
+    series: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    volume: Mapped[float | None] = mapped_column(Float, nullable=True)
+    author: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    author_jap: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    illustrator: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    illustrator_jap: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    book_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    translator: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    layout_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    language: Mapped[str | None] = mapped_column(String(10), default="es")
+    is_uncensored: Mapped[int] = mapped_column(Integer, default=0)
+    color_mode: Mapped[str | None] = mapped_column(String(50), default="bw")
 
-    book_hash: Mapped[str] = mapped_column(String(64))
-    processed: Mapped[bool] = mapped_column(Boolean, default=False)
+    book_hash: Mapped[str] = mapped_column(String(64), index=True)
+    series_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    identity_match: Mapped[str] = mapped_column(String(10), default="False")
+    path_collision: Mapped[str] = mapped_column(String(10), default="False")
+    processed: Mapped[str] = mapped_column(String(10), default="False")
+    upload_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+
+    @hybrid_property
+    def user_id(self) -> int:
+        return self.telegram_id
+
+    @user_id.setter
+    def user_id(self, value: int):
+        self.telegram_id = value
+
+    @user_id.expression
+    def user_id(cls):
+        return cls.telegram_id
 
 
 class UploadHistory(Base):

@@ -52,7 +52,9 @@ class UploadService:
                 for source in sources:
                     p = Path(source.path)
                     if p.exists():
-                        logger.info(f"Usando fuente de librería activa: {source.name} ({source.path})")
+                        logger.info(
+                            f"Usando fuente de librería activa: {source.name} ({source.path})"
+                        )
                         self._library_base_cache = p
                         self._active_source_id = source.id
                         return self._library_base_cache
@@ -88,7 +90,9 @@ class UploadService:
         self._active_source_id = 1
         return self._library_base_cache
 
-    async def analyze_epub(self, epub_path: Path, original_filename: str, user_id: int) -> dict[str, Any] | None:
+    async def analyze_epub(
+        self, epub_path: Path, original_filename: str, user_id: int
+    ) -> dict[str, Any] | None:
         """Analiza el EPUB, aplica IA si está activa y determina identidad."""
         try:
             if not await self._validate_epub_structure(epub_path):
@@ -106,17 +110,25 @@ class UploadService:
                 return None
 
             # 2. Mapear a formato interno de metadata
-            metadata = self._map_enriched_to_internal(enriched_metadata, original_filename)
+            metadata = self._map_enriched_to_internal(
+                enriched_metadata, original_filename
+            )
 
             # 3. Integración con IA (Gemini)
-            bg_ai_enabled = get_setting("enable_background_ai_scan", "false").lower() == "true"
+            bg_ai_enabled = (
+                get_setting("enable_background_ai_scan", "false").lower() == "true"
+            )
             if bg_ai_enabled:
-                ai_data = await AIService.normalize_book_metadata(original_filename, metadata)
+                ai_data = await AIService.normalize_book_metadata(
+                    original_filename, metadata
+                )
                 if ai_data:
                     self._apply_ai_enrichment(metadata, ai_data)
 
             # 4. Lógica de Identidad (Hashes)
-            identity = await self._determine_identity(epub_path, original_filename, metadata)
+            identity = await self._determine_identity(
+                epub_path, original_filename, metadata
+            )
 
             # Actualizar metadata con identidad final
             metadata.update(
@@ -143,7 +155,9 @@ class UploadService:
                 metadata["identity_match"] = None
 
             # 6. Determinar destino inteligente
-            metadata["suggested_path"] = await self._get_smart_destination(metadata, original_filename)
+            metadata["suggested_path"] = await self._get_smart_destination(
+                metadata, original_filename
+            )
 
             # 7. Persistir registro temporal de upload y obtener ID
             record = await upload_repo.create_upload_record(
@@ -191,9 +205,15 @@ class UploadService:
     def _map_enriched_to_internal(self, enriched: dict, original_filename: str) -> dict:
         """Mapea la metadata enriquecida al formato de control interno."""
         return {
-            "title": enriched.get("titulo_volumen") or enriched.get("titulo_serie") or "Sin título",
+            "title": enriched.get("titulo_volumen")
+            or enriched.get("titulo_serie")
+            or "Sin título",
             "author": enriched.get("autor")
-            or (enriched.get("autores", ["Autor desconocido"])[0] if enriched.get("autores") else "Autor desconocido"),
+            or (
+                enriched.get("autores", ["Autor desconocido"])[0]
+                if enriched.get("autores")
+                else "Autor desconocido"
+            ),
             "description": enriched.get("sinopsis", ""),
             "language": enriched.get("idioma", "es"),
             "isbn": enriched.get("isbn", ""),
@@ -201,12 +221,15 @@ class UploadService:
             "publish_date": enriched.get("fecha_publicacion", ""),
             "tags": ", ".join(enriched.get("generos", [])),
             "series": enriched.get("titulo_serie", ""),
-            "volume": enriched.get("volume_index") or enriched.get("titulo_volumen", ""),
+            "volume": enriched.get("volume_index")
+            or enriched.get("titulo_volumen", ""),
             "illustrator": enriched.get("ilustrador", ""),
             "translator": enriched.get("traductor", ""),
             "category": enriched.get("categoria", ""),
             "demography": normalize_demographics_list(enriched.get("demografia", [])),
-            "layout_by": ", ".join(enriched.get("maquetadores", [])) if enriched.get("maquetadores") else "",
+            "layout_by": ", ".join(enriched.get("maquetadores", []))
+            if enriched.get("maquetadores")
+            else "",
             "book_type": enriched.get("categoria", ""),
             "original_filename": original_filename,
         }
@@ -232,25 +255,34 @@ class UploadService:
         if ai_data.get("genres"):
             metadata["tags"] = ", ".join(ai_data["genres"])
         if ai_data.get("demographics"):
-            metadata["demography"] = normalize_demographics_list(ai_data["demographics"])
+            metadata["demography"] = normalize_demographics_list(
+                ai_data["demographics"]
+            )
         if ai_data.get("cleaned_description"):
             metadata["description"] = ai_data["cleaned_description"]
 
-    async def _determine_identity(self, epub_path: Path, original_filename: str, metadata: dict) -> dict:
+    async def _determine_identity(
+        self, epub_path: Path, original_filename: str, metadata: dict
+    ) -> dict:
         """Calcula hashes y normaliza identidad."""
-        identity = process_book_identity_comprehensive(str(epub_path), original_filename)
+        identity = process_book_identity_comprehensive(
+            str(epub_path), original_filename=original_filename
+        )
 
         # Merge con datos de metadata (que pueden venir corregidos por IA)
         final_identity = {
             "series": metadata.get("series") or identity.get("series"),
             "author": metadata.get("author") or identity.get("author"),
             "book_type": metadata.get("book_type") or identity.get("book_type"),
-            "volume": metadata.get("volume") if metadata.get("volume") is not None else identity.get("volume"),
+            "volume": metadata.get("volume")
+            if metadata.get("volume") is not None
+            else identity.get("volume"),
             "translator": metadata.get("translator") or identity.get("translator"),
             "layout_by": metadata.get("layout_by") or identity.get("layout_by"),
             "language": metadata.get("language") or identity.get("language"),
             "is_uncensored": metadata.get("is_uncensored", 0),
-            "color_mode": metadata.get("color_mode") or identity.get("color_mode", "bw"),
+            "color_mode": metadata.get("color_mode")
+            or identity.get("color_mode", "bw"),
         }
 
         book_hash = hash_service.generate_book_hash(
@@ -275,7 +307,9 @@ class UploadService:
         final_identity["series_hash"] = series_hash
         return final_identity
 
-    async def _get_smart_destination(self, metadata: dict, original_filename: str) -> str:
+    async def _get_smart_destination(
+        self, metadata: dict, original_filename: str
+    ) -> str:
         """Calcula la ruta de destino inteligente."""
         series_hash = metadata.get("series_hash")
         target_dir = None
@@ -302,23 +336,39 @@ class UploadService:
             series = metadata.get("series", "")
             tag = self._determine_novel_type_tag(metadata, original_filename)
 
-            series_ok = re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE) if series else ""
+            series_ok = (
+                re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE)
+                if series
+                else ""
+            )
             series_clean = self._clean_fs_name(series_ok)
-            series_folder_name = f"{series_clean} - {author} [{tag}]" if series_clean else f"{author} [{tag}]"
+            series_folder_name = (
+                f"{series_clean} - {author} [{tag}]"
+                if series_clean
+                else f"{author} [{tag}]"
+            )
             target_dir = library_base / series_folder_name
 
         # Nombre de archivo
         if metadata.get("ai_filename"):
             filename = metadata["ai_filename"]
         else:
-            filename = await self._generate_pattern_filename(target_dir, metadata, original_filename)
+            filename = await self._generate_pattern_filename(
+                target_dir, metadata, original_filename
+            )
 
         return f"{series_folder_name}/{filename}"
 
-    async def _generate_pattern_filename(self, target_dir: Path, metadata: dict, original_filename: str) -> str:
+    async def _generate_pattern_filename(
+        self, target_dir: Path, metadata: dict, original_filename: str
+    ) -> str:
         """Genera nombre de archivo basado en el patrón de la carpeta o el estándar."""
         series = metadata.get("series", "")
-        series_ok = re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE) if series else ""
+        series_ok = (
+            re.sub(r"\s*\[(?:NL|NW)\]\s*$", "", series, flags=re.IGNORECASE)
+            if series
+            else ""
+        )
 
         volume = metadata.get("volume")
         vol_str = self._format_volume_str(volume)
@@ -338,7 +388,9 @@ class UploadService:
         # Si la carpeta existe, intentar imitar el patrón
         if target_dir.exists():
             try:
-                files = [f for f in os.listdir(target_dir) if f.lower().endswith(".epub")]
+                files = [
+                    f for f in os.listdir(target_dir) if f.lower().endswith(".epub")
+                ]
                 for f in files:
                     if " - V" in f and "[" in f and "].epub" in f:
                         return f"{base_series_name} - V{vol_str} [{group}].epub"
@@ -381,9 +433,7 @@ class UploadService:
             "NL": ["shinsengumi", "light novel", "shonen", "seinen"],
             "NW": ["novela web", "web novel", "wn", "syosetu"],
         }
-        text_to_check = (
-            f"{metadata.get('publisher', '')} {metadata.get('tags', '')} {metadata.get('description', '')}".lower()
-        )
+        text_to_check = f"{metadata.get('publisher', '')} {metadata.get('tags', '')} {metadata.get('description', '')}".lower()
 
         for tag, words in indicators.items():
             if any(word in text_to_check for word in words):
@@ -399,34 +449,51 @@ class UploadService:
         except Exception:
             return None
 
-    async def finalize_upload(self, epub_path: Path, suggested_path: str, metadata: dict) -> bool:
+    async def finalize_upload(
+        self, epub_path: Path, suggested_path: str, metadata: dict
+    ) -> bool:
         """Mueve el archivo a su ubicación final e indexa."""
         try:
-            logger.info(f"Finalizando upload: sugiera path '{suggested_path}' para {epub_path.name}")
+            logger.info(
+                f"Finalizando upload: sugiera path '{suggested_path}' para {epub_path.name}"
+            )
 
             # Desviar a Nextcloud si las credenciales están configuradas
             from services.nextcloud_service import nextcloud_service
+
             if nextcloud_service.is_active:
-                logger.info("☁️ Nextcloud detectado activo. Desviando la subida directamente a Nextcloud...")
-                upload_success = await nextcloud_service.upload_file(epub_path, suggested_path)
+                logger.info(
+                    "☁️ Nextcloud detectado activo. Desviando la subida directamente a Nextcloud..."
+                )
+                upload_success = await nextcloud_service.upload_file(
+                    epub_path, suggested_path
+                )
                 if upload_success:
                     # Borrar archivo temporal
                     if epub_path.exists():
                         try:
                             epub_path.unlink()
                         except Exception as unlink_err:
-                            logger.warning(f"No se pudo borrar el archivo temporal {epub_path}: {unlink_err}")
+                            logger.warning(
+                                f"No se pudo borrar el archivo temporal {epub_path}: {unlink_err}"
+                            )
 
                     # Limpieza de registro temporal de upload_books en DB
                     upload_id = metadata.get("upload_id")
                     if upload_id:
                         try:
                             await upload_repo.delete_upload_record(int(upload_id))
-                            logger.info(f"Registro temporal de upload {upload_id} eliminado.")
+                            logger.info(
+                                f"Registro temporal de upload {upload_id} eliminado."
+                            )
                         except Exception as e:
-                            logger.warning(f"No se pudo eliminar el registro temporal {upload_id}: {e}")
+                            logger.warning(
+                                f"No se pudo eliminar el registro temporal {upload_id}: {e}"
+                            )
 
-                    logger.info(f"✅ Finalización de upload exitosa vía Nextcloud: {suggested_path}")
+                    logger.info(
+                        f"✅ Finalización de upload exitosa vía Nextcloud: {suggested_path}"
+                    )
                     return True
                 else:
                     logger.error("❌ Fallo subiendo el libro a Nextcloud.")
@@ -441,7 +508,9 @@ class UploadService:
             try:
                 full_path.parent.mkdir(parents=True, exist_ok=True)
             except Exception as e:
-                logger.error(f"No se pudo crear el directorio de destino {full_path.parent}: {e}")
+                logger.error(
+                    f"No se pudo crear el directorio de destino {full_path.parent}: {e}"
+                )
                 return False
 
             logger.info(f"Moviendo {epub_path} -> {full_path}")
@@ -453,7 +522,9 @@ class UploadService:
                 target_file_path = str(full_path).replace("\\", "/")
                 existing = await book_repo.get_by_filepath(target_file_path)
                 if existing:
-                    logger.info("El libro ya existe en la ubicación final, marcando como éxito.")
+                    logger.info(
+                        "El libro ya existe en la ubicación final, marcando como éxito."
+                    )
                     return True
                 return False
 
@@ -479,10 +550,14 @@ class UploadService:
 
             # IMPORTANTE: Pasar el source_id detectado
             try:
-                scan_result = await scanner.sync_path(target_file_path, source_id=source_id, force_scan=True)
+                scan_result = await scanner.sync_path(
+                    target_file_path, source_id=source_id, force_scan=True
+                )
                 logger.info(f"Scan result para {target_file_path}: {scan_result}")
             except Exception as scan_err:
-                logger.warning(f"Error en scanner.sync_path (archivo ya fue movido): {scan_err}")
+                logger.warning(
+                    f"Error en scanner.sync_path (archivo ya fue movido): {scan_err}"
+                )
                 scan_result = None
 
             # El archivo ya fue movido exitosamente al disco.
@@ -494,23 +569,31 @@ class UploadService:
                 # Actualizar campos específicos confirmados
                 db_data = {
                     "book_type": metadata.get("book_type"),
-                    "is_uncensored": 1 if metadata.get("is_uncensored") in (1, True, "True") else 0,
+                    "is_uncensored": 1
+                    if metadata.get("is_uncensored") in (1, True, "True")
+                    else 0,
                     "color_mode": metadata.get("color_mode", "bw"),
                     "description": metadata.get("description"),
                 }
                 try:
                     await book_repo.update(book.id, db_data)
                 except Exception as upd_err:
-                    logger.warning(f"No se pudo actualizar metadata post-scan: {upd_err}")
+                    logger.warning(
+                        f"No se pudo actualizar metadata post-scan: {upd_err}"
+                    )
 
                 # Sincronizar serie
                 try:
                     async with pg_manager.get_session() as session:
-                        await SeriesScanner.sync_series_metadata(session, book.series_hash)
+                        await SeriesScanner.sync_series_metadata(
+                            session, book.series_hash
+                        )
                 except Exception as ser_err:
                     logger.warning(f"No se pudo sincronizar serie: {ser_err}")
             else:
-                logger.info(f"Libro aún no indexado en DB (se indexará en próximo escaneo): {target_file_path}")
+                logger.info(
+                    f"Libro aún no indexado en DB (se indexará en próximo escaneo): {target_file_path}"
+                )
 
             # LIMPIEZA DE UPLOAD_BOOKS
             upload_id = metadata.get("upload_id")
@@ -519,7 +602,9 @@ class UploadService:
                     await upload_repo.delete_upload_record(int(upload_id))
                     logger.info(f"Registro temporal de upload {upload_id} eliminado.")
                 except Exception as e:
-                    logger.warning(f"No se pudo eliminar el registro temporal {upload_id}: {e}")
+                    logger.warning(
+                        f"No se pudo eliminar el registro temporal {upload_id}: {e}"
+                    )
 
             # Sincronización automática a la nube tras upload
             from services.sync_service import SyncService
