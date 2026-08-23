@@ -94,9 +94,8 @@ class NextcloudService:
 
             # 2. Subir el archivo mediante PUT asíncrono
             try:
-                # Leemos en stream binario para un rendimiento óptimo de memoria en archivos grandes
-                with open(local_path, "rb") as f:
-                    res = await client.put(webdav_url, content=f, auth=auth)
+                file_bytes = local_path.read_bytes()
+                res = await client.put(webdav_url, content=file_bytes, auth=auth)
 
                 # 201 (Created) o 204 (No Content/Actualizado con éxito)
                 if res.status_code in (201, 204):
