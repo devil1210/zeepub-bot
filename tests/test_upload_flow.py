@@ -128,6 +128,14 @@ async def test_analyze_epub_flow(tmp_path: Path):
             new=AsyncMock(return_value=None),
         ),
         patch(
+            "services.upload_service.book_repo.get_by_series_and_volume",
+            new=AsyncMock(return_value=None),
+        ),
+        patch(
+            "repositories.series_repository.series_repo.find_by_title_or_alias",
+            new=AsyncMock(return_value=None),
+        ),
+        patch(
             "services.upload_service.book_repo.get_one_by_attr",
             new=AsyncMock(return_value=None),
         ),
@@ -289,3 +297,126 @@ async def test_finalize_upload_local(tmp_path: Path):
         dest_file = lib_dir / "Series_Name/Book_V01.epub"
         assert dest_file.exists()
         assert not temp_epub.exists()
+
+
+@pytest.mark.asyncio
+async def test_duplicate_detection_by_uuid(tmp_path: Path):
+    """Verifica detección de duplicados cuando el EPUB contiene un UUID existente."""
+    epub_file = tmp_path / "uuid_book.epub"
+    epub_file.write_bytes(create_minimal_epub_bytes("Book With UUID", "Author"))
+
+    mock_record = MagicMock()
+    mock_record.id = 88
+
+    existing_book_mock = MagicMock()
+    existing_book_mock.id = "uuid_hash_123"
+    existing_book_mock.filepath = "/library/Series/Book.epub"
+    existing_book_mock.series_info = None
+    existing_book_mock.volume = 1.0
+
+    with (
+        patch(
+            "services.upload_service.enrich_metadata_from_epub",
+            new=AsyncMock(
+                return_value={
+                    "titulo_volumen": "Book With UUID",
+                    "autor": "Author",
+                    "uuid": "12345678-1234-5678-1234-567812345678",
+                }
+            ),
+        ),
+        patch.object(
+            upload_repo, "create_upload_record", new=AsyncMock(return_value=mock_record)
+        ),
+        patch(
+            "services.upload_service.book_repo.get_by_hash",
+            new=AsyncMock(return_value=existing_book_mock),
+        ),
+        patch(
+            "services.upload_service.book_repo.get_by_series_and_volume",
+            new=AsyncMock(return_value=None),
+        ),
+        patch(
+            "services.upload_service.book_repo.get_one_by_attr",
+            new=AsyncMock(return_value=None),
+        ),
+        patch(
+            "repositories.series_repository.series_repo.find_by_title_or_alias",
+            new=AsyncMock(return_value=None),
+        ),
+        patch("services.upload_service.get_setting", return_value="false"),
+        patch.object(
+            upload_service,
+            "_get_library_base",
+            new=AsyncMock(return_value=Path("/library")),
+        ),
+    ):
+        metadata = await upload_service.analyze_epub(epub_file, "uuid_book.epub", 12345)
+
+        assert metadata is not None
+        assert metadata["identity_match"] is not None
+        assert metadata["identity_match"]["exists"] is True
+        assert metadata["identity_match"]["path"] == "/library/Series/Book.epub"
+
+
+@pytest.mark.asyncio
+async def test_duplicate_detection_by_series_and_volume(tmp_path: Path):
+    """Verifica detección de duplicados cuando el volumen ya existe para la serie."""
+    epub_file = tmp_path / "series_vol_book.epub"
+    epub_file.write_bytes(create_minimal_epub_bytes("Baka V01", "Kenji Inoue"))
+
+    mock_record = MagicMock()
+    mock_record.id = 99
+
+    existing_book_mock = MagicMock()
+    existing_book_mock.id = "hash_v01"
+    existing_book_mock.filepath = "/library/Baka/V01.epub"
+    existing_book_mock.series_info = MagicMock()
+    existing_book_mock.series_info.name = "Baka to Test"
+    existing_book_mock.volume = 1.0
+
+    with (
+        patch(
+            "services.upload_service.enrich_metadata_from_epub",
+            new=AsyncMock(
+                return_value={
+                    "titulo_serie": "Baka to Test",
+                    "titulo_volumen": "Baka to Test V01",
+                    "autor": "Kenji Inoue",
+                    "volume_index": 1.0,
+                }
+            ),
+        ),
+        patch.object(
+            upload_repo, "create_upload_record", new=AsyncMock(return_value=mock_record)
+        ),
+        patch(
+            "services.upload_service.book_repo.get_by_hash",
+            new=AsyncMock(return_value=None),
+        ),
+        patch(
+            "services.upload_service.book_repo.get_by_series_and_volume",
+            new=AsyncMock(return_value=existing_book_mock),
+        ),
+        patch(
+            "services.upload_service.book_repo.get_one_by_attr",
+            new=AsyncMock(return_value=None),
+        ),
+        patch(
+            "repositories.series_repository.series_repo.find_by_title_or_alias",
+            new=AsyncMock(return_value=None),
+        ),
+        patch("services.upload_service.get_setting", return_value="false"),
+        patch.object(
+            upload_service,
+            "_get_library_base",
+            new=AsyncMock(return_value=Path("/library")),
+        ),
+    ):
+        metadata = await upload_service.analyze_epub(epub_file, "series_vol_book.epub", 12345)
+
+        assert metadata is not None
+        assert metadata["identity_match"] is not None
+        assert metadata["identity_match"]["exists"] is True
+        assert metadata["identity_match"]["volume"] == 1.0
+        assert metadata["identity_match"]["series"] == "Baka to Test"

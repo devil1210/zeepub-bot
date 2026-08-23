@@ -526,8 +526,10 @@ export const UploadEpub: React.FC<UploadProps> = ({ onNavigate }) => {
                                                             {res.filename}
                                                         </p>
                                                         {isDuplicate && (
-                                                            <span className="px-2 py-0.5 rounded bg-amber-500 text-black text-[9px] font-black uppercase tracking-wider animate-pulse">
-                                                                Duplicado Exacto
+                                                            <span className="px-2 py-0.5 rounded bg-amber-500 text-black text-[9px] font-black uppercase tracking-wider">
+                                                                {res.metadata?.identity_match?.volume !== undefined && res.metadata?.identity_match?.volume !== null
+                                                                    ? `Ya en biblioteca (Vol. ${res.metadata.identity_match.volume})`
+                                                                    : 'Ya en biblioteca'}
                                                             </span>
                                                         )}
                                                         {res.metadata?.file_exists && !isDuplicate && (

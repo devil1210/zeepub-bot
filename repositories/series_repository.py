@@ -74,6 +74,36 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
+    async def find_by_title_or_alias(self, title: str) -> SeriesMetadata | None:
+        """Busca una serie por su nombre, título en español, título en inglés o patrón."""
+        if not title:
+            return None
+        t_clean = title.strip().lower()
+        async with pg_manager.get_session() as session:
+            # 1. Búsqueda exacta
+            stmt = select(SeriesMetadata).where(
+                or_(
+                    func.lower(SeriesMetadata.name) == t_clean,
+                    func.lower(SeriesMetadata.name_spanish) == t_clean,
+                    func.lower(SeriesMetadata.name_english) == t_clean,
+                )
+            ).limit(1)
+            result = await session.execute(stmt)
+            series = result.scalar_one_or_none()
+            if series:
+                return series
+
+            # 2. Búsqueda por patrón (ilike)
+            stmt_like = select(SeriesMetadata).where(
+                or_(
+                    SeriesMetadata.name.ilike(f"%{t_clean}%"),
+                    SeriesMetadata.name_spanish.ilike(f"%{t_clean}%"),
+                    SeriesMetadata.name_english.ilike(f"%{t_clean}%"),
+                )
+            ).limit(1)
+            result_like = await session.execute(stmt_like)
+            return result_like.scalar_one_or_none()
+
     async def list_series(
         self, page: int = 1, items_per_page: int = 20, sort_by: str = "name"
     ) -> dict[str, Any]:

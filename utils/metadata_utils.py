@@ -671,6 +671,9 @@ def process_book_identity_comprehensive(
         ),
         "series_spanish": series_spanish or meta.get("series_spanish"),
         "series_english": series_english or meta.get("series_english"),
+        "uuid": meta.get("uuid"),
+        "isbn": meta.get("isbn"),
+        "asin": meta.get("asin"),
     }
 
 

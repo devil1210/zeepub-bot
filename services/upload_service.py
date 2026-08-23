@@ -133,6 +133,7 @@ class UploadService:
             # Actualizar metadata con identidad final
             metadata.update(
                 {
+                    "uuid": identity.get("uuid"),
                     "series": identity.get("series"),
                     "author": identity.get("author"),
                     "volume": identity.get("volume"),
@@ -142,14 +143,42 @@ class UploadService:
             )
 
             # 5. Verificar duplicados
+            # 5.1 Buscar por book_hash (identificador único con UUID o metadatos)
             existing_book = await book_repo.get_by_hash(metadata["book_hash"])
-            # identity_match es None si no hay duplicado, o un dict con info si existe.
-            # IMPORTANTE: el frontend evalúa truthiness de este campo para decidir si es duplicado.
+
+            # 5.2 Si no se encontró y hay UUID, buscar por hash de UUID directamente
+            if not existing_book and metadata.get("uuid"):
+                uuid_hash = hash_service.generate_book_hash(uuid=metadata["uuid"])
+                existing_book = await book_repo.get_by_hash(uuid_hash)
+
+            # 5.3 Si no se encontró por hash exacto, verificar si el volumen ya existe en la serie
+            if not existing_book and metadata.get("volume") is not None:
+                vol_parsed = self._parse_volume(metadata["volume"])
+                if vol_parsed is not None:
+                    # Buscar por series_hash
+                    if metadata.get("series_hash"):
+                        existing_book = await book_repo.get_by_series_and_volume(
+                            metadata["series_hash"], vol_parsed
+                        )
+                    # Si no, buscar la serie por título / alias
+                    if not existing_book:
+                        from repositories.series_repository import series_repo
+
+                        s_query = metadata.get("series") or metadata.get("title")
+                        if s_query:
+                            matched_series = await series_repo.find_by_title_or_alias(s_query)
+                            if matched_series:
+                                existing_book = await book_repo.get_by_series_and_volume(
+                                    matched_series.id, vol_parsed
+                                )
+
             if existing_book:
                 metadata["identity_match"] = {
                     "exists": True,
                     "path": existing_book.filepath,
                     "id": existing_book.id,
+                    "series": existing_book.series_info.name if existing_book.series_info else metadata.get("series"),
+                    "volume": existing_book.volume,
                 }
             else:
                 metadata["identity_match"] = None
@@ -203,6 +232,23 @@ class UploadService:
         except zipfile.BadZipFile:
             return False
 
+    @staticmethod
+    def _parse_volume(val: Any) -> float | None:
+        """Parsea un número de volumen a float de forma robusta."""
+        if val is None:
+            return None
+        if isinstance(val, (int, float)):
+            return float(val)
+        import re
+
+        try:
+            match = re.search(r"(\d+(?:\.\d+)?)", str(val))
+            if match:
+                return float(match.group(1))
+        except Exception:
+            pass
+        return None
+
     def _map_enriched_to_internal(self, enriched: dict, original_filename: str) -> dict:
         """Mapea la metadata enriquecida al formato de control interno."""
         return {
@@ -218,6 +264,8 @@ class UploadService:
             "description": enriched.get("sinopsis", ""),
             "language": enriched.get("idioma", "es"),
             "isbn": enriched.get("isbn", ""),
+            "asin": enriched.get("asin", ""),
+            "uuid": enriched.get("uuid"),
             "publisher": enriched.get("publisher", ""),
             "publish_date": enriched.get("fecha_publicacion", ""),
             "tags": ", ".join(enriched.get("generos", [])),
@@ -272,6 +320,7 @@ class UploadService:
 
         # Merge con datos de metadata (que pueden venir corregidos por IA)
         final_identity = {
+            "uuid": metadata.get("uuid") or identity.get("uuid"),
             "series": metadata.get("series") or identity.get("series"),
             "author": metadata.get("author") or identity.get("author"),
             "book_type": metadata.get("book_type") or identity.get("book_type"),
@@ -296,6 +345,7 @@ class UploadService:
             language=final_identity["language"],
             is_uncensored=final_identity["is_uncensored"],
             color_mode=final_identity["color_mode"],
+            uuid=final_identity.get("uuid"),
         )
 
         series_hash = hash_service.generate_series_hash(

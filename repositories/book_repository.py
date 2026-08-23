@@ -102,6 +102,23 @@ class BookRepository(BaseRepository[LocalBook]):
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
+    async def get_by_series_and_volume(
+        self, series_id: str, volume: float
+    ) -> LocalBook | None:
+        """Busca si ya existe un libro para la misma serie y número de volumen."""
+        async with pg_manager.get_session() as session:
+            stmt = (
+                select(LocalBook)
+                .options(selectinload(LocalBook.series_info))
+                .where(
+                    LocalBook.series_id == str(series_id),
+                    LocalBook.volume == float(volume),
+                )
+                .limit(1)
+            )
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+
     async def get_one_by_attr(self, attr: str, value: Any) -> LocalBook | None:
         """Busca un libro por un atributo dinámico."""
         async with pg_manager.get_session() as session:

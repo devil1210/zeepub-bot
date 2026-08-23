@@ -190,6 +190,8 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
             "is_uncensored": 0,
             "color_mode": "bw",
             "isbn": None,
+            "uuid": None,
+            "asin": None,
         }
 
         # Version EPUB: <package version="...">
@@ -385,11 +387,33 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                 # Limpieza básica
                 clean_val = txt
                 if lower_txt.startswith("urn:isbn:"):
-                    clean_val = txt[9:]
+                    clean_val = txt[9:].strip()
                 elif lower_txt.startswith("isbn:"):
-                    clean_val = txt[5:]
+                    clean_val = txt[5:].strip()
                 elif lower_txt.startswith("urn:uuid:"):
-                    # UUID no es ISBN
+                    clean_val = txt[9:].strip()
+                    out["uuid"] = clean_val
+                    continue
+                elif lower_txt.startswith("urn:asin:"):
+                    clean_val = txt[9:].strip()
+                    out["asin"] = clean_val
+                    continue
+                elif lower_txt.startswith("urn:"):
+                    clean_val = txt[4:].strip()
+
+                import re
+
+                if re.match(
+                    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    clean_val,
+                    re.IGNORECASE,
+                ):
+                    if not out.get("uuid"):
+                        out["uuid"] = clean_val
+                    continue
+
+                if "asin" in lower_txt:
+                    out["asin"] = clean_val
                     continue
 
                 # Detectar explícitamente si es ISBN
