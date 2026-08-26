@@ -550,8 +550,15 @@ async def enviar_libro_directo(
 
         ilustrador = meta.get("illustrator") or meta.get("ilustrador")
         if ilustrador:
+            # Separar y formatear si hay múltiples ilustradores (ej: "Ichika & Yuu", "a20, misekiss")
+            ills = [
+                i.strip()
+                for i in re.split(r"[,;/+&]|\s+y\s+|\s+and\s+", str(ilustrador))
+                if i.strip() and i.strip().upper() not in ("N/A", "DESCONOCIDO", "-")
+            ]
+            ill_val = ", ".join(ills) if len(ills) > 1 else str(ilustrador).strip()
             tabla_literaria += (
-                f"  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n"
+                f"  <tr><td><b>🎨 Ilustrador</b></td><td>{ill_val}</td></tr>\n"
             )
 
         layout_by = meta.get("layout_by") or meta.get("maquetador")

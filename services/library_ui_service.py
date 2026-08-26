@@ -590,8 +590,14 @@ async def mostrar_detalles_libro(
 
     ilustrador = libro.get("illustrator") or libro.get("ilustrador")
     if ilustrador:
+        ills = [
+            i.strip()
+            for i in re.split(r"[,;/+&]|\s+y\s+|\s+and\s+", str(ilustrador))
+            if i.strip() and i.strip().upper() not in ("N/A", "DESCONOCIDO", "-")
+        ]
+        ill_val = ", ".join(ills) if len(ills) > 1 else str(ilustrador).strip()
         tabla_literaria += (
-            f"  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n"
+            f"  <tr><td><b>🎨 Ilustrador</b></td><td>{ill_val}</td></tr>\n"
         )
 
     layout_by = libro.get("layout_by") or libro.get("maquetador")

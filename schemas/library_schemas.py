@@ -46,7 +46,7 @@ class BookDTO(BaseModel):
     publisher: str | None = None
     isbn: str | None = None
     modifiedAt: str | None = None
-    published_at: str | None = None
+    published_at: Any | None = None
     asin: str | None = None
     word_count: int | None = None
     page_count: int | None = None
@@ -54,7 +54,7 @@ class BookDTO(BaseModel):
     file_size: int | None = None
     size: str | None = None
     epub_version: str | None = None
-    modified_at_opf: str | None = None
+    modified_at_opf: Any | None = None
     group: str | None = None
     volumeNumber: float | None = None
     translator_siglas: str | None = None
