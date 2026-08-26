@@ -262,6 +262,18 @@ class TelegramPublisherProvider(PublisherProvider):
             if volume:
                 html_parts.append(f"<h6>📚 Volumen {volume}</h6>\n")
 
+            # Géneros en chips / tags estilizados
+            from utils.metadata_utils import format_genre_chips
+
+            generos = (
+                book_data.get("tags_json")
+                or book_data.get("tags")
+                or book_data.get("generos")
+            )
+            chips_generos = format_genre_chips(generos)
+            if chips_generos:
+                html_parts.append(f"<p>🏷️ <i>{chips_generos}</i></p>\n")
+
             # TABLA 1: Ficha artística y literaria
             tabla_literaria = "<table bordered striped compact>\n"
             autor = book_data.get("author") or book_data.get("autor") or "Desconocido"
@@ -300,19 +312,6 @@ class TelegramPublisherProvider(PublisherProvider):
             if demo_val:
                 tabla_literaria += (
                     f"  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n"
-                )
-
-            generos = (
-                book_data.get("tags_json")
-                or book_data.get("tags")
-                or book_data.get("generos")
-            )
-            if generos:
-                generos_val = (
-                    ", ".join(generos) if isinstance(generos, list) else generos
-                )
-                tabla_literaria += (
-                    f"  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n"
                 )
 
             traductor = book_data.get("translator") or book_data.get("traductor")

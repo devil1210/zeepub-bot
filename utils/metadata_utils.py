@@ -781,3 +781,25 @@ def is_demographic_tag(tag: str) -> bool:
     if not tag or not isinstance(tag, str):
         return False
     return bool(normalize_demography(tag.strip()))
+
+
+def format_genre_chips(generos: Any, prefix: str = "#") -> str:
+    """
+    Convierte una lista o string de géneros en tags/chips estilizados.
+    Ejemplo: ["Acción", "Ciencia Ficción"] -> "#Acción #Ciencia_Ficción"
+    """
+    if not generos:
+        return ""
+    if isinstance(generos, str):
+        g_list = [g.strip() for g in re.split(r"[,;]+", generos) if g.strip()]
+    elif isinstance(generos, (list, tuple, set)):
+        g_list = [str(g).strip() for g in generos if str(g).strip()]
+    else:
+        return ""
+
+    chips = []
+    for g in g_list:
+        clean_g = re.sub(r"[^\w\s]", "", g).strip().replace(" ", "_")
+        if clean_g:
+            chips.append(f"{prefix}{clean_g}")
+    return " ".join(chips)

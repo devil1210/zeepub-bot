@@ -13,6 +13,7 @@ from services.keyboard_factory import BotKeyboards
 from services.library_service import LibraryService
 from services.rich_message_service import RichMessageService
 from utils.helpers import (
+    format_genre_chips,
     get_thread_id,
     get_translator_acronym,
     normalize_demography,
@@ -585,6 +586,12 @@ async def mostrar_detalles_libro(
     if volume:
         html_parts.append(f"<h6>📚 Volumen {volume}</h6>\n")
 
+    # Géneros en chips / tags estilizados
+    generos = libro.get("tags_json") or libro.get("tags") or libro.get("generos")
+    chips_generos = format_genre_chips(generos)
+    if chips_generos:
+        html_parts.append(f"<p>🏷️ <i>{chips_generos}</i></p>\n")
+
     # 3. TABLA 1: Ficha artística y literaria
     tabla_literaria = "<table bordered striped compact>\n"
 
@@ -627,13 +634,6 @@ async def mostrar_detalles_libro(
     if demo_val:
         tabla_literaria += (
             f"  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n"
-        )
-
-    generos = libro.get("tags_json") or libro.get("tags") or libro.get("generos")
-    if generos:
-        generos_val = ", ".join(generos) if isinstance(generos, list) else generos
-        tabla_literaria += (
-            f"  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n"
         )
 
     traductor = libro.get("translator") or libro.get("traductor")

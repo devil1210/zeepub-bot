@@ -13,6 +13,7 @@ from utils.identity_utils import generate_short_link  # noqa: F401
 # --- metadata_utils ---
 from utils.metadata_utils import (
     CANONICAL_DEMOGRAPHICS,  # noqa: F401
+    format_genre_chips,  # noqa: F401
     generar_slug_from_meta,  # noqa: F401
     get_series_spanish_from_api,  # noqa: F401
     is_demographic_tag,  # noqa: F401
