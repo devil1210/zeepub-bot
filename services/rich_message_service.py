@@ -80,6 +80,76 @@ class RichMessageService:
             return None
 
     @classmethod
+    async def edit_rich_message(
+        cls,
+        chat_id: int | str,
+        message_id: int | str,
+        blocks: list[dict] | None = None,
+        html: str | None = None,
+        markdown: str | None = None,
+        media: list[dict] | None = None,
+        files: dict | None = None,
+        **kwargs,
+    ) -> dict | None:
+        """
+        Edita un Rich Message existente in-place usando el endpoint editMessageText
+        con el payload estructurado de rich_message. (Telegram Bot API 10.1+)
+        """
+        url = f"https://api.telegram.org/bot{config.TELEGRAM_TOKEN}/editMessageText"
+
+        rich_payload = {}
+        if blocks is not None:
+            rich_payload["blocks"] = blocks
+        if html is not None:
+            rich_payload["html"] = html
+        if markdown is not None:
+            rich_payload["markdown"] = markdown
+        if media is not None:
+            rich_payload["media"] = media
+
+        payload = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "rich_message": rich_payload,
+            **kwargs,
+        }
+        if "reply_markup" in payload:
+            markup = payload["reply_markup"]
+            if hasattr(markup, "to_dict"):
+                payload["reply_markup"] = markup.to_dict()
+
+        try:
+            logger.info(
+                f"[RichMessageService] Editando rich message in-place en chat {chat_id}, msg {message_id}"
+            )
+            async with httpx.AsyncClient() as client:
+                if files:
+                    payload["rich_message"] = json.dumps(payload["rich_message"])
+                    if (
+                        "reply_markup" in payload
+                        and payload["reply_markup"] is not None
+                    ):
+                        payload["reply_markup"] = json.dumps(payload["reply_markup"])
+                    response = await client.post(
+                        url, data=payload, files=files, timeout=60.0
+                    )
+                else:
+                    response = await client.post(url, json=payload, timeout=60.0)
+
+                result = response.json()
+                if not result.get("ok"):
+                    logger.error(
+                        f"[RichMessageService] Error en edit_rich_message: {result}"
+                    )
+                return result
+        except Exception as e:
+            logger.error(
+                f"[RichMessageService] Excepción en edit_rich_message: {e}",
+                exc_info=True,
+            )
+            return None
+
+    @classmethod
     async def send_rich_message_draft(
         cls,
         chat_id: int | str,

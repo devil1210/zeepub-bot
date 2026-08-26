@@ -562,16 +562,17 @@ async def mostrar_detalles_libro(
         else "tienes descargas ilimitadas"
     )
 
-    is_staff = await check_is_admin_or_staff(uid, update.effective_user)
-    reply_markup = BotKeyboards.book_details(
-        key=key, is_admin_or_staff=is_staff, can_download=can_download
-    )
-
-    # C. Construir HTML dinámico para el Rich Message unificado
+def build_book_rich_html(
+    libro: dict,
+    has_cover: bool = True,
+    include_download: bool = False,
+    filename: str | None = None,
+) -> str:
+    """Construye el HTML dinámico completo para el Rich Message del libro."""
     html_parts = []
 
     # 1. Imagen al inicio de todo
-    if media:
+    if has_cover:
         html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
 
     # 2. Títulos en cascada
@@ -715,7 +716,14 @@ async def mostrar_detalles_libro(
     tabla_archivo += "  </table>\n</details>\n"
     html_parts.append(tabla_archivo)
 
-    # 6. Línea divisoria y pie con margen no recortable
+    # 6. Si se incluye descarga embebida
+    if include_download and filename:
+        html_parts.append(
+            f"<p>✅ <b>¡Tu novela está lista para descargar!</b></p>\n"
+            f'<p><a href="tg://document?id=epub_file">📥 {filename}</a></p>\n'
+        )
+
+    # 7. Línea divisoria y pie con margen no recortable
     html_parts.append("<hr/>")
 
     slug = libro.get("slug")
@@ -728,7 +736,77 @@ async def mostrar_detalles_libro(
     html_parts.append(f"<p>{hashtag_serie}</p>")
     html_parts.append("<p>⠀</p>")
 
-    html_content = "\n".join(html_parts)
+    return "\n".join(html_parts)
+
+
+async def mostrar_detalles_libro(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, key: str
+):
+    """Muestra la ficha técnica y opciones para un libro específico."""
+    uid = update.effective_user.id
+    st = state_manager.get_user_state(uid)
+    libro_st = st.get("libros", {}).get(key)
+
+    if not libro_st:
+        logger.warning(f"Libro no encontrado en estado para key: {key}")
+        if update.callback_query:
+            await update.callback_query.answer(
+                "⚠️ Información no disponible.", show_alert=True
+            )
+        return
+
+    # 1. Obtener Metadata Enriquecida (incluye sinopsis y detalles técnicos)
+    book_id = libro_st.get("hash") or libro_st.get("descarga")
+    meta = await metadata_orchestrator.get_enriched_metadata(book_id)
+
+    # Actualizar estado local con la data enriquecida
+    st["libros"][key].update(meta)
+    libro = st["libros"][key]
+
+    # Preparar Portada y Archivos
+    cover_data = await resolve_cover_data(libro.get("portada"))
+    media = None
+    files = None
+
+    if cover_data:
+        if isinstance(cover_data, bytes):
+            files = {
+                "tomozaki_cover": ("cover.jpg", cover_data, "image/jpeg")
+            }
+        elif isinstance(cover_data, str) and os.path.exists(cover_data):
+            try:
+                with open(cover_data, "rb") as f:
+                    files = {
+                        "tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")
+                    }
+            except Exception as e:
+                logger.warning(f"Error al leer archivo de portada local: {e}")
+
+        if files:
+            media = [
+                {
+                    "id": "tomozaki_cover",
+                    "media": {
+                        "type": "photo",
+                        "media": "attach://tomozaki_cover",
+                    },
+                }
+            ]
+
+    # Teclado interactivo
+    left = await downloads_left(uid)
+    can_download = (
+        True
+        if left == "ilimitadas"
+        else (isinstance(left, int) and left > 0)
+    )
+    is_staff = await check_is_admin_or_staff(uid, update.effective_user)
+    reply_markup = BotKeyboards.book_details(
+        key=key, is_admin_or_staff=is_staff, can_download=can_download
+    )
+
+    # C. Construir HTML dinámico para el Rich Message unificado
+    html_content = build_book_rich_html(libro, has_cover=bool(media))
 
     # D. Intentar enviar Rich Message unificado
     res = await RichMessageService.send_rich_message(

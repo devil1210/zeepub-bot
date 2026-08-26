@@ -10,6 +10,7 @@ from handlers.commands.base_handler import BaseCommandHandler
 from services.keyboard_factory import BotKeyboards
 from services.library_service import LibraryService
 from services.library_ui_service import (
+    build_book_rich_html,
     mostrar_menu_principal,
     mostrar_generos,
     mostrar_series,
@@ -19,7 +20,7 @@ from services.library_ui_service import (
     mostrar_autores_local,
 )
 from services.download_history import register_book_download
-from services.cover_service import send_doc_bytes
+from services.cover_service import resolve_cover_data, send_doc_bytes
 from utils.download_limiter import downloads_left
 from utils.helpers import format_genre_chips, get_thread_id
 
@@ -200,72 +201,113 @@ class CallbackHandlerV6(BaseCommandHandler):
                     caption = f"#{clean_title}"
 
                 try:
-                    # D. Construir pie de foto estilizado (Título + Volumen + Chips de género + Slug)
-                    vol_val = libro_st.get("volume")
-                    vol_str = f" - Volumen {vol_val}" if vol_val else ""
-
-                    generos = (
-                        libro_st.get("tags_json")
-                        or libro_st.get("tags")
-                        or libro_st.get("generos")
-                    )
-                    chips_generos = format_genre_chips(generos)
-
-                    caption_parts = [
-                        f"📖 <b>{title}{vol_str}</b>"
-                    ]
-                    if chips_generos:
-                        caption_parts.append(f"🏷️ <i>{chips_generos}</i>")
-                    if caption:
-                        caption_parts.append(f"\n{caption}")
-
-                    full_caption = "\n".join(caption_parts)
-
-                    # Teclado post-descarga directamente acoplado al documento
+                    # D. Construir y editar el Rich Message existente in-place agregándole la descarga
+                    filename = libro_st.get("filename") or f"{title}.epub"
                     series_hash = st.get("current_series_hash")
                     series_hash_short = series_hash[:16] if series_hash else None
                     post_keyboard = BotKeyboards.post_download(series_hash_short)
 
-                    filename = libro_st.get("filename") or f"{title}.epub"
+                    # 1. Resolver portada
+                    cover_data = await resolve_cover_data(libro_st.get("portada"))
+                    delivery_files = {}
+                    delivery_media = []
 
-                    # 1. Intentar transformar el mensaje actual in-place (Un solo mensaje en chat)
-                    edited = False
-                    sent_doc = None
-                    try:
-                        file_bytes = None
-                        if isinstance(filepath, str) and os.path.exists(filepath):
-                            with open(filepath, "rb") as f:
-                                file_bytes = f.read()
-                        elif isinstance(filepath, (bytes, bytearray)):
-                            file_bytes = filepath
-
-                        if file_bytes:
-                            from telegram import InputMediaDocument
-
-                            input_doc = InputMediaDocument(
-                                media=io.BytesIO(file_bytes),
-                                filename=filename,
-                                caption=full_caption,
-                                parse_mode="HTML",
+                    if cover_data:
+                        if isinstance(cover_data, bytes):
+                            delivery_files["tomozaki_cover"] = (
+                                "cover.jpg",
+                                cover_data,
+                                "image/jpeg",
                             )
-                            sent_doc = await context.bot.edit_message_media(
-                                chat_id=update.effective_chat.id,
-                                message_id=query.message.message_id,
-                                media=input_doc,
-                                reply_markup=post_keyboard,
+                        elif isinstance(cover_data, str) and os.path.exists(
+                            cover_data
+                        ):
+                            try:
+                                with open(cover_data, "rb") as f:
+                                    delivery_files["tomozaki_cover"] = (
+                                        "cover.jpg",
+                                        f.read(),
+                                        "image/jpeg",
+                                    )
+                            except Exception as e:
+                                logger.warning(f"Error leyendo portada local: {e}")
+
+                        if "tomozaki_cover" in delivery_files:
+                            delivery_media.append(
+                                {
+                                    "id": "tomozaki_cover",
+                                    "media": {
+                                        "type": "photo",
+                                        "media": "attach://tomozaki_cover",
+                                    },
+                                }
                             )
-                            edited = True
-                    except Exception as e:
-                        logger.warning(
-                            f"No se pudo editar mensaje in-place a documento: {e}"
+
+                    # 2. Resolver archivo epub
+                    epub_bytes = None
+                    if isinstance(filepath, str) and os.path.exists(filepath):
+                        with open(filepath, "rb") as f:
+                            epub_bytes = f.read()
+                    elif isinstance(filepath, (bytes, bytearray)):
+                        epub_bytes = filepath
+
+                    if epub_bytes:
+                        delivery_files["epub_file"] = (
+                            filename,
+                            io.BytesIO(epub_bytes),
+                            "application/epub+zip",
+                        )
+                        delivery_media.append(
+                            {
+                                "id": "epub_file",
+                                "media": {
+                                    "type": "document",
+                                    "media": "attach://epub_file",
+                                },
+                            }
                         )
 
-                    # 2. Fallback si no fue posible editar in-place
-                    if not edited:
+                    # 3. Construir HTML rico completo con enlace de descarga integrado
+                    html_edited = build_book_rich_html(
+                        libro_st,
+                        has_cover=bool("tomozaki_cover" in delivery_files),
+                        include_download=True,
+                        filename=filename,
+                    )
+
+                    # 4. Editar el Rich Message in-place
+                    from services.rich_message_service import RichMessageService
+
+                    res_edit = await RichMessageService.edit_rich_message(
+                        chat_id=update.effective_chat.id,
+                        message_id=query.message.message_id,
+                        html=html_edited,
+                        media=delivery_media if delivery_media else None,
+                        files=delivery_files if delivery_files else None,
+                        reply_markup=post_keyboard,
+                    )
+
+                    sent_doc = None
+                    if res_edit and res_edit.get("ok"):
+                        sent_doc = res_edit.get("result")
+                    else:
+                        # Fallback tradicional si no se pudo editar
+                        vol_val = libro_st.get("volume")
+                        vol_str = f" - Volumen {vol_val}" if vol_val else ""
+                        chips_generos = format_genre_chips(
+                            libro_st.get("tags_json")
+                            or libro_st.get("tags")
+                            or libro_st.get("generos")
+                        )
+                        caption_parts = [f"📖 <b>{title}{vol_str}</b>"]
+                        if chips_generos:
+                            caption_parts.append(f"🏷️ <i>{chips_generos}</i>")
+                        if caption:
+                            caption_parts.append(f"\n{caption}")
                         sent_doc = await send_doc_bytes(
                             context.bot,
                             update.effective_chat.id,
-                            full_caption,
+                            "\n".join(caption_parts),
                             filepath,
                             filename=filename,
                             parse_mode="HTML",
