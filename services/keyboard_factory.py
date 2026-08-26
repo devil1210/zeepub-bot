@@ -1,8 +1,8 @@
 # services/keyboard_factory.py
 """
 Factory de Teclados Interactivos para Telegram (ZeePub-bot v3.6+).
-Garantiza semiótica de color estricta por emojis, diseño responsivo y límites de 64 bytes en callback_data.
-Sigue el principio Zero Dead-Ends (ningún menú deja al usuario sin salida o navegación de retorno).
+Implementa estilos de botones nativos de Telegram Bot API 7.0+ (style: primary, success, danger),
+soporte para custom emoji IDs animados, semiótica visual estricta y arquitectura Zero Dead-Ends.
 """
 
 from typing import List, Optional
@@ -10,7 +10,34 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 class BotKeyboards:
-    """Constructor centralizado de teclados interactivos con semiótica cromática."""
+    """Constructor centralizado de teclados interactivos con estilos nativos y semiótica cromática."""
+
+    @staticmethod
+    def btn(
+        text: str,
+        callback_data: Optional[str] = None,
+        url: Optional[str] = None,
+        style: Optional[str] = None,  # "primary" (azul) | "success" (verde) | "danger" (rojo)
+        icon_custom_emoji_id: Optional[str] = None,
+    ) -> InlineKeyboardButton:
+        """
+        Construye un InlineKeyboardButton con soporte nativo para estilos de color y premium emojis.
+        Compatible con Telegram Bot API 7.0+.
+        """
+        api_kwargs = {}
+        if style:
+            api_kwargs["style"] = style
+        if icon_custom_emoji_id:
+            api_kwargs["icon_custom_emoji_id"] = str(icon_custom_emoji_id)
+
+        if api_kwargs:
+            return InlineKeyboardButton(
+                text=text,
+                callback_data=callback_data,
+                url=url,
+                api_kwargs=api_kwargs,
+            )
+        return InlineKeyboardButton(text=text, callback_data=callback_data, url=url)
 
     # ---------------------------------------------------------
     # 🏠 MENÚ PRINCIPAL
@@ -20,40 +47,43 @@ class BotKeyboards:
         webapp_url: Optional[str] = None, show_webapp: bool = False
     ) -> InlineKeyboardMarkup:
         """
-        Genera el teclado del Menú Principal.
-        Semiótica:
-        - 🔵 Azul: Exploración (Catálogo, Géneros, Autores, Buscar)
-        - 🟡 Amarillo: Novedades / Destacados
-        - 🌐 Púrpura/Azul: Web App (Solo Admin/Staff si show_webapp=True)
-        - 🔴 Rojo: Salir / Cerrar
+        Genera el teclado del Menú Principal con estilos nativos.
         """
         keyboard = [
             [
-                InlineKeyboardButton(
-                    "📖 Catálogo de Series", callback_data="nav_local|all_series"
+                BotKeyboards.btn(
+                    "📖 Catálogo de Series",
+                    callback_data="nav_local|all_series",
+                    style="primary",
                 ),
-                InlineKeyboardButton(
-                    "⭐ Novedades", callback_data="nav_local|newest"
+                BotKeyboards.btn(
+                    "⭐ Novedades",
+                    callback_data="nav_local|newest",
+                    style="primary",
                 ),
             ],
             [
-                InlineKeyboardButton("🏷️ Géneros", callback_data="nav_local|genres"),
-                InlineKeyboardButton("✍️ Autores", callback_data="nav_local|authors"),
+                BotKeyboards.btn("🏷️ Géneros", callback_data="nav_local|genres"),
+                BotKeyboards.btn("✍️ Autores", callback_data="nav_local|authors"),
             ],
             [
-                InlineKeyboardButton("🔍 Buscar Novela", callback_data="buscar"),
+                BotKeyboards.btn("🔍 Buscar Novela", callback_data="buscar"),
             ],
         ]
 
         if show_webapp and webapp_url:
             keyboard.append(
                 [
-                    InlineKeyboardButton("🌐 Abrir ZeePub Web", url=webapp_url),
-                    InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+                    BotKeyboards.btn(
+                        "🌐 Abrir ZeePub Web", url=webapp_url, style="primary"
+                    ),
+                    BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger"),
                 ]
             )
         else:
-            keyboard.append([InlineKeyboardButton("❌ Salir", callback_data="cerrar")])
+            keyboard.append(
+                [BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger")]
+            )
 
         return InlineKeyboardMarkup(keyboard)
 
@@ -67,10 +97,12 @@ class BotKeyboards:
         """
         keyboard = []
         for i in range(0, len(genres), 2):
-            row = [InlineKeyboardButton(f"🏷️ {genres[i]}", callback_data=f"gen|{genres[i]}")]
+            row = [
+                BotKeyboards.btn(f"🏷️ {genres[i]}", callback_data=f"gen|{genres[i]}")
+            ]
             if i + 1 < len(genres):
                 row.append(
-                    InlineKeyboardButton(
+                    BotKeyboards.btn(
                         f"🏷️ {genres[i + 1]}", callback_data=f"gen|{genres[i + 1]}"
                     )
                 )
@@ -79,9 +111,9 @@ class BotKeyboards:
         # Barra de navegación Zero Dead-Ends
         keyboard.append(
             [
-                InlineKeyboardButton("⬅️ Volver", callback_data="subir_nivel"),
-                InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
-                InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+                BotKeyboards.btn("⬅️ Volver", callback_data="subir_nivel"),
+                BotKeyboards.btn("🏠 Inicio", callback_data="volver_menu"),
+                BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger"),
             ]
         )
         return InlineKeyboardMarkup(keyboard)
@@ -108,44 +140,46 @@ class BotKeyboards:
             idx = item.get("index", 0)
             if len(title) > 34:
                 title = title[:31] + "..."
-            keyboard.append([InlineKeyboardButton(f"📁 {title}", callback_data=f"col|{idx}")])
+            keyboard.append([BotKeyboards.btn(f"📁 {title}", callback_data=f"col|{idx}")])
 
         # 2. Fila de Paginación Inteligente
         nav_row = []
         safe_filter = filter_val or ""
-        
+
         if page > 1:
             nav_row.append(
-                InlineKeyboardButton(
+                BotKeyboards.btn(
                     "◀️ Ant.",
                     callback_data=f"nav_p|{origin_type}|{safe_filter}|{page - 1}",
+                    style="primary",
                 )
             )
         else:
-            nav_row.append(InlineKeyboardButton("⛔ 1", callback_data="noop"))
+            nav_row.append(BotKeyboards.btn("⛔ 1", callback_data="noop"))
 
         # Indicador central de página
         display_total = max(1, total_pages)
-        nav_row.append(InlineKeyboardButton(f"📄 {page}/{display_total}", callback_data="noop"))
+        nav_row.append(BotKeyboards.btn(f"📄 {page}/{display_total}", callback_data="noop"))
 
         if page < total_pages:
             nav_row.append(
-                InlineKeyboardButton(
+                BotKeyboards.btn(
                     "Sig. ▶️",
                     callback_data=f"nav_p|{origin_type}|{safe_filter}|{page + 1}",
+                    style="primary",
                 )
             )
         else:
-            nav_row.append(InlineKeyboardButton(f"⛔ {display_total}", callback_data="noop"))
+            nav_row.append(BotKeyboards.btn(f"⛔ {display_total}", callback_data="noop"))
 
         keyboard.append(nav_row)
 
         # 3. Anclas de Navegación Zero Dead-Ends
         keyboard.append(
             [
-                InlineKeyboardButton("⬅️ Volver", callback_data="subir_nivel"),
-                InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
-                InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+                BotKeyboards.btn("⬅️ Volver", callback_data="subir_nivel"),
+                BotKeyboards.btn("🏠 Inicio", callback_data="volver_menu"),
+                BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger"),
             ]
         )
         return InlineKeyboardMarkup(keyboard)
@@ -171,42 +205,44 @@ class BotKeyboards:
             display = b.get("display") or f"📕 {b.get('title', 'Libro')}"
             if len(display) > 34:
                 display = display[:31] + "..."
-            keyboard.append([InlineKeyboardButton(display, callback_data=f"lib|{key}")])
+            keyboard.append([BotKeyboards.btn(display, callback_data=f"lib|{key}")])
 
         # Paginador
         nav_row = []
         safe_filter = filter_val or ""
         if page > 1:
             nav_row.append(
-                InlineKeyboardButton(
+                BotKeyboards.btn(
                     "◀️ Ant.",
                     callback_data=f"nav_b|{origin_type}|{safe_filter}|{page - 1}",
+                    style="primary",
                 )
             )
         else:
-            nav_row.append(InlineKeyboardButton("⛔ 1", callback_data="noop"))
+            nav_row.append(BotKeyboards.btn("⛔ 1", callback_data="noop"))
 
         display_total = max(1, total_pages)
-        nav_row.append(InlineKeyboardButton(f"📄 {page}/{display_total}", callback_data="noop"))
+        nav_row.append(BotKeyboards.btn(f"📄 {page}/{display_total}", callback_data="noop"))
 
         if page < total_pages:
             nav_row.append(
-                InlineKeyboardButton(
+                BotKeyboards.btn(
                     "Sig. ▶️",
                     callback_data=f"nav_b|{origin_type}|{safe_filter}|{page + 1}",
+                    style="primary",
                 )
             )
         else:
-            nav_row.append(InlineKeyboardButton(f"⛔ {display_total}", callback_data="noop"))
+            nav_row.append(BotKeyboards.btn(f"⛔ {display_total}", callback_data="noop"))
 
         keyboard.append(nav_row)
 
         # Barra de retorno
         keyboard.append(
             [
-                InlineKeyboardButton("⬅️ Volver", callback_data="subir_nivel"),
-                InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
-                InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+                BotKeyboards.btn("⬅️ Volver", callback_data="subir_nivel"),
+                BotKeyboards.btn("🏠 Inicio", callback_data="volver_menu"),
+                BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger"),
             ]
         )
         return InlineKeyboardMarkup(keyboard)
@@ -224,33 +260,37 @@ class BotKeyboards:
             display_auth = f"✍️ {auth}"
             if len(display_auth) > 34:
                 display_auth = display_auth[:31] + "..."
-            keyboard.append([InlineKeyboardButton(display_auth, callback_data=f"aut|{auth}")])
+            keyboard.append([BotKeyboards.btn(display_auth, callback_data=f"aut|{auth}")])
 
         nav_row = []
         if page > 1:
             nav_row.append(
-                InlineKeyboardButton("◀️ Ant.", callback_data=f"nav_au|{page - 1}")
+                BotKeyboards.btn(
+                    "◀️ Ant.", callback_data=f"nav_au|{page - 1}", style="primary"
+                )
             )
         else:
-            nav_row.append(InlineKeyboardButton("⛔ 1", callback_data="noop"))
+            nav_row.append(BotKeyboards.btn("⛔ 1", callback_data="noop"))
 
         display_total = max(1, total_pages)
-        nav_row.append(InlineKeyboardButton(f"📄 {page}/{display_total}", callback_data="noop"))
+        nav_row.append(BotKeyboards.btn(f"📄 {page}/{display_total}", callback_data="noop"))
 
         if page < total_pages:
             nav_row.append(
-                InlineKeyboardButton("Sig. ▶️", callback_data=f"nav_au|{page + 1}")
+                BotKeyboards.btn(
+                    "Sig. ▶️", callback_data=f"nav_au|{page + 1}", style="primary"
+                )
             )
         else:
-            nav_row.append(InlineKeyboardButton(f"⛔ {display_total}", callback_data="noop"))
+            nav_row.append(BotKeyboards.btn(f"⛔ {display_total}", callback_data="noop"))
 
         keyboard.append(nav_row)
 
         keyboard.append(
             [
-                InlineKeyboardButton("⬅️ Volver", callback_data="subir_nivel"),
-                InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
-                InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+                BotKeyboards.btn("⬅️ Volver", callback_data="subir_nivel"),
+                BotKeyboards.btn("🏠 Inicio", callback_data="volver_menu"),
+                BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger"),
             ]
         )
         return InlineKeyboardMarkup(keyboard)
@@ -267,13 +307,13 @@ class BotKeyboards:
             display = v.get("display") or f"📖 Vol. {v.get('volume', 1)}"
             if len(display) > 34:
                 display = display[:31] + "..."
-            keyboard.append([InlineKeyboardButton(display, callback_data=f"lib|{key}")])
+            keyboard.append([BotKeyboards.btn(display, callback_data=f"lib|{key}")])
 
         keyboard.append(
             [
-                InlineKeyboardButton("⬅️ Volver a Series", callback_data="volver_ultima"),
-                InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
-                InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+                BotKeyboards.btn("⬅️ Volver a Series", callback_data="volver_ultima"),
+                BotKeyboards.btn("🏠 Inicio", callback_data="volver_menu"),
+                BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger"),
             ]
         )
         return InlineKeyboardMarkup(keyboard)
@@ -289,27 +329,35 @@ class BotKeyboards:
     ) -> InlineKeyboardMarkup:
         """
         Genera los botones para la ficha técnica del libro.
-        - Verde 🟢: Descargar EPUB (Acción principal destacada)
-        - 📢 Naranja/Azul: Publicar en Telegram (Exclusivo Admin / Staff)
+        - Verde 🟢: Descargar EPUB (style="success" nativo)
+        - Azul 🔵: Publicar en Telegram (style="primary" nativo para Admin/Staff)
         - Blanco/Gris ⚪: Volver y Menú Principal
-        - Rojo 🔴: Salir
+        - Rojo 🔴: Salir (style="danger" nativo)
         """
         keyboard = [
-            [InlineKeyboardButton("📥 Descargar EPUB", callback_data=f"dl_confirm|{key}")],
+            [
+                BotKeyboards.btn(
+                    "📥 Descargar EPUB",
+                    callback_data=f"dl_confirm|{key}",
+                    style="success",
+                )
+            ],
         ]
         if is_admin_or_staff:
             keyboard.append(
                 [
-                    InlineKeyboardButton(
-                        "📢 Publicar en Telegram", callback_data=f"pub_menu|{key}"
+                    BotKeyboards.btn(
+                        "📢 Publicar en Telegram",
+                        callback_data=f"pub_menu|{key}",
+                        style="primary",
                     )
                 ]
             )
         keyboard.append(
             [
-                InlineKeyboardButton("⬅️ Volver a la Serie", callback_data="volver_ultima"),
-                InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
-                InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+                BotKeyboards.btn("⬅️ Volver a la Serie", callback_data="volver_ultima"),
+                BotKeyboards.btn("🏠 Inicio", callback_data="volver_menu"),
+                BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger"),
             ]
         )
         return InlineKeyboardMarkup(keyboard)
@@ -324,19 +372,23 @@ class BotKeyboards:
         """
         keyboard = [
             [
-                InlineKeyboardButton(
-                    "⚡ Publicar Inmediatamente", callback_data=f"pub_now|{key}"
+                BotKeyboards.btn(
+                    "⚡ Publicar Inmediatamente",
+                    callback_data=f"pub_now|{key}",
+                    style="success",
                 ),
             ],
             [
-                InlineKeyboardButton(
-                    "⏰ Programar Publicación", callback_data=f"pub_sched_menu|{key}"
+                BotKeyboards.btn(
+                    "⏰ Programar Publicación",
+                    callback_data=f"pub_sched_menu|{key}",
+                    style="primary",
                 ),
             ],
             [
-                InlineKeyboardButton("⬅️ Volver al Libro", callback_data=f"info_libro|{key}"),
-                InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
-                InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+                BotKeyboards.btn("⬅️ Volver al Libro", callback_data=f"info_libro|{key}"),
+                BotKeyboards.btn("🏠 Inicio", callback_data="volver_menu"),
+                BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger"),
             ],
         ]
         return InlineKeyboardMarkup(keyboard)
@@ -351,20 +403,28 @@ class BotKeyboards:
         """
         keyboard = [
             [
-                InlineKeyboardButton("🕒 En 1 Hora", callback_data=f"pub_in|1|{key}"),
-                InlineKeyboardButton("🕕 En 3 Horas", callback_data=f"pub_in|3|{key}"),
-            ],
-            [
-                InlineKeyboardButton(
-                    "🌅 Mañana 10:00 AM", callback_data=f"pub_preset|tomorrow_10|{key}"
+                BotKeyboards.btn(
+                    "🕒 En 1 Hora", callback_data=f"pub_in|1|{key}", style="primary"
                 ),
-                InlineKeyboardButton(
-                    "🌇 Mañana 18:00 PM", callback_data=f"pub_preset|tomorrow_18|{key}"
+                BotKeyboards.btn(
+                    "🕕 En 3 Horas", callback_data=f"pub_in|3|{key}", style="primary"
                 ),
             ],
             [
-                InlineKeyboardButton("⬅️ Volver a Opciones", callback_data=f"pub_menu|{key}"),
-                InlineKeyboardButton("❌ Cancelar", callback_data="cerrar"),
+                BotKeyboards.btn(
+                    "🌅 Mañana 10:00 AM",
+                    callback_data=f"pub_preset|tomorrow_10|{key}",
+                    style="primary",
+                ),
+                BotKeyboards.btn(
+                    "🌇 Mañana 18:00 PM",
+                    callback_data=f"pub_preset|tomorrow_18|{key}",
+                    style="primary",
+                ),
+            ],
+            [
+                BotKeyboards.btn("⬅️ Volver a Opciones", callback_data=f"pub_menu|{key}"),
+                BotKeyboards.btn("❌ Cancelar", callback_data="cerrar", style="danger"),
             ],
         ]
         return InlineKeyboardMarkup(keyboard)
@@ -381,7 +441,7 @@ class BotKeyboards:
         if series_hash_short:
             keyboard.append(
                 [
-                    InlineKeyboardButton(
+                    BotKeyboards.btn(
                         "⬅️ Volver a la Serie",
                         callback_data=f"show_series|{series_hash_short}",
                     )
@@ -390,13 +450,17 @@ class BotKeyboards:
 
         keyboard.append(
             [
-                InlineKeyboardButton(
-                    "📖 Catálogo de Series", callback_data="nav_local|all_series"
+                BotKeyboards.btn(
+                    "📖 Catálogo de Series",
+                    callback_data="nav_local|all_series",
+                    style="primary",
                 ),
-                InlineKeyboardButton("🏠 Menú Principal", callback_data="volver_menu"),
+                BotKeyboards.btn("🏠 Menú Principal", callback_data="volver_menu"),
             ]
         )
-        keyboard.append([InlineKeyboardButton("❌ Salir", callback_data="cerrar")])
+        keyboard.append(
+            [BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger")]
+        )
         return InlineKeyboardMarkup(keyboard)
 
     # ---------------------------------------------------------
@@ -414,20 +478,22 @@ class BotKeyboards:
             if len(title) > 34:
                 title = title[:31] + "..."
             keyboard.append(
-                [InlineKeyboardButton(f"📁 {title}", callback_data=f"col|{s['index']}")]
+                [BotKeyboards.btn(f"📁 {title}", callback_data=f"col|{s['index']}")]
             )
 
         for b in books_items:
             display = b.get("display") or f"📕 {b.get('title', 'Libro')}"
             if len(display) > 34:
                 display = display[:31] + "..."
-            keyboard.append([InlineKeyboardButton(display, callback_data=f"lib|{b['key']}")])
+            keyboard.append([BotKeyboards.btn(display, callback_data=f"lib|{b['key']}")])
 
         keyboard.append(
             [
-                InlineKeyboardButton("🔍 Nueva Búsqueda", callback_data="buscar"),
-                InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
-                InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+                BotKeyboards.btn(
+                    "🔍 Nueva Búsqueda", callback_data="buscar", style="primary"
+                ),
+                BotKeyboards.btn("🏠 Inicio", callback_data="volver_menu"),
+                BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger"),
             ]
         )
         return InlineKeyboardMarkup(keyboard)
