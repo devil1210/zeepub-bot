@@ -42,6 +42,7 @@ from .system_handlers import (
     handle_admin_restart_docker,
     handle_admin_send_logs_telegram,
     handle_admin_sync_facebook_publications,
+    handle_admin_update_publication_caption,
     handle_admin_update_system,
 )
 from .theme_handlers import (
@@ -70,6 +71,7 @@ from .user_handlers import (
 )
 
 __all__ = [
+    "handle_admin_add_series_alias",
     "handle_admin_ai_series_duplicate_scan",
     "handle_admin_backup_library",
     "handle_admin_bulk_save_grid",
@@ -78,6 +80,7 @@ __all__ = [
     "handle_admin_clear_duplicates",
     "handle_admin_delete_duplicate",
     "handle_admin_delete_duplicate_item",
+    "handle_admin_delete_series_alias",
     "handle_admin_delete_user",
     "handle_admin_enrich_metadata",
     "handle_admin_find_duplicates",
@@ -122,6 +125,7 @@ __all__ = [
     "handle_admin_sync_users_cloud",
     "handle_admin_update_book_grid",
     "handle_admin_update_covers",
+    "handle_admin_update_publication_caption",
     "handle_admin_update_series_grid",
     "handle_admin_update_system",
     "handle_get_upload_history",

@@ -148,6 +148,8 @@ class LegacyRoutes:
             "pub-create-draft": miniapp_handlers.handle_pub_create_draft,
             "admin_sync_facebook_publications": miniapp_handlers.handle_admin_sync_facebook_publications,
             "admin-sync-facebook-publications": miniapp_handlers.handle_admin_sync_facebook_publications,
+            "admin_update_publication_caption": miniapp_handlers.handle_admin_update_publication_caption,
+            "admin-update-publication-caption": miniapp_handlers.handle_admin_update_publication_caption,
             # Workgroups / Fansubs Actions
             "workgroup_get_all": miniapp_handlers.handle_workgroup_get_all,
             "workgroup_save": miniapp_handlers.handle_workgroup_save,
@@ -174,14 +176,20 @@ class LegacyRoutes:
             data = body.get("data", {})
 
             if not action:
-                return JSONResponse(content={"error": "Action required"}, status_code=400)
+                return JSONResponse(
+                    content={"error": "Action required"}, status_code=400
+                )
 
             handler = self.action_map.get(action)
             if not handler:
                 logger.warning(f"⚠️ Unknown RPC action requested: {action}")
-                return JSONResponse(content={"error": f"Unknown action: {action}"}, status_code=400)
+                return JSONResponse(
+                    content={"error": f"Unknown action: {action}"}, status_code=400
+                )
 
-            logger.info(f"🤖 RPC Action: {action} (User: {user_data.get('user_id') or user_data.get('id')})")
+            logger.info(
+                f"🤖 RPC Action: {action} (User: {user_data.get('user_id') or user_data.get('id')})"
+            )
             from inspect import signature
 
             # Execute handler only with supported arguments
@@ -193,7 +201,9 @@ class LegacyRoutes:
 
             if result is not None:
                 return JSONResponse(content=jsonable_encoder(result))
-            return JSONResponse(content={"error": "No result from handler"}, status_code=500)
+            return JSONResponse(
+                content={"error": "No result from handler"}, status_code=500
+            )
 
         except HTTPException as he:
             # Propagate HTTP errors with their real status code (404, 400, etc.)
@@ -203,7 +213,8 @@ class LegacyRoutes:
             )
         except Exception as e:
             logger.error(
-                f"❌ Error in RPC dispatcher ({action if 'action' in locals() else 'unknown'}): {e}", exc_info=True
+                f"❌ Error in RPC dispatcher ({action if 'action' in locals() else 'unknown'}): {e}",
+                exc_info=True,
             )
             return JSONResponse(content={"error": str(e)}, status_code=500)
 
@@ -230,9 +241,12 @@ class LegacyRoutes:
                 "isBetaTester": user_data.get("beta_tester", False)
                 or user_info.get("is_real_admin", False)
                 or user_info.get("level") == "admin",
-                "isAdmin": user_info.get("is_real_admin", False) or user_info.get("level") == "admin",
-                "is_admin": user_info.get("is_real_admin", False) or user_info.get("level") == "admin",
-                "is_real_admin": user_info.get("is_real_admin", False) or user_info.get("level") == "admin",
+                "isAdmin": user_info.get("is_real_admin", False)
+                or user_info.get("level") == "admin",
+                "is_admin": user_info.get("is_real_admin", False)
+                or user_info.get("level") == "admin",
+                "is_real_admin": user_info.get("is_real_admin", False)
+                or user_info.get("level") == "admin",
                 "isStaff": user_info.get("level") in ("admin", "staff"),
                 "role": user_info.get("role"),
                 "status_label": user_info.get("status_label"),
@@ -245,7 +259,12 @@ class LegacyRoutes:
                 "name": user_data.get("name"),
                 "roles": user_data.get("roles", []),
                 "insignias": user_data.get("insignias", []),
-                "ui_exported_settings": ["theme", "primaryColor", "glassBlur", "glassOpacity"],
+                "ui_exported_settings": [
+                    "theme",
+                    "primaryColor",
+                    "glassBlur",
+                    "glassOpacity",
+                ],
             }
 
             return JSONResponse(content=legacy_access)
@@ -267,9 +286,13 @@ class LegacyRoutes:
                 book = volumes[0]
         file_path = book.get("filepath") or book.get("file_path") if book else None
         if not book or not file_path or not os.path.exists(file_path):
-            raise HTTPException(status_code=404, detail="Archivo EPUB no encontrado en el servidor")
+            raise HTTPException(
+                status_code=404, detail="Archivo EPUB no encontrado en el servidor"
+            )
         title = book.get("title") or book.get("clean_title") or "libro"
-        safe_title = "".join([c for c in title if c.isalnum() or c in (" ", "_", "-")]).rstrip()
+        safe_title = "".join(
+            [c for c in title if c.isalnum() or c in (" ", "_", "-")]
+        ).rstrip()
 
         async def iterfile_async():
             async with aiofiles.open(file_path, mode="rb") as f:

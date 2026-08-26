@@ -190,6 +190,8 @@ export const api = {
     adminStopScan: () => rpc('admin_stop_scan'),
     syncFacebookPublications: (limit: number = 50, fetchAll: boolean = false) =>
         rpc('admin_sync_facebook_publications', { limit, fetch_all: fetchAll }),
+    updatePublicationCaption: (publicationId: number, newCaption: string) =>
+        rpc('admin_update_publication_caption', { publication_id: publicationId, new_caption: newCaption }),
 
 
     // Tier Configuration
