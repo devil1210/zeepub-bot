@@ -405,6 +405,11 @@ class TelegramPublisherProvider(PublisherProvider):
             tabla_archivo += "  </table>\n</details>\n"
             html_parts.append(tabla_archivo)
 
+            if any(m.get("id") == "epub_doc" for m in media):
+                html_parts.append(
+                    f'<p><a href="tg://document?id=epub_doc">📥 Descargar {fname}</a></p>'
+                )
+
             # Línea divisoria y pie con margen no recortable
             html_parts.append("<hr/>")
 
@@ -447,34 +452,39 @@ class TelegramPublisherProvider(PublisherProvider):
                         book_id_val, str(tg_msg_id), str(target_id)
                     )
 
-                # B. Si el Rich Message se envió con éxito, enviar el documento ePub abajo con únicamente su hashtag
-                epub_data = (
-                    book_data.get("epub_bytes")
-                    or book_data.get("filepath")
-                    or book_data.get("file_path")
-                )
-                if epub_data:
-                    slug = book_data.get("slug")
-                    if slug:
-                        final_caption = slug if slug.startswith("#") else f"#{slug}"
-                    else:
-                        title_en = (
-                            book_data.get("english_title")
-                            or book_data.get("series_english")
-                            or "book"
-                        )
-                        clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
-                        final_caption = f"#{clean_title}"
-
-                    await send_doc_bytes(
-                        self.bot,
-                        target_id,
-                        final_caption,
-                        epub_data,
-                        filename=fname,
-                        parse_mode="HTML",
-                        message_thread_id=thread_id,
+                # B. Si el epub no se incluyó embebido, enviarlo como documento separado de respaldo
+                if "epub_doc" not in (files or {}):
+                    epub_data = (
+                        book_data.get("epub_bytes")
+                        or book_data.get("filepath")
+                        or book_data.get("file_path")
                     )
+                    if epub_data:
+                        slug = book_data.get("slug")
+                        if slug:
+                            final_caption = (
+                                slug if slug.startswith("#") else f"#{slug}"
+                            )
+                        else:
+                            title_en = (
+                                book_data.get("english_title")
+                                or book_data.get("series_english")
+                                or "book"
+                            )
+                            clean_title = re.sub(
+                                r"[^\w\s]", "", title_en
+                            ).replace(" ", "_")
+                            final_caption = f"#{clean_title}"
+
+                        await send_doc_bytes(
+                            self.bot,
+                            target_id,
+                            final_caption,
+                            epub_data,
+                            filename=fname,
+                            parse_mode="HTML",
+                            message_thread_id=thread_id,
+                        )
                 return True
         except Exception as e:
             logger.warning(f"Error al enviar Rich Message en announce_book: {e}")
