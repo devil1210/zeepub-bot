@@ -283,6 +283,32 @@ class RichMessageService:
             block["credit"] = {"text": credit}
         return block
 
+    @classmethod
+    def create_document(
+        cls,
+        document_id: str,
+        title: str | None = None,
+        mime_type: str = "application/epub+zip",
+    ) -> dict:
+        """
+        Crea un bloque de documento integrado en el Rich Message (Bot API 10.3).
+        Permite adjuntar el archivo directamente dentro del cuerpo enriquecido.
+        """
+        doc_ref = (
+            document_id
+            if document_id.startswith(("http://", "https://", "tg://", "attach://"))
+            else f"attach://{document_id}"
+        )
+        doc_block = {
+            "type": "document",
+            "document": doc_ref,
+        }
+        if title:
+            doc_block["title"] = title
+        if mime_type:
+            doc_block["mime_type"] = mime_type
+        return doc_block
+
     # ── Conversor HTML -> RichText ──────────────────────────────────────────
 
     @classmethod
