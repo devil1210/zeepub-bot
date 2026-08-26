@@ -210,12 +210,10 @@ class CallbackHandlerV6(BaseCommandHandler):
                     caption = f"#{clean_title}"
 
                 try:
-                    # D. Preparar entrega enriquecida con Documento integrado y teclado post-descarga
-                    series_hash = st.get("current_series_hash")
-                    series_hash_short = series_hash[:16] if series_hash else None
-                    post_keyboard = BotKeyboards.post_download(series_hash_short)
+                    # D. Construir pie de foto estilizado (Título + Volumen + Chips de género + Slug)
+                    vol_val = libro_st.get("volume")
+                    vol_str = f" - Volumen {vol_val}" if vol_val else ""
 
-                    filename = libro_st.get("filename") or f"{title}.epub"
                     generos = (
                         libro_st.get("tags_json")
                         or libro_st.get("tags")
@@ -223,83 +221,33 @@ class CallbackHandlerV6(BaseCommandHandler):
                     )
                     chips_generos = format_genre_chips(generos)
 
-                    vol_val = libro_st.get("volume")
-                    vol_str = f" - Volumen {vol_val}" if vol_val else ""
-                    html_parts = [
-                        f"<h3>📖 {title}{vol_str}</h3>"
+                    caption_parts = [
+                        f"📖 <b>{title}{vol_str}</b>"
                     ]
                     if chips_generos:
-                        html_parts.append(f"<p>🏷️ <i>{chips_generos}</i></p>")
-
-                    html_parts.append("<p>✅ <b>¡Tu novela está lista para descargar!</b></p>")
-                    html_parts.append(f'<p><a href="tg://document?id=epub_file">📥 {filename}</a></p>')
+                        caption_parts.append(f"🏷️ <i>{chips_generos}</i>")
                     if caption:
-                        html_parts.append(f"<p>{caption}</p>")
+                        caption_parts.append(f"\n{caption}")
 
-                    html_delivery = "\n".join(html_parts)
+                    full_caption = "\n".join(caption_parts)
 
-                    # Leer bytes del archivo epub
-                    epub_bytes = None
-                    if isinstance(filepath, str) and os.path.exists(filepath):
-                        with open(filepath, "rb") as f:
-                            epub_bytes = f.read()
-                    elif isinstance(filepath, (bytes, bytearray)):
-                        epub_bytes = filepath
+                    # Teclado post-descarga directamente acoplado al documento
+                    series_hash = st.get("current_series_hash")
+                    series_hash_short = series_hash[:16] if series_hash else None
+                    post_keyboard = BotKeyboards.post_download(series_hash_short)
 
-                    rich_sent = False
-                    sent_doc = None
-                    if epub_bytes:
-                        delivery_files = {
-                            "epub_file": (
-                                filename,
-                                io.BytesIO(epub_bytes),
-                                "application/epub+zip",
-                            )
-                        }
-                        delivery_media = [
-                            {
-                                "id": "epub_file",
-                                "media": {
-                                    "type": "document",
-                                    "media": "attach://epub_file",
-                                },
-                            }
-                        ]
-                        from services.rich_message_service import RichMessageService
+                    filename = libro_st.get("filename") or f"{title}.epub"
 
-                        res = await RichMessageService.send_rich_message(
-                            chat_id=update.effective_chat.id,
-                            html=html_delivery,
-                            media=delivery_media,
-                            files=delivery_files,
-                            reply_markup=post_keyboard,
-                            message_thread_id=get_thread_id(update),
-                        )
-                        if res and res.get("ok"):
-                            rich_sent = True
-                            sent_doc = res.get("result")
-
-                    # Fallback si RichMessage no pudo enviarse
-                    if not rich_sent:
-                        sent_doc = await send_doc_bytes(
-                            context.bot,
-                            update.effective_chat.id,
-                            caption,
-                            filepath,
-                            filename=filename,
-                            parse_mode="HTML",
-                            message_thread_id=get_thread_id(update),
-                        )
-                        await context.bot.send_message(
-                            chat_id=update.effective_chat.id,
-                            text=(
-                                "✅ <b>¡Novela enviada con éxito!</b>\n\n"
-                                "<i>¿Qué quieres hacer ahora? Selecciona una opción del menú:</i>"
-                            ),
-                            reply_markup=post_keyboard,
-                            parse_mode="HTML",
-                            message_thread_id=get_thread_id(update),
-                        )
+                    sent_doc = await send_doc_bytes(
+                        context.bot,
+                        update.effective_chat.id,
+                        full_caption,
+                        filepath,
+                        filename=filename,
+                        parse_mode="HTML",
+                        reply_markup=post_keyboard,
+                        message_thread_id=get_thread_id(update),
+                    )
 
                     # E. Registrar descarga en BD
                     meta_reg = {
