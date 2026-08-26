@@ -22,6 +22,27 @@ from utils.helpers import (
 logger = logging.getLogger(__name__)
 
 
+async def check_is_admin_or_staff(uid: int, tg_user=None) -> bool:
+    """Verifica si el usuario tiene privilegios de Admin o Staff/Publicador."""
+    try:
+        from services.user_service import get_effective_user
+
+        info = await get_effective_user(uid, tg_user=tg_user)
+        if (
+            info.get("is_real_admin")
+            or info.get("role") in ["admin", "staff", "Publicador"]
+            or info.get("level") in ["admin", "staff"]
+        ):
+            return True
+        from config.config_settings import config
+
+        if uid in getattr(config, "ADMIN_USERS", []):
+            return True
+    except Exception as e:
+        logger.debug(f"Error verificando rol admin/staff para {uid}: {e}")
+    return False
+
+
 async def mostrar_menu_principal(
     update: Update, context: ContextTypes.DEFAULT_TYPE, force_new: bool = False
 ):
@@ -33,8 +54,11 @@ async def mostrar_menu_principal(
     st["current_view"] = "main"
     st["titulo"] = "📚 Biblioteca Local"
 
+    is_staff = await check_is_admin_or_staff(uid, update.effective_user)
     webapp_url = getattr(config, "WEBAPP_URL", None)
-    reply_markup = BotKeyboards.main_menu(webapp_url=webapp_url)
+    reply_markup = BotKeyboards.main_menu(
+        webapp_url=webapp_url, show_webapp=is_staff
+    )
 
     text = (
         "<b>📚 Bienvenido a la Biblioteca Local</b>\n\n"
@@ -536,7 +560,8 @@ async def mostrar_detalles_libro(
         else "tienes descargas ilimitadas"
     )
 
-    reply_markup = BotKeyboards.book_details(key=key)
+    is_staff = await check_is_admin_or_staff(uid, update.effective_user)
+    reply_markup = BotKeyboards.book_details(key=key, is_admin_or_staff=is_staff)
 
     # C. Construir HTML dinámico para el Rich Message unificado
     html_parts = []

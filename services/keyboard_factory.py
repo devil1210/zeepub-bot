@@ -16,12 +16,15 @@ class BotKeyboards:
     # 🏠 MENÚ PRINCIPAL
     # ---------------------------------------------------------
     @staticmethod
-    def main_menu(webapp_url: Optional[str] = None) -> InlineKeyboardMarkup:
+    def main_menu(
+        webapp_url: Optional[str] = None, show_webapp: bool = False
+    ) -> InlineKeyboardMarkup:
         """
         Genera el teclado del Menú Principal.
         Semiótica:
         - 🔵 Azul: Exploración (Catálogo, Géneros, Autores, Buscar)
         - 🟡 Amarillo: Novedades / Destacados
+        - 🌐 Púrpura/Azul: Web App (Solo Admin/Staff si show_webapp=True)
         - 🔴 Rojo: Salir / Cerrar
         """
         keyboard = [
@@ -42,7 +45,7 @@ class BotKeyboards:
             ],
         ]
 
-        if webapp_url:
+        if show_webapp and webapp_url:
             keyboard.append(
                 [
                     InlineKeyboardButton("🌐 Abrir ZeePub Web", url=webapp_url),
@@ -282,19 +285,86 @@ class BotKeyboards:
     def book_details(
         key: str,
         read_url: Optional[str] = None,
+        is_admin_or_staff: bool = False,
     ) -> InlineKeyboardMarkup:
         """
         Genera los botones para la ficha técnica del libro.
         - Verde 🟢: Descargar EPUB (Acción principal destacada)
+        - 📢 Naranja/Azul: Publicar en Telegram (Exclusivo Admin / Staff)
         - Blanco/Gris ⚪: Volver y Menú Principal
         - Rojo 🔴: Salir
         """
         keyboard = [
             [InlineKeyboardButton("📥 Descargar EPUB", callback_data=f"dl_confirm|{key}")],
+        ]
+        if is_admin_or_staff:
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        "📢 Publicar en Telegram", callback_data=f"pub_menu|{key}"
+                    )
+                ]
+            )
+        keyboard.append(
             [
                 InlineKeyboardButton("⬅️ Volver a la Serie", callback_data="volver_ultima"),
                 InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
                 InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+            ]
+        )
+        return InlineKeyboardMarkup(keyboard)
+
+    # ---------------------------------------------------------
+    # 📢 MENÚ DE PUBLICACIÓN EN TELEGRAM (ADMIN / STAFF)
+    # ---------------------------------------------------------
+    @staticmethod
+    def publish_menu(key: str) -> InlineKeyboardMarkup:
+        """
+        Menú de opciones de publicación en canales para Admin y Staff.
+        """
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    "⚡ Publicar Inmediatamente", callback_data=f"pub_now|{key}"
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "⏰ Programar Publicación", callback_data=f"pub_sched_menu|{key}"
+                ),
+            ],
+            [
+                InlineKeyboardButton("⬅️ Volver al Libro", callback_data=f"info_libro|{key}"),
+                InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
+                InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+            ],
+        ]
+        return InlineKeyboardMarkup(keyboard)
+
+    # ---------------------------------------------------------
+    # ⏰ PRESETS DE PROGRAMACIÓN HORARIA (ADMIN / STAFF)
+    # ---------------------------------------------------------
+    @staticmethod
+    def publish_schedule_presets(key: str) -> InlineKeyboardMarkup:
+        """
+        Presets rápidos de programación para publicación en canal.
+        """
+        keyboard = [
+            [
+                InlineKeyboardButton("🕒 En 1 Hora", callback_data=f"pub_in|1|{key}"),
+                InlineKeyboardButton("🕕 En 3 Horas", callback_data=f"pub_in|3|{key}"),
+            ],
+            [
+                InlineKeyboardButton(
+                    "🌅 Mañana 10:00 AM", callback_data=f"pub_preset|tomorrow_10|{key}"
+                ),
+                InlineKeyboardButton(
+                    "🌇 Mañana 18:00 PM", callback_data=f"pub_preset|tomorrow_18|{key}"
+                ),
+            ],
+            [
+                InlineKeyboardButton("⬅️ Volver a Opciones", callback_data=f"pub_menu|{key}"),
+                InlineKeyboardButton("❌ Cancelar", callback_data="cerrar"),
             ],
         ]
         return InlineKeyboardMarkup(keyboard)
