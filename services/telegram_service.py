@@ -672,18 +672,18 @@ async def enviar_libro_directo(
         tabla_archivo += "  </table>\n</details>\n"
         html_parts.append(tabla_archivo)
 
-        # Línea divisoria y pie con espaciado real
+        # Línea divisoria y pie con margen no recortable
         html_parts.append("<hr/>")
 
         slug = meta.get("slug")
         if slug:
             hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
-            html_parts.append(f"<p>{hashtag_serie}</p>")
         else:
             clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
-            html_parts.append(f"<p>#{clean_title}</p>")
+            hashtag_serie = f"#{clean_title}"
 
-        html_parts.append("<br/><br/>")
+        html_parts.append(f"<p>{hashtag_serie}</p>")
+        html_parts.append("<p>⠀</p>")
 
         html_content = "\n".join(html_parts)
 
