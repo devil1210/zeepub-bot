@@ -233,6 +233,8 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
         setViewMode,
         setLoading,
         setCustomActions,
+        pushHistory,
+        popHistory,
         resetHistory,
         handlePrevPage,
         handleNextPage,

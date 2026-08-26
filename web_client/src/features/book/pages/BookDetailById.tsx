@@ -47,7 +47,7 @@ export const BookDetailById: React.FC<BookDetailByIdProps> = ({ bookId, onBack, 
             unregister();
             setContextType('main');
         };
-    }, [onBack, setContextType, setVisible, registerCallbacks, downloading, onNavigate, setCustomActions]);
+    }, [onBack, setContextType, setVisible, registerCallbacks, onNavigate, setCustomActions]);
 
     useEffect(() => {
         const fetchBook = async () => {

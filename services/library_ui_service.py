@@ -7,7 +7,9 @@ import uuid
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
+from config.config_settings import config
 from core.state_manager import state_manager
+from services.keyboard_factory import BotKeyboards
 from services.library_service import LibraryService
 from services.rich_message_service import RichMessageService
 from utils.helpers import (
@@ -31,22 +33,8 @@ async def mostrar_menu_principal(
     st["current_view"] = "main"
     st["titulo"] = "📚 Biblioteca Local"
 
-    keyboard = [
-        [
-            InlineKeyboardButton(
-                "📖 Catálogo de Series", callback_data="nav_local|all_series"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                "⭐ Novedades (Series)", callback_data="nav_local|newest"
-            )
-        ],
-        [InlineKeyboardButton("🏷️ Géneros", callback_data="nav_local|genres")],
-        [InlineKeyboardButton("✍️ Autores", callback_data="nav_local|authors")],
-        [InlineKeyboardButton("🔍 Buscar EPUB", callback_data="buscar")],
-        [InlineKeyboardButton("❌ Salir", callback_data="cerrar")],
-    ]
+    webapp_url = getattr(config, "WEBAPP_URL", None)
+    reply_markup = BotKeyboards.main_menu(webapp_url=webapp_url)
 
     text = (
         "<b>📚 Bienvenido a la Biblioteca Local</b>\n\n"
@@ -57,7 +45,7 @@ async def mostrar_menu_principal(
     if update.callback_query and not force_new:
         try:
             await update.callback_query.edit_message_text(
-                text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+                text, reply_markup=reply_markup, parse_mode="HTML"
             )
             return
         except Exception:
@@ -67,7 +55,7 @@ async def mostrar_menu_principal(
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=text,
-        reply_markup=InlineKeyboardMarkup(keyboard),
+        reply_markup=reply_markup,
         parse_mode="HTML",
         message_thread_id=get_thread_id(update),
     )
@@ -79,19 +67,7 @@ async def mostrar_generos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     st = state_manager.get_user_state(uid)
     genres = await LibraryService.get_genres()
 
-    keyboard = []
-    # Agrupar de 2 en 2
-    for i in range(0, len(genres), 2):
-        row = [InlineKeyboardButton(genres[i], callback_data=f"gen|{genres[i]}")]
-        if i + 1 < len(genres):
-            row.append(
-                InlineKeyboardButton(
-                    genres[i + 1], callback_data=f"gen|{genres[i + 1]}"
-                )
-            )
-        keyboard.append(row)
-
-    keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")])
+    reply_markup = BotKeyboards.genres_grid(genres)
 
     st["current_view"] = "genres"
     st["prev_view_local"] = "main"
@@ -100,13 +76,13 @@ async def mostrar_generos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = "<b>🏷️ Selecciona un Género:</b>"
     if update.callback_query:
         await update.callback_query.edit_message_text(
-            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+            text, reply_markup=reply_markup, parse_mode="HTML"
         )
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=reply_markup,
             parse_mode="HTML",
             message_thread_id=get_thread_id(update),
         )
@@ -151,31 +127,22 @@ async def mostrar_series(
         st["prev_view_local"] = "main"
 
     st["colecciones"] = {}
-    keyboard = []
+    items = []
 
     for i, s in enumerate(data["items"]):
         href = f"local_series|{s['series_hash']}"
         series_title = s.get("name") or s.get("series_name") or s.get("title", "Novela")
         st["colecciones"][i] = {"titulo": series_title, "href": href}
-        keyboard.append([InlineKeyboardButton(series_title, callback_data=f"col|{i}")])
+        items.append({"title": series_title, "index": i})
 
-    nav_row = [InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")]
-    if page > 1:
-        nav_row.append(
-            InlineKeyboardButton(
-                "⬅️ Ant.",
-                callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page - 1}",
-            )
-        )
-    if page * page_size < data["total"]:
-        nav_row.append(
-            InlineKeyboardButton(
-                "Sig. ➡️",
-                callback_data=f"nav_p|{origin_type}|{filter_val or ''}|{page + 1}",
-            )
-        )
-
-    keyboard.append(nav_row)
+    total_pages = (data["total"] + page_size - 1) // page_size if data["total"] > 0 else 1
+    reply_markup = BotKeyboards.series_list(
+        items=items,
+        origin_type=origin_type,
+        filter_val=filter_val,
+        page=page,
+        total_pages=total_pages,
+    )
 
     st["current_view"] = "series_list"
     st["titulo"] = title
@@ -184,13 +151,13 @@ async def mostrar_series(
     if update.callback_query and not force_new:
         try:
             await update.callback_query.edit_message_text(
-                text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+                text, reply_markup=reply_markup, parse_mode="HTML"
             )
         except Exception:
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=text,
-                reply_markup=InlineKeyboardMarkup(keyboard),
+                reply_markup=reply_markup,
                 parse_mode="HTML",
                 message_thread_id=get_thread_id(update),
             )
@@ -198,7 +165,7 @@ async def mostrar_series(
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=reply_markup,
             parse_mode="HTML",
             message_thread_id=get_thread_id(update),
         )
@@ -222,19 +189,18 @@ async def mostrar_libros(
     st["prev_view_local"] = "main"
 
     if origin_type == "recent":
-        # Usamos el nuevo fetcher de LibraryService
         data = await LibraryService.get_recent_books(
             page=page, items_per_page=page_size
         )
     else:
-        # Fallback futuro
         data = {"items": [], "totalItems": 0, "totalPages": 0}
 
     st["libros"] = {}
-    keyboard = []
+    items = []
 
     for b in data.get("items", []):
         key = uuid.uuid4().hex[:8]
+        display = f"📕 {b['title']}"
         st["libros"][key] = {
             "titulo": b["title"],
             "autor": b["author"],
@@ -242,46 +208,32 @@ async def mostrar_libros(
             "portada": b.get("coverUrl", b.get("cover_medium") or b.get("cover_low")),
             "hash": b["book_hash"],
         }
+        items.append({"key": key, "title": b["title"], "display": display})
 
-        display = f"📕 {b['title']}"
-        if len(display) > 35:
-            display = display[:32] + "..."
-
-        keyboard.append([InlineKeyboardButton(display, callback_data=f"lib|{key}")])
-
-    nav_row = [InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")]
-    if page > 1:
-        nav_row.append(
-            InlineKeyboardButton(
-                "⬅️ Ant.",
-                callback_data=f"nav_b|{origin_type}|{filter_val or ''}|{page - 1}",
-            )
-        )
-    if page < data.get("totalPages", 1):
-        nav_row.append(
-            InlineKeyboardButton(
-                "Sig. ➡️",
-                callback_data=f"nav_b|{origin_type}|{filter_val or ''}|{page + 1}",
-            )
-        )
-
-    keyboard.append(nav_row)
+    total_pages = data.get("totalPages", 1)
+    reply_markup = BotKeyboards.books_list(
+        items=items,
+        origin_type=origin_type,
+        filter_val=filter_val,
+        page=page,
+        total_pages=total_pages,
+    )
 
     st["current_view"] = "books_list"
     title = "📚 Catálogo de Libros" if origin_type == "recent" else "📖 Libros"
     st["titulo"] = title
 
-    text = f"<b>{title}</b>\n✨ Explorando {data.get('totalItems', 0)} libros disponibles (Pág. {page}/{data.get('totalPages', 1)})."
+    text = f"<b>{title}</b>\n✨ Explorando {data.get('totalItems', 0)} libros disponibles (Pág. {page}/{total_pages})."
 
     if hasattr(update, "callback_query") and update.callback_query:
         await update.callback_query.edit_message_text(
-            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+            text, reply_markup=reply_markup, parse_mode="HTML"
         )
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=reply_markup,
             parse_mode="HTML",
             message_thread_id=get_thread_id(update),
         )
@@ -302,11 +254,11 @@ async def mostrar_volumenes_local(
 
     series_name = meta.series_name if meta else "Serie"
     st["libros"] = {}
-    keyboard = []
+    volumes_items = []
 
     for v in volumes:
         key = uuid.uuid4().hex[:8]
-        # Nuevo formato: Vol. X [TR] [Color]
+        # Formato: Vol. X [TR] [Color]
         vol = v.get("volume")
         if vol is None or vol == "":
             vol = 0
@@ -323,7 +275,6 @@ async def mostrar_volumenes_local(
             vol_str = f"📖 Vol. {vol_display}"
 
         translator = v.get("translator")
-        # Preferimos siglas de BD, si no hay, usamos heurística
         tr_acronym = v.get("translator_siglas") or get_translator_acronym(translator)
 
         is_color = v.get("color_mode") == "color"
@@ -345,12 +296,9 @@ async def mostrar_volumenes_local(
             "color": is_color,
         }
 
-        if len(display) > 35:
-            display = display[:32] + "..."
+        volumes_items.append({"key": key, "display": display, "volume": vol})
 
-        keyboard.append([InlineKeyboardButton(display, callback_data=f"lib|{key}")])
-
-    keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="volver_ultima")])
+    reply_markup = BotKeyboards.series_volumes(volumes_items)
 
     st["current_view"] = "volumes_local"
     st["current_series_hash"] = series_hash
@@ -363,14 +311,14 @@ async def mostrar_volumenes_local(
     if update.callback_query and not force_new:
         try:
             await update.callback_query.edit_message_text(
-                text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+                text, reply_markup=reply_markup, parse_mode="HTML"
             )
         except Exception:
             # Si el mensaje original fue borrado (común en flujo de detalles), enviamos uno nuevo
             await context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=text,
-                reply_markup=InlineKeyboardMarkup(keyboard),
+                reply_markup=reply_markup,
                 parse_mode="HTML",
                 message_thread_id=get_thread_id(update),
             )
@@ -378,7 +326,7 @@ async def mostrar_volumenes_local(
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=reply_markup,
             parse_mode="HTML",
             message_thread_id=get_thread_id(update),
         )
@@ -588,14 +536,8 @@ async def mostrar_detalles_libro(
         else "tienes descargas ilimitadas"
     )
 
-    keyboard = [
-        [
-            InlineKeyboardButton("Descargar", callback_data=f"dl_confirm|{key}"),
-            InlineKeyboardButton("🔙 Volver", callback_data="volver_ultima"),
-            InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    read_url = getattr(config, "WEBAPP_URL", None)
+    reply_markup = BotKeyboards.book_details(key=key, read_url=read_url)
 
     # C. Construir HTML dinámico para el Rich Message unificado
     html_parts = []
@@ -829,37 +771,25 @@ async def mostrar_autores_local(
     authors = data["items"]
     total = data["total"]
 
-    keyboard = []
-    # Mostramos de 1 en 1 para mayor claridad
-    for auth in authors:
-        keyboard.append([InlineKeyboardButton(auth, callback_data=f"aut|{auth}")])
-
-    nav_row = [InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")]
-    if page > 1:
-        nav_row.append(
-            InlineKeyboardButton("⬅️ Ant.", callback_data=f"nav_au|{page - 1}")
-        )
-    if page * page_size < total:
-        nav_row.append(
-            InlineKeyboardButton("Sig. ➡️", callback_data=f"nav_au|{page + 1}")
-        )
-
-    keyboard.append(nav_row)
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+    reply_markup = BotKeyboards.authors_list(
+        authors=authors, page=page, total_pages=total_pages
+    )
 
     st["current_view"] = "authors"
     st["prev_view_local"] = "main"
     st["titulo"] = "✍️ Autores"
 
-    text = f"<b>✍️ Selecciona un Autor:</b>\nMostrando {len(authors)} autores (Pág. {page})."
+    text = f"<b>✍️ Selecciona un Autor:</b>\nMostrando {len(authors)} autores (Pág. {page}/{total_pages})."
     if update.callback_query:
         await update.callback_query.edit_message_text(
-            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+            text, reply_markup=reply_markup, parse_mode="HTML"
         )
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=reply_markup,
             parse_mode="HTML",
             message_thread_id=get_thread_id(update),
         )
@@ -878,12 +808,11 @@ async def mostrar_resultados_locales(
 
     st["libros"] = {}
     st["colecciones"] = {}
-    keyboard = []
+    series_items = []
 
     # 1. Agregar Series (Resultados agrupados)
     if series:
         for i, s in enumerate(series):
-            # Límite para no saturar el mensaje de Telegram
             if i >= 15:
                 break
             href = f"local_series|{s['series_hash']}"
@@ -895,19 +824,16 @@ async def mostrar_resultados_locales(
                 or s.get("title", "Novela")
             )
             st["colecciones"][i] = {"titulo": series_title, "href": href}
-            keyboard.append(
-                [InlineKeyboardButton(f"📁 {series_title}", callback_data=f"col|{i}")]
-            )
+            series_items.append({"title": series_title, "index": i})
 
     # 2. Agregar Libros "Sueltos" (que no pertenecen a las series encontradas o no tienen serie)
+    books_items = []
     if books_standalone:
         for b in books_standalone:
-            # Si ya tenemos suficientes botones, paramos
-            if len(keyboard) >= 20:
+            if len(books_items) >= 15:
                 break
             key = uuid.uuid4().hex[:8]
 
-            # Construir título en inglés consistente con el catálogo de la Mini App
             eng_t = b.get("english_title") or b.get("series_english")
             if eng_t:
                 vol_num = b.get("volume")
@@ -919,6 +845,7 @@ async def mostrar_resultados_locales(
             else:
                 display_title = b["title"]
 
+            display = f"📕 {display_title}"
             st["libros"][key] = {
                 "titulo": display_title,
                 "autor": b["author"],
@@ -926,14 +853,11 @@ async def mostrar_resultados_locales(
                 "portada": b.get("cover_medium") or b.get("cover_low"),
                 "hash": b["book_hash"],
             }
+            books_items.append({"key": key, "title": display_title, "display": display})
 
-            display = f"📕 {display_title}"
-            if len(display) > 35:
-                display = display[:32] + "..."
-
-            keyboard.append([InlineKeyboardButton(display, callback_data=f"lib|{key}")])
-
-    keyboard.append([InlineKeyboardButton("🔙 Volver", callback_data="subir_nivel")])
+    reply_markup = BotKeyboards.search_results(
+        series_items=series_items, books_items=books_items
+    )
 
     st["current_view"] = "search_results"
     st["titulo"] = f"🔍 Resultado: {query}"
@@ -952,13 +876,13 @@ async def mostrar_resultados_locales(
 
     if hasattr(update, "callback_query") and update.callback_query:
         await update.callback_query.edit_message_text(
-            text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML"
+            text, reply_markup=reply_markup, parse_mode="HTML"
         )
     else:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
+            reply_markup=reply_markup,
             parse_mode="HTML",
             message_thread_id=get_thread_id(update),
         )

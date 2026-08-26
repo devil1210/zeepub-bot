@@ -76,14 +76,18 @@ class PublisherService:
             or book.title
             or ""
         )
+        series_name_clean = getattr(series_info, "name", None) if series_info else None
+        if series_name_clean and series_name_clean.strip().lower() in ("volumen único", "volumen unico", "volumen_unico"):
+            series_name_clean = None
+
         romaji_t = (
-            (getattr(series_info, "romaji", None) or getattr(series_info, "name", None) if series_info else None)
+            (getattr(series_info, "romaji", None) or series_name_clean)
             or getattr(book, "romaji", None)
             or getattr(book, "romaji_title", None)
             or ""
         )
         s_slug = (
-            (getattr(series_info, "slug", None) if series_info else None)
+            (getattr(series_info, "slug", None) if series_info and getattr(series_info, "slug", "") not in ("Volumen_Unico", "Volumen_unico", "volumen_unico") else None)
             or (getattr(series_info, "series_spanish", None) if series_info else None)
             or getattr(book, "slug", None)
             or spanish_t
@@ -100,13 +104,19 @@ class PublisherService:
         fecha_act = ""
         if getattr(book, "file_modified_at", None):
             fecha_act = book.file_modified_at.strftime("%d/%m/%Y")
+        elif getattr(book, "modified_at_opf", None):
+            fecha_act = book.modified_at_opf.strftime("%d/%m/%Y")
         elif getattr(book, "updated_at", None):
             fecha_act = book.updated_at.strftime("%d/%m/%Y")
         elif getattr(book, "created_at", None):
             fecha_act = book.created_at.strftime("%d/%m/%Y")
 
         fecha_pub = ""
-        if getattr(book, "modified_at_opf", None):
+        if getattr(book, "published_at", None):
+            fecha_pub = book.published_at.strftime("%d/%m/%Y")
+        elif getattr(book, "release_date", None):
+            fecha_pub = book.release_date.strftime("%d/%m/%Y")
+        elif getattr(book, "modified_at_opf", None):
             fecha_pub = book.modified_at_opf.strftime("%d/%m/%Y")
 
         # Formateo de tamaño
@@ -199,7 +209,11 @@ class PublisherService:
             "published_at": fecha_pub,
             "fecha_publicacion": fecha_pub,
             "fecha_publ": fecha_pub,
-            "modified_at_opf": fecha_pub,
+            "modified_at_opf": (
+                book.modified_at_opf.strftime("%d/%m/%Y")
+                if getattr(book, "modified_at_opf", None)
+                else fecha_act
+            ),
             "palabras": palabras_str,
             "words": palabras_str,
             "paginas": paginas_str,

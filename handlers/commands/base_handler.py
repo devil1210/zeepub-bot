@@ -26,13 +26,16 @@ class BaseCommandHandler(ABC):
         """Handle the specific command logic."""
         pass
 
-    async def _send_message(self, update: Update, text: str, thread_id: int | None = None):
+    async def _send_message(
+        self, update: Update, text: str, thread_id: int | None = None, reply_markup=None
+    ):
         """Common message sending with thread support."""
         await update._bot.send_message(
             chat_id=update.effective_chat.id,
             text=text,
             message_thread_id=thread_id,
             parse_mode="HTML",
+            reply_markup=reply_markup,
         )
 
     async def _get_user_info(self, update: Update):

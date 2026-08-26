@@ -39,7 +39,17 @@ class SearchHandler(BaseCommandHandler):
                 "¿Qué novela ligera estás buscando?\n"
                 "<i>Escribe el título, autor o palabra clave a continuación:</i>"
             )
-            await self._send_message(update, search_text, get_thread_id(update))
+            from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+            search_cancel_kb = InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("🏠 Menú Principal", callback_data="volver_menu"),
+                    InlineKeyboardButton("❌ Cancelar", callback_data="cerrar"),
+                ]
+            ])
+            await self._send_message(
+                update, search_text, get_thread_id(update), reply_markup=search_cancel_kb
+            )
             return
 
         # B. Si hay argumentos, realizar la búsqueda directa

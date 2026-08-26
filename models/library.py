@@ -267,6 +267,7 @@ class Book(Base):
     rating_average: Mapped[float] = mapped_column(Float, default=0.0)
     rating_count: Mapped[int] = mapped_column(Integer, default=0)
     reading_time: Mapped[int | None] = mapped_column(Integer)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     modified_at_opf: Mapped[datetime | None] = mapped_column(DateTime)
 
     cover_low: Mapped[str | None] = mapped_column(String(1024))

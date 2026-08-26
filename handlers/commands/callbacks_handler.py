@@ -7,6 +7,7 @@ from telegram.ext import ContextTypes
 
 from core.state_manager import state_manager
 from handlers.commands.base_handler import BaseCommandHandler
+from services.keyboard_factory import BotKeyboards
 from services.library_service import LibraryService
 from services.library_ui_service import (
     mostrar_menu_principal,
@@ -42,6 +43,10 @@ class CallbackHandlerV6(BaseCommandHandler):
             await query.answer()
         except Exception:
             pass
+
+        # Ignore no-op pagination buttons
+        if data == "noop":
+            return
 
         try:
             # 2. Main Menu Navigation
@@ -234,28 +239,8 @@ class CallbackHandlerV6(BaseCommandHandler):
 
                     # F. Mensaje final interactivo de "¿Qué quieres hacer ahora?"
                     series_hash = st.get("current_series_hash")
-                    keyboard = []
-                    if series_hash:
-                        # Recortamos el hash a 16 caracteres para no superar el límite de 64 bytes de callback_data
-                        series_hash_short = series_hash[:16]
-                        keyboard.append(
-                            [
-                                InlineKeyboardButton(
-                                    "🔙 Volver a la Serie",
-                                    callback_data=f"show_series|{series_hash_short}",
-                                )
-                            ]
-                        )
-                    keyboard.append(
-                        [
-                            InlineKeyboardButton(
-                                "📚 Catálogo Principal", callback_data="volver_menu"
-                            )
-                        ]
-                    )
-                    keyboard.append(
-                        [InlineKeyboardButton("❌ Salir", callback_data="cerrar")]
-                    )
+                    series_hash_short = series_hash[:16] if series_hash else None
+                    post_keyboard = BotKeyboards.post_download(series_hash_short)
 
                     now_text = (
                         "✅ <b>¡Novela enviada con éxito!</b>\n\n"
@@ -264,7 +249,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                     await context.bot.send_message(
                         chat_id=update.effective_chat.id,
                         text=now_text,
-                        reply_markup=InlineKeyboardMarkup(keyboard),
+                        reply_markup=post_keyboard,
                         parse_mode="HTML",
                         message_thread_id=get_thread_id(update),
                     )
@@ -329,7 +314,16 @@ class CallbackHandlerV6(BaseCommandHandler):
                     "¿Qué novela ligera estás buscando?\n"
                     "<i>Escribe el título, autor o palabra clave a continuación:</i>"
                 )
-                await query.edit_message_text(search_text, parse_mode="HTML")
+                search_cancel_kb = InlineKeyboardMarkup([
+                    [
+                        InlineKeyboardButton("⬅️ Volver", callback_data="subir_nivel"),
+                        InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
+                        InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
+                    ]
+                ])
+                await query.edit_message_text(
+                    search_text, reply_markup=search_cancel_kb, parse_mode="HTML"
+                )
 
             # 14. Clean/Delete Interactive Menu
             elif data == "cerrar" or data == "close_menu":
@@ -346,7 +340,10 @@ class CallbackHandlerV6(BaseCommandHandler):
                 try:
                     await query.message.delete()
                 except Exception:
-                    pass
+                    try:
+                        await query.edit_message_reply_markup(reply_markup=None)
+                    except Exception:
+                        pass
 
             else:
                 logger.info(f"Callback no manejado en la v6: {data}")

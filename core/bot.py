@@ -319,6 +319,7 @@ class ZeePubBot:
         # Inicializar schedulers y updates usando BotInitializer
         await BotInitializer.initialize_schedulers(self.app)
         await BotInitializer.check_update_state(self.app.bot)
+        await BotInitializer.register_bot_commands(self.app.bot)
 
         # Configurar el botón de menú de Telegram con la URL de la Mini App (.vip)
         try:

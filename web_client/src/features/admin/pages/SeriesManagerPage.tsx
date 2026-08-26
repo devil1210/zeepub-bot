@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
     BookOpen, Search, Filter, Plus, Edit3, Tag, GitMerge, Layers, 
-    User, Sparkles, Check, AlertCircle, RefreshCw, ChevronRight, Image as ImageIcon
+    User, Sparkles, Check, AlertCircle, RefreshCw, ChevronRight, ArrowLeft, Image as ImageIcon
 } from 'lucide-react';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { useTelegram } from '@shared/contexts/TelegramContext';
@@ -72,30 +72,39 @@ export const SeriesManagerPage: React.FC = () => {
     }, [seriesList, searchQuery]);
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 md:p-8 space-y-6 animate-in fade-in duration-300">
+        <div className="min-h-screen text-slate-100 p-4 sm:p-6 md:p-8 space-y-6 animate-in fade-in duration-300 pb-32">
             {/* Header Area */}
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-slate-900/80 border border-white/10 rounded-2xl p-6 backdrop-blur-xl shadow-2xl">
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-bold uppercase tracking-wider">
-                            Gestión de Catálogo
-                        </span>
-                        <span className="text-xs text-slate-400 font-mono">
-                            {totalSeries} Series Registradas
-                        </span>
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4 glass-panel border border-white/10 rounded-2xl p-6 shadow-2xl">
+                <div className="flex items-start gap-4">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors mt-1"
+                        title="Volver"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 text-[10px] font-bold uppercase tracking-wider">
+                                Gestión de Catálogo
+                            </span>
+                            <span className="text-xs text-slate-400 font-mono">
+                                {totalSeries} Series Registradas
+                            </span>
+                        </div>
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
+                            <BookOpen className="w-7 h-7 text-primary" />
+                            Editor de Series
+                        </h1>
+                        <p className="text-xs text-slate-400 mt-1">
+                            Edición individual de portadas, títulos en español/inglés, alias de maquetación y fusión de duplicados.
+                        </p>
                     </div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-                        <BookOpen className="w-7 h-7 text-indigo-400" />
-                        Editor de Series
-                    </h1>
-                    <p className="text-xs text-slate-400 mt-1">
-                        Edición individual de portadas, títulos en español/inglés, alias de maquetación y fusión de duplicados.
-                    </p>
                 </div>
 
                 <button
                     onClick={() => loadSeries()}
-                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-2 transition-all active:scale-95 border border-white/10"
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 text-xs font-bold flex items-center gap-2 transition-all active:scale-95 border border-white/10"
                 >
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     Actualizar Lista

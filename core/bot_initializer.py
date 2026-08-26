@@ -105,3 +105,23 @@ class BotInitializer:
 
         except Exception as e:
             logger.error(f"Error notificando update: {e}", exc_info=True)
+
+    @staticmethod
+    async def register_bot_commands(bot):
+        """Registra los comandos interactivos en Telegram BotFather / Menú de comandos."""
+        from telegram import BotCommand
+
+        commands = [
+            BotCommand("start", "🏠 Iniciar y abrir menú principal"),
+            BotCommand("catalog", "📖 Explorar catálogo de novelas"),
+            BotCommand("menu", "📚 Abrir menú de la biblioteca"),
+            BotCommand("buscar", "🔍 Buscar novelas por título o autor"),
+            BotCommand("status", "📊 Ver cuota y estado del bot"),
+            BotCommand("cancel", "❌ Cancelar operaciones y limpiar estado"),
+            BotCommand("ayuda", "ℹ️ Guía rápida de uso y comandos"),
+        ]
+        try:
+            await bot.set_my_commands(commands)
+            logger.info("Comandos del bot registrados exitosamente en Telegram.")
+        except Exception as e:
+            logger.warning(f"No se pudieron registrar los comandos en Telegram: {e}")

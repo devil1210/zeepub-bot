@@ -114,13 +114,27 @@ class SeriesScanner:
 
         if not series:
             series_name = identity.get("series") or "Unknown"
+            if series_name.strip().lower() in ("volumen único", "volumen unico", "volumen_unico", "unknown", ""):
+                series_name = (
+                    identity.get("series_spanish")
+                    or identity.get("series_english")
+                    or identity.get("title")
+                    or "Unknown"
+                )
+
+            # Limpiar sufijos de volumen del nombre de la serie
+            series_name = re.sub(r"\s*[-–—]\s*Volumen\s*[Úu]nico\s*$", "", series_name, flags=re.IGNORECASE).strip()
+
+            romaji_val = identity.get("romaji_title") or series_name
+            if romaji_val.strip().lower() in ("volumen único", "volumen unico", "volumen_unico"):
+                romaji_val = series_name
 
             series = SeriesMetadata(
                 id=series_hash,
                 series_name=series_name,
                 series_spanish=identity.get("series_spanish") or series_name,
                 series_english=identity.get("series_english") or series_name,
-                name=identity.get("romaji_title") or series_name,
+                name=romaji_val,
                 author=identity.get("author") or "Unknown",
                 author_jap=identity.get("author_jap"),
                 illustrator=identity.get("illustrator"),

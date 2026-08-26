@@ -102,6 +102,7 @@ class EpubScanner:
         target_book.asin = source_book.asin
         target_book.epub_version = source_book.epub_version
         target_book.modified_at_opf = source_book.modified_at_opf
+        target_book.published_at = source_book.published_at
         target_book.word_count = source_book.word_count
         target_book.page_count = source_book.page_count
         target_book.reading_time = source_book.reading_time
@@ -465,6 +466,13 @@ class EpubScanner:
                 book.word_count = meta.get("word_count") or book.word_count
                 book.page_count = meta.get("page_count") or book.page_count
                 book.reading_time = meta.get("reading_time") or book.reading_time
+
+                # Parsear fecha de publicación (dc:date original)
+                published_date_str = meta.get("published_at") or meta.get("fecha_publicacion")
+                if published_date_str:
+                    book.published_at = (
+                        cls.parse_opf_date(published_date_str) or getattr(book, "published_at", None)
+                    )
 
                 # Parsear fecha de modificación de metadatos (evitar DataError con asyncpg si es string)
                 opf_date_str = meta.get("modified_at_opf")

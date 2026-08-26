@@ -79,15 +79,19 @@ class SlugManager:
             # Generate slug using existing utility
             meta_dict = series_metadata.to_dict()
             # Ensure name/series_name is present from the object directly if missing in dict
-            if "series_name" not in meta_dict or not meta_dict["series_name"]:
-                meta_dict["series_name"] = series_metadata.series_name or series_metadata.name
+            candidate_name = series_metadata.series_name or series_metadata.name
+            if candidate_name and candidate_name.strip().lower() in ("volumen único", "volumen unico", "volumen_unico"):
+                candidate_name = series_metadata.series_spanish or series_metadata.series_english or ""
+
+            if "series_name" not in meta_dict or not meta_dict["series_name"] or meta_dict["series_name"].strip().lower() in ("volumen único", "volumen unico"):
+                meta_dict["series_name"] = candidate_name
 
             new_slug = generar_slug_from_meta(meta_dict)
 
             # Fallback total: si sigue vacío, usar el nombre directo o el hash
-            if not new_slug and series_metadata.series_name:
+            if not new_slug and candidate_name:
                 # Generación manual rápida si el helper falló
-                new_slug = series_metadata.series_name.lower().replace(" ", "_")
+                new_slug = candidate_name.lower().replace(" ", "_")
 
             # Clean special characters and volume suffixes
             cleaned_slug = SlugManager.clean_slug_special_chars(new_slug)
@@ -108,6 +112,10 @@ class SlugManager:
         """
         if not current_slug:
             return True, "vacío"
+
+        # Detectar si el slug actual es genérico o inválido
+        if current_slug.lower() in ("volumen_unico", "volumen_01", "volumen_1", "tomo_1", "tomo_01"):
+            return True, "slug de volumen inválido"
 
         # Detectar si el slug actual contiene un sufijo de volumen (ej: _V20, _Vol_1)
         if re.search(r"_(?:v|vol|volumen|tomo)\d+$", current_slug, re.IGNORECASE) or re.search(r"_(?:v|vol|volumen|tomo)_\d+$", current_slug, re.IGNORECASE):

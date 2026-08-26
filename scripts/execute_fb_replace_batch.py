@@ -295,6 +295,7 @@ async def run_batch_replacement(batch_size: int = 35, sleep_between_posts: float
                 new_msg = item["new_message"]
                 
                 try:
+                    # 1. Intentar actualizar el objeto de publicación directo
                     res = await client.post(
                         f"https://graph.facebook.com/v21.0/{post_id}",
                         params={"access_token": token},
@@ -303,17 +304,34 @@ async def run_batch_replacement(batch_size: int = 35, sleep_between_posts: float
                     
                     if res.status_code == 200 and res.json().get("success"):
                         logger.info(f"[{p_idx}/{len(batch)} en Lote {batch_num}] ✅ Actualizado: {post_id}")
-                    elif res.status_code == 400 and "OAuthException" in res.text:
-                        logger.warning(f"⚠️ Meta rate limit detectado en post {post_id}. Entrando en descanso forzado de 20 minutos...")
-                        await asyncio.sleep(1200)
-                        # Reintentar este mismo post
-                        retry_res = await client.post(
+                    elif res.status_code == 400:
+                        # Si es un post de fotos antiguo, actualizar mediante el ID de la foto adjunta
+                        att_res = await client.get(
                             f"https://graph.facebook.com/v21.0/{post_id}",
-                            params={"access_token": token},
-                            data={"message": new_msg},
+                            params={"access_token": token, "fields": "attachments"},
                         )
-                        if retry_res.status_code == 200:
-                            logger.info(f"[{p_idx}/{len(batch)}] ✅ Actualizado tras reintento: {post_id}")
+                        photo_id = None
+                        if att_res.status_code == 200:
+                            atts = att_res.json().get("attachments", {}).get("data", [])
+                            if atts and atts[0].get("target", {}).get("id"):
+                                photo_id = atts[0]["target"]["id"]
+
+                        if photo_id:
+                            photo_res = await client.post(
+                                f"https://graph.facebook.com/v21.0/{photo_id}",
+                                params={"access_token": token},
+                                data={"message": new_msg},
+                            )
+                            if photo_res.status_code == 200 and photo_res.json().get("success"):
+                                logger.info(f"[{p_idx}/{len(batch)} en Lote {batch_num}] ✅ Actualizado vía Photo ID ({photo_id}): {post_id}")
+                            else:
+                                logger.warning(f"⚠️ Error actualizando photo {photo_id}: {photo_res.text}")
+                        else:
+                            if "OAuthException" in res.text:
+                                logger.warning(f"⚠️ Meta rate limit detectado en post {post_id}. Entrando en descanso de 15 minutos...")
+                                await asyncio.sleep(900)
+                            else:
+                                logger.error(f"❌ Error en post {post_id}: HTTP {res.status_code} - {res.text}")
                     else:
                         logger.error(f"❌ Error en post {post_id}: HTTP {res.status_code} - {res.text}")
                 except Exception as e:
