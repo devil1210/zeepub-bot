@@ -184,6 +184,48 @@ class TelegramPublisherProvider(PublisherProvider):
                     }
                 ]
 
+        # Adjuntar documento EPUB dentro del Rich Message (Telegram API 10.3)
+        epub_data = (
+            book_data.get("epub_bytes")
+            or book_data.get("filepath")
+            or book_data.get("file_path")
+        )
+        fname = book_data.get("filename", "libro.epub")
+        if epub_data:
+            try:
+                import io
+
+                if not files:
+                    files = {}
+                if isinstance(epub_data, (bytes, bytearray)):
+                    files["epub_doc"] = (
+                        fname,
+                        io.BytesIO(epub_data),
+                        "application/epub+zip",
+                    )
+                elif isinstance(epub_data, str) and os.path.exists(epub_data):
+                    with open(epub_data, "rb") as f:
+                        files["epub_doc"] = (
+                            fname,
+                            io.BytesIO(f.read()),
+                            "application/epub+zip",
+                        )
+
+                if "epub_doc" in files:
+                    media.append(
+                        {
+                            "id": "epub_doc",
+                            "media": {
+                                "type": "document",
+                                "media": "attach://epub_doc",
+                            },
+                        }
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"Error preparando archivo epub para Rich Message: {e}"
+                )
+
         # Si se proporcionó una plantilla personalizada (caption), usarla directamente para RichMessage
         if options and options.get("caption"):
             clean_user_caption = (
@@ -194,7 +236,7 @@ class TelegramPublisherProvider(PublisherProvider):
             clean_user_caption = re.sub(
                 r"<img\s+src=[^>]*>", "", clean_user_caption, flags=re.IGNORECASE
             ).strip()
-            if media:
+            if any(m.get("id") == "tomozaki_cover" for m in media):
                 html_content = (
                     f'<img src="tg://photo?id=tomozaki_cover" />\n{clean_user_caption}'
                 )
@@ -202,7 +244,7 @@ class TelegramPublisherProvider(PublisherProvider):
                 html_content = clean_user_caption
         else:
             html_parts = []
-            if media:
+            if any(m.get("id") == "tomozaki_cover" for m in media):
                 html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
 
             # Títulos en cascada
