@@ -285,19 +285,12 @@ class BotKeyboards:
     ) -> InlineKeyboardMarkup:
         """
         Genera los botones para la ficha técnica del libro.
-        - Verde 🟢: Descargar EPUB (Acción principal)
-        - Azul 🔵: Leer Online (si está disponible)
+        - Verde 🟢: Descargar EPUB (Acción principal destacada)
         - Blanco/Gris ⚪: Volver y Menú Principal
         - Rojo 🔴: Salir
         """
-        top_row = [
-            InlineKeyboardButton("📥 Descargar EPUB", callback_data=f"dl_confirm|{key}")
-        ]
-        if read_url:
-            top_row.append(InlineKeyboardButton("📖 Leer Online", url=read_url))
-
         keyboard = [
-            top_row,
+            [InlineKeyboardButton("📥 Descargar EPUB", callback_data=f"dl_confirm|{key}")],
             [
                 InlineKeyboardButton("⬅️ Volver a la Serie", callback_data="volver_ultima"),
                 InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),

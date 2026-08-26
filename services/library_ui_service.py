@@ -536,8 +536,7 @@ async def mostrar_detalles_libro(
         else "tienes descargas ilimitadas"
     )
 
-    read_url = getattr(config, "WEBAPP_URL", None)
-    reply_markup = BotKeyboards.book_details(key=key, read_url=read_url)
+    reply_markup = BotKeyboards.book_details(key=key)
 
     # C. Construir HTML dinámico para el Rich Message unificado
     html_parts = []
@@ -682,16 +681,18 @@ async def mostrar_detalles_libro(
     tabla_archivo += "  </table>\n</details>\n"
     html_parts.append(tabla_archivo)
 
-    # 6. Línea divisoria y pie
+    # 6. Línea divisoria y pie con espaciado real para teclado
     html_parts.append("<hr/>")
 
     slug = libro.get("slug")
     if slug:
         hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
-        html_parts.append(f"{hashtag_serie}\n\n\n")
+        html_parts.append(f"<p>{hashtag_serie}</p>")
     else:
         clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
-        html_parts.append(f"#{clean_title}\n\n\n")
+        html_parts.append(f"<p>#{clean_title}</p>")
+
+    html_parts.append("<br/><br/>")
 
     html_content = "\n".join(html_parts)
 
