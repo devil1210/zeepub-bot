@@ -221,7 +221,7 @@ class TelegramPublisherProvider(PublisherProvider):
                 html_parts.append(f"<h6>📚 Volumen {volume}</h6>\n")
 
             # TABLA 1: Ficha artística y literaria
-            tabla_literaria = "<table bordered striped>\n"
+            tabla_literaria = "<table bordered striped compact>\n"
             autor = book_data.get("author") or book_data.get("autor") or "Desconocido"
             tabla_literaria += f"  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n"
 
@@ -327,7 +327,7 @@ class TelegramPublisherProvider(PublisherProvider):
             tabla_archivo = (
                 "<details>\n"
                 "  <summary>📂 Ver Detalles del Archivo</summary>\n"
-                "  <table bordered striped>\n"
+                "  <table bordered striped compact>\n"
                 f"    <tr><td><b>📂 Nombre</b></td><td>{book_data.get('title') or 'Desconocido'}</td></tr>\n"
             )
             if volume:

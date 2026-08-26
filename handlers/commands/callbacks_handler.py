@@ -49,8 +49,13 @@ class CallbackHandlerV6(BaseCommandHandler):
             return
 
         try:
+            # 1. No-op (Inactive/Disabled Buttons)
+            if data == "noop":
+                await query.answer()
+                return
+
             # 2. Main Menu Navigation
-            if data == "main_menu" or data == "volver_menu":
+            elif data == "main_menu" or data == "volver_menu":
                 await mostrar_menu_principal(update, context)
 
             # 3. Categorized Lists Navigation

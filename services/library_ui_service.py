@@ -554,6 +554,7 @@ async def mostrar_detalles_libro(
 
     # B. Preparar Botones e información técnica del usuario
     left = await downloads_left(uid)
+    can_download = left == "ilimitadas" or (isinstance(left, int) and left > 0)
     left_str = (
         f"tienes {left} descargas restantes hoy"
         if isinstance(left, int)
@@ -561,7 +562,9 @@ async def mostrar_detalles_libro(
     )
 
     is_staff = await check_is_admin_or_staff(uid, update.effective_user)
-    reply_markup = BotKeyboards.book_details(key=key, is_admin_or_staff=is_staff)
+    reply_markup = BotKeyboards.book_details(
+        key=key, is_admin_or_staff=is_staff, can_download=can_download
+    )
 
     # C. Construir HTML dinámico para el Rich Message unificado
     html_parts = []
@@ -583,7 +586,7 @@ async def mostrar_detalles_libro(
         html_parts.append(f"<h6>📚 Volumen {volume}</h6>\n")
 
     # 3. TABLA 1: Ficha artística y literaria
-    tabla_literaria = "<table bordered striped>\n"
+    tabla_literaria = "<table bordered striped compact>\n"
 
     autor = libro.get("author") or libro.get("autor") or "Desconocido"
     tabla_literaria += f"  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n"
@@ -683,7 +686,7 @@ async def mostrar_detalles_libro(
     tabla_archivo = (
         "<details>\n"
         "  <summary>📂 Ver Detalles del Archivo</summary>\n"
-        "  <table bordered striped>\n"
+        "  <table bordered striped compact>\n"
         f"    <tr><td><b>📂 Nombre</b></td><td>{libro.get('title') or 'Desconocido'}</td></tr>\n"
     )
     if volume:

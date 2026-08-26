@@ -15,20 +15,23 @@ class BotKeyboards:
     @staticmethod
     def btn(
         text: str,
-        callback_data: str | None = None,
-        url: str | None = None,
-        style: str | None = None,  # "primary" (azul) | "success" (verde) | "danger" (rojo)
-        icon_custom_emoji_id: str | None = None,
+        callback_data: Optional[str] = None,
+        url: Optional[str] = None,
+        style: Optional[str] = None,  # "primary" (azul) | "success" (verde) | "danger" (rojo)
+        icon_custom_emoji_id: Optional[str] = None,
+        disabled: bool = False,
     ) -> InlineKeyboardButton:
         """
-        Construye un InlineKeyboardButton con soporte nativo para estilos de color y premium emojis.
-        Compatible con Telegram Bot API 7.0+.
+        Construye un InlineKeyboardButton con soporte nativo para estilos de color, premium emojis y estado disabled.
+        Compatible con Telegram Bot API 7.0+ y 10.3.
         """
         api_kwargs = {}
         if style:
             api_kwargs["style"] = style
         if icon_custom_emoji_id:
             api_kwargs["icon_custom_emoji_id"] = str(icon_custom_emoji_id)
+        if disabled:
+            api_kwargs["disabled"] = True
 
         if api_kwargs:
             return InlineKeyboardButton(
@@ -324,24 +327,32 @@ class BotKeyboards:
     @staticmethod
     def book_details(
         key: str,
-        read_url: str | None = None,
+        read_url: Optional[str] = None,
         is_admin_or_staff: bool = False,
+        can_download: bool = True,
     ) -> InlineKeyboardMarkup:
         """
         Genera los botones para la ficha técnica del libro.
-        - Verde 🟢: Descargar EPUB (style="success" nativo)
+        - Verde 🟢: Descargar EPUB (style="success" nativo) o Deshabilitado si no hay descargas
         - Azul 🔵: Publicar en Telegram (style="primary" nativo para Admin/Staff)
         - Blanco/Gris ⚪: Volver y Menú Principal
         - Rojo 🔴: Salir (style="danger" nativo)
         """
+        if can_download:
+            download_btn = BotKeyboards.btn(
+                "📥 Descargar EPUB",
+                callback_data=f"dl_confirm|{key}",
+                style="success",
+            )
+        else:
+            download_btn = BotKeyboards.btn(
+                "⛔ Descargas Agotadas Hoy",
+                callback_data="noop",
+                disabled=True,
+            )
+
         keyboard = [
-            [
-                BotKeyboards.btn(
-                    "📥 Descargar EPUB",
-                    callback_data=f"dl_confirm|{key}",
-                    style="success",
-                )
-            ],
+            [download_btn],
         ]
         if is_admin_or_staff:
             keyboard.append(

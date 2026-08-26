@@ -223,9 +223,15 @@ class RichMessageService:
         }
 
     @classmethod
-    def create_table(cls, headers: list[str], rows: list[list[str]], caption: str | None = None) -> dict:
+    def create_table(
+        cls,
+        headers: list[str],
+        rows: list[list[str]],
+        caption: str | None = None,
+        is_compact: bool = True,
+    ) -> dict:
         """
-        Crea un bloque de tabla responsivo.
+        Crea un bloque de tabla responsivo con soporte para is_compact (API 10.3).
         """
         table_rows = []
         # Cabecera
@@ -238,7 +244,8 @@ class RichMessageService:
 
         table_block = {
             "type": "table",
-            "rows": table_rows
+            "rows": table_rows,
+            "is_compact": is_compact,
         }
         if caption:
             table_block["caption"] = {"text": caption}
