@@ -100,6 +100,8 @@ from api.handlers.observatory import (
     handle_observatory_publications,
 )
 from api.handlers.publisher import (
+    handle_pub_check_facebook_album,
+    handle_pub_create_draft,
     handle_pub_delete_channel,
     handle_pub_delete_queue_item,
     handle_pub_delete_template,
@@ -112,6 +114,7 @@ from api.handlers.publisher import (
     handle_pub_save_channel,
     handle_pub_save_template,
     handle_pub_schedule,
+    handle_pub_send_template_to_chat,
     handle_pub_toggle_favorite,
     handle_pub_update_post,
     handle_pub_update_queue_item,
