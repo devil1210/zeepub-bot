@@ -191,16 +191,6 @@ class CallbackHandlerV6(BaseCommandHandler):
                     "⚡️ Descargando e iniciando envío...", show_alert=False
                 )
 
-                # B. Mantener el mensaje original intacto (No borrar nada) pero quitarle los botones inline
-                try:
-                    await context.bot.edit_message_reply_markup(
-                        chat_id=update.effective_chat.id,
-                        message_id=query.message.message_id,
-                        reply_markup=None,
-                    )
-                except Exception as e:
-                    logger.warning(f"Error removiendo botones del Rich Message: {e}")
-
                 # C. Formatear pie de foto (caption) del archivo (únicamente el slug)
                 slug = libro_st.get("slug") or ""
                 if slug:
@@ -238,16 +228,50 @@ class CallbackHandlerV6(BaseCommandHandler):
 
                     filename = libro_st.get("filename") or f"{title}.epub"
 
-                    sent_doc = await send_doc_bytes(
-                        context.bot,
-                        update.effective_chat.id,
-                        full_caption,
-                        filepath,
-                        filename=filename,
-                        parse_mode="HTML",
-                        reply_markup=post_keyboard,
-                        message_thread_id=get_thread_id(update),
-                    )
+                    # 1. Intentar transformar el mensaje actual in-place (Un solo mensaje en chat)
+                    edited = False
+                    sent_doc = None
+                    try:
+                        file_bytes = None
+                        if isinstance(filepath, str) and os.path.exists(filepath):
+                            with open(filepath, "rb") as f:
+                                file_bytes = f.read()
+                        elif isinstance(filepath, (bytes, bytearray)):
+                            file_bytes = filepath
+
+                        if file_bytes:
+                            from telegram import InputMediaDocument
+
+                            input_doc = InputMediaDocument(
+                                media=io.BytesIO(file_bytes),
+                                filename=filename,
+                                caption=full_caption,
+                                parse_mode="HTML",
+                            )
+                            sent_doc = await context.bot.edit_message_media(
+                                chat_id=update.effective_chat.id,
+                                message_id=query.message.message_id,
+                                media=input_doc,
+                                reply_markup=post_keyboard,
+                            )
+                            edited = True
+                    except Exception as e:
+                        logger.warning(
+                            f"No se pudo editar mensaje in-place a documento: {e}"
+                        )
+
+                    # 2. Fallback si no fue posible editar in-place
+                    if not edited:
+                        sent_doc = await send_doc_bytes(
+                            context.bot,
+                            update.effective_chat.id,
+                            full_caption,
+                            filepath,
+                            filename=filename,
+                            parse_mode="HTML",
+                            reply_markup=post_keyboard,
+                            message_thread_id=get_thread_id(update),
+                        )
 
                     # E. Registrar descarga en BD
                     meta_reg = {
