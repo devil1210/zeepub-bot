@@ -5,6 +5,7 @@ import os
 from config.config_settings import config
 from services.backup_scheduler import start_backup_scheduler
 from services.daily_reset_scheduler import start_daily_reset_scheduler
+from services.facebook_sync_service import start_facebook_sync_scheduler
 from services.publisher.publisher_scheduler import start_publisher_scheduler
 from services.recommendation_scheduler import start_recommendations_scheduler
 from services.weekly_reports import start_weekly_scheduler
@@ -34,6 +35,7 @@ class BotInitializer:
             ("daily_reset", start_daily_reset_scheduler),
             ("recommendations", start_recommendations_scheduler),
             ("publisher", start_publisher_scheduler),
+            ("facebook_sync", lambda _: start_facebook_sync_scheduler()),
         ]
 
         # Pre-load needed data for schedulers if any

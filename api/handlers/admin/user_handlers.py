@@ -201,7 +201,7 @@ async def handle_admin_save_user_permissions(data: dict[str, Any], user_data: di
         if "levelId" in data and data["levelId"] is not None:
             user.level_id = int(data["levelId"])
 
-        if "role" in data and data["role"]:
+        if data.get("role"):
             user.role = str(data["role"])
 
         # Actualizar campos nativos del modelo User si aplican

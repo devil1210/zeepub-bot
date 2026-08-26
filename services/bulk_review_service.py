@@ -251,7 +251,7 @@ class BulkReviewService:
             except Exception as e:
                 await session.rollback()
                 logger.error(f"Error en transacción masiva: {e}")
-                errors.append({"error": f"Error en transacción: {str(e)}"})
+                errors.append({"error": f"Error en transacción: {e!s}"})
 
         logger.info(f"✅ Actualizaciones completadas: {updated_count} exitosas, {len(errors)} errores")
 

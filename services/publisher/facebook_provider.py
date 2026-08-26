@@ -23,6 +23,7 @@ class FacebookPublisherProvider(PublisherProvider):
     ) -> tuple[str, str]:
         """Resuelve el Page ID y Page Access Token si se proveyó un User Token."""
         import httpx
+
         from config.config_settings import config
 
         target_page_id = str(target_id) if target_id else config.FACEBOOK_GROUP_ID
@@ -76,9 +77,10 @@ class FacebookPublisherProvider(PublisherProvider):
         # 1. Verificar si ya tenemos el fb_album_id en la base de datos
         if series_id:
             try:
+                from sqlalchemy import select
+
                 from core.db_manager_pg import pg_manager
                 from models.library import Series
-                from sqlalchemy import select
 
                 async with pg_manager.get_session() as session:
                     stmt = select(Series.fb_album_id).where(Series.id == series_id)
@@ -304,9 +306,10 @@ class FacebookPublisherProvider(PublisherProvider):
         if not series_id or not album_id:
             return
         try:
+            from sqlalchemy import update
+
             from core.db_manager_pg import pg_manager
             from models.library import Series
-            from sqlalchemy import update
 
             async with pg_manager.get_session() as session:
                 await session.execute(
@@ -325,9 +328,10 @@ class FacebookPublisherProvider(PublisherProvider):
         if not book_hash or (not post_id and not photo_id):
             return
         try:
+            from sqlalchemy import update
+
             from core.db_manager_pg import pg_manager
             from models.library import Book
-            from sqlalchemy import update
 
             async with pg_manager.get_session() as session:
                 values = {}
@@ -441,10 +445,11 @@ class FacebookPublisherProvider(PublisherProvider):
             return False
 
         import httpx
+        from sqlalchemy import select
+
         from config.config_settings import config
         from core.db_manager_pg import pg_manager
         from models.communications import PublicationChannel
-        from sqlalchemy import select
 
         page_token = token
         resolved_target = str(target_id) if target_id else None
@@ -511,9 +516,10 @@ class FacebookPublisherProvider(PublisherProvider):
         if not caption:
             # Intentar resolver la plantilla por defecto de Facebook configurada en BD
             try:
+                from sqlalchemy import select
+
                 from core.db_manager_pg import pg_manager
                 from models.communications import PublicationTemplate
-                from sqlalchemy import select
 
                 async with pg_manager.get_session() as session:
                     stmt = (

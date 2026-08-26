@@ -135,9 +135,7 @@ def merge_user_ui_settings(
     for k, v in personal_settings.items():
         if v is None:
             continue
-        if not is_forced:
-            final_ui[k] = v
-        elif k in exported_list:
+        if not is_forced or k in exported_list:
             final_ui[k] = v
 
     return normalize_ui(final_ui), exported_list

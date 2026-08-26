@@ -510,9 +510,10 @@ class TelegramPublisherProvider(PublisherProvider):
     ) -> None:
         """Helper para guardar tg_message_id y tg_chat_id en Book."""
         try:
+            from sqlalchemy import update
+
             from core.db_manager_pg import pg_manager
             from models.library import Book
-            from sqlalchemy import update
 
             async with pg_manager.get_session() as session:
                 await session.execute(
@@ -552,6 +553,7 @@ class TelegramPublisherProvider(PublisherProvider):
             # Si se proporciona portada o ruta de portada, intentar edit_message_media
             if cover:
                 from telegram import InputMediaPhoto
+
                 from services.cover_service import resolve_cover_data
                 resolved_cover = await resolve_cover_data(cover)
                 if resolved_cover:

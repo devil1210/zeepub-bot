@@ -68,7 +68,7 @@ async def trigger_watchtower_update():
                     "✅ Orden enviada. Si el sistema se reinicia, la actualización fue exitosa.",
                 )
             except Exception as e:
-                logger.error(f"Error inesperado probando {url}: {repr(e)}")
+                logger.error(f"Error inesperado probando {url}: {e!r}")
                 last_error = str(e)
 
     # Si llegamos aquí, ninguno funcionó

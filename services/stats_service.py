@@ -86,7 +86,6 @@ async def record_activity(user_id: int, action: str):
     """
     logger.debug(f"Activity recorded for user {user_id}: {action}")
     # In the future, we could store this in a dedicated activity_log table.
-    pass
 
 
 async def get_daily_stats() -> dict[str, Any]:
@@ -147,7 +146,6 @@ async def reset_stats():
     Download history is immutable, so this is mostly for other metrics.
     """
     logger.info("Daily stats reset executed.")
-    pass
 
 
 async def get_stats_summary(period: str = "day") -> dict[str, Any]:

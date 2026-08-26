@@ -348,6 +348,9 @@ class Book(Base):
     downloads: Mapped[list["UserDownload"]] = relationship(
         back_populates="book", cascade="all, delete-orphan"
     )
+    publications: Mapped[list["BookPublication"]] = relationship(
+        "BookPublication", back_populates="book", cascade="all, delete-orphan", lazy="selectin"
+    )
 
 
 # Alias para compatibilidad con código legacy

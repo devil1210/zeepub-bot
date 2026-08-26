@@ -17,7 +17,6 @@ from services.ai_service import AIService
 from services.epub_service import enrich_metadata_from_epub
 from services.hash_service import hash_service
 from services.scanner.series_scanner import SeriesScanner
-from services.settings_service import get_setting
 from utils.helpers import normalize_demographics_list
 from utils.metadata_utils import process_book_identity_comprehensive
 

@@ -19,6 +19,7 @@ import { BookActions } from '../components/BookActions';
 import { BookHeader } from '../components/BookHeader';
 import { BookSpecs } from '../components/BookSpecs';
 import { ScheduleModal } from '@features/publisher/components/ScheduleModal';
+import { BookPublicationsHistory } from '../components/BookPublicationsHistory';
 
 interface BookDetailProps {
   volume?: Volume;
@@ -38,8 +39,10 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   onNavigate
 }) => {
   const { settings } = useTheme();
-  const { webApp } = useTelegram();
+  const { webApp, isAdmin, isStaff } = useTelegram();
   const { setContextType, registerCallbacks, setVisible, setCustomActions } = useNavigation();
+
+  const canViewStaffInfo = isAdmin || isStaff;
 
   // Data State
   const [curVolume, setCurVolume] = useState<Volume | null>(initialVolume || null);
@@ -151,7 +154,8 @@ export const BookDetail: React.FC<BookDetailProps> = ({
             book_type: bookData.book_type || bookData.bookType,
             is_uncensored: bookData.is_uncensored === 1 || bookData.is_uncensored === true,
             color_mode: bookData.color_mode,
-            book_hash: bookData.book_hash
+            book_hash: bookData.book_hash,
+            publications: bookData.publications || initialVolume?.publications || []
           };
 
           const mappedSeries: Series = {
@@ -750,6 +754,11 @@ export const BookDetail: React.FC<BookDetailProps> = ({
                   </div>
                 </details>
               </div>
+
+              {/* Publications History (Staff & Admin Only) */}
+              {canViewStaffInfo && curVolume.publications && curVolume.publications.length > 0 && (
+                <BookPublicationsHistory publications={curVolume.publications} />
+              )}
 
             </div>
           </div>

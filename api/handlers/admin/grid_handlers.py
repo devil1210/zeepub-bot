@@ -1,6 +1,7 @@
 import logging
 import re
 from typing import Any
+
 from fastapi import HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import selectinload
@@ -333,7 +334,7 @@ async def handle_admin_bulk_save_grid(data: dict[str, Any], user_data: dict[str,
             if not series:
                 continue
 
-            if "name" in s_data and s_data["name"]:
+            if s_data.get("name"):
                 series.name = str(s_data["name"]).strip()
             if "series_english" in s_data or "name_english" in s_data:
                 val = s_data.get("series_english", s_data.get("name_english"))
@@ -367,7 +368,7 @@ async def handle_admin_bulk_save_grid(data: dict[str, Any], user_data: dict[str,
             if not book:
                 continue
 
-            if "title" in b_data and b_data["title"]:
+            if b_data.get("title"):
                 book.title = str(b_data["title"]).strip()
             if "volume" in b_data:
                 vol_val = b_data.get("volume")

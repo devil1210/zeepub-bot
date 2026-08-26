@@ -9,11 +9,11 @@ from .library_routes import LibraryRoutes
 from .media_routes import MediaRoutes
 
 __all__ = [
-    "LibraryRoutes",
     "AdminRoutes",
-    "MediaRoutes",
+    "AgentRoutes",
     "AuthRoutes",
     "ConfigRoutes",
     "LegacyRoutes",
-    "AgentRoutes",
+    "LibraryRoutes",
+    "MediaRoutes",
 ]

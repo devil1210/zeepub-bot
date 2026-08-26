@@ -203,7 +203,6 @@ class ZeePubBot:
                             "Bot marcado como initialized pero ExtBot no está listo. Continuando con error original..."
                         )
                         # Can't reinitialize, but bot isn't ready
-                        pass
 
                 if attempt < max_retries - 1:
                     wait = retry_delay * (attempt + 1)
@@ -271,7 +270,7 @@ class ZeePubBot:
                     try:
                         await self.app.bot.send_message(
                             chat_id=admin_id,
-                            text=f"🚨 <b>ALERTA CRÍTICA</b>\nEl bot inició en <b>MODO SEGURO</b> debido a un error en los plugins:\n\n<pre>{str(e)}</pre>\n\nUsa /update_system para intentar reparar.",
+                            text=f"🚨 <b>ALERTA CRÍTICA</b>\nEl bot inició en <b>MODO SEGURO</b> debido a un error en los plugins:\n\n<pre>{e!s}</pre>\n\nUsa /update_system para intentar reparar.",
                             parse_mode="HTML",
                         )
                     except Exception as ex:

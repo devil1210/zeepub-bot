@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated, Any
 
-from fastapi import Depends, Header, HTTPException, Query, Cookie
+from fastapi import Cookie, Depends, Header, HTTPException, Query
 
 from config.config_settings import config
 from services.rbac_service import Permission

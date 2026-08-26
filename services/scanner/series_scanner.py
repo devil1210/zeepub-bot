@@ -342,6 +342,7 @@ class SeriesScanner:
             res = await ai_service._call_ai(prompt, json_mode=True)
             if res:
                 import json
+
                 from services.ai_service import AIService as AI
 
                 raw_json = AI._extract_json_from_text(res)
@@ -371,7 +372,6 @@ class SeriesScanner:
                 )
         except Exception as e:
             logger.error(f"❌ Error en enrich_series_metadata: {e}")
-            pass
 
     @classmethod
     async def sync_series_metadata(cls, session: Any, series_hash: str):

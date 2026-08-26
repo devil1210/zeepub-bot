@@ -30,6 +30,17 @@ export interface Book {
   illustrator?: string;
   layout_by?: string;
   isbn?: string;
+  publications?: BookPublication[];
+}
+
+export interface BookPublication {
+  id: number;
+  platform: 'facebook' | 'telegram' | string;
+  channel_id?: number | null;
+  post_id: string;
+  post_url?: string | null;
+  published_at?: string | null;
+  caption?: string | null;
 }
 
 export interface Volume {
@@ -95,6 +106,7 @@ export interface Volume {
   fileSize?: number;
   summary?: string;
   book_hash?: string;
+  publications?: BookPublication[];
 }
 
 export interface Series {

@@ -47,9 +47,13 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
         # Optimization: Fetch metadata, total downloads and volumes in parallel
         series_task = LibraryService.get_series_metadata(s_hash)
         downloads_task = LibraryService.get_series_total_downloads(s_hash)
-        volumes_task = LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
+        volumes_task = LibraryService.get_series_volumes(
+            s_hash, limit=v_limit, offset=v_offset
+        )
 
-        series, total_downloads, volumes = await asyncio.gather(series_task, downloads_task, volumes_task)
+        series, total_downloads, volumes = await asyncio.gather(
+            series_task, downloads_task, volumes_task
+        )
 
         if not series and not volumes:
             raise HTTPException(status_code=404, detail="Serie no encontrada")
@@ -63,26 +67,36 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
             "title": (series.series_english or series.series_name)
             if series
             else (rep.get("series") or rep.get("title")),
-            "english_title": (series.series_english or series.name_english) if series else rep.get("english_title"),
-            "spanish_title": (series.series_spanish or series.name_spanish) if series else rep.get("spanish_title"),
-            "romaji_title": (series.name or series.series_name) if series else rep.get("romaji_title"),
-            "romaji": (series.name or series.series_name) if series else rep.get("romaji"),
+            "english_title": (series.series_english or series.name_english)
+            if series
+            else rep.get("english_title"),
+            "spanish_title": (series.series_spanish or series.name_spanish)
+            if series
+            else rep.get("spanish_title"),
+            "romaji_title": (series.name or series.series_name)
+            if series
+            else rep.get("romaji_title"),
+            "romaji": (series.name or series.series_name)
+            if series
+            else rep.get("romaji"),
             "author": series.author if series else rep.get("author"),
             "summary": series.description if series else rep.get("description"),
             "cover": series.cover_url if series else rep.get("cover"),
             "coverUrl": {
                 "cover_low": series.cover_url if series else rep.get("cover_low"),
-                "cover_medium": (series.cover_url if series else rep.get("cover_low")).replace(
-                    "_low.jpg", "_medium.jpg"
-                )
+                "cover_medium": (
+                    series.cover_url if series else rep.get("cover_low")
+                ).replace("_low.jpg", "_medium.jpg")
                 if (series.cover_url if series else rep.get("cover_low"))
                 else None,
-                "cover_high": (series.cover_url if series else rep.get("cover_low")).replace("_low.jpg", "_high.jpg")
+                "cover_high": (
+                    series.cover_url if series else rep.get("cover_low")
+                ).replace("_low.jpg", "_high.jpg")
                 if (series.cover_url if series else rep.get("cover_low"))
                 else None,
-                "cover_original": (series.cover_url if series else rep.get("cover_low")).replace(
-                    "_low.jpg", "_original.jpg"
-                )
+                "cover_original": (
+                    series.cover_url if series else rep.get("cover_low")
+                ).replace("_low.jpg", "_original.jpg")
                 if (series.cover_url if series else rep.get("cover_low"))
                 else None,
             }
@@ -94,7 +108,9 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
             "numBooks": series.book_count if series else len(volumes),
             "is_uncensored": rep.get("is_uncensored", False) if rep else False,
             "color_mode": rep.get("color_mode") if rep else None,
-            "demographics": series.demographics_json if series else rep.get("demographics", []),
+            "demographics": series.demographics_json
+            if series
+            else rep.get("demographics", []),
             "tags": series.tags_json if series else rep.get("tags", []),
             "book_type": series.book_type if series else rep.get("book_type"),
             "is_series": True,
@@ -118,32 +134,73 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
                 v_limit = data.get("limit", 100)
                 v_offset = data.get("offset", 0)
                 series_meta_task = LibraryService.get_series_metadata(s_hash)
-                volumes_task = LibraryService.get_series_volumes(s_hash, limit=v_limit, offset=v_offset)
-                series_meta, volumes = await asyncio.gather(series_meta_task, volumes_task)
+                volumes_task = LibraryService.get_series_volumes(
+                    s_hash, limit=v_limit, offset=v_offset
+                )
+                series_meta, volumes = await asyncio.gather(
+                    series_meta_task, volumes_task
+                )
 
                 local_book["volumes"] = volumes
                 local_book["series_hash"] = s_hash
 
                 if series_meta:
-                    if not local_book.get("romaji_title") and not local_book.get("romaji"):
-                        local_book["romaji_title"] = series_meta.name or series_meta.series_name
-                        local_book["romaji"] = series_meta.name or series_meta.series_name
+                    if not local_book.get("romaji_title") and not local_book.get(
+                        "romaji"
+                    ):
+                        local_book["romaji_title"] = (
+                            series_meta.name or series_meta.series_name
+                        )
+                        local_book["romaji"] = (
+                            series_meta.name or series_meta.series_name
+                        )
                     if not local_book.get("english_title"):
-                        local_book["english_title"] = series_meta.series_english or series_meta.name_english
+                        local_book["english_title"] = (
+                            series_meta.series_english or series_meta.name_english
+                        )
                     if not local_book.get("spanish_title"):
-                        local_book["spanish_title"] = series_meta.series_spanish or series_meta.name_spanish
+                        local_book["spanish_title"] = (
+                            series_meta.series_spanish or series_meta.name_spanish
+                        )
             else:
                 local_book["volumes"] = [local_book]
 
-            # Query download count for this book dynamically
-            from sqlalchemy import select, func
+            # Query download count and publications for this book dynamically
+            from sqlalchemy import desc, func, select
+
             from core.db_manager_pg import pg_manager
+            from models.communications import BookPublication
             from models.library import UserDownload
 
             async with pg_manager.get_session() as session:
-                dl_stmt = select(func.count()).where(UserDownload.book_hash == book_hash)
+                dl_stmt = select(func.count()).where(
+                    UserDownload.book_hash == book_hash
+                )
                 dl_count = (await session.execute(dl_stmt)).scalar() or 0
                 local_book["download_count"] = dl_count
+
+                # Publications query (ordered by most recent first)
+                pub_stmt = (
+                    select(BookPublication)
+                    .where(BookPublication.book_id == book_hash)
+                    .order_by(desc(BookPublication.published_at))
+                )
+                pubs_res = await session.execute(pub_stmt)
+                pubs = pubs_res.scalars().all()
+                local_book["publications"] = [
+                    {
+                        "id": pub.id,
+                        "platform": pub.platform,
+                        "channel_id": pub.channel_id,
+                        "post_id": pub.post_id,
+                        "post_url": pub.post_url,
+                        "published_at": pub.published_at.isoformat()
+                        if pub.published_at
+                        else None,
+                        "caption": pub.caption,
+                    }
+                    for pub in pubs
+                ]
 
             # Crucial: if it was explicitly a book_id (starts with local_ or digit), it's NOT a series view
             local_book["is_series"] = False
@@ -200,6 +257,8 @@ async def handle_request_book(data: dict[str, Any], user_data: dict[str, Any]):
 
     # Log to Notion
     username = user_data.get("nickname") or user_data.get("name") or f"User_{user_id}"
-    asyncio.create_task(notion_service.log_book_request(username, book_name, author, notes))
+    asyncio.create_task(
+        notion_service.log_book_request(username, book_name, author, notes)
+    )
 
     return {"success": True, "message": "Solicitud enviada a los bibliotecarios"}

@@ -225,7 +225,9 @@ async def prepare_facebook_post(
                 )
 
                 # Generar caption completo (sin slug para FB) usando el motor unificado
-                from services.publisher.publisher_service import TelegramPublisherProvider
+                from services.publisher.publisher_service import (
+                    TelegramPublisherProvider,
+                )
                 from utils.template_engine import apply_publication_template
 
                 # Enriquecer meta con tamaño si no está

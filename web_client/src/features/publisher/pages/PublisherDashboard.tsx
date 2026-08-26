@@ -25,8 +25,11 @@ import {
     MessageSquare,
     Heart,
     Coffee,
-    BookOpen
+    BookOpen,
+    Loader2
 } from 'lucide-react';
+import { api } from '@shared/services/api';
+import { useTelegram } from '@shared/contexts/TelegramContext';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { ScheduleModal } from '../components/ScheduleModal';
 import { ChannelModal } from '../components/ChannelModal';
@@ -65,7 +68,43 @@ export const PublisherDashboard: React.FC = () => {
     const [editingChannel, setEditingChannel] = useState<PublicationChannel | null>(null);
     const [isWorkgroupModalOpen, setIsWorkgroupModalOpen] = useState(false);
     const [editingWorkgroup, setEditingWorkgroup] = useState<TranslatorsGroupItem | null>(null);
+    const [syncingFb, setSyncingFb] = useState(false);
+    const { isAdmin, isStaff, webApp } = useTelegram();
+    const canSync = isAdmin || isStaff;
     const navigate = useNavigate();
+
+    const handleSyncFacebook = async () => {
+        setSyncingFb(true);
+        webApp?.HapticFeedback?.impactOccurred('medium');
+        try {
+            const res = await api.syncFacebookPublications(50, false);
+            if (res.success) {
+                const added = res.new_publications_synced ?? 0;
+                const checked = res.posts_checked ?? 0;
+                webApp?.HapticFeedback?.notificationOccurred('success');
+                const msg = `✅ Sincronización completada: ${added} nuevas publicaciones vinculadas de ${checked} posts revisados.`;
+                if (webApp?.showAlert) {
+                    webApp.showAlert(msg);
+                } else {
+                    alert(msg);
+                }
+                refresh();
+            } else {
+                webApp?.HapticFeedback?.notificationOccurred('error');
+                const errMsg = res.error || res.message || 'Error desconocido';
+                if (webApp?.showAlert) webApp.showAlert(`⚠️ Error al sincronizar: ${errMsg}`);
+                else alert(`⚠️ Error al sincronizar: ${errMsg}`);
+            }
+        } catch (error: any) {
+            console.error('Error sincronizando Facebook:', error);
+            webApp?.HapticFeedback?.notificationOccurred('error');
+            const errMsg = error.message || 'Error de conexión';
+            if (webApp?.showAlert) webApp.showAlert(`❌ Error al conectar con el servidor: ${errMsg}`);
+            else alert(`❌ Error al conectar con el servidor: ${errMsg}`);
+        } finally {
+            setSyncingFb(false);
+        }
+    };
 
     const handleCreateTemplate = () => {
         React.startTransition(() => {
@@ -257,6 +296,41 @@ export const PublisherDashboard: React.FC = () => {
 
                 {activeTab === 'channels' && (
                     <div className="flex flex-col gap-6">
+                        {/* Facebook Feed Sync Banner */}
+                        {canSync && (
+                            <div className="glass-panel border border-blue-500/20 bg-blue-500/5 rounded-premium p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+                                <div className="flex items-center gap-3.5">
+                                    <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner">
+                                        <Facebook className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-2">
+                                            Sincronización de Publicaciones Facebook
+                                        </h3>
+                                        <p className="text-[11px] text-gray-400 mt-0.5">
+                                            Escanea posts manuales recientes del administrador en Facebook y los vincula automáticamente al catálogo.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={handleSyncFacebook}
+                                    disabled={syncingFb}
+                                    className="group relative flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 hover:text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-blue-500/20 active:scale-[0.98] text-xs font-bold shrink-0 self-end sm:self-center"
+                                    title="Escanear posts recientes de Facebook y vincularlos a los EPUBs"
+                                >
+                                    {syncingFb ? (
+                                        <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                                    ) : (
+                                        <RefreshCw className="w-4 h-4 text-blue-400 group-hover:rotate-180 transition-transform duration-500" />
+                                    )}
+                                    <span>
+                                        {syncingFb ? 'Sincronizando FB...' : 'Sincronizar Publicaciones FB'}
+                                    </span>
+                                </button>
+                            </div>
+                        )}
+
                         {/* Authorized Channels */}
                         <div className="flex flex-col gap-3">
                             <div className="flex justify-between items-center px-1">

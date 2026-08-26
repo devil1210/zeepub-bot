@@ -39,9 +39,7 @@ async def handle_admin_get_tier_config(data: dict[str, Any], user_data: dict[str
 
     # Check Global
     is_global = False
-    if tier_id and str(tier_id).lower() == "global":
-        is_global = True
-    elif tier_name and "global" in str(tier_name).lower():
+    if tier_id and str(tier_id).lower() == "global" or tier_name and "global" in str(tier_name).lower():
         is_global = True
 
     if is_global:

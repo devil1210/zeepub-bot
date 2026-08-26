@@ -47,8 +47,7 @@ class UserService:
                     f"Level ID {defaults.get('level_id', 6)} not found in DB. Using fallback level 0 (Temporary) or skipping assignment."
                 )
                 # Si es el primer arranque, tratamos de forzar el nivel default o dejar que el modelo decida
-                if "level_id" in defaults:
-                    del defaults["level_id"]  # Dejar que el modelo use su default (6) si no existe el 1
+                defaults.pop("level_id", None)  # Dejar que el modelo use su default (6) si no existe el 1
 
             user = await self.user_repo.create(telegram_id=telegram_id, **defaults)
             # Crear configuración de UI por defecto
@@ -406,8 +405,9 @@ class UserService:
 
     async def unlink_telegram_account(self, current_user_id: int) -> dict:
         """Desvincula Telegram de la cuenta actual."""
-        from sqlalchemy import select
         import zlib
+
+        from sqlalchemy import select
 
         query = select(User).where(User.telegram_id == current_user_id)
         res = await self.session.execute(query)
@@ -488,7 +488,6 @@ class UserService:
         """Invalida el caché (placeholder para v4)."""
         # En v4 la consistencia es directa via Postgres,
         # pero mantenemos la interfaz para plugins.
-        pass
 
     async def upsert_user(self, telegram_id: int, **data) -> User:
         """Registro/Actualización masiva de usuario (RBAC compatible)."""

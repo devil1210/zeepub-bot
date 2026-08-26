@@ -713,7 +713,7 @@ class AIService:
         """
         client = cls._get_client()
         if not client:
-            return None
+            return
 
         # 1. Enviar el borrador inicial con el bloque Thinking para feedback visual
         from services.rich_message_service import RichMessageService
@@ -722,7 +722,7 @@ class AIService:
 
         if not res or not res.get("ok"):
             logger.warning("[AIService] No se pudo enviar el borrador de pensamiento.")
-            return None
+            return
 
         actual_draft_id = res.get("result", {}).get("draft_id") or draft_id
 

@@ -87,3 +87,29 @@ class PublicationQueue(Base):
     # Relaciones
     channel = relationship("PublicationChannel", back_populates="queued_items")
     template = relationship("PublicationTemplate", back_populates="queued_items")
+
+
+class BookPublication(Base):
+    """
+    Registro histórico de publicaciones realizadas por libro en distintas plataformas (Facebook, Telegram, etc.)
+    Permite saber cuántas veces se ha publicado un EPUB, en qué fechas y acceder al enlace directo del post.
+    """
+
+    __tablename__ = "book_publications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    book_id: Mapped[str] = mapped_column(ForeignKey("books.id", ondelete="CASCADE"), index=True)
+    platform: Mapped[str] = mapped_column(String(50), default="facebook", index=True)  # facebook, telegram
+    channel_id: Mapped[int | None] = mapped_column(ForeignKey("publication_channels.id", ondelete="SET NULL"), nullable=True)
+
+    post_id: Mapped[str] = mapped_column(String(128), index=True)
+    post_url: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    caption: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    # Relaciones
+    channel = relationship("PublicationChannel")
+    book = relationship("Book", back_populates="publications")
+

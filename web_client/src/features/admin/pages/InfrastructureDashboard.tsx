@@ -24,7 +24,8 @@ import {
     Zap,
     AlertTriangle,
     CheckCircle2,
-    Loader2
+    Loader2,
+    Facebook
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 import { useTelegram } from '@shared/contexts/TelegramContext';
@@ -487,6 +488,14 @@ export const InfrastructureDashboard: React.FC = () => {
                                     >
                                         {actionLoading === 'Backup' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Database className="w-3 h-3" />}
                                         Full Backup
+                                    </button>
+                                    <button
+                                        disabled={!!actionLoading}
+                                        onClick={() => handleAction('Sync FB Publications', () => api.syncFacebookPublications(50, false))}
+                                        className="col-span-2 py-2 text-[10px] font-black text-center bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/20 rounded-lg transition-all uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm"
+                                    >
+                                        {actionLoading === 'Sync FB Publications' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Facebook className="w-3 h-3" />}
+                                        Sync Facebook Publications
                                     </button>
                                 </div>
                             </div>

@@ -14,15 +14,12 @@ class MaintenanceTool(abc.ABC):
     @abc.abstractmethod
     def name(self) -> str:
         """User friendly name of the tool."""
-        pass
 
     @property
     @abc.abstractmethod
     def description(self) -> str:
         """Description of what the tool does."""
-        pass
 
     @abc.abstractmethod
     async def run(self, **kwargs) -> dict[str, Any]:
         """Execute the maintenance task."""
-        pass

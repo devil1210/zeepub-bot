@@ -6,7 +6,6 @@ from typing import Annotated, Any
 from urllib.parse import urlparse
 
 import aiofiles
-import httpx
 from fastapi import APIRouter, Depends, Query, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -58,9 +57,10 @@ class LibraryRoutes:
                     return await self.public_download(url=source_url, title=title, url_hash=url_hash)
 
             # 2. Buscar por id, short_link o hash_md5 en la base de datos PostgreSQL (tabla books)
+            from sqlalchemy import select
+
             from core.db_manager_pg import pg_manager
             from models.library import Book
-            from sqlalchemy import select
 
             async with pg_manager.get_session() as session:
                 stmt = select(Book).where(
@@ -166,9 +166,10 @@ class LibraryRoutes:
                 filename_to_find = os.path.basename(url)
                 
                 try:
+                    from sqlalchemy import select
+
                     from core.db_manager_pg import pg_manager
                     from models.library import Book
-                    from sqlalchemy import select
 
                     async with pg_manager.get_session() as session:
                         stmt = select(Book.filepath).where(Book.filename == filename_to_find).limit(1)
@@ -181,8 +182,9 @@ class LibraryRoutes:
                         # Actualizar url_mappings en segundo plano para optimizar futuras descargas
                         if url_hash:
                             try:
+                                from sqlalchemy import MetaData, Table
+
                                 from utils.url_cache import _get_sa_engine
-                                from sqlalchemy import Table, MetaData
                                 engine = _get_sa_engine()
                                 meta = MetaData()
                                 url_mappings = Table("url_mappings", meta, autoload_with=engine)

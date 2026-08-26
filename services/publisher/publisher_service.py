@@ -1,8 +1,6 @@
 import asyncio
 import logging
-import os
-import re
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +15,6 @@ from services.publisher.facebook_provider import FacebookPublisherProvider
 from services.publisher.telegram_provider import TelegramPublisherProvider
 from services.publisher.twitter_provider import TwitterPublisherProvider
 from utils.helpers import normalize_demography
-from utils.http_client import fetch_bytes
 from utils.template_engine import apply_publication_template
 
 logger = logging.getLogger(__name__)
@@ -25,13 +22,13 @@ logger = logging.getLogger(__name__)
 # Re-exportar clases para mantener 100% de compatibilidad en imports de todo el proyecto
 BasePublisherProvider = PublisherProvider
 __all__ = [
-    "PublisherProvider",
     "BasePublisherProvider",
-    "TelegramPublisherProvider",
     "FacebookPublisherProvider",
-    "TwitterPublisherProvider",
+    "PublisherProvider",
     "PublisherService",
     "PublisherServiceWrapper",
+    "TelegramPublisherProvider",
+    "TwitterPublisherProvider",
     "publisher_service",
 ]
 
@@ -534,9 +531,10 @@ class PublisherService:
         sin duplicar la foto ni crear un nuevo post.
         """
         results = {"success": False, "platforms": {}}
-        from models.library import LocalBook
         from sqlalchemy import or_, select
         from sqlalchemy.orm import selectinload
+
+        from models.library import LocalBook
 
         stmt = (
             select(LocalBook)
@@ -707,10 +705,11 @@ class PublisherService:
         """
         Verifica el estado del álbum de Facebook para un libro específico por su hash o ID.
         """
-        from config.config_settings import config
-        from models.library import LocalBook
         from sqlalchemy import or_, select
         from sqlalchemy.orm import selectinload
+
+        from config.config_settings import config
+        from models.library import LocalBook
 
         stmt = (
             select(LocalBook)

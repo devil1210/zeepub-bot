@@ -239,7 +239,7 @@ async def handle_link_telegram(data: dict[str, Any], user_data: dict[str, Any], 
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         logger.error(f"Error al vincular Telegram: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error al vincular Telegram: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error al vincular Telegram: {e!s}")
 
 
 async def handle_generate_qr_auth(data: dict[str, Any], user_data: dict[str, Any]):

@@ -115,7 +115,7 @@ async def handle_admin_cleanup_library(data: dict[str, Any], user_data: dict[str
             }
     except Exception as e:
         logger.error(f"Error during library cleanup: {e}", exc_info=True)
-        return {"success": False, "message": f"Error during cleanup: {str(e)}"}
+        return {"success": False, "message": f"Error during cleanup: {e!s}"}
 
 
 async def handle_admin_scan_series(data: dict[str, Any], user_data: dict[str, Any]):
@@ -772,7 +772,7 @@ async def handle_upload_confirm_internal(
     except Exception as e:
         logger.error(f"Error finalizando upload {upload_id}: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500, detail=f"Error al finalizar el upload: {str(e)}"
+            status_code=500, detail=f"Error al finalizar el upload: {e!s}"
         )
 
 
@@ -786,7 +786,8 @@ async def handle_admin_get_series_detail(data: dict[str, Any], user_data: dict[s
 
     from sqlalchemy import or_
     from sqlalchemy.orm import selectinload
-    from models.library import Series, Book
+
+    from models.library import Series
 
     async with pg_manager.get_session() as session:
         stmt = (

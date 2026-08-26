@@ -9,7 +9,10 @@ from fastapi import HTTPException
 from api.handlers.helpers import check_admin, check_staff
 from models.communications import PublicationChannel, PublicationTemplate
 from repositories.publication_repository import pub_repo
-from services.publisher.publisher_service import publisher_service, TelegramPublisherProvider
+from services.publisher.publisher_service import (
+    TelegramPublisherProvider,
+    publisher_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -213,8 +216,9 @@ async def handle_pub_save_template(data: dict[str, Any], user_data: dict[str, An
 
     # Si se marca como default, desmarcar las otras plantillas de esa misma plataforma
     if is_default:
-        from core.db_manager_pg import pg_manager
         from sqlalchemy import update
+
+        from core.db_manager_pg import pg_manager
         async with pg_manager.get_session() as session:
             await session.execute(
                 update(PublicationTemplate)
@@ -341,7 +345,7 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
         raise HTTPException(status_code=400, detail="Formato de fecha inválido") from e
 
     payload = data.get("payload") or {}
-    if "fb_album_id" in data and data["fb_album_id"]:
+    if data.get("fb_album_id"):
         payload["fb_album_id"] = data["fb_album_id"]
 
     if not template_ids:
@@ -396,7 +400,6 @@ async def handle_pub_update_queue_item(data: dict[str, Any], user_data: dict[str
                     item.scheduled_for = dt_aware.replace(tzinfo=None)
                 except Exception as e:
                     logger.error(f"Error parsing date: {e}")
-                    pass
 
             if "status" in data:
                 item.status = data["status"]
@@ -542,11 +545,12 @@ async def handle_pub_send_template_to_chat(data: dict[str, Any], user_data: dict
         raise HTTPException(status_code=400, detail="Falta book_id")
 
     # 1. Obtener libro y resolver metadatos
+    from sqlalchemy import or_, select
+    from sqlalchemy.orm import selectinload
+
     from core.db_manager_pg import pg_manager
     from models.library import LocalBook
     from services.workgroup_service import workgroup_service
-    from sqlalchemy import or_, select
-    from sqlalchemy.orm import selectinload
     from utils.helpers import clean_caption_for_facebook, escape_html
     from utils.template_engine import apply_publication_template
 
@@ -636,9 +640,9 @@ async def handle_pub_send_template_to_chat(data: dict[str, Any], user_data: dict
     if media:
         html_parts.append('<img src="tg://photo?id=fb_cover" />\n')
 
-    html_parts.append(f"<h3>📋 Plantilla de Publicación para Facebook</h3>")
+    html_parts.append("<h3>📋 Plantilla de Publicación para Facebook</h3>")
     html_parts.append(f"<p><b>📖 {escape_html(str(titulo_libro))}{vol_libro}</b></p>")
-    html_parts.append(f"<p><i>Toca el recuadro de abajo para copiar el texto con todos sus saltos de línea:</i></p>")
+    html_parts.append("<p><i>Toca el recuadro de abajo para copiar el texto con todos sus saltos de línea:</i></p>")
     html_parts.append(f"<pre><code class=\"language-copy\">{escape_html(final_facebook_text)}</code></pre>")
 
     html_content = "\n".join(html_parts)
@@ -666,8 +670,8 @@ async def handle_pub_send_template_to_chat(data: dict[str, Any], user_data: dict
             f"<pre><code class=\"language-copy\">{escape_html(final_facebook_text)}</code></pre>"
         )
         try:
-            from services.cover_service import send_photo_bytes
             from api.main import bot as main_bot
+            from services.cover_service import send_photo_bytes
             tg_bot = main_bot.app.bot
 
             if resolved_cover:
@@ -691,14 +695,14 @@ async def handle_pub_create_draft(data: dict[str, Any], user_data: dict[str, Any
     if not book_id:
         raise HTTPException(status_code=400, detail="Falta book_id")
 
+    from sqlalchemy import or_, select
+    from sqlalchemy.orm import selectinload
+
     from core.db_manager_pg import pg_manager
     from models.library import LocalBook
     from services.workgroup_service import workgroup_service
-    from sqlalchemy import or_, select
-    from sqlalchemy.orm import selectinload
     from utils.helpers import clean_caption_for_facebook
     from utils.template_engine import apply_publication_template
-    from services.publisher.facebook_provider import FacebookPublisherProvider
 
     async with pg_manager.get_session() as session:
         stmt = (

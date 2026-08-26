@@ -7,9 +7,9 @@ from .series_scanner import SeriesScanner
 from .slug_manager import SlugManager
 
 __all__ = [
-    "SeriesScanner",
-    "MetadataProcessor",
-    "SlugManager",
     "AIProcessor",
+    "MetadataProcessor",
     "ScannerHelpers",
+    "SeriesScanner",
+    "SlugManager",
 ]

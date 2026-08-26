@@ -3,7 +3,7 @@ import os
 import re
 from typing import Any
 
-from sqlalchemy import func, select, update, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import selectinload
 
 from models.library import (
@@ -192,8 +192,6 @@ class LibraryScanner:
                 f"Detectados {len(missing_paths)} libros eliminados en {source.name}. Archivando..."
             )
 
-            from models.download_models import DownloadHistory
-            from models.library import UserDownload, UserRating
 
             for b in db_books:
                 if b.filepath in missing_paths:
@@ -276,8 +274,6 @@ class LibraryScanner:
         """
         logger.info("Iniciando auditoría de integridad física...")
 
-        from models.download_models import DownloadHistory
-        from models.library import UserDownload, UserRating
 
         stmt = select(LocalBook)
         result = await session.execute(stmt)

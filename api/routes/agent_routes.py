@@ -151,7 +151,7 @@ class AgentRoutes:
 
         except Exception as e:
             logger.error(f"[AgentRoutes] Error en búsqueda: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Error en búsqueda: {str(e)}") from e
+            raise HTTPException(status_code=500, detail=f"Error en búsqueda: {e!s}") from e
 
     # ── /api/stats ────────────────────────────────────────────────────────────
 
@@ -184,7 +184,7 @@ class AgentRoutes:
 
         except Exception as e:
             logger.error(f"[AgentRoutes] Error en stats: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail=f"Error obteniendo stats: {str(e)}") from e
+            raise HTTPException(status_code=500, detail=f"Error obteniendo stats: {e!s}") from e
 
     # ── Registro de rutas ─────────────────────────────────────────────────────
 

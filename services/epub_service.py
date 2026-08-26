@@ -140,10 +140,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
 
                     # Fix: Handle YYYY-DD-MM (e.g. 2019-28-12)
                     # If month is obviously wrong (>12) and day looks like a month (<=12), swap them
-                    if m > 12 >= d:
-                        m, d = d, m
-                    # Or if month is just > 12, assume it's the day (heuristic)
-                    elif m > 12:
+                    if m > 12 >= d or m > 12:
                         m, d = d, m
 
                 # Case 2: DD-MM-YYYY (e.g. 01-07-2022)
@@ -240,7 +237,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
 
         # Título volumen: primer <dc:title> o <title>
         # Título volumen: primer <dc:title> o <title> (Limpiar Romaji del volumen del título principal)
-        from utils.metadata_utils import clean_romaji_title, clean_english_title
+        from utils.metadata_utils import clean_english_title, clean_romaji_title
         for el in root.iter():
             if local_name(el).lower() == "title" and el.text:
                 out["titulo_volumen"] = el.text.strip()
@@ -443,9 +440,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                     if len(candidate) in (10, 13):
                         # Prioridad: Prefiere ISBN-13
                         current = out.get("isbn")
-                        if not current:
-                            out["isbn"] = clean_val
-                        elif len(re.sub(r"[^0-9X]", "", current)) == 10 and len(candidate) == 13:
+                        if not current or len(re.sub(r"[^0-9X]", "", current)) == 10 and len(candidate) == 13:
                             out["isbn"] = clean_val
 
         # Fallback: Buscar ISBN en dc:source o dc:relation si aun no tenemos

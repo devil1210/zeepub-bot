@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from fastapi.responses import JSONResponse
 
 from api.deps import require_mini_app_access
 

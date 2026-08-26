@@ -5,7 +5,7 @@ Implementa estilos de botones nativos de Telegram Bot API 7.0+ (style: primary, 
 soporte para custom emoji IDs animados, semiótica visual estricta y arquitectura Zero Dead-Ends.
 """
 
-from typing import List, Optional
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
@@ -15,10 +15,10 @@ class BotKeyboards:
     @staticmethod
     def btn(
         text: str,
-        callback_data: Optional[str] = None,
-        url: Optional[str] = None,
-        style: Optional[str] = None,  # "primary" (azul) | "success" (verde) | "danger" (rojo)
-        icon_custom_emoji_id: Optional[str] = None,
+        callback_data: str | None = None,
+        url: str | None = None,
+        style: str | None = None,  # "primary" (azul) | "success" (verde) | "danger" (rojo)
+        icon_custom_emoji_id: str | None = None,
     ) -> InlineKeyboardButton:
         """
         Construye un InlineKeyboardButton con soporte nativo para estilos de color y premium emojis.
@@ -44,7 +44,7 @@ class BotKeyboards:
     # ---------------------------------------------------------
     @staticmethod
     def main_menu(
-        webapp_url: Optional[str] = None, show_webapp: bool = False
+        webapp_url: str | None = None, show_webapp: bool = False
     ) -> InlineKeyboardMarkup:
         """
         Genera el teclado del Menú Principal con estilos nativos.
@@ -91,7 +91,7 @@ class BotKeyboards:
     # 🏷️ REJILLA DE GÉNEROS
     # ---------------------------------------------------------
     @staticmethod
-    def genres_grid(genres: List[str]) -> InlineKeyboardMarkup:
+    def genres_grid(genres: list[str]) -> InlineKeyboardMarkup:
         """
         Muestra la lista de géneros en formato cuadrícula (2 columnas) con barra de navegación Zero Dead-Ends.
         """
@@ -123,9 +123,9 @@ class BotKeyboards:
     # ---------------------------------------------------------
     @staticmethod
     def series_list(
-        items: List[dict],
+        items: list[dict],
         origin_type: str,
-        filter_val: Optional[str],
+        filter_val: str | None,
         page: int,
         total_pages: int,
     ) -> InlineKeyboardMarkup:
@@ -189,9 +189,9 @@ class BotKeyboards:
     # ---------------------------------------------------------
     @staticmethod
     def books_list(
-        items: List[dict],
+        items: list[dict],
         origin_type: str,
-        filter_val: Optional[str],
+        filter_val: str | None,
         page: int,
         total_pages: int,
     ) -> InlineKeyboardMarkup:
@@ -252,7 +252,7 @@ class BotKeyboards:
     # ---------------------------------------------------------
     @staticmethod
     def authors_list(
-        authors: List[str], page: int, total_pages: int
+        authors: list[str], page: int, total_pages: int
     ) -> InlineKeyboardMarkup:
         """Lista de autores paginada con semiótica ✍️ y control de límites."""
         keyboard = []
@@ -299,7 +299,7 @@ class BotKeyboards:
     # 📖 LISTA DE VOLÚMENES POR SERIE
     # ---------------------------------------------------------
     @staticmethod
-    def series_volumes(volumes: List[dict]) -> InlineKeyboardMarkup:
+    def series_volumes(volumes: list[dict]) -> InlineKeyboardMarkup:
         """Lista interactiva de volúmenes pertenecientes a una serie."""
         keyboard = []
         for v in volumes:
@@ -324,7 +324,7 @@ class BotKeyboards:
     @staticmethod
     def book_details(
         key: str,
-        read_url: Optional[str] = None,
+        read_url: str | None = None,
         is_admin_or_staff: bool = False,
     ) -> InlineKeyboardMarkup:
         """
@@ -433,7 +433,7 @@ class BotKeyboards:
     # ✅ PANTALLA POST-DESCARGA
     # ---------------------------------------------------------
     @staticmethod
-    def post_download(series_hash_short: Optional[str] = None) -> InlineKeyboardMarkup:
+    def post_download(series_hash_short: str | None = None) -> InlineKeyboardMarkup:
         """
         Opciones tras la descarga exitosa de un libro.
         """
@@ -468,7 +468,7 @@ class BotKeyboards:
     # ---------------------------------------------------------
     @staticmethod
     def search_results(
-        series_items: List[dict], books_items: List[dict]
+        series_items: list[dict], books_items: list[dict]
     ) -> InlineKeyboardMarkup:
         """Teclado para resultados de búsqueda combinados (Series + Libros sueltos)."""
         keyboard = []

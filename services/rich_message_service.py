@@ -4,10 +4,12 @@
 # Single Responsibility: Proveer los builders de bloques y transporte HTTP directo.
 #
 
+import json
 import logging
 import re
-import json
+
 import httpx
+
 from config.config_settings import config
 
 logger = logging.getLogger(__name__)
@@ -201,7 +203,7 @@ class RichMessageService:
                 "type": "paragraph",
                 "text": text["text"]
             }
-            if "entities" in text and text["entities"]:
+            if text.get("entities"):
                 block["entities"] = text["entities"]
             return block
         else:

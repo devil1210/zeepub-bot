@@ -10,7 +10,12 @@ from sqlalchemy import desc, exists, func, select, update
 from api.handlers.helpers import check_staff
 from config.config_settings import config
 from core.db_manager_pg import pg_manager
-from models.library import AILearningFeedback, LocalBook, MetadataProposal, SeriesMetadata
+from models.library import (
+    AILearningFeedback,
+    LocalBook,
+    MetadataProposal,
+    SeriesMetadata,
+)
 from services.ai_service import AIService
 from services.settings_service import get_setting, set_setting
 from utils.helpers import generate_series_hash

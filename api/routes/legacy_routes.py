@@ -1,8 +1,8 @@
-import os
 import logging
+import os
 from typing import Annotated, Any
-import aiofiles
 
+import aiofiles
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -146,6 +146,8 @@ class LegacyRoutes:
             "pub-send-template-to-chat": miniapp_handlers.handle_pub_send_template_to_chat,
             "pub_create_draft": miniapp_handlers.handle_pub_create_draft,
             "pub-create-draft": miniapp_handlers.handle_pub_create_draft,
+            "admin_sync_facebook_publications": miniapp_handlers.handle_admin_sync_facebook_publications,
+            "admin-sync-facebook-publications": miniapp_handlers.handle_admin_sync_facebook_publications,
             # Workgroups / Fansubs Actions
             "workgroup_get_all": miniapp_handlers.handle_workgroup_get_all,
             "workgroup_save": miniapp_handlers.handle_workgroup_save,

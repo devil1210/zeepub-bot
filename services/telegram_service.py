@@ -18,7 +18,7 @@ from utils.http_client import cleanup_tmp, fetch_bytes
 logger = logging.getLogger(__name__)
 
 # Re-export cover/media functions from dedicated module for backward compatibility
-from services.cover_service import (  # noqa: F401, E402
+from services.cover_service import (
     resolve_cover_data,
     send_doc_bytes,
     send_photo_bytes,
@@ -253,8 +253,8 @@ async def descargar_epub_pendiente(
 
     # Forzar que solo se envíe el mensaje del archivo con la info (1 solo mensaje)
     # Usamos <hr><hr> para que enviar_libro_directo salte Part 0 (Portada) y Part 1 (Sinopsis)
-    from services.publisher.publisher_service import TelegramPublisherProvider
     from repositories.publication_repository import pub_repo
+    from services.publisher.publisher_service import TelegramPublisherProvider
 
     try:
         db_templates = await pub_repo.get_templates(platform="telegram")
@@ -339,7 +339,6 @@ async def descargar_epub_pendiente(
                     pass
 
     cleanup_tmp(epub_buffer)
-    pass
 
 
 async def enviar_libro_directo(
@@ -832,13 +831,13 @@ async def enviar_libro_directo(
     except Exception as e:
         logger.error(f"Error en enviar_libro_directo: {e}", exc_info=True)
         await bot.send_message(
-            chat_id=user_id, text=f"❌ Ocurrió un error interno: {str(e)}"
+            chat_id=user_id, text=f"❌ Ocurrió un error interno: {e!s}"
         )
         return False
 
 
 # Re-export FB functions from dedicated module for backward compatibility
-from services.facebook_service import (  # noqa: F401, E402
+from services.facebook_service import (  # noqa: F401
     _publish_choice_facebook,
     preparar_post_facebook,
     publicar_facebook_action,

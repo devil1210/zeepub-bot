@@ -120,6 +120,7 @@ class LibraryService:
     ) -> list[dict]:
         """Obtiene volúmenes de una serie (Estático)."""
         from sqlalchemy import func, select
+
         from core.db_manager_pg import pg_manager
         from models.library import UserDownload
 
@@ -155,6 +156,7 @@ class LibraryService:
     async def get_series_total_downloads(cls, series_hash: str) -> int:
         """Obtiene el total de descargas de una serie (Estático)."""
         from sqlalchemy import func, select
+
         from core.db_manager_pg import pg_manager
         from models.library import UserDownload
 
@@ -293,9 +295,10 @@ class LibraryService:
         if len(short_hash) == 64:
             return short_hash
 
+        from sqlalchemy import select
+
         from core.db_manager_pg import pg_manager
         from models.library import Series
-        from sqlalchemy import select
 
         async with pg_manager.get_session() as session:
             stmt = select(Series.id).where(Series.id.like(f"{short_hash}%")).limit(1)
@@ -306,9 +309,10 @@ class LibraryService:
     @classmethod
     async def get_authors(cls, page: int = 1, page_size: int = 10) -> dict:
         """Obtiene la lista de autores únicos de forma paginada desde PostgreSQL."""
+        from sqlalchemy import func, select
+
         from core.db_manager_pg import pg_manager
         from models.library import Series
-        from sqlalchemy import select, func
 
         async with pg_manager.get_session() as session:
             stmt = (
@@ -336,9 +340,10 @@ class LibraryService:
     @classmethod
     async def get_library_stats(cls) -> dict:
         """Obtiene estadísticas globales de la biblioteca (cantidad total de series y libros)."""
+        from sqlalchemy import func, select
+
         from core.db_manager_pg import pg_manager
         from models.library import Book, Series
-        from sqlalchemy import select, func
 
         try:
             async with pg_manager.get_session() as session:
@@ -369,10 +374,11 @@ class LibraryService:
         if not target_hash or not source_hash or target_hash == source_hash:
             return False
 
+        from sqlalchemy import func, select, text
+
         from core.db_manager_pg import pg_manager
         from models.library import SeriesAlias, SeriesMetadata
         from services.maintenance.orchestrator import MaintenanceOrchestrator
-        from sqlalchemy import func, select, text
 
         try:
             async with pg_manager.get_session() as session:
@@ -492,9 +498,10 @@ class LibraryService:
         if not series_id or not alias or len(alias.strip()) <= 1:
             return {"success": False, "message": "Alias o ID de serie inválido"}
 
+        from sqlalchemy import func, select
+
         from core.db_manager_pg import pg_manager
         from models.library import SeriesAlias, SeriesMetadata
-        from sqlalchemy import func, select
 
         clean_alias = alias.strip()
         try:
@@ -536,9 +543,10 @@ class LibraryService:
     @classmethod
     async def delete_series_alias(cls, alias_id: int) -> dict:
         """Elimina un alias de la base de datos."""
+        from sqlalchemy import delete
+
         from core.db_manager_pg import pg_manager
         from models.library import SeriesAlias
-        from sqlalchemy import delete
 
         try:
             async with pg_manager.get_session() as session:

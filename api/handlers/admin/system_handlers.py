@@ -111,4 +111,21 @@ async def handle_admin_send_logs_telegram(data: dict[str, Any], user_data: dict[
         return {"success": True, "message": "Logs enviados correctamente."}
     except Exception as e:
         logger.error(f"Error sending logs to Telegram: {e}")
-        return {"success": False, "message": f"Error: {str(e)}"}
+        return {"success": False, "message": f"Error: {e!s}"}
+
+
+async def handle_admin_sync_facebook_publications(data: dict[str, Any], user_data: dict[str, Any]):
+    """Sincroniza manualmente las publicaciones de Facebook con la base de datos (Staff/Admin)."""
+    check_staff(user_data)
+    from services.facebook_sync_service import FacebookSyncService
+
+    limit_posts = data.get("limit", 50)
+    fetch_all = data.get("fetch_all", False)
+
+    try:
+        res = await FacebookSyncService.sync_recent_publications(limit_posts=limit_posts, fetch_all=fetch_all)
+        return res
+    except Exception as e:
+        logger.error(f"Error en handle_admin_sync_facebook_publications: {e}")
+        return {"success": False, "message": str(e)}
+
