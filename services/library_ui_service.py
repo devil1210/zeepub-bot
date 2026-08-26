@@ -9,8 +9,10 @@ from telegram.ext import ContextTypes
 
 from config.config_settings import config
 from core.state_manager import state_manager
+from services.cover_service import resolve_cover_data
 from services.keyboard_factory import BotKeyboards
 from services.library_service import LibraryService
+from services.metadata_orchestrator.metadata_service import metadata_orchestrator
 from services.rich_message_service import RichMessageService
 from utils.helpers import (
     format_genre_chips,
