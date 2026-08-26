@@ -10,6 +10,16 @@ services:
       - ./data:/app/data
       # La ruta del host se define en el .env como HOST_LIB_PATH
       - ${HOST_LIB_PATH}:/library:rw
+      - ./api:/app/api
+      - ./config:/app/config
+      - ./core:/app/core
+      - ./handlers:/app/handlers
+      - ./models:/app/models
+      - ./plugins:/app/plugins
+      - ./repositories:/app/repositories
+      - ./schemas:/app/schemas
+      - ./services:/app/services
+      - ./utils:/app/utils
     environment:
       # Construcción dinámica de la URL de DB usando las variables del .env
       - ENABLE_POSTGRES_PLUGIN=true
