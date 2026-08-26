@@ -9,11 +9,12 @@ from telegram.ext import ContextTypes
 
 from config.config_settings import config
 from core.state_manager import state_manager
-from services.cover_service import resolve_cover_data
+from services.cover_service import resolve_cover_data, send_photo_bytes
 from services.keyboard_factory import BotKeyboards
 from services.library_service import LibraryService
 from services.metadata_orchestrator.metadata_service import metadata_orchestrator
 from services.rich_message_service import RichMessageService
+from utils.download_limiter import downloads_left
 from utils.helpers import (
     format_genre_chips,
     get_thread_id,
@@ -746,7 +747,10 @@ async def mostrar_detalles_libro(
 ):
     """Muestra la ficha técnica y opciones para un libro específico."""
     uid = update.effective_user.id
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
     st = state_manager.get_user_state(uid)
+    st.setdefault("last_detalles_msg_ids", [])
     libro_st = st.get("libros", {}).get(key)
 
     if not libro_st:
@@ -823,50 +827,27 @@ async def mostrar_detalles_libro(
     # E. Fallback tradicional si la API de Telegram o el transporte fallan
     if not res or not res.get("ok"):
         logger.warning(
-            "[UI Service] Fallback a mensajes tradicionales en mostrar_detalles_libro"
+            "[UI Service] Fallback a mensaje tradicional en mostrar_detalles_libro"
         )
+        title_en, title_jp, title_es = resolve_title_cascade(libro)
+        desc_txt = f"📖 <b>{title_en}</b>"
+        if libro.get("volume"):
+            desc_txt += f" - Vol. {libro.get('volume')}"
+        sinopsis = libro.get("sinopsis") or "Sin sinopsis disponible."
 
-        # 1. Enviar portada tradicional
-        msg_portada = None
-        if portada:
-            msg_portada = await send_photo_bytes(
-                context.bot,
-                chat_id,
-                part0,
-                portada,
-                parse_mode="HTML",
-                message_thread_id=thread_id,
-            )
+        fallback_text = f"{desc_txt}\n\n{sinopsis}"
+        if len(fallback_text) > 4000:
+            fallback_text = fallback_text[:3990] + "..."
 
-        if not msg_portada:
-            msg_portada = await context.bot.send_message(
-                chat_id=chat_id,
-                text=part0,
-                parse_mode="HTML",
-                message_thread_id=thread_id,
-            )
-
-        if msg_portada:
-            st["last_detalles_msg_ids"].append(msg_portada.message_id)
-
-        # 2. Mensaje de Sinopsis plano
-        msg_sinopsis = await context.bot.send_message(
-            chat_id=chat_id, text=part1, parse_mode="HTML", message_thread_id=thread_id
-        )
-        if msg_sinopsis:
-            st["last_detalles_msg_ids"].append(msg_sinopsis.message_id)
-
-        # 3. Mensaje Técnico plano + Botones + Cuota
-        text_final = f"{part2}\n\n💡 <i>Recuerda que {left_str}.</i>"
-        msg_info = await context.bot.send_message(
+        msg = await context.bot.send_message(
             chat_id=chat_id,
-            text=text_final,
+            text=fallback_text,
             reply_markup=reply_markup,
             parse_mode="HTML",
             message_thread_id=thread_id,
         )
-        if msg_info:
-            st["last_detalles_msg_ids"].append(msg_info.message_id)
+        if msg:
+            st["last_detalles_msg_ids"].append(msg.message_id)
     else:
         # Si fue exitoso el Rich Message, guardamos su ID de mensaje para limpieza
         rich_msg_id = res.get("result", {}).get("message_id")
