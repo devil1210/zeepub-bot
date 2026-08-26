@@ -57,6 +57,7 @@ from api.handlers.admin import (
     handle_admin_set_user_level,
     handle_admin_stats,
     handle_admin_stop_scan,
+    handle_admin_sync_facebook_publications,
     handle_admin_sync_library_cloud,
     handle_admin_sync_themes,
     handle_admin_sync_users_cloud,
