@@ -6,6 +6,8 @@ soporte para custom emoji IDs animados, semiótica visual estricta y arquitectur
 """
 
 
+from typing import List, Optional
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
