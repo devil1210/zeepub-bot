@@ -300,23 +300,37 @@ async def mostrar_volumenes_local(
     meta_serie = await LibraryService.get_series_metadata(series_hash)
     series_name = meta_serie.series_name if meta_serie else "Serie"
 
-    # Ordenar volúmenes numéricamente
+    # Ordenar volúmenes numéricamente de menor a mayor
     def parse_vol_num(v):
         vol_raw = v.get("volume")
         try:
-            return float(vol_raw) if vol_raw is not None and vol_raw != "" else 0.0
+            return float(vol_raw) if vol_raw is not None and str(vol_raw).strip() != "" else 0.0
         except (ValueError, TypeError):
             return 999.0
 
     volumes.sort(key=parse_vol_num)
 
-    # Re-poblar estado si cambió de serie o si no hay libros cargados
-    if st.get("current_series_hash") != series_hash or not st.get("libros"):
+    # Re-poblar estado si cambió de serie, si no hay libros o si la llave seleccionada no pertenece a esta serie
+    need_rebuild = (
+        st.get("current_series_hash") != series_hash
+        or not st.get("libros")
+        or (selected_key and selected_key not in st.get("libros", {}))
+    )
+
+    if need_rebuild:
+        prev_target_hash = None
+        if selected_key and selected_key in st.get("libros", {}):
+            prev_target_hash = st["libros"][selected_key].get("book_hash") or st["libros"][selected_key].get("id")
+        elif selected_key:
+            prev_target_hash = selected_key
+
         st["libros"] = {}
+        matched_key = None
+
         for v in volumes:
             key = uuid.uuid4().hex[:8]
             vol = v.get("volume")
-            if vol is None or vol == "":
+            if vol is None or str(vol).strip() == "":
                 vol = 0
             try:
                 f_vol = float(vol)
@@ -330,6 +344,7 @@ async def mostrar_volumenes_local(
             is_color = v.get("color_mode") == "color"
             color_tag = " [🎨]" if is_color else ""
             display = f"📖 {vol_str} [{tr_acronym}]{color_tag}"
+            v_hash = v.get("book_hash") or v.get("id") or v.get("hash")
 
             st["libros"][key] = {
                 "key": key,
@@ -353,10 +368,16 @@ async def mostrar_volumenes_local(
                 "color": is_color,
             }
 
+            if prev_target_hash and (v_hash == prev_target_hash or key == prev_target_hash):
+                matched_key = key
+
+        if matched_key:
+            selected_key = matched_key
+
     st["current_view"] = "volumes_local"
     st["current_series_hash"] = series_hash
 
-    # 2. Determinar el volumen activo
+    # 2. Determinar el volumen activo (por defecto el primero ordenado, o el seleccionado)
     if selected_key and selected_key in st["libros"]:
         active_key = selected_key
     else:
@@ -1167,7 +1188,7 @@ def build_book_rich_blocks(
             {"text": "⬅️ Volver", "callback_data": "nav_back"},
             {"text": "📚 Catálogo", "callback_data": "nav_local|all_series"},
             {"text": "🏠 Inicio", "callback_data": "main_menu"},
-            {"text": "❌ Salir", "callback_data": "noop"},
+            {"text": "❌ Salir", "callback_data": "salir"},
         ]
 
         blocks.append(
@@ -1223,6 +1244,17 @@ async def mostrar_detalles_libro(
     # Actualizar estado local con la data enriquecida
     st["libros"][key].update(meta)
     libro = st["libros"][key]
+
+    # Si el libro pertenece a una serie, mostrarlo directamente en el carrusel de volúmenes
+    series_hash = libro.get("series_hash") or meta.get("series_hash") or st.get("current_series_hash")
+    if series_hash:
+        return await mostrar_volumenes_local(
+            update,
+            context,
+            series_hash=series_hash,
+            selected_key=key,
+            force_new=False,
+        )
 
     # Preparar Portada y Archivos
     cover_raw = (

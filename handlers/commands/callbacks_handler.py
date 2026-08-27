@@ -70,7 +70,7 @@ class CallbackHandlerV6(BaseCommandHandler):
             st["downloaded_msgs"].discard(msg_id)
 
             # Si pulsó Salir en el mensaje descargado, simplemente confirmamos y no enviamos nada nuevo
-            if data == "noop":
+            if data in ("noop", "salir", "cerrar", "cerrar_mensaje"):
                 try:
                     await query.answer("¡Lectura guardada! 📚", show_alert=False)
                 except Exception:
@@ -90,8 +90,21 @@ class CallbackHandlerV6(BaseCommandHandler):
         force_new = is_downloaded_msg
 
         try:
+            # 0. Salir / Cerrar Mensaje
+            if data in ("salir", "cerrar_mensaje", "cerrar"):
+                if not is_downloaded_msg and query.message:
+                    try:
+                        await query.message.delete()
+                    except Exception:
+                        pass
+                try:
+                    await query.answer("👋 Menú cerrado", show_alert=False)
+                except Exception:
+                    pass
+                return
+
             # 1. Main Menu Navigation
-            if data == "main_menu" or data == "volver_menu":
+            elif data == "main_menu" or data == "volver_menu":
                 if not is_downloaded_msg and query.message:
                     try:
                         await query.message.delete()
