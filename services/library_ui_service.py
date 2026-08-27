@@ -720,10 +720,10 @@ def build_book_rich_html(
     html_parts.append(tabla_archivo)
 
     # 6. Si se incluye descarga embebida
-    if include_download and filename:
+    if include_download:
         html_parts.append(
-            f"<p>✅ <b>¡Tu novela está lista para descargar!</b></p>\n"
-            f'<p><a href="tg://document?id=epub_file">📥 {filename}</a></p>\n'
+            '<p>✅ <b>¡Tu novela está lista para descargar!</b></p>\n'
+            '<tg-document src="tg://document?id=epub_file" />\n'
         )
 
     # 7. Línea divisoria y pie con margen no recortable
@@ -762,7 +762,12 @@ async def mostrar_detalles_libro(
         return
 
     # 1. Obtener Metadata Enriquecida (incluye sinopsis y detalles técnicos)
-    book_id = libro_st.get("hash") or libro_st.get("descarga")
+    book_id = (
+        libro_st.get("book_hash")
+        or libro_st.get("id")
+        or libro_st.get("hash")
+        or libro_st.get("descarga")
+    )
     meta = await metadata_orchestrator.get_enriched_metadata(book_id)
 
     # Actualizar estado local con la data enriquecida
@@ -771,16 +776,24 @@ async def mostrar_detalles_libro(
 
     # Preparar Portada y Archivos
     cover_raw = (
-        libro.get("portada")
-        or libro.get("cover_image")
-        or libro.get("cover_url")
-        or libro.get("cover_path")
+        libro.get("cover_high")
+        or libro.get("coverUrl")
+        or libro.get("cover_original")
+        or libro.get("cover_medium")
         or libro.get("cover")
+        or libro.get("portada")
+        or libro.get("cover_image")
+        or libro.get("cover_path")
     )
     if not cover_raw and book_id:
         from utils.library_db import COVERS_DIR
 
-        for ext in [f"{book_id}_high.jpg", f"{book_id}.jpg", f"{book_id}_cover.jpg"]:
+        for ext in [
+            f"{book_id}_high.jpg",
+            f"{book_id}.jpg",
+            f"{book_id}_cover.jpg",
+            f"{book_id}_original.jpg",
+        ]:
             cand = os.path.join(COVERS_DIR, ext)
             if os.path.exists(cand):
                 cover_raw = cand
