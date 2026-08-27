@@ -55,6 +55,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                     dl_libro,
                     has_cover=bool(dl_files and "tomozaki_cover" in dl_files),
                     include_download=True,
+                    volume_buttons=None,
                     show_nav_buttons=False,
                 )
                 try:
@@ -203,7 +204,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                         context,
                         series_hash=series_hash,
                         selected_key=key,
-                        force_new=False,
+                        force_new=force_new,
                     )
 
             # 10. Choose Book (Show Rich Metadata details)
@@ -216,7 +217,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                         context,
                         series_hash=series_hash,
                         selected_key=key,
-                        force_new=False,
+                        force_new=force_new,
                     )
                 else:
                     await mostrar_detalles_libro(update, context, key)
