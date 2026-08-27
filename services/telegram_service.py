@@ -493,227 +493,89 @@ async def enviar_libro_directo(
                 portada_data=portada_data,
             )
 
-        # --- CONSTRUIR RENDER RICH HTML (Telegram Premium) ---
-        media = None
-        files = None
+        # --- CONSTRUIR RENDER RICH HTML UNIFICADO CON ARCHIVO INTEGRADO ---
+        fname = meta.get("filename") or f"{title}.epub"
+        if download_url and not download_url.startswith("http"):
+            fname = os.path.basename(download_url)
+
+        files = {}
+        media = []
+
         if portada_data:
             if isinstance(portada_data, bytes):
-                files = {"tomozaki_cover": ("cover.jpg", portada_data, "image/jpeg")}
+                files["tomozaki_cover"] = ("cover.jpg", portada_data, "image/jpeg")
             elif isinstance(portada_data, str) and os.path.exists(portada_data):
                 try:
                     with open(portada_data, "rb") as f:
-                        files = {
-                            "tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")
-                        }
+                        files["tomozaki_cover"] = (
+                            "cover.jpg",
+                            f.read(),
+                            "image/jpeg",
+                        )
                 except Exception as e:
                     logger.warning(f"Error al leer archivo de portada local: {e}")
 
-            if files:
-                media = [
+            if "tomozaki_cover" in files:
+                media.append(
                     {
                         "id": "tomozaki_cover",
                         "media": {"type": "photo", "media": "attach://tomozaki_cover"},
                     }
-                ]
+                )
 
-        html_parts = []
-        if media:
-            html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
+        if epub_bytes:
+            if isinstance(epub_bytes, (bytes, bytearray)):
+                files["epub_file"] = (
+                    fname,
+                    io.BytesIO(epub_bytes),
+                    "application/epub+zip",
+                )
+            elif isinstance(epub_bytes, str) and os.path.exists(epub_bytes):
+                try:
+                    with open(epub_bytes, "rb") as f:
+                        files["epub_file"] = (fname, f.read(), "application/epub+zip")
+                except Exception as e:
+                    logger.warning(f"Error al leer archivo EPUB local: {e}")
 
-        # Títulos en cascada
-        from utils.metadata_utils import resolve_title_cascade
+            if "epub_file" in files:
+                media.append(
+                    {
+                        "id": "epub_file",
+                        "media": {"type": "document", "media": "attach://epub_file"},
+                    }
+                )
 
-        title_en, title_jp, title_es = resolve_title_cascade(meta)
-
-        html_parts.append(f"<h3>🇬🇧 {title_en}</h3>")
-        if title_jp:
-            html_parts.append(f"<h4>🇯🇵 {title_jp}</h4>")
-        if title_es:
-            html_parts.append(f"<h5>🇪🇸 {title_es}</h5>")
-
-        volume = meta.get("volume")
-        vol_str = ""
-        if volume is not None and volume != "":
-            try:
-                v_float = float(volume)
-                vol_str = str(int(v_float)) if v_float.is_integer() else str(v_float)
-            except Exception:
-                vol_str = str(volume)
-
-        if vol_str:
-            html_parts.append(f"<h6>📚 Volumen {vol_str}</h6>\n")
-
-        # TABLA 1: Ficha artística y literaria
-        tabla_literaria = "<table bordered striped>\n"
-        autor = meta.get("author") or meta.get("autor") or "Desconocido"
-        tabla_literaria += f"  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n"
-
-        ilustrador = meta.get("illustrator") or meta.get("ilustrador")
-        if ilustrador:
-            # Separar y formatear si hay múltiples ilustradores (ej: "Ichika & Yuu", "a20, misekiss")
-            ills = [
-                i.strip()
-                for i in re.split(r"[,;/+&]|\s+y\s+|\s+and\s+", str(ilustrador))
-                if i.strip() and i.strip().upper() not in ("N/A", "DESCONOCIDO", "-")
-            ]
-            ill_val = ", ".join(ills) if len(ills) > 1 else str(ilustrador).strip()
-            tabla_literaria += (
-                f"  <tr><td><b>🎨 Ilustrador</b></td><td>{ill_val}</td></tr>\n"
-            )
-
-        layout_by = meta.get("layout_by") or meta.get("maquetador")
-        if layout_by:
-            # Múltiples maquetadores separados por coma, punto y coma o espacio (ej: "Meng Zhi", "Meng, Zhi" -> "#Meng #Zhi")
-            maqs = [
-                m.strip()
-                for m in re.split(r"[,;]+|\s+(?=#)|\s+", str(layout_by))
-                if m.strip()
-            ]
-            layout_val = " ".join(m if m.startswith("#") else f"#{m}" for m in maqs)
-            tabla_literaria += (
-                f"  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n"
-            )
-
-        categoria = meta.get("book_type") or meta.get("tipo") or "Novela"
-        tabla_literaria += (
-            f"  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n"
+        from services.library_ui_service import build_book_rich_html
+        html_content = build_book_rich_html(
+            meta,
+            has_cover=bool("tomozaki_cover" in files),
+            include_download=bool("epub_file" in files),
+            filename=fname,
         )
 
-        demo = (
-            meta.get("demographics_json")
-            or meta.get("demographics")
-            or meta.get("demografia")
-        )
-        demo_val = normalize_demography(demo)
-        if demo_val:
-            tabla_literaria += (
-                f"  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n"
-            )
-
-        generos = meta.get("tags_json") or meta.get("tags") or meta.get("generos")
-        if generos:
-            generos_val = ", ".join(generos) if isinstance(generos, list) else generos
-            tabla_literaria += (
-                f"  <tr><td><b>🎭 Géneros</b></td><td>{generos_val}</td></tr>\n"
-            )
-
-        traductor = meta.get("translator") or meta.get("traductor")
-        if traductor:
-            tabla_literaria += (
-                f"  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n"
-            )
-
-        grupo_trad = (
-            meta.get("publisher")
-            or meta.get("translation_group")
-            or meta.get("grupo_traductor")
-        )
-        if grupo_trad:
-            grupo_trad_val = grupo_trad
-            if meta.get("translation_group_url"):
-                url_g = meta.get("translation_group_url")
-                grupo_trad_val = f'<a href="{url_g}">{grupo_trad}</a>'
-            tabla_literaria += f"  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n"
-
-        tabla_literaria += "</table>\n"
-        html_parts.append(tabla_literaria)
-
-        # SINOPSIS: Acordeón colapsable
-        sinopsis_raw = (
-            meta.get("sinopsis")
-            or meta.get("description")
-            or "Sin sinopsis disponible."
-        )
-        html_parts.append(
-            "<details>\n"
-            "  <summary>📖 Ver Sinopsis</summary>\n"
-            "  <blockquote>\n"
-            f"    {sinopsis_raw}\n"
-            "  </blockquote>\n"
-            "</details>\n"
-        )
-
-        # TABLA 2: Detalles del archivo
-        size_val = meta.get("size")
-        if not size_val and meta.get("file_size"):
-            try:
-                size_bytes = int(meta.get("file_size"))
-                size_val = f"{size_bytes / (1024 * 1024):.2f} MB"
-            except:
-                size_val = "Desconocido"
-        if not size_val:
-            size_val = "Desconocido"
-
-        version_val = meta.get("epub_version") or meta.get("version") or "3.0"
-
-        tabla_archivo = (
-            "<details>\n"
-            "  <summary>📂 Ver Detalles del Archivo</summary>\n"
-            "  <table bordered striped>\n"
-            f"    <tr><td><b>📂 Nombre</b></td><td>{meta.get('title') or 'Desconocido'}</td></tr>\n"
-        )
-        if vol_str:
-            tabla_archivo += (
-                f"    <tr><td><b>📖 Volumen</b></td><td>Volumen {vol_str}</td></tr>\n"
-            )
-
-        tabla_archivo += (
-            f"    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n"
-        )
-
-        fecha = (
-            meta.get("updated_at") or meta.get("actualizado") or meta.get("indexed_at")
-        )
-        if fecha:
-            if hasattr(fecha, "strftime"):
-                fecha_str = fecha.strftime("%d-%m-%Y")
-            else:
-                fecha_str = str(fecha)
-            tabla_archivo += (
-                f"    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n"
-            )
-
-        tabla_archivo += f"    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n"
-
-        tabla_archivo += "  </table>\n</details>\n"
-        html_parts.append(tabla_archivo)
-
-        # Línea divisoria y pie con margen no recortable
-        html_parts.append("<hr/>")
-
-        slug = meta.get("slug")
-        if slug:
-            hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
-        else:
-            clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
-            hashtag_serie = f"#{clean_title}"
-
-        html_parts.append(f"<p>{hashtag_serie}</p>")
-        html_parts.append("<p>⠀</p>")
-
-        html_content = "\n".join(html_parts)
-
-        # Intentar enviar Rich Message unificado
+        # Intentar enviar Rich Message unificado con EPUB incluido
         rich_sent = False
+        sent_doc = None
         from services.rich_message_service import RichMessageService
 
         try:
             res = await RichMessageService.send_rich_message(
                 chat_id=destino,
                 html=html_content,
-                media=media,
+                media=media if media else None,
                 files=files if files else None,
                 reply_markup=reply_markup,
                 message_thread_id=message_thread_id,
             )
             if res and res.get("ok"):
                 rich_sent = True
+                sent_doc = res.get("result")
         except Exception as e:
             logger.warning(
                 f"Error al enviar Rich Message unificado en enviar_libro_directo: {e}"
             )
 
-        # Fallback tradicional si falla
+        # Fallback tradicional SOLO si el Rich Message no se pudo enviar
         if not rich_sent:
             logger.info("Ejecutando fallback tradicional en enviar_libro_directo")
             from services.presentation.delivery_formatter import (
@@ -757,37 +619,31 @@ async def enviar_libro_directo(
                         message_thread_id=message_thread_id,
                     )
 
-        # Formatear el caption del archivo epub (Únicamente el slug)
-        if slug:
-            final_caption = slug if slug.startswith("#") else f"#{slug}"
-        else:
-            clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
-            final_caption = f"#{clean_title}"
+            slug = meta.get("slug")
+            if slug:
+                final_caption = slug if slug.startswith("#") else f"#{slug}"
+            else:
+                title_en = meta.get("english_title") or meta.get("title") or title
+                clean_title = re.sub(r"[^\w\s]", "", str(title_en)).replace(" ", "_")
+                final_caption = f"#{clean_title}"
 
-        if auto_delete_seconds > 0:
-            mins = auto_delete_seconds // 60
-            final_caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
+            if auto_delete_seconds > 0:
+                mins = auto_delete_seconds // 60
+                final_caption += f"\n\n🗑️ <i>Se borrará en {mins} min</i>"
 
-        # Nombre de archivo
-        fname = meta.get("filename") or "archivo.epub"
-        if download_url and not download_url.startswith("http"):
-            fname = os.path.basename(download_url)
-
-        if epub_bytes:
-            logger.info(f"Enviando archivo EPUB a {destino}: {fname}")
-            sent_doc = await send_doc_bytes(
-                bot,
-                destino,
-                final_caption,
-                epub_bytes,
-                filename=fname,
-                parse_mode="HTML",
-                message_thread_id=message_thread_id,
-                reply_markup=reply_markup if not rich_sent else None,
-            )
-        else:
-            sent_doc = None
-            if not rich_sent and final_caption:
+            if epub_bytes:
+                logger.info(f"Enviando archivo EPUB fallback a {destino}: {fname}")
+                sent_doc = await send_doc_bytes(
+                    bot,
+                    destino,
+                    final_caption,
+                    epub_bytes,
+                    filename=fname,
+                    parse_mode="HTML",
+                    message_thread_id=message_thread_id,
+                    reply_markup=reply_markup,
+                )
+            elif final_caption:
                 await bot.send_message(
                     chat_id=destino,
                     text=final_caption,

@@ -24,16 +24,33 @@ async def register_book_download(
     try:
         from services.history_service import log_published_book
 
-        file_info = {
-            "file_size": sent_doc.document.file_size,
-            "file_unique_id": sent_doc.document.file_unique_id,
-        }
-        log_published_book(
-            meta=meta,
-            message_id=sent_doc.message_id,
-            channel_id=sent_doc.chat.id,
-            file_info=file_info,
+        msg_id = getattr(sent_doc, "message_id", None) or (
+            sent_doc.get("message_id") if isinstance(sent_doc, dict) else None
         )
+        chat_obj = getattr(sent_doc, "chat", None)
+        chan_id = getattr(chat_obj, "id", None) if chat_obj else (
+            sent_doc.get("chat", {}).get("id") if isinstance(sent_doc, dict) else user_id
+        )
+
+        doc_obj = getattr(sent_doc, "document", None) or (
+            sent_doc.get("document") if isinstance(sent_doc, dict) else None
+        )
+        file_info = {}
+        if doc_obj:
+            file_info = {
+                "file_size": getattr(doc_obj, "file_size", None)
+                or (doc_obj.get("file_size") if isinstance(doc_obj, dict) else meta.get("file_size")),
+                "file_unique_id": getattr(doc_obj, "file_unique_id", None)
+                or (doc_obj.get("file_unique_id") if isinstance(doc_obj, dict) else None),
+            }
+
+        if msg_id and chan_id:
+            log_published_book(
+                meta=meta,
+                message_id=msg_id,
+                channel_id=chan_id,
+                file_info=file_info,
+            )
     except Exception as e:
         logger.error(f"Failed to log book history: {e}")
 
