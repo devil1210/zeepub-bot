@@ -198,26 +198,28 @@ class TelegramPublisherProvider(PublisherProvider):
                 if not files:
                     files = {}
                 if isinstance(epub_data, (bytes, bytearray)):
-                    files["epub_doc"] = (
+                    files["epub_file"] = (
                         fname,
                         io.BytesIO(epub_data),
                         "application/epub+zip",
                     )
                 elif isinstance(epub_data, str) and os.path.exists(epub_data):
                     with open(epub_data, "rb") as f:
-                        files["epub_doc"] = (
+                        files["epub_file"] = (
                             fname,
                             io.BytesIO(f.read()),
                             "application/epub+zip",
                         )
 
-                if "epub_doc" in files:
+                if "epub_file" in files:
+                    if not media:
+                        media = []
                     media.append(
                         {
-                            "id": "epub_doc",
+                            "id": "epub_file",
                             "media": {
                                 "type": "document",
-                                "media": "attach://epub_doc",
+                                "media": "attach://epub_file",
                             },
                         }
                     )
@@ -225,6 +227,9 @@ class TelegramPublisherProvider(PublisherProvider):
                 logger.warning(
                     f"Error preparando archivo epub para Rich Message: {e}"
                 )
+
+        from services.library_ui_service import build_book_rich_blocks
+        from services.rich_message_service import RichMessageService
 
         # Si se proporcionó una plantilla personalizada (caption), usarla directamente para RichMessage
         if options and options.get("caption"):
@@ -236,207 +241,40 @@ class TelegramPublisherProvider(PublisherProvider):
             clean_user_caption = re.sub(
                 r"<img\s+src=[^>]*>", "", clean_user_caption, flags=re.IGNORECASE
             ).strip()
-            if any(m.get("id") == "tomozaki_cover" for m in media):
+            if any(m.get("id") == "tomozaki_cover" for m in (media or [])):
                 html_content = (
                     f'<img src="tg://photo?id=tomozaki_cover" />\n{clean_user_caption}'
                 )
             else:
                 html_content = clean_user_caption
+            rich_blocks = None
         else:
-            html_parts = []
-            if any(m.get("id") == "tomozaki_cover" for m in media):
-                html_parts.append('<img src="tg://photo?id=tomozaki_cover" />\n')
-
-            # Títulos en cascada
-            from utils.metadata_utils import resolve_title_cascade
-
-            title_en, title_jp, title_es = resolve_title_cascade(book_data)
-
-            html_parts.append(f"<h3>🇬🇧 {title_en}</h3>")
-            if title_jp:
-                html_parts.append(f"<h4>🇯🇵 {title_jp}</h4>")
-            if title_es:
-                html_parts.append(f"<h5>🇪🇸 {title_es}</h5>")
-
-            volume = book_data.get("volume")
-            if volume:
-                html_parts.append(f"<h6>📚 Volumen {volume}</h6>\n")
-
-            # Géneros en chips / tags estilizados
-            from utils.metadata_utils import format_genre_chips
-
-            generos = (
-                book_data.get("tags_json")
-                or book_data.get("tags")
-                or book_data.get("generos")
-            )
-            chips_generos = format_genre_chips(generos)
-            if chips_generos:
-                html_parts.append(f"<p>🏷️ <i>{chips_generos}</i></p>\n")
-
-            # TABLA 1: Ficha artística y literaria
-            tabla_literaria = "<table bordered striped compact>\n"
-            autor = book_data.get("author") or book_data.get("autor") or "Desconocido"
-            tabla_literaria += f"  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n"
-
-            ilustrador = book_data.get("illustrator") or book_data.get("ilustrador")
-            if ilustrador:
-                tabla_literaria += (
-                    f"  <tr><td><b>🎨 Ilustrador</b></td><td>{ilustrador}</td></tr>\n"
-                )
-
-            layout_by = book_data.get("layout_by") or book_data.get("maquetador")
-            if layout_by:
-                # Múltiples maquetadores separados por coma, punto y coma o espacio (ej: "Meng Zhi", "Meng, Zhi" -> "#Meng #Zhi")
-                maqs = [
-                    m.strip()
-                    for m in re.split(r"[,;]+|\s+(?=#)|\s+", str(layout_by))
-                    if m.strip()
-                ]
-                layout_val = " ".join(m if m.startswith("#") else f"#{m}" for m in maqs)
-                tabla_literaria += (
-                    f"  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n"
-                )
-
-            categoria = book_data.get("book_type") or book_data.get("tipo") or "Novela"
-            tabla_literaria += (
-                f"  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n"
+            html_content = None
+            rich_blocks = build_book_rich_blocks(
+                book_data,
+                has_cover=bool(files and "tomozaki_cover" in files),
+                include_download=bool(files and "epub_file" in files),
+                show_nav_buttons=False,
+                volume_buttons=None,
             )
 
-            demo = (
-                book_data.get("demographics_json")
-                or book_data.get("demographics")
-                or book_data.get("demografia")
-            )
-            demo_val = normalize_demography(demo)
-            if demo_val:
-                tabla_literaria += (
-                    f"  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n"
-                )
-
-            traductor = book_data.get("translator") or book_data.get("traductor")
-            if traductor:
-                tabla_literaria += (
-                    f"  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n"
-                )
-
-            grupo_trad = (
-                book_data.get("publisher")
-                or book_data.get("translation_group")
-                or book_data.get("grupo_traductor")
-            )
-            if grupo_trad:
-                grupo_trad_val = grupo_trad
-                if book_data.get("translation_group_url"):
-                    url_g = book_data.get("translation_group_url")
-                    grupo_trad_val = f'<a href="{url_g}">{grupo_trad}</a>'
-                tabla_literaria += f"  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n"
-
-            tabla_literaria += "</table>\n"
-            html_parts.append(tabla_literaria)
-
-            # SINOPSIS: Acordeón colapsable
-            sinopsis_raw = (
-                book_data.get("sinopsis")
-                or book_data.get("description")
-                or "Sin sinopsis disponible."
-            )
-            html_parts.append(
-                "<details>\n"
-                "  <summary>📖 Ver Sinopsis</summary>\n"
-                "  <blockquote>\n"
-                f"    {sinopsis_raw}\n"
-                "  </blockquote>\n"
-                "</details>\n"
-            )
-
-            # TABLA 2: Detalles del archivo
-            size_val = book_data.get("size")
-            if not size_val and book_data.get("file_size"):
-                try:
-                    size_bytes = int(book_data.get("file_size"))
-                    size_val = f"{size_bytes / (1024 * 1024):.2f} MB"
-                except Exception:
-                    size_val = "Desconocido"
-            if not size_val:
-                size_val = "Desconocido"
-
-            version_val = (
-                book_data.get("epub_version") or book_data.get("version") or "3.0"
-            )
-
-            tabla_archivo = (
-                "<details>\n"
-                "  <summary>📂 Ver Detalles del Archivo</summary>\n"
-                "  <table bordered striped compact>\n"
-                f"    <tr><td><b>📂 Nombre</b></td><td>{book_data.get('title') or 'Desconocido'}</td></tr>\n"
-            )
-            if volume:
-                tabla_archivo += f"    <tr><td><b>📖 Volumen</b></td><td>Volumen {volume}</td></tr>\n"
-
-            tabla_archivo += (
-                f"    <tr><td><b>ℹ️ Versión Epub</b></td><td>{version_val}</td></tr>\n"
-            )
-
-            fecha = (
-                book_data.get("updated_at")
-                or book_data.get("actualizado")
-                or book_data.get("indexed_at")
-            )
-            if fecha:
-                if hasattr(fecha, "strftime"):
-                    fecha_str = fecha.strftime("%d-%m-%Y")
-                elif isinstance(fecha, str):
-                    try:
-                        dt = datetime.fromisoformat(fecha)
-                        fecha_str = dt.strftime("%d-%m-%Y")
-                    except Exception:
-                        fecha_str = fecha
-                else:
-                    fecha_str = str(fecha)
-                tabla_archivo += (
-                    f"    <tr><td><b>📅 Actualizado</b></td><td>{fecha_str}</td></tr>\n"
-                )
-
-            tabla_archivo += (
-                f"    <tr><td><b>💾 Tamaño</b></td><td>{size_val}</td></tr>\n"
-            )
-
-            tabla_archivo += "  </table>\n</details>\n"
-            html_parts.append(tabla_archivo)
-
-            if any(m.get("id") == "epub_doc" for m in media):
-                html_parts.append(
-                    f'<p><a href="tg://document?id=epub_doc">📥 Descargar {fname}</a></p>'
-                )
-
-            # Línea divisoria y pie con margen no recortable
-            html_parts.append("<hr/>")
-
-            slug = book_data.get("slug")
-            if slug:
-                hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
-            else:
-                clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
-                hashtag_serie = f"#{clean_title}"
-
-            html_parts.append(f"<p>{hashtag_serie}</p>")
-            html_parts.append("<p>⠀</p>")
-
-            html_content = "\n".join(html_parts)
-
-        # A. Intentar enviar Rich Message unificado a través de Telegram API 10.2
-        from services.rich_message_service import RichMessageService
-
-        fname = book_data.get("filename", "libro.epub")
+        # A. Intentar enviar Rich Message unificado a través de Telegram API
         try:
-            res = await RichMessageService.send_rich_message(
-                chat_id=target_id,
-                html=html_content,
-                media=media,
-                files=files if files else None,
-                message_thread_id=thread_id,
-            )
+            if rich_blocks:
+                res = await RichMessageService.send_rich_message(
+                    chat_id=target_id,
+                    blocks=rich_blocks,
+                    files=files if files else None,
+                    message_thread_id=thread_id,
+                )
+            else:
+                res = await RichMessageService.send_rich_message(
+                    chat_id=target_id,
+                    html=html_content,
+                    media=media,
+                    files=files if files else None,
+                    message_thread_id=thread_id,
+                )
             if res and res.get("ok"):
                 sent_msg = res.get("result")
                 tg_msg_id = None
@@ -453,7 +291,7 @@ class TelegramPublisherProvider(PublisherProvider):
                     )
 
                 # B. Si el epub no se incluyó embebido, enviarlo como documento separado de respaldo
-                if "epub_doc" not in (files or {}):
+                if "epub_file" not in (files or {}):
                     epub_data = (
                         book_data.get("epub_bytes")
                         or book_data.get("filepath")
