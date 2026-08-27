@@ -1038,8 +1038,13 @@ def build_book_rich_blocks(
                 "is_open": False,
                 "blocks": [
                     {
-                        "type": "paragraph",
-                        "text": {"type": "italic", "text": sinopsis_clean},
+                        "type": "blockquote",
+                        "blocks": [
+                            {
+                                "type": "paragraph",
+                                "text": sinopsis_clean,
+                            }
+                        ],
                     }
                 ],
             }

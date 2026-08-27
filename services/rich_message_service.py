@@ -290,10 +290,15 @@ class RichMessageService:
     @classmethod
     def create_blockquote(cls, text: str | dict, credit: str | None = None) -> dict:
         """Crea un bloque de cita destacado."""
-        rich_text = text if isinstance(text, dict) else {"text": text}
+        paragraph_text = text if isinstance(text, (dict, list)) else str(text)
         block = {
             "type": "blockquote",
-            "text": rich_text
+            "blocks": [
+                {
+                    "type": "paragraph",
+                    "text": paragraph_text,
+                }
+            ],
         }
         if credit:
             block["credit"] = {"text": credit}
