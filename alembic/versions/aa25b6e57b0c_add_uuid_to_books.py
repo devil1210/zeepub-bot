@@ -17,13 +17,41 @@ depends_on = None
 
 
 def upgrade():
-    # Agregar columna uuid a la tabla books
-    op.add_column("books", sa.Column("uuid", sa.String(length=255), nullable=True))
-    # Crear índice en books(uuid) para búsquedas ultrarrápidas
-    op.create_index("ix_books_uuid", "books", ["uuid"])
+    # Agregar columna uuid a la tabla books si la tabla existe
+    conn = op.get_bind()
+    tables_res = conn.execute(
+        sa.text(
+            "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'books'"
+        )
+    ).fetchone()
+
+    if tables_res:
+        columns_res = conn.execute(
+            sa.text(
+                "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'books'"
+            )
+        )
+        existing_cols = [row[0] for row in columns_res]
+        if "uuid" not in existing_cols:
+            op.add_column(
+                "books", sa.Column("uuid", sa.String(length=255), nullable=True)
+            )
+            op.create_index("ix_books_uuid", "books", ["uuid"])
 
 
 def downgrade():
-    # Eliminar índice y columna
-    op.drop_index("ix_books_uuid", table_name="books")
-    op.drop_column("books", "uuid")
+    conn = op.get_bind()
+    tables_res = conn.execute(
+        sa.text(
+            "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'books'"
+        )
+    ).fetchone()
+    if tables_res:
+        try:
+            op.drop_index("ix_books_uuid", table_name="books")
+        except Exception:
+            pass
+        try:
+            op.drop_column("books", "uuid")
+        except Exception:
+            pass

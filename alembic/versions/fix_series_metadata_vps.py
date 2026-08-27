@@ -19,13 +19,47 @@ depends_on = None
 
 def upgrade():
     # Add columns to series_metadata if they don't exist
-    # Use batch_alter_table or check for existence for safety
     t_name = "series_metadata"
-
-    # We use raw execution with check to avoid errors if some already exist in some environment
     conn = op.get_bind()
+
+    tables_res = conn.execute(
+        sa.text(
+            f"SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '{t_name}'"
+        )
+    ).fetchone()
+
+    if not tables_res:
+        # Create table if it doesn't exist (e.g. in fresh CI test databases)
+        op.create_table(
+            t_name,
+            sa.Column("id", sa.Integer(), autoincrement=True, primary_key=True),
+            sa.Column("series_hash", sa.String(64), unique=True, index=True),
+            sa.Column("series_name", sa.String(512)),
+            sa.Column("series_spanish", sa.String(255)),
+            sa.Column("series_english", sa.String(255)),
+            sa.Column("slug", sa.String(512), index=True),
+            sa.Column("author_jap", sa.String(255)),
+            sa.Column("illustrator", sa.String(255)),
+            sa.Column("illustrator_jap", sa.String(255)),
+            sa.Column("tags", postgresql.JSONB(astext_type=sa.Text())),
+            sa.Column("demographics", postgresql.JSONB(astext_type=sa.Text())),
+            sa.Column(
+                "created_at",
+                sa.DateTime(timezone=True),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+            ),
+            sa.Column(
+                "updated_at",
+                sa.DateTime(timezone=True),
+                server_default=sa.text("CURRENT_TIMESTAMP"),
+            ),
+        )
+        return
+
     columns_res = conn.execute(
-        sa.text(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{t_name}'")
+        sa.text(
+            f"SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = '{t_name}'"
+        )
     )
     existing_cols = [row[0] for row in columns_res]
 
@@ -44,16 +78,34 @@ def upgrade():
         if col_name not in existing_cols:
             op.add_column(t_name, sa.Column(col_name, col_type))
             if col_name == "slug":
-                op.create_index(op.f("ix_series_metadata_slug"), t_name, ["slug"], unique=False)
+                op.create_index(
+                    op.f("ix_series_metadata_slug"), t_name, ["slug"], unique=False
+                )
 
 
 def downgrade():
-    op.drop_index(op.f("ix_series_metadata_slug"), table_name="series_metadata")
-    op.drop_column("series_metadata", "demographics")
-    op.drop_column("series_metadata", "tags")
-    op.drop_column("series_metadata", "illustrator_jap")
-    op.drop_column("series_metadata", "illustrator")
-    op.drop_column("series_metadata", "author_jap")
-    op.drop_column("series_metadata", "slug")
-    op.drop_column("series_metadata", "series_english")
-    op.drop_column("series_metadata", "series_spanish")
+    conn = op.get_bind()
+    tables_res = conn.execute(
+        sa.text(
+            "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'series_metadata'"
+        )
+    ).fetchone()
+    if tables_res:
+        try:
+            op.drop_index(op.f("ix_series_metadata_slug"), table_name="series_metadata")
+        except Exception:
+            pass
+        for c in [
+            "demographics",
+            "tags",
+            "illustrator_jap",
+            "illustrator",
+            "author_jap",
+            "slug",
+            "series_english",
+            "series_spanish",
+        ]:
+            try:
+                op.drop_column("series_metadata", c)
+            except Exception:
+                pass
