@@ -678,6 +678,7 @@ def build_book_rich_html(
     has_cover: bool = True,
     include_download: bool = False,
     filename: str | None = None,
+    series_hash_short: str | None = None,
 ) -> str:
     """Construye el HTML dinámico completo para el Rich Message del libro."""
     html_parts = []
@@ -688,7 +689,12 @@ def build_book_rich_html(
 
     # 2. Títulos en cascada
     title_en, title_jp, title_es = resolve_title_cascade(libro)
-    html_parts.append(f"<h3>🇬🇧 {title_en}</h3>")
+    bot_user = getattr(config, "BOT_USERNAME", "ZeePub_bot") or "ZeePub_bot"
+    if series_hash_short:
+        series_url = f"https://t.me/{bot_user}?start=series_{series_hash_short}"
+        html_parts.append(f'<h3><a href="{series_url}">🇬🇧 {title_en}</a></h3>')
+    else:
+        html_parts.append(f"<h3>🇬🇧 {title_en}</h3>")
     if title_jp:
         html_parts.append(f"<h4>🇯🇵 {title_jp}</h4>")
     if title_es:
@@ -884,13 +890,29 @@ def build_book_rich_blocks(
 
     # 2. Títulos en cascada
     title_en, title_jp, title_es = resolve_title_cascade(libro)
-    blocks.append(
-        {
-            "type": "heading",
-            "size": 3,
-            "text": f"🇬🇧 {title_en}",
-        }
-    )
+    bot_user = getattr(config, "BOT_USERNAME", "ZeePub_bot") or "ZeePub_bot"
+
+    if series_hash_short:
+        series_url = f"https://t.me/{bot_user}?start=series_{series_hash_short}"
+        blocks.append(
+            {
+                "type": "heading",
+                "size": 3,
+                "text": {
+                    "type": "url",
+                    "text": f"🇬🇧 {title_en}",
+                    "url": series_url,
+                },
+            }
+        )
+    else:
+        blocks.append(
+            {
+                "type": "heading",
+                "size": 3,
+                "text": f"🇬🇧 {title_en}",
+            }
+        )
     if title_jp:
         blocks.append(
             {

@@ -39,9 +39,30 @@ class StartHandler(BaseCommandHandler):
                 # If topics exist, redirect welcome message to "System" topic
                 thread_id = topic_ids.get("sistema", thread_id)
 
-        # Check for deep-linking arguments (e.g. /start link_b64email)
+        # Check for deep-linking arguments (e.g. /start link_b64email or /start series_hash)
         if context.args and len(context.args) > 0:
             arg = context.args[0]
+            if (
+                arg.startswith("series_")
+                or arg.startswith("serie_")
+                or arg.startswith("show_series_")
+            ):
+                series_hash_short = arg.split("_")[-1]
+                try:
+                    from services.library_service import LibraryService
+                    from services.library_ui_service import mostrar_volumenes_local
+
+                    series_hash = await LibraryService.resolve_series_hash(
+                        series_hash_short
+                    )
+                    if series_hash:
+                        await mostrar_volumenes_local(
+                            update, context, series_hash, force_new=True
+                        )
+                        return
+                except Exception as e:
+                    logger.error(f"Error procesando deep link de serie: {e}")
+
             if arg.startswith("auth_"):
                 try:
                     from services.user_service import confirm_qr_auth_session
