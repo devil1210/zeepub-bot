@@ -208,7 +208,30 @@ class CallbackHandlerV6(BaseCommandHandler):
                     post_keyboard = BotKeyboards.post_download(series_hash_short)
 
                     # 1. Resolver portada
-                    cover_data = await resolve_cover_data(libro_st.get("portada"))
+                    cover_raw = (
+                        libro_st.get("portada")
+                        or libro_st.get("cover_image")
+                        or libro_st.get("cover_url")
+                        or libro_st.get("cover_path")
+                        or libro_st.get("cover")
+                    )
+                    if not cover_raw and (
+                        st.get("current_series_hash") or libro_st.get("hash")
+                    ):
+                        b_id = libro_st.get("hash") or st.get("current_series_hash")
+                        from utils.library_db import COVERS_DIR
+
+                        for ext in [
+                            f"{b_id}_high.jpg",
+                            f"{b_id}.jpg",
+                            f"{b_id}_cover.jpg",
+                        ]:
+                            cand = os.path.join(COVERS_DIR, ext)
+                            if os.path.exists(cand):
+                                cover_raw = cand
+                                break
+
+                    cover_data = await resolve_cover_data(cover_raw)
                     delivery_files = {}
                     delivery_media = []
 

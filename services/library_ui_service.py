@@ -770,7 +770,23 @@ async def mostrar_detalles_libro(
     libro = st["libros"][key]
 
     # Preparar Portada y Archivos
-    cover_data = await resolve_cover_data(libro.get("portada"))
+    cover_raw = (
+        libro.get("portada")
+        or libro.get("cover_image")
+        or libro.get("cover_url")
+        or libro.get("cover_path")
+        or libro.get("cover")
+    )
+    if not cover_raw and book_id:
+        from utils.library_db import COVERS_DIR
+
+        for ext in [f"{book_id}_high.jpg", f"{book_id}.jpg", f"{book_id}_cover.jpg"]:
+            cand = os.path.join(COVERS_DIR, ext)
+            if os.path.exists(cand):
+                cover_raw = cand
+                break
+
+    cover_data = await resolve_cover_data(cover_raw)
     media = None
     files = None
 
