@@ -191,13 +191,35 @@ class CallbackHandlerV6(BaseCommandHandler):
                     update, context, series_hash, force_new=True
                 )
 
+            # Volume Selector In-Place Switcher
+            elif data.startswith("sel_vol|"):
+                key = data.split("|")[1]
+                series_hash = st.get("current_series_hash") or (
+                    st.get("libros", {}).get(key, {}).get("series_hash")
+                )
+                if series_hash:
+                    await mostrar_volumenes_local(
+                        update,
+                        context,
+                        series_hash=series_hash,
+                        selected_key=key,
+                        force_new=False,
+                    )
+
             # 10. Choose Book (Show Rich Metadata details)
             elif data.startswith("lib|"):
                 key = data.split("|")[1]
-                # Guardamos historial para volver atrás
-                st["historial"] = st.get("historial", [])
-                st["historial"].append(("volumes_local", st.get("current_series_hash")))
-                await mostrar_detalles_libro(update, context, key)
+                series_hash = st.get("current_series_hash")
+                if series_hash:
+                    await mostrar_volumenes_local(
+                        update,
+                        context,
+                        series_hash=series_hash,
+                        selected_key=key,
+                        force_new=False,
+                    )
+                else:
+                    await mostrar_detalles_libro(update, context, key)
 
             # 11. Book Download Direct Action
             elif data.startswith("dl_confirm|"):
@@ -333,12 +355,29 @@ class CallbackHandlerV6(BaseCommandHandler):
                             }
                         )
 
+                    # Construir volume_rows si la serie tiene más de 1 volumen
+                    volume_rows = []
+                    if len(st.get("libros", {})) > 1:
+                        current_row = []
+                        for k, bk in st["libros"].items():
+                            vol_disp = bk.get("vol_display", bk.get("volume", 0))
+                            label = f"🔘 Vol. {vol_disp}" if k == key else f"Vol. {vol_disp}"
+                            cb = "noop" if k == key else f"sel_vol|{k}"
+                            current_row.append({"text": label, "callback_data": cb})
+                            if len(current_row) == 4:
+                                volume_rows.append(current_row)
+                                current_row = []
+                        if current_row:
+                            volume_rows.append(current_row)
+
                     # 3. Construir Bloques Nativos con descarga embebida y botones de navegación
                     rich_blocks_edited = build_book_rich_blocks(
                         libro_st,
                         has_cover=bool("tomozaki_cover" in delivery_files),
                         include_download=True,
                         series_hash_short=series_hash_short,
+                        volume_buttons=volume_rows if volume_rows else None,
+                        show_nav_buttons=True,
                     )
 
                     # 4. Editar el Rich Message in-place usando Bloques Nativos
