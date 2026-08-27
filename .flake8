@@ -2,6 +2,8 @@
 # Ignorar las carpetas de skills y directorios de sistema para evitar errores de sintaxis o nombres indefinidos en CI
 exclude =
     .agent/skills/*,
+    .agents/*,
+    legacy/*,
     .git,
     __pycache__,
     venv,

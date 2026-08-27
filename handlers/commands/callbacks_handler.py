@@ -22,6 +22,7 @@ from services.library_ui_service import (
 )
 from services.download_history import register_book_download
 from services.cover_service import resolve_cover_data, send_doc_bytes
+from services.rich_message_service import RichMessageService
 from utils.download_limiter import downloads_left
 from utils.helpers import format_genre_chips, get_thread_id
 
