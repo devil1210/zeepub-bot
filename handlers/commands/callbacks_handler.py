@@ -49,10 +49,11 @@ class CallbackHandlerV6(BaseCommandHandler):
         if is_downloaded_msg:
             down_data = st.get("libros_downloaded", {}).pop(msg_id, {})
             dl_libro = down_data.get("libro") or {}
+            dl_files = down_data.get("files")
             if dl_libro:
                 clean_blocks = build_book_rich_blocks(
                     dl_libro,
-                    has_cover=True,
+                    has_cover=bool(dl_files and "tomozaki_cover" in dl_files),
                     include_download=True,
                     show_nav_buttons=False,
                 )
@@ -61,6 +62,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                         chat_id=update.effective_chat.id,
                         message_id=msg_id,
                         blocks=clean_blocks,
+                        files=dl_files if dl_files else None,
                     )
                 except Exception as e:
                     logger.warning(f"Error limpiando botones de mensaje descargado: {e}")
@@ -173,7 +175,9 @@ class CallbackHandlerV6(BaseCommandHandler):
                             st.get("current_page"),
                         )
                     )
-                    await mostrar_volumenes_local(update, context, series_hash)
+                    await mostrar_volumenes_local(
+                        update, context, series_hash, force_new=force_new
+                    )
                 else:
                     await query.answer("⚠️ Serie no disponible.", show_alert=True)
 
@@ -338,8 +342,6 @@ class CallbackHandlerV6(BaseCommandHandler):
                     )
 
                     # 4. Editar el Rich Message in-place usando Bloques Nativos
-                    from services.rich_message_service import RichMessageService
-
                     res_edit = await RichMessageService.edit_rich_message(
                         chat_id=update.effective_chat.id,
                         message_id=query.message.message_id,
@@ -358,6 +360,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                         ] = {
                             "libro": libro_st,
                             "series_hash_short": series_hash_short,
+                            "files": delivery_files,
                         }
                     else:
                         # Fallback a edición con HTML o envío tradicional
