@@ -10,6 +10,7 @@ from handlers.commands.base_handler import BaseCommandHandler
 from services.keyboard_factory import BotKeyboards
 from services.library_service import LibraryService
 from services.library_ui_service import (
+    build_book_rich_blocks,
     build_book_rich_html,
     mostrar_menu_principal,
     mostrar_generos,
@@ -297,38 +298,54 @@ class CallbackHandlerV6(BaseCommandHandler):
                             }
                         )
 
-                    # 3. Construir HTML rico completo con enlace de descarga integrado
-                    html_edited = build_book_rich_html(
+                    # 3. Construir Bloques Nativos con descarga embebida y botones de navegación
+                    rich_blocks_edited = build_book_rich_blocks(
                         libro_st,
                         has_cover=bool("tomozaki_cover" in delivery_files),
                         include_download=True,
-                        filename=filename,
+                        series_hash_short=series_hash_short,
                     )
 
-                    # 4. Editar el Rich Message in-place
+                    # 4. Editar el Rich Message in-place usando Bloques Nativos
                     from services.rich_message_service import RichMessageService
 
                     res_edit = await RichMessageService.edit_rich_message(
                         chat_id=update.effective_chat.id,
                         message_id=query.message.message_id,
-                        html=html_edited,
-                        media=delivery_media if delivery_media else None,
+                        blocks=rich_blocks_edited,
                         files=delivery_files if delivery_files else None,
-                        reply_markup=post_keyboard,
                     )
 
                     sent_doc = None
                     if res_edit and res_edit.get("ok"):
                         sent_doc = res_edit.get("result")
                     else:
-                        # Fallback tradicional si no se pudo editar
-                        vol_val = libro_st.get("volume")
-                        vol_str = f" - Volumen {vol_val}" if vol_val else ""
-                        chips_generos = format_genre_chips(
-                            libro_st.get("tags_json")
-                            or libro_st.get("tags")
-                            or libro_st.get("generos")
+                        # Fallback a edición con HTML o envío tradicional
+                        html_edited = build_book_rich_html(
+                            libro_st,
+                            has_cover=bool("tomozaki_cover" in delivery_files),
+                            include_download=True,
+                            filename=filename,
                         )
+                        res_edit_html = await RichMessageService.edit_rich_message(
+                            chat_id=update.effective_chat.id,
+                            message_id=query.message.message_id,
+                            html=html_edited,
+                            media=delivery_media if delivery_media else None,
+                            files=delivery_files if delivery_files else None,
+                            reply_markup=post_keyboard,
+                        )
+                        if res_edit_html and res_edit_html.get("ok"):
+                            sent_doc = res_edit_html.get("result")
+                        else:
+                            # Fallback tradicional si no se pudo editar
+                            vol_val = libro_st.get("volume")
+                            vol_str = f" - Volumen {vol_val}" if vol_val else ""
+                            chips_generos = format_genre_chips(
+                                libro_st.get("tags_json")
+                                or libro_st.get("tags")
+                                or libro_st.get("generos")
+                            )
                         caption_parts = [f"📖 <b>{title}{vol_str}</b>"]
                         if chips_generos:
                             caption_parts.append(f"🏷️ <i>{chips_generos}</i>")

@@ -744,6 +744,311 @@ def build_book_rich_html(
     return "\n".join(html_parts)
 
 
+def build_book_rich_blocks(
+    libro: dict,
+    has_cover: bool = True,
+    include_download: bool = False,
+    key: str | None = None,
+    can_download: bool = True,
+    is_admin_or_staff: bool = False,
+    series_hash_short: str | None = None,
+) -> list[dict]:
+    """Construye la estructura de bloques nativos (Rich Blocks) para Telegram Bot API."""
+    blocks = []
+
+    # 1. Portada
+    if has_cover:
+        blocks.append(
+            {
+                "type": "photo",
+                "photo": {
+                    "type": "photo",
+                    "media": "attach://tomozaki_cover",
+                },
+            }
+        )
+
+    # 2. Títulos en cascada
+    title_en, title_jp, title_es = resolve_title_cascade(libro)
+    blocks.append(
+        {
+            "type": "heading",
+            "size": 3,
+            "text": f"🇬🇧 {title_en}",
+        }
+    )
+    if title_jp:
+        blocks.append(
+            {
+                "type": "heading",
+                "size": 4,
+                "text": f"🇯🇵 {title_jp}",
+            }
+        )
+    if title_es:
+        blocks.append(
+            {
+                "type": "heading",
+                "size": 5,
+                "text": f"🇪🇸 {title_es}",
+            }
+        )
+
+    volume = libro.get("volume")
+    if volume:
+        blocks.append(
+            {
+                "type": "heading",
+                "size": 6,
+                "text": f"📚 Volumen {volume}",
+            }
+        )
+
+    # Géneros
+    generos = libro.get("tags_json") or libro.get("tags") or libro.get("generos")
+    chips_generos = format_genre_chips(generos)
+    if chips_generos:
+        blocks.append(
+            {
+                "type": "paragraph",
+                "text": f"🏷️ {chips_generos}",
+            }
+        )
+
+    # 3. TABLA 1: Ficha Artística
+    tabla_cells = []
+    autor = libro.get("author") or libro.get("autor") or "Desconocido"
+    tabla_cells.append([{"text": "👤 Autor"}, {"text": autor}])
+
+    ilustrador = libro.get("illustrator") or libro.get("ilustrador")
+    if ilustrador:
+        ills = [
+            i.strip()
+            for i in re.split(r"[,;/+&]|\s+y\s+|\s+and\s+", str(ilustrador))
+            if i.strip() and i.strip().upper() not in ("N/A", "DESCONOCIDO", "-")
+        ]
+        ill_val = ", ".join(ills) if len(ills) > 1 else str(ilustrador).strip()
+        tabla_cells.append([{"text": "🎨 Ilustrador"}, {"text": ill_val}])
+
+    layout_by = libro.get("layout_by") or libro.get("maquetador")
+    if layout_by:
+        maqs = [
+            m.strip()
+            for m in re.split(r"[,;/+&]|\s+y\s+|\s+and\s+", str(layout_by))
+            if m.strip() and m.strip().upper() not in ("N/A", "DESCONOCIDO", "-")
+        ]
+        maq_tags = [m if m.startswith("#") else f"#{m}" for m in maqs]
+        maq_val = (
+            " ".join(maq_tags)
+            if len(maq_tags) > 1
+            else (maq_tags[0] if maq_tags else "")
+        )
+        if maq_val:
+            tabla_cells.append([{"text": "📓 Maquetador"}, {"text": maq_val}])
+
+    cat_val = libro.get("book_type") or libro.get("categoria") or "Novela Ligera"
+    tabla_cells.append([{"text": "📦 Categoría"}, {"text": cat_val}])
+
+    demografia = normalize_demography(
+        libro.get("demographics") or libro.get("demografia")
+    )
+    if demografia:
+        tabla_cells.append([{"text": "👥 Demografía"}, {"text": demografia}])
+
+    traductor = libro.get("translator") or libro.get("traductor")
+    if traductor:
+        tabla_cells.append([{"text": "🌐 Traductor"}, {"text": str(traductor)}])
+
+    grupo_tr = (
+        libro.get("group") or libro.get("publisher") or libro.get("editorial")
+    )
+    if grupo_tr:
+        tabla_cells.append([{"text": "🏢 Grupo Traductor"}, {"text": str(grupo_tr)}])
+
+    blocks.append(
+        {
+            "type": "table",
+            "is_bordered": True,
+            "is_striped": True,
+            "is_compact": True,
+            "cells": tabla_cells,
+        }
+    )
+
+    # 4. TABLA 2: Sinopsis en Details
+    sinopsis = libro.get("sinopsis") or libro.get("description")
+    if sinopsis:
+        sinopsis_clean = re.sub(r"<[^>]+>", "", str(sinopsis)).strip()
+        if len(sinopsis_clean) > 800:
+            sinopsis_clean = sinopsis_clean[:790] + "..."
+        blocks.append(
+            {
+                "type": "details",
+                "summary": "📖 Ver Sinopsis",
+                "is_open": False,
+                "blocks": [
+                    {
+                        "type": "paragraph",
+                        "text": sinopsis_clean,
+                    }
+                ],
+            }
+        )
+
+    # 5. TABLA 3: Detalles Técnicos del Archivo
+    tech_cells = []
+    formato = libro.get("epub_version") or "EPUB 3.0"
+    tech_cells.append([{"text": "📄 Formato"}, {"text": formato}])
+
+    raw_pages = libro.get("page_count")
+    if raw_pages and str(raw_pages).isdigit() and int(raw_pages) > 0:
+        tech_cells.append([{"text": "📑 Páginas"}, {"text": f"~{raw_pages} págs"}])
+
+    raw_words = libro.get("word_count")
+    if raw_words and str(raw_words).isdigit() and int(raw_words) > 0:
+        tech_cells.append(
+            [{"text": "📝 Palabras"}, {"text": f"{int(raw_words):,} palabras"}]
+        )
+
+    reading_time = libro.get("reading_time")
+    if reading_time and str(reading_time).isdigit() and int(reading_time) > 0:
+        mins = int(reading_time)
+        hrs = mins // 60
+        rem_mins = mins % 60
+        time_str = f"{hrs}h {rem_mins}m" if hrs > 0 else f"{mins}m"
+        tech_cells.append([{"text": "⏱️ Lectura"}, {"text": time_str}])
+
+    fecha = (
+        libro.get("modified_at_opf")
+        or libro.get("published_at")
+        or libro.get("modifiedAt")
+        or libro.get("updated_at")
+    )
+    if fecha:
+        if hasattr(fecha, "strftime"):
+            fecha_str = fecha.strftime("%d-%m-%Y")
+        else:
+            fecha_str = str(fecha)
+        tech_cells.append([{"text": "📅 Actualizado"}, {"text": fecha_str}])
+
+    raw_size = libro.get("file_size") or libro.get("size")
+    if raw_size:
+        try:
+            size_num = float(raw_size)
+            if size_num >= 1024 * 1024:
+                size_val = f"{size_num / (1024 * 1024):.1f} MB"
+            elif size_num >= 1024:
+                size_val = f"{size_num / 1024:.1f} KB"
+            else:
+                size_val = f"{int(size_num)} B"
+        except (ValueError, TypeError):
+            size_val = str(raw_size)
+    else:
+        size_val = "N/A"
+    tech_cells.append([{"text": "💾 Tamaño"}, {"text": size_val}])
+
+    blocks.append(
+        {
+            "type": "details",
+            "summary": "📁 Ver Detalles del Archivo",
+            "is_open": False,
+            "blocks": [
+                {
+                    "type": "table",
+                    "is_bordered": True,
+                    "is_compact": True,
+                    "cells": tech_cells,
+                }
+            ],
+        }
+    )
+
+    # 6. Si se incluye descarga embebida
+    if include_download:
+        blocks.append(
+            {
+                "type": "details",
+                "summary": "📥 Descargar EPUB",
+                "is_open": True,
+                "blocks": [
+                    {
+                        "type": "document",
+                        "document": {
+                            "type": "document",
+                            "media": "attach://epub_file",
+                        },
+                    }
+                ],
+            }
+        )
+    elif key:
+        # Botón Descargar Incrustado en el Rich Message
+        btn_text = (
+            "📥 Descargar EPUB"
+            if can_download
+            else "⛔ Sin descargas disponibles"
+        )
+        cb_data = f"dl_confirm|{key}" if can_download else "noop"
+        blocks.append(
+            {
+                "type": "buttons",
+                "align": "center",
+                "buttons": [
+                    {
+                        "text": btn_text,
+                        "callback_data": cb_data,
+                    }
+                ],
+            }
+        )
+        if is_admin_or_staff:
+            blocks.append(
+                {
+                    "type": "buttons",
+                    "align": "center",
+                    "buttons": [
+                        {
+                            "text": "📢 Publicar en Telegram",
+                            "callback_data": f"pub_channel|{key}",
+                        }
+                    ],
+                }
+            )
+
+    # Botones de navegación incrustados
+    nav_row = []
+    if series_hash_short:
+        nav_row.append(
+            {
+                "text": "⬅️ Volver a la Serie",
+                "callback_data": f"show_series|{series_hash_short}",
+            }
+        )
+    nav_row.append({"text": "🏠 Inicio", "callback_data": "main_menu"})
+    nav_row.append({"text": "❌ Salir", "callback_data": "noop"})
+
+    blocks.append(
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": nav_row,
+        }
+    )
+
+    # 7. Divider y pie con hashtag
+    blocks.append({"type": "divider"})
+    slug = libro.get("slug")
+    if slug:
+        hashtag_serie = slug if slug.startswith("#") else f"#{slug}"
+    else:
+        clean_title = re.sub(r"[^\w\s]", "", title_en).replace(" ", "_")
+        hashtag_serie = f"#{clean_title}"
+
+    blocks.append({"type": "paragraph", "text": hashtag_serie})
+
+    return blocks
+
+
 async def mostrar_detalles_libro(
     update: Update, context: ContextTypes.DEFAULT_TYPE, key: str
 ):
@@ -802,7 +1107,6 @@ async def mostrar_detalles_libro(
                 break
 
     cover_data = await resolve_cover_data(cover_raw)
-    media = None
     files = None
 
     if cover_data:
@@ -819,18 +1123,7 @@ async def mostrar_detalles_libro(
             except Exception as e:
                 logger.warning(f"Error al leer archivo de portada local: {e}")
 
-        if files:
-            media = [
-                {
-                    "id": "tomozaki_cover",
-                    "media": {
-                        "type": "photo",
-                        "media": "attach://tomozaki_cover",
-                    },
-                }
-            ]
-
-    # Teclado interactivo
+    # Verificar cuota de descarga y rol
     left = await downloads_left(uid)
     can_download = (
         True
@@ -838,20 +1131,24 @@ async def mostrar_detalles_libro(
         else (isinstance(left, int) and left > 0)
     )
     is_staff = await check_is_admin_or_staff(uid, update.effective_user)
-    reply_markup = BotKeyboards.book_details(
-        key=key, is_admin_or_staff=is_staff, can_download=can_download
+    series_hash = st.get("current_series_hash") or libro.get("series_hash")
+    series_hash_short = series_hash[:16] if series_hash else None
+
+    # C. Construir Bloques Nativos (Rich Blocks) con botones incrustados
+    rich_blocks = build_book_rich_blocks(
+        libro,
+        has_cover=bool(files and "tomozaki_cover" in files),
+        key=key,
+        can_download=can_download,
+        is_admin_or_staff=is_staff,
+        series_hash_short=series_hash_short,
     )
 
-    # C. Construir HTML dinámico para el Rich Message unificado
-    html_content = build_book_rich_html(libro, has_cover=bool(media))
-
-    # D. Intentar enviar Rich Message unificado
+    # D. Intentar enviar Rich Message unificado usando Bloques Nativos
     res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
-        html=html_content,
-        media=media,
+        blocks=rich_blocks,
         files=files if files else None,
-        reply_markup=reply_markup,
         message_thread_id=thread_id,
     )
 
@@ -860,25 +1157,43 @@ async def mostrar_detalles_libro(
         logger.warning(
             "[UI Service] Fallback a mensaje tradicional en mostrar_detalles_libro"
         )
-        title_en, title_jp, title_es = resolve_title_cascade(libro)
-        desc_txt = f"📖 <b>{title_en}</b>"
-        if libro.get("volume"):
-            desc_txt += f" - Vol. {libro.get('volume')}"
-        sinopsis = libro.get("sinopsis") or "Sin sinopsis disponible."
-
-        fallback_text = f"{desc_txt}\n\n{sinopsis}"
-        if len(fallback_text) > 4000:
-            fallback_text = fallback_text[:3990] + "..."
-
-        msg = await context.bot.send_message(
+        reply_markup = BotKeyboards.book_details(
+            key=key, is_admin_or_staff=is_staff, can_download=can_download
+        )
+        html_content = build_book_rich_html(
+            libro, has_cover=bool(files and "tomozaki_cover" in files)
+        )
+        res_html = await RichMessageService.send_rich_message(
             chat_id=chat_id,
-            text=fallback_text,
+            html=html_content,
+            files=files if files else None,
             reply_markup=reply_markup,
-            parse_mode="HTML",
             message_thread_id=thread_id,
         )
-        if msg:
-            st["last_detalles_msg_ids"].append(msg.message_id)
+        if not res_html or not res_html.get("ok"):
+            title_en, title_jp, title_es = resolve_title_cascade(libro)
+            desc_txt = f"📖 <b>{title_en}</b>"
+            if libro.get("volume"):
+                desc_txt += f" - Vol. {libro.get('volume')}"
+            sinopsis = libro.get("sinopsis") or "Sin sinopsis disponible."
+
+            fallback_text = f"{desc_txt}\n\n{sinopsis}"
+            if len(fallback_text) > 4000:
+                fallback_text = fallback_text[:3990] + "..."
+
+            msg = await context.bot.send_message(
+                chat_id=chat_id,
+                text=fallback_text,
+                reply_markup=reply_markup,
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )
+            if msg:
+                st["last_detalles_msg_ids"].append(msg.message_id)
+        elif res_html.get("result", {}).get("message_id"):
+            st["last_detalles_msg_ids"].append(
+                res_html["result"]["message_id"]
+            )
     else:
         # Si fue exitoso el Rich Message, guardamos su ID de mensaje para limpieza
         rich_msg_id = res.get("result", {}).get("message_id")
