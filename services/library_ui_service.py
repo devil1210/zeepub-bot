@@ -89,7 +89,9 @@ async def mostrar_menu_principal(
     )
 
 
-async def mostrar_generos(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def mostrar_generos(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, force_new: bool = False
+):
     """Muestra lista de géneros."""
     uid = update.effective_user.id
     st = state_manager.get_user_state(uid)
@@ -102,18 +104,21 @@ async def mostrar_generos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     st["titulo"] = "🏷️ Géneros"
 
     text = "<b>🏷️ Selecciona un Género:</b>"
-    if update.callback_query:
-        await update.callback_query.edit_message_text(
-            text, reply_markup=reply_markup, parse_mode="HTML"
-        )
-    else:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=text,
-            reply_markup=reply_markup,
-            parse_mode="HTML",
-            message_thread_id=get_thread_id(update),
-        )
+    if update.callback_query and not force_new:
+        try:
+            await update.callback_query.edit_message_text(
+                text, reply_markup=reply_markup, parse_mode="HTML"
+            )
+            return
+        except Exception:
+            pass
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=text,
+        reply_markup=reply_markup,
+        parse_mode="HTML",
+        message_thread_id=get_thread_id(update),
+    )
 
 
 async def mostrar_series(
@@ -753,6 +758,7 @@ def build_book_rich_blocks(
     is_admin_or_staff: bool = False,
     series_hash_short: str | None = None,
     volume_buttons: list[list[dict]] | None = None,
+    show_nav_buttons: bool = True,
 ) -> list[dict]:
     """Construye la estructura de bloques nativos (Rich Blocks) para Telegram Bot API."""
     blocks = []
@@ -1029,25 +1035,26 @@ def build_book_rich_blocks(
             )
 
     # 8. Botones de navegación incrustados
-    nav_row = []
-    if series_hash_short:
-        nav_row.append(
+    if show_nav_buttons:
+        nav_row = []
+        if series_hash_short:
+            nav_row.append(
+                {
+                    "text": "⬅️ Volver",
+                    "callback_data": f"show_series|{series_hash_short}",
+                }
+            )
+        nav_row.append({"text": "📚 Catálogo", "callback_data": "nav_local|all_series"})
+        nav_row.append({"text": "🏠 Inicio", "callback_data": "main_menu"})
+        nav_row.append({"text": "❌ Salir", "callback_data": "noop"})
+
+        blocks.append(
             {
-                "text": "⬅️ Volver",
-                "callback_data": f"show_series|{series_hash_short}",
+                "type": "buttons",
+                "align": "center",
+                "buttons": nav_row,
             }
         )
-    nav_row.append({"text": "📚 Catálogo", "callback_data": "nav_local|all_series"})
-    nav_row.append({"text": "🏠 Inicio", "callback_data": "main_menu"})
-    nav_row.append({"text": "❌ Salir", "callback_data": "noop"})
-
-    blocks.append(
-        {
-            "type": "buttons",
-            "align": "center",
-            "buttons": nav_row,
-        }
-    )
 
     # 9. Divider y pie con hashtag
     blocks.append({"type": "divider"})
@@ -1216,7 +1223,10 @@ async def mostrar_detalles_libro(
 
 
 async def mostrar_autores_local(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 1
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    page: int = 1,
+    force_new: bool = False,
 ):
     """Muestra lista de autores locales paginada."""
     uid = update.effective_user.id
@@ -1237,18 +1247,21 @@ async def mostrar_autores_local(
     st["titulo"] = "✍️ Autores"
 
     text = f"<b>✍️ Selecciona un Autor:</b>\nMostrando {len(authors)} autores (Pág. {page}/{total_pages})."
-    if update.callback_query:
-        await update.callback_query.edit_message_text(
-            text, reply_markup=reply_markup, parse_mode="HTML"
-        )
-    else:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=text,
-            reply_markup=reply_markup,
-            parse_mode="HTML",
-            message_thread_id=get_thread_id(update),
-        )
+    if update.callback_query and not force_new:
+        try:
+            await update.callback_query.edit_message_text(
+                text, reply_markup=reply_markup, parse_mode="HTML"
+            )
+            return
+        except Exception:
+            pass
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=text,
+        reply_markup=reply_markup,
+        parse_mode="HTML",
+        message_thread_id=get_thread_id(update),
+    )
 
 
 async def mostrar_resultados_locales(

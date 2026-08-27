@@ -40,6 +40,39 @@ class CallbackHandlerV6(BaseCommandHandler):
         uid = update.effective_user.id
         st = state_manager.get_user_state(uid)
 
+        msg_id = query.message.message_id if query.message else None
+        is_downloaded_msg = bool(msg_id and msg_id in st.get("downloaded_msgs", set()))
+
+        # Si el usuario interactúa desde un mensaje que contiene un libro descargado,
+        # limpiamos sus botones de navegación para preservarlo intacto en el chat.
+        if is_downloaded_msg:
+            down_data = st.get("libros_downloaded", {}).pop(msg_id, {})
+            dl_libro = down_data.get("libro") or {}
+            if dl_libro:
+                clean_blocks = build_book_rich_blocks(
+                    dl_libro,
+                    has_cover=True,
+                    include_download=True,
+                    show_nav_buttons=False,
+                )
+                try:
+                    await RichMessageService.edit_rich_message(
+                        chat_id=update.effective_chat.id,
+                        message_id=msg_id,
+                        blocks=clean_blocks,
+                    )
+                except Exception as e:
+                    logger.warning(f"Error limpiando botones de mensaje descargado: {e}")
+            st["downloaded_msgs"].discard(msg_id)
+
+            # Si pulsó Salir en el mensaje descargado, simplemente confirmamos y no enviamos nada nuevo
+            if data == "noop":
+                try:
+                    await query.answer("¡Lectura guardada! 📚", show_alert=False)
+                except Exception:
+                    pass
+                return
+
         # 1. Always answer callback to prevent Telegram client from spinning
         try:
             await query.answer()
@@ -50,29 +83,26 @@ class CallbackHandlerV6(BaseCommandHandler):
         if data == "noop":
             return
 
+        force_new = is_downloaded_msg
+
         try:
-            # 1. No-op (Inactive/Disabled Buttons)
-            if data == "noop":
-                await query.answer()
-                return
+            # 1. Main Menu Navigation
+            if data == "main_menu" or data == "volver_menu":
+                await mostrar_menu_principal(update, context, force_new=force_new)
 
-            # 2. Main Menu Navigation
-            elif data == "main_menu" or data == "volver_menu":
-                await mostrar_menu_principal(update, context)
-
-            # 3. Categorized Lists Navigation
+            # 2. Categorized Lists Navigation
             elif data.startswith("nav_local|"):
                 category = data.split("|")[1]
                 if category == "all_series":
                     await mostrar_series(
-                        update, context, origin_type="all_series", page=1
+                        update, context, origin_type="all_series", page=1, force_new=force_new
                     )
                 elif category == "newest":
-                    await mostrar_series(update, context, origin_type="newest", page=1)
+                    await mostrar_series(update, context, origin_type="newest", page=1, force_new=force_new)
                 elif category == "genres":
-                    await mostrar_generos(update, context)
+                    await mostrar_generos(update, context, force_new=force_new)
                 elif category == "authors":
-                    await mostrar_autores_local(update, context, page=1)
+                    await mostrar_autores_local(update, context, page=1, force_new=force_new)
 
             # 4. Genre Filtering
             elif data.startswith("gen|"):
@@ -319,6 +349,15 @@ class CallbackHandlerV6(BaseCommandHandler):
                     sent_doc = None
                     if res_edit and res_edit.get("ok"):
                         sent_doc = res_edit.get("result")
+                        st.setdefault("downloaded_msgs", set()).add(
+                            query.message.message_id
+                        )
+                        st.setdefault("libros_downloaded", {})[
+                            query.message.message_id
+                        ] = {
+                            "libro": libro_st,
+                            "series_hash_short": series_hash_short,
+                        }
                     else:
                         # Fallback a edición con HTML o envío tradicional
                         html_edited = build_book_rich_html(
