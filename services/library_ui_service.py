@@ -705,10 +705,14 @@ def build_book_rich_html(
         html_parts.append(f"<p>🏷️ <i>{chips_generos}</i></p>\n")
 
     # 3. TABLA 1: Ficha artística y literaria
-    tabla_literaria = "<table bordered striped compact>\n"
+    tabla_literaria = (
+        "<details open>\n"
+        "  <summary>📋 Ficha Técnica</summary>\n"
+        "  <table bordered striped compact>\n"
+    )
 
     autor = libro.get("author") or libro.get("autor") or "Desconocido"
-    tabla_literaria += f"  <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n"
+    tabla_literaria += f"    <tr><td><b>👤 Autor</b></td><td>{autor}</td></tr>\n"
 
     ilustrador = libro.get("illustrator") or libro.get("ilustrador")
     if ilustrador:
@@ -719,7 +723,7 @@ def build_book_rich_html(
         ]
         ill_val = ", ".join(ills) if len(ills) > 1 else str(ilustrador).strip()
         tabla_literaria += (
-            f"  <tr><td><b>🎨 Ilustrador</b></td><td>{ill_val}</td></tr>\n"
+            f"    <tr><td><b>🎨 Ilustrador</b></td><td>{ill_val}</td></tr>\n"
         )
 
     layout_by = libro.get("layout_by") or libro.get("maquetador")
@@ -731,11 +735,11 @@ def build_book_rich_html(
         ]
         layout_val = " ".join(m if m.startswith("#") else f"#{m}" for m in maqs)
         tabla_literaria += (
-            f"  <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n"
+            f"    <tr><td><b>💻 Maquetador</b></td><td>{layout_val}</td></tr>\n"
         )
 
     categoria = libro.get("book_type") or libro.get("tipo") or "Novela"
-    tabla_literaria += f"  <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n"
+    tabla_literaria += f"    <tr><td><b>📦 Categoría</b></td><td>{categoria}</td></tr>\n"
 
     demo = (
         libro.get("demographics_json")
@@ -745,13 +749,13 @@ def build_book_rich_html(
     demo_val = normalize_demography(demo)
     if demo_val:
         tabla_literaria += (
-            f"  <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n"
+            f"    <tr><td><b>👥 Demografía</b></td><td>{demo_val}</td></tr>\n"
         )
 
     traductor = libro.get("translator") or libro.get("traductor")
     if traductor:
         tabla_literaria += (
-            f"  <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n"
+            f"    <tr><td><b>🌐 Traductor</b></td><td>{traductor}</td></tr>\n"
         )
 
     grupo_trad = (
@@ -765,10 +769,10 @@ def build_book_rich_html(
             url_g = libro.get("translation_group_url")
             grupo_trad_val = f'<a href="{url_g}">{grupo_trad}</a>'
         tabla_literaria += (
-            f"  <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n"
+            f"    <tr><td><b>🏢 Grupo Traductor</b></td><td>{grupo_trad_val}</td></tr>\n"
         )
 
-    tabla_literaria += "</table>\n"
+    tabla_literaria += "  </table>\n</details>\n"
     html_parts.append(tabla_literaria)
 
     # 4. SINOPSIS: Acordeón colapsable
@@ -977,11 +981,18 @@ def build_book_rich_blocks(
 
     blocks.append(
         {
-            "type": "table",
-            "is_bordered": True,
-            "is_striped": True,
-            "is_compact": True,
-            "cells": tabla_cells,
+            "type": "details",
+            "summary": "📋 Ficha Técnica",
+            "is_open": True,
+            "blocks": [
+                {
+                    "type": "table",
+                    "is_bordered": True,
+                    "is_striped": True,
+                    "is_compact": True,
+                    "cells": tabla_cells,
+                }
+            ],
         }
     )
 
