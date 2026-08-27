@@ -998,7 +998,7 @@ def build_book_rich_blocks(
                 "is_open": False,
                 "blocks": [
                     {
-                        "type": "paragraph",
+                        "type": "blockquote",
                         "text": sinopsis_clean,
                     }
                 ],
@@ -1139,17 +1139,12 @@ def build_book_rich_blocks(
 
     # 8. Botones de navegación incrustados
     if show_nav_buttons:
-        nav_row = []
-        if series_hash_short:
-            nav_row.append(
-                {
-                    "text": "⬅️ Volver",
-                    "callback_data": f"show_series|{series_hash_short}",
-                }
-            )
-        nav_row.append({"text": "📚 Catálogo", "callback_data": "nav_local|all_series"})
-        nav_row.append({"text": "🏠 Inicio", "callback_data": "main_menu"})
-        nav_row.append({"text": "❌ Salir", "callback_data": "noop"})
+        nav_row = [
+            {"text": "⬅️ Volver", "callback_data": "nav_back"},
+            {"text": "📚 Catálogo", "callback_data": "nav_local|all_series"},
+            {"text": "🏠 Inicio", "callback_data": "main_menu"},
+            {"text": "❌ Salir", "callback_data": "noop"},
+        ]
 
         blocks.append(
             {

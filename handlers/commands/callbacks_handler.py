@@ -92,21 +92,93 @@ class CallbackHandlerV6(BaseCommandHandler):
         try:
             # 1. Main Menu Navigation
             if data == "main_menu" or data == "volver_menu":
-                await mostrar_menu_principal(update, context, force_new=force_new)
+                if not is_downloaded_msg and query.message:
+                    try:
+                        await query.message.delete()
+                    except Exception:
+                        pass
+                await mostrar_menu_principal(update, context, force_new=True)
 
-            # 2. Categorized Lists Navigation
+            # 2. Back Navigation (Historial)
+            elif data == "nav_back" or data == "volver":
+                if not is_downloaded_msg and query.message:
+                    try:
+                        await query.message.delete()
+                    except Exception:
+                        pass
+
+                historial = st.get("historial", [])
+                if historial:
+                    prev_state = historial.pop()
+                    view_type = prev_state[0]
+                    if view_type == "series_list":
+                        _, orig_t, f_val, pg = prev_state
+                        await mostrar_series(
+                            update,
+                            context,
+                            origin_type=orig_t,
+                            filter_val=f_val,
+                            page=pg or 1,
+                            force_new=True,
+                        )
+                    elif view_type == "genres":
+                        await mostrar_generos(update, context, force_new=True)
+                    elif view_type == "authors":
+                        pg = prev_state[1] if len(prev_state) > 1 else 1
+                        await mostrar_autores_local(
+                            update, context, page=pg, force_new=True
+                        )
+                    elif view_type == "main":
+                        await mostrar_menu_principal(
+                            update, context, force_new=True
+                        )
+                    else:
+                        await mostrar_series(
+                            update,
+                            context,
+                            origin_type="all_series",
+                            page=1,
+                            force_new=True,
+                        )
+                else:
+                    await mostrar_series(
+                        update,
+                        context,
+                        origin_type="all_series",
+                        page=1,
+                        force_new=True,
+                    )
+
+            # 3. Categorized Lists Navigation
             elif data.startswith("nav_local|"):
+                if not is_downloaded_msg and query.message:
+                    try:
+                        await query.message.delete()
+                    except Exception:
+                        pass
                 category = data.split("|")[1]
                 if category == "all_series":
                     await mostrar_series(
-                        update, context, origin_type="all_series", page=1, force_new=force_new
+                        update,
+                        context,
+                        origin_type="all_series",
+                        page=1,
+                        force_new=True,
                     )
                 elif category == "newest":
-                    await mostrar_series(update, context, origin_type="newest", page=1, force_new=force_new)
+                    await mostrar_series(
+                        update,
+                        context,
+                        origin_type="newest",
+                        page=1,
+                        force_new=True,
+                    )
                 elif category == "genres":
-                    await mostrar_generos(update, context, force_new=force_new)
+                    await mostrar_generos(update, context, force_new=True)
                 elif category == "authors":
-                    await mostrar_autores_local(update, context, page=1, force_new=force_new)
+                    await mostrar_autores_local(
+                        update, context, page=1, force_new=True
+                    )
 
             # 4. Genre Filtering
             elif data.startswith("gen|"):
