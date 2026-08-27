@@ -752,6 +752,7 @@ def build_book_rich_blocks(
     can_download: bool = True,
     is_admin_or_staff: bool = False,
     series_hash_short: str | None = None,
+    volume_buttons: list[list[dict]] | None = None,
 ) -> list[dict]:
     """Construye la estructura de bloques nativos (Rich Blocks) para Telegram Bot API."""
     blocks = []
@@ -963,7 +964,19 @@ def build_book_rich_blocks(
         }
     )
 
-    # 6. Si se incluye descarga embebida
+    # 6. Selector de Volúmenes (si hay botones de volumen)
+    if volume_buttons:
+        for row in volume_buttons:
+            if row:
+                blocks.append(
+                    {
+                        "type": "buttons",
+                        "align": "center",
+                        "buttons": row,
+                    }
+                )
+
+    # 7. Si se incluye descarga embebida
     if include_download:
         blocks.append(
             {
@@ -1015,15 +1028,16 @@ def build_book_rich_blocks(
                 }
             )
 
-    # Botones de navegación incrustados
+    # 8. Botones de navegación incrustados
     nav_row = []
     if series_hash_short:
         nav_row.append(
             {
-                "text": "⬅️ Volver a la Serie",
+                "text": "⬅️ Volver",
                 "callback_data": f"show_series|{series_hash_short}",
             }
         )
+    nav_row.append({"text": "📚 Catálogo", "callback_data": "nav_local|all_series"})
     nav_row.append({"text": "🏠 Inicio", "callback_data": "main_menu"})
     nav_row.append({"text": "❌ Salir", "callback_data": "noop"})
 
@@ -1035,7 +1049,7 @@ def build_book_rich_blocks(
         }
     )
 
-    # 7. Divider y pie con hashtag
+    # 9. Divider y pie con hashtag
     blocks.append({"type": "divider"})
     slug = libro.get("slug")
     if slug:

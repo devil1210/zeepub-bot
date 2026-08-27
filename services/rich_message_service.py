@@ -207,61 +207,7 @@ class RichMessageService:
             logger.error(f"[RichMessageService] Excepción de transporte en sendRichMessageDraft: {e}", exc_info=True)
             return None
 
-    @classmethod
-    async def edit_rich_message(
-        cls,
-        chat_id: int | str,
-        message_id: int,
-        blocks: list[dict] | None = None,
-        html: str | None = None,
-        markdown: str | None = None,
-        media: list[dict] | None = None,
-        reply_markup=None
-    ) -> dict | None:
-        """
-        Edita un mensaje existente para transformarlo en un Rich Message.
-        Intenta editMessageCaption primero (para mensajes con medios) y hace fallback a editMessageText.
-        """
-        rich_payload = {}
-        if blocks is not None:
-            rich_payload["blocks"] = blocks
-        if html is not None:
-            rich_payload["html"] = html
-        if markdown is not None:
-            rich_payload["markdown"] = markdown
-        if media is not None:
-            rich_payload["media"] = media
 
-        payload = {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "rich_message": json.dumps(rich_payload)
-        }
-        if reply_markup:
-            if hasattr(reply_markup, "to_dict"):
-                payload["reply_markup"] = json.dumps(reply_markup.to_dict())
-            else:
-                payload["reply_markup"] = json.dumps(reply_markup) if isinstance(reply_markup, dict) else str(reply_markup)
-
-        try:
-            async with httpx.AsyncClient() as client:
-                # 1. Intentar editMessageCaption (mensajes con foto / medios)
-                url_caption = f"https://api.telegram.org/bot{config.TELEGRAM_TOKEN}/editMessageCaption"
-                resp = await client.post(url_caption, data=payload, timeout=30.0)
-                res = resp.json()
-                if res.get("ok"):
-                    return res
-
-                # 2. Fallback a editMessageText (mensajes de solo texto)
-                url_text = f"https://api.telegram.org/bot{config.TELEGRAM_TOKEN}/editMessageText"
-                resp_text = await client.post(url_text, data=payload, timeout=30.0)
-                res_text = resp_text.json()
-                if not res_text.get("ok"):
-                    logger.error(f"[RichMessageService] Error en editMessageText (Rich): {res_text}")
-                return res_text
-        except Exception as e:
-            logger.error(f"[RichMessageService] Excepción de transporte en edit_rich_message: {e}", exc_info=True)
-            return None
 
     # ── Builders de Bloques ──────────────────────────────────────────────────
 
