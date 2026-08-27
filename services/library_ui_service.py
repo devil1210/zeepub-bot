@@ -459,6 +459,13 @@ async def mostrar_volumenes_local(
         except Exception as e:
             logger.debug(f"[mostrar_volumenes_local] No se pudo editar in-place: {e}")
 
+        # Si no se pudo editar (ej. el mensaje origen era texto normal del catálogo), lo eliminamos
+        if update.callback_query.message:
+            try:
+                await update.callback_query.message.delete()
+            except Exception:
+                pass
+
     # Si no es callback, o force_new=True, o falló la edición:
     await RichMessageService.send_rich_message(
         chat_id=chat_id,
@@ -1031,8 +1038,8 @@ def build_book_rich_blocks(
                 "is_open": False,
                 "blocks": [
                     {
-                        "type": "blockquote",
-                        "text": sinopsis_clean,
+                        "type": "paragraph",
+                        "text": {"type": "italic", "text": sinopsis_clean},
                     }
                 ],
             }
