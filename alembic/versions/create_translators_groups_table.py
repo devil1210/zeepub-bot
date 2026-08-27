@@ -33,19 +33,28 @@ def upgrade():
         sa.UniqueConstraint("name", "siglas", name="uq_translators_groups_name_siglas"),
     )
 
-    # Populate data from local_books
+    # Populate data from local_books (only if local_books table exists)
     # Extract acronyms from brackets in filename
     # Postgres substring format: substring(string from pattern)
     op.execute(r"""
-        INSERT INTO translators_groups (name, siglas)
-        SELECT DISTINCT
-            publisher,
-            substring(filename from '\[(.*?)\]')
-        FROM local_books
-        WHERE
-            publisher IS NOT NULL
-            AND filename ~ '\[.*?\]'
-        ON CONFLICT (name, siglas) DO NOTHING
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1
+                FROM information_schema.tables
+                WHERE table_schema = 'public' AND table_name = 'local_books'
+            ) THEN
+                INSERT INTO translators_groups (name, siglas)
+                SELECT DISTINCT
+                    publisher,
+                    substring(filename from '\[(.*?)\]')
+                FROM local_books
+                WHERE
+                    publisher IS NOT NULL
+                    AND filename ~ '\[.*?\]'
+                ON CONFLICT (name, siglas) DO NOTHING;
+            END IF;
+        END $$;
     """)
 
 
