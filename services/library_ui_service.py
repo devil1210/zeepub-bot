@@ -722,8 +722,10 @@ def build_book_rich_html(
     # 6. Si se incluye descarga embebida
     if include_download:
         html_parts.append(
-            '<p>✅ <b>¡Tu novela está lista para descargar!</b></p>\n'
-            '<tg-document src="tg://document?id=epub_file" />\n'
+            "<details open>\n"
+            "  <summary>📥 Descargar EPUB</summary>\n"
+            '  <tg-document src="tg://document?id=epub_file" />\n'
+            "</details>\n"
         )
 
     # 7. Línea divisoria y pie con margen no recortable
