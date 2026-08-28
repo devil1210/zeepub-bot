@@ -424,7 +424,7 @@ async def pedir_termino_busqueda(
     st["prev_view_local"] = "main"
     st["titulo"] = "🔍 Buscador"
 
-    blocks = build_search_prompt_rich_blocks()
+    blocks = build_search_prompt_rich_blocks(include_buttons=True)
 
     if update.callback_query and not force_new:
         try:
@@ -434,6 +434,7 @@ async def pedir_termino_busqueda(
                 blocks=blocks,
             )
             if res_edit and res_edit.get("ok"):
+                st["search_prompt_msg_id"] = update.callback_query.message.message_id
                 return
         except Exception as e:
             logger.debug(f"[pedir_termino_busqueda] Falló edit_rich_message: {e}")
@@ -444,7 +445,9 @@ async def pedir_termino_busqueda(
         message_thread_id=thread_id,
     )
 
-    if not res or not res.get("ok"):
+    if res and res.get("ok"):
+        st["search_prompt_msg_id"] = res.get("result", {}).get("message_id")
+    else:
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
         search_cancel_kb = InlineKeyboardMarkup([
@@ -458,13 +461,15 @@ async def pedir_termino_busqueda(
             "¿Qué novela ligera estás buscando?\n"
             "<i>Escribe el título, autor o palabra clave a continuación:</i>"
         )
-        await context.bot.send_message(
+        msg = await context.bot.send_message(
             chat_id=chat_id,
             text=text,
             reply_markup=search_cancel_kb,
             parse_mode="HTML",
             message_thread_id=thread_id,
         )
+        if msg:
+            st["search_prompt_msg_id"] = msg.message_id
 
 
 async def mostrar_resultados_locales(

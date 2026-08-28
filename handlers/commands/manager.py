@@ -150,6 +150,31 @@ class HandlerManagerV6:
         # Si el usuario estaba esperando búsqueda interactiva
         if st.get("esperando_busqueda"):
             st["esperando_busqueda"] = False  # Consumir estado
+            prompt_msg_id = st.pop("search_prompt_msg_id", None)
+            if prompt_msg_id:
+                try:
+                    from services.library_ui import build_search_prompt_rich_blocks
+                    from services.rich_message_service import RichMessageService
+
+                    clean_blocks = build_search_prompt_rich_blocks(
+                        include_buttons=False, searched_term=text
+                    )
+                    await RichMessageService.edit_rich_message(
+                        chat_id=update.effective_chat.id,
+                        message_id=prompt_msg_id,
+                        blocks=clean_blocks,
+                    )
+                except Exception as e:
+                    logger.debug(f"No se pudieron quitar los botones del prompt previo: {e}")
+                    try:
+                        await context.bot.edit_message_reply_markup(
+                            chat_id=update.effective_chat.id,
+                            message_id=prompt_msg_id,
+                            reply_markup=None,
+                        )
+                    except Exception:
+                        pass
+
             await self.search_h._search_by_term(update, context, text, thread_id)
             return
 
