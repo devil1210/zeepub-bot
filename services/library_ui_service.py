@@ -241,36 +241,222 @@ async def mostrar_menu_principal(
         )
 
 
+def build_genres_rich_blocks(genres: list[str]) -> list[dict]:
+    """Construye los bloques nativos para el Explorador de Géneros."""
+    blocks = [
+        {
+            "type": "heading",
+            "size": 2,
+            "text": "🏷️ Explorador de Géneros",
+        },
+        {
+            "type": "paragraph",
+            "text": "Selecciona una categoría para descubrir todas las novelas ligeras disponibles en la biblioteca:",
+        },
+        {
+            "type": "table",
+            "is_bordered": True,
+            "is_striped": True,
+            "is_compact": True,
+            "cells": [
+                [
+                    {"text": "🏷️ Total Categorías", "align": "left"},
+                    {"text": f"{len(genres)} géneros", "align": "left"},
+                ],
+                [
+                    {"text": "🎯 Modo de Exploración", "align": "left"},
+                    {"text": "Filtrado directo por tag", "align": "left"},
+                ],
+            ],
+        },
+    ]
+
+    # Botones en pares (máx 16)
+    for i in range(0, min(16, len(genres)), 2):
+        row = [{"text": f"🏷️ {genres[i]}", "callback_data": f"gen|{genres[i]}"}]
+        if i + 1 < len(genres):
+            row.append(
+                {"text": f"🏷️ {genres[i + 1]}", "callback_data": f"gen|{genres[i + 1]}"}
+            )
+        blocks.append({"type": "buttons", "align": "center", "buttons": row})
+
+    # Barra de navegación Zero Dead-Ends
+    blocks.append(
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
+                {"text": "⬅️ Volver", "callback_data": "subir_nivel"},
+                {"text": "🏠 Inicio", "callback_data": "volver_menu"},
+                {"text": "❌ Salir", "callback_data": "salir"},
+            ],
+        }
+    )
+    blocks.append({"type": "divider"})
+    blocks.append({"type": "paragraph", "text": "#ZeePubs #Generos"})
+    return blocks
+
+
 async def mostrar_generos(
     update: Update, context: ContextTypes.DEFAULT_TYPE, force_new: bool = False
 ):
-    """Muestra lista de géneros."""
+    """Muestra lista de géneros en formato Rich Message unificado."""
     uid = update.effective_user.id
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
     st = state_manager.get_user_state(uid)
-    genres = await LibraryService.get_genres()
 
-    reply_markup = BotKeyboards.genres_grid(genres)
+    genres = await LibraryService.get_genres()
 
     st["current_view"] = "genres"
     st["prev_view_local"] = "main"
     st["titulo"] = "🏷️ Géneros"
 
-    text = "<b>🏷️ Selecciona un Género:</b>"
+    blocks = build_genres_rich_blocks(genres)
+
     if update.callback_query and not force_new:
         try:
-            await update.callback_query.edit_message_text(
-                text, reply_markup=reply_markup, parse_mode="HTML"
+            res_edit = await RichMessageService.edit_rich_message(
+                chat_id=chat_id,
+                message_id=update.callback_query.message.message_id,
+                blocks=blocks,
             )
-            return
-        except Exception:
-            pass
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=text,
-        reply_markup=reply_markup,
-        parse_mode="HTML",
-        message_thread_id=get_thread_id(update),
+            if res_edit and res_edit.get("ok"):
+                return
+        except Exception as e:
+            logger.debug(f"[mostrar_generos] Falló edit_rich_message: {e}")
+
+    res = await RichMessageService.send_rich_message(
+        chat_id=chat_id,
+        blocks=blocks,
+        message_thread_id=thread_id,
     )
+
+    if not res or not res.get("ok"):
+        reply_markup = BotKeyboards.genres_grid(genres)
+        text = "<b>🏷️ Selecciona un Género:</b>"
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )
+
+
+def build_series_catalog_rich_blocks(
+    title: str,
+    items: list[dict],
+    total_series: int,
+    page: int,
+    total_pages: int,
+    origin_type: str,
+    filter_val: str | None = None,
+) -> list[dict]:
+    """Construye los bloques nativos para el Catálogo de Series Paginado."""
+    safe_filter = filter_val or ""
+    blocks = [
+        {
+            "type": "heading",
+            "size": 2,
+            "text": title,
+        },
+        {
+            "type": "table",
+            "is_bordered": True,
+            "is_striped": True,
+            "is_compact": True,
+            "cells": [
+                [
+                    {"text": "📚 Total Colección", "align": "left"},
+                    {"text": f"{total_series} series", "align": "left"},
+                ],
+                [
+                    {"text": "📄 Página Actual", "align": "left"},
+                    {"text": f"{page} de {total_pages}", "align": "left"},
+                ],
+            ],
+        },
+        {
+            "type": "details",
+            "summary": "📋 Series en esta página",
+            "is_open": True,
+            "blocks": [
+                {
+                    "type": "table",
+                    "is_bordered": True,
+                    "is_compact": True,
+                    "cells": [
+                        [
+                            {"text": f"{i + 1}. {item.get('title', 'Novela')}", "align": "left"},
+                            {"text": f"{item.get('book_count', 1)} vols", "align": "left"},
+                        ]
+                        for i, item in enumerate(items)
+                    ]
+                    if items
+                    else [[{"text": "No se encontraron series en esta página", "align": "left"}]],
+                }
+            ],
+        },
+    ]
+
+    # Botones individuales por cada serie (máx 6-8 por página)
+    for item in items:
+        s_title = item.get("title", "Novela")
+        idx = item.get("index", 0)
+        if len(s_title) > 34:
+            s_title = s_title[:31] + "..."
+        blocks.append(
+            {
+                "type": "buttons",
+                "align": "center",
+                "buttons": [{"text": f"📁 {s_title}", "callback_data": f"col|{idx}"}],
+            }
+        )
+
+    # Fila de Paginación
+    nav_row = []
+    if page > 1:
+        nav_row.append(
+            {
+                "text": "◀️ Ant.",
+                "callback_data": f"nav_p|{origin_type}|{safe_filter}|{page - 1}",
+            }
+        )
+    else:
+        nav_row.append({"text": "⛔ 1", "callback_data": "noop"})
+
+    nav_row.append(
+        {"text": f"📄 {page}/{total_pages}", "callback_data": "noop"}
+    )
+
+    if page < total_pages:
+        nav_row.append(
+            {
+                "text": "Sig. ▶️",
+                "callback_data": f"nav_p|{origin_type}|{safe_filter}|{page + 1}",
+            }
+        )
+    else:
+        nav_row.append({"text": f"⛔ {total_pages}", "callback_data": "noop"})
+
+    blocks.append({"type": "buttons", "align": "center", "buttons": nav_row})
+
+    # Barra de navegación Zero Dead-Ends
+    blocks.append(
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
+                {"text": "⬅️ Volver", "callback_data": "subir_nivel"},
+                {"text": "🏠 Inicio", "callback_data": "volver_menu"},
+                {"text": "❌ Salir", "callback_data": "salir"},
+            ],
+        }
+    )
+    blocks.append({"type": "divider"})
+    blocks.append({"type": "paragraph", "text": "#ZeePubs #Catalogo"})
+    return blocks
 
 
 async def mostrar_series(
@@ -281,10 +467,12 @@ async def mostrar_series(
     page: int = 1,
     force_new: bool = False,
 ):
-    """Muestra series filtradas por tag, autor o todas."""
+    """Muestra series filtradas por tag, autor o todas en formato Rich Message unificado."""
     uid = update.effective_user.id
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
     st = state_manager.get_user_state(uid)
-    page_size = 10
+    page_size = 6
 
     st["origin_type"] = origin_type
     st["filter_val"] = filter_val
@@ -317,42 +505,57 @@ async def mostrar_series(
     for i, s in enumerate(data["items"]):
         href = f"local_series|{s['series_hash']}"
         series_title = s.get("name") or s.get("series_name") or s.get("title", "Novela")
+        book_count = s.get("book_count") or s.get("count") or 1
         st["colecciones"][i] = {"titulo": series_title, "href": href}
-        items.append({"title": series_title, "index": i})
+        items.append({"title": series_title, "index": i, "book_count": book_count})
 
     total_pages = (data["total"] + page_size - 1) // page_size if data["total"] > 0 else 1
-    reply_markup = BotKeyboards.series_list(
-        items=items,
-        origin_type=origin_type,
-        filter_val=filter_val,
-        page=page,
-        total_pages=total_pages,
-    )
-
     st["current_view"] = "series_list"
     st["titulo"] = title
 
-    text = f"<b>{title}</b>\nResultados: {data['total']} series."
+    blocks = build_series_catalog_rich_blocks(
+        title=title,
+        items=items,
+        total_series=data["total"],
+        page=page,
+        total_pages=total_pages,
+        origin_type=origin_type,
+        filter_val=filter_val,
+    )
+
     if update.callback_query and not force_new:
         try:
-            await update.callback_query.edit_message_text(
-                text, reply_markup=reply_markup, parse_mode="HTML"
+            res_edit = await RichMessageService.edit_rich_message(
+                chat_id=chat_id,
+                message_id=update.callback_query.message.message_id,
+                blocks=blocks,
             )
-        except Exception:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=text,
-                reply_markup=reply_markup,
-                parse_mode="HTML",
-                message_thread_id=get_thread_id(update),
-            )
-    else:
+            if res_edit and res_edit.get("ok"):
+                return
+        except Exception as e:
+            logger.debug(f"[mostrar_series] Falló edit_rich_message: {e}")
+
+    res = await RichMessageService.send_rich_message(
+        chat_id=chat_id,
+        blocks=blocks,
+        message_thread_id=thread_id,
+    )
+
+    if not res or not res.get("ok"):
+        reply_markup = BotKeyboards.series_list(
+            items=items,
+            origin_type=origin_type,
+            filter_val=filter_val,
+            page=page,
+            total_pages=total_pages,
+        )
+        text = f"<b>{title}</b>\nResultados: {data['total']} series."
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
+            chat_id=chat_id,
             text=text,
             reply_markup=reply_markup,
             parse_mode="HTML",
-            message_thread_id=get_thread_id(update),
+            message_thread_id=thread_id,
         )
 
 
@@ -1528,14 +1731,122 @@ async def mostrar_detalles_libro(
             st["last_detalles_msg_ids"].append(rich_msg_id)
 
 
+def build_authors_rich_blocks(
+    authors: list[str],
+    total_authors: int,
+    page: int,
+    total_pages: int,
+) -> list[dict]:
+    """Construye los bloques nativos para el Directorio de Autores."""
+    blocks = [
+        {
+            "type": "heading",
+            "size": 2,
+            "text": "✍️ Directorio de Autores",
+        },
+        {
+            "type": "table",
+            "is_bordered": True,
+            "is_striped": True,
+            "is_compact": True,
+            "cells": [
+                [
+                    {"text": "✍️ Total Autores", "align": "left"},
+                    {"text": f"{total_authors} autores", "align": "left"},
+                ],
+                [
+                    {"text": "📄 Página Actual", "align": "left"},
+                    {"text": f"{page} de {total_pages}", "align": "left"},
+                ],
+            ],
+        },
+        {
+            "type": "details",
+            "summary": "📋 Autores en esta página",
+            "is_open": True,
+            "blocks": [
+                {
+                    "type": "table",
+                    "is_bordered": True,
+                    "is_compact": True,
+                    "cells": [
+                        [
+                            {"text": f"{i + 1}. {a}", "align": "left"},
+                            {"text": "Autor", "align": "left"},
+                        ]
+                        for i, a in enumerate(authors)
+                    ]
+                    if authors
+                    else [[{"text": "No se encontraron autores en esta página", "align": "left"}]],
+                }
+            ],
+        },
+    ]
+
+    # Botones individuales por autor (en pares o individuales)
+    for i in range(0, len(authors), 2):
+        row = [{"text": f"✍️ {authors[i]}", "callback_data": f"aut|{authors[i]}"}]
+        if i + 1 < len(authors):
+            row.append(
+                {"text": f"✍️ {authors[i + 1]}", "callback_data": f"aut|{authors[i + 1]}"}
+            )
+        blocks.append({"type": "buttons", "align": "center", "buttons": row})
+
+    # Paginación
+    nav_row = []
+    if page > 1:
+        nav_row.append(
+            {
+                "text": "◀️ Ant.",
+                "callback_data": f"nav_aut|{page - 1}",
+            }
+        )
+    else:
+        nav_row.append({"text": "⛔ 1", "callback_data": "noop"})
+
+    nav_row.append(
+        {"text": f"📄 {page}/{total_pages}", "callback_data": "noop"}
+    )
+
+    if page < total_pages:
+        nav_row.append(
+            {
+                "text": "Sig. ▶️",
+                "callback_data": f"nav_aut|{page + 1}",
+            }
+        )
+    else:
+        nav_row.append({"text": f"⛔ {total_pages}", "callback_data": "noop"})
+
+    blocks.append({"type": "buttons", "align": "center", "buttons": nav_row})
+
+    # Barra de navegación Zero Dead-Ends
+    blocks.append(
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
+                {"text": "⬅️ Volver", "callback_data": "subir_nivel"},
+                {"text": "🏠 Inicio", "callback_data": "volver_menu"},
+                {"text": "❌ Salir", "callback_data": "salir"},
+            ],
+        }
+    )
+    blocks.append({"type": "divider"})
+    blocks.append({"type": "paragraph", "text": "#ZeePubs #Autores"})
+    return blocks
+
+
 async def mostrar_autores_local(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
     page: int = 1,
     force_new: bool = False,
 ):
-    """Muestra lista de autores locales paginada."""
+    """Muestra lista de autores locales paginada en formato Rich Message unificado."""
     uid = update.effective_user.id
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
     st = state_manager.get_user_state(uid)
     page_size = 10
 
@@ -1544,30 +1855,48 @@ async def mostrar_autores_local(
     total = data["total"]
 
     total_pages = (total + page_size - 1) // page_size if total > 0 else 1
-    reply_markup = BotKeyboards.authors_list(
-        authors=authors, page=page, total_pages=total_pages
-    )
 
     st["current_view"] = "authors"
     st["prev_view_local"] = "main"
     st["titulo"] = "✍️ Autores"
 
-    text = f"<b>✍️ Selecciona un Autor:</b>\nMostrando {len(authors)} autores (Pág. {page}/{total_pages})."
+    blocks = build_authors_rich_blocks(
+        authors=authors,
+        total_authors=total,
+        page=page,
+        total_pages=total_pages,
+    )
+
     if update.callback_query and not force_new:
         try:
-            await update.callback_query.edit_message_text(
-                text, reply_markup=reply_markup, parse_mode="HTML"
+            res_edit = await RichMessageService.edit_rich_message(
+                chat_id=chat_id,
+                message_id=update.callback_query.message.message_id,
+                blocks=blocks,
             )
-            return
-        except Exception:
-            pass
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=text,
-        reply_markup=reply_markup,
-        parse_mode="HTML",
-        message_thread_id=get_thread_id(update),
+            if res_edit and res_edit.get("ok"):
+                return
+        except Exception as e:
+            logger.debug(f"[mostrar_autores_local] Falló edit_rich_message: {e}")
+
+    res = await RichMessageService.send_rich_message(
+        chat_id=chat_id,
+        blocks=blocks,
+        message_thread_id=thread_id,
     )
+
+    if not res or not res.get("ok"):
+        reply_markup = BotKeyboards.authors_list(
+            authors=authors, page=page, total_pages=total_pages
+        )
+        text = f"<b>✍️ Selecciona un Autor:</b>\nMostrando {len(authors)} autores (Pág. {page}/{total_pages})."
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )
 
 
 async def mostrar_resultados_locales(
