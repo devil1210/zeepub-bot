@@ -47,46 +47,198 @@ async def check_is_admin_or_staff(uid: int, tg_user=None) -> bool:
     return False
 
 
+def build_main_menu_rich_blocks(
+    user_name: str,
+    stats: dict,
+    downloads_str: str,
+    user_rank: str,
+    webapp_url: str | None = None,
+    show_webapp: bool = False,
+) -> list[dict]:
+    """Construye la estructura de bloques nativos (Rich Blocks) para el Menú Principal."""
+    series_cnt = stats.get("series_count", 0)
+    books_cnt = stats.get("books_count", 0)
+
+    blocks = [
+        {
+            "type": "heading",
+            "size": 2,
+            "text": "🌟 ZeePubs • Biblioteca Digital",
+        },
+        {
+            "type": "paragraph",
+            "text": [
+                "¡Hola, ",
+                {"type": "bold", "text": user_name},
+                "! Bienvenido a tu portal de lectura de Novelas Ligeras en formato EPUB maquetado.",
+            ],
+        },
+        {
+            "type": "table",
+            "is_bordered": True,
+            "is_striped": True,
+            "is_compact": True,
+            "cells": [
+                [
+                    {"text": "📚 Series Disponibles", "align": "left"},
+                    {"text": f"{series_cnt} series", "align": "left"},
+                ],
+                [
+                    {"text": "📖 Volúmenes Indexados", "align": "left"},
+                    {"text": f"{books_cnt} libros", "align": "left"},
+                ],
+                [
+                    {"text": "📥 Cuota de Hoy", "align": "left"},
+                    {"text": downloads_str, "align": "left"},
+                ],
+                [
+                    {"text": "👤 Rango", "align": "left"},
+                    {"text": user_rank, "align": "left"},
+                ],
+            ],
+        },
+        {
+            "type": "details",
+            "summary": "💡 Guía Rápida y Comandos",
+            "is_open": False,
+            "blocks": [
+                {
+                    "type": "paragraph",
+                    "text": "• /search <título> - Buscar cualquier novela al instante\n• /catalogo - Ver todas las series de la colección\n• /menu o /start - Volver a este menú en cualquier momento",
+                }
+            ],
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
+                {"text": "📖 Catálogo de Series", "callback_data": "nav_local|all_series"},
+                {"text": "⭐ Novedades", "callback_data": "nav_local|newest"},
+            ],
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
+                {"text": "🏷️ Géneros", "callback_data": "nav_local|genres"},
+                {"text": "✍️ Autores", "callback_data": "nav_local|authors"},
+            ],
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
+                {"text": "🔍 Buscar Novela", "callback_data": "buscar"},
+            ],
+        },
+    ]
+
+    if show_webapp and webapp_url:
+        blocks.append(
+            {
+                "type": "buttons",
+                "align": "center",
+                "buttons": [
+                    {"text": "🌐 Abrir ZeePub Web", "url": webapp_url},
+                    {"text": "❌ Salir", "callback_data": "salir"},
+                ],
+            }
+        )
+    else:
+        blocks.append(
+            {
+                "type": "buttons",
+                "align": "center",
+                "buttons": [
+                    {"text": "❌ Salir", "callback_data": "salir"},
+                ],
+            }
+        )
+
+    blocks.append({"type": "divider"})
+    blocks.append({"type": "paragraph", "text": "#ZeePubs #BibliotecaDigital"})
+
+    return blocks
+
+
 async def mostrar_menu_principal(
     update: Update, context: ContextTypes.DEFAULT_TYPE, force_new: bool = False
 ):
-    """Muestra el menú principal basado en la BD local."""
+    """Muestra el menú principal en formato Rich Message unificado con estadísticas en vivo."""
     uid = update.effective_user.id
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
     st = state_manager.get_user_state(uid)
 
     st["historial"] = []
     st["current_view"] = "main"
-    st["titulo"] = "📚 Biblioteca Local"
+    st["titulo"] = "📚 Biblioteca Digital"
 
     is_staff = await check_is_admin_or_staff(uid, update.effective_user)
     webapp_url = getattr(config, "WEBAPP_URL", None)
-    reply_markup = BotKeyboards.main_menu(
-        webapp_url=webapp_url, show_webapp=is_staff
+
+    # 1. Obtener estadísticas globales y cuota
+    stats = await LibraryService.get_library_stats()
+    user_name = update.effective_user.first_name or "Lector"
+    left = await downloads_left(uid)
+    if left == "ilimitadas":
+        downloads_str = "Ilimitadas"
+    elif isinstance(left, int):
+        downloads_str = f"{left} disponibles"
+    else:
+        downloads_str = str(left)
+
+    user_rank = "👑 Administrador" if is_staff else "📖 Lector"
+
+    # 2. Construir Bloques Nativos (Rich Blocks)
+    blocks = build_main_menu_rich_blocks(
+        user_name=user_name,
+        stats=stats,
+        downloads_str=downloads_str,
+        user_rank=user_rank,
+        webapp_url=webapp_url,
+        show_webapp=is_staff,
     )
 
-    text = (
-        "<b>📚 Bienvenido a la Biblioteca Local</b>\n\n"
-        "✨ <i>Explora nuestra colección curada de Novelas Ligeras.</i>\n\n"
-        "🎯 <b>¿Qué novela te apetece leer hoy?</b>"
-    )
-
+    # 3. Intentar editar in-place si proviene de un callback
     if update.callback_query and not force_new:
         try:
-            await update.callback_query.edit_message_text(
-                text, reply_markup=reply_markup, parse_mode="HTML"
+            res_edit = await RichMessageService.edit_rich_message(
+                chat_id=chat_id,
+                message_id=update.callback_query.message.message_id,
+                blocks=blocks,
             )
-            return
-        except Exception:
-            pass
+            if res_edit and res_edit.get("ok"):
+                return
+        except Exception as e:
+            logger.debug(f"[mostrar_menu_principal] Falló edit_rich_message: {e}")
 
-    # Si no hay callback, o force_new=True, o falló la edición (mensaje borrado)
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=text,
-        reply_markup=reply_markup,
-        parse_mode="HTML",
-        message_thread_id=get_thread_id(update),
+    # 4. Enviar nuevo Rich Message
+    res = await RichMessageService.send_rich_message(
+        chat_id=chat_id,
+        blocks=blocks,
+        message_thread_id=thread_id,
     )
+
+    # 5. Fallback tradicional si falla Rich Message
+    if not res or not res.get("ok"):
+        reply_markup = BotKeyboards.main_menu(
+            webapp_url=webapp_url, show_webapp=is_staff
+        )
+        text = (
+            f"<b>🌟 ZeePubs • Biblioteca Digital</b>\n\n"
+            f"¡Hola, <b>{user_name}</b>! Bienvenido a tu portal de lectura de Novelas Ligeras.\n\n"
+            f"📚 <b>Series:</b> {stats.get('series_count', 0)} | 📖 <b>Libros:</b> {stats.get('books_count', 0)}\n"
+            f"📥 <b>Cuota hoy:</b> {downloads_str} | 👤 <b>Rango:</b> {user_rank}\n\n"
+            f"🎯 <b>¿Qué te apetece leer hoy?</b>"
+        )
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )
 
 
 async def mostrar_generos(
