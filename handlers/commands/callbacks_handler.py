@@ -791,22 +791,8 @@ class CallbackHandlerV6(BaseCommandHandler):
 
             # 13. Search Initialization
             elif data == "buscar" or data == "search_init":
-                st["esperando_busqueda"] = True
-                search_text = (
-                    "🔍 <b>Buscador ZeePub v6.0</b>\n\n"
-                    "¿Qué novela ligera estás buscando?\n"
-                    "<i>Escribe el título, autor o palabra clave a continuación:</i>"
-                )
-                search_cancel_kb = InlineKeyboardMarkup([
-                    [
-                        InlineKeyboardButton("⬅️ Volver", callback_data="subir_nivel"),
-                        InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
-                        InlineKeyboardButton("❌ Salir", callback_data="cerrar"),
-                    ]
-                ])
-                await query.edit_message_text(
-                    search_text, reply_markup=search_cancel_kb, parse_mode="HTML"
-                )
+                from services.library_ui_service import pedir_termino_busqueda
+                await pedir_termino_busqueda(update, context, force_new=False)
 
             # 14. Clean/Delete Interactive Menu
             elif data == "cerrar" or data == "close_menu":

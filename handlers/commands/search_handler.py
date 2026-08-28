@@ -31,25 +31,10 @@ class SearchHandler(BaseCommandHandler):
         st = state_manager.get_user_state(uid)
         args = context.args
 
-        # A. Si no hay argumentos, pedir término de búsqueda interactivo
+        # A. Si no hay argumentos, pedir término de búsqueda interactivo con UI Rich Message
         if not args:
-            st["esperando_busqueda"] = True
-            search_text = (
-                "🔍 <b>Buscador ZeePub v6.0</b>\n\n"
-                "¿Qué novela ligera estás buscando?\n"
-                "<i>Escribe el título, autor o palabra clave a continuación:</i>"
-            )
-            from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-
-            search_cancel_kb = InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("🏠 Menú Principal", callback_data="volver_menu"),
-                    InlineKeyboardButton("❌ Cancelar", callback_data="cerrar"),
-                ]
-            ])
-            await self._send_message(
-                update, search_text, get_thread_id(update), reply_markup=search_cancel_kb
-            )
+            from services.library_ui_service import pedir_termino_busqueda
+            await pedir_termino_busqueda(update, context, force_new=True)
             return
 
         # B. Si hay argumentos, realizar la búsqueda directa

@@ -1899,6 +1899,229 @@ async def mostrar_autores_local(
         )
 
 
+def build_search_prompt_rich_blocks() -> list[dict]:
+    """Construye los bloques nativos para la pantalla de solicitud de búsqueda."""
+    return [
+        {
+            "type": "heading",
+            "size": 2,
+            "text": "🔍 Búsqueda en la Biblioteca",
+        },
+        {
+            "type": "paragraph",
+            "text": "Encuentra cualquier novela ligera por su título (español, inglés o romaji), autor o categoría:",
+        },
+        {
+            "type": "table",
+            "is_bordered": True,
+            "is_striped": True,
+            "is_compact": True,
+            "cells": [
+                [{"text": "🎯 Estado", "align": "left"}, {"text": "Esperando término...", "align": "left"}],
+                [{"text": "✍️ Instrucción", "align": "left"}, {"text": "Escribe el texto en el chat", "align": "left"}],
+            ],
+        },
+        {
+            "type": "details",
+            "summary": "💡 Consejos de Búsqueda",
+            "is_open": False,
+            "blocks": [
+                {
+                    "type": "paragraph",
+                    "text": "• Escribe el nombre parcial: \"Mushoku\", \"Arifureta\", \"Tomozaki\"\n• O busca por autor: \"Rifujin\", \"Yaku\"\n• También puedes escribir directo: /search <término>",
+                }
+            ],
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
+                {"text": "📖 Catálogo Completo", "callback_data": "nav_local|all_series"},
+                {"text": "🏷️ Explorar Géneros", "callback_data": "nav_local|genres"},
+            ],
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
+                {"text": "🏠 Inicio", "callback_data": "volver_menu"},
+                {"text": "❌ Cancelar", "callback_data": "salir"},
+            ],
+        },
+        {
+            "type": "divider",
+        },
+        {
+            "type": "paragraph",
+            "text": "#ZeePubs #Buscador",
+        },
+    ]
+
+
+async def pedir_termino_busqueda(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, force_new: bool = False
+):
+    """Muestra la tarjeta de búsqueda interactiva en formato Rich Message."""
+    uid = update.effective_user.id
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
+    st = state_manager.get_user_state(uid)
+
+    st["esperando_busqueda"] = True
+    st["current_view"] = "search_prompt"
+    st["prev_view_local"] = "main"
+    st["titulo"] = "🔍 Buscador"
+
+    blocks = build_search_prompt_rich_blocks()
+
+    if update.callback_query and not force_new:
+        try:
+            res_edit = await RichMessageService.edit_rich_message(
+                chat_id=chat_id,
+                message_id=update.callback_query.message.message_id,
+                blocks=blocks,
+            )
+            if res_edit and res_edit.get("ok"):
+                return
+        except Exception as e:
+            logger.debug(f"[pedir_termino_busqueda] Falló edit_rich_message: {e}")
+
+    res = await RichMessageService.send_rich_message(
+        chat_id=chat_id,
+        blocks=blocks,
+        message_thread_id=thread_id,
+    )
+
+    if not res or not res.get("ok"):
+        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+        search_cancel_kb = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("🏠 Menú Principal", callback_data="volver_menu"),
+                InlineKeyboardButton("❌ Cancelar", callback_data="cerrar"),
+            ]
+        ])
+        text = (
+            "🔍 <b>Buscador ZeePubs</b>\n\n"
+            "¿Qué novela ligera estás buscando?\n"
+            "<i>Escribe el título, autor o palabra clave a continuación:</i>"
+        )
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=search_cancel_kb,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )
+
+
+def build_search_results_rich_blocks(
+    query: str,
+    series_results: list[dict],
+    standalone_books: list[dict],
+) -> list[dict]:
+    """Construye los bloques nativos para la pantalla de resultados de búsqueda."""
+    total_s = len(series_results)
+    total_b = len(standalone_books)
+
+    blocks = [
+        {
+            "type": "heading",
+            "size": 2,
+            "text": f"🔍 Resultados: \"{query}\"",
+        },
+        {
+            "type": "table",
+            "is_bordered": True,
+            "is_striped": True,
+            "is_compact": True,
+            "cells": [
+                [{"text": "🎯 Término buscado", "align": "left"}, {"text": query, "align": "left"}],
+                [{"text": "📁 Series encontradas", "align": "left"}, {"text": f"{total_s} series", "align": "left"}],
+            ],
+        },
+    ]
+
+    if total_s > 0 or total_b > 0:
+        table_rows = []
+        for s in series_results:
+            name = s.get("name") or s.get("series_name") or s.get("title", "Serie")
+            cnt = s.get("book_count") or 1
+            table_rows.append([{"text": f"📁 {name}", "align": "left"}, {"text": f"{cnt} vols", "align": "left"}])
+        for b in standalone_books:
+            b_title = b.get("title", "Libro")
+            table_rows.append([{"text": f"📕 {b_title}", "align": "left"}, {"text": "Individual", "align": "left"}])
+
+        blocks.append(
+            {
+                "type": "details",
+                "summary": "📋 Coincidencias Encontradas",
+                "is_open": True,
+                "blocks": [
+                    {
+                        "type": "table",
+                        "is_bordered": True,
+                        "is_compact": True,
+                        "cells": table_rows if table_rows else [[{"text": "Sin resultados", "align": "left"}]],
+                    }
+                ],
+            }
+        )
+    else:
+        blocks.append(
+            {
+                "type": "paragraph",
+                "text": f"❌ No se encontraron coincidencias para <b>{query}</b>.\nIntenta con un término más general o el nombre del autor.",
+            }
+        )
+
+    # Botones de Series
+    for i, s in enumerate(series_results):
+        name = s.get("name") or s.get("series_name") or s.get("title", "Serie")
+        cnt = s.get("book_count") or 1
+        btn_label = f"📁 {name}"
+        if len(btn_label) > 30:
+            btn_label = btn_label[:27] + "..."
+        btn_label += f" ({cnt} vols)"
+        blocks.append(
+            {
+                "type": "buttons",
+                "align": "center",
+                "buttons": [{"text": btn_label, "callback_data": f"col|{i}"}],
+            }
+        )
+
+    # Botones de Libros sueltos
+    for b in standalone_books:
+        key = b.get("key")
+        title = b.get("title", "Libro")
+        if len(title) > 34:
+            title = title[:31] + "..."
+        blocks.append(
+            {
+                "type": "buttons",
+                "align": "center",
+                "buttons": [{"text": f"📕 {title}", "callback_data": f"lib|{key}"}],
+            }
+        )
+
+    # Barra de navegación
+    blocks.append(
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
+                {"text": "🔍 Nueva Búsqueda", "callback_data": "buscar"},
+                {"text": "🏠 Inicio", "callback_data": "volver_menu"},
+                {"text": "❌ Salir", "callback_data": "salir"},
+            ],
+        }
+    )
+    blocks.append({"type": "divider"})
+    blocks.append({"type": "paragraph", "text": "#ZeePubs #Resultados"})
+    return blocks
+
+
 async def mostrar_resultados_locales(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -1906,8 +2129,10 @@ async def mostrar_resultados_locales(
     series: list,
     books_standalone: list = None,
 ):
-    """Muestra los resultados de una búsqueda local agrupada por series."""
+    """Muestra los resultados de una búsqueda local agrupada por series en formato Rich Message unificado."""
     uid = update.effective_user.id
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
     st = state_manager.get_user_state(uid)
 
     st["libros"] = {}
@@ -1915,11 +2140,15 @@ async def mostrar_resultados_locales(
     series_items = []
 
     # 1. Agregar Series (Resultados agrupados)
+    found_series_hashes = set()
     if series:
         for i, s in enumerate(series):
-            if i >= 15:
+            if i >= 10:
                 break
-            href = f"local_series|{s['series_hash']}"
+            s_hash = s.get("series_hash") or s.get("id")
+            if s_hash:
+                found_series_hashes.add(s_hash)
+            href = f"local_series|{s_hash}"
             series_title = (
                 s.get("series_english")
                 or s.get("name_english")
@@ -1928,13 +2157,20 @@ async def mostrar_resultados_locales(
                 or s.get("title", "Novela")
             )
             st["colecciones"][i] = {"titulo": series_title, "href": href}
-            series_items.append({"title": series_title, "index": i})
+            series_items.append({
+                "title": series_title,
+                "index": i,
+                "book_count": s.get("book_count") or 1,
+            })
 
-    # 2. Agregar Libros "Sueltos" (que no pertenecen a las series encontradas o no tienen serie)
+    # 2. Agregar Libros "Sueltos" (que no pertenezcan a las series ya mostradas arriba)
     books_items = []
     if books_standalone:
         for b in books_standalone:
-            if len(books_items) >= 15:
+            b_s_hash = b.get("series_hash") or b.get("series_id")
+            if b_s_hash and b_s_hash in found_series_hashes:
+                continue
+            if len(books_items) >= 6:
                 break
             key = uuid.uuid4().hex[:8]
 
@@ -1947,46 +2183,65 @@ async def mostrar_resultados_locales(
                 else:
                     display_title = eng_t
             else:
-                display_title = b["title"]
+                display_title = b.get("title", "Libro")
 
             display = f"📕 {display_title}"
             st["libros"][key] = {
                 "titulo": display_title,
-                "autor": b["author"],
-                "descarga": b["filepath"],
+                "autor": b.get("author"),
+                "descarga": b.get("filepath"),
                 "portada": b.get("cover_medium") or b.get("cover_low"),
-                "hash": b["book_hash"],
+                "hash": b.get("book_hash") or b.get("id"),
             }
             books_items.append({"key": key, "title": display_title, "display": display})
-
-    reply_markup = BotKeyboards.search_results(
-        series_items=series_items, books_items=books_items
-    )
 
     st["current_view"] = "search_results"
     st["titulo"] = f"🔍 Resultado: {query}"
 
-    total_s = len(series) if series else 0
-    total_b = len(books_standalone) if books_standalone else 0
+    blocks = build_search_results_rich_blocks(
+        query=query,
+        series_results=series_items,
+        standalone_books=books_items,
+    )
 
-    if total_s > 0 or total_b > 0:
-        text = f"<b>🔍 Resultados para:</b> {query}\n"
-        if total_s > 0:
-            text += f"📂 Encontradas <b>{total_s}</b> series.\n"
-        if total_b > 0:
-            text += f"📕 Encontrados <b>{total_b}</b> libros individuales.\n"
-    else:
-        text = f"❌ No se han encontrado resultados para: <b>{query}</b>"
-
+    # Intentar editar si viene de un callback
     if hasattr(update, "callback_query") and update.callback_query:
-        await update.callback_query.edit_message_text(
-            text, reply_markup=reply_markup, parse_mode="HTML"
+        try:
+            res_edit = await RichMessageService.edit_rich_message(
+                chat_id=chat_id,
+                message_id=update.callback_query.message.message_id,
+                blocks=blocks,
+            )
+            if res_edit and res_edit.get("ok"):
+                return
+        except Exception as e:
+            logger.debug(f"[mostrar_resultados_locales] Falló edit_rich_message: {e}")
+
+    res = await RichMessageService.send_rich_message(
+        chat_id=chat_id,
+        blocks=blocks,
+        message_thread_id=thread_id,
+    )
+
+    if not res or not res.get("ok"):
+        reply_markup = BotKeyboards.search_results(
+            series_items=series_items, books_items=books_items
         )
-    else:
+        total_s = len(series_items)
+        total_b = len(books_items)
+        if total_s > 0 or total_b > 0:
+            text = f"<b>🔍 Resultados para:</b> {query}\n"
+            if total_s > 0:
+                text += f"📂 Encontradas <b>{total_s}</b> series.\n"
+            if total_b > 0:
+                text += f"📕 Encontrados <b>{total_b}</b> libros individuales.\n"
+        else:
+            text = f"❌ No se han encontrado resultados para: <b>{query}</b>"
+
         await context.bot.send_message(
-            chat_id=update.effective_chat.id,
+            chat_id=chat_id,
             text=text,
             reply_markup=reply_markup,
             parse_mode="HTML",
-            message_thread_id=get_thread_id(update),
+            message_thread_id=thread_id,
         )
