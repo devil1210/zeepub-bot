@@ -129,9 +129,13 @@ class LibraryService:
                 service = cls(session)
                 books = await service.get_books_by_series(series_hash)
 
-                # Obtener descargas de todos los libros de esta serie agrupadas por book_hash
+                # Obtener descargas y publicaciones de todos los libros de esta serie
+                from models.communications import BookPublication
+                from sqlalchemy import desc
+
                 book_hashes = [b.id for b in books]
                 dl_map = {}
+                pub_map: dict[str, list[dict]] = {}
                 if book_hashes:
                     dl_stmt = (
                         select(UserDownload.book_hash, func.count(UserDownload.id))
@@ -141,11 +145,31 @@ class LibraryService:
                     dl_res = await session.execute(dl_stmt)
                     dl_map = {row[0]: row[1] for row in dl_res.all() if row[0]}
 
-                # Convertir a dict y poblar download_count
+                    pub_stmt = (
+                        select(BookPublication)
+                        .where(BookPublication.book_id.in_(book_hashes))
+                        .order_by(desc(BookPublication.published_at))
+                    )
+                    pub_res = await session.execute(pub_stmt)
+                    for p in pub_res.scalars().all():
+                        if p.book_id not in pub_map:
+                            pub_map[p.book_id] = []
+                        pub_map[p.book_id].append({
+                            "id": p.id,
+                            "platform": p.platform,
+                            "channel_id": p.channel_id,
+                            "post_id": p.post_id,
+                            "post_url": p.post_url,
+                            "published_at": p.published_at.isoformat() if p.published_at else None,
+                            "caption": p.caption,
+                        })
+
+                # Convertir a dict y poblar download_count y publications
                 res = []
                 for b in books:
                     b_dict = b.to_dict()
                     b_dict["download_count"] = dl_map.get(b.id, 0)
+                    b_dict["publications"] = pub_map.get(b.id, [])
                     res.append(b_dict)
                 return res
         except Exception as e:

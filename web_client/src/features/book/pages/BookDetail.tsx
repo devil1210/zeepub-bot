@@ -63,8 +63,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({
     const fetchData = async () => {
       if (initialVolume && initialSeries && (initialVolume.wordCount || initialVolume.word_count)) {
         // Robust normalization for coverUrl if it's missing the expected object structure
+        let normVol = { ...initialVolume };
         if (!initialVolume.coverUrl && (initialVolume as any).cover_low) {
-          setCurVolume({
+          normVol = {
             ...initialVolume,
             coverUrl: {
               cover_low: (initialVolume as any).cover_low,
@@ -74,9 +75,9 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               cover: (initialVolume as any).cover || (initialVolume as any).cover_low || ''
             },
             coverThumbUrl: (initialVolume as any).cover_thumb || (initialVolume as any).cover_low || ''
-          });
+          };
         } else if (typeof initialVolume.coverUrl === 'string' && (initialVolume as any).cover_original) {
-          setCurVolume({
+          normVol = {
             ...initialVolume,
             coverUrl: {
               cover_low: (initialVolume as any).cover_low,
@@ -85,9 +86,26 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               cover_original: (initialVolume as any).cover_original,
               cover: initialVolume.coverUrl
             }
-          });
+          };
         }
+        setCurVolume(normVol);
         setLoading(false);
+
+        // Fetch fresh detail in background to ensure publications and dynamic counts are up to date
+        const idToFetch = bookId || initialVolume?.id;
+        if (idToFetch) {
+          api.getBookDetail(idToFetch).then(res => {
+            const bookData = res?.book || (res?.id ? res : null);
+            if (bookData) {
+              setCurVolume(prev => prev ? {
+                ...prev,
+                downloadCount: bookData.download_count ?? bookData.downloadCount ?? prev.downloadCount,
+                download_count: bookData.download_count ?? bookData.downloadCount ?? prev.download_count,
+                publications: bookData.publications || prev.publications || []
+              } : null);
+            }
+          }).catch(err => console.debug("Error updating book detail background", err));
+        }
         return;
       }
 
@@ -756,8 +774,14 @@ export const BookDetail: React.FC<BookDetailProps> = ({
               </div>
 
               {/* Publications History (Staff & Admin Only) */}
-              {canViewStaffInfo && curVolume.publications && curVolume.publications.length > 0 && (
-                <BookPublicationsHistory publications={curVolume.publications} />
+              {canViewStaffInfo && (
+                <BookPublicationsHistory
+                  publications={curVolume.publications}
+                  onOpenSchedule={() => {
+                    setScheduleInitialPlatform(undefined);
+                    setIsScheduleModalOpen(true);
+                  }}
+                />
               )}
 
             </div>

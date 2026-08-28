@@ -74,6 +74,7 @@ async def send_photo_bytes(
     parse_mode=None,
     message_thread_id=None,
     reply_markup=None,
+    api_kwargs=None,
 ):
     """Envía imagen desde bytes o ruta de archivo."""
     if not data_or_path:
@@ -92,6 +93,7 @@ async def send_photo_bytes(
                     parse_mode=parse_mode,
                     message_thread_id=message_thread_id,
                     reply_markup=reply_markup,
+                    api_kwargs=api_kwargs,
                 )
             except BadRequest as e:
                 if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -104,6 +106,7 @@ async def send_photo_bytes(
                         parse_mode=parse_mode,
                         message_thread_id=None,
                         reply_markup=reply_markup,
+                        api_kwargs=api_kwargs,
                     )
                 raise e
 
@@ -128,6 +131,7 @@ async def send_photo_bytes(
                             parse_mode=parse_mode,
                             message_thread_id=message_thread_id,
                             reply_markup=reply_markup,
+                            api_kwargs=api_kwargs,
                         )
                     except BadRequest as e:
                         if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -139,6 +143,7 @@ async def send_photo_bytes(
                                 parse_mode=parse_mode,
                                 message_thread_id=None,
                                 reply_markup=reply_markup,
+                                api_kwargs=api_kwargs,
                             )
                         raise e
             except Exception:
@@ -153,6 +158,7 @@ async def send_photo_bytes(
                             parse_mode=parse_mode,
                             message_thread_id=message_thread_id,
                             reply_markup=reply_markup,
+                            api_kwargs=api_kwargs,
                         )
                     except BadRequest as e:
                         if "Message thread not found" in str(e) and message_thread_id is not None:
@@ -164,6 +170,7 @@ async def send_photo_bytes(
                                 parse_mode=parse_mode,
                                 message_thread_id=None,
                                 reply_markup=reply_markup,
+                                api_kwargs=api_kwargs,
                             )
                         raise e
     except Exception as e:

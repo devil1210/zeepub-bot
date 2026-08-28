@@ -26,6 +26,29 @@ from services.cover_service import (
 )
 
 
+def is_authorized_group(chat_id_or_username: int | str | None) -> bool:
+    """
+    Verifica si un grupo está explícitamente autorizado por el administrador
+    para permitir descargas públicas regulares en lugar de mensajes efímeros.
+    Configurable vía setting: 'authorized_download_groups'.
+    """
+    if not chat_id_or_username:
+        return False
+    from services.settings_service import get_setting
+
+    raw = get_setting("authorized_download_groups", "")
+    if not raw:
+        return False
+
+    allowed = [item.strip() for item in str(raw).split(",") if item.strip()]
+    str_chat = str(chat_id_or_username).strip()
+    return (
+        str_chat in allowed
+        or (str_chat.startswith("-100") and str_chat[4:] in allowed)
+        or (not str_chat.startswith("-100") and f"-100{str_chat}" in allowed)
+    )
+
+
 async def publicar_libro(
     update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -177,23 +200,23 @@ async def descargar_epub_pendiente(
 
     # Identificar si es grupo
     is_group = update.effective_chat.type in ("group", "supergroup")
+    is_authorized = is_authorized_group(chat_origen)
 
-    # Verificar privilegios usando el sistema de roles
-    from services.user_service import get_effective_user
+    # Si es grupo, se envía en el mismo grupo
+    delete_seconds = 0
+    if is_group:
+        destino = chat_origen
+        thread_id_destino = thread_id_origen
+        # En grupos NO autorizados, se envía como archivo efímero con auto-borrado
+        if not is_authorized:
+            from services.settings_service import get_setting
 
-    user_info = await get_effective_user(uid)
-    role = user_info.get("role", "free")
-    is_privileged = role in ("admin", "staff")
-
-    # Si es grupo y NO es privilegiado, forzar envío al privado
-    if is_group and not is_privileged:
-        destino = uid
-        thread_id_destino = None
-        # Opcional: Avisar en el grupo que se envió al privado?
-        # Por ahora lo hacemos silencioso o asumimos que 'prep' message (line 564) iría al privado.
-        # Pero wait, line 564 usa 'destino'. Si cambiamos destino a uid,
-        # el mensaje "Preparando..." va al privado.
-        # Eso es correcto.
+            try:
+                delete_minutes_str = get_setting("auto_delete_time", "2")
+                delete_minutes = int(delete_minutes_str or "2")
+                delete_seconds = max(60, delete_minutes * 60) if delete_minutes > 0 else 120
+            except Exception:
+                delete_seconds = 120
 
     # Borrar botones (siempre) para evitar doble click
     if msg_id:
@@ -202,12 +225,8 @@ async def descargar_epub_pendiente(
         except Exception as e:
             logger.debug("Could not delete msg_id %s: %s", msg_id, e)
 
-    # El borrado de los mensajes de detalles (portada, sinopsis, info) se hace
-    # proactivamente al final si success es True, para asegurar que no se pierda la info
-    # si falla la descarga.
-
     # Si eligió Volver, descartar buffer
-    if update.callback_query.data == "volver_ultima":
+    if update.callback_query and update.callback_query.data == "volver_ultima":
         return
 
     # Verificar que hay EPUB disponible
@@ -227,19 +246,6 @@ async def descargar_epub_pendiente(
             message_thread_id=thread_id_destino,
         )
         return
-
-    # Calculo de auto-borrado
-    delete_seconds = 0
-    if is_group and is_privileged and str(destino) == str(update.effective_chat.id):
-        from services.settings_service import get_setting
-
-        try:
-            delete_minutes_str = get_setting("auto_delete_time", "2")
-            delete_minutes = int(delete_minutes_str or "2")
-            if delete_minutes > 0:
-                delete_seconds = delete_minutes * 60
-        except Exception:
-            pass
 
     # Usar DeliveryService
     from services.delivery.delivery_service import delivery_service
@@ -278,10 +284,15 @@ async def descargar_epub_pendiente(
     if restantes != "ilimitadas":
         quota_text = f"\n\n📥 Te quedan {restantes} descargas disponibles para hoy."
 
+    ephemeral_notice = ""
+    if delete_seconds > 0:
+        mins = max(1, delete_seconds // 60)
+        ephemeral_notice = f"\n\n⏳ <i>Este archivo es efímero y se auto-eliminará en {mins} min.</i>"
+
     gratitude = (
         "\n\n✨ ¡Disfruta de tu lectura! Gracias por ser parte de nuestra comunidad. ❤️"
     )
-    compact_caption = f"<hr><hr>{info_template}{quota_text}{gratitude}"
+    compact_caption = f"<hr><hr>{info_template}{quota_text}{ephemeral_notice}{gratitude}"
 
     keyboard = [
         [
@@ -305,7 +316,7 @@ async def descargar_epub_pendiente(
         options={
             "target_chat_id": destino,  # Where to send the file
             "message_thread_id": thread_id_destino,
-            "job_queue": job_queue,
+            "job_queue": job_queue or getattr(context, "job_queue", None),
             "auto_delete_seconds": delete_seconds,
             "caption": compact_caption,
             "reply_markup": InlineKeyboardMarkup(keyboard),  # Integrar botones aquí
@@ -373,19 +384,28 @@ async def enviar_libro_directo(
             )
             return False
 
-        # 2. Mensaje de preparación (siempre al usuario que interactúa)
+        # Destino final del libro
+        destino = target_chat_id if target_chat_id else user_id
+        is_group_chat = str(destino).startswith("-")
+        is_authorized = is_authorized_group(destino)
+
+        # 2. Mensaje de preparación (efímero en grupos no autorizados para el usuario que interactúa)
         prep_msg = None
         try:
+            api_kwargs_prep = (
+                {"receiver_user_id": int(user_id)}
+                if is_group_chat and user_id and not is_authorized
+                else None
+            )
             prep_msg = await bot.send_message(
-                chat_id=user_id,
+                chat_id=destino,
                 text=f"⏳ Estamos preparando tu lectura: <b>{title}</b>... ¡Solo un momento! 🚀",
                 parse_mode="HTML",
+                message_thread_id=message_thread_id,
+                api_kwargs=api_kwargs_prep,
             )
         except Exception as e:
             logger.warning(f"No se pudo enviar mensaje de preparación: {e}")
-
-        # Destino final del libro
-        destino = target_chat_id if target_chat_id else user_id
 
         # 3. Obtener EPUB (Local o Servidor)
         epub_bytes = None
@@ -559,7 +579,19 @@ async def enviar_libro_directo(
         sent_doc = None
         from services.rich_message_service import RichMessageService
 
+        # Soporte para Ephemeral Messages (Telegram Bot API 10.2 / Ephemeral Message Parameters)
+        # En grupos NO autorizados, renderiza una respuesta privada visible ÚNICAMENTE para el usuario que interactuó.
+        # En grupos autorizados por el admin o chats privados, se envía de forma regular.
+        is_group_chat = str(destino).startswith("-")
+        is_authorized = is_authorized_group(destino)
+        api_kwargs = {}
+        rich_kwargs = {}
+        if is_group_chat and user_id and not is_authorized:
+            api_kwargs["receiver_user_id"] = int(user_id)
+            rich_kwargs["receiver_user_id"] = int(user_id)
+
         try:
+
             res = await RichMessageService.send_rich_message(
                 chat_id=destino,
                 html=html_content,
@@ -567,6 +599,7 @@ async def enviar_libro_directo(
                 files=files if files else None,
                 reply_markup=reply_markup,
                 message_thread_id=message_thread_id,
+                **rich_kwargs,
             )
             if res and res.get("ok"):
                 rich_sent = True
@@ -601,6 +634,7 @@ async def enviar_libro_directo(
                         filename="cover.jpg",
                         parse_mode="HTML",
                         message_thread_id=message_thread_id,
+                        api_kwargs=api_kwargs,
                     )
                 elif mensaje_portada:
                     await bot.send_message(
@@ -608,6 +642,7 @@ async def enviar_libro_directo(
                         text=mensaje_portada,
                         parse_mode="HTML",
                         message_thread_id=message_thread_id,
+                        api_kwargs=api_kwargs,
                     )
 
             if len(msg_parts) > 1:
@@ -618,6 +653,7 @@ async def enviar_libro_directo(
                         text=sinopsis_to_send,
                         parse_mode="HTML",
                         message_thread_id=message_thread_id,
+                        api_kwargs=api_kwargs,
                     )
 
             slug = meta.get("slug")
@@ -643,6 +679,7 @@ async def enviar_libro_directo(
                     parse_mode="HTML",
                     message_thread_id=message_thread_id,
                     reply_markup=reply_markup,
+                    api_kwargs=api_kwargs,
                 )
             elif final_caption:
                 await bot.send_message(
@@ -651,18 +688,55 @@ async def enviar_libro_directo(
                     parse_mode="HTML",
                     message_thread_id=message_thread_id,
                     reply_markup=reply_markup,
+                    api_kwargs=api_kwargs,
                 )
 
         if sent_doc and auto_delete_seconds > 0:
-            if job_queue:
-                job_queue.run_once(
-                    lambda ctx: ctx.bot.delete_message(
-                        chat_id=destino, message_id=sent_doc.message_id
-                    ),
-                    when=auto_delete_seconds,
-                )
+            msg_ids = []
+            if isinstance(sent_doc, list):
+                for m in sent_doc:
+                    mid = (
+                        m.get("message_id")
+                        if isinstance(m, dict)
+                        else getattr(m, "message_id", None)
+                    )
+                    if mid:
+                        msg_ids.append(mid)
             else:
-                logger.warning("Auto-delete skipped: No job_queue provided")
+                mid = (
+                    sent_doc.get("message_id")
+                    if isinstance(sent_doc, dict)
+                    else getattr(sent_doc, "message_id", None)
+                )
+                if mid:
+                    msg_ids.append(mid)
+
+            async def _do_delete(context_or_none=None):
+                target_bot = getattr(context_or_none, "bot", bot)
+                for mid in msg_ids:
+                    try:
+                        await target_bot.delete_message(
+                            chat_id=destino, message_id=mid
+                        )
+                        logger.info(
+                            f"Mensaje efímero {mid} borrado tras {auto_delete_seconds}s en chat {destino}"
+                        )
+                    except Exception as del_err:
+                        logger.debug(
+                            f"No se pudo auto-borrar mensaje efímero {mid}: {del_err}"
+                        )
+
+            if job_queue:
+                async def _job_callback(ctx):
+                    await _do_delete(ctx)
+
+                job_queue.run_once(_job_callback, when=auto_delete_seconds)
+            else:
+                async def _asyncio_delete():
+                    await asyncio.sleep(auto_delete_seconds)
+                    await _do_delete()
+
+                asyncio.create_task(_asyncio_delete())
 
         # 8. Registrar descarga e historial (Extraído a servicio dedicado)
         if sent_doc:

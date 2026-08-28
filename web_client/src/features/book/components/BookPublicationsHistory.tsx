@@ -10,7 +10,8 @@ import {
   Edit3,
   Save,
   X,
-  Loader2
+  Loader2,
+  Send
 } from 'lucide-react';
 import { BookPublication } from '@shared/types';
 import { useTelegram } from '@shared/contexts/TelegramContext';
@@ -18,9 +19,13 @@ import { api } from '@shared/services/api';
 
 interface BookPublicationsHistoryProps {
   publications?: BookPublication[];
+  onOpenSchedule?: () => void;
 }
 
-export const BookPublicationsHistory: React.FC<BookPublicationsHistoryProps> = ({ publications = [] }) => {
+export const BookPublicationsHistory: React.FC<BookPublicationsHistoryProps> = ({
+  publications = [],
+  onOpenSchedule
+}) => {
   const { webApp, isAdmin, isStaff } = useTelegram();
   const canEdit = isAdmin || isStaff;
 
@@ -44,7 +49,40 @@ export const BookPublicationsHistory: React.FC<BookPublicationsHistoryProps> = (
   }, [publications]);
 
   if (!localPubs || localPubs.length === 0) {
-    return null;
+    return (
+      <div className="glass-panel border border-white/10 rounded-premium-sm p-6 lg:p-8 shadow-xl space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-300">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-white/5 text-gray-400 border border-white/10 shadow-lg">
+              <Radio className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-black uppercase tracking-wider text-white">
+                  Historial de Publicaciones
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-white/5 text-gray-400 font-mono text-[10px] font-bold">
+                  0
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                Sin registros de emisión en Facebook / Telegram para este volumen.
+              </p>
+            </div>
+          </div>
+
+          {onOpenSchedule && (
+            <button
+              onClick={onOpenSchedule}
+              className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/80 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 self-start sm:self-center"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Publicar en Redes</span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
   }
 
   const toggleCaption = (id: number) => {
