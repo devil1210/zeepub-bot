@@ -231,50 +231,24 @@ class TelegramPublisherProvider(PublisherProvider):
         from services.library_ui_service import build_book_rich_blocks
         from services.rich_message_service import RichMessageService
 
-        # Si se proporcionó una plantilla personalizada (caption), usarla directamente para RichMessage
-        if options and options.get("caption"):
-            clean_user_caption = (
-                caption_raw.replace("__ATTACH_FILE_SIGNAL__", "")
-                .replace("{archivo}", "")
-                .strip()
-            )
-            clean_user_caption = re.sub(
-                r"<img\s+src=[^>]*>", "", clean_user_caption, flags=re.IGNORECASE
-            ).strip()
-            if any(m.get("id") == "tomozaki_cover" for m in (media or [])):
-                html_content = (
-                    f'<img src="tg://photo?id=tomozaki_cover" />\n{clean_user_caption}'
-                )
-            else:
-                html_content = clean_user_caption
-            rich_blocks = None
-        else:
-            html_content = None
-            rich_blocks = build_book_rich_blocks(
-                book_data,
-                has_cover=bool(files and "tomozaki_cover" in files),
-                include_download=bool(files and "epub_file" in files),
-                show_nav_buttons=False,
-                volume_buttons=None,
-            )
+        # Siempre construir Bloques Nativos (Rich Blocks) estándar para anuncios en Telegram
+        # (Ficha técnica en details open, sinopsis en blockquote, detalles de archivo, y EPUB embebido nativo)
+        rich_blocks = build_book_rich_blocks(
+            book_data,
+            has_cover=bool(files and "tomozaki_cover" in files),
+            include_download=bool(files and "epub_file" in files),
+            show_nav_buttons=False,
+            volume_buttons=None,
+        )
 
         # A. Intentar enviar Rich Message unificado a través de Telegram API
         try:
-            if rich_blocks:
-                res = await RichMessageService.send_rich_message(
-                    chat_id=target_id,
-                    blocks=rich_blocks,
-                    files=files if files else None,
-                    message_thread_id=thread_id,
-                )
-            else:
-                res = await RichMessageService.send_rich_message(
-                    chat_id=target_id,
-                    html=html_content,
-                    media=media,
-                    files=files if files else None,
-                    message_thread_id=thread_id,
-                )
+            res = await RichMessageService.send_rich_message(
+                chat_id=target_id,
+                blocks=rich_blocks,
+                files=files if files else None,
+                message_thread_id=thread_id,
+            )
             if res and res.get("ok"):
                 sent_msg = res.get("result")
                 tg_msg_id = None

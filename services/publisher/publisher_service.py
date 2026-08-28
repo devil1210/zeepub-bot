@@ -320,9 +320,9 @@ class PublisherService:
                     if template_id_to_use:
                         template = await self.repo.get_template_by_id(template_id_to_use)
                         if template and template.content:
-                            # Para Telegram, si es la plantilla por defecto, dejar que TelegramPublisherProvider
-                            # use su generador dinámico nativo idéntico al de enviar_libro_directo
-                            if platform == "telegram" and template.is_default:
+                            # Para Telegram, siempre dejar que TelegramPublisherProvider
+                            # use su generador dinámico nativo idéntico al de enviar_libro_directo (Rich Blocks)
+                            if platform == "telegram":
                                 caption = None
                             else:
                                 caption = apply_publication_template(
@@ -414,7 +414,7 @@ class PublisherService:
             caption = None
             template_id_to_use = item.template_id
             cover_quality = "high"
-            if item.template:
+            if item.template and platform != "telegram":
                 caption = apply_publication_template(item.template.content, book_data)
                 if item.template.extra_config and "cover_quality" in item.template.extra_config:
                     saved_q = item.template.extra_config["cover_quality"]
