@@ -566,12 +566,20 @@ async def enviar_libro_directo(
                     }
                 )
 
+        # Soporte para Ephemeral Messages (Telegram Bot API 10.2 / Ephemeral Message Parameters)
+        # En grupos NO autorizados, renderiza una respuesta privada visible ÚNICAMENTE para el usuario que interactuó.
+        # En grupos autorizados por el admin o chats privados, se envía de forma regular.
+        is_group_chat = str(destino).startswith("-")
+        is_authorized = is_authorized_group(destino)
+        is_ephemeral = bool(is_group_chat and user_id and not is_authorized)
+
         from services.library_ui_service import build_book_rich_html
         html_content = build_book_rich_html(
             meta,
             has_cover=bool("tomozaki_cover" in files),
             include_download=bool("epub_file" in files),
             filename=fname,
+            collapsed=is_ephemeral,
         )
 
         # Intentar enviar Rich Message unificado con EPUB incluido
@@ -579,14 +587,9 @@ async def enviar_libro_directo(
         sent_doc = None
         from services.rich_message_service import RichMessageService
 
-        # Soporte para Ephemeral Messages (Telegram Bot API 10.2 / Ephemeral Message Parameters)
-        # En grupos NO autorizados, renderiza una respuesta privada visible ÚNICAMENTE para el usuario que interactuó.
-        # En grupos autorizados por el admin o chats privados, se envía de forma regular.
-        is_group_chat = str(destino).startswith("-")
-        is_authorized = is_authorized_group(destino)
         api_kwargs = {}
         rich_kwargs = {}
-        if is_group_chat and user_id and not is_authorized:
+        if is_ephemeral:
             api_kwargs["receiver_user_id"] = int(user_id)
             rich_kwargs["receiver_user_id"] = int(user_id)
 

@@ -22,6 +22,7 @@ def build_book_rich_html(
     include_download: bool = False,
     filename: str | None = None,
     series_hash_short: str | None = None,
+    collapsed: bool = False,
 ) -> str:
     """Construye el HTML dinámico completo para el Rich Message del libro."""
     html_parts = []
@@ -45,8 +46,9 @@ def build_book_rich_html(
     if chips_generos:
         html_parts.append(f"<p>🏷️ <i>{chips_generos}</i></p>\n")
 
+    tabla_open = "" if collapsed else " open"
     tabla_literaria = (
-        "<details open>\n"
+        f"<details{tabla_open}>\n"
         "  <summary>📋 Ficha Técnica</summary>\n"
         "  <table bordered striped compact>\n"
     )
@@ -169,8 +171,9 @@ def build_book_rich_html(
     html_parts.append(tabla_archivo)
 
     if include_download:
+        dl_open = "" if collapsed else " open"
         html_parts.append(
-            "<details open>\n"
+            f"<details{dl_open}>\n"
             "  <summary>📥 Descargar EPUB</summary>\n"
             '  <tg-document src="tg://document?id=epub_file" />\n'
             "</details>\n"
@@ -194,13 +197,14 @@ def build_book_rich_html(
 def build_book_rich_blocks(
     libro: dict,
     has_cover: bool = True,
-    include_download: bool = False,
     key: str | None = None,
     can_download: bool = True,
     is_admin_or_staff: bool = False,
+    include_download: bool = False,
     series_hash_short: str | None = None,
     volume_buttons: list[list[dict]] | None = None,
-    show_nav_buttons: bool = True,
+    show_nav_buttons: bool = False,
+    collapsed: bool = False,
 ) -> list[dict]:
     """Construye la estructura de bloques nativos (Rich Blocks) para Telegram Bot API."""
     blocks = []
@@ -314,7 +318,7 @@ def build_book_rich_blocks(
         {
             "type": "details",
             "summary": "📋 Ficha Técnica",
-            "is_open": True,
+            "is_open": False if collapsed else True,
             "blocks": [
                 {
                     "type": "table",
@@ -434,7 +438,7 @@ def build_book_rich_blocks(
             {
                 "type": "details",
                 "summary": "📥 Descargar EPUB",
-                "is_open": True,
+                "is_open": False if collapsed else True,
                 "blocks": [
                     {
                         "type": "document",
