@@ -41,11 +41,6 @@ class MaintenancePlugin(BasePlugin):
             # Admin only commands
             app.add_handler(CommandHandler("backup_db", self.backup_db))
             app.add_handler(CommandHandler("restore_db", self.restore_db))
-            app.add_handler(CommandHandler("latest_books", self.latest_books))
-            app.add_handler(CommandHandler("scan_library", self.scan_library, block=False))
-            app.add_handler(CommandHandler("reset_stats", self.reset_stats))
-            app.add_handler(CommandHandler("reset_library", self.reset_library))
-            app.add_handler(CommandHandler("find_duplicates", self.find_duplicates))
 
             # Publisher/Admin commands
             app.add_handler(CommandHandler("export_db", self.export_db))

@@ -7,11 +7,15 @@ from .builders import (
     build_authors_rich_blocks,
     build_book_rich_blocks,
     build_book_rich_html,
+    build_donations_rich_blocks,
     build_genres_rich_blocks,
+    build_help_rich_blocks,
     build_main_menu_rich_blocks,
+    build_rules_rich_blocks,
     build_search_prompt_rich_blocks,
     build_search_results_rich_blocks,
     build_series_catalog_rich_blocks,
+    build_status_rich_blocks,
 )
 from .catalog_views import (
     check_is_admin_or_staff,
@@ -36,6 +40,10 @@ __all__ = [
     "build_authors_rich_blocks",
     "build_search_prompt_rich_blocks",
     "build_search_results_rich_blocks",
+    "build_status_rich_blocks",
+    "build_donations_rich_blocks",
+    "build_rules_rich_blocks",
+    "build_help_rich_blocks",
     "build_book_rich_blocks",
     "build_book_rich_html",
     # Catalog Views

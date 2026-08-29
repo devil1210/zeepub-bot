@@ -45,16 +45,10 @@ class UserManagerPlugin(BasePlugin):
 
         try:
             app = bot_instance
-            # Admin commands
-            app.add_handler(CommandHandler("add_user", self.add_user))
-            app.add_handler(CommandHandler("remove_user", self.remove_user))
-            app.add_handler(CommandHandler("set_rol", self.set_rol))
-            app.add_handler(CommandHandler("set_apodo", self.set_apodo))
-            app.add_handler(CommandHandler("reset", self.reset_command))
+            # Utility & Donation commands
             app.add_handler(CommandHandler("id", self.get_id))
             app.add_handler(CommandHandler("approve_donation", self.approve_donation))
             app.add_handler(CommandHandler("reject_donation", self.reject_donation))
-            app.add_handler(CommandHandler("refresh_user", self.refresh_user_command))
 
             logger.info("Plugin UserManager: Handlers registrados.")
             return True

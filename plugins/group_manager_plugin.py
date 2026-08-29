@@ -149,7 +149,7 @@ class GroupManagerPlugin(BasePlugin):
             await update.message.reply_text("❌ Error guardando configuración.")
 
     async def reglas(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Muestra las reglas del grupo (desde mensaje guardado 'reglas' o default)."""
+        """Muestra las reglas del grupo (desde mensaje guardado 'reglas' o Rich Message por defecto)."""
         thread_id = get_thread_id(update)
         # Intentar cargar mensaje personalizado "reglas"
         msg = await custom_messages_repo.get_message("reglas")
@@ -170,15 +170,24 @@ class GroupManagerPlugin(BasePlugin):
                     message_thread_id=thread_id,
                 )
         else:
-            await update.message.reply_text(
-                "📜 <b>Reglas del Grupo</b>\n\n"
-                "1. Respeto mutuo.\n"
-                "2. No spam.\n"
-                "3. Disfrutar de la lectura.\n\n"
-                "<i>(Configura este mensaje guardando uno con slug 'reglas')</i>",
-                parse_mode="HTML",
+            from services.library_ui import build_rules_rich_blocks
+            from services.rich_message_service import RichMessageService
+
+            blocks = build_rules_rich_blocks()
+            res = await RichMessageService.send_rich_message(
+                chat_id=update.effective_chat.id,
+                blocks=blocks,
                 message_thread_id=thread_id,
             )
+            if not res or not res.get("ok"):
+                await update.message.reply_text(
+                    "📜 <b>Normas de la Comunidad • ZeePubs</b>\n\n"
+                    "1. Respeto mutuo y trato cordial.\n"
+                    "2. Cero spam o contenido no autorizado.\n"
+                    "3. Uso responsable de las búsquedas y descargas.",
+                    parse_mode="HTML",
+                    message_thread_id=thread_id,
+                )
 
     async def track_chats(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Track when bot is added/removed from groups and send introduction."""

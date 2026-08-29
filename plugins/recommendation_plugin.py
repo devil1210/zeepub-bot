@@ -43,9 +43,13 @@ class RecommendationPlugin(BasePlugin):
         pass
 
     async def command_recommend(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Genera recomendaciones inmediatas."""
+        """Genera recomendaciones personalizadas en formato Rich Message."""
         uid = update.effective_user.id
+        thread_id = update.effective_message.message_thread_id if update.effective_message else None
         from services.user_service import get_effective_user
+        from services.rich_message_service import RichMessageService
+        from core.state_manager import state_manager
+        import uuid
 
         user_info = await get_effective_user(uid)
 
@@ -53,9 +57,7 @@ class RecommendationPlugin(BasePlugin):
             await update.message.reply_text("⛔ Esta función está en Beta exclusiva para Staff.")
             return
 
-        await update.message.reply_text("🤔 Analizando tus gustos...")
-
-        recs = await RecommendationService.get_recommendations(uid, limit=3)
+        recs = await RecommendationService.get_recommendations(uid, limit=4)
 
         if not recs:
             await update.message.reply_text(
@@ -63,50 +65,83 @@ class RecommendationPlugin(BasePlugin):
             )
             return
 
-        await update.message.reply_text("💡 <b>Tengo estas sugerencias para ti:</b>", parse_mode="HTML")
+        st = state_manager.get_user_state(uid)
+        st["libros"] = st.get("libros", {})
 
-        # Enviar fichas simplificadas
+        table_rows = []
+        buttons = []
+
         for book in recs:
-            # Construir tarjeta simple con botón de descarga
-            caption = (
-                f"📚 <b>{book['title']}</b>\n"
-                f"👤 {book['author']}\n"
-                f"⭐ {book.get('rating_average', 0):.1f} ({book.get('rating_count', 0)} votos)\n"
-            )
+            title = book.get("title") or "Novela"
+            author = book.get("author") or "Desconocido"
+            rating = book.get("rating_average", 0)
+            local_id = book.get("id") or book.get("hash") or book.get("book_hash")
 
-            # Botón para descargar
-            local_id = book.get("id")
-            kb = []
-            if local_id:
-                # Use standard flow: lib|local_{id}
-                kb = [[InlineKeyboardButton("📥 Ver Libro", callback_data=f"lib|local_{local_id}")]]
+            key = uuid.uuid4().hex[:8]
+            st["libros"][key] = {
+                "titulo": title,
+                "autor": author,
+                "descarga": book.get("filepath"),
+                "portada": book.get("cover") or book.get("cover_low") or book.get("cover_medium"),
+                "hash": local_id,
+                "volume": book.get("volume"),
+            }
 
-            # Enviar portada si hay path
-            sent = False
-            cover_path = book.get("cover") or book.get("cover_low") or book.get("cover_medium")
-            if cover_path and cover_path.startswith("/"):
-                try:
-                    import os
+            table_rows.append([
+                {"text": f"📖 {title[:28]}", "align": "left"},
+                {"text": f"⭐ {rating:.1f}" if rating else "—", "align": "right"},
+            ])
+            buttons.append({"text": f"📕 {title[:25]}...", "callback_data": f"lib|{key}"})
 
-                    if os.path.exists(cover_path):
-                        await context.bot.send_photo(
-                            chat_id=uid,
-                            photo=open(cover_path, "rb"),
-                            caption=caption,
-                            parse_mode="HTML",
-                            reply_markup=InlineKeyboardMarkup(kb),
-                        )
-                        sent = True
-                except Exception:
-                    pass
+        blocks = [
+            {
+                "type": "heading",
+                "size": 2,
+                "text": "💡 Recomendaciones para Ti • ZeePubs",
+            },
+            {
+                "type": "paragraph",
+                "text": "Basado en tu historial y preferencias de lectura, seleccionamos estas obras:",
+            },
+            {
+                "type": "table",
+                "is_bordered": True,
+                "is_striped": True,
+                "is_compact": True,
+                "cells": table_rows,
+            },
+        ]
 
-            if not sent:
-                await context.bot.send_message(
-                    chat_id=uid,
-                    text=caption,
-                    parse_mode="HTML",
-                    reply_markup=InlineKeyboardMarkup(kb),
-                )
+        # Agregar botones en pares
+        for i in range(0, len(buttons), 2):
+            row = buttons[i : i + 2]
+            blocks.append({
+                "type": "buttons",
+                "align": "center",
+                "buttons": row,
+            })
+
+        blocks.extend([
+            {
+                "type": "buttons",
+                "align": "center",
+                "buttons": [
+                    {"text": "📚 Catálogo", "callback_data": "nav_local|all_series"},
+                    {"text": "🏠 Inicio", "callback_data": "volver_menu"},
+                ],
+            },
+            {"type": "divider"},
+            {"type": "paragraph", "text": "#ZeePubs #Recomendaciones"},
+        ])
+
+        res = await RichMessageService.send_rich_message(
+            chat_id=update.effective_chat.id,
+            blocks=blocks,
+            message_thread_id=thread_id,
+        )
+
+        if not res or not res.get("ok"):
+            await update.message.reply_text("💡 <b>Tus Recomendaciones:</b>", parse_mode="HTML")
 
     async def command_settings(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Menú de configuración de usuario."""

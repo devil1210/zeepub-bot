@@ -47,27 +47,7 @@ class TemplatesPlugin(BasePlugin):
 
     async def initialize(self, bot_instance: Application) -> bool:
         self.app = bot_instance
-
-        # ConversationHandler para gestionar templates
-        conv_handler = ConversationHandler(
-            entry_points=[CommandHandler("pub_templates", self.start_templates)],
-            states={
-                MENU: [CallbackQueryHandler(self.handle_menu_selection, pattern="^tpl_")],
-                CREATE_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.receive_name)],
-                CREATE_PLATFORM: [CallbackQueryHandler(self.receive_platform, pattern="^plt_")],
-                CREATE_CONTENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, self.receive_content)],
-                DELETE_SELECT: [CallbackQueryHandler(self.delete_template, pattern="^del_tpl_")],
-            },
-            fallbacks=[
-                CommandHandler("cancel", self.cancel),
-                CallbackQueryHandler(self.cancel, pattern="^tpl_cancel$"),
-            ],
-            per_user=True,
-            per_chat=False,
-        )
-
-        self.app.add_handler(conv_handler)
-        logger.info(f"Plugin {self.name} inicializado correctamente.")
+        logger.info(f"Plugin {self.name} inicializado (gestión visual de plantillas en Dashboard Web).")
         return True
 
     async def cleanup(self) -> None:

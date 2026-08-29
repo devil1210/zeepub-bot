@@ -134,6 +134,7 @@ class StatsPlugin(BasePlugin):
 
         # Modo Resumen Diario (Dashboard Completo)
         from services.stats_service import get_stats_summary
+        from services.rich_message_service import RichMessageService
 
         # Obtener métricas paralelas
         stats_day = await get_stats_summary("day")
@@ -141,46 +142,90 @@ class StatsPlugin(BasePlugin):
         stats_year = await get_stats_summary("year")
         stats_all = await get_stats_summary("all")
 
-        cms = context.application.plugin_manager.get_plugin("custom_messages")
+        blocks = [
+            {
+                "type": "heading",
+                "size": 2,
+                "text": "📊 Panel de Estadísticas • ZeePubs",
+            },
+            {
+                "type": "paragraph",
+                "text": "Resumen en tiempo real de actividad, descargas y crecimiento de la comunidad:",
+            },
+            {
+                "type": "table",
+                "is_bordered": True,
+                "is_striped": True,
+                "is_compact": True,
+                "cells": [
+                    [
+                        {"text": "📅 Periodo", "align": "left"},
+                        {"text": "📥 Descargas", "align": "center"},
+                        {"text": "👥 Activos", "align": "center"},
+                        {"text": "🆕 Nuevos", "align": "center"},
+                    ],
+                    [
+                        {"text": "Hoy", "align": "left"},
+                        {"text": str(stats_day.get("total_downloads", 0)), "align": "center"},
+                        {"text": str(stats_day.get("unique_users", 0)), "align": "center"},
+                        {"text": str(stats_day.get("new_users", 0)), "align": "center"},
+                    ],
+                    [
+                        {"text": "Este Mes", "align": "left"},
+                        {"text": str(stats_month.get("total_downloads", 0)), "align": "center"},
+                        {"text": str(stats_month.get("unique_users", 0)), "align": "center"},
+                        {"text": str(stats_month.get("new_users", 0)), "align": "center"},
+                    ],
+                    [
+                        {"text": "Este Año", "align": "left"},
+                        {"text": str(stats_year.get("total_downloads", 0)), "align": "center"},
+                        {"text": str(stats_year.get("unique_users", 0)), "align": "center"},
+                        {"text": "—", "align": "center"},
+                    ],
+                    [
+                        {"text": "Histórico Total", "align": "left"},
+                        {"text": str(stats_all.get("total_downloads", 0)), "align": "center"},
+                        {"text": "—", "align": "center"},
+                        {"text": str(stats_all.get("new_users", 0)), "align": "center"},
+                    ],
+                ],
+            },
+        ]
 
-        # Definir emojis
-        e_dl = "⬇️"
-        e_us = "👥"
-        e_new = "🆕"
+        webapp_url = getattr(config, "WEBAPP_URL", None)
+        action_buttons = [
+            {"text": "📚 Catálogo", "callback_data": "nav_local|all_series"},
+            {"text": "🏠 Inicio", "callback_data": "volver_menu"},
+        ]
+        if webapp_url:
+            action_buttons.insert(0, {"text": "🚀 Observatorio Web", "web_app": {"url": f"{webapp_url}admin"}})
 
-        msg_thread_info = ""
-        if thread_id:
-            msg_thread_info = f"🆔 <b>Topic ID:</b> <code>{thread_id}</code>\n\n"
+        blocks.extend([
+            {
+                "type": "buttons",
+                "align": "center",
+                "buttons": action_buttons,
+            },
+            {"type": "divider"},
+            {"type": "paragraph", "text": "#ZeePubs #Estadisticas"},
+        ])
 
-        base_summary = (
-            "📊 <b>Panel de Estadísticas</b>\n"
-            f"{msg_thread_info}"
-            "<b>Hoy:</b>\n"
-            f"{e_dl} Descargas: {stats_day['total_downloads']}\n"
-            f"{e_us} Activos: {stats_day['unique_users']}\n"
-            f"{e_new} Nuevos: {stats_day['new_users']}\n\n"
-            "<b>Este Mes:</b>\n"
-            f"{e_dl} Descargas: {stats_month['total_downloads']}\n"
-            f"{e_us} Activos: {stats_month['unique_users']}\n"
-            f"{e_new} Nuevos: {stats_month['new_users']}\n\n"
-            "<b>Este Año:</b>\n"
-            f"{e_dl} Descargas: {stats_year['total_downloads']}\n"
-            f"{e_us} Activos: {stats_year['unique_users']}\n\n"
-            "<b>Histórico Total:</b>\n"
-            f"{e_dl} Descargas: {stats_all['total_downloads']}\n"
-            f"{e_new} Usuarios Totales: {stats_all['new_users']}\n"
-        )
-
-        # Intentar usar template si existe (opcional)
-        text = base_summary
-        if cms and cms.enabled:
-            # Check if template exists before trying to use it to avoid errors if user hasn't added it yet
-            # For now, we stick to the hardcoded enhanced format or update template later
-            pass
-
-        await context.bot.send_message(
+        res = await RichMessageService.send_rich_message(
             chat_id=update.effective_chat.id,
-            text=text,
-            parse_mode="HTML",
+            blocks=blocks,
             message_thread_id=thread_id,
         )
+
+        if not res or not res.get("ok"):
+            base_summary = (
+                "📊 <b>Panel de Estadísticas</b>\n\n"
+                f"• <b>Hoy:</b> {stats_day['total_downloads']} descargas | {stats_day['unique_users']} activos\n"
+                f"• <b>Mes:</b> {stats_month['total_downloads']} descargas | {stats_month['unique_users']} activos\n"
+                f"• <b>Total Histórico:</b> {stats_all['total_downloads']} descargas | {stats_all['new_users']} usuarios\n"
+            )
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=base_summary,
+                parse_mode="HTML",
+                message_thread_id=thread_id,
+            )

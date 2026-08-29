@@ -34,17 +34,8 @@ class HelpPlugin(BasePlugin):
     async def initialize(self, bot_instance) -> bool:
         app = bot_instance
 
-        # --- Public Commands ---
+        # --- Public Help Command ---
         app.add_handler(CommandHandler(["help", "ayuda"], self.show_help))
-        app.add_handler(CommandHandler(["menu", "inicio"], self.show_help))
-
-        # --- Admin/Menu Management ---
-        app.add_handler(CommandHandler("add_menu_cmd", self.add_menu_cmd))
-        app.add_handler(CommandHandler("del_menu_cmd", self.del_menu_cmd))
-        app.add_handler(CommandHandler("list_menu_cmd", self.list_menu_cmd))
-        app.add_handler(CommandHandler("move_menu_cmd", self.move_menu_cmd))
-        app.add_handler(CommandHandler("refresh_menu", self.refresh_menu))
-        app.add_handler(CommandHandler("set_bot_avatar", self.set_bot_avatar))
 
         # --- Callbacks ---
         app.add_handler(CallbackQueryHandler(self.handle_help_callbacks, pattern=r"^help_"))
@@ -64,20 +55,35 @@ class HelpPlugin(BasePlugin):
         return user and user.get("role") == "admin"
 
     async def show_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Muestra el menú de ayuda principal."""
+        """Muestra el menú de ayuda con Rich Blocks y Glass UI."""
         user = await get_effective_user(update.effective_user.id)
         role = user.get("role", "user") if user else "user"
+        is_staff = role in ("admin", "staff") or update.effective_user.id in config.ADMIN_USERS
         thread_id = get_thread_id(update)
 
-        text = self.help_service.build_main_help_text()
-        keyboard = self.help_service.get_main_help_keyboard(role)
+        from services.library_ui import build_help_rich_blocks
+        from services.rich_message_service import RichMessageService
 
-        if update.callback_query:
-            await update.callback_query.edit_message_text(text=text, reply_markup=keyboard, parse_mode="HTML")
-        else:
-            await update.message.reply_text(
-                text=text, reply_markup=keyboard, parse_mode="HTML", message_thread_id=thread_id
-            )
+        blocks = build_help_rich_blocks(
+            user_rank=role.capitalize(),
+            is_staff=is_staff,
+        )
+
+        res = await RichMessageService.send_rich_message(
+            chat_id=update.effective_chat.id,
+            blocks=blocks,
+            message_thread_id=thread_id,
+        )
+
+        if not res or not res.get("ok"):
+            text = self.help_service.build_main_help_text()
+            keyboard = self.help_service.get_main_help_keyboard(role)
+            if update.callback_query:
+                await update.callback_query.edit_message_text(text=text, reply_markup=keyboard, parse_mode="HTML")
+            else:
+                await update.message.reply_text(
+                    text=text, reply_markup=keyboard, parse_mode="HTML", message_thread_id=thread_id
+                )
 
     async def handle_help_callbacks(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Procesa las interacciones con el menú de ayuda."""

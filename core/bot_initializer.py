@@ -116,11 +116,11 @@ class BotInitializer:
         commands = [
             BotCommand("start", "🏠 Iniciar y abrir menú principal"),
             BotCommand("catalog", "📖 Explorar catálogo de novelas"),
-            BotCommand("menu", "📚 Abrir menú de la biblioteca"),
             BotCommand("buscar", "🔍 Buscar novelas por título o autor"),
-            BotCommand("status", "📊 Ver cuota y estado del bot"),
-            BotCommand("cancel", "❌ Cancelar operaciones y limpiar estado"),
+            BotCommand("status", "👤 Ver perfil y cuota diaria"),
+            BotCommand("donar", "☕ Membresías VIP y donaciones"),
             BotCommand("ayuda", "ℹ️ Guía rápida de uso y comandos"),
+            BotCommand("cancel", "❌ Cancelar operaciones y limpiar estado"),
         ]
         try:
             await bot.set_my_commands(commands)

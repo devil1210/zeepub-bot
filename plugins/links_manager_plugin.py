@@ -40,12 +40,7 @@ class LinksManagerPlugin(BasePlugin):
             return False
 
         try:
-            app = bot_instance
-            app.add_handler(CommandHandler("status_links", self.status_links))
-            app.add_handler(CommandHandler("link_list", self.link_list))
-            app.add_handler(CommandHandler("purge_link", self.purge_link))
-
-            logger.info("Plugin LinksManager: Handlers registrados.")
+            logger.info("Plugin LinksManager inicializado (gestión visual en Dashboard Web).")
             return True
         except Exception as e:
             logger.error(f"Error registrando handlers del plugin LinksManager: {e}")
