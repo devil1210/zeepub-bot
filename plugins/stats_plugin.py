@@ -198,8 +198,7 @@ class StatsPlugin(BasePlugin):
             {"text": "🏠 Inicio", "callback_data": "volver_menu"},
         ]
         if webapp_url:
-            admin_url = f"{webapp_url.rstrip('/')}/admin"
-            action_buttons.insert(0, {"text": "🌐 Observatorio Web", "url": admin_url})
+            action_buttons.insert(0, {"text": "🌐 Abrir ZeePub Web", "url": webapp_url})
 
         blocks.extend([
             {
