@@ -3,6 +3,7 @@
 Vistas de Detalle de Libros y Carrusel de Volúmenes de Serie para Telegram Rich Messages.
 """
 
+import asyncio
 import io
 import logging
 import os
@@ -26,6 +27,9 @@ from utils.helpers import (
 from .builders import build_book_rich_blocks, build_book_rich_html
 
 logger = logging.getLogger(__name__)
+
+# Cache en memoria de IDs de mensajes con navegación expirada (10m) en grupos no autorizados
+_nav_expired_msgs: set[int] = set()
 
 
 async def check_is_admin_or_staff(uid: int, tg_user=None) -> bool:
