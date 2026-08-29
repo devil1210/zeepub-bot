@@ -171,13 +171,7 @@ def build_book_rich_html(
     html_parts.append(tabla_archivo)
 
     if include_download:
-        dl_open = "" if collapsed else " open"
-        html_parts.append(
-            f"<details{dl_open}>\n"
-            "  <summary>📥 Descargar EPUB</summary>\n"
-            '  <tg-document src="tg://document?id=epub_file" />\n'
-            "</details>\n"
-        )
+        html_parts.append('  <tg-document src="tg://document?id=epub_file" />\n')
 
     html_parts.append("<hr/>")
 
@@ -436,18 +430,11 @@ def build_book_rich_blocks(
     if include_download:
         blocks.append(
             {
-                "type": "details",
-                "summary": "📥 Descargar EPUB",
-                "is_open": False if collapsed else True,
-                "blocks": [
-                    {
-                        "type": "document",
-                        "document": {
-                            "type": "document",
-                            "media": "attach://epub_file",
-                        },
-                    }
-                ],
+                "type": "document",
+                "document": {
+                    "type": "document",
+                    "media": "attach://epub_file",
+                },
             }
         )
     elif key:
