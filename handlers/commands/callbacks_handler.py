@@ -456,79 +456,100 @@ class CallbackHandlerV6(BaseCommandHandler):
                         if current_row:
                             volume_rows.append(current_row)
 
-                    # 3. Construir Bloques Nativos con descarga embebida y botones de navegación
-                    rich_blocks_edited = build_book_rich_blocks(
-                        libro_st,
-                        has_cover=bool("tomozaki_cover" in delivery_files),
-                        include_download=True,
-                        series_hash_short=series_hash_short,
-                        volume_buttons=volume_rows if volume_rows else None,
-                        show_nav_buttons=True,
-                    )
+                    # 3. Entrega del libro según tipo de chat y autorización
+                    from services.telegram_service import is_authorized_group, enviar_libro_directo
 
-                    # 4. Editar el Rich Message in-place usando Bloques Nativos
-                    res_edit = await RichMessageService.edit_rich_message(
-                        chat_id=update.effective_chat.id,
-                        message_id=query.message.message_id,
-                        blocks=rich_blocks_edited,
-                        files=delivery_files if delivery_files else None,
-                    )
+                    is_group = update.effective_chat.type in ("group", "supergroup")
+                    is_authorized = is_authorized_group(update.effective_chat.id)
 
                     sent_doc = None
-                    if res_edit and res_edit.get("ok"):
-                        sent_doc = res_edit.get("result")
-                        st.setdefault("downloaded_msgs", set()).add(
-                            query.message.message_id
+                    if is_group and not is_authorized:
+                        # En grupos no autorizados: No editar el mensaje del grupo para incrustar el archivo público.
+                        # Enviar el EPUB como respuesta efímera privada al usuario que pulsó el botón.
+                        await query.answer("📥 Enviando tu libro como mensaje privado...")
+                        sent_doc = await enviar_libro_directo(
+                            bot=context.bot,
+                            user_id=uid,
+                            title=title,
+                            download_url=filepath,
+                            target_chat_id=update.effective_chat.id,
+                            message_thread_id=get_thread_id(update),
+                            metadata_override=libro_st,
+                            explicit_file_buffer=epub_bytes,
+                            job_queue=getattr(context, "job_queue", None),
                         )
-                        st.setdefault("libros_downloaded", {})[
-                            query.message.message_id
-                        ] = {
-                            "libro": libro_st,
-                            "series_hash_short": series_hash_short,
-                            "files": delivery_files,
-                        }
                     else:
-                        # Fallback a edición con HTML o envío tradicional
-                        html_edited = build_book_rich_html(
+                        # En chat privado o grupos autorizados: Editar el Rich Message in-place
+                        rich_blocks_edited = build_book_rich_blocks(
                             libro_st,
                             has_cover=bool("tomozaki_cover" in delivery_files),
                             include_download=True,
-                            filename=filename,
+                            series_hash_short=series_hash_short,
+                            volume_buttons=volume_rows if volume_rows else None,
+                            show_nav_buttons=True,
                         )
-                        res_edit_html = await RichMessageService.edit_rich_message(
+
+                        res_edit = await RichMessageService.edit_rich_message(
                             chat_id=update.effective_chat.id,
                             message_id=query.message.message_id,
-                            html=html_edited,
-                            media=delivery_media if delivery_media else None,
+                            blocks=rich_blocks_edited,
                             files=delivery_files if delivery_files else None,
-                            reply_markup=post_keyboard,
                         )
-                        if res_edit_html and res_edit_html.get("ok"):
-                            sent_doc = res_edit_html.get("result")
-                        else:
-                            # Fallback tradicional si no se pudo editar
-                            vol_val = libro_st.get("volume")
-                            vol_str = f" - Volumen {vol_val}" if vol_val else ""
-                            chips_generos = format_genre_chips(
-                                libro_st.get("tags_json")
-                                or libro_st.get("tags")
-                                or libro_st.get("generos")
+
+                        if res_edit and res_edit.get("ok"):
+                            sent_doc = res_edit.get("result")
+                            st.setdefault("downloaded_msgs", set()).add(
+                                query.message.message_id
                             )
-                        caption_parts = [f"📖 <b>{title}{vol_str}</b>"]
-                        if chips_generos:
-                            caption_parts.append(f"🏷️ <i>{chips_generos}</i>")
-                        if caption:
-                            caption_parts.append(f"\n{caption}")
-                        sent_doc = await send_doc_bytes(
-                            context.bot,
-                            update.effective_chat.id,
-                            "\n".join(caption_parts),
-                            filepath,
-                            filename=filename,
-                            parse_mode="HTML",
-                            reply_markup=post_keyboard,
-                            message_thread_id=get_thread_id(update),
-                        )
+                            st.setdefault("libros_downloaded", {})[
+                                query.message.message_id
+                            ] = {
+                                "libro": libro_st,
+                                "series_hash_short": series_hash_short,
+                                "files": delivery_files,
+                            }
+                        else:
+                            # Fallback a edición con HTML o envío tradicional
+                            html_edited = build_book_rich_html(
+                                libro_st,
+                                has_cover=bool("tomozaki_cover" in delivery_files),
+                                include_download=True,
+                                filename=filename,
+                            )
+                            res_edit_html = await RichMessageService.edit_rich_message(
+                                chat_id=update.effective_chat.id,
+                                message_id=query.message.message_id,
+                                html=html_edited,
+                                media=delivery_media if delivery_media else None,
+                                files=delivery_files if delivery_files else None,
+                                reply_markup=post_keyboard,
+                            )
+                            if res_edit_html and res_edit_html.get("ok"):
+                                sent_doc = res_edit_html.get("result")
+                            else:
+                                # Fallback tradicional si no se pudo editar
+                                vol_val = libro_st.get("volume")
+                                vol_str = f" - Volumen {vol_val}" if vol_val else ""
+                                chips_generos = format_genre_chips(
+                                    libro_st.get("tags_json")
+                                    or libro_st.get("tags")
+                                    or libro_st.get("generos")
+                                )
+                                caption_parts = [f"📖 <b>{title}{vol_str}</b>"]
+                                if chips_generos:
+                                    caption_parts.append(f"🏷️ <i>{chips_generos}</i>")
+                                if caption:
+                                    caption_parts.append(f"\n{caption}")
+                                sent_doc = await send_doc_bytes(
+                                    context.bot,
+                                    update.effective_chat.id,
+                                    "\n".join(caption_parts),
+                                    filepath,
+                                    filename=filename,
+                                    parse_mode="HTML",
+                                    reply_markup=post_keyboard,
+                                    message_thread_id=get_thread_id(update),
+                                )
 
                     # E. Registrar descarga en BD
                     meta_reg = {
