@@ -198,7 +198,8 @@ class StatsPlugin(BasePlugin):
             {"text": "🏠 Inicio", "callback_data": "volver_menu"},
         ]
         if webapp_url:
-            action_buttons.insert(0, {"text": "🚀 Observatorio Web", "web_app": {"url": f"{webapp_url}admin"}})
+            admin_url = f"{webapp_url.rstrip('/')}/admin"
+            action_buttons.insert(0, {"text": "🌐 Observatorio Web", "url": admin_url})
 
         blocks.extend([
             {

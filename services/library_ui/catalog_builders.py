@@ -632,7 +632,7 @@ def build_status_rich_blocks(
         {"text": "🏠 Inicio", "callback_data": "volver_menu"},
     ]
     if webapp_url:
-        action_buttons.insert(0, {"text": "🚀 Abrir Mini App", "web_app": {"url": webapp_url}})
+        action_buttons.insert(0, {"text": "🌐 Abrir ZeePub Web", "url": webapp_url})
 
     blocks.append(
         {
