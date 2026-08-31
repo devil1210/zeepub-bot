@@ -33,6 +33,8 @@ async def mostrar_panel_admin(
     if not is_staff:
         if update.callback_query:
             await update.callback_query.answer("🚫 Acceso restringido a Administradores.", show_alert=True)
+        elif update.message:
+            await update.message.reply_text("🚫 Acceso restringido a Administradores.", message_thread_id=thread_id)
         return
 
     # Obtener estadísticas en tiempo real
@@ -70,6 +72,8 @@ async def ejecutar_admin_scan(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not is_staff:
         if update.callback_query:
             await update.callback_query.answer("🚫 Acceso restringido a Administradores.", show_alert=True)
+        elif update.message:
+            await update.message.reply_text("🚫 Acceso restringido a Administradores.", message_thread_id=thread_id)
         return
 
     # Feedback inmediato
@@ -125,6 +129,8 @@ async def ejecutar_admin_update(update: Update, context: ContextTypes.DEFAULT_TY
     if not is_staff:
         if update.callback_query:
             await update.callback_query.answer("🚫 Acceso restringido a Administradores.", show_alert=True)
+        elif update.message:
+            await update.message.reply_text("🚫 Acceso restringido a Administradores.", message_thread_id=thread_id)
         return
 
     if update.callback_query:
