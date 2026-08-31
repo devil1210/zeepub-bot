@@ -235,7 +235,9 @@ class AuthRoutes:
                         key="tg_session",
                         value=str(tg_user_id),
                         max_age=86400 * 30,
+                        path="/",
                         httponly=False,
+                        secure=True,
                         samesite="lax",
                     )
                     return response
