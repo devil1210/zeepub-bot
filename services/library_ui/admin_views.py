@@ -4,17 +4,21 @@ Vistas para el Panel de Administración y Mantenimiento usando Rich Messages.
 """
 
 import logging
+import os
+from datetime import datetime
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from services.library_service import LibraryService
 from services.rich_message_service import RichMessageService
+from services.settings_service import get_setting, set_setting
 from utils.helpers import get_last_commit_message, get_thread_id
 
 from .builders import (
     build_admin_panel_rich_blocks,
     build_admin_scan_result_blocks,
+    build_auto_delete_menu_blocks,
 )
 from .info_views import check_is_admin_or_staff
 
@@ -37,11 +41,12 @@ async def mostrar_panel_admin(
             await update.message.reply_text("🚫 Acceso restringido a Administradores.", message_thread_id=thread_id)
         return
 
-    # Obtener estadísticas en tiempo real
+    # Obtener estadísticas y configuración
     stats = await LibraryService.get_library_stats()
     git_hash = get_last_commit_message() or "v3.6.0"
+    auto_del = get_setting("auto_delete_time", "2") or "2"
 
-    blocks = build_admin_panel_rich_blocks(stats=stats, git_hash=git_hash)
+    blocks = build_admin_panel_rich_blocks(stats=stats, git_hash=git_hash, auto_del_mins=str(auto_del))
 
     if update.callback_query and not force_new:
         try:
@@ -162,8 +167,8 @@ async def ejecutar_admin_update(update: Update, context: ContextTypes.DEFAULT_TY
             "is_striped": True,
             "is_compact": True,
             "cells": [
-                [{"text": "🔹 Versión Local", "align": "left"}, {"text": f"<code>{local_hash[:8]}</code>", "align": "left"}],
-                [{"text": "🔸 Versión Remota", "align": "left"}, {"text": f"<code>{remote_hash[:8]}</code>", "align": "left"}],
+                [{"text": "🔹 Versión Local", "align": "left"}, {"text": str(local_hash[:8]), "align": "left"}],
+                [{"text": "🔸 Versión Remota", "align": "left"}, {"text": str(remote_hash[:8]), "align": "left"}],
                 [{"text": "📊 Estado", "align": "left"}, {"text": "✅ Al día" if is_up_to_date else "⚠️ Actualización disponible", "align": "left"}],
             ],
         },
@@ -218,3 +223,143 @@ async def ejecutar_admin_update(update: Update, context: ContextTypes.DEFAULT_TY
         blocks=update_blocks,
         message_thread_id=thread_id,
     )
+
+
+async def mostrar_menu_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Muestra el submenú interactivo para configurar el tiempo de auto-destrucción."""
+    uid = update.effective_user.id
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
+    is_staff = await check_is_admin_or_staff(uid, update.effective_user)
+
+    if not is_staff:
+        if update.callback_query:
+            await update.callback_query.answer("🚫 Acceso restringido a Administradores.", show_alert=True)
+        return
+
+    curr_str = get_setting("auto_delete_time", "2") or "2"
+    try:
+        curr_mins = int(curr_str)
+    except ValueError:
+        curr_mins = 2
+
+    blocks = build_auto_delete_menu_blocks(curr_mins)
+
+    if update.callback_query:
+        try:
+            await RichMessageService.edit_rich_message(
+                chat_id=chat_id,
+                message_id=update.callback_query.message.message_id,
+                blocks=blocks,
+            )
+            return
+        except Exception:
+            pass
+
+    await RichMessageService.send_rich_message(
+        chat_id=chat_id,
+        blocks=blocks,
+        message_thread_id=thread_id,
+    )
+
+
+async def ejecutar_set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE, minutes: int):
+    """Guarda la nueva configuración de auto-destrucción y actualiza la vista."""
+    set_setting("auto_delete_time", str(minutes))
+    if update.callback_query:
+        await update.callback_query.answer(f"✅ Auto-destrucción configurada a {minutes} min", show_alert=False)
+    await mostrar_menu_timer(update, context)
+
+
+async def ejecutar_admin_backup(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Genera un backup completo de PostgreSQL y lo envía como documento."""
+    uid = update.effective_user.id
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
+    is_staff = await check_is_admin_or_staff(uid, update.effective_user)
+
+    if not is_staff:
+        if update.callback_query:
+            await update.callback_query.answer("🚫 Acceso denegado.", show_alert=True)
+        return
+
+    if update.callback_query:
+        await update.callback_query.answer("⏳ Generando backup de PostgreSQL...", show_alert=False)
+
+    try:
+        from services.backup_service import generate_backup_file
+
+        filename = await generate_backup_file()
+
+        if filename and os.path.exists(filename):
+            with open(filename, "rb") as f:
+                await context.bot.send_document(
+                    chat_id=chat_id,
+                    document=f,
+                    filename=os.path.basename(filename),
+                    caption=f"📦 <b>Backup PostgreSQL • ZeePubs</b>\n📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                    parse_mode="HTML",
+                    message_thread_id=thread_id,
+                )
+            try:
+                os.remove(filename)
+            except Exception:
+                pass
+        else:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="❌ No se pudo generar el archivo de backup.",
+                message_thread_id=thread_id,
+            )
+    except Exception as e:
+        logger.error(f"Error en ejecutar_admin_backup: {e}", exc_info=True)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"❌ Error generando backup: {e}",
+            message_thread_id=thread_id,
+        )
+
+
+async def ejecutar_toggle_grupo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Alterna la autorización del grupo actual (Permanente vs Auto-destrucción)."""
+    uid = update.effective_user.id
+    chat = update.effective_chat
+    cid = chat.id if chat else 0
+    thread_id = get_thread_id(update)
+    is_staff = await check_is_admin_or_staff(uid, update.effective_user)
+
+    if not is_staff:
+        if update.callback_query:
+            await update.callback_query.answer("🚫 Acceso denegado.", show_alert=True)
+        return
+
+    if chat.type not in ["group", "supergroup"]:
+        if update.callback_query:
+            await update.callback_query.answer(
+                "ℹ️ Este comando se utiliza dentro de un grupo para autorizarlo o revocarlo.",
+                show_alert=True,
+            )
+        return
+
+    from services.telegram_service import is_authorized_group
+    from repositories.group_settings_repository import group_settings_repo
+
+    currently_auth = is_authorized_group(cid)
+    new_state = not currently_auth
+
+    success = await group_settings_repo.set_authorized(cid, new_state)
+
+    if success:
+        if new_state:
+            msg = f"🏢 <b>¡Grupo Autorizado!</b>\n\nEste grupo (<code>{cid}</code>) ahora tiene modo biblioteca permanente (los libros no se auto-destruyen)."
+            alert = "✅ Grupo autorizado exitosamente (permanente)."
+        else:
+            msg = f"⏳ <b>Autorización Revocada</b>\n\nEste grupo (<code>{cid}</code>) ahora funciona con auto-destrucción de libros."
+            alert = "⚠️ Grupo revocado (modo auto-destrucción activo)."
+
+        if update.callback_query:
+            await update.callback_query.answer(alert, show_alert=True)
+        await context.bot.send_message(chat_id=cid, text=msg, parse_mode="HTML", message_thread_id=thread_id)
+    else:
+        if update.callback_query:
+            await update.callback_query.answer("❌ Error al cambiar estado del grupo.", show_alert=True)

@@ -9,8 +9,12 @@ from telegram import Update
 from telegram.ext import ContextTypes
 
 from services.library_ui.admin_views import (
+    ejecutar_admin_backup,
     ejecutar_admin_scan,
     ejecutar_admin_update,
+    ejecutar_set_timer,
+    ejecutar_toggle_grupo,
+    mostrar_menu_timer,
     mostrar_panel_admin,
 )
 from services.library_ui.info_views import check_is_admin_or_staff
@@ -40,6 +44,11 @@ async def handle_admin_callback(
         await mostrar_panel_admin(update, context, force_new=False)
         return True
 
+    if data.startswith("admin_set_timer|"):
+        mins = int(data.split("|")[1])
+        await ejecutar_set_timer(update, context, minutes=mins)
+        return True
+
     if data.startswith("admin_act|"):
         act = data.split("|")[1]
 
@@ -53,6 +62,19 @@ async def handle_admin_callback(
 
         elif act == "update":
             await ejecutar_admin_update(update, context)
+            return True
+
+        elif act == "backup":
+            await ejecutar_admin_backup(update, context)
+            return True
+
+        elif act == "toggle_group":
+            await ejecutar_toggle_grupo(update, context)
+            return True
+
+        elif act == "timer_menu":
+            await query.answer()
+            await mostrar_menu_timer(update, context)
             return True
 
         elif act == "stats":

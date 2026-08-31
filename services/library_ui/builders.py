@@ -7,6 +7,7 @@ Re-exporta constructores especializados desde `catalog_builders` y `book_builder
 from .admin_builders import (
     build_admin_panel_rich_blocks,
     build_admin_scan_result_blocks,
+    build_auto_delete_menu_blocks,
 )
 from .book_builders import (
     build_book_rich_blocks,

@@ -6,7 +6,9 @@ Constructores de Bloques Nativos (Rich Messages) para el Panel de Administració
 from typing import Any
 
 
-def build_admin_panel_rich_blocks(stats: dict[str, Any], git_hash: str = "v3.6.0") -> list[dict[str, Any]]:
+def build_admin_panel_rich_blocks(
+    stats: dict[str, Any], git_hash: str = "v3.6.0", auto_del_mins: str = "2"
+) -> list[dict[str, Any]]:
     """Construye Bloques Nativos para el Panel de Control de Administración."""
     series_cnt = stats.get("series_count", 0)
     books_cnt = stats.get("books_count", 0)
@@ -53,7 +55,7 @@ def build_admin_panel_rich_blocks(stats: dict[str, Any], git_hash: str = "v3.6.0
             "blocks": [
                 {
                     "type": "paragraph",
-                    "text": "Selecciona una acción para ejecutar en la biblioteca:",
+                    "text": f"⏱️ Auto-destrucción en grupos: <b>{auto_del_mins} min</b>\nSelecciona una acción a ejecutar:",
                 }
             ],
         },
@@ -70,26 +72,84 @@ def build_admin_panel_rich_blocks(stats: dict[str, Any], git_hash: str = "v3.6.0
             "align": "center",
             "buttons": [
                 {"text": "🚀 Actualizar Bot", "callback_data": "admin_act|update"},
+                {"text": "💾 Backup BD", "callback_data": "admin_act|backup"},
+            ],
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
+                {"text": "🏢 Autorizar Grupo", "callback_data": "admin_act|toggle_group"},
+                {"text": "⏱️ Auto-destrucción", "callback_data": "admin_act|timer_menu"},
+            ],
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
                 {"text": "🧹 Integridad DB", "callback_data": "admin_act|integrity"},
-            ],
-        },
-        {
-            "type": "buttons",
-            "align": "center",
-            "buttons": [
                 {"text": "📊 Estadísticas", "callback_data": "admin_act|stats"},
-                {"text": "🆔 Info Identidad", "callback_data": "admin_act|id"},
             ],
         },
         {
             "type": "buttons",
             "align": "center",
             "buttons": [
+                {"text": "🆔 Info Identidad", "callback_data": "admin_act|id"},
                 {"text": "🏠 Volver al Inicio", "callback_data": "volver_menu"},
             ],
         },
         {"type": "divider"},
         {"type": "paragraph", "text": "#ZeePubs #AdminPanel"},
+    ]
+
+
+def build_auto_delete_menu_blocks(current_mins: int = 2) -> list[dict[str, Any]]:
+    """Construye el menú interactivo para seleccionar el tiempo de auto-destrucción en grupos."""
+    presets = [1, 2, 3, 5, 10, 15]
+    row1 = []
+    row2 = []
+
+    for m in presets[:3]:
+        label = f"🔘 {m} min" if m == current_mins else f"{m} min"
+        row1.append({"text": label, "callback_data": f"admin_set_timer|{m}"})
+
+    for m in presets[3:]:
+        label = f"🔘 {m} min" if m == current_mins else f"{m} min"
+        row2.append({"text": label, "callback_data": f"admin_set_timer|{m}"})
+
+    return [
+        {
+            "type": "heading",
+            "size": 2,
+            "text": "⏱️ Configurar Auto-destrucción en Grupos",
+        },
+        {
+            "type": "paragraph",
+            "text": (
+                f"Configuración actual: <b>{current_mins} minutos</b>.\n\n"
+                "<i>Selecciona cuántos minutos durarán los libros descargados en grupos NO autorizados antes de ser eliminados automáticamente:</i>"
+            ),
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": row1,
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": row2,
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
+                {"text": "🛠️ Volver al Panel", "callback_data": "admin_panel"},
+            ],
+        },
+        {"type": "divider"},
+        {"type": "paragraph", "text": "#ZeePubs #Configuracion"},
     ]
 
 

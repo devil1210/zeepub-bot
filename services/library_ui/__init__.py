@@ -4,13 +4,18 @@ Paquete modularizado de Interfaz de Usuario y Vistas para Telegram Rich Messages
 """
 
 from .admin_views import (
+    ejecutar_admin_backup,
     ejecutar_admin_scan,
     ejecutar_admin_update,
+    ejecutar_set_timer,
+    ejecutar_toggle_grupo,
+    mostrar_menu_timer,
     mostrar_panel_admin,
 )
 from .builders import (
     build_admin_panel_rich_blocks,
     build_admin_scan_result_blocks,
+    build_auto_delete_menu_blocks,
     build_authors_rich_blocks,
     build_book_rich_blocks,
     build_book_rich_html,
@@ -78,6 +83,11 @@ __all__ = [
     "mostrar_panel_admin",
     "ejecutar_admin_scan",
     "ejecutar_admin_update",
+    "ejecutar_admin_backup",
+    "ejecutar_toggle_grupo",
+    "mostrar_menu_timer",
+    "ejecutar_set_timer",
+    "build_auto_delete_menu_blocks",
     # Series Views
     "mostrar_volumenes_local",
     "mostrar_detalles_libro",
