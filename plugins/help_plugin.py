@@ -141,60 +141,39 @@ class HelpPlugin(BasePlugin):
                 pass
 
             # 1. Public Commands
-            raw_cmds = get_setting("menu_public_commands")
-            if raw_cmds:
-                cmd_list = [c.strip() for c in raw_cmds.split(",") if c.strip()]
-                public_cmds = []
-                for c_name in cmd_list:
-                    fallback_desc = COMMANDS_REGISTRY.get(c_name, {}).get("desc", "Comando bot")
-                    desc = fallback_desc
-                    if cms and cms.enabled:
-                        desc = await cms.get_text(f"cmd_menu_desc_{c_name}", default_text=fallback_desc)
-                    public_cmds.append(BotCommand(c_name, desc))
-            else:
-                public_cmds = await self._get_default_public_cmds_dynamic(cms)
+            public_cmds = [
+                BotCommand("start", "🏠 Iniciar bot y menú principal"),
+                BotCommand("buscar", "🔍 Buscar novelas por título o autor"),
+                BotCommand("catalogo", "📚 Explorar catálogo completo"),
+                BotCommand("series", "📖 Explorar catálogo por series"),
+                BotCommand("status", "👤 Ver perfil y descargas restantes"),
+                BotCommand("donar", "⭐ Información de membresías VIP"),
+                BotCommand("ayuda", "ℹ️ Guía de uso y comandos"),
+                BotCommand("cancel", "❌ Cancelar acción activa"),
+            ]
 
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeDefault())
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllPrivateChats())
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllGroupChats())
             await bot.set_my_commands(public_cmds, scope=BotCommandScopeAllChatAdministrators())
 
-            # 2. Complete Menu for Admins
-            admin_cmds = []
-            for cmd_name in sorted(COMMANDS_REGISTRY.keys()):
-                if len(admin_cmds) >= 95:
-                    break
+            # 2. Curated Menu for Admins / Staff
+            admin_cmds = list(public_cmds) + [
+                BotCommand("stats", "📊 Estadísticas globales del sistema"),
+                BotCommand("upload_epub", "📤 Subir libro a la biblioteca"),
+                BotCommand("broadcast", "📢 Enviar mensaje global a usuarios"),
+            ]
 
-                # Exclude specific non-interactive or internal commands if needed
-                fallback_desc = COMMANDS_REGISTRY[cmd_name]["desc"]
-                desc = fallback_desc
-                if cms and cms.enabled:
-                    desc = await cms.get_text(f"cmd_menu_desc_{cmd_name}", default_text=fallback_desc)
-                admin_cmds.append(BotCommand(cmd_name, desc))
-
-            for admin_id in config.ADMIN_USERS:
+            for admin_id in getattr(config, "ADMIN_USERS", []):
                 try:
                     await bot.set_my_commands(admin_cmds, scope=BotCommandScopeChat(chat_id=admin_id))
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(0.2)
                 except Exception:
                     pass
 
             logger.info("Menus de comandos actualizados en Telegram.")
         except Exception as e:
             logger.error(f"Error actualizando menú de comandos en Telegram: {e}")
-
-    async def _get_default_public_cmds_dynamic(self, cms=None):
-        from telegram import BotCommand
-
-        defaults = ["start", "help", "menu", "search", "donar", "niveles", "status", "cancel"]
-        cmds = []
-        for c_name in defaults:
-            fallback = COMMANDS_REGISTRY.get(c_name, {}).get("desc", "Comando")
-            desc = fallback
-            if cms and cms.enabled:
-                desc = await cms.get_text(f"cmd_menu_desc_{c_name}", default_text=fallback)
-            cmds.append(BotCommand(c_name, desc))
-        return cmds
 
     # --- Admin Command Handlers ---
 

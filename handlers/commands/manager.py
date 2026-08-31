@@ -73,14 +73,30 @@ class HandlerManagerV6:
 
     def register(self):
         """Registra comandos y callbacks del bot."""
-        self.app.add_handler(CommandHandler("start", self.start_h.handle))
         self.app.add_handler(
-            CommandHandler(["catalog", "menu", "inicio"], self.catalog_h.handle)
+            CommandHandler(["start", "menu", "inicio"], self.start_h.handle)
         )
-        self.app.add_handler(CommandHandler(["ayuda", "help"], self.start_h.handle))
-        self.app.add_handler(CommandHandler(["search", "buscar"], self.search_h.handle))
-        self.app.add_handler(CommandHandler("status", self.status_h.handle))
-        self.app.add_handler(CommandHandler("cancel", self.cancel_h.handle))
+        self.app.add_handler(
+            CommandHandler(["catalog", "catalogo", "series"], self.handle_catalog_series)
+        )
+        self.app.add_handler(
+            CommandHandler(["ayuda", "help"], self.handle_help)
+        )
+        self.app.add_handler(
+            CommandHandler(["donar", "vip", "donaciones"], self.handle_donations)
+        )
+        self.app.add_handler(
+            CommandHandler(["reglas", "rules"], self.handle_rules)
+        )
+        self.app.add_handler(
+            CommandHandler(["search", "buscar"], self.search_h.handle)
+        )
+        self.app.add_handler(
+            CommandHandler(["status", "perfil"], self.status_h.handle)
+        )
+        self.app.add_handler(
+            CommandHandler(["cancel", "cancelar"], self.cancel_h.handle)
+        )
         self.app.add_handler(CommandHandler("evil", self.evil_h.handle))
         self.app.add_handler(CommandHandler("plugins", self.plugins_h.handle))
         self.app.add_handler(CommandHandler("auth", self.auth_h.handle))
@@ -477,3 +493,33 @@ class HandlerManagerV6:
                 parse_mode="HTML",
                 message_thread_id=thread_id,
             )
+
+    async def handle_catalog_series(self, update, context):
+        """Muestra el catálogo interactivo de series en formato Rich Message."""
+        from services.library_ui_service import mostrar_series
+
+        await mostrar_series(
+            update=update,
+            context=context,
+            origin_type="all_series",
+            page=1,
+            force_new=True,
+        )
+
+    async def handle_help(self, update, context):
+        """Muestra la guía interactiva y comandos en formato Rich Message."""
+        from services.library_ui_service import mostrar_ayuda
+
+        await mostrar_ayuda(update=update, context=context, force_new=True)
+
+    async def handle_donations(self, update, context):
+        """Muestra las membresías VIP y donaciones en formato Rich Message."""
+        from services.library_ui_service import mostrar_donaciones
+
+        await mostrar_donaciones(update=update, context=context, force_new=True)
+
+    async def handle_rules(self, update, context):
+        """Muestra las normas de la comunidad en formato Rich Message."""
+        from services.library_ui_service import mostrar_reglas
+
+        await mostrar_reglas(update=update, context=context, force_new=True)

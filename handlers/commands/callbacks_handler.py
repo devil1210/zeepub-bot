@@ -14,13 +14,17 @@ from services.library_ui_service import (
     build_book_rich_html,
     cancel_nav_timer,
     is_nav_expired,
-    mostrar_menu_principal,
-    mostrar_generos,
-    mostrar_series,
-    mostrar_libros,
-    mostrar_volumenes_local,
-    mostrar_detalles_libro,
     mostrar_autores_local,
+    mostrar_ayuda,
+    mostrar_detalles_libro,
+    mostrar_donaciones,
+    mostrar_generos,
+    mostrar_libros,
+    mostrar_menu_principal,
+    mostrar_reglas,
+    mostrar_resultados_locales,
+    mostrar_series,
+    mostrar_volumenes_local,
 )
 from services.download_history import register_book_download
 from services.cover_service import resolve_cover_data, send_doc_bytes
@@ -215,6 +219,12 @@ class CallbackHandlerV6(BaseCommandHandler):
                     await mostrar_autores_local(
                         update, context, page=1, force_new=True
                     )
+                elif category in ("help", "ayuda"):
+                    await mostrar_ayuda(update, context, force_new=True)
+                elif category in ("donations", "donar", "vip"):
+                    await mostrar_donaciones(update, context, force_new=True)
+                elif category in ("rules", "reglas"):
+                    await mostrar_reglas(update, context, force_new=True)
 
             # 4. Genre Filtering
             elif data.startswith("gen|"):

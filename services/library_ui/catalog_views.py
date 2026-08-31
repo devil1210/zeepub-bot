@@ -18,8 +18,11 @@ from utils.helpers import get_thread_id
 
 from .builders import (
     build_authors_rich_blocks,
+    build_donations_rich_blocks,
     build_genres_rich_blocks,
+    build_help_rich_blocks,
     build_main_menu_rich_blocks,
+    build_rules_rich_blocks,
     build_search_prompt_rich_blocks,
     build_search_results_rich_blocks,
     build_series_catalog_rich_blocks,
@@ -594,3 +597,95 @@ async def mostrar_resultados_locales(
             parse_mode="HTML",
             message_thread_id=thread_id,
         )
+
+
+async def mostrar_ayuda(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, force_new: bool = False
+):
+    """Muestra la guía de ayuda interactiva y comandos usando Rich Message."""
+    uid = update.effective_user.id
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
+    is_staff = await check_is_admin_or_staff(uid, update.effective_user)
+    user_name = update.effective_user.first_name or "Lector"
+
+    blocks = build_help_rich_blocks(user_rank=user_name, is_staff=is_staff)
+
+    if update.callback_query and not force_new:
+        try:
+            res_edit = await RichMessageService.edit_rich_message(
+                chat_id=chat_id,
+                message_id=update.callback_query.message.message_id,
+                blocks=blocks,
+            )
+            if res_edit and res_edit.get("ok"):
+                return
+        except Exception as e:
+            logger.debug(f"[mostrar_ayuda] No se pudo editar in-place: {e}")
+
+    await RichMessageService.send_rich_message(
+        chat_id=chat_id,
+        blocks=blocks,
+        message_thread_id=thread_id,
+    )
+
+
+async def mostrar_donaciones(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, force_new: bool = False
+):
+    """Muestra la información de membresías VIP, donaciones y beneficios en Rich Message."""
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
+    user_name = update.effective_user.first_name or "Lector"
+    donation_url = getattr(config, "DONATION_URL", "https://ko-fi.com/zeepubs")
+
+    blocks = build_donations_rich_blocks(
+        user_name=user_name,
+        donation_url=donation_url,
+    )
+
+    if update.callback_query and not force_new:
+        try:
+            res_edit = await RichMessageService.edit_rich_message(
+                chat_id=chat_id,
+                message_id=update.callback_query.message.message_id,
+                blocks=blocks,
+            )
+            if res_edit and res_edit.get("ok"):
+                return
+        except Exception as e:
+            logger.debug(f"[mostrar_donaciones] No se pudo editar in-place: {e}")
+
+    await RichMessageService.send_rich_message(
+        chat_id=chat_id,
+        blocks=blocks,
+        message_thread_id=thread_id,
+    )
+
+
+async def mostrar_reglas(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, force_new: bool = False
+):
+    """Muestra las reglas de convivencia y uso responsable de la comunidad."""
+    chat_id = update.effective_chat.id
+    thread_id = get_thread_id(update)
+
+    blocks = build_rules_rich_blocks()
+
+    if update.callback_query and not force_new:
+        try:
+            res_edit = await RichMessageService.edit_rich_message(
+                chat_id=chat_id,
+                message_id=update.callback_query.message.message_id,
+                blocks=blocks,
+            )
+            if res_edit and res_edit.get("ok"):
+                return
+        except Exception as e:
+            logger.debug(f"[mostrar_reglas] No se pudo editar in-place: {e}")
+
+    await RichMessageService.send_rich_message(
+        chat_id=chat_id,
+        blocks=blocks,
+        message_thread_id=thread_id,
+    )

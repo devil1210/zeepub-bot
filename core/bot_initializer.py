@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -111,19 +112,45 @@ class BotInitializer:
     @staticmethod
     async def register_bot_commands(bot):
         """Registra los comandos interactivos en Telegram BotFather / Menú de comandos."""
-        from telegram import BotCommand
+        from telegram import (
+            BotCommand,
+            BotCommandScopeAllChatAdministrators,
+            BotCommandScopeAllGroupChats,
+            BotCommandScopeAllPrivateChats,
+            BotCommandScopeChat,
+            BotCommandScopeDefault,
+        )
 
-        commands = [
-            BotCommand("start", "🏠 Iniciar y abrir menú principal"),
-            BotCommand("catalog", "📖 Explorar catálogo de novelas"),
+        public_commands = [
+            BotCommand("start", "🏠 Iniciar bot y menú principal"),
             BotCommand("buscar", "🔍 Buscar novelas por título o autor"),
-            BotCommand("status", "👤 Ver perfil y cuota diaria"),
-            BotCommand("donar", "☕ Membresías VIP y donaciones"),
-            BotCommand("ayuda", "ℹ️ Guía rápida de uso y comandos"),
-            BotCommand("cancel", "❌ Cancelar operaciones y limpiar estado"),
+            BotCommand("catalogo", "📚 Explorar catálogo completo"),
+            BotCommand("series", "📖 Explorar catálogo por series"),
+            BotCommand("status", "👤 Ver perfil y descargas restantes"),
+            BotCommand("donar", "⭐ Información de membresías VIP"),
+            BotCommand("ayuda", "ℹ️ Guía de uso y comandos"),
+            BotCommand("cancel", "❌ Cancelar acción activa"),
         ]
+
+        admin_commands = list(public_commands) + [
+            BotCommand("stats", "📊 Estadísticas globales del sistema"),
+            BotCommand("upload_epub", "📤 Subir libro a la biblioteca"),
+            BotCommand("broadcast", "📢 Enviar mensaje global a usuarios"),
+        ]
+
         try:
-            await bot.set_my_commands(commands)
+            await bot.set_my_commands(public_commands, scope=BotCommandScopeDefault())
+            await bot.set_my_commands(public_commands, scope=BotCommandScopeAllPrivateChats())
+            await bot.set_my_commands(public_commands, scope=BotCommandScopeAllGroupChats())
+            await bot.set_my_commands(public_commands, scope=BotCommandScopeAllChatAdministrators())
+
+            for admin_id in getattr(config, "ADMIN_USERS", []):
+                try:
+                    await bot.set_my_commands(admin_commands, scope=BotCommandScopeChat(chat_id=admin_id))
+                    await asyncio.sleep(0.2)
+                except Exception:
+                    pass
+
             logger.info("Comandos del bot registrados exitosamente en Telegram.")
         except Exception as e:
             logger.warning(f"No se pudieron registrar los comandos en Telegram: {e}")

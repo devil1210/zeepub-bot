@@ -20,9 +20,12 @@ from .builders import (
 from .catalog_views import (
     check_is_admin_or_staff,
     mostrar_autores_local,
+    mostrar_ayuda,
+    mostrar_donaciones,
     mostrar_generos,
     mostrar_libros,
     mostrar_menu_principal,
+    mostrar_reglas,
     mostrar_resultados_locales,
     mostrar_series,
     pedir_termino_busqueda,
@@ -60,6 +63,9 @@ __all__ = [
     "mostrar_autores_local",
     "pedir_termino_busqueda",
     "mostrar_resultados_locales",
+    "mostrar_ayuda",
+    "mostrar_donaciones",
+    "mostrar_reglas",
     # Series Views
     "mostrar_volumenes_local",
     "mostrar_detalles_libro",

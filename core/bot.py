@@ -320,25 +320,12 @@ class ZeePubBot:
         await BotInitializer.check_update_state(self.app.bot)
         await BotInitializer.register_bot_commands(self.app.bot)
 
-        # Configurar el botón de menú de Telegram con la URL de la Mini App (.vip)
+        # Configurar el botón de menú de Telegram en modo estándar (Default / Menú de comandos)
         try:
-            from telegram import MenuButtonWebApp, WebAppInfo
+            from telegram import MenuButtonDefault
 
-            if config.WEBAPP_URL:
-                logger.info(
-                    f"Configurando Menu Button del bot con URL: {config.WEBAPP_URL}"
-                )
-                await self.app.bot.set_chat_menu_button(
-                    menu_button=MenuButtonWebApp(
-                        text="🚀 Abrir Mini App",
-                        web_app=WebAppInfo(url=config.WEBAPP_URL),
-                    )
-                )
-                logger.info("Menu Button de la Mini App configurado exitosamente.")
-            else:
-                logger.warning(
-                    "WEBAPP_URL no configurada en env. No se pudo configurar el Menu Button."
-                )
+            await self.app.bot.set_chat_menu_button(menu_button=MenuButtonDefault())
+            logger.info("Menu Button de Telegram configurado en modo estándar (Default).")
         except Exception as e:
             logger.error(f"Error configurando el Menu Button del bot: {e}")
 
