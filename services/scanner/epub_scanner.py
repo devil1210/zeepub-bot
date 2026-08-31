@@ -398,7 +398,7 @@ class EpubScanner:
                     book = LocalBook(
                         id=target_book_hash,
                         filepath=filepath,
-                        source=source,
+                        source_id=source.id if source else 1,
                         genres=[],
                         demographics=[],
                     )
