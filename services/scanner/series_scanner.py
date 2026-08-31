@@ -296,14 +296,8 @@ class SeriesScanner:
             existing = (await session.execute(stmt)).scalar_one_or_none()
 
             if not existing:
-                try:
-                    alias_obj = SeriesAlias(series_id=series.id, alias=clean_t)
-                    session.add(alias_obj)
-                    await session.flush()
-                except Exception as e:
-                    logger.debug(
-                        f"No se pudo guardar el alias '{clean_t}' para serie {series.id}: {e}"
-                    )
+                alias_obj = SeriesAlias(series_id=series.id, alias=clean_t)
+                session.add(alias_obj)
 
     @classmethod
     async def enrich_series_metadata(

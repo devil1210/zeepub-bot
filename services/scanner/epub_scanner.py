@@ -391,7 +391,9 @@ class EpubScanner:
                             session.add(new_duplicate)
                             await session.flush()
 
+                is_new_book = False
                 if not book:
+                    is_new_book = True
                     # Inicializamos colecciones vacías para evitar lazy-load al asignar después del flush
                     book = LocalBook(
                         id=target_book_hash,
@@ -400,7 +402,6 @@ class EpubScanner:
                         genres=[],
                         demographics=[],
                     )
-                    session.add(book)
 
                 # Sincronizar campos principales desde Identity y Meta
                 book.filename = filename
@@ -518,7 +519,13 @@ class EpubScanner:
                         }
                     )
                     series = await series_provider(session, book, skip_ai=skip_ai)
-                    book.series_hash = series.series_hash
+                    if series:
+                        book.series_id = series.id
+                        book.series_hash = series.series_hash
+
+                # Añadir nuevo libro a la sesión una vez que series_id es válido
+                if is_new_book and book not in session:
+                    session.add(book)
 
                 # Relaciones (NUEVO)
                 # Obtenemos los objetos de taxonomía (esto hace E/S asíncrona permitida)

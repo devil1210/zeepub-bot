@@ -158,7 +158,8 @@ class LibraryScanner:
             else:
                 new_group = TranslatorsGroup(name=group_name, siglas=siglas)
                 session.add(new_group)
-                await session.flush()
+                async with session.begin_nested():
+                    await session.flush()
                 book.translator_group_id = new_group.id
         except Exception as e:
             logger.warning(f"Error sincronizando grupo traductor: {e}")
