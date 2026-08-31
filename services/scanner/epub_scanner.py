@@ -483,10 +483,11 @@ class EpubScanner:
                     )
 
                 # Tags y Clasificación (JSON - Legacy)
-                raw_tags = meta.get("tags", [])
+                from utils.metadata_utils import is_dummy_value
+
+                raw_tags = [t for t in (meta.get("tags") or []) if not is_dummy_value(t)]
                 raw_demo = (
-                    meta.get("demographics")
-                    or meta.get("demografia")
+                    [d for d in (meta.get("demographics") or meta.get("demografia") or []) if not is_dummy_value(d)]
                     or [t for t in raw_tags if is_demographic_tag(t)]
                 )
                 book_demographics = normalize_demographics_list(raw_demo)

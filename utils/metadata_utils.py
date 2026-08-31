@@ -482,6 +482,38 @@ def generar_slug_from_meta(meta: Any) -> str:
     return slug
 
 
+DUMMY_PATTERNS = [
+    r"^nombre\s+de\s+la\s+novela",
+    r"^autor\s+apellido",
+    r"^ilustrador\s+apellido",
+    r"^grupo\s+traductor",
+    r"^traductor$",
+    r"^editorial$",
+    r"^lorem\s+ipsum",
+    r"^demograf[ií]a\d*",
+    r"^g[eé]neroliterario\d*",
+    r"^000-00-0000-000-0$",
+    r"^bxxxxxxxx",
+    r"^http://grupotraductor\.com",
+    r"^siglas-grupo",
+]
+
+
+def is_dummy_value(val: Any) -> bool:
+    """Detecta si un valor de metadatos es texto de relleno o plantilla genérica."""
+    if val is None:
+        return False
+    if isinstance(val, (list, set, tuple)):
+        return all(is_dummy_value(x) for x in val)
+    val_str = str(val).strip().lower()
+    if not val_str:
+        return False
+    for pat in DUMMY_PATTERNS:
+        if re.search(pat, val_str, re.IGNORECASE):
+            return True
+    return False
+
+
 def process_book_identity_comprehensive(
     epub_path: str = None,
     meta: dict | None = None,
@@ -502,6 +534,11 @@ def process_book_identity_comprehensive(
     if not meta:
         return {}
 
+    # Limpiar placeholders y dummies del diccionario de metadatos OPF
+    for k in ["title", "series", "author", "translator", "publisher", "illustrator", "description", "isbn", "asin", "author_jap", "illustrator_jap"]:
+        if is_dummy_value(meta.get(k)):
+            meta[k] = None
+
     # Metadata del EPUB: Origen sagrado de la Serie
     series_meta = meta.get("series")  # Tag específico de serie (Calibre/EPUB3)
 
@@ -510,9 +547,21 @@ def process_book_identity_comprehensive(
     series_spanish = meta.get("series_spanish")
     series_english = clean_english_title(series_meta) if series_meta else None
 
+    # Filename parsing para título visual, tags, volumen y fallback de autor/serie
+    parsed_filename = parse_metadata_from_title(original_filename)
+
+    # Si el autor del OPF era placeholder o nulo, intentar extraer de carpeta contenedora
+    if not author and epub_path:
+        parent_dir = os.path.basename(os.path.dirname(epub_path))
+        if parent_dir and " - " in parent_dir:
+            dir_parts = [p.strip() for p in parent_dir.split(" - ") if p.strip()]
+            if len(dir_parts) >= 2:
+                author_cand = re.sub(r"\[.*?\]|\(.*?\)", "", dir_parts[1]).strip()
+                if author_cand and not is_dummy_value(author_cand):
+                    author = normalize_author_name(author_cand)
+
     if series_meta:
         # Solo intentar extraer partes si vienen con separadores claros tipo guiones o barras con espacios alrededor.
-        # NUNCA separar por dos puntos (:) porque son parte natural de los títulos en inglés (ej: "Arifureta: From...")
         parts = re.split(r"\s+[\-\–\—\−\―\~～\|¦║]\s+", series_meta)
         parts = [p.strip() for p in parts if p.strip()]
 
@@ -550,17 +599,16 @@ def process_book_identity_comprehensive(
             )
             romaji_from_series = series_parsed_meta.get("romaji")
     else:
-        # Si no hay tag de serie en el metadato, NO usamos el título ni el nombre de archivo
-        series = "Unknown"
+        # Si no hay tag de serie en el metadato, usar el del nombre del archivo
+        series = parsed_filename.get("series_clean") or parsed_filename.get("series") or "Unknown"
 
     volume = meta.get("volume")
     translator = meta.get("translator")
     layout_by = meta.get("layout_by")
     language = meta.get("language") or "es"
 
-    # El filename parsing se usa SOLO para el título visual y tags complementarios
-    parsed_filename = parse_metadata_from_title(original_filename)
-    all_found_tags = list(meta.get("tags", [])) + parsed_filename.get("tags", [])
+    raw_tags = [t for t in meta.get("tags", []) if not is_dummy_value(t)]
+    all_found_tags = list(raw_tags) + parsed_filename.get("tags", [])
 
     book_type = meta.get("book_type")
     if not book_type:
@@ -613,14 +661,22 @@ def process_book_identity_comprehensive(
     if series:
         series = series.strip()
 
-    # Volumen: Preferir metadato, fallback al filename solo si el metadato es nulo
-    if volume is None and parsed_filename.get("volume"):
+    # Volumen: Extraer volumen del nombre del archivo
+    fn_volume = None
+    if parsed_filename.get("volume"):
         try:
             v_val = re.sub(r"[^\d.]", "", str(parsed_filename["volume"]))
             if v_val:
-                volume = float(v_val)
+                fn_volume = float(v_val)
         except Exception:
-            volume = None
+            fn_volume = None
+
+    # Prioridad: Si el metadato era nulo, o si el filename especifica un volumen (ej. V03 -> 3.0)
+    # y el OPF tenía 1.0 (default de calibre) o era dummy, prevalece el filename.
+    if volume is None:
+        volume = fn_volume
+    elif fn_volume is not None and volume == 1.0 and fn_volume != 1.0:
+        volume = fn_volume
 
     if not book_type:
         book_type = "Light Novel"
