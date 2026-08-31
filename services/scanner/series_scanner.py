@@ -88,9 +88,10 @@ class SeriesScanner:
                         [t.lower() for t in candidate_titles]
                     )
                 )
+                .limit(1)
             )
             alias_res = await session.execute(alias_stmt)
-            series = alias_res.scalar_one_or_none()
+            series = alias_res.scalars().first()
 
         # 3. Búsqueda por Coincidencia de Slug Normalizado
         if not series and candidate_titles:
@@ -107,9 +108,10 @@ class SeriesScanner:
                         selectinload(SeriesMetadata.aliases),
                     )
                     .where(SeriesMetadata.slug.in_(list(candidate_slugs)))
+                    .limit(1)
                 )
                 slug_res = await session.execute(slug_stmt)
-                series = slug_res.scalar_one_or_none()
+                series = slug_res.scalars().first()
 
         from services.scanner.slug_manager import SlugManager
 
