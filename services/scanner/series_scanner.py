@@ -44,7 +44,15 @@ class SeriesScanner:
         Usa los datos pre-extraídos de 'book.extracted_data'.
         """
         identity = getattr(book, "extracted_data", {})
-        series_hash = book.series_hash
+        series_hash = (
+            identity.get("series_hash")
+            or getattr(book, "series_id", None)
+            or cls.generate_series_hash(
+                series_name=identity.get("series") or "Unknown",
+                author=identity.get("author") or "Unknown",
+                book_type=identity.get("book_type") or "Light Novel",
+            )
+        )
 
         # 1. Búsqueda por Hash directo
         stmt = (
@@ -57,7 +65,7 @@ class SeriesScanner:
             .where(SeriesMetadata.series_hash == series_hash)
         )
         result = await session.execute(stmt)
-        series = result.scalar_one_or_none()
+        series = result.scalars().first()
 
         candidate_titles = {
             t.strip()

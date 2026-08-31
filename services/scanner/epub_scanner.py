@@ -499,8 +499,8 @@ class EpubScanner:
                 # 7. VINCULACIÓN DE SERIE (Aislado de la identidad básica)
                 # Debe ocurrir ANTES de sync_taxonomy porque sync_taxonomy dispara un flush()
                 if series_provider:
-                    # Cálculo proactivo del hash de serie para evitar IntegrityErrors por IDs nulos
-                    book.series_hash = cls.generate_series_hash(
+                    # Cálculo proactivo del hash de serie para el provider sin mutar book.series_id prematuramente
+                    tentative_series_hash = cls.generate_series_hash(
                         series_name=identity["series"],
                         author=identity["author"],
                         book_type=identity["book_type"],
@@ -510,6 +510,7 @@ class EpubScanner:
                     book.extracted_data = identity
                     book.extracted_data.update(
                         {
+                            "series_hash": tentative_series_hash,
                             "tags": raw_tags,
                             "demographics": book_demographics,
                             "description": book.description,
