@@ -8,12 +8,12 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from services.library_ui_service import (
-    check_is_admin_or_staff,
+from services.library_ui.admin_views import (
     ejecutar_admin_scan,
     ejecutar_admin_update,
     mostrar_panel_admin,
 )
+from services.library_ui.info_views import check_is_admin_or_staff
 from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
