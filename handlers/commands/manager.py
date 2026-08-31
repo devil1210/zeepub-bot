@@ -97,6 +97,7 @@ class HandlerManagerV6:
         self.app.add_handler(
             CommandHandler(["cancel", "cancelar"], self.cancel_h.handle)
         )
+        self.app.add_handler(CommandHandler("id", self.handle_id))
         self.app.add_handler(CommandHandler("evil", self.evil_h.handle))
         self.app.add_handler(CommandHandler("plugins", self.plugins_h.handle))
         self.app.add_handler(CommandHandler("auth", self.auth_h.handle))
@@ -523,3 +524,32 @@ class HandlerManagerV6:
         from services.library_ui_service import mostrar_reglas
 
         await mostrar_reglas(update=update, context=context, force_new=True)
+
+    async def handle_id(self, update, context):
+        """Muestra la información de ID del usuario, chat y tema actual."""
+        user = update.effective_user
+        uid = user.id if user else 0
+        chat = update.effective_chat
+        cid = chat.id if chat else 0
+        thread_id = get_thread_id(update)
+        username = f"@{user.username}" if user and user.username else (user.first_name if user else "Desconocido")
+
+        lines = [
+            "🆔 <b>Información de Identidad • ZeePubs</b>\n",
+            f"• <b>Usuario:</b> {username}",
+            f"• <b>User ID:</b> <code>{uid}</code>",
+            f"• <b>Chat ID:</b> <code>{cid}</code>",
+        ]
+        if thread_id:
+            lines.append(f"• <b>Topic / Thread ID:</b> <code>{thread_id}</code>")
+
+        text = "\n".join(lines)
+        if update.message:
+            await update.message.reply_text(
+                text, parse_mode="HTML", message_thread_id=thread_id
+            )
+        elif update.callback_query:
+            await update.callback_query.answer()
+            await context.bot.send_message(
+                chat_id=cid, text=text, parse_mode="HTML", message_thread_id=thread_id
+            )

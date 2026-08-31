@@ -160,6 +160,7 @@ class HelpPlugin(BasePlugin):
             # 2. Curated Menu for Admins / Staff
             admin_cmds = list(public_cmds) + [
                 BotCommand("stats", "📊 Estadísticas globales del sistema"),
+                BotCommand("id", "🆔 Ver ID de usuario, chat y tema actual"),
                 BotCommand("upload_epub", "📤 Subir libro a la biblioteca"),
                 BotCommand("broadcast", "📢 Enviar mensaje global a usuarios"),
             ]
