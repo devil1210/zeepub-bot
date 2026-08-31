@@ -133,6 +133,9 @@ class BotInitializer:
         ]
 
         admin_commands = list(public_commands) + [
+            BotCommand("admin", "🛠️ Panel de control y mantenimiento"),
+            BotCommand("scan_library", "🔄 Escanear e indexar biblioteca"),
+            BotCommand("update_system", "🚀 Comprobar / actualizar versión"),
             BotCommand("stats", "📊 Estadísticas globales del sistema"),
             BotCommand("id", "🆔 Ver ID de usuario, chat y tema actual"),
             BotCommand("upload_epub", "📤 Subir libro a la biblioteca"),

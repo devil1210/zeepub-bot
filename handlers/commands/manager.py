@@ -98,6 +98,15 @@ class HandlerManagerV6:
             CommandHandler(["cancel", "cancelar"], self.cancel_h.handle)
         )
         self.app.add_handler(CommandHandler("id", self.handle_id))
+        self.app.add_handler(
+            CommandHandler(["admin", "panel"], self.handle_admin_panel)
+        )
+        self.app.add_handler(
+            CommandHandler(["scan_library", "scan"], self.handle_scan_library)
+        )
+        self.app.add_handler(
+            CommandHandler(["update_system", "update"], self.handle_update_system)
+        )
         self.app.add_handler(CommandHandler("evil", self.evil_h.handle))
         self.app.add_handler(CommandHandler("plugins", self.plugins_h.handle))
         self.app.add_handler(CommandHandler("auth", self.auth_h.handle))
@@ -553,3 +562,21 @@ class HandlerManagerV6:
             await context.bot.send_message(
                 chat_id=cid, text=text, parse_mode="HTML", message_thread_id=thread_id
             )
+
+    async def handle_admin_panel(self, update, context):
+        """Muestra el panel administrativo interactivo con Rich Message."""
+        from services.library_ui_service import mostrar_panel_admin
+
+        await mostrar_panel_admin(update=update, context=context, force_new=True)
+
+    async def handle_scan_library(self, update, context):
+        """Ejecuta el escáner de la biblioteca local con feedback Rich Message."""
+        from services.library_ui_service import ejecutar_admin_scan
+
+        await ejecutar_admin_scan(update=update, context=context)
+
+    async def handle_update_system(self, update, context):
+        """Ejecuta la comprobación y actualización del bot."""
+        from services.library_ui_service import ejecutar_admin_update
+
+        await ejecutar_admin_update(update=update, context=context)

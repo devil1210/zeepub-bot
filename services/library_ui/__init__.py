@@ -3,7 +3,14 @@
 Paquete modularizado de Interfaz de Usuario y Vistas para Telegram Rich Messages.
 """
 
+from .admin_views import (
+    ejecutar_admin_scan,
+    ejecutar_admin_update,
+    mostrar_panel_admin,
+)
 from .builders import (
+    build_admin_panel_rich_blocks,
+    build_admin_scan_result_blocks,
     build_authors_rich_blocks,
     build_book_rich_blocks,
     build_book_rich_html,
@@ -18,17 +25,19 @@ from .builders import (
     build_status_rich_blocks,
 )
 from .catalog_views import (
-    check_is_admin_or_staff,
     mostrar_autores_local,
-    mostrar_ayuda,
-    mostrar_donaciones,
     mostrar_generos,
     mostrar_libros,
     mostrar_menu_principal,
-    mostrar_reglas,
     mostrar_resultados_locales,
     mostrar_series,
     pedir_termino_busqueda,
+)
+from .info_views import (
+    check_is_admin_or_staff,
+    mostrar_ayuda,
+    mostrar_donaciones,
+    mostrar_reglas,
 )
 from .lifecycle import (
     cancel_nav_timer,
@@ -66,6 +75,9 @@ __all__ = [
     "mostrar_ayuda",
     "mostrar_donaciones",
     "mostrar_reglas",
+    "mostrar_panel_admin",
+    "ejecutar_admin_scan",
+    "ejecutar_admin_update",
     # Series Views
     "mostrar_volumenes_local",
     "mostrar_detalles_libro",
