@@ -62,8 +62,12 @@ async def mostrar_panel_admin(
     )
 
 
-async def ejecutar_admin_scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Ejecuta el escaneo de la biblioteca local y muestra el resultado en Rich Message."""
+async def ejecutar_admin_scan(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    deep_scan: bool = False,
+):
+    """Ejecuta el escaneo de la biblioteca local (rápido o profundo) y muestra el resultado en Rich Message."""
     uid = update.effective_user.id
     chat_id = update.effective_chat.id
     thread_id = get_thread_id(update)
@@ -76,13 +80,20 @@ async def ejecutar_admin_scan(update: Update, context: ContextTypes.DEFAULT_TYPE
             await update.message.reply_text("🚫 Acceso restringido a Administradores.", message_thread_id=thread_id)
         return
 
+    mode_title = "🔥 Escaneo Profundo" if deep_scan else "⚡ Escaneo Rápido"
+    mode_desc = (
+        "Re-indexando todos los EPUBs, portadas, metadatos, limpieza de huérfanos y conteos..."
+        if deep_scan
+        else "Indexando archivos nuevos o modificados en las carpetas locales..."
+    )
+
     # Feedback inmediato
     if update.callback_query:
-        await update.callback_query.answer("🔄 Iniciando escaneo de la biblioteca...", show_alert=False)
+        await update.callback_query.answer(f"🔄 Iniciando {mode_title.lower()}...", show_alert=False)
 
     loading_blocks = [
-        {"type": "heading", "size": 2, "text": "🔄 Escaneando Biblioteca • ZeePubs"},
-        {"type": "paragraph", "text": "Procesando archivos EPUB locales, metadatos y portadas en segundo plano...\n\n<i>Esto puede tardar unos segundos.</i>"},
+        {"type": "heading", "size": 2, "text": f"🔄 {mode_title} • ZeePubs"},
+        {"type": "paragraph", "text": f"{mode_desc}\n\n<i>Esto puede tardar unos segundos.</i>"},
     ]
     if update.callback_query:
         try:
@@ -97,7 +108,7 @@ async def ejecutar_admin_scan(update: Update, context: ContextTypes.DEFAULT_TYPE
     from services.scanner_service import ScannerService
 
     scanner = ScannerService()
-    results = await scanner.sync_all(force_scan=True)
+    results = await scanner.sync_all(force_scan=deep_scan, soft_scan=not deep_scan)
 
     result_blocks = build_admin_scan_result_blocks(results or {})
 

@@ -42,18 +42,18 @@ def build_admin_panel_rich_blocks(stats: dict[str, Any], git_hash: str = "v3.6.0
                 ],
                 [
                     {"text": "🏷️ Versión Git", "align": "left"},
-                    {"text": f"<code>{git_hash[:8]}</code>", "align": "left"},
+                    {"text": str(git_hash[:10]), "align": "left"},
                 ],
             ],
         },
         {
             "type": "details",
-            "summary": "⚙️ Operaciones Rápidas",
+            "summary": "⚙️ Operaciones de Mantenimiento",
             "is_open": True,
             "blocks": [
                 {
                     "type": "paragraph",
-                    "text": "Selecciona una acción para ejecutar mantenimiento en segundo plano:",
+                    "text": "Selecciona una acción para ejecutar en la biblioteca:",
                 }
             ],
         },
@@ -61,23 +61,30 @@ def build_admin_panel_rich_blocks(stats: dict[str, Any], git_hash: str = "v3.6.0
             "type": "buttons",
             "align": "center",
             "buttons": [
-                {"text": "🔄 Escanear Biblioteca", "callback_data": "admin_act|scan"},
+                {"text": "⚡ Escaneo Rápido", "callback_data": "admin_act|scan_soft"},
+                {"text": "🔥 Escaneo Profundo", "callback_data": "admin_act|scan_full"},
+            ],
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
                 {"text": "🚀 Actualizar Bot", "callback_data": "admin_act|update"},
-            ],
-        },
-        {
-            "type": "buttons",
-            "align": "center",
-            "buttons": [
                 {"text": "🧹 Integridad DB", "callback_data": "admin_act|integrity"},
-                {"text": "📊 Estadísticas", "callback_data": "admin_act|stats"},
             ],
         },
         {
             "type": "buttons",
             "align": "center",
             "buttons": [
-                {"text": "🆔 Info de Identidad", "callback_data": "admin_act|id"},
+                {"text": "📊 Estadísticas", "callback_data": "admin_act|stats"},
+                {"text": "🆔 Info Identidad", "callback_data": "admin_act|id"},
+            ],
+        },
+        {
+            "type": "buttons",
+            "align": "center",
+            "buttons": [
                 {"text": "🏠 Volver al Inicio", "callback_data": "volver_menu"},
             ],
         },

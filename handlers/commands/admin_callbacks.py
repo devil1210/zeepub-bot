@@ -43,8 +43,12 @@ async def handle_admin_callback(
     if data.startswith("admin_act|"):
         act = data.split("|")[1]
 
-        if act == "scan":
-            await ejecutar_admin_scan(update, context)
+        if act in ("scan", "scan_soft"):
+            await ejecutar_admin_scan(update, context, deep_scan=False)
+            return True
+
+        elif act == "scan_full":
+            await ejecutar_admin_scan(update, context, deep_scan=True)
             return True
 
         elif act == "update":
