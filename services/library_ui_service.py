@@ -15,7 +15,9 @@ from services.library_ui import (
     build_search_prompt_rich_blocks,
     build_search_results_rich_blocks,
     build_series_catalog_rich_blocks,
+    cancel_nav_timer,
     check_is_admin_or_staff,
+    is_nav_expired,
     mostrar_autores_local,
     mostrar_detalles_libro,
     mostrar_generos,
@@ -25,6 +27,7 @@ from services.library_ui import (
     mostrar_series,
     mostrar_volumenes_local,
     pedir_termino_busqueda,
+    schedule_message_lifecycle,
 )
 
 __all__ = [
@@ -52,4 +55,8 @@ __all__ = [
     # Series Views
     "mostrar_volumenes_local",
     "mostrar_detalles_libro",
+    # Lifecycle
+    "schedule_message_lifecycle",
+    "is_nav_expired",
+    "cancel_nav_timer",
 ]
