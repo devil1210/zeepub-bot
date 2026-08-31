@@ -146,6 +146,7 @@ async def mostrar_volumenes_local(
                 "translator_siglas": tr_acronym,
                 "color": is_color,
             }
+            state_manager.register_book_key(key, st["libros"][key])
 
             if prev_target_hash and (v_hash == prev_target_hash or key == prev_target_hash):
                 matched_key = key

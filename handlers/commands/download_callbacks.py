@@ -1,8 +1,10 @@
 # handlers/commands/download_callbacks.py
 """
 Manejador especializado de descargas directas, paquetes y estrellas para Telegram.
+Soporta descargas compartidas en grupos (efímeras y autorizadas) y privadas in-place.
 """
 
+import asyncio
 import io
 import logging
 import os
@@ -56,29 +58,62 @@ async def handle_download_callback(
             await query.answer("❌ Error al procesar Stars.", show_alert=True)
         return True
 
-    # 2. Descarga de Libro Individual
-    if data.startswith("b_dl|"):
-        key = data.split("|")[1]
-        libro_st = st.get("libros", {}).get(key)
+    # 2. Descarga de Libro Individual (Soporta múltiples prefijos de compatibilidad)
+    download_prefixes = ("dl_confirm|", "b_dl|", "descargar_epub|", "dl|")
+    if any(data.startswith(p) for p in download_prefixes):
+        matched_prefix = next(p for p in download_prefixes if data.startswith(p))
+        key = data[len(matched_prefix):]
+
+        # A. Buscar libro en el estado del usuario, en el mapa compartido o en cualquier estado activo
+        libro_st = state_manager.get_book_by_key(key, uid)
+
         if not libro_st:
-            await query.answer("⚠️ Libro no encontrado en la memoria.", show_alert=True)
+            # Fallback en base de datos por ID o Hash si no está en memoria
+            try:
+                from core.db_manager_pg import pg_manager
+                from repositories.library import BookRepository
+
+                async with pg_manager.get_session() as session:
+                    repo = BookRepository(session)
+                    b_obj = await repo.get_by_id(key) or await repo.get_by_hash(key)
+                    if b_obj:
+                        libro_st = {
+                            "id": b_obj.id,
+                            "book_hash": b_obj.hash_md5,
+                            "hash": b_obj.hash_md5,
+                            "title": b_obj.title,
+                            "titulo": b_obj.title,
+                            "filepath": b_obj.filepath,
+                            "descarga": b_obj.filepath,
+                            "filename": b_obj.filename or f"{b_obj.title}.epub",
+                            "file_size": b_obj.file_size,
+                            "autor": b_obj.author,
+                            "volume": b_obj.volume,
+                            "portada": f"/covers/{b_obj.id}.jpg",
+                        }
+                        state_manager.register_book_key(key, libro_st)
+            except Exception as e:
+                logger.warning(f"Error buscando libro en BD para key {key}: {e}")
+
+        if not libro_st:
+            await query.answer("⚠️ Libro no encontrado o sesión expirada.", show_alert=True)
             return True
 
-        # A. Chequeo de Límites de Descarga
+        # B. Chequeo de Límites de Descarga
         left = await downloads_left(uid)
         is_admin_user = uid in getattr(config, "ADMIN_USERS", []) or uid == 133994080
-        if not is_admin_user and left <= 0:
+        if not is_admin_user and left != "ilimitadas" and isinstance(left, int) and left <= 0:
             await query.answer(
                 "🚫 Has alcanzado tu límite diario de descargas. Vuelve mañana o adquiere un rango con /donar.",
                 show_alert=True,
             )
             return True
 
-        # B. Feedback inmediato
+        # C. Feedback visual inmediato
         await query.answer("🚀 Procesando archivo EPUB...", show_alert=False)
 
-        # C. Obtener metadatos y ruta del archivo
-        filepath = libro_st.get("filepath")
+        # D. Metadatos y ruta
+        filepath = libro_st.get("filepath") or libro_st.get("descarga")
         title = libro_st.get("title") or libro_st.get("titulo", "Libro")
         book_hash = (
             libro_st.get("hash")
@@ -102,7 +137,7 @@ async def handle_download_callback(
 
         try:
             filename = libro_st.get("filename") or f"{title}.epub"
-            series_hash = st.get("current_series_hash")
+            series_hash = st.get("current_series_hash") or libro_st.get("series_hash")
             series_hash_short = series_hash[:16] if series_hash else None
             post_keyboard = BotKeyboards.post_download(series_hash_short)
 
@@ -111,7 +146,7 @@ async def handle_download_callback(
                 libro_st.get("book_hash")
                 or libro_st.get("id")
                 or libro_st.get("hash")
-                or st.get("current_series_hash")
+                or series_hash
             )
             cover_raw = (
                 libro_st.get("cover_high")
@@ -194,41 +229,66 @@ async def handle_download_callback(
                     }
                 )
 
-            # Volume rows
-            volume_rows = []
-            if len(st.get("libros", {})) > 1:
-                current_row = []
-                for k, bk in st["libros"].items():
-                    vol_disp = bk.get("vol_display", bk.get("volume", 0))
-                    label = f"🔘 Vol. {vol_disp}" if k == key else f"Vol. {vol_disp}"
-                    cb = "noop" if k == key else f"sel_vol|{k}"
-                    current_row.append({"text": label, "callback_data": cb})
-                    if len(current_row) == 4:
-                        volume_rows.append(current_row)
-                        current_row = []
-                if current_row:
-                    volume_rows.append(current_row)
-
             from services.telegram_service import is_authorized_group, enviar_libro_directo
 
             is_group = update.effective_chat.type in ("group", "supergroup")
             is_authorized = is_authorized_group(update.effective_chat.id)
+            thread_id = get_thread_id(update)
 
             sent_doc = None
-            if is_group and not is_authorized:
-                await query.answer("📥 Enviando tu libro como mensaje privado...")
-                sent_doc = await enviar_libro_directo(
-                    bot=context.bot,
-                    user_id=uid,
-                    title=title,
-                    download_url=filepath,
-                    target_chat_id=update.effective_chat.id,
-                    message_thread_id=get_thread_id(update),
-                    metadata_override=libro_st,
-                    explicit_file_buffer=epub_bytes,
-                    job_queue=getattr(context, "job_queue", None),
-                )
+
+            # Si es un grupo (autorizado o no), enviamos el documento como mensaje nuevo para no romper la ficha interactiva compartida
+            if is_group:
+                if not is_authorized:
+                    from services.settings_service import get_setting
+
+                    try:
+                        del_mins = int(get_setting("auto_delete_time", "2") or "2")
+                        auto_delete_sec = max(60, del_mins * 60)
+                    except Exception:
+                        auto_delete_sec = 120
+
+                    sent_doc = await enviar_libro_directo(
+                        bot=context.bot,
+                        user_id=uid,
+                        title=title,
+                        download_url=filepath,
+                        target_chat_id=update.effective_chat.id,
+                        message_thread_id=thread_id,
+                        metadata_override=libro_st,
+                        explicit_file_buffer=epub_bytes,
+                        auto_delete_seconds=auto_delete_sec,
+                        job_queue=getattr(context, "job_queue", None),
+                    )
+                else:
+                    sent_doc = await enviar_libro_directo(
+                        bot=context.bot,
+                        user_id=uid,
+                        title=title,
+                        download_url=filepath,
+                        target_chat_id=update.effective_chat.id,
+                        message_thread_id=thread_id,
+                        metadata_override=libro_st,
+                        explicit_file_buffer=epub_bytes,
+                        auto_delete_seconds=0,
+                        job_queue=getattr(context, "job_queue", None),
+                    )
             else:
+                # Chat Privado: Edición in-place del Rich Message
+                volume_rows = []
+                if len(st.get("libros", {})) > 1:
+                    current_row = []
+                    for k, bk in st["libros"].items():
+                        vol_disp = bk.get("vol_display", bk.get("volume", 0))
+                        label = f"🔘 Vol. {vol_disp}" if k == key else f"Vol. {vol_disp}"
+                        cb = "noop" if k == key else f"sel_vol|{k}"
+                        current_row.append({"text": label, "callback_data": cb})
+                        if len(current_row) == 4:
+                            volume_rows.append(current_row)
+                            current_row = []
+                    if current_row:
+                        volume_rows.append(current_row)
+
                 rich_blocks_edited = build_book_rich_blocks(
                     libro_st,
                     has_cover=bool("tomozaki_cover" in delivery_files),
@@ -295,7 +355,7 @@ async def handle_download_callback(
                             filename=filename,
                             parse_mode="HTML",
                             reply_markup=post_keyboard,
-                            message_thread_id=get_thread_id(update),
+                            message_thread_id=thread_id,
                         )
 
             # E. Registrar descarga en BD

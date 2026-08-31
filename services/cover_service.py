@@ -96,6 +96,19 @@ async def send_photo_bytes(
                     api_kwargs=api_kwargs,
                 )
             except BadRequest as e:
+                if api_kwargs:
+                    try:
+                        bio.seek(0)
+                        return await bot.send_photo(
+                            chat_id=chat_id,
+                            photo=input_file,
+                            caption=caption,
+                            parse_mode=parse_mode,
+                            message_thread_id=message_thread_id,
+                            reply_markup=reply_markup,
+                        )
+                    except Exception:
+                        pass
                 if "Message thread not found" in str(e) and message_thread_id is not None:
                     # Retry without thread_id (send to General/Main)
                     bio.seek(0)
@@ -106,7 +119,6 @@ async def send_photo_bytes(
                         parse_mode=parse_mode,
                         message_thread_id=None,
                         reply_markup=reply_markup,
-                        api_kwargs=api_kwargs,
                     )
                 raise e
 
@@ -209,6 +221,19 @@ async def send_doc_bytes(
                     api_kwargs=api_kwargs,
                 )
             except BadRequest as e:
+                if api_kwargs:
+                    try:
+                        bio.seek(0)
+                        return await bot.send_document(
+                            chat_id=chat_id,
+                            document=input_file,
+                            caption=caption,
+                            parse_mode=parse_mode,
+                            message_thread_id=message_thread_id,
+                            reply_markup=reply_markup,
+                        )
+                    except Exception:
+                        pass
                 if "Message thread not found" in str(e) and message_thread_id is not None:
                     bio.seek(0)
                     return await bot.send_document(
@@ -218,7 +243,6 @@ async def send_doc_bytes(
                         parse_mode=parse_mode,
                         message_thread_id=None,
                         reply_markup=reply_markup,
-                        api_kwargs=api_kwargs,
                     )
                 raise e
         elif isinstance(data_or_path, str) and await asyncio.to_thread(os.path.exists, data_or_path):
