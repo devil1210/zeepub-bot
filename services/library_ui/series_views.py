@@ -25,11 +25,9 @@ from utils.helpers import (
 )
 
 from .builders import build_book_rich_blocks, build_book_rich_html
+from .lifecycle import is_nav_expired, schedule_message_lifecycle
 
 logger = logging.getLogger(__name__)
-
-# Cache en memoria de IDs de mensajes con navegación expirada (10m) en grupos no autorizados
-_nav_expired_msgs: set[int] = set()
 
 
 async def check_is_admin_or_staff(uid: int, tg_user=None) -> bool:
@@ -229,18 +227,14 @@ async def mostrar_volumenes_local(
         if current_row:
             volume_rows.append(current_row)
 
-    from services.telegram_service import is_authorized_group
-
     is_group = update.effective_chat.type in ("group", "supergroup")
-    is_authorized = is_authorized_group(chat_id)
-    is_unauthorized_group = is_group and not is_authorized
 
     msg_id = (
         update.callback_query.message.message_id
         if update.callback_query and update.callback_query.message
         else None
     )
-    nav_expired = bool(msg_id and msg_id in _nav_expired_msgs)
+    nav_expired = is_nav_expired(chat_id, msg_id)
 
     # 6. Cuota y rol
     left = await downloads_left(uid)
@@ -248,9 +242,9 @@ async def mostrar_volumenes_local(
     is_staff = await check_is_admin_or_staff(uid, update.effective_user)
     series_hash_short = series_hash[:16] if series_hash else None
 
-    # En grupos no autorizados: si expiró la navegación tras 10 min, no volver a mostrar los botones de navegación
-    show_nav_buttons = False if (is_unauthorized_group and nav_expired) else True
-    show_admin_buttons = False if (is_unauthorized_group and nav_expired) else is_staff
+    # Si expiró la navegación tras 10 min, no volver a mostrar los botones de navegación
+    show_nav_buttons = False if nav_expired else True
+    show_admin_buttons = False if nav_expired else is_staff
 
     # 7. Construir Bloques Nativos (Rich Blocks)
     rich_blocks = build_book_rich_blocks(
@@ -266,14 +260,27 @@ async def mostrar_volumenes_local(
 
     # 8. Enviar o editar in-place
     if update.callback_query and not force_new:
+        target_mid = update.callback_query.message.message_id
         try:
             res_edit = await RichMessageService.edit_rich_message(
                 chat_id=chat_id,
-                message_id=update.callback_query.message.message_id,
+                message_id=target_mid,
                 blocks=rich_blocks,
                 files=files if files else None,
             )
             if res_edit and res_edit.get("ok"):
+                # Programar / Refrescar temporizador de 10 min en cada interacción
+                schedule_message_lifecycle(
+                    chat_id=chat_id,
+                    message_id=target_mid,
+                    active_book=active_book,
+                    active_key=active_key,
+                    volume_rows=volume_rows,
+                    files=files,
+                    is_group=is_group,
+                    bot_inst=context.bot if context else None,
+                    series_hash_short=series_hash_short,
+                )
                 return
         except Exception as e:
             logger.debug(f"[mostrar_volumenes_local] No se pudo editar in-place: {e}")
@@ -291,84 +298,21 @@ async def mostrar_volumenes_local(
         message_thread_id=thread_id,
     )
 
-    # Programar expiración de botones de navegación a los 10 minutos (600s) en grupos no autorizados
-    sent_msg_id = None
+    # Programar temporizador de 10 minutos para mensaje nuevo
     if res and res.get("ok"):
         sent_msg_id = res.get("result", {}).get("message_id")
-
-    if is_unauthorized_group and sent_msg_id:
-        target_bot = context.bot if context and getattr(context, "bot", None) else None
-
-        async def _lifecycle_unauthorized_group_message(
-            target_mid: int,
-            target_cid: int,
-            cur_bk: dict,
-            cur_key: str,
-            cur_vol_rows: list,
-            cur_files: dict,
-            bot_inst,
-        ):
-            # Fase 1: A los 10 minutos (600s), retirar botones de navegación
-            await asyncio.sleep(600)
-            _nav_expired_msgs.add(target_mid)
-            clean_blocks = build_book_rich_blocks(
-                cur_bk,
-                has_cover=bool(cur_files and "tomozaki_cover" in cur_files),
-                key=cur_key,
-                can_download=True,
-                is_admin_or_staff=False,
+        if sent_msg_id:
+            schedule_message_lifecycle(
+                chat_id=chat_id,
+                message_id=sent_msg_id,
+                active_book=active_book,
+                active_key=active_key,
+                volume_rows=volume_rows,
+                files=files,
+                is_group=is_group,
+                bot_inst=context.bot if context else None,
                 series_hash_short=series_hash_short,
-                volume_buttons=cur_vol_rows if cur_vol_rows else None,
-                show_nav_buttons=False,
             )
-            try:
-                await RichMessageService.edit_rich_message(
-                    chat_id=target_cid,
-                    message_id=target_mid,
-                    blocks=clean_blocks,
-                    files=cur_files if cur_files else None,
-                )
-                logger.info(
-                    f"[UI Service] Botones de navegación retirados por inactividad (10m) en mensaje {target_mid}"
-                )
-            except Exception as exp_err:
-                logger.debug(
-                    f"[UI Service] No se pudo retirar botones de navegación en {target_mid}: {exp_err}"
-                )
-
-            # Fase 2: A las 24 horas (86400s totales -> 85800s adicionales), auto-eliminar mensaje del grupo
-            await asyncio.sleep(85800)
-            _nav_expired_msgs.discard(target_mid)
-            try:
-                active_bot = bot_inst
-                if not active_bot:
-                    from api.main import bot as main_bot
-
-                    active_bot = main_bot.app.bot
-
-                if active_bot:
-                    await active_bot.delete_message(
-                        chat_id=target_cid, message_id=target_mid
-                    )
-                    logger.info(
-                        f"[UI Service] Mensaje de búsqueda {target_mid} auto-eliminado tras 24h en chat {target_cid}"
-                    )
-            except Exception as del_err:
-                logger.debug(
-                    f"[UI Service] No se pudo auto-eliminar mensaje {target_mid} tras 24h: {del_err}"
-                )
-
-        asyncio.create_task(
-            _lifecycle_unauthorized_group_message(
-                sent_msg_id,
-                chat_id,
-                active_book,
-                active_key,
-                volume_rows,
-                files or {},
-                target_bot,
-            )
-        )
 
 
 async def mostrar_detalles_libro(

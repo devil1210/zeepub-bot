@@ -27,6 +27,11 @@ from .catalog_views import (
     mostrar_series,
     pedir_termino_busqueda,
 )
+from .lifecycle import (
+    cancel_nav_timer,
+    is_nav_expired,
+    schedule_message_lifecycle,
+)
 from .series_views import (
     mostrar_detalles_libro,
     mostrar_volumenes_local,
@@ -58,4 +63,8 @@ __all__ = [
     # Series Views
     "mostrar_volumenes_local",
     "mostrar_detalles_libro",
+    # Lifecycle
+    "schedule_message_lifecycle",
+    "is_nav_expired",
+    "cancel_nav_timer",
 ]

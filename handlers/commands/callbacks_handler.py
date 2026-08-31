@@ -12,6 +12,8 @@ from services.library_service import LibraryService
 from services.library_ui_service import (
     build_book_rich_blocks,
     build_book_rich_html,
+    cancel_nav_timer,
+    is_nav_expired,
     mostrar_menu_principal,
     mostrar_generos,
     mostrar_series,
@@ -88,10 +90,31 @@ class CallbackHandlerV6(BaseCommandHandler):
             return
 
         force_new = is_downloaded_msg
+        chat_id = update.effective_chat.id
+
+        # Expiración por inactividad (10 minutos)
+        if is_nav_expired(chat_id, msg_id):
+            if data in (
+                "main_menu",
+                "volver_menu",
+                "nav_back",
+                "volver",
+                "salir",
+                "cerrar_mensaje",
+            ) or data.startswith("nav_local|"):
+                try:
+                    await query.answer(
+                        "⚠️ Los botones de navegación han expirado por inactividad (10 min). Usa /start o /menu para abrir uno nuevo.",
+                        show_alert=True,
+                    )
+                except Exception:
+                    pass
+                return
 
         try:
             # 0. Salir / Cerrar Mensaje
             if data in ("salir", "cerrar_mensaje", "cerrar"):
+                cancel_nav_timer(chat_id, msg_id)
                 if not is_downloaded_msg and query.message:
                     try:
                         await query.message.delete()
