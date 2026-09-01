@@ -263,11 +263,36 @@ class CallbackHandlerV6(BaseCommandHandler):
                 )
 
             # 7. Selección de Serie / Colección
-            elif data.startswith("col|"):
-                series_idx = int(data.split("|")[1])
-                series_hash = st.get("series_map", {}).get(series_idx)
+            elif data.startswith("col|") or data.startswith("local_series|") or data.startswith("ser|"):
+                raw_val = data.split("|")[1]
+                series_hash = None
+
+                # 1. Si es un hash directo
+                if not raw_val.isdigit() or len(raw_val) > 6:
+                    series_hash = raw_val
+
+                # 2. Si es índice, buscar en state de usuario o compartido
+                if not series_hash:
+                    series_hash = state_manager.get_series_by_key(raw_val, uid)
+                    if not series_hash and raw_val.isdigit():
+                        try:
+                            series_hash = state_manager.get_series_by_key(int(raw_val), uid)
+                        except Exception:
+                            pass
+
+                # 3. Fallback en colecciones href
+                if not series_hash and raw_val.isdigit():
+                    idx = int(raw_val)
+                    if "colecciones" in st and idx in st["colecciones"]:
+                        href = st["colecciones"][idx].get("href", "")
+                        if href.startswith("local_series|"):
+                            series_hash = href.replace("local_series|", "")
+
+                if not series_hash:
+                    series_hash = raw_val
+
                 if series_hash:
-                    await mostrar_volumenes_local(update, context, series_hash)
+                    await mostrar_volumenes_local(update, context, str(series_hash))
                 else:
                     await query.answer("⚠️ Serie no encontrada.", show_alert=True)
 

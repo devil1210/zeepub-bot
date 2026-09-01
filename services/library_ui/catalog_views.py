@@ -217,14 +217,27 @@ async def mostrar_series(
         st["prev_view_local"] = "main"
 
     st["colecciones"] = {}
+    if "series_map" not in st:
+        st["series_map"] = {}
     items = []
 
     for i, s in enumerate(data["items"]):
-        href = f"local_series|{s['series_hash']}"
+        s_hash = s.get("series_hash") or s.get("id")
+        href = f"local_series|{s_hash}"
         series_title = s.get("name") or s.get("series_name") or s.get("title", "Novela")
         book_count = s.get("book_count") or s.get("count") or 1
         st["colecciones"][i] = {"titulo": series_title, "href": href}
-        items.append({"title": series_title, "index": i, "book_count": book_count})
+        st["series_map"][i] = s_hash
+        st["series_map"][str(i)] = s_hash
+        if s_hash:
+            state_manager.register_series_key(str(i), s_hash)
+            state_manager.register_series_key(s_hash, s_hash)
+        items.append({
+            "title": series_title,
+            "index": i,
+            "book_count": book_count,
+            "series_hash": s_hash,
+        })
 
     total_pages = (data["total"] + page_size - 1) // page_size if data["total"] > 0 else 1
     st["current_view"] = "series_list"
@@ -487,6 +500,8 @@ async def mostrar_resultados_locales(
 
     st["libros"] = {}
     st["colecciones"] = {}
+    if "series_map" not in st:
+        st["series_map"] = {}
     series_items = []
 
     # 1. Agregar Series (Resultados agrupados)
@@ -507,10 +522,16 @@ async def mostrar_resultados_locales(
                 or s.get("title", "Novela")
             )
             st["colecciones"][i] = {"titulo": series_title, "href": href}
+            st["series_map"][i] = s_hash
+            st["series_map"][str(i)] = s_hash
+            if s_hash:
+                state_manager.register_series_key(str(i), s_hash)
+                state_manager.register_series_key(s_hash, s_hash)
             series_items.append({
                 "title": series_title,
                 "index": i,
                 "book_count": s.get("book_count") or 1,
+                "series_hash": s_hash,
             })
 
     # 2. Agregar Libros "Sueltos"

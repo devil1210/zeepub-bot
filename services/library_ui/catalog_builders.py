@@ -236,13 +236,15 @@ def build_series_catalog_rich_blocks(
     for item in items:
         s_title = item.get("title", "Novela")
         idx = item.get("index", 0)
+        s_hash = item.get("series_hash")
+        cb = f"col|{s_hash}" if s_hash and len(str(s_hash)) <= 45 else f"col|{idx}"
         if len(s_title) > 34:
             s_title = s_title[:31] + "..."
         blocks.append(
             {
                 "type": "buttons",
                 "align": "center",
-                "buttons": [{"text": f"📁 {s_title}", "callback_data": f"col|{idx}"}],
+                "buttons": [{"text": f"📁 {s_title}", "callback_data": cb}],
             }
         )
 
@@ -521,6 +523,8 @@ def build_search_results_rich_blocks(
     for i, s in enumerate(series_results):
         name = s.get("name") or s.get("series_name") or s.get("title", "Serie")
         cnt = s.get("book_count") or 1
+        s_hash = s.get("series_hash")
+        cb = f"col|{s_hash}" if s_hash and len(str(s_hash)) <= 45 else f"col|{i}"
         btn_label = f"📁 {name}"
         if len(btn_label) > 30:
             btn_label = btn_label[:27] + "..."
@@ -529,7 +533,7 @@ def build_search_results_rich_blocks(
             {
                 "type": "buttons",
                 "align": "center",
-                "buttons": [{"text": btn_label, "callback_data": f"col|{i}"}],
+                "buttons": [{"text": btn_label, "callback_data": cb}],
             }
         )
 
