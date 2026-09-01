@@ -25,9 +25,9 @@ class CacheEntry:
 class AsyncLRUCache:
     """Caché asíncrono con control de expiración (TTL) y límite de capacidad."""
 
-    def __init__(self, max_size: int = 1000, default_ttl: int = 300):
+    def __init__(self, max_size: int = 1000, default_ttl: int = 300, ttl_seconds: int | None = None):
         self.max_size = max_size
-        self.default_ttl = default_ttl
+        self.default_ttl = ttl_seconds if ttl_seconds is not None else default_ttl
         self._cache: dict[str, CacheEntry] = {}
         self._tag_map: dict[str, set[str]] = {}
         self._lock = asyncio.Lock()
@@ -95,12 +95,20 @@ class AsyncLRUCache:
                 self._evict(k)
             return len(keys_to_remove)
 
+    async def delete(self, key: str) -> None:
+        """Elimina una clave específica de la caché."""
+        async with self._lock:
+            self._evict(key)
+
     async def clear(self) -> None:
         """Limpia toda la caché."""
         async with self._lock:
             self._cache.clear()
             self._tag_map.clear()
 
+
+# Alias para compatibilidad hacia atrás
+AsyncTTLCache = AsyncLRUCache
 
 # Instancia global de caché de catálogo
 catalog_cache = AsyncLRUCache(max_size=2000, default_ttl=300)
