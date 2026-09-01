@@ -90,8 +90,22 @@ async def mostrar_volumenes_local(
     volumes.sort(key=parse_vol_num)
 
     # Re-poblar estado si cambió de serie, si no hay libros o si la llave seleccionada no pertenece a esta serie
+    # 1. Resolver el hash completo de la serie si viene recortado a 16 caracteres
+    full_series_hash = await LibraryService.resolve_series_hash(series_hash)
+    series_hash = full_series_hash or series_hash
+
+    is_same_series = bool(
+        st.get("current_series_hash")
+        and (
+            st["current_series_hash"] == series_hash
+            or st["current_series_hash"].startswith(series_hash)
+            or series_hash.startswith(st["current_series_hash"])
+        )
+    )
+
+    # Re-poblar estado si cambió de serie o si no hay libros cargados
     need_rebuild = (
-        st.get("current_series_hash") != series_hash
+        not is_same_series
         or not st.get("libros")
         or (selected_key and selected_key not in st.get("libros", {}))
     )
@@ -159,12 +173,27 @@ async def mostrar_volumenes_local(
     st["current_view"] = "volumes_local"
     st["current_series_hash"] = series_hash
 
-    # 2. Determinar el volumen activo
+    # 2. Paginación y determinación del volumen activo
+    all_book_items = list(st["libros"].items())
+    total_volumes = len(all_book_items)
+    page_size = 8
+    total_vol_pages = (total_volumes + page_size - 1) // page_size if total_volumes > 12 else 1
+
+    vol_page = st.get("vol_page", 1)
+    if not (1 <= vol_page <= total_vol_pages):
+        vol_page = 1
+
     if selected_key and selected_key in st["libros"]:
         active_key = selected_key
+        active_idx = next((i for i, (k, _) in enumerate(all_book_items) if k == active_key), 0)
+        vol_page = (active_idx // page_size) + 1 if total_volumes > 12 else 1
     else:
-        active_key = list(st["libros"].keys())[0]
+        start_idx = (vol_page - 1) * page_size if total_volumes > 12 else 0
+        end_idx = min(start_idx + page_size, total_volumes) if total_volumes > 12 else total_volumes
+        page_items = all_book_items[start_idx:end_idx]
+        active_key = page_items[0][0]
 
+    st["vol_page"] = vol_page
     active_book = st["libros"][active_key]
 
     # 3. Enriquecer metadata del volumen activo
@@ -179,7 +208,9 @@ async def mostrar_volumenes_local(
         if meta_enriched:
             active_book.update(meta_enriched)
 
-    # 4. Resolver portada del volumen activo
+    # 4. Resolver portada del volumen activo con caché de Telegram file_id
+    from services.cover_service import get_cached_cover_file_id, set_cached_cover_file_id
+
     cover_raw = (
         active_book.get("cover_high")
         or active_book.get("coverUrl")
@@ -203,37 +234,39 @@ async def mostrar_volumenes_local(
                 cover_raw = cand
                 break
 
-    cover_data = await resolve_cover_data(cover_raw)
+    cached_fid = (
+        get_cached_cover_file_id(str(active_key))
+        or (get_cached_cover_file_id(str(book_id)) if book_id else None)
+        or (get_cached_cover_file_id(str(cover_raw)) if cover_raw else None)
+    )
+
     files = None
-    if cover_data:
-        if isinstance(cover_data, bytes):
-            files = {"tomozaki_cover": ("cover.jpg", cover_data, "image/jpeg")}
-        elif isinstance(cover_data, str) and os.path.exists(cover_data):
-            try:
-                with open(cover_data, "rb") as f:
-                    files = {"tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")}
-            except Exception as e:
-                logger.warning(f"Error al leer archivo de portada local: {e}")
+    cover_media = "attach://tomozaki_cover"
+    has_cover = False
+
+    if cached_fid:
+        cover_media = cached_fid
+        has_cover = True
+        logger.debug(f"⚡ [mostrar_volumenes_local] Reutilizando file_id de Telegram instantáneo: {cached_fid[:15]}...")
+    else:
+        cover_data = await resolve_cover_data(cover_raw)
+        if cover_data:
+            has_cover = True
+            if isinstance(cover_data, bytes):
+                files = {"tomozaki_cover": ("cover.jpg", cover_data, "image/jpeg")}
+            elif isinstance(cover_data, str) and os.path.exists(cover_data):
+                try:
+                    with open(cover_data, "rb") as f:
+                        files = {"tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")}
+                except Exception as e:
+                    logger.warning(f"Error al leer archivo de portada local: {e}")
 
     # 5. Selector de volúmenes (con sub-paginador si la serie supera 12 volúmenes)
     volume_rows = []
-    total_volumes = len(st["libros"])
-
     if total_volumes > 1:
-        all_book_items = list(st["libros"].items())
-        active_idx = next((i for i, (k, _) in enumerate(all_book_items) if k == active_key), 0)
-
-        # Si supera 12 volúmenes, paginar en bloques de 8 (2 filas de 4)
         if total_volumes > 12:
-            page_size = 8
-            total_vol_pages = (total_volumes + page_size - 1) // page_size
-            vol_page = st.get("vol_page")
-            if not vol_page or not (1 <= vol_page <= total_vol_pages):
-                vol_page = (active_idx // page_size) + 1
-            st["vol_page"] = vol_page
-
             start_idx = (vol_page - 1) * page_size
-            end_idx = start_idx + page_size
+            end_idx = min(start_idx + page_size, total_volumes)
             display_items = all_book_items[start_idx:end_idx]
 
             current_row = []
@@ -250,8 +283,8 @@ async def mostrar_volumenes_local(
 
             # Fila de control de paginación de volúmenes
             s_short = series_hash[:16] if series_hash else ""
-            prev_cb = f"vol_page|{s_short}|{vol_page - 1}|{active_key}" if vol_page > 1 else "noop"
-            next_cb = f"vol_page|{s_short}|{vol_page + 1}|{active_key}" if vol_page < total_vol_pages else "noop"
+            prev_cb = f"vol_page|{s_short}|{vol_page - 1}" if vol_page > 1 else "noop"
+            next_cb = f"vol_page|{s_short}|{vol_page + 1}" if vol_page < total_vol_pages else "noop"
             volume_rows.append([
                 {"text": "◀️" if vol_page > 1 else "▫️", "callback_data": prev_cb},
                 {"text": f"📚 Volúmenes ({vol_page}/{total_vol_pages})", "callback_data": "noop"},
@@ -292,7 +325,8 @@ async def mostrar_volumenes_local(
     # 7. Construir Bloques Nativos (Rich Blocks)
     rich_blocks = build_book_rich_blocks(
         active_book,
-        has_cover=bool(files and "tomozaki_cover" in files),
+        has_cover=has_cover,
+        cover_media=cover_media,
         key=active_key,
         can_download=can_download,
         is_admin_or_staff=show_admin_buttons,
@@ -312,6 +346,19 @@ async def mostrar_volumenes_local(
                 files=files if files else None,
             )
             if res_edit and res_edit.get("ok"):
+                # Capturar y cachear file_id devuelto por Telegram
+                res_obj = res_edit.get("result", {})
+                photos = res_obj.get("photo")
+                if photos and isinstance(photos, list) and len(photos) > 0:
+                    new_fid = photos[-1].get("file_id")
+                    if new_fid:
+                        if cover_raw:
+                            set_cached_cover_file_id(str(cover_raw), new_fid)
+                        if book_id:
+                            set_cached_cover_file_id(str(book_id), new_fid)
+                        if active_key:
+                            set_cached_cover_file_id(str(active_key), new_fid)
+
                 # Programar / Refrescar temporizador de 10 min en cada interacción
                 schedule_message_lifecycle(
                     chat_id=chat_id,

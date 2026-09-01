@@ -191,6 +191,7 @@ def build_book_rich_html(
 def build_book_rich_blocks(
     libro: dict,
     has_cover: bool = True,
+    cover_media: str = "attach://tomozaki_cover",
     key: str | None = None,
     can_download: bool = True,
     is_admin_or_staff: bool = False,
@@ -209,7 +210,7 @@ def build_book_rich_blocks(
                 "type": "photo",
                 "photo": {
                     "type": "photo",
-                    "media": "attach://tomozaki_cover",
+                    "media": cover_media or "attach://tomozaki_cover",
                 },
             }
         )
