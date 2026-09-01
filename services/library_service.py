@@ -290,6 +290,47 @@ class LibraryService:
             }
 
     @classmethod
+    async def get_random_series(cls) -> dict | None:
+        """Obtiene una serie aleatoria."""
+        from sqlalchemy import func, select
+
+        from core.db_manager_pg import pg_manager
+        from models.library import Series
+
+        async with pg_manager.get_session() as session:
+            stmt = select(Series).order_by(func.random()).limit(1)
+            res = await session.execute(stmt)
+            series = res.scalar_one_or_none()
+            return series.to_dict() if series else None
+
+    @classmethod
+    @cached(ttl=600, tag="top")
+    async def get_top_downloaded_series(cls, limit: int = 10) -> list[dict]:
+        """Obtiene las series más descargadas."""
+        from sqlalchemy import desc, func, select
+
+        from core.db_manager_pg import pg_manager
+        from models.library import Series, UserDownload
+
+        async with pg_manager.get_session() as session:
+            stmt = (
+                select(Series, func.count(UserDownload.id).label("dl_count"))
+                .join(UserDownload, UserDownload.series_hash == Series.id, isouter=True)
+                .group_by(Series.id)
+                .order_by(desc("dl_count"), Series.name.asc())
+                .limit(limit)
+            )
+            res = await session.execute(stmt)
+            results = []
+            for row in res.all():
+                s = row[0]
+                dl_count = row[1] or 0
+                s_dict = s.to_dict()
+                s_dict["download_count"] = dl_count
+                results.append(s_dict)
+            return results
+
+    @classmethod
     async def get_genres(cls) -> list[str]:
         """Obtiene lista de géneros."""
         # TODO: Implementar en repo

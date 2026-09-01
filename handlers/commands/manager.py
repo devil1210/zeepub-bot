@@ -17,6 +17,7 @@ from handlers.commands.cancel_handler import CancelHandler
 from handlers.commands.evil_handler import EvilHandler
 from handlers.commands.plugins_handler import PluginsHandler
 from handlers.commands.auth_handler import AuthHandler
+from handlers.commands.extra_commands_handler import ExtraCommandsHandler
 from telegram.ext import InlineQueryHandler
 from handlers.commands.callbacks_handler import CallbackHandlerV6
 from handlers.commands.inline_handler import InlineQueryHandlerV6
@@ -68,6 +69,7 @@ class HandlerManagerV6:
         self.evil_h = EvilHandler(app)
         self.plugins_h = PluginsHandler(app)
         self.auth_h = AuthHandler(app)
+        self.extra_h = ExtraCommandsHandler(app)
         self.callback_h = CallbackHandlerV6(app)
         self.inline_h = InlineQueryHandlerV6(app)
 
@@ -96,6 +98,27 @@ class HandlerManagerV6:
         )
         self.app.add_handler(
             CommandHandler(["cancel", "cancelar"], self.cancel_h.handle)
+        )
+        self.app.add_handler(
+            CommandHandler(["random", "aleatorio"], self.extra_h.handle_random)
+        )
+        self.app.add_handler(
+            CommandHandler(["top", "populares"], self.extra_h.handle_top)
+        )
+        self.app.add_handler(
+            CommandHandler(["novedades", "recientes"], self.extra_h.handle_novedades)
+        )
+        self.app.add_handler(
+            CommandHandler(["genero", "generos"], self.extra_h.handle_genero)
+        )
+        self.app.add_handler(
+            CommandHandler(["stats", "diagnostico"], self.extra_h.handle_stats_admin)
+        )
+        self.app.add_handler(
+            CommandHandler(["clearcache", "limpiarcache"], self.extra_h.handle_clearcache_admin)
+        )
+        self.app.add_handler(
+            CommandHandler(["cola", "pubqueue"], self.extra_h.handle_cola_admin)
         )
         self.app.add_handler(CommandHandler("id", self.handle_id))
         self.app.add_handler(
