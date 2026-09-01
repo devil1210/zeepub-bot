@@ -79,9 +79,9 @@ class BotInitializer:
                 from services.version_service import VersionService
 
                 v_info = await VersionService.get_version_status()
+                branch = state.get("branch") or v_info.get("branch", "")
                 v = v_info.get("local_hash", get_version_string())
-                branch = v_info.get("branch", "")
-                changelog = v_info.get("changelog", [])
+                changelog = state.get("changelog") or v_info.get("changelog", [])
 
                 cl_text = ""
                 if changelog:

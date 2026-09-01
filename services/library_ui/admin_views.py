@@ -188,8 +188,17 @@ async def ejecutar_admin_update(update: Update, context: ContextTypes.DEFAULT_TY
             )
         )
         if changelog:
-            cl_text = "<b>📌 Últimas mejoras y correcciones aplicadas:</b>\n" + "\n".join(f"• {c}" for c in changelog[:5])
-            update_blocks.append(RichMessageService.create_paragraph(cl_text))
+            update_blocks.append({
+                "type": "details",
+                "summary": "📌 Últimas mejoras y correcciones aplicadas",
+                "is_open": True,
+                "blocks": [
+                    {
+                        "type": "paragraph",
+                        "text": "\n".join(f"• {c}" for c in changelog[:6]),
+                    }
+                ],
+            })
 
         update_blocks.append({
             "type": "buttons",
@@ -211,18 +220,40 @@ async def ejecutar_admin_update(update: Update, context: ContextTypes.DEFAULT_TY
             )
 
         if changelog:
-            cl_text = "<b>✨ Novedades y correcciones en esta actualización:</b>\n" + "\n".join(f"• {c}" for c in changelog[:6])
-            update_blocks.append(RichMessageService.create_paragraph(cl_text))
+            update_blocks.append({
+                "type": "details",
+                "summary": "✨ Novedades y correcciones en esta actualización",
+                "is_open": True,
+                "blocks": [
+                    {
+                        "type": "paragraph",
+                        "text": "\n".join(f"• {c}" for c in changelog[:6]),
+                    }
+                ],
+            })
 
         # Guardar estado para notificar al reiniciar
         msg_id = update.callback_query.message.message_id if update.callback_query else None
-        VersionService.save_update_state(chat_id=chat_id, message_id=msg_id, thread_id=thread_id)
+        VersionService.save_update_state(
+            chat_id=chat_id,
+            message_id=msg_id,
+            thread_id=thread_id,
+            branch=branch,
+            local_hash=local_hash,
+            remote_hash=remote_hash,
+            changelog=changelog,
+        )
 
         from services.maintenance_service import trigger_watchtower_update
 
         success, msg = await trigger_watchtower_update()
+        status_icon = "✅" if success else "⚠️"
         update_blocks.append(
-            RichMessageService.create_paragraph(f"<b>Resultado:</b> {msg}")
+            RichMessageService.create_paragraph(
+                f"{status_icon} <b>Estado del Despliegue:</b>\n"
+                f"{msg}\n\n"
+                f"<i>ℹ️ Si el sistema se reinicia, recibirás la confirmación automáticamente cuando vuelva a estar en línea.</i>"
+            )
         )
         update_blocks.append({
             "type": "buttons",

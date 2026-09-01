@@ -18,28 +18,24 @@ logger = logging.getLogger(__name__)
 class VersionService:
     @staticmethod
     def get_current_branch() -> str:
-        """Determina la rama activa del bot (prioridad: env > config > version_branch.txt > git > fallback)."""
+        """Determina la rama activa del bot (prioridad: env > version_branch.txt > git > config > fallback)."""
         # 1. Variable de entorno directa
         env_branch = os.getenv("GIT_BRANCH")
         if env_branch and env_branch.strip():
             return env_branch.strip()
 
-        # 2. Configuración cargada
-        cfg_branch = getattr(config, "GIT_BRANCH", None)
-        if cfg_branch and cfg_branch.strip() and cfg_branch != "main":
-            return cfg_branch.strip()
+        # 2. Archivo estático version_branch.txt o data/version_branch.txt
+        for p in ("version_branch.txt", "data/version_branch.txt", "/app/version_branch.txt"):
+            if os.path.exists(p):
+                try:
+                    with open(p) as f:
+                        val = f.read().strip()
+                        if val:
+                            return val
+                except Exception:
+                    pass
 
-        # 3. Archivo estático version_branch.txt
-        if os.path.exists("version_branch.txt"):
-            try:
-                with open("version_branch.txt") as f:
-                    val = f.read().strip()
-                    if val:
-                        return val
-            except Exception:
-                pass
-
-        # 4. Git local en host o contenedor
+        # 3. Git local en host o contenedor
         try:
             out = subprocess.check_output(
                 ["git", "branch", "--show-current"], stderr=subprocess.DEVNULL
@@ -49,19 +45,25 @@ class VersionService:
         except Exception:
             pass
 
-        return cfg_branch or "main"
+        # 4. Configuración cargada
+        cfg_branch = getattr(config, "GIT_BRANCH", None)
+        if cfg_branch and cfg_branch.strip() and cfg_branch != "main":
+            return cfg_branch.strip()
+
+        return cfg_branch or "feat/integrate-web-client"
 
     @staticmethod
     def get_local_commit_hash() -> str:
         """Obtiene el hash del commit local activo (7 caracteres)."""
-        if os.path.exists("version_hash.txt"):
-            try:
-                with open("version_hash.txt") as f:
-                    val = f.read().strip()
-                    if val:
-                        return val[:7]
-            except Exception:
-                pass
+        for p in ("version_hash.txt", "data/version_hash.txt", "/app/version_hash.txt"):
+            if os.path.exists(p):
+                try:
+                    with open(p) as f:
+                        val = f.read().strip()
+                        if val:
+                            return val[:7]
+                except Exception:
+                    pass
         try:
             out = subprocess.check_output(
                 ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL
@@ -139,6 +141,10 @@ class VersionService:
         chat_id: int | str,
         message_id: int | str | None = None,
         thread_id: int | str | None = None,
+        branch: str | None = None,
+        local_hash: str | None = None,
+        remote_hash: str | None = None,
+        changelog: list | None = None,
     ):
         """Guarda el estado previo a reiniciar para notificar al iniciar con éxito."""
         try:
@@ -147,6 +153,10 @@ class VersionService:
                 "chat_id": chat_id,
                 "message_id": message_id,
                 "message_thread_id": thread_id,
+                "branch": branch or VersionService.get_current_branch(),
+                "local_hash": local_hash or VersionService.get_local_commit_hash(),
+                "remote_hash": remote_hash,
+                "changelog": changelog or [],
                 "timestamp": time.time(),
             }
             with open("data/update_state.json", "w") as f:
