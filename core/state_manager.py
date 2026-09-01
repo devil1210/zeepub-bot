@@ -4,10 +4,12 @@ from typing import Any
 
 
 class StateManager:
-    """Gestión de estado por usuario en memoria."""
+    """Gestión de estado por usuario en memoria con soporte multiusuario y pila de navegación."""
 
     def __init__(self):
         self.user_state: dict[int, dict[str, Any]] = {}
+        self._shared_books: dict[str, dict[str, Any]] = {}
+        self._shared_series: dict[str, str] = {}
 
     def get_user_state(self, uid: int) -> dict[str, Any]:
         if uid not in self.user_state:
@@ -25,16 +27,31 @@ class StateManager:
                 "esperando_password": False,
                 "ultima_pagina": None,
                 "series_hash": None,
+                "current_series_hash": None,
                 "volume_id": None,
+                "vol_page": 1,
+                "last_search_query": "",
                 "msg_que_hacer": None,
             }
         return self.user_state[uid]
 
+    def push_history(self, uid: int, entry: tuple) -> None:
+        """Agrega un estado a la pila de navegación del usuario evitando duplicados inmediatos."""
+        st = self.get_user_state(uid)
+        hist = st.setdefault("historial", [])
+        if not hist or hist[-1] != entry:
+            hist.append(entry)
+
+    def pop_history(self, uid: int) -> tuple | None:
+        """Extrae el último estado de la pila de navegación."""
+        st = self.get_user_state(uid)
+        hist = st.get("historial", [])
+        if hist and isinstance(hist, list):
+            return hist.pop()
+        return None
 
     def register_book_key(self, key: str, book_data: dict[str, Any]) -> None:
         """Registra un libro en el mapa compartido para que cualquier usuario en un grupo pueda descargarlo."""
-        if not hasattr(self, "_shared_books"):
-            self._shared_books = {}
         self._shared_books[key] = book_data
 
     def get_book_by_key(self, key: str, uid: int | None = None) -> dict[str, Any] | None:
@@ -43,7 +60,7 @@ class StateManager:
             st = self.user_state[uid]
             if "libros" in st and key in st["libros"]:
                 return st["libros"][key]
-        if hasattr(self, "_shared_books") and key in self._shared_books:
+        if key in self._shared_books:
             return self._shared_books[key]
         for st in self.user_state.values():
             if "libros" in st and key in st["libros"]:
@@ -52,8 +69,6 @@ class StateManager:
 
     def register_series_key(self, key: str, series_hash: str) -> None:
         """Registra una serie en el mapa compartido para soporte multiusuario en grupos."""
-        if not hasattr(self, "_shared_series"):
-            self._shared_series = {}
         self._shared_series[key] = series_hash
 
     def get_series_by_key(self, key: str, uid: int | None = None) -> str | None:
@@ -66,7 +81,7 @@ class StateManager:
                 href = st["colecciones"][key].get("href", "")
                 if href.startswith("local_series|"):
                     return href.replace("local_series|", "")
-        if hasattr(self, "_shared_series") and key in self._shared_series:
+        if key in self._shared_series:
             return self._shared_series[key]
         for st in self.user_state.values():
             if "series_map" in st and key in st["series_map"]:

@@ -386,6 +386,17 @@ class CallbackHandlerV6(BaseCommandHandler):
                 else:
                     await mostrar_detalles_libro(update, context, key)
 
+            # 9.1 Paginación del Carrusel de Volúmenes
+            elif data.startswith("vol_page|"):
+                parts = data.split("|")
+                s_hash = parts[1]
+                target_page = int(parts[2])
+                active_k = parts[3] if len(parts) > 3 else None
+                st["vol_page"] = target_page
+                await mostrar_volumenes_local(
+                    update, context, series_hash=s_hash, selected_key=active_k
+                )
+
             # 10. Toggle de Sinopsis
             elif data.startswith("tog_syn|"):
                 key = data.split("|")[1]

@@ -215,20 +215,60 @@ async def mostrar_volumenes_local(
             except Exception as e:
                 logger.warning(f"Error al leer archivo de portada local: {e}")
 
-    # 5. Selector de volúmenes
+    # 5. Selector de volúmenes (con sub-paginador si la serie supera 12 volúmenes)
     volume_rows = []
-    if len(st["libros"]) > 1:
-        current_row = []
-        for k, bk in st["libros"].items():
-            vol_disp = bk.get("vol_display", bk.get("volume", 0))
-            label = f"🔘 Vol. {vol_disp}" if k == active_key else f"Vol. {vol_disp}"
-            cb = "noop" if k == active_key else f"sel_vol|{k}"
-            current_row.append({"text": label, "callback_data": cb})
-            if len(current_row) == 4:
+    total_volumes = len(st["libros"])
+
+    if total_volumes > 1:
+        all_book_items = list(st["libros"].items())
+        active_idx = next((i for i, (k, _) in enumerate(all_book_items) if k == active_key), 0)
+
+        # Si supera 12 volúmenes, paginar en bloques de 8 (2 filas de 4)
+        if total_volumes > 12:
+            page_size = 8
+            total_vol_pages = (total_volumes + page_size - 1) // page_size
+            vol_page = st.get("vol_page")
+            if not vol_page or not (1 <= vol_page <= total_vol_pages):
+                vol_page = (active_idx // page_size) + 1
+            st["vol_page"] = vol_page
+
+            start_idx = (vol_page - 1) * page_size
+            end_idx = start_idx + page_size
+            display_items = all_book_items[start_idx:end_idx]
+
+            current_row = []
+            for k, bk in display_items:
+                vol_disp = bk.get("vol_display", bk.get("volume", 0))
+                label = f"🔘 Vol. {vol_disp}" if k == active_key else f"Vol. {vol_disp}"
+                cb = "noop" if k == active_key else f"sel_vol|{k}"
+                current_row.append({"text": label, "callback_data": cb})
+                if len(current_row) == 4:
+                    volume_rows.append(current_row)
+                    current_row = []
+            if current_row:
                 volume_rows.append(current_row)
-                current_row = []
-        if current_row:
-            volume_rows.append(current_row)
+
+            # Fila de control de paginación de volúmenes
+            s_short = series_hash[:16] if series_hash else ""
+            prev_cb = f"vol_page|{s_short}|{vol_page - 1}|{active_key}" if vol_page > 1 else "noop"
+            next_cb = f"vol_page|{s_short}|{vol_page + 1}|{active_key}" if vol_page < total_vol_pages else "noop"
+            volume_rows.append([
+                {"text": "◀️" if vol_page > 1 else "▫️", "callback_data": prev_cb},
+                {"text": f"📚 Volúmenes ({vol_page}/{total_vol_pages})", "callback_data": "noop"},
+                {"text": "▶️" if vol_page < total_vol_pages else "▫️", "callback_data": next_cb},
+            ])
+        else:
+            current_row = []
+            for k, bk in all_book_items:
+                vol_disp = bk.get("vol_display", bk.get("volume", 0))
+                label = f"🔘 Vol. {vol_disp}" if k == active_key else f"Vol. {vol_disp}"
+                cb = "noop" if k == active_key else f"sel_vol|{k}"
+                current_row.append({"text": label, "callback_data": cb})
+                if len(current_row) == 4:
+                    volume_rows.append(current_row)
+                    current_row = []
+            if current_row:
+                volume_rows.append(current_row)
 
     is_group = update.effective_chat.type in ("group", "supergroup")
 

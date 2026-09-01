@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.library import Book, Series
 from repositories.library import BookRepository, SeriesRepository
+from services.cache_service import cached
 
 logger = logging.getLogger(__name__)
 
@@ -106,8 +107,17 @@ class LibraryService:
     # --- Static Methods for v3.x compatibility ---
 
     @classmethod
+    async def invalidate_catalog_cache(cls):
+        """Invalida toda la caché del catálogo tras un escaneo."""
+        from services.cache_service import catalog_cache
+
+        await catalog_cache.clear()
+        logger.info("🧹 Caché del catálogo invalidada con éxito.")
+
+    @classmethod
+    @cached(ttl=600, tag="series")
     async def get_series_metadata(cls, series_hash: str) -> Series | None:
-        """Obtiene metadata de una serie (Estático)."""
+        """Obtiene metadata de una serie (Estático con caché)."""
         from core.db_manager_pg import pg_manager
 
         async with pg_manager.get_session() as session:
@@ -115,10 +125,11 @@ class LibraryService:
             return await service.get_series_details(series_hash)
 
     @classmethod
+    @cached(ttl=300, tag="volumes")
     async def get_series_volumes(
         cls, series_hash: str, limit: int = 100, offset: int = 0
     ) -> list[dict]:
-        """Obtiene volúmenes de una serie (Estático)."""
+        """Obtiene volúmenes de una serie (Estático con caché)."""
         from sqlalchemy import func, select
 
         from core.db_manager_pg import pg_manager

@@ -190,6 +190,11 @@ class ScannerService:
                 }
             )
 
+            # Invalidate catalog cache
+            from services.library_service import LibraryService
+
+            await LibraryService.invalidate_catalog_cache()
+
             # Sync to Cloud if enabled
             from services.sync_service import SyncService
 
