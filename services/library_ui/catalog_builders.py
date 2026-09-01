@@ -460,6 +460,36 @@ def build_search_prompt_rich_blocks(
     return blocks
 
 
+def format_item_badges(item: dict) -> str:
+    """Genera sufijos de formato y edición: [NL], [NW], [🎨], [SC], etc."""
+    badges = []
+    b_type = str(item.get("book_type") or item.get("categoria") or "").lower()
+    title_raw = str(item.get("title") or item.get("name") or "").lower()
+
+    if "web" in b_type or "[nw]" in title_raw or "novela web" in b_type:
+        badges.append("[NW]")
+    elif "visual" in b_type or "[vn]" in title_raw:
+        badges.append("[VN]")
+    elif "manga" in b_type:
+        badges.append("[Manga]")
+    elif "manhwa" in b_type:
+        badges.append("[Manhwa]")
+    elif "artbook" in b_type:
+        badges.append("[Artbook]")
+    elif "ligera" in b_type or "light" in b_type or "[nl]" in title_raw:
+        badges.append("[NL]")
+    elif b_type:
+        badges.append(f"[{item.get('book_type')}]")
+
+    if item.get("color_mode") == "color" or item.get("is_color") or item.get("color"):
+        badges.append("[🎨]")
+
+    if item.get("is_uncensored") or item.get("uncensored") or "[sc]" in title_raw or "sin censura" in title_raw:
+        badges.append("[SC]")
+
+    return " ".join(badges)
+
+
 def build_search_results_rich_blocks(
     query: str,
     series_results: list[dict],
@@ -490,12 +520,16 @@ def build_search_results_rich_blocks(
     if total_s > 0 or total_b > 0:
         table_rows = []
         for s in series_results:
-            name = s.get("name") or s.get("series_name") or s.get("title", "Serie")
+            name = s.get("title") or s.get("name") or s.get("series_name") or "Serie"
+            badges = format_item_badges(s)
+            disp_name = f"{name} {badges}".strip() if badges else name
             cnt = s.get("book_count") or 1
-            table_rows.append([{"text": f"📁 {name}", "align": "left"}, {"text": f"{cnt} vols", "align": "left"}])
+            table_rows.append([{"text": f"📁 {disp_name}", "align": "left"}, {"text": f"{cnt} vols", "align": "left"}])
         for b in standalone_books:
             b_title = b.get("title", "Libro")
-            table_rows.append([{"text": f"📕 {b_title}", "align": "left"}, {"text": "Individual", "align": "left"}])
+            b_badges = format_item_badges(b)
+            disp_b_title = f"{b_title} {b_badges}".strip() if b_badges else b_title
+            table_rows.append([{"text": f"📕 {disp_b_title}", "align": "left"}, {"text": "Individual", "align": "left"}])
 
         blocks.append(
             {
@@ -521,14 +555,16 @@ def build_search_results_rich_blocks(
         )
 
     for i, s in enumerate(series_results):
-        name = s.get("name") or s.get("series_name") or s.get("title", "Serie")
+        name = s.get("title") or s.get("name") or s.get("series_name") or "Serie"
+        badges = format_item_badges(s)
         cnt = s.get("book_count") or 1
         s_hash = s.get("series_hash")
         cb = f"col|{s_hash}" if s_hash and len(str(s_hash)) <= 45 else f"col|{i}"
-        btn_label = f"📁 {name}"
-        if len(btn_label) > 30:
-            btn_label = btn_label[:27] + "..."
-        btn_label += f" ({cnt} vols)"
+        
+        badges_str = f" {badges}" if badges else ""
+        max_name_len = max(12, 28 - len(badges_str) - len(f" ({cnt} vols)"))
+        short_name = name[:max_name_len] + "..." if len(name) > max_name_len else name
+        btn_label = f"📁 {short_name}{badges_str} ({cnt} vols)"
         blocks.append(
             {
                 "type": "buttons",

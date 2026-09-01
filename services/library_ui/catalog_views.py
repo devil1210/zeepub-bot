@@ -529,6 +529,11 @@ async def mostrar_resultados_locales(
                 state_manager.register_series_key(s_hash, s_hash)
             series_items.append({
                 "title": series_title,
+                "name": s.get("name"),
+                "name_english": s.get("name_english"),
+                "book_type": s.get("book_type"),
+                "color_mode": s.get("color_mode"),
+                "is_uncensored": s.get("is_uncensored"),
                 "index": i,
                 "book_count": s.get("book_count") or 1,
                 "series_hash": s_hash,
@@ -564,7 +569,14 @@ async def mostrar_resultados_locales(
                 "portada": b.get("cover_medium") or b.get("cover_low"),
                 "hash": b.get("book_hash") or b.get("id"),
             }
-            books_items.append({"key": key, "title": display_title, "display": display})
+            books_items.append({
+                "key": key,
+                "title": display_title,
+                "display": display,
+                "book_type": b.get("book_type") or b.get("categoria"),
+                "color_mode": b.get("color_mode"),
+                "is_uncensored": b.get("is_uncensored"),
+            })
 
     st["current_view"] = "search_results"
     st["titulo"] = f"🔍 Resultado: {query}"
