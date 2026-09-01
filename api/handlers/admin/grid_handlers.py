@@ -211,20 +211,33 @@ async def handle_admin_update_series_grid(data: dict[str, Any], user_data: dict[
         if not series:
             raise HTTPException(status_code=404, detail="Serie no encontrada")
 
+        from sqlalchemy import update
+
         if "name" in data:
             series.name = str(data["name"]).strip()
+            if series.name:
+                await session.execute(
+                    update(Book)
+                    .where(Book.series_id == series.id)
+                    .values(romaji_title=series.name)
+                )
         if "series_english" in data or "name_english" in data:
             val = data.get("series_english", data.get("name_english"))
             series.name_english = str(val).strip() if val else None
+            if series.name_english:
+                await session.execute(
+                    update(Book)
+                    .where(Book.series_id == series.id)
+                    .values(series_english=series.name_english, english_title=series.name_english)
+                )
         if "series_spanish" in data or "name_spanish" in data:
             val = data.get("series_spanish", data.get("name_spanish"))
             series.name_spanish = str(val).strip() if val else None
             if series.name_spanish:
-                from sqlalchemy import update
                 await session.execute(
                     update(Book)
                     .where(Book.series_id == series.id)
-                    .values(series_spanish=series.name_spanish)
+                    .values(series_spanish=series.name_spanish, spanish_title=series.name_spanish)
                 )
         if "slug" in data:
             raw_slug = data.get("slug")

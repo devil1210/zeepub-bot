@@ -244,6 +244,8 @@ def resolve_title_cascade(data: dict[str, Any]) -> tuple[str, str | None, str | 
     )
     t_jp = (
         data.get("romaji_title")
+        or data.get("series_romaji")
+        or data.get("series_name")
         or data.get("title_japanese")
         or data.get("title_jp")
         or data.get("romaji")
