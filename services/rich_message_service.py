@@ -41,7 +41,7 @@ class RichMessageService:
         
         rich_payload = {}
         if blocks is not None:
-            rich_payload["blocks"] = blocks
+            rich_payload["blocks"] = cls._normalize_blocks(blocks)
         if html is not None:
             rich_payload["html"] = html
         if markdown is not None:
@@ -99,7 +99,7 @@ class RichMessageService:
 
         rich_payload = {}
         if blocks is not None:
-            rich_payload["blocks"] = blocks
+            rich_payload["blocks"] = cls._normalize_blocks(blocks)
         if html is not None:
             rich_payload["html"] = html
         if markdown is not None:
@@ -168,7 +168,7 @@ class RichMessageService:
         
         rich_payload = {}
         if blocks is not None:
-            rich_payload["blocks"] = blocks
+            rich_payload["blocks"] = cls._normalize_blocks(blocks)
         if html is not None:
             rich_payload["html"] = html
         if markdown is not None:
@@ -410,3 +410,33 @@ class RichMessageService:
             "text": plain_text,
             "entities": entities
         }
+
+    @classmethod
+    def _normalize_blocks(cls, blocks: list[dict] | None) -> list[dict] | None:
+        """Normaliza recursivamente los bloques procesando tags HTML a entidades nativas de Rich Message."""
+        if not blocks or not isinstance(blocks, list):
+            return blocks
+
+        normalized = []
+        for b in blocks:
+            if not isinstance(b, dict):
+                normalized.append(b)
+                continue
+
+            b_copy = dict(b)
+            b_type = b_copy.get("type")
+
+            if b_type == "paragraph":
+                txt = b_copy.get("text", "")
+                if isinstance(txt, str) and "<" in txt and ">" in txt and not b_copy.get("entities"):
+                    parsed = cls.html_to_rich_text(txt)
+                    b_copy["text"] = parsed["text"]
+                    if parsed.get("entities"):
+                        b_copy["entities"] = parsed["entities"]
+            elif b_type == "details":
+                if "blocks" in b_copy and isinstance(b_copy["blocks"], list):
+                    b_copy["blocks"] = cls._normalize_blocks(b_copy["blocks"])
+
+            normalized.append(b_copy)
+
+        return normalized

@@ -191,7 +191,7 @@ class BotConfig:
     ENABLE_METRICS: bool = os.getenv("ENABLE_METRICS", "true").lower() == "true"
 
     # Updates
-    GIT_BRANCH: str = os.getenv("GIT_BRANCH", "main")
+    GIT_BRANCH: str = os.getenv("GIT_BRANCH", "feat/integrate-web-client")
 
     # Supabase Configuration
     ENABLE_SUPABASE: bool = os.getenv("ENABLE_SUPABASE", "False").lower() == "true"

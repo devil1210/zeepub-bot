@@ -43,7 +43,8 @@ async def mostrar_panel_admin(
 
     # Obtener estadísticas y configuración
     stats = await LibraryService.get_library_stats()
-    git_hash = get_last_commit_message() or "v3.6.0"
+    from services.version_service import VersionService
+    git_hash = VersionService.get_local_commit_hash()
     auto_del = get_setting("auto_delete_time", "2") or "2"
 
     blocks = build_admin_panel_rich_blocks(stats=stats, git_hash=git_hash, auto_del_mins=str(auto_del))

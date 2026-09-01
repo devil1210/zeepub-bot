@@ -44,7 +44,7 @@ def build_admin_panel_rich_blocks(
                 ],
                 [
                     {"text": "🏷️ Versión Git", "align": "left"},
-                    {"text": str(git_hash[:10]), "align": "left"},
+                    {"text": str(git_hash[:7]), "align": "left"},
                 ],
             ],
         },

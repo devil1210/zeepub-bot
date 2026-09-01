@@ -50,7 +50,7 @@ class VersionService:
         if cfg_branch and cfg_branch.strip() and cfg_branch != "main":
             return cfg_branch.strip()
 
-        return cfg_branch or "feat/integrate-web-client"
+        return "feat/integrate-web-client"
 
     @staticmethod
     def get_local_commit_hash() -> str:
