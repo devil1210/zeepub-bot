@@ -15,7 +15,7 @@ from core.state_manager import state_manager
 from services.cache_service import cache_manager, catalog_cache
 from services.cover_service import _cover_file_id_cache
 from services.library_service import LibraryService
-from services.library_ui.catalog_views import mostrar_generos_local, mostrar_series
+from services.library_ui.catalog_views import mostrar_generos, mostrar_series
 from services.library_ui.series_views import mostrar_volumenes_local
 from services.rich_message_service import RichMessageService
 from utils.auth_helpers import check_is_admin_or_staff
@@ -184,7 +184,7 @@ class ExtraCommandsHandler:
     async def handle_genero(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Filtra directamente por género (ej. /genero accion)."""
         if not context.args:
-            await mostrar_generos_local(update, context)
+            await mostrar_generos(update, context)
             return
 
         query_gen = " ".join(context.args).strip()
