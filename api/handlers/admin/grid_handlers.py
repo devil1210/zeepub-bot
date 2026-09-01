@@ -194,8 +194,17 @@ async def handle_admin_update_series_grid(data: dict[str, Any], user_data: dict[
     if not series_id:
         raise HTTPException(status_code=400, detail="series_id es requerido")
 
+    clean_id = series_id.replace("series_", "") if series_id.startswith("series_") else series_id
+
     async with pg_manager.get_session() as session:
-        stmt = select(Series).where(Series.id == series_id)
+        stmt = select(Series).where(
+            or_(
+                Series.id == series_id,
+                Series.id == clean_id,
+                Series.slug == series_id,
+                Series.slug == clean_id,
+            )
+        )
         res = await session.execute(stmt)
         series = res.scalar_one_or_none()
 
@@ -210,6 +219,13 @@ async def handle_admin_update_series_grid(data: dict[str, Any], user_data: dict[
         if "series_spanish" in data or "name_spanish" in data:
             val = data.get("series_spanish", data.get("name_spanish"))
             series.name_spanish = str(val).strip() if val else None
+            if series.name_spanish:
+                from sqlalchemy import update
+                await session.execute(
+                    update(Book)
+                    .where(Book.series_id == series.id)
+                    .values(series_spanish=series.name_spanish)
+                )
         if "slug" in data:
             raw_slug = data.get("slug")
             series.slug = _sanitize_slug(raw_slug)
@@ -231,6 +247,9 @@ async def handle_admin_update_series_grid(data: dict[str, Any], user_data: dict[
         if "publisher" in data:
             val = data.get("publisher")
             series.publisher = str(val).strip() if val else None
+        if "cover_url" in data:
+            val = data.get("cover_url")
+            series.cover_url = str(val).strip() if val else None
         if "book_type" in data:
             val = data.get("book_type")
             series.book_type = str(val).strip() if val else "Novela Ligera"
@@ -246,7 +265,7 @@ async def handle_admin_update_series_grid(data: dict[str, Any], user_data: dict[
                 series.tags_json = [str(t).strip() for t in val if str(t).strip()]
 
         await session.commit()
-        await cache_manager.delete_series(series_id)
+        await cache_manager.delete_series(series.id)
 
         return {
             "success": True,

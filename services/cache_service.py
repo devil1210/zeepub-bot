@@ -208,6 +208,24 @@ class CacheManager:
         """Alias para invalidate_user (compatibilidad con user_repository)."""
         await self.invalidate_user(telegram_id)
 
+    async def invalidate_series(self, series_id: str) -> None:
+        """Invalida cache de una serie."""
+        self.memory_cache.clear_pattern(f"series:{series_id}")
+        self.memory_cache.clear_pattern("grid:")
+
+    async def delete_series(self, series_id: str) -> None:
+        """Alias para invalidate_series."""
+        await self.invalidate_series(series_id)
+
+    async def invalidate_book(self, book_id: str) -> None:
+        """Invalida cache de un libro."""
+        self.memory_cache.clear_pattern(f"book:{book_id}")
+        self.memory_cache.clear_pattern("grid:")
+
+    async def delete_book(self, book_id: str) -> None:
+        """Alias para invalidate_book."""
+        await self.invalidate_book(book_id)
+
     async def get_user_effective(self, telegram_id: int) -> dict[str, Any] | None:
         """Obtiene usuario efectivo (con defaults)."""
         user = await self.get_user(telegram_id)
