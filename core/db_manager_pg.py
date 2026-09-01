@@ -62,9 +62,14 @@ class PostgresManager:
                 self.engine = create_async_engine(db_url, pool_pre_ping=True, pool_recycle=3600)
                 self.session_maker = async_sessionmaker(self.engine, expire_on_commit=False, class_=AsyncSession)
 
-                # Verify connection
+                # Verify connection and ensure unaccent extension is available
                 async with self.engine.begin() as conn:
                     await conn.run_sync(lambda _: logger.info("Postgres connection established successfully."))
+                    try:
+                        from sqlalchemy import text
+                        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS unaccent;"))
+                    except Exception as ue:
+                        logger.debug(f"PostgreSQL extension 'unaccent' check: {ue}")
 
                 self._initialized = True
             except Exception as e:

@@ -167,6 +167,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
         async with pg_manager.get_session() as session:
             try:
                 pattern = f"%{query}%"
+                unacc_pattern = func.unaccent(pattern)
                 search_type = search_type.lower() if search_type else "todos"
 
                 # Base query with download count subquery
@@ -191,30 +192,30 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 ):
                     series_filters.extend(
                         [
-                            SeriesMetadata.series_name.ilike(pattern),
-                            SeriesMetadata.name_spanish.ilike(pattern),
-                            SeriesMetadata.name_english.ilike(pattern),
+                            func.unaccent(func.coalesce(SeriesMetadata.series_name, "")).ilike(unacc_pattern),
+                            func.unaccent(func.coalesce(SeriesMetadata.name_spanish, "")).ilike(unacc_pattern),
+                            func.unaccent(func.coalesce(SeriesMetadata.name_english, "")).ilike(unacc_pattern),
                         ]
                     )
 
                 if search_type in ("todos", "all", "author", "autor"):
-                    series_filters.append(SeriesMetadata.author.ilike(pattern))
+                    series_filters.append(func.unaccent(func.coalesce(SeriesMetadata.author, "")).ilike(unacc_pattern))
 
                 if search_type in ("todos", "all", "tags", "géneros", "genres"):
                     series_filters.append(
-                        cast(SeriesMetadata.tags_json, String).ilike(pattern)
+                        func.unaccent(cast(SeriesMetadata.tags_json, String)).ilike(unacc_pattern)
                     )
 
                 if search_type in ("todos", "all", "demographics", "demografía"):
                     series_filters.append(
-                        cast(SeriesMetadata.demographics_json, String).ilike(pattern)
+                        func.unaccent(cast(SeriesMetadata.demographics_json, String)).ilike(unacc_pattern)
                     )
 
                 if search_type in ("translator", "traductor", "group", "grupo"):
-                    series_filters.append(SeriesMetadata.publisher.ilike(pattern))
+                    series_filters.append(func.unaccent(func.coalesce(SeriesMetadata.publisher, "")).ilike(unacc_pattern))
 
                 if search_type in ("todos", "all", "illustrator", "ilustrador"):
-                    series_filters.append(SeriesMetadata.illustrator.ilike(pattern))
+                    series_filters.append(func.unaccent(func.coalesce(SeriesMetadata.illustrator, "")).ilike(unacc_pattern))
 
                 # 2. Filtros de Libro (vía EXISTS)
                 book_filters = []
@@ -225,7 +226,7 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                     "layout",
                     "typesetter",
                 ):
-                    book_filters.append(LocalBook.layout_by.ilike(pattern))
+                    book_filters.append(func.unaccent(func.coalesce(LocalBook.layout_by, "")).ilike(unacc_pattern))
 
                 if search_type in (
                     "todos",
@@ -235,20 +236,21 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                     "group",
                     "grupo",
                 ):
-                    book_filters.append(LocalBook.translator.ilike(pattern))
+                    book_filters.append(func.unaccent(func.coalesce(LocalBook.translator, "")).ilike(unacc_pattern))
 
                 if search_type in ("todos", "all", "isbn"):
-                    book_filters.append(LocalBook.isbn.ilike(pattern))
+                    book_filters.append(func.unaccent(func.coalesce(LocalBook.isbn, "")).ilike(unacc_pattern))
 
                 if search_type in ("todos", "all", "illustrator", "ilustrador"):
-                    book_filters.append(LocalBook.illustrator.ilike(pattern))
+                    book_filters.append(func.unaccent(func.coalesce(LocalBook.illustrator, "")).ilike(unacc_pattern))
 
                 if search_type in ("todos", "all"):
                     # En modo 'todos', también buscamos título/filename en libros
                     book_filters.extend(
                         [
-                            LocalBook.title.ilike(pattern),
-                            LocalBook.filename.ilike(pattern),
+                            func.unaccent(func.coalesce(LocalBook.title, "")).ilike(unacc_pattern),
+                            func.unaccent(func.coalesce(LocalBook.spanish_title, "")).ilike(unacc_pattern),
+                            func.unaccent(func.coalesce(LocalBook.filename, "")).ilike(unacc_pattern),
                         ]
                     )
 

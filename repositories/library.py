@@ -35,21 +35,23 @@ class SeriesRepository(BaseRepository[Series]):
         # Filtros
         if query:
             search = f"%{query}%"
+            unacc_search = func.unaccent(search)
             # 1. Filtros a nivel de Serie (nombre, español, inglés, autor)
             series_criteria = [
-                Series.series_name.ilike(search),
-                Series.series_spanish.ilike(search),
-                Series.series_english.ilike(search),
-                Series.author.ilike(search),
+                func.unaccent(func.coalesce(Series.name, '')).ilike(unacc_search),
+                func.unaccent(func.coalesce(Series.name_spanish, '')).ilike(unacc_search),
+                func.unaccent(func.coalesce(Series.name_english, '')).ilike(unacc_search),
+                func.unaccent(func.coalesce(Series.author, '')).ilike(unacc_search),
             ]
 
             # 2. Filtros a nivel de Libros de la Serie (publisher, translator, group, layout, etc.)
             book_criteria = [
-                Book.publisher.ilike(search),
-                Book.translator.ilike(search),
-                Book.layout_by.ilike(search),
-                Book.title.ilike(search),
-                Book.filename.ilike(search),
+                func.unaccent(func.coalesce(Book.publisher, '')).ilike(unacc_search),
+                func.unaccent(func.coalesce(Book.translator, '')).ilike(unacc_search),
+                func.unaccent(func.coalesce(Book.layout_by, '')).ilike(unacc_search),
+                func.unaccent(func.coalesce(Book.title, '')).ilike(unacc_search),
+                func.unaccent(func.coalesce(Book.spanish_title, '')).ilike(unacc_search),
+                func.unaccent(func.coalesce(Book.filename, '')).ilike(unacc_search),
             ]
 
             # 3. Filtros por nombre/siglas del Fansub / TranslatorsGroup vinculado
@@ -58,8 +60,8 @@ class SeriesRepository(BaseRepository[Series]):
                 .join(TranslatorsGroup, Book.translator_group_id == TranslatorsGroup.id)
                 .where(
                     or_(
-                        TranslatorsGroup.name.ilike(search),
-                        TranslatorsGroup.siglas.ilike(search),
+                        func.unaccent(func.coalesce(TranslatorsGroup.name, '')).ilike(unacc_search),
+                        func.unaccent(func.coalesce(TranslatorsGroup.siglas, '')).ilike(unacc_search),
                     )
                 )
             )
@@ -74,10 +76,10 @@ class SeriesRepository(BaseRepository[Series]):
 
         if tag:
             # Filtramos por el nombre del tag/género en la relación many-to-many
-            stmt = stmt.where(Series.genres.any(Genre.name.ilike(tag)))
+            stmt = stmt.where(Series.genres.any(func.unaccent(func.coalesce(Genre.name, '')).ilike(func.unaccent(tag))))
 
         if author:
-            stmt = stmt.where(Series.author.ilike(f"%{author}%"))
+            stmt = stmt.where(func.unaccent(func.coalesce(Series.author, '')).ilike(func.unaccent(f"%{author}%")))
 
         # Ordenación
         if sort_by == "newest":
@@ -101,6 +103,13 @@ class SeriesRepository(BaseRepository[Series]):
         if not series_list and query and len(query) > 2:
             try:
                 import difflib
+                import unicodedata
+
+                def strip_accents(s: str) -> str:
+                    return "".join(
+                        c for c in unicodedata.normalize("NFD", s)
+                        if unicodedata.category(c) != "Mn"
+                    ).lower()
 
                 # Obtener todas las series para comparar en memoria
                 all_stmt = select(Series)
@@ -108,7 +117,7 @@ class SeriesRepository(BaseRepository[Series]):
                 all_series = all_res.scalars().all()
 
                 scored_series = []
-                q_lower = query.lower()
+                q_norm = strip_accents(query)
 
                 for s in all_series:
                     # Comparar contra nombre original, español e inglés
@@ -121,15 +130,15 @@ class SeriesRepository(BaseRepository[Series]):
                     for name in names_to_check:
                         if not name:
                             continue
-                        name_lower = name.lower()
+                        name_norm = strip_accents(name)
 
                         # 1. Coincidencia difusa rápida de ratio
                         ratio = difflib.SequenceMatcher(
-                            None, q_lower, name_lower
+                            None, q_norm, name_norm
                         ).ratio()
 
                         # 2. Si es substring, darle un bonus alto
-                        if q_lower in name_lower or name_lower in q_lower:
+                        if q_norm in name_norm or name_norm in q_norm:
                             ratio = max(ratio, 0.7)
 
                         if ratio > max_score:

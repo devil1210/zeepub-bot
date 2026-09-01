@@ -143,29 +143,32 @@ class BookRepository(BaseRepository[LocalBook]):
         async with pg_manager.get_session() as session:
             try:
                 pattern = f"%{query}%"
+                unacc_pattern = func.unaccent(pattern)
 
                 # Filtros base
                 filters = [
-                    LocalBook.title.ilike(pattern),
-                    SeriesMetadata.author.ilike(pattern),
-                    SeriesMetadata.series_name.ilike(pattern),
-                    LocalBook.romaji_title.ilike(pattern),
+                    func.unaccent(func.coalesce(LocalBook.title, "")).ilike(unacc_pattern),
+                    func.unaccent(func.coalesce(LocalBook.spanish_title, "")).ilike(unacc_pattern),
+                    func.unaccent(func.coalesce(SeriesMetadata.author, "")).ilike(unacc_pattern),
+                    func.unaccent(func.coalesce(SeriesMetadata.series_name, "")).ilike(unacc_pattern),
+                    func.unaccent(func.coalesce(SeriesMetadata.name_spanish, "")).ilike(unacc_pattern),
+                    func.unaccent(func.coalesce(SeriesMetadata.name_english, "")).ilike(unacc_pattern),
+                    func.unaccent(func.coalesce(LocalBook.romaji_title, "")).ilike(unacc_pattern),
                 ]
 
                 # Filtros extendidos según el tipo de búsqueda
                 if search_type in ("all", "todos", "genres", "géneros", "tags"):
-                    filters.append(cast(SeriesMetadata.tags_json, String).ilike(pattern))
+                    filters.append(func.unaccent(cast(SeriesMetadata.tags_json, String)).ilike(unacc_pattern))
                 if search_type in ("all", "todos", "demographics", "demografía"):
-                    filters.append(cast(SeriesMetadata.demographics_json, String).ilike(pattern))
+                    filters.append(func.unaccent(cast(SeriesMetadata.demographics_json, String)).ilike(unacc_pattern))
                 if search_type in ("all", "todos", "translator", "traductor", "group", "grupo"):
-                    filters.append(LocalBook.translator.ilike(pattern))
+                    filters.append(func.unaccent(func.coalesce(LocalBook.translator, "")).ilike(unacc_pattern))
                 if search_type in ("all", "todos", "illustrator", "ilustrador"):
-                    # Fallback to checking author or related since illustrator was removed from LocalBook
-                    filters.append(SeriesMetadata.author.ilike(pattern))
+                    filters.append(func.unaccent(func.coalesce(SeriesMetadata.author, "")).ilike(unacc_pattern))
                 if search_type in ("all", "todos", "layout", "maquetador", "typesetter"):
-                    filters.append(LocalBook.layout_by.ilike(pattern))
+                    filters.append(func.unaccent(func.coalesce(LocalBook.layout_by, "")).ilike(unacc_pattern))
                 if search_type in ("all", "todos", "isbn"):
-                    filters.append(LocalBook.isbn.ilike(pattern))
+                    filters.append(func.unaccent(func.coalesce(LocalBook.isbn, "")).ilike(unacc_pattern))
 
                 # Subconsulta para conteo de descargas
                 dl_subquery = (
