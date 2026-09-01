@@ -17,6 +17,7 @@ from handlers.commands.publish_callbacks import handle_publish_callback
 from services.library_ui_service import (
     build_book_rich_blocks,
     cancel_nav_timer,
+    ejecutar_busqueda_local,
     is_nav_expired,
     mostrar_autores_local,
     mostrar_ayuda,
@@ -26,6 +27,7 @@ from services.library_ui_service import (
     mostrar_libros,
     mostrar_menu_principal,
     mostrar_reglas,
+    mostrar_resultados_locales,
     mostrar_series,
     mostrar_volumenes_local,
     pedir_termino_busqueda,
@@ -146,7 +148,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                 await mostrar_menu_principal(update, context, force_new=True)
 
             # 2. Historial de Navegación Atrás
-            elif data in ("nav_back", "volver"):
+            elif data in ("nav_back", "volver", "volver_ultima"):
                 if not is_downloaded_msg and query.message:
                     try:
                         await query.message.delete()
@@ -157,7 +159,15 @@ class CallbackHandlerV6(BaseCommandHandler):
                 if historial:
                     prev_state = historial.pop()
                     view_type = prev_state[0]
-                    if view_type == "series_list":
+                    if view_type == "search_results":
+                        search_q = prev_state[1] if len(prev_state) > 1 else st.get("last_search_query", "")
+                        if search_q:
+                            await ejecutar_busqueda_local(
+                                update, context, query=search_q, force_new=True
+                            )
+                        else:
+                            await mostrar_menu_principal(update, context, force_new=True)
+                    elif view_type == "series_list":
                         _, orig_t, f_val, pg = prev_state
                         await mostrar_series(
                             update,
@@ -174,6 +184,14 @@ class CallbackHandlerV6(BaseCommandHandler):
                         await mostrar_autores_local(
                             update, context, page=pg, force_new=True
                         )
+                    elif view_type == "volumes_local":
+                        series_h = prev_state[1] if len(prev_state) > 1 else None
+                        if series_h:
+                            await mostrar_volumenes_local(
+                                update, context, series_hash=str(series_h), force_new=True
+                            )
+                        else:
+                            await mostrar_menu_principal(update, context, force_new=True)
                     elif view_type == "main":
                         await mostrar_menu_principal(update, context, force_new=True)
                     else:
@@ -185,13 +203,28 @@ class CallbackHandlerV6(BaseCommandHandler):
                             force_new=True,
                         )
                 else:
-                    await mostrar_series(
-                        update,
-                        context,
-                        origin_type="all_series",
-                        page=1,
-                        force_new=True,
-                    )
+                    # Fallback inteligente si el historial está vacío
+                    if st.get("last_search_query"):
+                        await ejecutar_busqueda_local(
+                            update, context, query=st["last_search_query"], force_new=True
+                        )
+                    elif st.get("origin_type"):
+                        await mostrar_series(
+                            update,
+                            context,
+                            origin_type=st.get("origin_type", "all_series"),
+                            filter_val=st.get("filter_val"),
+                            page=st.get("current_page", 1),
+                            force_new=True,
+                        )
+                    elif st.get("prev_view_local") == "genres":
+                        await mostrar_generos(update, context, force_new=True)
+                    elif st.get("prev_view_local") == "authors":
+                        await mostrar_autores_local(
+                            update, context, page=st.get("current_page_b", 1), force_new=True
+                        )
+                    else:
+                        await mostrar_menu_principal(update, context, force_new=True)
 
             # 3. Categorías de Navegación
             elif data.startswith("nav_local|"):
@@ -200,6 +233,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                         await query.message.delete()
                     except Exception:
                         pass
+                st.setdefault("historial", []).append(("main",))
                 category = data.split("|")[1]
                 if category == "all_series":
                     await mostrar_series(
@@ -232,6 +266,7 @@ class CallbackHandlerV6(BaseCommandHandler):
 
             # 4. Filtro por Género
             elif data.startswith("gen|"):
+                st.setdefault("historial", []).append(("genres",))
                 genre_name = data.split("|")[1]
                 await mostrar_series(
                     update, context, origin_type="genre", filter_val=genre_name, page=1
@@ -239,6 +274,7 @@ class CallbackHandlerV6(BaseCommandHandler):
 
             # 5. Filtro por Autor
             elif data.startswith("aut|"):
+                st.setdefault("historial", []).append(("authors", st.get("current_page_b", 1)))
                 author_name = data.split("|")[1]
                 await mostrar_series(
                     update,
@@ -292,6 +328,27 @@ class CallbackHandlerV6(BaseCommandHandler):
                     series_hash = raw_val
 
                 if series_hash:
+                    # Guardar vista actual en el historial antes de navegar a la serie
+                    curr_view = st.get("current_view")
+                    if "historial" not in st or not isinstance(st["historial"], list):
+                        st["historial"] = []
+
+                    if curr_view == "search_results":
+                        st["historial"].append(("search_results", st.get("last_search_query", "")))
+                    elif curr_view == "series_list":
+                        st["historial"].append((
+                            "series_list",
+                            st.get("origin_type", "all_series"),
+                            st.get("filter_val"),
+                            st.get("current_page", 1),
+                        ))
+                    elif curr_view == "genres":
+                        st["historial"].append(("genres",))
+                    elif curr_view == "authors":
+                        st["historial"].append(("authors", st.get("current_page_b", 1)))
+                    elif curr_view == "main":
+                        st["historial"].append(("main",))
+
                     await mostrar_volumenes_local(update, context, str(series_hash))
                 else:
                     await query.answer("⚠️ Serie no encontrada.", show_alert=True)
@@ -299,6 +356,11 @@ class CallbackHandlerV6(BaseCommandHandler):
             # 8. Selección de Libro Individual
             elif data.startswith("lib|"):
                 key = data.split("|")[1]
+                curr_view = st.get("current_view")
+                if curr_view == "volumes_local" and st.get("current_series_hash"):
+                    st.setdefault("historial", []).append(("volumes_local", st.get("current_series_hash")))
+                elif curr_view == "search_results":
+                    st.setdefault("historial", []).append(("search_results", st.get("last_search_query", "")))
                 await mostrar_detalles_libro(update, context, key)
 
             # 9. Cambio de Volumen en Serie (Carrusel Interactivo)
@@ -329,33 +391,14 @@ class CallbackHandlerV6(BaseCommandHandler):
             # 11. Subir Nivel / Volver a Vista Previa
             elif data == "subir_nivel":
                 prev_view = st.get("prev_view_local", "main")
-                if prev_view == "genres":
+                if prev_view == "search_results" and st.get("last_search_query"):
+                    await ejecutar_busqueda_local(update, context, query=st["last_search_query"])
+                elif prev_view == "genres":
                     await mostrar_generos(update, context)
                 elif prev_view == "authors":
                     await mostrar_autores_local(
                         update, context, page=st.get("current_page_b", 1)
                     )
-                else:
-                    await mostrar_menu_principal(update, context)
-
-            elif data == "volver_ultima":
-                hist = st.get("historial", [])
-                if hist:
-                    last_view = hist.pop()
-                    st["historial"] = hist
-                    view_name = last_view[0]
-                    if view_name == "series_list":
-                        await mostrar_series(
-                            update,
-                            context,
-                            origin_type=last_view[1],
-                            filter_val=last_view[2],
-                            page=last_view[3],
-                        )
-                    elif view_name == "volumes_local":
-                        await mostrar_volumenes_local(update, context, last_view[1])
-                    else:
-                        await mostrar_menu_principal(update, context)
                 else:
                     await mostrar_menu_principal(update, context)
 

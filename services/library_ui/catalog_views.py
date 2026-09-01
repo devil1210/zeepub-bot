@@ -579,6 +579,8 @@ async def mostrar_resultados_locales(
             })
 
     st["current_view"] = "search_results"
+    st["last_search_query"] = query
+    st["prev_view_local"] = "search_results"
     st["titulo"] = f"🔍 Resultado: {query}"
 
     blocks = build_search_results_rich_blocks(
@@ -627,4 +629,27 @@ async def mostrar_resultados_locales(
             parse_mode="HTML",
             message_thread_id=thread_id,
         )
+
+
+async def ejecutar_busqueda_local(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    query: str,
+    force_new: bool = False,
+):
+    """Ejecuta una búsqueda por término y muestra los resultados en formato Rich Message."""
+    data_s = await LibraryService.search_series(query, page=1, items_per_page=15)
+    series = data_s.get("results", [])
+    data_b = await LibraryService.search_books(query, page=1, items_per_page=15)
+    books = data_b.get("items", [])
+
+    await mostrar_resultados_locales(
+        update=update,
+        context=context,
+        query=query,
+        series=series,
+        books_standalone=books,
+        force_new=force_new,
+    )
+
 

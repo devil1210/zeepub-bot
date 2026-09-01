@@ -27,6 +27,7 @@ from services.library_ui import (
     ejecutar_admin_backup,
     ejecutar_admin_scan,
     ejecutar_admin_update,
+    ejecutar_busqueda_local,
     ejecutar_set_timer,
     ejecutar_toggle_grupo,
     is_nav_expired,

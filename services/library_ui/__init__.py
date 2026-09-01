@@ -30,6 +30,7 @@ from .builders import (
     build_status_rich_blocks,
 )
 from .catalog_views import (
+    ejecutar_busqueda_local,
     mostrar_autores_local,
     mostrar_generos,
     mostrar_libros,
