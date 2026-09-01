@@ -7,6 +7,7 @@ Cumple estrictamente con el principio de responsabilidad única y límite < 500 
 import logging
 import os
 import psutil
+import unicodedata
 from datetime import datetime, timezone
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -19,9 +20,19 @@ from services.library_ui.catalog_views import mostrar_generos, mostrar_series
 from services.library_ui.info_views import check_is_admin_or_staff
 from services.library_ui.series_views import mostrar_volumenes_local
 from services.rich_message_service import RichMessageService
-from utils.helpers import get_thread_id, normalize_search_text
+from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
+
+
+def _normalize_text(text: str) -> str:
+    """Normaliza texto eliminando acentos y convirtiendo a minúsculas."""
+    if not text:
+        return ""
+    return "".join(
+        c for c in unicodedata.normalize("NFD", text.lower().strip())
+        if unicodedata.category(c) != "Mn"
+    )
 
 
 class ExtraCommandsHandler:
@@ -188,12 +199,12 @@ class ExtraCommandsHandler:
             return
 
         query_gen = " ".join(context.args).strip()
-        norm_query = normalize_search_text(query_gen)
+        norm_query = _normalize_text(query_gen)
         genres = await LibraryService.get_genres()
 
-        matched_gen = next((g for g in genres if normalize_search_text(g) == norm_query), None)
+        matched_gen = next((g for g in genres if _normalize_text(g) == norm_query), None)
         if not matched_gen:
-            matched_gen = next((g for g in genres if norm_query in normalize_search_text(g)), None)
+            matched_gen = next((g for g in genres if norm_query in _normalize_text(g)), None)
 
         if matched_gen:
             await mostrar_series(update, context, origin_type="genre", filter_val=matched_gen, page=1, force_new=True)
