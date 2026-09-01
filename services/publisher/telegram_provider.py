@@ -37,7 +37,7 @@ class TelegramPublisherProvider(PublisherProvider):
     )
 
     FB_CAPTION_TEMPLATE = (
-        "📚 {serie} ║ {romaji_title} ║ {titulo}\n"
+        "📚 [?series_english]{series_english}[/?][?!series_english]{serie}[/?][?romaji_title] ║ {romaji_title}[/?][?series_spanish] ║ {series_spanish}[/?][?!series_spanish][?titulo] ║ {titulo}[/?]\n"
         "[?volumen]📖 Volumen {volumen}\n[/?]"
         "[?download_link]⬇️ Descarga: {download_link}\n[/?]"
         "[?fecha]📅 Actualizado: {fecha}\n[/?]"
