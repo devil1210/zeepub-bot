@@ -562,9 +562,14 @@ def build_search_results_rich_blocks(
         cb = f"col|{s_hash}" if s_hash and len(str(s_hash)) <= 45 else f"col|{i}"
         
         badges_str = f" {badges}" if badges else ""
-        max_name_len = max(12, 28 - len(badges_str) - len(f" ({cnt} vols)"))
-        short_name = name[:max_name_len] + "..." if len(name) > max_name_len else name
-        btn_label = f"📁 {short_name}{badges_str} ({cnt} vols)"
+        vols_str = f" ({cnt} vols)"
+        target_max = 52
+        available_name_len = target_max - len(badges_str) - len(vols_str) - len("📁 ")
+        if len(name) > available_name_len:
+            short_name = name[:max(10, available_name_len - 3)] + "..."
+        else:
+            short_name = name
+        btn_label = f"📁 {short_name}{badges_str}{vols_str}"
         blocks.append(
             {
                 "type": "buttons",
@@ -576,13 +581,20 @@ def build_search_results_rich_blocks(
     for b in standalone_books:
         key = b.get("key")
         title = b.get("title", "Libro")
-        if len(title) > 34:
-            title = title[:31] + "..."
+        b_badges = format_item_badges(b)
+        b_badges_str = f" {b_badges}" if b_badges else ""
+        target_max = 52
+        available_title_len = target_max - len(b_badges_str) - len("📕 ")
+        if len(title) > available_title_len:
+            short_title = title[:max(10, available_title_len - 3)] + "..."
+        else:
+            short_title = title
+        btn_label = f"📕 {short_title}{b_badges_str}"
         blocks.append(
             {
                 "type": "buttons",
                 "align": "center",
-                "buttons": [{"text": f"📕 {title}", "callback_data": f"lib|{key}"}],
+                "buttons": [{"text": btn_label, "callback_data": f"lib|{key}"}],
             }
         )
 
