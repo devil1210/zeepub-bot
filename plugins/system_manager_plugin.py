@@ -64,22 +64,22 @@ class SystemManagerPlugin(BasePlugin):
         pass
 
     async def check_for_updates_job(self, context: ContextTypes.DEFAULT_TYPE):
-        """Tarea programada para revisar actualizaciones."""
+        """Tarea programada para revisar actualizaciones con changelog."""
         try:
-            local_hash, remote_hash = await self._get_git_hashes()
+            from services.version_service import VersionService
 
-            if local_hash == "Desconocido" or remote_hash == "Desconocido":
-                return
-
-            if local_hash != remote_hash:
-                # Check if we already notified recently?
-                # For now simplify: Just notify. The interval is 6 hours, so it's not too spammy.
-                # Maybe checking a stored state would be better, but let's start simple.
+            v_info = await VersionService.get_version_status()
+            if not v_info["is_up_to_date"] and v_info["local_hash"] != "Desconocido" and v_info["remote_hash"] != "Desconocido":
+                changelog_items = v_info.get("changelog", [])
+                cl_snippet = ""
+                if changelog_items:
+                    cl_snippet = "\n\n<b>📝 Novedades:</b>\n" + "\n".join(f"• {c}" for c in changelog_items[:4])
 
                 msg = (
-                    f"🔔 <b>Actualización Disponible</b>\n\n"
-                    f"Actual: <code>{local_hash}</code>\n"
-                    f"Nueva: <code>{remote_hash}</code>\n\n"
+                    f"🔔 <b>Actualización Disponible ({v_info['branch']})</b>\n\n"
+                    f"Actual: <code>{v_info['local_hash']}</code>\n"
+                    f"Nueva: <code>{v_info['remote_hash']}</code>"
+                    f"{cl_snippet}\n\n"
                     f"Usa /update_system para aplicar cambios."
                 )
 
@@ -92,43 +92,11 @@ class SystemManagerPlugin(BasePlugin):
             logger.error(f"Error in check_for_updates_job: {e}")
 
     async def _get_git_hashes(self):
-        """Helper to get local and remote hashes."""
-        # 1. Local
-        try:
-            if os.path.exists("version_hash.txt"):
-                with open("version_hash.txt") as f:
-                    local_hash = f.read().strip()[:7]
-            else:
-                # Local
-                process = await asyncio.create_subprocess_exec(
-                    "git",
-                    "rev-parse",
-                    "--short",
-                    "HEAD",
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                )
-                stdout, _ = await process.communicate()
-                local_hash = stdout.decode().strip() if stdout else "Desconocido"
-        except Exception:
-            local_hash = "Desconocido"
+        """Helper to get local and remote hashes using VersionService."""
+        from services.version_service import VersionService
 
-        # 2. Remote
-        remote_hash = "Desconocido"
-        try:
-            branch = config.GIT_BRANCH or "main"
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(
-                    f"https://api.github.com/repos/devil1210/zeepub-bot/commits/{branch}",
-                    headers={"User-Agent": "ZeePubBot/2.0"},
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    remote_hash = data.get("sha", "")[:7]
-        except Exception as e:
-            logger.error(f"Error checking remote git via API: {e}")
-
-        return local_hash, remote_hash
+        v_info = await VersionService.get_version_status()
+        return v_info["local_hash"], v_info["remote_hash"]
 
     def _is_admin(self, uid: int) -> bool:
         return uid in config.ADMIN_USERS

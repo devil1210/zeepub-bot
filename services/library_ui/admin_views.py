@@ -152,12 +152,18 @@ async def ejecutar_admin_update(update: Update, context: ContextTypes.DEFAULT_TY
     if update.callback_query:
         await update.callback_query.answer("⏳ Comprobando versión remota...", show_alert=False)
 
-    from plugins.system_manager_plugin import SystemManagerPlugin
+    from services.version_service import VersionService
 
-    sys_plugin = SystemManagerPlugin()
-    local_hash, remote_hash = await sys_plugin._get_git_hashes()
+    v_info = await VersionService.get_version_status()
+    branch = v_info.get("branch", "main")
+    local_hash = v_info.get("local_hash", "Desconocido")
+    remote_hash = v_info.get("remote_hash", "Desconocido")
+    is_up_to_date = v_info.get("is_up_to_date", False)
+    changelog = v_info.get("changelog", [])
 
-    is_up_to_date = local_hash == remote_hash and local_hash != "Desconocido"
+    force_update = False
+    if context.args and any("force" in str(a).lower() for a in context.args):
+        force_update = True
 
     update_blocks = [
         {"type": "heading", "size": 2, "text": "🚀 Actualización del Sistema • ZeePubs"},
@@ -167,38 +173,57 @@ async def ejecutar_admin_update(update: Update, context: ContextTypes.DEFAULT_TY
             "is_striped": True,
             "is_compact": True,
             "cells": [
-                [{"text": "🔹 Versión Local", "align": "left"}, {"text": str(local_hash[:8]), "align": "left"}],
-                [{"text": "🔸 Versión Remota", "align": "left"}, {"text": str(remote_hash[:8]), "align": "left"}],
+                [{"text": "🔹 Rama Activa", "align": "left"}, {"text": str(branch), "align": "left"}],
+                [{"text": "🔹 Versión Local", "align": "left"}, {"text": str(local_hash), "align": "left"}],
+                [{"text": "🔸 Versión Remota", "align": "left"}, {"text": str(remote_hash), "align": "left"}],
                 [{"text": "📊 Estado", "align": "left"}, {"text": "✅ Al día" if is_up_to_date else "⚠️ Actualización disponible", "align": "left"}],
             ],
         },
     ]
 
-    if is_up_to_date:
-        update_blocks.append({
-            "type": "paragraph",
-            "text": "El bot ya está ejecutando la última versión del repositorio.",
-        })
+    if is_up_to_date and not force_update:
+        update_blocks.append(
+            RichMessageService.create_paragraph(
+                "✅ <b>El sistema ya está completamente actualizado.</b> No se requieren cambios."
+            )
+        )
+        if changelog:
+            cl_text = "<b>📌 Últimas mejoras y correcciones aplicadas:</b>\n" + "\n".join(f"• {c}" for c in changelog[:5])
+            update_blocks.append(RichMessageService.create_paragraph(cl_text))
+
         update_blocks.append({
             "type": "buttons",
             "align": "center",
             "buttons": [
+                {"text": "🔄 Forzar Actualización", "callback_data": "admin_force_update"},
                 {"text": "🛠️ Panel Admin", "callback_data": "admin_panel"},
                 {"text": "🏠 Inicio", "callback_data": "volver_menu"},
             ],
         })
     else:
-        update_blocks.append({
-            "type": "paragraph",
-            "text": "Se ha detectado una nueva versión en GitHub. Iniciando sincronización...",
-        })
+        if force_update:
+            update_blocks.append(
+                RichMessageService.create_paragraph("⚠️ <b>Actualización Forzada solicitada.</b> Iniciando sincronización...")
+            )
+        else:
+            update_blocks.append(
+                RichMessageService.create_paragraph("🚀 <b>Se ha detectado una nueva versión en GitHub.</b> Iniciando sincronización...")
+            )
+
+        if changelog:
+            cl_text = "<b>✨ Novedades y correcciones en esta actualización:</b>\n" + "\n".join(f"• {c}" for c in changelog[:6])
+            update_blocks.append(RichMessageService.create_paragraph(cl_text))
+
+        # Guardar estado para notificar al reiniciar
+        msg_id = update.callback_query.message.message_id if update.callback_query else None
+        VersionService.save_update_state(chat_id=chat_id, message_id=msg_id, thread_id=thread_id)
+
         from services.maintenance_service import trigger_watchtower_update
 
         success, msg = await trigger_watchtower_update()
-        update_blocks.append({
-            "type": "paragraph",
-            "text": f"<b>Resultado:</b> {msg}",
-        })
+        update_blocks.append(
+            RichMessageService.create_paragraph(f"<b>Resultado:</b> {msg}")
+        )
         update_blocks.append({
             "type": "buttons",
             "align": "center",

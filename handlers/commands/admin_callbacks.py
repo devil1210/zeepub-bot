@@ -44,6 +44,11 @@ async def handle_admin_callback(
         await mostrar_panel_admin(update, context, force_new=False)
         return True
 
+    if data == "admin_force_update":
+        context.args = ["force"]
+        await ejecutar_admin_update(update, context)
+        return True
+
     if data.startswith("admin_set_timer|"):
         mins = int(data.split("|")[1])
         await ejecutar_set_timer(update, context, minutes=mins)

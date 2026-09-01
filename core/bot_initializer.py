@@ -76,16 +76,25 @@ class BotInitializer:
             thread_id = state.get("message_thread_id")
 
             if chat_id:
-                v = get_version_string()
-                commit_msg = get_last_commit_message()
+                from services.version_service import VersionService
+
+                v_info = await VersionService.get_version_status()
+                v = v_info.get("local_hash", get_version_string())
+                branch = v_info.get("branch", "")
+                changelog = v_info.get("changelog", [])
+
+                cl_text = ""
+                if changelog:
+                    cl_text = "\n\n<b>📝 Mejoras aplicadas:</b>\n" + "\n".join(f"• {c}" for c in changelog[:5])
+
                 logger.info(f"Sending update success message to {chat_id} (Thread: {thread_id})")
                 try:
                     await bot.send_message(
                         chat_id=chat_id,
                         text=(
-                            f"✅ <b>¡Actualización Completada!</b>\n"
-                            f"🤖 ZeePub Bot {escapar_html(v)} está en línea. 🚀\n\n"
-                            f"📝 <b>Cambios:</b> {escapar_html(commit_msg)}"
+                            f"✅ <b>¡Actualización Exitosa!</b>\n"
+                            f"🤖 <b>ZeePub Bot</b> está en línea y actualizado en la rama <code>{escapar_html(branch)}</code> (<code>{escapar_html(v)}</code>). 🚀"
+                            f"{cl_text}"
                         ),
                         parse_mode="HTML",
                         message_thread_id=thread_id,
@@ -95,9 +104,8 @@ class BotInitializer:
                     await bot.send_message(
                         chat_id=chat_id,
                         text=(
-                            f"✅ ¡Actualización Completada!\n"
-                            f"🤖 ZeePub Bot {v} está en línea. 🚀\n\n"
-                            f"📝 Cambios: {commit_msg}"
+                            f"✅ ¡Actualización Exitosa!\n"
+                            f"🤖 ZeePub Bot está en línea en la rama {branch} ({v}). 🚀\n"
                         ),
                         message_thread_id=thread_id,
                     )

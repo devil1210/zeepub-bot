@@ -223,9 +223,19 @@ class RichMessageService:
                 block["entities"] = text["entities"]
             return block
         else:
+            text_str = str(text)
+            if "<" in text_str and ">" in text_str:
+                parsed = cls.html_to_rich_text(text_str)
+                block = {
+                    "type": "paragraph",
+                    "text": parsed["text"]
+                }
+                if parsed.get("entities"):
+                    block["entities"] = parsed["entities"]
+                return block
             return {
                 "type": "paragraph",
-                "text": text
+                "text": text_str
             }
 
     @classmethod
