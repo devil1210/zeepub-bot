@@ -107,7 +107,8 @@ async def mostrar_volumenes_local(
         matched_key = None
 
         for v in volumes:
-            key = uuid.uuid4().hex[:8]
+            v_hash = str(v.get("book_hash") or v.get("id") or v.get("hash") or "")
+            key = v_hash[:16] if v_hash else uuid.uuid4().hex[:8]
             vol = v.get("volume")
             if vol is None or str(vol).strip() == "":
                 vol = 0
@@ -123,7 +124,6 @@ async def mostrar_volumenes_local(
             is_color = v.get("color_mode") == "color"
             color_tag = " [🎨]" if is_color else ""
             display = f"📖 {vol_str} [{tr_acronym}]{color_tag}"
-            v_hash = v.get("book_hash") or v.get("id") or v.get("hash")
 
             st["libros"][key] = {
                 "key": key,
@@ -147,8 +147,10 @@ async def mostrar_volumenes_local(
                 "color": is_color,
             }
             state_manager.register_book_key(key, st["libros"][key])
+            if v_hash:
+                state_manager.register_book_key(v_hash, st["libros"][key])
 
-            if prev_target_hash and (v_hash == prev_target_hash or key == prev_target_hash):
+            if prev_target_hash and (v_hash == prev_target_hash or key == prev_target_hash or prev_target_hash.startswith(key)):
                 matched_key = key
 
         if matched_key:

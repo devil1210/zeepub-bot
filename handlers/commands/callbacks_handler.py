@@ -373,6 +373,11 @@ class CallbackHandlerV6(BaseCommandHandler):
                     book_data = state_manager.get_book_by_key(key)
                     if book_data:
                         series_h = book_data.get("series_hash")
+                if not series_h:
+                    from handlers.commands.publish_callbacks import _resolve_libro
+                    resolved_b = await _resolve_libro(st, key)
+                    if resolved_b:
+                        series_h = resolved_b.get("series_hash")
 
                 if series_h:
                     await mostrar_volumenes_local(

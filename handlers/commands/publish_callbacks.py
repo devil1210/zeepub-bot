@@ -17,6 +17,71 @@ from utils.helpers import get_thread_id
 logger = logging.getLogger(__name__)
 
 
+async def _resolve_libro(st: dict, key: str) -> dict | None:
+    """Resuelve un libro buscando en state local, global o directamente en PostgreSQL por hash/id."""
+    if not key:
+        return None
+
+    # 1. State local del usuario
+    libro_st = st.get("libros", {}).get(key)
+    if libro_st:
+        return libro_st
+
+    # 2. State global de state_manager
+    libro_st = state_manager.get_book_by_key(key)
+    if libro_st:
+        st.setdefault("libros", {})[key] = libro_st
+        return libro_st
+
+    # 3. Consulta directa en base de datos PostgreSQL por ID, hash o prefijo
+    try:
+        from core.db_manager_pg import pg_manager
+        from sqlalchemy import select
+        from models.library import LocalBook
+
+        async with pg_manager.get_session() as session:
+            stmt = select(LocalBook).where(
+                (LocalBook.id == key)
+                | (LocalBook.book_hash == key)
+                | (LocalBook.id.startswith(key))
+                | (LocalBook.book_hash.startswith(key))
+            )
+            res = await session.execute(stmt)
+            book = res.scalars().first()
+            if book:
+                vol = getattr(book, "volume", 0)
+                try:
+                    f_vol = float(vol)
+                    vol_disp = int(f_vol) if f_vol.is_integer() else f_vol
+                except Exception:
+                    vol_disp = vol
+
+                b_dict = {
+                    "key": key,
+                    "titulo": book.title,
+                    "english_title": getattr(book, "english_title", "") or book.title,
+                    "japanese_title": getattr(book, "romaji_title", ""),
+                    "spanish_title": getattr(book, "spanish_title", ""),
+                    "autor": getattr(book, "author", ""),
+                    "descarga": getattr(book, "filepath", ""),
+                    "hash": book.id,
+                    "book_hash": book.id,
+                    "id": book.id,
+                    "series": getattr(book, "series_name", ""),
+                    "series_hash": getattr(book, "series_hash", ""),
+                    "volume": vol,
+                    "vol_display": vol_disp,
+                    "translator": getattr(book, "translator", ""),
+                }
+                st.setdefault("libros", {})[key] = b_dict
+                state_manager.register_book_key(key, b_dict)
+                return b_dict
+    except Exception as e:
+        logger.error(f"Error resolviendo libro por BD para key {key}: {e}", exc_info=True)
+
+    return None
+
+
 async def _get_telegram_channels() -> list[dict]:
     """Helper para obtener canales activos de Telegram."""
     try:
@@ -62,7 +127,7 @@ async def handle_publish_callback(
     # 1. Menú Principal de Publicación (Inmediata vs Programada)
     if data.startswith("pub_menu|") or data.startswith("pub_channel|"):
         key = data.split("|")[1]
-        libro_st = st.get("libros", {}).get(key)
+        libro_st = await _resolve_libro(st, key)
         if not libro_st:
             await query.answer("⚠️ Información del libro no encontrada.", show_alert=True)
             return True
@@ -126,7 +191,7 @@ async def handle_publish_callback(
     # 2. Menú de Programación Horaria
     elif data.startswith("pub_sched_menu|"):
         key = data.split("|")[1]
-        libro_st = st.get("libros", {}).get(key)
+        libro_st = await _resolve_libro(st, key)
         if not libro_st:
             await query.answer("⚠️ Información del libro no encontrada.", show_alert=True)
             return True
@@ -188,7 +253,7 @@ async def handle_publish_callback(
     # 3. Publicación Inmediata
     elif data.startswith("pub_now|"):
         key = data.split("|")[1]
-        libro_st = st.get("libros", {}).get(key)
+        libro_st = await _resolve_libro(st, key)
         if not libro_st:
             await query.answer("⚠️ Libro no encontrado.", show_alert=True)
             return True
@@ -211,7 +276,7 @@ async def handle_publish_callback(
                 queue_item = await publisher_service.schedule_publication(
                     book_hash=book_hash,
                     channel_id=target_ch_id,
-                    scheduled_for=datetime.now(timezone.utc),
+                    scheduled_for=datetime.utcnow(),
                 )
                 if queue_item and hasattr(queue_item, "id"):
                     await publisher_service.process_queue_item_direct(queue_item.id)
@@ -276,7 +341,7 @@ async def handle_publish_callback(
     elif data.startswith("pub_in|") or data.startswith("pub_preset|"):
         parts = data.split("|")
         key = parts[2]
-        libro_st = st.get("libros", {}).get(key)
+        libro_st = await _resolve_libro(st, key)
         if not libro_st:
             await query.answer("⚠️ Libro no encontrado.", show_alert=True)
             return True
@@ -285,7 +350,7 @@ async def handle_publish_callback(
         vol_display = libro_st.get("vol_display") or str(libro_st.get("volume") or "1.0")
         book_hash = libro_st.get("hash") or libro_st.get("book_hash") or libro_st.get("id")
 
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         if parts[0] == "pub_in":
             hours = int(parts[1])
             sched_time = now + timedelta(hours=hours)

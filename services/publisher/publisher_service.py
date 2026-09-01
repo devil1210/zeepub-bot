@@ -254,11 +254,17 @@ class PublisherService:
         self,
         book_hash: str,
         channel_id: int,
-        scheduled_for: datetime,
+        scheduled_for: datetime | None = None,
         template_id: int | None = None,
         payload: dict | None = None,
     ) -> PublicationQueue:
         """Programa una nueva publicación."""
+        if scheduled_for is not None:
+            if hasattr(scheduled_for, "tzinfo") and scheduled_for.tzinfo is not None:
+                scheduled_for = scheduled_for.astimezone(timezone.utc).replace(tzinfo=None)
+        else:
+            scheduled_for = datetime.utcnow()
+
         new_item = PublicationQueue(
             book_hash=book_hash,
             channel_id=channel_id,
