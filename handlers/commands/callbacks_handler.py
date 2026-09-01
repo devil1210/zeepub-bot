@@ -301,19 +301,30 @@ class CallbackHandlerV6(BaseCommandHandler):
                 key = data.split("|")[1]
                 await mostrar_detalles_libro(update, context, key)
 
-            # 9. Cambio de Volumen en Serie
+            # 9. Cambio de Volumen en Serie (Carrusel Interactivo)
             elif data.startswith("sel_vol|"):
                 key = data.split("|")[1]
-                await mostrar_detalles_libro(update, context, key, force_edit=True)
+                series_h = st.get("current_series_hash")
+                if not series_h and key in st.get("libros", {}):
+                    series_h = st["libros"][key].get("series_hash")
+                if not series_h:
+                    book_data = state_manager.get_book_by_key(key)
+                    if book_data:
+                        series_h = book_data.get("series_hash")
+
+                if series_h:
+                    await mostrar_volumenes_local(
+                        update, context, series_hash=str(series_h), selected_key=key
+                    )
+                else:
+                    await mostrar_detalles_libro(update, context, key)
 
             # 10. Toggle de Sinopsis
             elif data.startswith("tog_syn|"):
                 key = data.split("|")[1]
                 is_expanded = st.get("synopsis_expanded", False)
                 st["synopsis_expanded"] = not is_expanded
-                await mostrar_detalles_libro(
-                    update, context, key, force_edit=True, toggle_synopsis=True
-                )
+                await mostrar_detalles_libro(update, context, key)
 
             # 11. Subir Nivel / Volver a Vista Previa
             elif data == "subir_nivel":
