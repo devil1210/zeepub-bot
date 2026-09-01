@@ -16,9 +16,9 @@ from services.cache_service import cache_manager, catalog_cache
 from services.cover_service import _cover_file_id_cache
 from services.library_service import LibraryService
 from services.library_ui.catalog_views import mostrar_generos, mostrar_series
+from services.library_ui.info_views import check_is_admin_or_staff
 from services.library_ui.series_views import mostrar_volumenes_local
 from services.rich_message_service import RichMessageService
-from utils.auth_helpers import check_is_admin_or_staff
 from utils.helpers import get_thread_id, normalize_search_text
 
 logger = logging.getLogger(__name__)
