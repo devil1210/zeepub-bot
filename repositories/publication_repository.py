@@ -185,7 +185,7 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
         stmt = select(PublicationQueue).options(
             selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template)
         )
-        if status:
+        if status and status.lower() not in ("all", "todos", "none", "*"):
             st = status.lower()
             if st in ("sent", "published", "completado"):
                 stmt = stmt.where(PublicationQueue.status.in_(["sent", "published"]))

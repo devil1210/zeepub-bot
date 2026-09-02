@@ -65,6 +65,15 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
             )
             result = await session.execute(stmt)
             for b in result.scalars():
+                cov = (
+                    getattr(b, "cover_medium", None)
+                    or getattr(b, "cover_high", None)
+                    or getattr(b, "cover_low", None)
+                    or getattr(b, "cover_original", None)
+                    or getattr(b, "cover_url", None)
+                    or getattr(b, "cover_thumb", None)
+                    or ""
+                )
                 info = {
                     "series": (b.series_info.series_name if b.series_info else b.title),
                     "series_spanish": (
@@ -75,11 +84,13 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
                     ),
                     "volume": b.volume,
                     "author": b.author,
-                    "cover_url": b.cover_url or b.cover_thumb or "",
+                    "cover_url": cov,
                     "book_hash": b.book_hash,
                 }
-                book_info_map[b.book_hash] = info
-                book_info_map[str(b.id)] = info
+                if b.book_hash:
+                    book_info_map[b.book_hash] = info
+                if b.id:
+                    book_info_map[str(b.id)] = info
 
     # Format queue items
     queue_formatted = [

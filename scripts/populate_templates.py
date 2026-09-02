@@ -6,9 +6,11 @@ from core.db_manager_pg import pg_manager
 
 async def main():
     telegram_content = (
-        "<b>{series_english}</b>\n"
-        "[?volumen]<b>Volumen {volumen}</b>\n[/?]"
-        "[?genres]{genres}\n[/?]"
+        "🇬🇧 <b>{series_english}</b>\n"
+        "[?romaji_title]🇯🇵 <b>{romaji_title}</b>\n[/?]"
+        "[?series_spanish]🇪🇸 <b>{series_spanish}</b>\n[/?]"
+        "[?volumen]📚 <b>Volumen {volumen}</b>\n[/?]"
+        "[?genres]🏷️ {genres}\n[/?]"
         "\n<blockquote expandable>\n"
         "📋 <b>Ficha Técnica</b>\n\n"
         "[?autor]👤 <b>Autor:</b> {autor}\n[/?]"
@@ -23,6 +25,15 @@ async def main():
         "📖 <b>Ver Sinopsis</b>\n\n"
         "{sinopsis}\n"
         "</blockquote>[/?]\n\n"
+        "<blockquote expandable>\n"
+        "📁 <b>Ver Detalles del Archivo</b>\n\n"
+        "[?formato]📄 <b>Formato:</b> {formato}\n[/?]"
+        "[?paginas]📑 <b>Páginas:</b> ~{paginas} págs\n[/?]"
+        "[?palabras]📝 <b>Palabras:</b> {palabras} palabras\n[/?]"
+        "[?reading_time]⏱️ <b>Lectura:</b> {reading_time}\n[/?]"
+        "[?fecha]📅 <b>Actualizado:</b> {fecha}\n[/?]"
+        "[?tamaño]💾 <b>Tamaño:</b> {tamaño}\n[/?]"
+        "</blockquote>\n\n"
         "#{slug}"
     )
 

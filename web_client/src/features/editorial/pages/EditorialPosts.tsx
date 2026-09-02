@@ -32,12 +32,8 @@ export const EditorialPosts: React.FC = () => {
     const fetchPosts = async () => {
         setLoading(true);
         try {
-            const res = await api.pubGetQueue('sent', 100);
-            let items = res?.items || [];
-            if (items.length === 0) {
-                const allRes = await api.pubGetQueue(undefined, 100);
-                items = allRes?.items || [];
-            }
+            const res = await api.pubGetQueue('all', 150);
+            const items = res?.items || [];
             setPosts(items);
         } catch (err) {
             console.error('Error cargando historial de posts:', err);
