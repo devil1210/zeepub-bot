@@ -53,7 +53,7 @@ export const EditorialLegacyTools: React.FC = () => {
     ];
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
+        <div className="w-full max-w-[2100px] mx-auto space-y-6 animate-in fade-in duration-300">
             <div>
                 <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
                     <Wrench className="w-6 h-6 text-indigo-400" /> Herramientas de Mantenimiento & Legacy
