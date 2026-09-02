@@ -26,6 +26,7 @@ import {
     Edit3
 } from 'lucide-react';
 import { api } from '@shared/services/api';
+import { publisherApi } from '@features/publisher/services/publisherApi';
 import { useTelegram } from '@shared/contexts/TelegramContext';
 import { ReportIssueModal } from '@shared/components/ReportIssueModal';
 import { RatingModal } from '@features/book/components/RatingModal';
@@ -158,7 +159,7 @@ export const EditorialBookDetail: React.FC = () => {
         setSendingTemplate(true);
         try {
             webApp?.HapticFeedback?.impactOccurred('light');
-            await api.sendTemplateToTelegram(book.id || book.book_hash);
+            await publisherApi.sendTemplateToChat(book.id || book.book_hash);
             webApp?.HapticFeedback?.notificationOccurred('success');
             setFeedbackMsg({ type: 'success', text: 'Plantilla y portada enviadas a tu Telegram.' });
         } catch (err: any) {
@@ -790,7 +791,13 @@ export const EditorialBookDetail: React.FC = () => {
                 <SchedulePostModal
                     isOpen={isScheduleOpen}
                     onClose={() => setIsScheduleOpen(false)}
-                    initialBook={book}
+                    book={book}
+                    onSuccess={() => {
+                        setIsScheduleOpen(false);
+                        fetchBookData();
+                        setFeedbackMsg({ type: 'success', text: 'Publicación programada correctamente.' });
+                        setTimeout(() => setFeedbackMsg(null), 4000);
+                    }}
                 />
             )}
 
@@ -814,8 +821,7 @@ export const EditorialBookDetail: React.FC = () => {
                 <ReportIssueModal
                     isOpen={isReportOpen}
                     onClose={() => setIsReportOpen(false)}
-                    bookId={book.id || book.book_hash}
-                    bookTitle={`${seriesTitle} - Vol. ${book.volume || 1}`}
+                    contextData={`${seriesTitle} - Vol. ${book.volume || 1} (ID: ${book.id || book.book_hash})`}
                 />
             )}
 

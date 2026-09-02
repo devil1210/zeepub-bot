@@ -1042,7 +1042,11 @@ export const EditorialSeriesDetail: React.FC = () => {
                 <SchedulePostModal
                     isOpen={!!scheduleBook}
                     onClose={() => setScheduleBook(null)}
-                    initialBook={scheduleBook}
+                    book={scheduleBook}
+                    onSuccess={() => {
+                        setScheduleBook(null);
+                        fetchSeries();
+                    }}
                 />
             )}
         </div>
