@@ -303,6 +303,50 @@ class Book(Base):
         return cls.id
 
     @hybrid_property
+    def file_hash(self) -> str:
+        """Alias de compatibilidad para el hash del archivo."""
+        return self.id
+
+    @file_hash.setter
+    def file_hash(self, value: str):
+        self.id = value
+
+    @file_hash.expression
+    def file_hash(cls):
+        return cls.id
+
+    @hybrid_property
+    def source_chat_id(self) -> str | None:
+        """Alias para tg_chat_id."""
+        return self.tg_chat_id
+
+    @source_chat_id.setter
+    def source_chat_id(self, value: str | None):
+        self.tg_chat_id = value
+
+    @source_chat_id.expression
+    def source_chat_id(cls):
+        return cls.tg_chat_id
+
+    @hybrid_property
+    def source_message_id(self) -> str | None:
+        """Alias para tg_message_id."""
+        return self.tg_message_id
+
+    @source_message_id.setter
+    def source_message_id(self, value: str | None):
+        self.tg_message_id = value
+
+    @source_message_id.expression
+    def source_message_id(cls):
+        return cls.tg_message_id
+
+    @hybrid_property
+    def is_available(self) -> bool:
+        """Indica si el libro está disponible para lectura y descarga."""
+        return True
+
+    @hybrid_property
     def series_hash(self) -> str:
         """Alias semántico para el hash de la serie vinculada."""
         return self.series_id

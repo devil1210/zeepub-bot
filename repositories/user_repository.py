@@ -238,6 +238,83 @@ class UserRepository(BaseRepository[User]):
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 
+    async def get_or_create_user(
+        self, telegram_user: Any, session: Any = None
+    ) -> tuple[User, bool]:
+        """
+        Obtiene o crea un usuario de Telegram aplicando el patrón get_or_create.
+        1. Busca por telegram_id / telegram_user_id.
+        2. Si existe: actualiza name (first_name / last_name), username, updated_at (last_seen_at).
+        3. Si no existe: crea nuevo usuario con valores por defecto.
+        4. Retorna (user, created_bool).
+        """
+        tid = getattr(telegram_user, "id", None) or (
+            telegram_user.get("id") or telegram_user.get("telegram_id")
+            if isinstance(telegram_user, dict)
+            else None
+        )
+        if tid is None:
+            try:
+                tid = int(telegram_user)
+            except (ValueError, TypeError):
+                raise ValueError(f"Identificador de usuario de Telegram inválido: {telegram_user}")
+
+        uname = getattr(telegram_user, "username", None) or (
+            telegram_user.get("username") if isinstance(telegram_user, dict) else None
+        )
+        first_n = getattr(telegram_user, "first_name", None) or (
+            telegram_user.get("first_name") if isinstance(telegram_user, dict) else None
+        )
+        last_n = getattr(telegram_user, "last_name", None) or (
+            telegram_user.get("last_name") if isinstance(telegram_user, dict) else None
+        )
+        lang = getattr(telegram_user, "language_code", None) or (
+            telegram_user.get("language_code") if isinstance(telegram_user, dict) else "es"
+        )
+
+        full_n = f"{first_n or ''} {last_n or ''}".strip() or (uname or f"User_{tid}")
+
+        async def _execute(s):
+            stmt = (
+                select(User)
+                .options(selectinload(User.ui_settings), selectinload(User.level))
+                .where(User.telegram_id == tid)
+            )
+            res = await s.execute(stmt)
+            existing = res.scalar_one_or_none()
+
+            if existing:
+                if uname:
+                    existing.username = uname
+                if full_n and full_n != f"User_{tid}":
+                    existing.name = full_n
+                existing.updated_at = datetime.utcnow()
+                if lang and existing.settings is not None:
+                    existing.settings["language_code"] = lang
+                await s.commit()
+                return existing, False
+            else:
+                new_user = User(
+                    telegram_id=tid,
+                    username=uname,
+                    name=full_n,
+                    level_id=6,
+                    role="user",
+                    settings={"language_code": lang or "es"},
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                )
+                s.add(new_user)
+                await s.commit()
+                await s.refresh(new_user)
+                return new_user, True
+
+        if session is not None:
+            return await _execute(session)
+        else:
+            async with pg_manager.get_session() as s:
+                return await _execute(s)
+
     # ... CRUD methods ... (create, update, delete, upsert kept as is or simplified)
 
     # --- Level Methods (delegated to LevelRepository) ---

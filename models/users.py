@@ -46,6 +46,91 @@ class User(Base):
     def full_name(self, value: str):
         self.name = value
 
+    @hybrid_property
+    def telegram_user_id(self) -> int:
+        return self.telegram_id
+
+    @telegram_user_id.setter
+    def telegram_user_id(self, value: int):
+        self.telegram_id = value
+
+    @telegram_user_id.expression
+    def telegram_user_id(cls):
+        return cls.telegram_id
+
+    @hybrid_property
+    def first_name(self) -> str:
+        if self.name:
+            return self.name.split()[0]
+        return self.nickname or f"User_{self.telegram_id}"
+
+    @first_name.setter
+    def first_name(self, value: str):
+        if self.name and " " in self.name:
+            last = self.name.split(" ", 1)[1]
+            self.name = f"{value} {last}"
+        else:
+            self.name = value
+
+    @hybrid_property
+    def last_name(self) -> str | None:
+        if self.name and " " in self.name:
+            return self.name.split(" ", 1)[1]
+        return None
+
+    @last_name.setter
+    def last_name(self, value: str | None):
+        first = self.first_name
+        if value:
+            self.name = f"{first} {value}".strip()
+        else:
+            self.name = first
+
+    @hybrid_property
+    def is_active(self) -> bool:
+        return self.role not in ("banned", "inactive")
+
+    @is_active.setter
+    def is_active(self, value: bool):
+        if not value and self.role != "banned":
+            self.role = "inactive"
+        elif value and self.role == "inactive":
+            self.role = "user"
+
+    @hybrid_property
+    def is_banned(self) -> bool:
+        return self.role == "banned"
+
+    @is_banned.setter
+    def is_banned(self, value: bool):
+        if value:
+            self.role = "banned"
+        elif self.role == "banned":
+            self.role = "user"
+
+    @hybrid_property
+    def last_seen_at(self) -> datetime:
+        return self.updated_at
+
+    @last_seen_at.setter
+    def last_seen_at(self, value: datetime):
+        self.updated_at = value
+
+    @last_seen_at.expression
+    def last_seen_at(cls):
+        return cls.updated_at
+
+    @property
+    def language_code(self) -> str:
+        st = self.settings or {}
+        return st.get("language_code", "es")
+
+    @language_code.setter
+    def language_code(self, value: str):
+        st = dict(self.settings or {})
+        st["language_code"] = value
+        self.settings = st
+
     # Relaciones
     level: Mapped["UserLevel"] = relationship(back_populates="users", lazy="selectin")
     ui_settings: Mapped["UserUISettings"] = relationship(
