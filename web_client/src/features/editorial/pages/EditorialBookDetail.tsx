@@ -53,6 +53,7 @@ export const EditorialBookDetail: React.FC = () => {
 
     // Action states
     const [downloadingTelegram, setDownloadingTelegram] = useState(false);
+    const [isDownloadingDirect, setIsDownloadingDirect] = useState(false);
     const [sendingTemplate, setSendingTemplate] = useState(false);
     const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
@@ -90,18 +91,49 @@ export const EditorialBookDetail: React.FC = () => {
         fetchBookData();
     }, [id]);
 
-    const handleDirectDownload = () => {
+    const handleDirectDownload = async () => {
         if (!book) return;
-        const bookId = book.id || book.book_hash;
-        const downloadUrl = `/api/bot/download_file/${bookId}`;
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = `${book.title || 'libro'}.epub`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setFeedbackMsg({ type: 'success', text: 'Iniciando descarga del archivo EPUB...' });
-        setTimeout(() => setFeedbackMsg(null), 4000);
+        setIsDownloadingDirect(true);
+        setFeedbackMsg({ type: 'info', text: 'Obteniendo archivo EPUB desde el servidor...' });
+
+        try {
+            webApp?.HapticFeedback?.impactOccurred('medium');
+            const targetBookId = book.id || book.book_hash;
+            const downloadUrl = `/api/bot/download_file/${targetBookId}`;
+
+            const headers: Record<string, string> = {};
+            const tgData = (window as any).Telegram?.WebApp?.initData;
+            if (tgData) {
+                headers['X-Telegram-Init-Data'] = tgData;
+            }
+
+            const response = await fetch(downloadUrl, { headers, credentials: 'include' });
+            if (!response.ok) {
+                const errJson = await response.json().catch(() => ({}));
+                throw new Error(errJson.detail || errJson.error || `Error del servidor (HTTP ${response.status})`);
+            }
+
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            const rawTitle = book.title || book.filename?.replace('.epub', '') || 'libro';
+            const safeName = rawTitle.replace(/[^\w\s\-\.]/gi, '').trim() || 'libro';
+            link.setAttribute('download', `${safeName}.epub`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+
+            webApp?.HapticFeedback?.notificationOccurred('success');
+            setFeedbackMsg({ type: 'success', text: '¡Descarga completada con éxito!' });
+        } catch (err: any) {
+            console.error('Error triggering direct download', err);
+            setFeedbackMsg({ type: 'error', text: err.message || 'Error al descargar archivo EPUB.' });
+        } finally {
+            setIsDownloadingDirect(false);
+            setTimeout(() => setFeedbackMsg(null), 5000);
+        }
     };
 
     const handleTelegramDownload = async () => {
@@ -334,10 +366,15 @@ export const EditorialBookDetail: React.FC = () => {
                         <button
                             type="button"
                             onClick={handleDirectDownload}
-                            className="w-full py-3.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-xl shadow-blue-600/30 hover:shadow-blue-500/50 transition-all active:scale-95"
+                            disabled={isDownloadingDirect}
+                            className="w-full py-3.5 px-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-xl shadow-blue-600/30 hover:shadow-blue-500/50 transition-all active:scale-95 disabled:opacity-50"
                         >
-                            <Download className="w-4 h-4" />
-                            <span>Descargar en Navegador</span>
+                            {isDownloadingDirect ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            ) : (
+                                <Download className="w-4 h-4" />
+                            )}
+                            <span>{isDownloadingDirect ? 'Descargando EPUB...' : 'Descargar en Navegador'}</span>
                         </button>
 
                         {/* Telegram Download Button */}
