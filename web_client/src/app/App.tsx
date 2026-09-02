@@ -41,6 +41,7 @@ const EditorialDuplicates = React.lazy(() => import('@features/editorial/pages/E
 const EditorialObservatory = React.lazy(() => import('@features/editorial/pages/EditorialObservatory').then(m => ({ default: m.EditorialObservatory })));
 const EditorialUpload = React.lazy(() => import('@features/editorial/pages/EditorialUpload').then(m => ({ default: m.EditorialUpload })));
 const EditorialSeriesDetail = React.lazy(() => import('@features/editorial/pages/EditorialSeriesDetail').then(m => ({ default: m.EditorialSeriesDetail })));
+const EditorialBookDetail = React.lazy(() => import('@features/editorial/pages/EditorialBookDetail').then(m => ({ default: m.EditorialBookDetail })));
 const EditorialPostEdit = React.lazy(() => import('@features/editorial/pages/EditorialPostEdit').then(m => ({ default: m.EditorialPostEdit })));
 
 import { Series, Volume } from '@shared/types';
@@ -219,14 +220,12 @@ const AppContent: React.FC = () => {
           <EditorialLayout>
             <Routes>
               <Route path="/app-v2" element={<EditorialDashboard />} />
+              <Route path="/app-v2/library" element={<EditorialLibrary />} />
               <Route path="/app-v2/volumes" element={<EditorialVolumes />} />
-              <Route path="/app-v2/library" element={<Navigate to="/app-v2/volumes" replace />} />
               <Route path="/app-v2/series" element={<EditorialSeries />} />
-              <Route path="/app-v2/series/:id" element={
-                <ProtectedAdminRoute>
-                  <EditorialSeriesDetail />
-                </ProtectedAdminRoute>
-              } />
+              <Route path="/app-v2/series/:id" element={<EditorialSeriesDetail />} />
+              <Route path="/app-v2/book/:id" element={<EditorialBookDetail />} />
+              <Route path="/app-v2/volumes/:id" element={<EditorialBookDetail />} />
               <Route path="/app-v2/datagrid" element={<Navigate to="/app-v2/series" replace />} />
               <Route path="/app-v2/calendar" element={<EditorialCalendar />} />
               <Route path="/app-v2/posts" element={<EditorialPosts />} />

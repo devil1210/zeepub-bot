@@ -47,8 +47,9 @@ export const EditorialLayout: React.FC<EditorialLayoutProps> = ({ children }) =>
         {
             title: 'BIBLIOTECA & CATÁLOGO',
             items: [
+                { path: '/app-v2/library', label: 'Exploración de Catálogo (Árbol)', icon: Layers },
                 { path: '/app-v2/volumes', label: 'Matriz de Volúmenes & EPUBs', icon: BookOpen },
-                { path: '/app-v2/series', label: 'Catálogo & DataGrid de Series', icon: Layers },
+                { path: '/app-v2/series', label: 'Gestor & DataGrid de Series', icon: Table },
             ],
         },
         {
