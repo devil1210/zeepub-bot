@@ -806,12 +806,20 @@ export const EditorialBookDetail: React.FC = () => {
                 <RatingModal
                     isOpen={isRatingOpen}
                     onClose={() => setIsRatingOpen(false)}
-                    bookId={book.id || book.book_hash}
+                    title={seriesTitle || book.title || 'Libro'}
                     currentRating={book.rating || 0}
-                    onRatingSubmitted={(newRating) => {
-                        setBook({ ...book, rating: newRating });
-                        setFeedbackMsg({ type: 'success', text: `¡Gracias por tu valoración de ${newRating} estrellas!` });
-                        setTimeout(() => setFeedbackMsg(null), 4000);
+                    onSubmit={async (newRating) => {
+                        try {
+                            const res = await api.rateBook(book.id || book.book_hash, newRating);
+                            const updatedRating = res?.new_average !== undefined ? res.new_average : newRating;
+                            setBook({ ...book, rating: updatedRating });
+                            setIsRatingOpen(false);
+                            setFeedbackMsg({ type: 'success', text: `¡Gracias por tu valoración de ${newRating} estrellas!` });
+                            setTimeout(() => setFeedbackMsg(null), 4000);
+                        } catch (err: any) {
+                            setFeedbackMsg({ type: 'error', text: err.message || 'Error al enviar valoración' });
+                            setTimeout(() => setFeedbackMsg(null), 4000);
+                        }
                     }}
                 />
             )}
