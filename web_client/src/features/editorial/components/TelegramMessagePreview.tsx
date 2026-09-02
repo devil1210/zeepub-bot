@@ -10,11 +10,7 @@ import {
     BookOpen,
     Loader2,
     X,
-    Download,
-    ArrowLeft,
-    Home,
-    XCircle,
-    Eye
+    ArrowDown
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 
@@ -27,6 +23,56 @@ export interface TelegramMessagePreviewProps {
     coverUrl?: string;
     isCaptionMode?: boolean;
 }
+
+// Renders flag emojis with robust Twemoji SVG fallback so Windows never renders ugly 'GB'/'JP'/'ES' letters
+export const renderWithTwemoji = (text: string) => {
+    if (!text) return null;
+    const parts = text.split(/(🇬🇧|🇯🇵|🇪🇸|🇺🇸)/g);
+
+    return parts.map((part, i) => {
+        if (part === '🇬🇧') {
+            return (
+                <img
+                    key={i}
+                    src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ec-1f1e7.svg"
+                    className="w-4 h-4 inline-block mr-1.5 align-middle shadow-sm rounded-sm"
+                    alt="🇬🇧"
+                />
+            );
+        }
+        if (part === '🇯🇵') {
+            return (
+                <img
+                    key={i}
+                    src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ef-1f1f5.svg"
+                    className="w-4 h-4 inline-block mr-1.5 align-middle shadow-sm rounded-sm"
+                    alt="🇯🇵"
+                />
+            );
+        }
+        if (part === '🇪🇸') {
+            return (
+                <img
+                    key={i}
+                    src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ea-1f1f8.svg"
+                    className="w-4 h-4 inline-block mr-1.5 align-middle shadow-sm rounded-sm"
+                    alt="🇪🇸"
+                />
+            );
+        }
+        if (part === '🇺🇸') {
+            return (
+                <img
+                    key={i}
+                    src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1fa-1f1f8.svg"
+                    className="w-4 h-4 inline-block mr-1.5 align-middle shadow-sm rounded-sm"
+                    alt="🇺🇸"
+                />
+            );
+        }
+        return part;
+    });
+};
 
 export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     rawTemplate,
@@ -46,49 +92,49 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     const [copied, setCopied] = useState(false);
     const [previewWidth, setPreviewWidth] = useState<'desktop' | 'mobile'>('desktop');
 
-    // Default book matching real library
+    // Default book matching the user's exact screenshot (Accel World Vol. 25)
     const activeBook = useMemo(() => {
         if (selectedBook) return selectedBook;
         if (sampleBook) return sampleBook;
         if (previewBook) return previewBook;
 
         return {
-            serie: 'Cause I Will Hate You',
-            series: 'Cause I Will Hate You',
-            series_english: 'Cause I Will Hate You',
-            series_name: 'Cause I Will Hate You',
-            romaji_title: 'Anata no Koto wo, Kirai ni Naru kara',
-            series_spanish: 'Porque Llegaré a Odiarte',
-            titulo: 'Porque Llegaré a Odiarte',
-            title: 'Porque Llegaré a Odiarte',
-            volumen: '1',
-            volume: '1',
-            autor: 'Yuu Hidaka',
-            author: 'Yuu Hidaka',
-            illustrator: 'Sako',
-            ilustrador: 'Sako',
-            layout_by: 'Zhi',
-            maquetador: 'Zhi',
+            serie: 'Accel World',
+            series: 'Accel World',
+            series_english: 'Accel World',
+            series_name: 'Accel World',
+            romaji_title: '',
+            series_spanish: '',
+            titulo: 'Accel World - V25 [ShinsengumiTL]',
+            title: 'Accel World - V25 [ShinsengumiTL]',
+            volumen: '25',
+            volume: '25',
+            autor: 'Reki Kawahara',
+            author: 'Reki Kawahara',
+            illustrator: 'HIMA',
+            ilustrador: 'HIMA',
+            layout_by: 'Zeedif',
+            maquetador: 'Zeedif',
             tipo: 'Novela Ligera',
-            demography: 'Shounen',
-            genres: 'Juvenil, Drama, Escolar, Recuentos de la vida, Romance',
-            traductor: 'Mayu',
-            translator: 'Mayu',
-            editorial: "Tamashi's Project",
+            demography: 'Kodomo',
+            genres: '#Acción #Aventura #Ciencia_ficción #Comedia #Escolar #Fantasía #Romance',
+            traductor: 'McKight',
+            translator: 'McKight',
+            editorial: 'Shinsengumi Translations',
             formato: 'EPUB 3.0',
             version: 'EPUB 3.0',
-            paginas: '240',
-            palabras: '68,200',
-            reading_time: '3h 50m',
-            size_mb: '3.1 MB',
-            tamaño: '3.1 MB',
+            paginas: '280',
+            palabras: '74,500',
+            reading_time: '4h 15m',
+            size_mb: '23.9 MB',
+            tamaño: '23.9 MB',
             fecha: '02-09-2026',
-            published_at: '2024',
+            published_at: '2020',
             sinopsis:
-                'Una historia emotiva y conmovedora sobre dos jóvenes cuyas vidas se entrelazan en la escuela secundaria...',
-            slug: 'Cause_I_Will_Hate_You',
+                'Haruyuki Arita es un estudiante de secundaria con sobrepeso y baja autoestima que sufre acoso escolar constante. Su único refugio es el mundo virtual...',
+            slug: 'Accel_World',
             download_link: 'https://dl.zeepubs.com/QfFLyhydJK',
-            filename: 'Cause I Will Hate You - Vol 1.epub',
+            filename: 'Accel world - V25 [ShinsengumiTL].epub',
             link: 'https://dl.zeepubs.com/QfFLyhydJK',
             cover_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600',
         };
@@ -114,6 +160,10 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
 
             const combined: any[] = [];
             for (const v of volumesList) {
+                const tagsStr = Array.isArray(v.genres)
+                    ? v.genres.map((g: string) => (g.startsWith('#') ? g : `#${g}`)).join(' ')
+                    : (v.genres || '#NovelaLigera');
+
                 combined.push({
                     id: v.id || v.book_hash,
                     title: v.title,
@@ -126,12 +176,16 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                     translator: v.translator,
                     synopsis: v.synopsis || v.description,
                     cover_url: v.cover_url || v.cover_thumb || v.cover_high,
-                    genres: Array.isArray(v.genres) ? v.genres.join(', ') : v.genres,
+                    genres: tagsStr,
                 });
             }
 
             if (combined.length === 0) {
                 for (const s of seriesList) {
+                    const tagsStr = Array.isArray(s.genres)
+                        ? s.genres.map((g: string) => (g.startsWith('#') ? g : `#${g}`)).join(' ')
+                        : (s.genres || '#NovelaLigera');
+
                     combined.push({
                         id: s.id || s.series_hash,
                         title: s.name || s.title,
@@ -144,7 +198,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                         translator: s.translator,
                         synopsis: s.synopsis || s.description,
                         cover_url: s.cover_url || s.cover_thumb,
-                        genres: Array.isArray(s.genres) ? s.genres.join(', ') : s.genres,
+                        genres: tagsStr,
                     });
                 }
             }
@@ -159,16 +213,18 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
 
     const handleSelectRealBook = (b: any) => {
         const seriesName = b.series_name || b.series || b.title || 'Serie';
-        const genresList = Array.isArray(b.genres) ? b.genres.join(', ') : (b.genres || 'Novela Ligera');
-        const formattedSize = b.file_size ? `${(b.file_size / (1024 * 1024)).toFixed(2)} MB` : (b.size_mb || '3.5 MB');
+        const formattedSize = b.file_size ? `${(b.file_size / (1024 * 1024)).toFixed(1)} MB` : (b.size_mb || '23.9 MB');
+        const tagsStr = Array.isArray(b.genres)
+            ? b.genres.map((g: string) => (g.startsWith('#') ? g : `#${g}`)).join(' ')
+            : (b.genres || '#NovelaLigera');
 
         setSelectedBook({
             serie: seriesName,
             series: seriesName,
             series_english: b.series_english || seriesName,
             series_name: seriesName,
-            romaji_title: b.romaji_title || seriesName,
-            series_spanish: b.series_spanish || b.title,
+            romaji_title: b.romaji_title || '',
+            series_spanish: b.series_spanish || '',
             titulo: b.title,
             title: b.title,
             volumen: String(b.volume || 1),
@@ -177,27 +233,27 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
             author: b.author || 'Autor desconocido',
             illustrator: b.illustrator || 'Ilustrador oficial',
             ilustrador: b.illustrator || 'Ilustrador oficial',
-            layout_by: b.layout_by || 'ZeePubs',
-            maquetador: b.layout_by || 'ZeePubs',
+            layout_by: b.layout_by || 'Zeedif',
+            maquetador: b.layout_by || 'Zeedif',
             tipo: b.book_type || 'Novela Ligera',
-            demography: b.demography || 'Shounen',
-            genres: genresList,
-            traductor: b.translator || 'Fansub',
-            translator: b.translator || 'Fansub',
-            editorial: b.workgroup_name || b.publisher || 'Editorial Digital',
+            demography: b.demography || 'Kodomo',
+            genres: tagsStr,
+            traductor: b.translator || 'McKight',
+            translator: b.translator || 'McKight',
+            editorial: b.workgroup_name || b.publisher || 'Shinsengumi Translations',
             formato: b.epub_version || 'EPUB 3.0',
             version: 'EPUB 3.0',
-            paginas: b.page_count ? String(b.page_count) : '240',
-            palabras: b.word_count ? Number(b.word_count).toLocaleString() : '68,000',
-            reading_time: b.reading_time ? `${Math.floor(b.reading_time / 60)}h ${b.reading_time % 60}m` : '3h 45m',
+            paginas: b.page_count ? String(b.page_count) : '280',
+            palabras: b.word_count ? Number(b.word_count).toLocaleString() : '74,500',
+            reading_time: b.reading_time ? `${Math.floor(b.reading_time / 60)}h ${b.reading_time % 60}m` : '4h 15m',
             size_mb: formattedSize,
             tamaño: formattedSize,
             fecha: new Date().toLocaleDateString('es-ES'),
-            published_at: new Date().getFullYear().toString(),
-            sinopsis: b.synopsis || b.description || 'Sinopsis disponible en la biblioteca.',
+            published_at: '2024',
+            sinopsis: b.sinopsis || b.description || 'Sinopsis disponible en la biblioteca.',
             slug: seriesName.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_'),
             download_link: `https://dl.zeepubs.com/${b.short_link || b.book_hash || b.id}`,
-            filename: b.filename || `${b.title}.epub`,
+            filename: b.filename || `${seriesName} - V${b.volume || 1}.epub`,
             link: `https://dl.zeepubs.com/${b.short_link || b.book_hash || b.id}`,
             cover_url: b.cover_url || b.cover_thumb || '',
         });
@@ -325,33 +381,26 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                 </div>
             </div>
 
-            {/* Official Telegram Post Card (Matching Exact Dark Telegram UI) */}
+            {/* Official Telegram Post Card (Matching Real Telegram Message UI) */}
             <div className="flex-1 bg-[#0e1621] rounded-3xl border border-white/10 p-3 sm:p-5 overflow-y-auto shadow-2xl flex flex-col items-center justify-start min-h-[580px] 2xl:min-h-[660px]">
                 <div
                     className={`w-full transition-all duration-300 bg-[#17212b] text-slate-100 rounded-2xl border border-[#232e3c] overflow-hidden shadow-2xl font-sans ${
-                        previewWidth === 'desktop' ? 'max-w-[480px]' : 'max-w-[380px]'
+                        previewWidth === 'desktop' ? 'max-w-[460px]' : 'max-w-[380px]'
                     }`}
                 >
-                    {/* Top Cover with Blurred Wings Backdrop (Exact Telegram Photo Presentation) */}
+                    {/* Top Cover Attached Image */}
                     {currentCover && (
-                        <div className="relative w-full h-[380px] sm:h-[440px] bg-[#0c1219] overflow-hidden flex items-center justify-center border-b border-[#232e3c]">
-                            {/* Blurred Ambient Backdrop */}
+                        <div className="relative w-full bg-[#0c1219] overflow-hidden flex items-center justify-center border-b border-[#232e3c]">
                             <img
                                 src={currentCover}
                                 alt=""
-                                className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-125"
-                            />
-                            {/* Sharp Foreground Cover */}
-                            <img
-                                src={currentCover}
-                                alt=""
-                                className="relative max-h-full max-w-full object-contain z-10 drop-shadow-2xl"
+                                className="w-full max-h-[440px] object-cover object-center"
                             />
                         </div>
                     )}
 
                     {/* Telegram Caption Body */}
-                    <div className="p-3.5 sm:p-4 space-y-2 text-[13px] leading-snug select-text">
+                    <div className="p-3 sm:p-4 space-y-2 text-[13px] leading-snug select-text">
                         {isFacebookTemplate ? (
                             /* FACEBOOK COPY TEMPLATE AS DELIVERED TO TELEGRAM */
                             <div className="space-y-2.5">
@@ -379,45 +428,13 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                             </div>
                         ) : (
                             /* OFFICIAL TELEGRAM BOT POST RENDERER */
-                            <TelegramBotPostRenderer html={evaluatedText} />
+                            <TelegramRichMessageLiveRenderer html={evaluatedText} book={activeBook} />
                         )}
 
                         <div className="pt-1 flex justify-end text-[11px] text-[#8fa0b5] font-mono">
-                            <span>18:00</span>
+                            <span>9:33</span>
                         </div>
                     </div>
-
-                    {/* Bottom Inline Keyboard Actions (Telegram Interactive Buttons) */}
-                    {!isFacebookTemplate && (
-                        <div className="p-2.5 bg-[#131d27] border-t border-[#232e3c] space-y-1.5">
-                            <button
-                                type="button"
-                                className="w-full py-2 px-3 rounded-xl bg-[#243447] hover:bg-[#2b3e55] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-                            >
-                                <Download className="w-3.5 h-3.5 text-sky-400" /> Descargar EPUB
-                            </button>
-                            <div className="grid grid-cols-3 gap-1.5">
-                                <button
-                                    type="button"
-                                    className="py-1.5 px-2 rounded-xl bg-[#243447] hover:bg-[#2b3e55] text-slate-200 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
-                                >
-                                    <ArrowLeft className="w-3 h-3" /> Volver
-                                </button>
-                                <button
-                                    type="button"
-                                    className="py-1.5 px-2 rounded-xl bg-[#243447] hover:bg-[#2b3e55] text-slate-200 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
-                                >
-                                    <Home className="w-3 h-3 text-amber-400" /> Inicio
-                                </button>
-                                <button
-                                    type="button"
-                                    className="py-1.5 px-2 rounded-xl bg-[#243447] hover:bg-[#2b3e55] text-slate-200 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
-                                >
-                                    <XCircle className="w-3 h-3 text-rose-400" /> Salir
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -440,7 +457,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => handleSearchLibrary(e.target.value)}
-                                placeholder="Escribe el nombre de la serie (ej. Cause I Will Hate You, Baccano)..."
+                                placeholder="Escribe el nombre de la serie (ej. Accel World, Baccano)..."
                                 autoFocus
                                 className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                             />
@@ -494,8 +511,9 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     );
 };
 
-// Official Telegram Bot Post Renderer (Replicating Telegram UI Exactly)
-export const TelegramBotPostRenderer: React.FC<{ html: string }> = ({ html }) => {
+// Precise Telegram Rich Message Renderer (Matching Real Telegram Post Pixel-for-Pixel)
+export const TelegramRichMessageLiveRenderer: React.FC<{ html: string; book: any }> = ({ html, book }) => {
+    const [openFicha, setOpenFicha] = useState(true); // Open by default (<details open>)
     const [openSinopsis, setOpenSinopsis] = useState(false);
     const [openArchivo, setOpenArchivo] = useState(false);
 
@@ -503,17 +521,51 @@ export const TelegramBotPostRenderer: React.FC<{ html: string }> = ({ html }) =>
         return <div className="text-gray-500 italic text-xs">Escribe una plantilla para previsualizar...</div>;
     }
 
-    // Parse sections
+    // Parse blocks
     const parsed = useMemo(() => {
         let text = html
             .replace(/&lt;/g, '<')
             .replace(/&gt;/g, '>')
             .replace(/&amp;/g, '&');
 
-        // Remove <img ... /> tag since cover is displayed on top
+        // Remove <img ... />
         text = text.replace(/<img[^>]*>/gi, '');
-        // Remove <tg-document ... />
+
+        // Has Document Tag?
+        const hasDocument = /<tg-document/i.test(text);
         text = text.replace(/<tg-document[^>]*>/gi, '');
+
+        // Extract Ficha Técnica details
+        let fichaRows: Array<[string, string]> = [];
+        const fichaMatch = text.match(/<details[^>]*open[^>]*>[\s\S]*?<summary>[\s\S]*?Ficha Técnica[\s\S]*?<\/summary>([\s\S]*?)<\/details>/i) ||
+                           text.match(/<details[^>]*>[\s\S]*?<summary>[\s\S]*?Ficha Técnica[\s\S]*?<\/summary>([\s\S]*?)<\/details>/i);
+        if (fichaMatch) {
+            const tableContent = fichaMatch[1];
+            tableContent.replace(/<tr[^>]*>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<\/tr>/gi, (_m, c1, c2) => {
+                const label = c1.replace(/<[^>]+>/g, '').trim();
+                const val = c2.replace(/<[^>]+>/g, '').trim();
+                if (label && val) {
+                    fichaRows.push([label, val]);
+                }
+                return '';
+            });
+            text = text.replace(fichaMatch[0], '§§FICHA§§');
+        } else {
+            // Check for standalone <table>
+            const tableMatch = text.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
+            if (tableMatch) {
+                const tableContent = tableMatch[1];
+                tableContent.replace(/<tr[^>]*>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<\/tr>/gi, (_m, c1, c2) => {
+                    const label = c1.replace(/<[^>]+>/g, '').trim();
+                    const val = c2.replace(/<[^>]+>/g, '').trim();
+                    if (label && val) {
+                        fichaRows.push([label, val]);
+                    }
+                    return '';
+                });
+                text = text.replace(tableMatch[0], '§§FICHA§§');
+            }
+        }
 
         // Extract sinopsis details
         let sinopsisText = '';
@@ -533,97 +585,109 @@ export const TelegramBotPostRenderer: React.FC<{ html: string }> = ({ html }) =>
         if (archivoMatch) {
             const tableContent = archivoMatch[1];
             tableContent.replace(/<tr[^>]*>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<\/tr>/gi, (_m, c1, c2) => {
-                archivoRows.push([c1.replace(/<[^>]+>/g, '').trim(), c2.replace(/<[^>]+>/g, '').trim()]);
+                const label = c1.replace(/<[^>]+>/g, '').trim();
+                const val = c2.replace(/<[^>]+>/g, '').trim();
+                if (label && val) {
+                    archivoRows.push([label, val]);
+                }
                 return '';
             });
             text = text.replace(archivoMatch[0], '§§ARCHIVO§§');
         }
 
-        // Extract main table
-        let mainTableRows: Array<[string, string]> = [];
-        const mainTableMatch = text.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
-        if (mainTableMatch) {
-            const tableContent = mainTableMatch[1];
-            tableContent.replace(/<tr[^>]*>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<\/tr>/gi, (_m, c1, c2) => {
-                mainTableRows.push([c1.replace(/<[^>]+>/g, '').trim(), c2.replace(/<[^>]+>/g, '').trim()]);
-                return '';
-            });
-            text = text.replace(mainTableMatch[0], '§§MAINTABLE§§');
-        }
-
         return {
             rawText: text,
+            fichaRows,
             sinopsisText,
             archivoRows,
-            mainTableRows,
+            hasDocument,
         };
     }, [html]);
 
-    // Render remaining title / hashtag lines
     const renderedLines = useMemo(() => {
-        const lines = parsed.rawText.split('\n').map((l) => l.trim()).filter((l) => l && l !== '<hr/>');
+        const lines = parsed.rawText.split('\n').map((l) => l.trim()).filter((l) => l && l !== '<hr/>' && l !== '<hr>');
         return lines;
     }, [parsed.rawText]);
 
     return (
         <div className="space-y-2 text-[13px] text-slate-100">
-            {/* Titles, Flags & Headings */}
-            <div className="space-y-0.5">
+            {/* Titles, Flags, Volume & Genres Chips */}
+            <div className="space-y-1">
                 {renderedLines.map((line, idx) => {
-                    if (line === '§§MAINTABLE§§' || line === '§§SINOPSIS§§' || line === '§§ARCHIVO§§') {
+                    if (line === '§§FICHA§§' || line === '§§SINOPSIS§§' || line === '§§ARCHIVO§§') {
                         return null;
                     }
 
                     // Hashtag
                     if (line.startsWith('#')) {
                         return (
-                            <div key={idx} className="pt-1.5 text-[#5288c1] font-medium text-[12.5px] hover:underline cursor-pointer">
+                            <div key={idx} className="pt-1 text-[#5288c1] font-medium text-[13px] hover:underline cursor-pointer">
                                 {line}
                             </div>
                         );
                     }
 
-                    // Standard Title line (clean bold text with flag)
-                    const cleanHtml = line
-                        .replace(/<\/?(h\d|p|b|strong)[^>]*>/gi, '')
-                        .trim();
+                    // Genres line with tag icon
+                    if (line.includes('🏷️') || line.includes('#')) {
+                        const cleanLine = line.replace(/<\/?(p|i|em|b|strong)[^>]*>/gi, '').trim();
+                        return (
+                            <div key={idx} className="text-[#5288c1] font-medium text-xs leading-relaxed">
+                                {renderWithTwemoji(cleanLine)}
+                            </div>
+                        );
+                    }
 
-                    if (!cleanHtml) return null;
+                    // Title line
+                    const cleanTitle = line.replace(/<\/?(h\d|p|b|strong)[^>]*>/gi, '').trim();
+                    if (!cleanTitle) return null;
 
                     return (
-                        <div key={idx} className="font-bold text-white text-[13.5px] leading-tight">
-                            {cleanHtml}
+                        <div key={idx} className="font-bold text-white text-[14.5px] leading-tight flex items-center">
+                            {renderWithTwemoji(cleanTitle)}
                         </div>
                     );
                 })}
             </div>
 
-            {/* Ficha Técnica Table */}
-            {parsed.mainTableRows.length > 0 && (
-                <div className="my-2 rounded-xl bg-[#131d27] border border-[#223143] overflow-hidden text-xs divide-y divide-[#223143]">
-                    {parsed.mainTableRows.map(([label, val], idx) => {
-                        const isHashtag = val.startsWith('#');
-                        return (
-                            <div key={idx} className="flex">
-                                <div className="w-[38%] py-1.5 px-3 bg-[#111923] text-[#8fa0b5] font-medium border-r border-[#223143] shrink-0 truncate">
-                                    {label}
-                                </div>
-                                <div className={`w-[62%] py-1.5 px-3 bg-[#141f2d] ${isHashtag ? 'text-[#5288c1] font-medium' : 'text-slate-100'} truncate`}>
-                                    {val}
-                                </div>
-                            </div>
-                        );
-                    })}
+            {/* Ficha Técnica Section (^ 📋 Ficha Técnica) */}
+            {parsed.fichaRows.length > 0 && (
+                <div className="pt-1">
+                    <button
+                        type="button"
+                        onClick={() => setOpenFicha(!openFicha)}
+                        className="py-1 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors w-full text-left"
+                    >
+                        {openFicha ? <ChevronUp className="w-3.5 h-3.5 text-[#5288c1]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#5288c1]" />}
+                        <span>📋 Ficha Técnica</span>
+                    </button>
+
+                    {openFicha && (
+                        <div className="mt-1 rounded-xl bg-[#131d27] border border-[#223143] overflow-hidden text-xs divide-y divide-[#223143]">
+                            {parsed.fichaRows.map(([label, val], idx) => {
+                                const isHashtag = val.startsWith('#');
+                                return (
+                                    <div key={idx} className="flex">
+                                        <div className="w-[38%] py-1.5 px-3 bg-[#101822] text-[#8fa0b5] font-medium border-r border-[#223143] shrink-0 truncate flex items-center gap-1">
+                                            {renderWithTwemoji(label)}
+                                        </div>
+                                        <div className={`w-[62%] py-1.5 px-3 bg-[#141f2d] ${isHashtag ? 'text-[#5288c1] font-medium' : 'text-slate-100'} truncate flex items-center`}>
+                                            {renderWithTwemoji(val)}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* Expandable Sinopsis Accordion */}
+            {/* Expandable Sinopsis Accordion (∨ 📖 Ver Sinopsis) */}
             {parsed.sinopsisText && (
                 <div className="pt-0.5">
                     <button
                         type="button"
                         onClick={() => setOpenSinopsis(!openSinopsis)}
-                        className="py-1 px-0.5 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors w-full text-left"
+                        className="py-1 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors w-full text-left"
                     >
                         {openSinopsis ? <ChevronUp className="w-3.5 h-3.5 text-[#5288c1]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#5288c1]" />}
                         <span>📖 Ver Sinopsis</span>
@@ -636,13 +700,13 @@ export const TelegramBotPostRenderer: React.FC<{ html: string }> = ({ html }) =>
                 </div>
             )}
 
-            {/* Expandable Detalles del Archivo Accordion */}
+            {/* Expandable Detalles del Archivo Accordion (∨ 📁 Ver Detalles del Archivo) */}
             {parsed.archivoRows.length > 0 && (
                 <div className="pt-0.5">
                     <button
                         type="button"
                         onClick={() => setOpenArchivo(!openArchivo)}
-                        className="py-1 px-0.5 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors w-full text-left"
+                        className="py-1 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors w-full text-left"
                     >
                         {openArchivo ? <ChevronUp className="w-3.5 h-3.5 text-[#5288c1]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#5288c1]" />}
                         <span>📁 Ver Detalles del Archivo</span>
@@ -651,16 +715,33 @@ export const TelegramBotPostRenderer: React.FC<{ html: string }> = ({ html }) =>
                         <div className="mt-1.5 rounded-xl bg-[#131d27] border border-[#223143] overflow-hidden text-xs divide-y divide-[#223143] animate-in fade-in duration-150">
                             {parsed.archivoRows.map(([label, val], idx) => (
                                 <div key={idx} className="flex">
-                                    <div className="w-[38%] py-1.5 px-3 bg-[#111923] text-[#8fa0b5] font-medium border-r border-[#223143] shrink-0 truncate">
-                                        {label}
+                                    <div className="w-[38%] py-1.5 px-3 bg-[#101822] text-[#8fa0b5] font-medium border-r border-[#223143] shrink-0 truncate flex items-center gap-1">
+                                        {renderWithTwemoji(label)}
                                     </div>
-                                    <div className="w-[62%] py-1.5 px-3 bg-[#141f2d] text-slate-100 truncate">
-                                        {val}
+                                    <div className="w-[62%] py-1.5 px-3 bg-[#141f2d] text-slate-100 truncate flex items-center">
+                                        {renderWithTwemoji(val)}
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Telegram Document Attachment Box (<tg-document src="tg://document?id=epub_file" />) */}
+            {parsed.hasDocument && (
+                <div className="my-2.5 p-2.5 rounded-xl bg-[#131d27] border border-[#223143] flex items-center gap-3 select-none">
+                    <div className="w-10 h-10 rounded-full bg-[#5288c1] flex items-center justify-center shrink-0 shadow-md">
+                        <ArrowDown className="w-5 h-5 text-white stroke-[2.5]" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <div className="text-xs font-bold text-white truncate">
+                            {book.filename || `${book.series || book.title} - V${book.volumen || book.volume}.epub`}
+                        </div>
+                        <div className="text-[11px] text-[#8fa0b5] font-medium">
+                            {book.size_mb || book.tamaño || '23.9 MB'}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
