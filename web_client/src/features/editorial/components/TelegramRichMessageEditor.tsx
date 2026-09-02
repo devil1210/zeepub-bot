@@ -23,6 +23,7 @@ interface TelegramRichMessageEditorProps {
     value: string;
     onChange: (val: string) => void;
     platform?: 'telegram' | 'facebook';
+    placeholder?: string;
 }
 
 const TEMPLATE_VARIABLES = [
@@ -48,6 +49,7 @@ export const TelegramRichMessageEditor: React.FC<TelegramRichMessageEditorProps>
     value,
     onChange,
     platform = 'telegram',
+    placeholder,
 }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -272,7 +274,7 @@ export const TelegramRichMessageEditor: React.FC<TelegramRichMessageEditorProps>
                     ref={textareaRef}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    placeholder="Escribe aquí la plantilla usando etiquetas HTML de Telegram y variables..."
+                    placeholder={placeholder || "Escribe aquí la plantilla usando etiquetas HTML de Telegram y variables..."}
                     className="w-full h-full min-h-[560px] 2xl:min-h-[640px] p-5 rounded-3xl bg-slate-900/90 border border-white/10 text-xs sm:text-sm font-mono text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500 shadow-inner leading-relaxed select-text resize-y"
                 />
             </div>

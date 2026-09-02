@@ -164,7 +164,7 @@ export const DataGridEditor: React.FC = () => {
                 setToastMessage({ text: 'Series fusionadas con éxito', type: 'success' });
                 setMergeSourceHash('');
                 setSelectedSeriesForAlias(null);
-                fetchData();
+                loadGridData();
             } else {
                 setToastMessage({ text: res.message || 'Error en fusión', type: 'error' });
             }

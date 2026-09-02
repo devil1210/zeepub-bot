@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Sparkles,
     Edit2,
@@ -38,24 +38,24 @@ const DiffHighlighter: React.FC<DiffHighlighterProps> = ({ oldText, newText }) =
 interface ProposalModalProps {
     isOpen: boolean;
     proposal: any;
-    approvedChanges: any[];
-    applyRenames: boolean;
-    applyMeta: boolean;
-    editedSeries: string;
-    editedSpanish: string;
-    isEditingSeries: boolean;
-    editingBookId: number | null;
-    processingProposal: boolean;
+    approvedChanges?: any[];
+    applyRenames?: boolean;
+    applyMeta?: boolean;
+    editedSeries?: string;
+    editedSpanish?: string;
+    isEditingSeries?: boolean;
+    editingBookId?: number | null;
+    processingProposal?: boolean;
     onClose: () => void;
     onApply: () => void;
-    setApplyRenames: (val: boolean) => void;
-    setApplyMeta: (val: boolean) => void;
-    setEditedSeries: (val: string) => void;
-    setEditedSpanish: (val: string) => void;
-    setIsEditingSeries: (val: boolean) => void;
-    toggleChange: (bookId: number) => void;
-    handleEditFilename: (bookId: number, name: string) => void;
-    setEditingBookId: (id: number | null) => void;
+    setApplyRenames?: (val: boolean) => void;
+    setApplyMeta?: (val: boolean) => void;
+    setEditedSeries?: (val: string) => void;
+    setEditedSpanish?: (val: string) => void;
+    setIsEditingSeries?: (val: boolean) => void;
+    toggleChange?: (bookId: number) => void;
+    handleEditFilename?: (bookId: number, name: string) => void;
+    setEditingBookId?: (id: number | null) => void;
 }
 
 export const ProposalModal: React.FC<ProposalModalProps> = ({
@@ -68,7 +68,7 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
     editedSpanish,
     isEditingSeries,
     editingBookId,
-    processingProposal,
+    processingProposal = false,
     onClose,
     onApply,
     setApplyRenames,
@@ -80,6 +80,43 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
     handleEditFilename,
     setEditingBookId
 }) => {
+    const [localApproved, setLocalApproved] = useState<any[]>(() => proposal?.changes || []);
+    const [localRenames, setLocalRenames] = useState(true);
+    const [localMeta, setLocalMeta] = useState(true);
+    const [localSeries, setLocalSeries] = useState(proposal?.proposed_series || '');
+    const [localSpanish, setLocalSpanish] = useState(proposal?.proposed_spanish || '');
+    const [localIsEditing, setLocalIsEditing] = useState(false);
+    const [localEditingId, setLocalEditingId] = useState<number | null>(null);
+
+    const actualApprovedChanges = approvedChanges !== undefined ? approvedChanges : localApproved;
+    const actualApplyRenames = applyRenames !== undefined ? applyRenames : localRenames;
+    const actualApplyMeta = applyMeta !== undefined ? applyMeta : localMeta;
+    const actualEditedSeries = editedSeries !== undefined ? editedSeries : localSeries;
+    const actualEditedSpanish = editedSpanish !== undefined ? editedSpanish : localSpanish;
+    const actualIsEditingSeries = isEditingSeries !== undefined ? isEditingSeries : localIsEditing;
+    const actualEditingBookId = editingBookId !== undefined ? editingBookId : localEditingId;
+
+    const doSetApplyRenames = setApplyRenames || setLocalRenames;
+    const doSetApplyMeta = setApplyMeta || setLocalMeta;
+    const doSetEditedSeries = setEditedSeries || setLocalSeries;
+    const doSetEditedSpanish = setEditedSpanish || setLocalSpanish;
+    const doSetIsEditingSeries = setIsEditingSeries || setLocalIsEditing;
+    const doSetEditingBookId = setEditingBookId || setLocalEditingId;
+    const doToggleChange = toggleChange || ((id: number) => {
+        setLocalApproved(prev => {
+            const exists = prev.some(c => c.book_id === id);
+            if (exists) return prev.filter(c => c.book_id !== id);
+            const found = proposal?.changes?.find((c: any) => c.book_id === id);
+            return found ? [...prev, found] : prev;
+        });
+    });
+    const doHandleEditFilename = handleEditFilename || ((id: number, name: string) => {
+        if (proposal?.changes) {
+            const ch = proposal.changes.find((c: any) => c.book_id === id);
+            if (ch) ch.proposed_filename = name;
+        }
+    });
+
     if (!isOpen || !proposal) return null;
 
     return (
@@ -118,9 +155,9 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
                                         Nombre de la Serie (Español / Principal)
                                     </span>
-                                    {!isEditingSeries && (
+                                    {!actualIsEditingSeries && (
                                         <button
-                                            onClick={() => setIsEditingSeries(true)}
+                                            onClick={() => doSetIsEditingSeries(true)}
                                             className="text-xs font-bold text-gray-400 hover:text-white flex items-center gap-1.5 transition-colors"
                                         >
                                             <Edit2 className="w-3.5 h-3.5" />
@@ -129,14 +166,14 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
                                     )}
                                 </div>
 
-                                {isEditingSeries ? (
+                                {actualIsEditingSeries ? (
                                     <div className="space-y-3 pt-2">
                                         <div>
                                             <label className="text-[10px] uppercase font-bold text-gray-400">Título Serie (Principal)</label>
                                             <input
                                                 type="text"
-                                                value={editedSeries}
-                                                onChange={(e) => setEditedSeries(e.target.value)}
+                                                value={actualEditedSeries}
+                                                onChange={(e) => doSetEditedSeries(e.target.value)}
                                                 className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none"
                                             />
                                         </div>
@@ -144,13 +181,13 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
                                             <label className="text-[10px] uppercase font-bold text-gray-400">Título Español</label>
                                             <input
                                                 type="text"
-                                                value={editedSpanish}
-                                                onChange={(e) => setEditedSpanish(e.target.value)}
+                                                value={actualEditedSpanish}
+                                                onChange={(e) => doSetEditedSpanish(e.target.value)}
                                                 className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:border-primary outline-none"
                                             />
                                         </div>
                                         <button
-                                            onClick={() => setIsEditingSeries(false)}
+                                            onClick={() => doSetIsEditingSeries(false)}
                                             className="px-4 py-1.5 bg-primary text-white text-xs font-bold rounded-lg flex items-center gap-1.5"
                                         >
                                             <Check className="w-3.5 h-3.5" /> Listo
@@ -162,13 +199,13 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
                                             <p className="text-lg font-bold text-green-100 break-words leading-relaxed whitespace-pre-wrap">
                                                 <DiffHighlighter
                                                     oldText={proposal.current_series}
-                                                    newText={editedSeries}
+                                                    newText={actualEditedSeries}
                                                 />
                                             </p>
-                                            {editedSpanish !== editedSeries && (
+                                            {actualEditedSpanish !== actualEditedSeries && (
                                                 <p className="text-sm text-gray-400 mt-2 flex items-center gap-2">
                                                     <span className="text-[10px] font-black bg-white/5 px-1.5 rounded text-gray-500">ES</span>
-                                                    {editedSpanish}
+                                                    {actualEditedSpanish}
                                                 </p>
                                             )}
                                         </div>
@@ -208,13 +245,13 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
                     <div>
                         <div className="flex items-center justify-between mb-4">
                             <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wide">
-                                Archivos a Renombrar ({approvedChanges.length}/{proposal.changes?.length || 0})
+                                Archivos a Renombrar ({actualApprovedChanges.length}/{proposal.changes?.length || 0})
                             </h4>
                             <label className="flex items-center gap-2 text-xs font-bold text-primary cursor-pointer">
                                 <input
                                     type="checkbox"
-                                    checked={applyRenames}
-                                    onChange={(e) => setApplyRenames(e.target.checked)}
+                                    checked={actualApplyRenames}
+                                    onChange={(e) => doSetApplyRenames(e.target.checked)}
                                     className="rounded border-white/20 bg-white/5"
                                 />
                                 Habilitar Renombrado
@@ -223,11 +260,11 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
 
                         <div className="space-y-2">
                             {proposal.changes?.map((change: any) => {
-                                const isSelected = approvedChanges.some(c => c.book_id === change.book_id);
+                                const isSelected = actualApprovedChanges.some((c: any) => (c.book_id || c) === change.book_id);
                                 return (
                                     <div
                                         key={change.book_id}
-                                        className={`p-3 rounded-premium-sm border flex items-center gap-4 text-sm transition-all group ${isSelected && applyRenames
+                                        className={`p-3 rounded-premium-sm border flex items-center gap-4 text-sm transition-all group ${isSelected && actualApplyRenames
                                             ? 'bg-white/5 border-white/10 opacity-100'
                                             : 'bg-black/20 border-white/5 opacity-40 grayscale'
                                             }`}
@@ -235,8 +272,8 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
                                         <input
                                             type="checkbox"
                                             checked={isSelected}
-                                            onChange={() => toggleChange(change.book_id)}
-                                            disabled={!applyRenames}
+                                            onChange={() => doToggleChange(change.book_id)}
+                                            disabled={!actualApplyRenames}
                                             className="w-5 h-5 rounded-lg border-white/20 bg-white/5 cursor-pointer accent-primary"
                                         />
                                         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
@@ -244,19 +281,19 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
                                                 {change.current_filename}
                                             </div>
                                             <div className="flex items-center gap-2 group/field">
-                                                {editingBookId === change.book_id ? (
+                                                {actualEditingBookId === change.book_id ? (
                                                     <div className="flex-1 flex items-center gap-2 animate-in slide-in-from-right-2 duration-200">
                                                         <input
                                                             type="text"
                                                             autoFocus
                                                             value={change.proposed_filename}
-                                                            onChange={(e) => handleEditFilename(change.book_id, e.target.value)}
-                                                            onKeyDown={(e) => e.key === 'Enter' && setEditingBookId(null)}
-                                                            onBlur={() => setEditingBookId(null)}
+                                                            onChange={(e) => doHandleEditFilename(change.book_id, e.target.value)}
+                                                            onKeyDown={(e) => e.key === 'Enter' && doSetEditingBookId(null)}
+                                                            onBlur={() => doSetEditingBookId(null)}
                                                             className="flex-1 bg-black/60 border border-primary/50 rounded px-2 py-1 text-xs text-white outline-none focus:ring-1 ring-primary"
                                                         />
                                                         <button
-                                                            onClick={() => setEditingBookId(null)}
+                                                            onClick={() => doSetEditingBookId(null)}
                                                             className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-green-400 hover:text-green-300 transition-colors"
                                                         >
                                                             <Check className="w-4 h-4" />
@@ -271,7 +308,7 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
                                                             />
                                                         </div>
                                                         <button
-                                                            onClick={() => setEditingBookId(change.book_id)}
+                                                            onClick={() => doSetEditingBookId(change.book_id)}
                                                             className="p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded bg-white/5 hover:bg-white/10 text-gray-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
                                                             title="Editar nombre"
                                                         >

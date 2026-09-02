@@ -25,7 +25,7 @@ import { useTheme } from '@shared/contexts/ThemeContext';
 export const EditorialSettings: React.FC = () => {
     const { settings, updateSettings } = useTheme();
     const [activeTab, setActiveTab] = useState<'general' | 'ai' | 'system' | 'logs'>('general');
-    const [logs, setLogs] = useState<string>('');
+    const [logs, setLogs] = useState<any>('');
     const [logLevel, setLogLevel] = useState<'ALL' | 'INFO' | 'WARNING' | 'ERROR'>('INFO');
     const [logSearch, setLogSearch] = useState('');
     const [loadingLogs, setLoadingLogs] = useState(false);

@@ -483,6 +483,19 @@ export const api = {
         platforms?: string[];
     }) => rpc('pub_update_post', data),
 
+    pubUpdateQueueItem: (data: { id: number; scheduled_for?: string; [key: string]: any }) =>
+        rpc('pub_update_queue_item', data),
+
+    getAiReviewList: (type: 'pending' | 'reviewed' | 'queue' | 'learning', limit: number = 100, offset: number = 0) =>
+        rpc('ai_get_lists', { type, limit, offset }),
+
+    scanAiSeries: (seriesHash: string, targetModel?: string, dryRun: boolean = false) =>
+        rpc('ai_scan_series', { series_hash: seriesHash, dry_run: dryRun, target_model: targetModel }),
+
+    getDuplicates: () => rpc('admin_get_duplicates'),
+    getAiDuplicates: () => rpc('admin_ai_series_duplicate_scan'),
+    clearDuplicateHistory: () => rpc('admin_clear_duplicates'),
+
     // Raw RPC Access
     rpc: rpc
 };

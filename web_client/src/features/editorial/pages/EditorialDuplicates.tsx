@@ -7,6 +7,7 @@ import {
     RefreshCw,
     Search,
     AlertTriangle,
+    AlertCircle,
     CheckCircle2,
     Sparkles,
     Loader2,

@@ -388,9 +388,10 @@ export const EditorialVolumes: React.FC = () => {
             {/* Quick Edit Drawer */}
             <EditorialQuickEditDrawer
                 isOpen={!!selectedVolumeForEdit}
-                book={selectedVolumeForEdit}
+                itemType="volume"
+                itemData={selectedVolumeForEdit}
                 onClose={() => setSelectedVolumeForEdit(null)}
-                onSuccess={() => {
+                onSaveSuccess={() => {
                     setSelectedVolumeForEdit(null);
                     fetchVolumes();
                 }}
