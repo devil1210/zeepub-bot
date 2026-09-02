@@ -1,96 +1,87 @@
 import asyncio
-from repositories.publication_repository import pub_repo
-from models.communications import PublicationTemplate
-from sqlalchemy import select
 from core.db_manager_pg import pg_manager
+from models.communications import PublicationTemplate
+from sqlalchemy import select, update
 
-async def main():
-    telegram_content = (
-        "🇬🇧 <b>{series_english}</b>\n"
-        "[?romaji_title]🇯🇵 <b>{romaji_title}</b>\n[/?]"
-        "[?series_spanish]🇪🇸 <b>{series_spanish}</b>\n[/?]"
-        "[?volumen]📚 <b>Volumen {volumen}</b>\n[/?]"
-        "[?genres]🏷️ {genres}\n[/?]"
-        "\n<blockquote expandable>\n"
-        "📋 <b>Ficha Técnica</b>\n\n"
-        "[?autor]👤 <b>Autor:</b> {autor}\n[/?]"
-        "[?illustrator]🎨 <b>Ilustrador:</b> {illustrator}\n[/?]"
-        "[?layout_by]📓 <b>Maquetador:</b> #{layout_by}\n[/?]"
-        "[?tipo]📦 <b>Categoría:</b> {tipo}\n[/?]"
-        "[?demography]👥 <b>Demografía:</b> {demography}\n[/?]"
-        "[?traductor]🌐 <b>Traductor:</b> {traductor}\n[/?]"
-        "[?editorial]🏢 <b>Grupo Traductor:</b> {editorial}\n[/?]"
-        "</blockquote>\n\n"
-        "[?sinopsis]<blockquote expandable>\n"
-        "📖 <b>Ver Sinopsis</b>\n\n"
-        "{sinopsis}\n"
-        "</blockquote>[/?]\n\n"
-        "<blockquote expandable>\n"
-        "📁 <b>Ver Detalles del Archivo</b>\n\n"
-        "[?formato]📄 <b>Formato:</b> {formato}\n[/?]"
-        "[?paginas]📑 <b>Páginas:</b> ~{paginas} págs\n[/?]"
-        "[?palabras]📝 <b>Palabras:</b> {palabras} palabras\n[/?]"
-        "[?reading_time]⏱️ <b>Lectura:</b> {reading_time}\n[/?]"
-        "[?fecha]📅 <b>Actualizado:</b> {fecha}\n[/?]"
-        "[?tamaño]💾 <b>Tamaño:</b> {tamaño}\n[/?]"
-        "</blockquote>\n\n"
-        "#{slug}"
-    )
+TELEGRAM_RICH_MESSAGE = """<p>[?series_english]<h3>🇬🇧 {series_english}</h3></p>[?][?romaji_title]<h4>🇯🇵 {romaji_title}</h4></p>[?][?series_spanish]<h5>🇪🇸 {series_spanish}</h5></p><p>[?][?!series_spanish][?series_english]<h3>🇬🇧 {serie}</h3></p>[/?][?volumen]<h6>📚 Volumen {volumen}</h6></p>[/?]<p><table bordered striped></p><p>[?autor] <tr><td><b>👤 Autor:</b></td><td>{autor}</td></tr></p>[?][?illustrator] <tr><td><b>🎨 Ilustrador:</b></td><td>{illustrator}</td></tr></p>[?][?layout_by] <tr><td><b>📓 Maquetador:</b></td><td>#{layout_by}</td></tr></p>[?][?tipo] <tr><td><b>📦 Categoría:</b></td><td>{tipo}</td></tr></p>[?][?demography] <tr><td><b>👥 Demografía:</b></td><td>{demography}</td></tr></p>[?][?genres] <tr><td><b>🏷️ Géneros:</b></td><td>{genres}</td></tr></p>[?][?traductor] <tr><td><b>🌐 Traductor:</b></td><td>{traductor}</td></tr></p>[?][?grupo_traductor] [?editorial] <tr><td><b>🏢 Grupo Traductor:</b></td><td>{editorial}</td></tr></p>[/?]</table></p><p>[?sinopsis]<details><summary>📖 Ver Sinopsis</summary><p><blockquote>{sinopsis}</blockquote></p></details>[/?]</p><p><details><summary>📁 Ver Detalles del Archivo</summary><p><table bordered striped></p><p><tr><td><b>📑 Nombre:</b></td><td>{titulo}</td></tr>[?volumen] <tr><td><b>📖 Volumen:</b></td><td>Volumen {volumen}</td></tr>[/?][?version] <tr><td><b>ℹ️ Versión Epub:</b></td><td>{version}</td></tr>[/?][?fecha] <tr><td><b>📅 Actualizado:</b></td><td>{fecha}</td></tr>[/?][?size_mb] <tr><td><b>💾 Tamaño:</b></td><td>{size_mb}</td></tr></p>[/?] </table></p></details></p><hr/><p>#{slug}</p><p>{archivo}</p>"""
 
-    facebook_content = (
-        "📚 [?series_english]{series_english}[/?][?!series_english]{serie}[/?] ║ {serie} [?series_spanish]║ {series_spanish}[/?]\n"
-        "[?volumen]📖 Volumen {volumen}\n[/?]"
-        "#{slug}\n\n"
-        "[?download_link]⬇️ Descarga: {download_link}\n\n[/?]"
-        "[?fecha]📅 Actualizado: {fecha}\n[/?]"
-        "[?tamaño]📦 Tamaño: {tamaño}\n[/?]"
-        "[?layout_by]🎨 Maquetado por: {layout_by}\n[/?]"
-        "[?tipo]🏷️ Categoría: {tipo}\n[/?]"
-        "[?genres]🎭 Géneros: {genres}\n[/?]"
-        "[?autor]✍️ Autor: {autor}\n[/?]"
-        "[?illustrator]🎨 Ilustrador: {illustrator}\n[/?]"
-        "[?published_at]📅 Publicado: {published_at}\n[/?]"
-        "[?traductor]🌐 Traducción: {traductor}\n[/?]"
-        "[?editorial]🏢 Grupo Traductor: {editorial}\n[/?]"
-        "\n[?sinopsis]📝 Sinopsis:\n\n{sinopsis}\n[/?]"
-    )
+FACEBOOK_TELEGRAM_TEMPLATE = """📚 [?series_english]{series_english}[/?][?!series_english]{serie}[/?][?romaji_title] ║ {romaji_title}[/?][?series_spanish] ║ {series_spanish}[/?]
+[?volumen]📖 Volumen {volumen}
+[/?]#{slug}
 
-    templates = [
-        PublicationTemplate(
-            name="Telegram (Canal Oficial)",
-            content=telegram_content,
-            platform="telegram",
-            is_default=True,
-            extra_config={"type": "official_tg"},
-        ),
-        PublicationTemplate(
-            name="Facebook (Página Oficial)",
-            content=facebook_content,
-            platform="facebook",
-            is_default=True,
-            extra_config={"type": "official_fb"},
-        ),
-    ]
+[?download_link]⬇️ Descarga: {download_link}
+[/?]
+[?fecha]📅 Actualizado: {fecha}
+[/?][?size_mb]📦 Tamaño: {size_mb}
+[/?][?!size_mb][?tamaño]📦 Tamaño: {tamaño}
+[/?][?layout_by]🎨 Maquetado por: #{layout_by} #ZeePubs
+[/?][?tipo]🏷️ Categoría: {tipo}
+[/?][?genres]🎭 Géneros: {genres}
+[/?][?autor]✍️ Autor: {autor}
+[/?][?illustrator]🎨 Ilustrador: {illustrator}
+[/?][?published_at]📅 Publicado: {published_at}
+[/?][?traductor]🌐 Traducción: {traductor}
+[/?][?editorial]🏢 Grupo Traductor: {editorial}
+[/?]
+[?sinopsis]📝 Sinopsis:
 
-    # Clean previous defaults and insert
+{sinopsis}
+[/?]"""
+
+async def populate():
     async with pg_manager.get_session() as session:
-        stmt = select(PublicationTemplate).where(
-            PublicationTemplate.name.in_([
-                "Telegram (Canal Oficial)",
-                "Facebook (Página Oficial)",
-                "Plantilla Oficial Telegram (Canal)",
-                "Plantilla Oficial Facebook (Página)",
-                "Plantilla Facebook",
-            ])
+        # Reset is_default
+        await session.execute(update(PublicationTemplate).values(is_default=False))
+
+        # 1. Telegram RichMessage template
+        tg_res = await session.execute(
+            select(PublicationTemplate).where(PublicationTemplate.name.in_(["Telegram RichMessage", "Telegram (Canal Oficial)"]))
         )
-        res = await session.execute(stmt)
-        for t in res.scalars():
-            await session.delete(t)
+        tg_tpl = tg_res.scalars().first()
+        if tg_tpl:
+            tg_tpl.name = "Telegram RichMessage"
+            tg_tpl.content = TELEGRAM_RICH_MESSAGE
+            tg_tpl.platform = "telegram"
+            tg_tpl.is_default = True
+            session.add(tg_tpl)
+        else:
+            new_tg = PublicationTemplate(
+                name="Telegram RichMessage",
+                content=TELEGRAM_RICH_MESSAGE,
+                platform="telegram",
+                is_default=True,
+                extra_config={"type": "rich_message"}
+            )
+            session.add(new_tg)
+
+        # 2. Facebook Template for Telegram
+        fb_res = await session.execute(
+            select(PublicationTemplate).where(PublicationTemplate.name.in_(["Plantilla de Publicación para Facebook", "Facebook (Página Oficial)", "Facebook"]))
+        )
+        fb_tpl = fb_res.scalars().first()
+        if fb_tpl:
+            fb_tpl.name = "Plantilla de Publicación para Facebook"
+            fb_tpl.content = FACEBOOK_TELEGRAM_TEMPLATE
+            fb_tpl.platform = "facebook"
+            fb_tpl.is_default = True
+            session.add(fb_tpl)
+        else:
+            new_fb = PublicationTemplate(
+                name="Plantilla de Publicación para Facebook",
+                content=FACEBOOK_TELEGRAM_TEMPLATE,
+                platform="facebook",
+                is_default=True,
+                extra_config={"type": "facebook_copy"}
+            )
+            session.add(new_fb)
+
         await session.commit()
 
-    for tpl in templates:
-        created = await pub_repo.create_template(tpl)
-        print(f"Created template: {created.name} (id: {created.id})")
+        # Print all
+        res = await session.execute(select(PublicationTemplate).order_by(PublicationTemplate.is_default.desc(), PublicationTemplate.id.asc()))
+        for t in res.scalars().all():
+            star = "⭐ OFICIAL" if t.is_default else "  Opcional"
+            print(f"[{star}] ID {t.id} - '{t.name}' ({t.platform})")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(populate())
