@@ -22,13 +22,15 @@ import {
     Layers,
     Clock,
     FileSpreadsheet,
-    Hash
+    Hash,
+    Edit3
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 import { useTelegram } from '@shared/contexts/TelegramContext';
 import { ReportIssueModal } from '@shared/components/ReportIssueModal';
 import { RatingModal } from '@features/book/components/RatingModal';
 import { SchedulePostModal } from '../components/SchedulePostModal';
+import { EditorialQuickEditDrawer } from '../components/EditorialQuickEditDrawer';
 import { getCoverUrl } from '@shared/utils/imageUtils';
 
 export const EditorialBookDetail: React.FC = () => {
@@ -46,6 +48,7 @@ export const EditorialBookDetail: React.FC = () => {
     const [isRatingOpen, setIsRatingOpen] = useState(false);
     const [isScheduleOpen, setIsScheduleOpen] = useState(false);
     const [isSpecsOpen, setIsSpecsOpen] = useState(false);
+    const [isQuickEditOpen, setIsQuickEditOpen] = useState(false);
     const [fullscreenCover, setFullscreenCover] = useState(false);
 
     // Action states
@@ -145,6 +148,41 @@ export const EditorialBookDetail: React.FC = () => {
         } catch {
             return dateStr;
         }
+    };
+
+    const formatReadingTime = (minutes?: number) => {
+        if (!minutes || minutes <= 0) return 'N/A';
+        const hours = minutes / 60;
+        const hoursStr = hours % 1 === 0 ? hours.toString() : hours.toFixed(1);
+        return `${minutes} min/ ${hoursStr} horas`;
+    };
+
+    const formatDescription = (desc?: string) => {
+        if (!desc) return <p className="italic text-gray-500 text-xs">Sin sinopsis registrada para este volumen.</p>;
+        const clean = desc
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n\n')
+            .replace(/<p[^>]*>/gi, '');
+
+        const paragraphs = clean
+            .split(/\n\s*\n|\n/)
+            .map((p) => p.trim())
+            .filter(Boolean);
+
+        if (paragraphs.length === 0) {
+            return <p className="italic text-gray-500 text-xs">Sin sinopsis registrada para este volumen.</p>;
+        }
+
+        return (
+            <div className="space-y-3 leading-relaxed text-xs sm:text-sm text-gray-300 font-normal">
+                {paragraphs.map((para, idx) => (
+                    <p key={idx}>{para}</p>
+                ))}
+            </div>
+        );
     };
 
     if (loading) {
@@ -316,6 +354,16 @@ export const EditorialBookDetail: React.FC = () => {
                             <span>Enviar a mi Telegram</span>
                         </button>
 
+                        {/* Quick Edit Button */}
+                        <button
+                            type="button"
+                            onClick={() => setIsQuickEditOpen(true)}
+                            className="w-full py-3 px-4 rounded-2xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 hover:text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-95 shadow-lg"
+                        >
+                            <Edit3 className="w-4 h-4 text-amber-400" />
+                            <span>Editor Rápido</span>
+                        </button>
+
                         {/* Rating and Report Buttons */}
                         <div className="grid grid-cols-2 gap-2.5">
                             <button
@@ -421,13 +469,21 @@ export const EditorialBookDetail: React.FC = () => {
 
                     {/* Synopsis Card */}
                     <div className="p-6 sm:p-7 rounded-3xl bg-slate-900/50 border border-white/10 backdrop-blur-xl shadow-xl space-y-3">
-                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-indigo-400">
-                            <FileText className="w-4 h-4" />
-                            <span>Sinopsis</span>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-indigo-400">
+                                <FileText className="w-4 h-4" />
+                                <span>Sinopsis</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsQuickEditOpen(true)}
+                                className="text-[11px] font-bold text-gray-400 hover:text-amber-300 flex items-center gap-1 transition-colors"
+                            >
+                                <Edit3 className="w-3 h-3" />
+                                <span>Editar</span>
+                            </button>
                         </div>
-                        <div className="text-xs sm:text-sm text-gray-300 leading-relaxed space-y-3 whitespace-pre-line font-normal">
-                            {book.synopsis || book.description || series?.description || 'Sin sinopsis registrada para este volumen.'}
-                        </div>
+                        {formatDescription(book.synopsis || book.description || series?.description)}
                     </div>
 
                     {/* Collapsible Ficha Técnica Card */}
@@ -447,42 +503,112 @@ export const EditorialBookDetail: React.FC = () => {
                         </button>
 
                         {isSpecsOpen && (
-                            <div className="p-5 sm:p-6 pt-0 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs animate-in fade-in duration-200">
-                                <div className="space-y-2">
-                                    <div className="flex justify-between py-1 border-b border-white/5">
-                                        <span className="text-gray-400">📄 Formato:</span>
-                                        <span className="font-bold text-white">EPUB 3.0</span>
+                            <div className="p-5 sm:p-6 pt-0 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-xs animate-in fade-in duration-200">
+                                {/* Left Column: Detalles Editoriales */}
+                                <div className="space-y-1.5">
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">SERIE</span>
+                                        <span className="font-bold text-white text-right truncate max-w-[220px]">
+                                            {series?.name_english || series?.name || book.series_name || book.title || '—'}
+                                        </span>
                                     </div>
-                                    <div className="flex justify-between py-1 border-b border-white/5">
-                                        <span className="text-gray-400">📑 Páginas estimadas:</span>
-                                        <span className="font-bold text-white">~{book.page_count || book.pages || 250} págs</span>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">VOLUMEN</span>
+                                        <span className="font-bold text-white">
+                                            {book.volume !== undefined && book.volume !== null ? book.volume : 'Único'}
+                                        </span>
                                     </div>
-                                    <div className="flex justify-between py-1 border-b border-white/5">
-                                        <span className="text-gray-400">📝 Palabras:</span>
-                                        <span className="font-bold text-white">{book.word_count || book.words || '—'} palabras</span>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">TIPO DE LIBRO</span>
+                                        <span className="font-bold text-white">
+                                            {book.book_type || series?.book_type || 'Novela Ligera'}
+                                        </span>
                                     </div>
-                                    <div className="flex justify-between py-1">
-                                        <span className="text-gray-400">⏱️ Tiempo de lectura:</span>
-                                        <span className="font-bold text-white">{book.reading_time || '5h 30m aprox.'}</span>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">ISBN</span>
+                                        <span className="font-mono text-gray-300">{book.isbn || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">ASIN</span>
+                                        <span className="font-mono text-gray-300">{book.asin || 'N/A'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">IDIOMA</span>
+                                        <span className="font-bold text-white">{book.language || 'es'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">TRADUCTOR</span>
+                                        <span className="font-bold text-indigo-400">
+                                            {book.translator || 'ZeePub'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">GRUPO TRADUCTOR</span>
+                                        <span className="font-bold text-cyan-400">
+                                            {book.workgroup || book.editorial || book.publisher || series?.publisher || 'SkyNovels'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2">
+                                        <span className="text-gray-400 font-medium">FECHA DE PUBLICACIÓN</span>
+                                        <span className="font-bold text-white">
+                                            {formatDate(book.published_at || book.publishedAt)}
+                                        </span>
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex justify-between py-1 border-b border-white/5">
-                                        <span className="text-gray-400">👤 Autor:</span>
-                                        <span className="font-bold text-white">{book.author || series?.author || '—'}</span>
+                                {/* Right Column: Especificaciones Técnicas */}
+                                <div className="space-y-1.5">
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">FORMATO</span>
+                                        <span className="font-bold text-white">{book.format || 'EPUB'}</span>
                                     </div>
-                                    <div className="flex justify-between py-1 border-b border-white/5">
-                                        <span className="text-gray-400">🎨 Ilustrador:</span>
-                                        <span className="font-bold text-white">{book.illustrator || series?.illustrator || '—'}</span>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">VERSIÓN EPUB</span>
+                                        <span className="font-mono text-white">v{book.epub_version || '3.0'}</span>
                                     </div>
-                                    <div className="flex justify-between py-1 border-b border-white/5">
-                                        <span className="text-gray-400">📦 Demografía:</span>
-                                        <span className="font-bold text-white">{series?.demographics?.[0] || series?.demography || 'General'}</span>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">PALABRAS</span>
+                                        <span className="font-bold text-white">
+                                            {book.word_count ? Number(book.word_count).toLocaleString('es-ES') : '—'}
+                                        </span>
                                     </div>
-                                    <div className="flex justify-between py-1">
-                                        <span className="text-gray-400">💾 Tamaño de archivo:</span>
-                                        <span className="font-bold text-white">{book.size_mb ? `${book.size_mb} MB` : (book.file_size ? `${(book.file_size / 1024 / 1024).toFixed(2)} MB` : '—')}</span>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">PÁGINAS</span>
+                                        <span className="font-bold text-white">
+                                            {book.page_count || book.pages || '—'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">MAQUETADOR</span>
+                                        {book.layout_by ? (
+                                            <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-bold border border-indigo-500/30">
+                                                #{book.layout_by}
+                                            </span>
+                                        ) : (
+                                            <span className="text-gray-500">N/A</span>
+                                        )}
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">LECTURA APROX.</span>
+                                        <span className="font-bold text-white">
+                                            {formatReadingTime(book.reading_time || (book.word_count ? Math.ceil(book.word_count / 200) : 0))}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">TAMAÑO</span>
+                                        <span className="font-mono font-bold text-emerald-400">
+                                            {book.size_mb ? `${book.size_mb} MB` : (book.file_size ? `${(book.file_size / 1024 / 1024).toFixed(2)} MB` : '—')}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">UPLOADER</span>
+                                        <span className="font-bold text-purple-400">{book.uploader || 'ZeePub'}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2">
+                                        <span className="text-gray-400 font-medium">FECHA DE ACTUALIZACIÓN</span>
+                                        <span className="font-bold text-white">
+                                            {formatDate(book.updated_at || book.modified_at || book.created_at)}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -612,6 +738,21 @@ export const EditorialBookDetail: React.FC = () => {
                     onClose={() => setIsReportOpen(false)}
                     bookId={book.id || book.book_hash}
                     bookTitle={`${seriesTitle} - Vol. ${book.volume || 1}`}
+                />
+            )}
+
+            {/* Quick Edit Drawer */}
+            {isQuickEditOpen && (
+                <EditorialQuickEditDrawer
+                    isOpen={isQuickEditOpen}
+                    itemType="volume"
+                    itemData={book}
+                    onClose={() => setIsQuickEditOpen(false)}
+                    onSaveSuccess={() => {
+                        fetchBookData();
+                        setFeedbackMsg({ type: 'success', text: 'Metadatos del volumen actualizados correctamente.' });
+                        setTimeout(() => setFeedbackMsg(null), 4000);
+                    }}
                 />
             )}
         </div>

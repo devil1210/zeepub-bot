@@ -329,6 +329,24 @@ async def handle_admin_update_book_grid(data: dict[str, Any], user_data: dict[st
         if "edition" in data:
             val = data.get("edition")
             book.edition = str(val).strip() if val else None
+        if "spanish_title" in data:
+            val = data.get("spanish_title")
+            book.spanish_title = str(val).strip() if val else None
+        if "english_title" in data:
+            val = data.get("english_title")
+            book.english_title = str(val).strip() if val else None
+        if "author" in data:
+            val = data.get("author")
+            book.author = str(val).strip() if val else None
+        if "illustrator" in data:
+            val = data.get("illustrator")
+            book.illustrator = str(val).strip() if val else None
+        if "synopsis" in data or "description" in data:
+            val = data.get("synopsis") or data.get("description")
+            book.description = str(val).strip() if val else None
+        if "publisher" in data or "editorial" in data:
+            val = data.get("publisher") or data.get("editorial")
+            book.publisher = str(val).strip() if val else None
 
         await session.commit()
         await cache_manager.delete_book(book_id)
