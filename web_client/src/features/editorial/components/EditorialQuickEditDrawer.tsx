@@ -24,17 +24,48 @@ export const EditorialQuickEditDrawer: React.FC<QuickEditDrawerProps> = ({
 
     useEffect(() => {
         if (itemData) {
+            const seriesInfo = itemData.series_info || itemData.series;
+            const isSpanish = (str: string) => /[áéíóúñÁÉÍÓÚÑ]|\b(el|la|los|las|de|del|en|y|un|una|más|mundo|ordinario)\b/i.test(str);
+
+            let initialEnglish = (
+                itemData.english_title ||
+                itemData.name_english ||
+                seriesInfo?.series_english ||
+                seriesInfo?.name_english ||
+                itemData.series_english ||
+                (!isSpanish(itemData.title || '') ? itemData.title : '') ||
+                ''
+            );
+
+            let initialSpanish = (
+                itemData.spanish_title ||
+                itemData.name_spanish ||
+                seriesInfo?.series_spanish ||
+                seriesInfo?.name_spanish ||
+                itemData.series_spanish ||
+                (isSpanish(itemData.title || '') ? itemData.title : '') ||
+                ''
+            );
+
+            // Normalizar si tiene punto en lugar de dos puntos (ej: Arifureta. De ordinario...)
+            if (initialSpanish && initialSpanish.includes('. ') && !initialSpanish.includes(': ')) {
+                const parts = initialSpanish.split('. ');
+                if (parts.length === 2 && parts[0].trim().length > 2) {
+                    initialSpanish = `${parts[0].trim()}: ${parts[1].trim()}`;
+                }
+            }
+
             setFormData({
-                title: itemData.title || itemData.name || '',
-                spanish_title: itemData.spanish_title || itemData.name_spanish || '',
-                english_title: itemData.english_title || itemData.name_english || '',
+                title: itemData.title || itemData.name || initialEnglish || '',
+                spanish_title: initialSpanish,
+                english_title: initialEnglish,
                 volume: itemData.volume || itemData.volume_number || '',
-                author: itemData.author || '',
-                illustrator: itemData.illustrator || '',
-                demography: itemData.demography || '',
+                author: itemData.author || seriesInfo?.author || '',
+                illustrator: itemData.illustrator || seriesInfo?.illustrator || '',
+                demography: itemData.demography || seriesInfo?.demography || '',
                 translator: itemData.translator || '',
                 layout_by: itemData.layout_by || itemData.layoutBy || '',
-                publisher: itemData.publisher || itemData.workgroup || itemData.editorial || '',
+                publisher: itemData.publisher || itemData.workgroup || itemData.editorial || seriesInfo?.publisher || '',
                 synopsis: itemData.synopsis || itemData.description || '',
                 series_id: itemData.series_id || itemData.series_hash || '',
                 status: itemData.status || 'ready',
@@ -92,7 +123,8 @@ export const EditorialQuickEditDrawer: React.FC<QuickEditDrawerProps> = ({
             } else {
                 const bId = itemData.book_hash || itemData.id;
                 await api.updateBookGrid(bId, {
-                    title: formData.title,
+                    title: formData.english_title || formData.title,
+                    english_title: formData.english_title,
                     spanish_title: formData.spanish_title,
                     volume: formData.volume,
                     author: formData.author,
@@ -105,13 +137,13 @@ export const EditorialQuickEditDrawer: React.FC<QuickEditDrawerProps> = ({
                 });
             }
 
-            setStatusMsg({ type: 'success', text: 'Cambios guardados con éxito' });
+            setStatusMsg({ type: 'success', text: 'Cambios guardados exitosamente' });
+            if (onSaveSuccess) onSaveSuccess();
             setTimeout(() => {
-                onSaveSuccess();
                 onClose();
-            }, 800);
+            }, 1000);
         } catch (err: any) {
-            setStatusMsg({ type: 'error', text: err.message || 'Error al guardar cambios' });
+            setStatusMsg({ type: 'error', text: err.message || 'Error al guardar los cambios' });
         } finally {
             setSaving(false);
         }
@@ -184,9 +216,13 @@ export const EditorialQuickEditDrawer: React.FC<QuickEditDrawerProps> = ({
                             <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Título Canónico (Inglés/Oficial)</label>
                             <input
                                 type="text"
-                                value={formData.title}
-                                onChange={(e) => handleFieldChange('title', e.target.value)}
+                                value={formData.english_title !== undefined ? formData.english_title : formData.title}
+                                onChange={(e) => {
+                                    handleFieldChange('english_title', e.target.value);
+                                    handleFieldChange('title', e.target.value);
+                                }}
                                 className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:border-indigo-500 focus:outline-none"
+                                placeholder="Ej: Arifureta: From Commonplace to World's Strongest"
                                 required
                             />
                         </div>
@@ -198,6 +234,7 @@ export const EditorialQuickEditDrawer: React.FC<QuickEditDrawerProps> = ({
                                 value={formData.spanish_title}
                                 onChange={(e) => handleFieldChange('spanish_title', e.target.value)}
                                 className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:border-indigo-500 focus:outline-none"
+                                placeholder="Ej: Arifureta: De ordinario al más fuerte del mundo"
                             />
                         </div>
 

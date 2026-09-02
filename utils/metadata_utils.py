@@ -188,6 +188,21 @@ DISTINCT_ROMAJI_WORDS = {
     "tenki",
     "koisuru",
     "astrea",
+    "sekai",
+    "saikyou",
+    "shokugyou",
+    "arifureta",
+    "taizai",
+    "nanatsu",
+    "mahouka",
+    "koukou",
+    "rettousei",
+    "slime",
+    "datta",
+    "kage",
+    "jitsuryokusha",
+    "hazure",
+    "waku",
 }
 
 
@@ -220,7 +235,7 @@ def is_romaji_string(text: str) -> bool:
     if not words:
         return False
     romaji_matches = sum(1 for w in words if w in DISTINCT_ROMAJI_WORDS)
-    if "no" in words or "to" in words or "de" in words:
+    if "no" in words or "to" in words or "de" in words or "wa" in words:
         if romaji_matches >= 1:
             return True
     return romaji_matches >= 2 or (
@@ -270,11 +285,18 @@ def resolve_title_cascade(data: dict[str, Any]) -> tuple[str, str | None, str | 
             t_jp = t_es
         t_es = None
 
-    # 3. Validar autenticidad de t_jp (debe ser romaji o japonés y distinto a t_en)
-    if t_jp and (t_jp == t_en or not is_romaji_string(t_jp)):
+    # 3. Normalizar puntuación típica de archivos (punto en lugar de dos puntos)
+    if t_es and ". " in t_es and ": " not in t_es:
+        # e.g., 'Arifureta. De ordinario...' -> 'Arifureta: De ordinario...'
+        parts = t_es.split(". ", 1)
+        if len(parts) == 2 and len(parts[0].strip()) > 2:
+            t_es = f"{parts[0].strip()}: {parts[1].strip()}"
+
+    # 4. Validar autenticidad de t_jp (debe ser distinto a t_en y no ser español)
+    if t_jp and (t_jp == t_en or (t_es and t_jp == t_es) or is_spanish_string(t_jp)):
         t_jp = None
 
-    # 4. Descartar t_es si es idéntico a t_en
+    # 5. Descartar t_es si es idéntico a t_en
     if t_es and t_es == t_en:
         t_es = None
 

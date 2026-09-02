@@ -152,6 +152,11 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
                 local_book["series_hash"] = s_hash
 
                 if series_meta:
+                    if hasattr(series_meta, 'to_dict'):
+                        local_book["series_info"] = series_meta.to_dict()
+                    elif hasattr(series_meta, '__dict__'):
+                        local_book["series_info"] = {k: v for k, v in series_meta.__dict__.items() if not k.startswith('_')}
+
                     if not local_book.get("romaji_title") and not local_book.get(
                         "romaji"
                     ):
@@ -161,11 +166,17 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
                         local_book["romaji"] = (
                             series_meta.name or series_meta.series_name
                         )
-                    if not local_book.get("english_title"):
+                    if not local_book.get("english_title") or local_book.get("english_title") == local_book.get("title"):
                         local_book["english_title"] = (
-                            series_meta.series_english or series_meta.name_english
+                            series_meta.series_english or series_meta.name_english or local_book.get("english_title")
                         )
-                    if not local_book.get("spanish_title"):
+                    if series_meta.series_spanish:
+                        s_sp_clean = series_meta.series_spanish
+                        cur_sp = local_book.get("spanish_title")
+                        if not cur_sp or (". " in cur_sp and ": " not in cur_sp):
+                            local_book["spanish_title"] = s_sp_clean
+                        local_book["series_spanish"] = s_sp_clean
+                    elif not local_book.get("spanish_title"):
                         local_book["spanish_title"] = (
                             series_meta.series_spanish or series_meta.name_spanish
                         )

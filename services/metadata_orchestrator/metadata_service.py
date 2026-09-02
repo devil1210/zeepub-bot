@@ -88,6 +88,12 @@ class MetadataOrchestrator:
                             or lb.series_spanish
                             or (s_name if is_spanish_string(s_name) else "")
                         )
+                        # Normalizar si tiene punto en vez de dos puntos
+                        if s_sp and ". " in s_sp and ": " not in s_sp:
+                            parts = s_sp.split(". ", 1)
+                            if len(parts) == 2 and len(parts[0].strip()) > 2:
+                                s_sp = f"{parts[0].strip()}: {parts[1].strip()}"
+
                         s_en = (
                             series.series_english
                             or lb.series_english
@@ -98,8 +104,11 @@ class MetadataOrchestrator:
                                 else ""
                             )
                         )
-                        r_title = lb.romaji_title or (
-                            s_name if is_romaji_string(s_name) else ""
+                        r_title = (
+                            getattr(series, "romaji", None)
+                            or getattr(series, "series_romaji", None)
+                            or getattr(lb, "romaji_title", None)
+                            or (s_name if (s_name != s_en and not is_spanish_string(s_name)) else "")
                         )
                         res.update(
                             {
@@ -111,9 +120,13 @@ class MetadataOrchestrator:
                                 "serie": s_en or s_sp or s_name or "",
                                 "series": s_sp or s_name or "",
                                 "series_spanish": s_sp,
+                                "spanish_title": s_sp or lb.spanish_title or "",
                                 "series_english": s_en,
+                                "english_title": s_en or lb.english_title or "",
                                 "romaji_title": r_title,
                                 "romaji": r_title,
+                                "title_japanese": r_title,
+                                "title_jp": r_title,
                                 "author": series.author or lb.author or "",
                                 "autor": series.author or lb.author or "",
                                 "author_jap": series.author_jap or lb.author_jap or "",

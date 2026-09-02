@@ -252,10 +252,32 @@ export const EditorialBookDetail: React.FC = () => {
         (typeof book.coverUrl === 'string' ? book.coverUrl : book.coverUrl?.cover_high || book.coverUrl?.cover_medium) ||
         (book.book_hash ? `/api/library/covers/${book.book_hash}.jpg` : `/api/library/covers/${book.id}.jpg`);
 
-    const seriesTitle = series?.series_english || series?.name || book.series_english || book.series_name || book.title;
+    const isSpanishText = (t: string) => {
+        if (!t) return false;
+        return /[áéíóúñÁÉÍÓÚÑ]|\b(el|la|los|las|de|del|en|y|un|una|más|mundo|ordinario)\b/i.test(t);
+    };
+
+    const seriesTitle = series?.series_english || series?.name_english || book.series_english || book.english_title || (series?.name && !isSpanishText(series.name) ? series.name : null) || book.title;
     const seriesId = series?.series_hash || series?.id || book.series_id;
     const genres = series?.tags || book.genres || book.tags || [];
     const publications = book.publications || [];
+
+    const canonicalEnglishTitle = seriesTitle;
+    let spanishTitle = series?.series_spanish || series?.name_spanish || book.series_spanish || book.spanish_title || (isSpanishText(book.title) ? book.title : null);
+    if (spanishTitle && spanishTitle.includes('. ') && !spanishTitle.includes(': ')) {
+        const parts = spanishTitle.split('. ');
+        if (parts.length === 2 && parts[0].trim().length > 2) {
+            spanishTitle = `${parts[0].trim()}: ${parts[1].trim()}`;
+        }
+    }
+
+    const romajiTitle =
+        series?.series_romaji ||
+        series?.romaji ||
+        series?.romaji_title ||
+        book.series_romaji ||
+        book.romaji_title ||
+        (series?.name && series.name !== canonicalEnglishTitle && series.name !== spanishTitle ? series.name : null);
 
     return (
         <div className="w-full max-w-[2000px] mx-auto space-y-6 animate-in fade-in duration-300">
@@ -461,34 +483,52 @@ export const EditorialBookDetail: React.FC = () => {
                         </div>
                     ) : null}
 
-                    {/* Big Title Header */}
+                    {/* Big Title Header: 3 Titles Cascade matching EditorialSeriesDetail */}
                     <div className="space-y-2">
                         <h1 className="text-3xl sm:text-4xl 2xl:text-5xl font-black text-white tracking-tight leading-tight">
-                            {seriesTitle}
+                            {canonicalEnglishTitle}
                         </h1>
 
-                        {/* Metadata row */}
-                        <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap pt-1 font-medium">
+                        {spanishTitle && spanishTitle !== canonicalEnglishTitle && (
+                            <div className="text-base sm:text-lg font-bold text-amber-300/90 flex items-center gap-2">
+                                <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-300 font-black tracking-widest border border-amber-400/20 shrink-0">
+                                    ESP
+                                </span>
+                                <span>{spanishTitle}</span>
+                            </div>
+                        )}
+
+                        {romajiTitle && romajiTitle !== canonicalEnglishTitle && romajiTitle !== spanishTitle && (
+                            <div className="text-xs sm:text-sm text-gray-400 font-medium flex items-center gap-2">
+                                <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-white/5 text-gray-400 font-black tracking-widest border border-white/5 shrink-0">
+                                    ROM
+                                </span>
+                                <span className="italic">{romajiTitle}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Metadata row */}
+                    <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap pt-1 font-medium">
+                        <span className="flex items-center gap-1.5 text-gray-300">
+                            <User className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>{book.author || series?.author || 'Autor desconocido'}</span>
+                        </span>
+                        {book.volume && (
+                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-gray-300 font-mono font-bold">
+                                <Hash className="w-3 h-3 text-indigo-400" /> {book.volume}
+                            </span>
+                        )}
+                        {book.translator && (
                             <span className="flex items-center gap-1.5 text-gray-300">
-                                <User className="w-3.5 h-3.5 text-indigo-400" />
-                                <span>{book.author || series?.author || 'Autor desconocido'}</span>
+                                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                                <span>{book.translator}</span>
                             </span>
-                            {book.volume && (
-                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 text-gray-300 font-mono font-bold">
-                                    <Hash className="w-3 h-3 text-indigo-400" /> {book.volume}
-                                </span>
-                            )}
-                            {book.translator && (
-                                <span className="flex items-center gap-1.5 text-gray-300">
-                                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                                    <span>{book.translator}</span>
-                                </span>
-                            )}
-                            <span className="flex items-center gap-1.5 text-gray-400">
-                                <Clock className="w-3.5 h-3.5 text-gray-500" />
-                                <span>Actualizado: {formatDate(book.updated_at || book.created_at)}</span>
-                            </span>
-                        </div>
+                        )}
+                        <span className="flex items-center gap-1.5 text-gray-400">
+                            <Clock className="w-3.5 h-3.5 text-gray-500" />
+                            <span>Actualizado: {formatDate(book.updated_at || book.created_at)}</span>
+                        </span>
                     </div>
 
                     {/* Genre Chips */}
@@ -784,7 +824,7 @@ export const EditorialBookDetail: React.FC = () => {
                 <EditorialQuickEditDrawer
                     isOpen={isQuickEditOpen}
                     itemType="volume"
-                    itemData={book}
+                    itemData={{ ...book, series_info: series }}
                     onClose={() => setIsQuickEditOpen(false)}
                     onSaveSuccess={() => {
                         fetchBookData();
