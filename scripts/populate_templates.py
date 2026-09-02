@@ -1,12 +1,9 @@
 import asyncio
-from repositories.publisher_repository import PublisherRepository
-from models.database import PublicationTemplate
+from repositories.publication_repository import pub_repo
+from models.communications import PublicationTemplate
 from services.publisher.telegram_provider import TelegramPublisherProvider
 
 async def main():
-    repo = PublisherRepository()
-    await repo.init_db()
-
     templates = [
         PublicationTemplate(
             name="Plantilla Oficial Telegram (Canal)",
@@ -47,7 +44,7 @@ async def main():
     ]
 
     for tpl in templates:
-        created = await repo.create_template(tpl)
+        created = await pub_repo.create_template(tpl)
         print(f"Created template: {created.name} (id: {created.id})")
 
 if __name__ == "__main__":
