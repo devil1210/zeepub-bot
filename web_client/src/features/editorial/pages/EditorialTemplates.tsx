@@ -5,14 +5,16 @@ import {
     Trash2,
     Save,
     RotateCcw,
-    Copy,
-    Check,
     Sparkles,
     Loader2,
     CheckCircle2,
-    AlertCircle
+    AlertCircle,
+    LayoutTemplate,
+    Send
 } from 'lucide-react';
 import { api } from '@shared/services/api';
+import { TelegramRichMessageEditor } from '../components/TelegramRichMessageEditor';
+import { TelegramMessagePreview } from '../components/TelegramMessagePreview';
 
 export const EditorialTemplates: React.FC = () => {
     const [templates, setTemplates] = useState<any[]>([]);
@@ -25,18 +27,7 @@ export const EditorialTemplates: React.FC = () => {
         is_default: false,
     });
     const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-    const [copied, setCopied] = useState(false);
-
-    const placeholders = [
-        { key: '{serie}', desc: 'Nombre canónico de la serie' },
-        { key: '{volumen}', desc: 'Número del volumen' },
-        { key: '{titulo}', desc: 'Título oficial/subtítulo' },
-        { key: '{autor}', desc: 'Nombre del autor' },
-        { key: '{sinopsis}', desc: 'Sinopsis o descripción' },
-        { key: '{hashtags}', desc: 'Hashtags automáticos' },
-        { key: '{link}', desc: 'Enlace directo a bot' },
-        { key: '{cta}', desc: 'Llamado a la acción' },
-    ];
+    const [isSaving, setIsSaving] = useState(false);
 
     const fetchTemplates = async () => {
         setLoading(true);
@@ -73,22 +64,17 @@ export const EditorialTemplates: React.FC = () => {
         setSelectedTemplate({ id: null });
         setFormData({
             name: 'Nueva Plantilla',
-            content: '🌟 {serie} • Vol. {volumen}\n\n📖 {titulo}\n✍️ Autor: {autor}\n\n{sinopsis}\n\n#ZeePubs #NovelasLigeras',
+            content: '📚 <b>{serie}</b> [?volumen]║ <b>Vol. {volumen}</b>[/?]\n#{slug}\n\n[?autor]✍️ <b>Autor:</b> {autor}\n[/?][?illustrator]🎨 <b>Ilustrador:</b> {illustrator}\n[/?][?traductor]🌐 <b>Traducción:</b> {traductor}\n[/?][?editorial]🏢 <b>Grupo:</b> {editorial}\n[/?]\n[?sinopsis]📝 <b>Sinopsis:</b>\n<blockquote expandable>{sinopsis}</blockquote>\n[/?]\n\n#{slug}',
             platform: 'telegram',
             is_default: false,
         });
         setStatusMsg(null);
     };
 
-    const insertPlaceholder = (ph: string) => {
-        setFormData((prev) => ({
-            ...prev,
-            content: prev.content + ' ' + ph,
-        }));
-    };
-
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSaving(true);
+        setStatusMsg(null);
         try {
             await api.pubSaveTemplate({
                 id: selectedTemplate?.id || undefined,
@@ -97,42 +83,39 @@ export const EditorialTemplates: React.FC = () => {
                 platform: formData.platform,
                 is_default: formData.is_default,
             });
-            setStatusMsg({ type: 'success', text: 'Plantilla guardada correctamente' });
-            fetchTemplates();
+            setStatusMsg({ type: 'success', text: '¡Plantilla guardada correctamente!' });
+            await fetchTemplates();
         } catch (err: any) {
-            setStatusMsg({ type: 'error', text: err.message || 'Error al guardar plantilla' });
+            console.error('Error guardando plantilla:', err);
+            setStatusMsg({ type: 'error', text: err.message || 'Error al guardar la plantilla' });
+        } finally {
+            setIsSaving(false);
         }
     };
 
     const handleDelete = async () => {
         if (!selectedTemplate?.id) return;
-        if (!confirm('¿Deseas eliminar esta plantilla?')) return;
+        if (!confirm(`¿Eliminar la plantilla "${formData.name}"?`)) return;
+
         try {
             await api.pubDeleteTemplate(selectedTemplate.id);
-            setStatusMsg({ type: 'success', text: 'Plantilla eliminada' });
             setSelectedTemplate(null);
             fetchTemplates();
+            setStatusMsg({ type: 'success', text: 'Plantilla eliminada' });
         } catch (err: any) {
             setStatusMsg({ type: 'error', text: err.message || 'Error al eliminar' });
         }
     };
 
-    const getSimulatedPreview = () => {
-        return formData.content
-            .replace(/{serie}/g, 'Mushoku Tensei')
-            .replace(/{volumen}/g, '26')
-            .replace(/{titulo}/g, 'Edición Conmemorativa')
-            .replace(/{autor}/g, 'Rifujin na Magonote')
-            .replace(/{sinopsis}/g, 'El viaje de Rudeus llega a su clímax decisivo. Tras años de lucha y aprendizaje, el destino final se revela en este épico desenlace.')
-            .replace(/{hashtags}/g, '#MushokuTensei #ZeePubs')
-            .replace(/{link}/g, 'https://t.me/zeepub_bot?start=dl_mushoku_26')
-            .replace(/{cta}/g, 'Descarga el EPUB oficial en nuestra biblioteca digital.');
-    };
-
-    const handleCopyPreview = () => {
-        navigator.clipboard.writeText(getSimulatedPreview());
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+    const handleRestoreDefaults = async () => {
+        if (!confirm('¿Restaurar las plantillas oficiales predeterminadas de Telegram?')) return;
+        try {
+            await api.pubRestoreTemplates();
+            setStatusMsg({ type: 'success', text: 'Plantillas predeterminadas restauradas' });
+            fetchTemplates();
+        } catch (err: any) {
+            setStatusMsg({ type: 'error', text: err.message || 'Error al restaurar' });
+        }
     };
 
     return (
@@ -144,17 +127,24 @@ export const EditorialTemplates: React.FC = () => {
                         <FileCode2 className="w-6 h-6 text-indigo-400" /> Biblioteca de Plantillas Editorial
                     </h2>
                     <p className="text-xs text-gray-400 mt-1">
-                        Estructura copys dinámicos reutilizables para canales de Telegram y publicaciones de Facebook.
+                        Estructura copys dinámicos enriquecidos para Telegram y publicaciones de Facebook con simulador en tiempo real.
                     </p>
                 </div>
 
-                <button
-                    onClick={handleCreateNew}
-                    className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
-                >
-                    <Plus className="w-4 h-4" />
-                    Nueva Plantilla
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleRestoreDefaults}
+                        className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-bold border border-white/10 flex items-center gap-1.5 transition-all"
+                    >
+                        <RotateCcw className="w-3.5 h-3.5" /> Restaurar Predeterminadas
+                    </button>
+                    <button
+                        onClick={handleCreateNew}
+                        className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
+                    >
+                        <Plus className="w-4 h-4" /> Nueva Plantilla
+                    </button>
+                </div>
             </div>
 
             {statusMsg && (
@@ -170,15 +160,16 @@ export const EditorialTemplates: React.FC = () => {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left: Template Selector List */}
-                <div className="space-y-3">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-gray-400">
-                        Plantillas Disponibles
-                    </h3>
+            {/* Main Layout Grid: Sidebar List + Editor Workspace */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left: Template Selector Sidebar */}
+                <div className="lg:col-span-4 bg-slate-900/40 border border-white/10 rounded-2xl p-4 backdrop-blur-xl h-fit space-y-3">
+                    <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2">
+                        Plantillas Disponibles ({templates.length})
+                    </div>
 
                     {loading ? (
-                        <div className="py-12 flex items-center justify-center">
+                        <div className="py-12 flex justify-center">
                             <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
                         </div>
                     ) : (
@@ -187,21 +178,27 @@ export const EditorialTemplates: React.FC = () => {
                                 <button
                                     key={tpl.id}
                                     onClick={() => selectTemplate(tpl)}
-                                    className={`w-full p-3.5 rounded-xl border text-left transition-all flex items-center justify-between group ${
+                                    className={`w-full p-3 rounded-xl text-left transition-all border flex items-center justify-between group ${
                                         selectedTemplate?.id === tpl.id
-                                            ? 'bg-indigo-600/15 border-indigo-500/50 text-white shadow-lg'
-                                            : 'bg-slate-900/50 border-white/10 text-gray-300 hover:bg-white/5'
+                                            ? 'bg-indigo-600/20 border-indigo-500/40 text-white shadow-lg'
+                                            : 'bg-white/[0.02] border-white/5 text-gray-300 hover:bg-white/[0.06]'
                                     }`}
                                 >
-                                    <div className="truncate">
-                                        <div className="text-xs font-bold truncate group-hover:text-indigo-300">
+                                    <div className="min-w-0 pr-2">
+                                        <div className="text-xs font-bold truncate group-hover:text-white">
                                             {tpl.name}
                                         </div>
                                         <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">
-                                            {tpl.platform} {tpl.is_default ? '• Default' : ''}
+                                            {tpl.platform} {tpl.is_default ? '• Predeterminada' : ''}
                                         </div>
                                     </div>
-                                    <span className="text-[9px] px-2 py-0.5 rounded-full font-black uppercase bg-white/10 text-gray-400">
+                                    <span
+                                        className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase shrink-0 ${
+                                            tpl.platform === 'telegram'
+                                                ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20'
+                                                : 'bg-blue-500/10 text-blue-300 border border-blue-500/20'
+                                        }`}
+                                    >
                                         {tpl.platform}
                                     </span>
                                 </button>
@@ -210,10 +207,14 @@ export const EditorialTemplates: React.FC = () => {
                     )}
                 </div>
 
-                {/* Center & Right: Template Editor & Live Preview */}
-                <div className="lg:col-span-2 space-y-6">
+                {/* Right: Rich Editor & Live Telegram Simulator */}
+                <div className="lg:col-span-8">
                     {selectedTemplate ? (
-                        <form onSubmit={handleSave} className="bg-slate-900/50 border border-white/10 rounded-2xl p-6 space-y-5 backdrop-blur-xl shadow-2xl">
+                        <form
+                            onSubmit={handleSave}
+                            className="bg-slate-900/50 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-6 backdrop-blur-xl shadow-2xl"
+                        >
+                            {/* Template Meta Inputs */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">
@@ -223,7 +224,7 @@ export const EditorialTemplates: React.FC = () => {
                                         type="text"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                                        className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                                         required
                                     />
                                 </div>
@@ -234,75 +235,51 @@ export const EditorialTemplates: React.FC = () => {
                                     <select
                                         value={formData.platform}
                                         onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                                        className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                                     >
-                                        <option value="telegram">Telegram (Canal / Grupo)</option>
-                                        <option value="facebook">Facebook (Página Oficial)</option>
+                                        <option value="telegram">Telegram (Canal / Grupo con Rich HTML)</option>
+                                        <option value="facebook">Facebook (Página Oficial / Copys)</option>
                                     </select>
                                 </div>
                             </div>
 
-                            {/* Variable Placeholders Palette */}
-                            <div>
-                                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-2">
-                                    Variables Dinámicas (Haz clic para insertar)
-                                </label>
-                                <div className="flex flex-wrap gap-2">
-                                    {placeholders.map((ph) => (
-                                        <button
-                                            key={ph.key}
-                                            type="button"
-                                            onClick={() => insertPlaceholder(ph.key)}
-                                            className="px-2.5 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[11px] font-mono font-bold transition-all active:scale-95"
-                                            title={ph.desc}
-                                        >
-                                            {ph.key}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                            {/* 2-Column Split: Editor + Live Preview */}
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                {/* Editor Column */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="text-[11px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
+                                            <LayoutTemplate className="w-3.5 h-3.5 text-indigo-400" /> Editor de Copy
+                                        </label>
+                                    </div>
 
-                            {/* Textarea Content */}
-                            <div>
-                                <div className="flex items-center justify-between mb-1">
-                                    <label className="text-[11px] font-bold text-gray-400 uppercase">
-                                        Cuerpo del Mensaje / Copy
-                                    </label>
-                                    <span className="text-[10px] text-gray-500 font-mono">
-                                        {formData.content.length} caracteres
-                                    </span>
+                                    <TelegramRichMessageEditor
+                                        value={formData.content}
+                                        onChange={(val) => setFormData({ ...formData, content: val })}
+                                        platform={formData.platform as 'telegram' | 'facebook'}
+                                    />
                                 </div>
-                                <textarea
-                                    value={formData.content}
-                                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                                    rows={8}
-                                    className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-xs text-white font-mono leading-relaxed focus:outline-none focus:border-indigo-500"
-                                    required
-                                />
-                            </div>
 
-                            {/* Live Simulation Preview */}
-                            <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <label className="text-[11px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
-                                        <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Previsualización Simulada
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={handleCopyPreview}
-                                        className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
-                                    >
-                                        {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                                        {copied ? 'Copiado' : 'Copiar para Facebook'}
-                                    </button>
-                                </div>
-                                <div className="p-4 rounded-xl bg-black/60 border border-white/5 font-mono text-xs text-gray-300 whitespace-pre-wrap leading-relaxed">
-                                    {getSimulatedPreview()}
+                                {/* Preview Column */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="text-[11px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
+                                            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Simulador {formData.platform === 'facebook' ? 'Facebook' : 'Telegram'}
+                                        </label>
+                                    </div>
+
+                                    <div className="h-[460px]">
+                                        <TelegramMessagePreview
+                                            rawTemplate={formData.content}
+                                            platform={formData.platform as 'telegram' | 'facebook'}
+                                            isCaptionMode={true}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Actions */}
-                            <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                            <div className="pt-4 border-t border-white/10 flex items-center justify-between">
                                 {selectedTemplate.id ? (
                                     <button
                                         type="button"
@@ -311,19 +288,23 @@ export const EditorialTemplates: React.FC = () => {
                                     >
                                         <Trash2 className="w-3.5 h-3.5" /> Eliminar
                                     </button>
-                                ) : <div />}
+                                ) : (
+                                    <div />
+                                )}
 
                                 <button
                                     type="submit"
-                                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 transition-all"
+                                    disabled={isSaving}
+                                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 transition-all disabled:opacity-50"
                                 >
-                                    <Save className="w-4 h-4" /> Guardar Plantilla
+                                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    <span>Guardar Plantilla</span>
                                 </button>
                             </div>
                         </form>
                     ) : (
-                        <div className="py-24 text-center text-gray-500 text-xs">
-                            Selecciona una plantilla o crea una nueva para comenzar a editar.
+                        <div className="py-24 text-center text-gray-500 text-xs bg-slate-900/30 rounded-2xl border border-white/5">
+                            Selecciona una plantilla de la lista o crea una nueva para comenzar a editar.
                         </div>
                     )}
                 </div>

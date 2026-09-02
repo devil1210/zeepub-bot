@@ -1,10 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Send, ExternalLink, Calendar, RefreshCw, Loader2, CheckCircle2, MessageSquare } from 'lucide-react';
+import {
+    Send,
+    ExternalLink,
+    Calendar,
+    RefreshCw,
+    Loader2,
+    CheckCircle2,
+    Edit3,
+    MessageSquare,
+    Sparkles
+} from 'lucide-react';
 import { api } from '@shared/services/api';
+import { EditPublishedPostModal } from '../components/EditPublishedPostModal';
 
 export const EditorialPosts: React.FC = () => {
     const [posts, setPosts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editingPost, setEditingPost] = useState<any | null>(null);
 
     const fetchPosts = async () => {
         setLoading(true);
@@ -40,14 +52,14 @@ export const EditorialPosts: React.FC = () => {
                         <Send className="w-6 h-6 text-indigo-400" /> Historial de Publicaciones
                     </h2>
                     <p className="text-xs text-gray-400 mt-1">
-                        Registro de volúmenes lanzados exitosamente en Telegram y Facebook.
+                        Registro de volúmenes lanzados exitosamente en Telegram y Facebook con opción de edición in-place.
                     </p>
                 </div>
 
                 <button
                     onClick={fetchPosts}
                     className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all active:scale-95"
-                    title="Actualizar"
+                    title="Actualizar Historial"
                 >
                     <RefreshCw className="w-4 h-4" />
                 </button>
@@ -82,8 +94,11 @@ export const EditorialPosts: React.FC = () => {
                                             <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                                                 Vol. {post.volume || 1}
                                             </span>
+                                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                                {post.platform}
+                                            </span>
                                         </div>
-                                        <div className="text-[11px] text-gray-400 flex items-center gap-2">
+                                        <div className="text-[11px] text-gray-400 flex items-center gap-2 flex-wrap">
                                             <span>Canal: <strong className="text-gray-200">{post.channel}</strong></span>
                                             <span>•</span>
                                             <span>{post.published_at ? new Date(post.published_at).toLocaleString() : 'Reciente'}</span>
@@ -92,15 +107,27 @@ export const EditorialPosts: React.FC = () => {
                                 </div>
 
                                 <div className="flex items-center gap-2 self-end sm:self-center">
-                                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                        Publicado en {post.platform}
-                                    </span>
+                                    <button
+                                        onClick={() => setEditingPost(post)}
+                                        className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white text-xs font-bold flex items-center gap-1.5 border border-indigo-500/30 transition-all active:scale-95 shadow-sm"
+                                        title="Editar mensaje en Telegram"
+                                    >
+                                        <Edit3 className="w-3.5 h-3.5" /> Editar en Telegram
+                                    </button>
                                 </div>
                             </div>
                         ))}
                     </div>
                 )}
             </div>
+
+            {/* Edit Sent Post Modal */}
+            <EditPublishedPostModal
+                isOpen={!!editingPost}
+                post={editingPost}
+                onClose={() => setEditingPost(null)}
+                onSuccess={fetchPosts}
+            />
         </div>
     );
 };
