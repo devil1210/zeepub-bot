@@ -472,6 +472,17 @@ export const api = {
     recalculateSeriesSlug: (seriesId: string) =>
         rpc('admin_recalculate_series_slug', { series_id: seriesId }),
 
+    mergeSeries: (targetHash: string, sourceHash: string, newName?: string) =>
+        rpc('admin_merge_series', { target_hash: targetHash, source_hash: sourceHash, new_name: newName }),
+
+    pubUpdatePost: (data: {
+        book_id?: string;
+        book_hash?: string;
+        caption?: string;
+        template_id?: number;
+        platforms?: string[];
+    }) => rpc('pub_update_post', data),
+
     // Raw RPC Access
     rpc: rpc
 };

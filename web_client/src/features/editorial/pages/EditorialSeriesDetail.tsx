@@ -1045,7 +1045,7 @@ export const EditorialSeriesDetail: React.FC = () => {
                     book={scheduleBook}
                     onSuccess={() => {
                         setScheduleBook(null);
-                        fetchSeries();
+                        fetchSeriesData();
                     }}
                 />
             )}
