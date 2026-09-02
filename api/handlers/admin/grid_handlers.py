@@ -182,9 +182,20 @@ async def handle_admin_get_library_grid(data: dict[str, Any], user_data: dict[st
             "series": results,
             "total_series": total_series,
             "total_books": total_books,
+            "total": total_series,
             "page": page,
             "pages": pages,
+            "total_pages": pages,
             "limit": limit,
+            "pagination": {
+                "page": page,
+                "pages": pages,
+                "total_pages": pages,
+                "total": total_series,
+                "total_series": total_series,
+                "total_books": total_books,
+                "limit": limit,
+            },
         }
 
 

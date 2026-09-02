@@ -61,6 +61,19 @@ export const EditorialLibrary: React.FC = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [totalSeries, setTotalSeries] = useState(0);
 
+    // Refs to avoid stale closures in scroll/observer callbacks
+    const pageRef = useRef(1);
+    const totalPagesRef = useRef(1);
+    const loadingRef = useRef(false);
+    const loadingMoreRef = useRef(false);
+
+    useEffect(() => {
+        pageRef.current = page;
+        totalPagesRef.current = totalPages;
+        loadingRef.current = loading;
+        loadingMoreRef.current = loadingMore;
+    }, [page, totalPages, loading, loadingMore]);
+
     // Infinite scroll observer
     const observerRef = useRef<IntersectionObserver | null>(null);
     const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null);
@@ -98,8 +111,12 @@ export const EditorialLibrary: React.FC = () => {
                 setSeriesList(incomingSeries);
             }
 
-            setTotalPages(pagination?.total_pages || res?.total_pages || 1);
-            setTotalSeries(pagination?.total || res?.total_series || res?.total || incomingSeries.length);
+            const computedTotalPages = pagination?.total_pages || res?.total_pages || res?.pages || 1;
+            const computedTotalSeries = pagination?.total || res?.total_series || res?.total || incomingSeries.length;
+
+            setTotalPages(computedTotalPages);
+            setTotalSeries(computedTotalSeries);
+            totalPagesRef.current = computedTotalPages;
         } catch (err) {
             console.error('Error cargando catálogo editorial:', err);
         } finally {
@@ -111,6 +128,7 @@ export const EditorialLibrary: React.FC = () => {
     // Refetch on filters or sort change
     useEffect(() => {
         setPage(1);
+        pageRef.current = 1;
         fetchCatalog(1, false);
     }, [searchQuery, selectedCategory, sortBy]);
 
@@ -118,37 +136,68 @@ export const EditorialLibrary: React.FC = () => {
     const handleObserver = useCallback(
         (entries: IntersectionObserverEntry[]) => {
             const target = entries[0];
-            if (target.isIntersecting && paginationMode === 'infinite' && !loading && !loadingMore && page < totalPages) {
-                const nextPage = page + 1;
-                setPage(nextPage);
-                fetchCatalog(nextPage, true);
+            if (target.isIntersecting && paginationMode === 'infinite') {
+                if (!loadingRef.current && !loadingMoreRef.current && pageRef.current < totalPagesRef.current) {
+                    const nextPage = pageRef.current + 1;
+                    pageRef.current = nextPage;
+                    setPage(nextPage);
+                    fetchCatalog(nextPage, true);
+                }
             }
         },
-        [paginationMode, loading, loadingMore, page, totalPages]
+        [paginationMode]
     );
 
     useEffect(() => {
         if (paginationMode !== 'infinite') return;
-        const option = { root: null, rootMargin: '200px', threshold: 0 };
+        const mainEl = document.querySelector('main');
+        const option = { root: mainEl || null, rootMargin: '300px', threshold: 0.01 };
         observerRef.current = new IntersectionObserver(handleObserver, option);
         if (loadMoreTriggerRef.current) {
             observerRef.current.observe(loadMoreTriggerRef.current);
         }
+
+        // Secondary fallback scroll listener for virtual scrolling or deep viewports
+        const handleScroll = () => {
+            if (loadingRef.current || loadingMoreRef.current) return;
+            if (pageRef.current >= totalPagesRef.current) return;
+
+            const target = mainEl || document.documentElement;
+            const scrollTop = target.scrollTop;
+            const scrollHeight = target.scrollHeight;
+            const clientHeight = target.clientHeight;
+
+            if (scrollTop + clientHeight >= scrollHeight - 350) {
+                const nextPage = pageRef.current + 1;
+                pageRef.current = nextPage;
+                setPage(nextPage);
+                fetchCatalog(nextPage, true);
+            }
+        };
+
+        mainEl?.addEventListener('scroll', handleScroll, { passive: true });
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
         return () => {
             if (observerRef.current) observerRef.current.disconnect();
+            mainEl?.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('scroll', handleScroll);
         };
     }, [handleObserver, paginationMode]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setPage(1);
+        pageRef.current = 1;
         fetchCatalog(1, false);
     };
 
     const handlePageChange = (newPage: number) => {
         if (newPage < 1 || newPage > totalPages) return;
         setPage(newPage);
+        pageRef.current = newPage;
         fetchCatalog(newPage, false);
+        document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 

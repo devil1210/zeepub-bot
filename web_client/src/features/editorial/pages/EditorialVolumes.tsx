@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
     BookOpen,
@@ -16,7 +16,9 @@ import {
     User,
     Sparkles,
     Filter,
-    Eye
+    Eye,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 import { EditorialQuickEditDrawer } from '../components/EditorialQuickEditDrawer';
@@ -29,22 +31,39 @@ export const EditorialVolumes: React.FC = () => {
 
     const [volumes, setVolumes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [missingFilter, setMissingFilter] = useState(initialMissing);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+    const [paginationMode, setPaginationMode] = useState<'infinite' | 'paged'>('infinite');
+
+    // Refs to avoid stale closures in scroll/observer callbacks
+    const pageRef = useRef(1);
+    const totalPagesRef = useRef(1);
+    const loadingRef = useRef(false);
+    const loadingMoreRef = useRef(false);
+
+    useEffect(() => {
+        pageRef.current = page;
+        totalPagesRef.current = totalPages;
+        loadingRef.current = loading;
+        loadingMoreRef.current = loadingMore;
+    }, [page, totalPages, loading, loadingMore]);
 
     const [selectedVolumeForEdit, setSelectedVolumeForEdit] = useState<any | null>(null);
     const [selectedVolumeForSchedule, setSelectedVolumeForSchedule] = useState<any | null>(null);
 
-    const fetchVolumes = async () => {
-        setLoading(true);
+    const fetchVolumes = async (pageToFetch = 1, append = false) => {
+        if (append) setLoadingMore(true);
+        else setLoading(true);
+
         try {
             const res = await api.getLibraryGrid({
                 query: searchQuery || seriesFilterParam || undefined,
                 missing_filter: missingFilter === 'all' ? undefined : missingFilter,
-                page,
+                page: pageToFetch,
                 limit: 24,
                 sort_by: 'volume',
             });
@@ -62,7 +81,7 @@ export const EditorialVolumes: React.FC = () => {
             );
 
             if (allVolumes.length === 0) {
-                const volRes = await api.searchVolumes(searchQuery || seriesFilterParam, page, 24);
+                const volRes = await api.searchVolumes(searchQuery || seriesFilterParam, pageToFetch, 24);
                 const items = volRes?.results || volRes?.items || [];
                 allVolumes = items.map((b: any) => ({
                     ...b,
@@ -74,24 +93,77 @@ export const EditorialVolumes: React.FC = () => {
                 }));
             }
 
-            setVolumes(allVolumes);
-            setTotalPages(res?.pagination?.total_pages || res?.total_pages || 1);
-            setTotalItems(res?.pagination?.total || allVolumes.length);
+            if (append) {
+                setVolumes((prev) => [...prev, ...allVolumes]);
+            } else {
+                setVolumes(allVolumes);
+            }
+
+            const computedTotalPages = res?.pagination?.total_pages || res?.total_pages || res?.pages || 1;
+            const computedTotalItems = res?.pagination?.total || res?.total_series || res?.total || allVolumes.length;
+
+            setTotalPages(computedTotalPages);
+            setTotalItems(computedTotalItems);
+            totalPagesRef.current = computedTotalPages;
         } catch (err) {
             console.error('Error cargando volúmenes:', err);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
     useEffect(() => {
-        fetchVolumes();
-    }, [page, missingFilter]);
+        setPage(1);
+        pageRef.current = 1;
+        fetchVolumes(1, false);
+    }, [missingFilter]);
+
+    // Infinite scroll listener
+    useEffect(() => {
+        if (paginationMode !== 'infinite') return;
+        const mainEl = document.querySelector('main');
+
+        const handleScroll = () => {
+            if (loadingRef.current || loadingMoreRef.current) return;
+            if (pageRef.current >= totalPagesRef.current) return;
+
+            const target = mainEl || document.documentElement;
+            const scrollTop = target.scrollTop;
+            const scrollHeight = target.scrollHeight;
+            const clientHeight = target.clientHeight;
+
+            if (scrollTop + clientHeight >= scrollHeight - 350) {
+                const nextPage = pageRef.current + 1;
+                pageRef.current = nextPage;
+                setPage(nextPage);
+                fetchVolumes(nextPage, true);
+            }
+        };
+
+        mainEl?.addEventListener('scroll', handleScroll, { passive: true });
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
+        return () => {
+            mainEl?.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, [paginationMode]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setPage(1);
-        fetchVolumes();
+        pageRef.current = 1;
+        fetchVolumes(1, false);
+    };
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage < 1 || newPage > totalPages) return;
+        setPage(newPage);
+        pageRef.current = newPage;
+        fetchVolumes(newPage, false);
+        document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const getMissingStatus = (vol: any) => {
@@ -272,25 +344,43 @@ export const EditorialVolumes: React.FC = () => {
                 </div>
             )}
 
-            {/* Pagination */}
+            {/* Infinite Scroll Spinner */}
+            {paginationMode === 'infinite' && (
+                <div className="py-8 flex justify-center">
+                    {loadingMore && (
+                        <div className="flex items-center gap-2 text-xs text-indigo-400 font-mono">
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <span>Cargando más volúmenes...</span>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 pt-4">
+                <div className="flex items-center justify-between p-4 rounded-3xl bg-slate-900/40 border border-white/10 backdrop-blur-xl shadow-xl">
                     <button
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                        className="px-4 py-2 rounded-xl bg-slate-900 border border-white/10 text-xs font-bold text-gray-300 hover:text-white disabled:opacity-30"
+                        type="button"
+                        onClick={() => handlePageChange(page - 1)}
+                        disabled={page <= 1 || loading}
+                        className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-30"
                     >
-                        Anterior
+                        <ChevronLeft className="w-4 h-4" /> Anterior
                     </button>
-                    <span className="text-xs text-gray-400 px-3 font-mono">
-                        Página {page} de {totalPages}
-                    </span>
+
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">
+                            Página <span className="font-bold text-white">{page}</span> de <span className="font-bold text-white">{totalPages}</span>
+                        </span>
+                    </div>
+
                     <button
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={page === totalPages}
-                        className="px-4 py-2 rounded-xl bg-slate-900 border border-white/10 text-xs font-bold text-gray-300 hover:text-white disabled:opacity-30"
+                        type="button"
+                        onClick={() => handlePageChange(page + 1)}
+                        disabled={page >= totalPages || loading}
+                        className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-30"
                     >
-                        Siguiente
+                        Siguiente <ChevronRight className="w-4 h-4" />
                     </button>
                 </div>
             )}

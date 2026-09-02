@@ -92,14 +92,15 @@ export const EditorialBookDetail: React.FC = () => {
 
     const handleDirectDownload = () => {
         if (!book) return;
-        const downloadUrl = `/api/library/download/${book.id || book.book_hash}`;
+        const bookId = book.id || book.book_hash;
+        const downloadUrl = `/api/bot/download_file/${bookId}`;
         const a = document.createElement('a');
         a.href = downloadUrl;
         a.download = `${book.title || 'libro'}.epub`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        setFeedbackMsg({ type: 'success', text: 'Iniciando descarga en el navegador...' });
+        setFeedbackMsg({ type: 'success', text: 'Iniciando descarga del archivo EPUB...' });
         setTimeout(() => setFeedbackMsg(null), 4000);
     };
 

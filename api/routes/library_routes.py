@@ -317,6 +317,14 @@ class LibraryRoutes:
         )
 
         self.router.add_api_route(
+            "/download/{url_hash}",
+            self.short_download,
+            methods=["GET"],
+            summary="Download by hash or book id",
+            description="Download EPUB using SHA256 hash or book id",
+        )
+
+        self.router.add_api_route(
             "/public/dl",
             self.public_download,
             methods=["GET"],

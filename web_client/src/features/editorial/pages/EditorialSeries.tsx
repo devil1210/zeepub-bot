@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Layers,
@@ -11,6 +11,7 @@ import {
     Sparkles,
     User,
     Tag,
+    ChevronLeft,
     ChevronRight,
     Filter,
     Plus
@@ -23,39 +24,108 @@ export const EditorialSeries: React.FC = () => {
     const [viewMode, setViewMode] = useState<'visual' | 'datagrid'>('visual');
     const [seriesList, setSeriesList] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const [totalSeries, setTotalSeries] = useState(0);
 
-    const fetchSeries = async () => {
-        setLoading(true);
+    // Refs to avoid stale closures in scroll callbacks
+    const pageRef = useRef(1);
+    const totalPagesRef = useRef(1);
+    const loadingRef = useRef(false);
+    const loadingMoreRef = useRef(false);
+
+    useEffect(() => {
+        pageRef.current = page;
+        totalPagesRef.current = totalPages;
+        loadingRef.current = loading;
+        loadingMoreRef.current = loadingMore;
+    }, [page, totalPages, loading, loadingMore]);
+
+    const fetchSeries = async (pageToFetch = 1, append = false) => {
+        if (append) setLoadingMore(true);
+        else setLoading(true);
+
         try {
             const res = await api.getLibraryGrid({
                 query: searchQuery.trim() || undefined,
-                page,
+                page: pageToFetch,
                 limit: 30,
             });
             if (res && res.series) {
-                setSeriesList(res.series);
-                setTotalSeries(res.total || res.series.length);
+                if (append) {
+                    setSeriesList((prev) => [...prev, ...res.series]);
+                } else {
+                    setSeriesList(res.series);
+                }
+                const computedPages = res?.pagination?.total_pages || res?.total_pages || res?.pages || 1;
+                const computedTotal = res?.pagination?.total || res?.total_series || res?.total || res.series.length;
+                setTotalPages(computedPages);
+                setTotalSeries(computedTotal);
+                totalPagesRef.current = computedPages;
             }
         } catch (err) {
             console.error('Error cargando catálogo de series:', err);
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     };
 
     useEffect(() => {
         if (viewMode === 'visual') {
-            fetchSeries();
+            setPage(1);
+            pageRef.current = 1;
+            fetchSeries(1, false);
         }
-    }, [page, viewMode]);
+    }, [viewMode]);
+
+    // Infinite scroll listener for visual mode
+    useEffect(() => {
+        if (viewMode !== 'visual') return;
+        const mainEl = document.querySelector('main');
+
+        const handleScroll = () => {
+            if (loadingRef.current || loadingMoreRef.current) return;
+            if (pageRef.current >= totalPagesRef.current) return;
+
+            const target = mainEl || document.documentElement;
+            const scrollTop = target.scrollTop;
+            const scrollHeight = target.scrollHeight;
+            const clientHeight = target.clientHeight;
+
+            if (scrollTop + clientHeight >= scrollHeight - 350) {
+                const nextPage = pageRef.current + 1;
+                pageRef.current = nextPage;
+                setPage(nextPage);
+                fetchSeries(nextPage, true);
+            }
+        };
+
+        mainEl?.addEventListener('scroll', handleScroll, { passive: true });
+        window.addEventListener('scroll', handleScroll, { passive: true });
+
+        return () => {
+            mainEl?.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, [viewMode]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setPage(1);
-        fetchSeries();
+        pageRef.current = 1;
+        fetchSeries(1, false);
+    };
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage < 1 || newPage > totalPages) return;
+        setPage(newPage);
+        pageRef.current = newPage;
+        fetchSeries(newPage, false);
+        document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const getSeriesCover = (s: any) => {
@@ -215,6 +285,45 @@ export const EditorialSeries: React.FC = () => {
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+
+                    {/* Infinite Scroll Spinner */}
+                    {loadingMore && (
+                        <div className="py-6 flex justify-center">
+                            <div className="flex items-center gap-2 text-xs text-indigo-400 font-mono">
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <span>Cargando más series...</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between p-4 rounded-3xl bg-slate-900/40 border border-white/10 backdrop-blur-xl shadow-xl mt-6">
+                            <button
+                                type="button"
+                                onClick={() => handlePageChange(page - 1)}
+                                disabled={page <= 1 || loading}
+                                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-30"
+                            >
+                                <ChevronLeft className="w-4 h-4" /> Anterior
+                            </button>
+
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400">
+                                    Página <span className="font-bold text-white">{page}</span> de <span className="font-bold text-white">{totalPages}</span> ({totalSeries} series)
+                                </span>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={() => handlePageChange(page + 1)}
+                                disabled={page >= totalPages || loading}
+                                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-30"
+                            >
+                                Siguiente <ChevronRight className="w-4 h-4" />
+                            </button>
                         </div>
                     )}
                 </div>
