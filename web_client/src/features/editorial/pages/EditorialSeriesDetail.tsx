@@ -279,16 +279,41 @@ export const EditorialSeriesDetail: React.FC = () => {
         }
     };
 
-    const handleDirectDownload = (e: React.MouseEvent, book: any) => {
+    const handleDirectDownload = async (e: React.MouseEvent, book: any) => {
         e.stopPropagation();
-        const downloadUrl = `/api/library/download/${book.id || book.book_hash}`;
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = `${book.title || 'libro'}.epub`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        showToast('Descarga iniciada en el navegador', 'success');
+        const bookId = book.id || book.book_hash;
+        const downloadUrl = `/api/bot/download_file/${bookId}`;
+        showToast('Descargando archivo EPUB desde el servidor...', 'info');
+
+        try {
+            const headers: Record<string, string> = {};
+            const tgData = (window as any).Telegram?.WebApp?.initData;
+            if (tgData) {
+                headers['X-Telegram-Init-Data'] = tgData;
+            }
+
+            const response = await fetch(downloadUrl, { headers, credentials: 'include' });
+            if (!response.ok) {
+                const errJson = await response.json().catch(() => ({}));
+                throw new Error(errJson.detail || errJson.error || `HTTP ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            const rawTitle = book.title || book.filename?.replace('.epub', '') || 'libro';
+            const safeName = rawTitle.replace(/[^\w\s\-\.]/gi, '').trim() || 'libro';
+            a.download = `${safeName}.epub`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+            showToast('¡Descarga completada con éxito!', 'success');
+        } catch (err: any) {
+            console.error('Error en descarga directa:', err);
+            showToast(err.message || 'Error al descargar archivo EPUB', 'error');
+        }
     };
 
     if (loading) {
