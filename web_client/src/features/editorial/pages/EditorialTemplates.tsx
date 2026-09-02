@@ -100,27 +100,29 @@ export const EditorialTemplates: React.FC = () => {
 
         try {
             await api.pubDeleteTemplate(selectedTemplate.id);
+            setStatusMsg({ type: 'success', text: 'Plantilla eliminada' });
             setSelectedTemplate(null);
             fetchTemplates();
-            setStatusMsg({ type: 'success', text: 'Plantilla eliminada' });
         } catch (err: any) {
             setStatusMsg({ type: 'error', text: err.message || 'Error al eliminar' });
         }
     };
 
     const handleRestoreDefaults = async () => {
-        if (!confirm('¿Restaurar las plantillas oficiales predeterminadas de Telegram?')) return;
+        if (!confirm('¿Restaurar plantillas oficiales predeterminadas?')) return;
+        setLoading(true);
         try {
-            await api.pubRestoreTemplates();
-            setStatusMsg({ type: 'success', text: 'Plantillas predeterminadas restauradas' });
+            await api.pubRestoreDefaultTemplates();
+            setStatusMsg({ type: 'success', text: 'Plantillas oficiales restauradas' });
             fetchTemplates();
         } catch (err: any) {
             setStatusMsg({ type: 'error', text: err.message || 'Error al restaurar' });
+            setLoading(false);
         }
     };
 
     return (
-        <div className="w-full max-w-[2200px] mx-auto space-y-6 animate-in fade-in duration-300">
+        <div className="w-full max-w-[2400px] mx-auto space-y-6 animate-in fade-in duration-300">
             {/* Top Bar Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -165,9 +167,9 @@ export const EditorialTemplates: React.FC = () => {
                 </div>
             )}
 
-            {/* 3-Column Wide 2K Layout: Templates List + Rich Editor + Channel Simulator */}
+            {/* 3-Column 2K Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* 1. Left Column: Templates Sidebar (3 cols on lg, 2 cols on 2K) */}
+                {/* 1. Left Column: Templates Sidebar (3 cols) */}
                 <div className="lg:col-span-4 xl:col-span-3 2xl:col-span-3 bg-slate-900/40 border border-white/10 rounded-3xl p-4 sm:p-5 backdrop-blur-xl h-fit space-y-3 shadow-xl">
                     <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2 flex items-center justify-between">
                         <span>Plantillas Guardadas</span>
@@ -215,7 +217,7 @@ export const EditorialTemplates: React.FC = () => {
                     )}
                 </div>
 
-                {/* 2. Middle & Right Columns: Editor + Live Simulator (9 cols on lg, 9 cols on 2K) */}
+                {/* 2. Middle & Right Columns: Editor + Live Simulator (9 cols) */}
                 <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9">
                     {selectedTemplate ? (
                         <form
@@ -251,10 +253,10 @@ export const EditorialTemplates: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Split Grid: Editor (Left) & Channel Simulator (Right) */}
+                            {/* Split Grid: Editor (Left 6 cols) & Channel Simulator (Right 6 cols) on 2K */}
                             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                                {/* Editor (7 cols) */}
-                                <div className="xl:col-span-7 space-y-2">
+                                {/* Editor (6 cols) */}
+                                <div className="xl:col-span-6 space-y-2">
                                     <label className="text-[11px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
                                         <LayoutTemplate className="w-3.5 h-3.5 text-indigo-400" /> Editor de Copy
                                     </label>
@@ -266,17 +268,16 @@ export const EditorialTemplates: React.FC = () => {
                                     />
                                 </div>
 
-                                {/* Simulator (5 cols) */}
-                                <div className="xl:col-span-5 space-y-2">
+                                {/* Simulator (6 cols) */}
+                                <div className="xl:col-span-6 space-y-2 flex flex-col">
                                     <label className="text-[11px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
-                                        <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Simulador Oficial de Canal
+                                        <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Simulador Oficial de Canal (TDesktop)
                                     </label>
 
-                                    <div className="h-[520px] 2xl:h-[580px]">
+                                    <div className="flex-1 min-h-[560px]">
                                         <TelegramMessagePreview
                                             rawTemplate={formData.content}
                                             platform={formData.platform as 'telegram' | 'facebook'}
-                                            isCaptionMode={true}
                                         />
                                     </div>
                                 </div>
@@ -308,7 +309,7 @@ export const EditorialTemplates: React.FC = () => {
                         </form>
                     ) : (
                         <div className="py-32 text-center text-gray-500 text-xs bg-slate-900/30 rounded-3xl border border-white/5">
-                            Selecciona una plantilla de la lista o crea una nueva para comenzar a editar.
+                            Selecciona una plantilla de la izquierda para editar o crea una nueva.
                         </div>
                     )}
                 </div>

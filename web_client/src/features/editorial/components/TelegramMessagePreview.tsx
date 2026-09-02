@@ -13,7 +13,9 @@ import {
     Sparkles,
     ExternalLink,
     Flame,
-    Smile
+    Smile,
+    Monitor,
+    Smartphone
 } from 'lucide-react';
 
 export interface TelegramMessagePreviewProps {
@@ -153,13 +155,13 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     sampleBook,
     previewBook,
     coverUrl,
-    isCaptionMode = true,
 }) => {
     const inputContent = rawTemplate || templateContent || '';
     const [selectedSampleId, setSelectedSampleId] = useState('baccano');
     const [reactionCount, setReactionCount] = useState(1);
     const [hasReacted, setHasReacted] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [previewWidth, setPreviewWidth] = useState<'desktop' | 'mobile'>('desktop');
 
     const activeSample = useMemo(() => {
         const found = SAMPLE_NOVELS.find((n) => n.id === selectedSampleId) || SAMPLE_NOVELS[0];
@@ -170,7 +172,6 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     // Evaluate Template Variables & Conditionals
     const evaluatedText = useMemo(() => {
         if (!inputContent) {
-            // Default official template if empty
             return `📚 <b>${activeSample.series_english || activeSample.serie}</b>\n📖 <b>Volumen ${activeSample.volumen}</b>\n\n🏷️ ${activeSample.genres || activeSample.hashtags}\n\n<blockquote>👤 <b>Autor:</b> ${activeSample.autor}\n🎨 <b>Ilustrador:</b> ${activeSample.illustrator}\n🌐 <b>Traducción:</b> ${activeSample.traductor}\n🏢 <b>Grupo:</b> ${activeSample.editorial}</blockquote>\n\n📝 <b>Sinopsis:</b>\n<blockquote expandable>${activeSample.sinopsis}</blockquote>\n\n#${activeSample.slug}`;
         }
         let text = inputContent;
@@ -205,7 +206,8 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     }, [inputContent, activeSample]);
 
     const charCount = evaluatedText.length;
-    const maxChars = isCaptionMode ? 1024 : 4096;
+    // Telegram Bot API: 4096 for rich text messages, 1024 for photo caption
+    const maxChars = 4096;
     const isOverLimit = charCount > maxChars;
 
     const handleCopy = () => {
@@ -230,17 +232,20 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
         activeSample.cover_vertical ||
         activeSample.cover;
 
+    // Check if the template contains explicit <img> tag or if we should show header cover
+    const hasEmbeddedImg = evaluatedText.includes('<img');
+
     return (
         <div className="flex flex-col h-full w-full space-y-3 font-sans select-none animate-in fade-in duration-200">
             {/* Control Header Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-xs">
                 {/* Sample Selector */}
-                <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-gray-400">Libro de Muestra:</span>
+                <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-gray-400 uppercase">Muestra:</span>
                     <select
                         value={selectedSampleId}
                         onChange={(e) => setSelectedSampleId(e.target.value)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-900 border border-white/10 text-xs text-indigo-300 font-bold focus:outline-none focus:border-indigo-500"
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 border border-white/10 text-xs text-indigo-300 font-bold focus:outline-none focus:border-indigo-500"
                     >
                         {SAMPLE_NOVELS.map((nov) => (
                             <option key={nov.id} value={nov.id}>
@@ -248,16 +253,41 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                             </option>
                         ))}
                     </select>
+
+                    {/* View Switcher: Desktop (TDesktop) vs Mobile */}
+                    <div className="flex items-center gap-1 bg-slate-900 border border-white/10 p-0.5 rounded-xl ml-2">
+                        <button
+                            type="button"
+                            onClick={() => setPreviewWidth('desktop')}
+                            className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
+                                previewWidth === 'desktop' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'
+                            }`}
+                            title="Vista Telegram Desktop (tdesktop)"
+                        >
+                            <Monitor className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setPreviewWidth('mobile')}
+                            className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
+                                previewWidth === 'mobile' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'
+                            }`}
+                            title="Vista Telegram Móvil"
+                        >
+                            <Smartphone className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Character Counter & Copy Action */}
                 <div className="flex items-center gap-2">
                     <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded-md border ${
+                        className={`text-[11px] font-mono px-2.5 py-1 rounded-lg border ${
                             isOverLimit
                                 ? 'bg-red-500/20 text-red-300 border-red-500/30'
-                                : 'bg-slate-900 text-gray-400 border-white/10'
+                                : 'bg-slate-900 text-gray-300 border-white/10'
                         }`}
+                        title="Límite oficial de Telegram: 4096 caracteres para mensajes enriquecidos"
                     >
                         {charCount} / {maxChars} carácteres
                     </span>
@@ -265,7 +295,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                     <button
                         type="button"
                         onClick={handleCopy}
-                        className="flex items-center gap-1 px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-bold border border-white/10 transition-all active:scale-95"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-bold border border-white/10 transition-all active:scale-95"
                     >
                         {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                         <span>{copied ? 'Copiado' : 'Copiar'}</span>
@@ -273,18 +303,22 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                 </div>
             </div>
 
-            {/* Official Telegram Post Bubble Container */}
-            <div className="flex-1 bg-[#0e1621] rounded-2xl border border-white/10 p-3 sm:p-5 overflow-y-auto shadow-2xl flex flex-col items-center justify-start">
-                {/* Telegram Post Card (Official Telegram UI matching Telegram Desktop/Mobile) */}
-                <div className="w-full max-w-[430px] bg-[#182533] text-gray-100 rounded-2xl border border-[#243343] overflow-hidden shadow-2xl font-sans">
-                    {/* Channel Header */}
-                    <div className="flex items-center justify-between px-3.5 py-2.5 bg-[#17212b] border-b border-white/5">
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-md">
+            {/* Official Telegram Channel Window Container */}
+            <div className="flex-1 bg-[#0e1621] rounded-3xl border border-white/10 p-4 sm:p-6 overflow-y-auto shadow-2xl flex flex-col items-center justify-start min-h-[500px]">
+                {/* Telegram Post Card: Expands gracefully up to 720px in Desktop mode, or 420px in Mobile mode */}
+                <div
+                    className={`w-full transition-all duration-300 bg-[#182533] text-gray-100 rounded-2xl border border-[#243343] overflow-hidden shadow-2xl font-sans ${
+                        previewWidth === 'desktop' ? 'max-w-[720px]' : 'max-w-[420px]'
+                    }`}
+                >
+                    {/* Channel Header (TDesktop style) */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-[#17212b] border-b border-white/5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-md shrink-0">
                                 ZP
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                                <div className="text-xs font-bold text-white flex items-center gap-2">
                                     ZeePubs • Biblioteca Digital
                                     <span className="text-[9px] px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-black">
                                         CANAL
@@ -297,37 +331,24 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                         <span className="text-[10px] text-gray-400 font-mono">18:00</span>
                     </div>
 
-                    {/* Book Cover (Telegram Native Photo Preview) */}
-                    {currentCover && (
-                        <div className="relative w-full bg-black/60 aspect-[2/3] max-h-[380px] overflow-hidden border-b border-white/5">
+                    {/* Top Cover Banner if not embedded via <img /> */}
+                    {!hasEmbeddedImg && currentCover && (
+                        <div className="relative w-full bg-black/60 max-h-[420px] overflow-hidden border-b border-white/5 flex items-center justify-center">
                             <img
                                 src={currentCover}
                                 alt="Cover"
-                                className="w-full h-full object-cover object-center"
+                                className="w-full h-full max-h-[420px] object-cover object-center"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
                         </div>
                     )}
 
                     {/* Telegram Caption Body (Evaluated strictly with Official Telegram Formatting) */}
-                    <div className="p-3.5 space-y-3 text-[13px] leading-relaxed select-text">
-                        <TelegramOfficialHtmlRenderer html={evaluatedText} />
-
-                        {/* Telegram Native Inline Buttons */}
-                        <div className="pt-2 space-y-1.5">
-                            <a
-                                href={activeSample.download_link || '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full py-2 px-3 rounded-xl bg-[#2b3a4a] hover:bg-[#344659] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors border border-white/5"
-                            >
-                                <FileText className="w-3.5 h-3.5 text-cyan-400" />
-                                <span>📥 Descargar EPUB ({activeSample.tamaño || '3.0 MB'})</span>
-                            </a>
-                        </div>
+                    <div className="p-4 sm:p-5 space-y-3.5 text-[13px] sm:text-[14px] leading-relaxed select-text">
+                        <TelegramOfficialHtmlRenderer html={evaluatedText} activeCover={currentCover} />
 
                         {/* Telegram Message Footer: Reactions, Views, Timestamp */}
-                        <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
+                        <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs">
                             <div className="flex items-center gap-1.5">
                                 <button
                                     type="button"
@@ -347,9 +368,9 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-2 text-[10px] text-gray-400 font-mono">
+                            <div className="flex items-center gap-2 text-[11px] text-gray-400 font-mono">
                                 <span className="flex items-center gap-1">
-                                    <Eye className="w-3 h-3" /> 48
+                                    <Eye className="w-3.5 h-3.5" /> 48
                                 </span>
                                 <span>18:00</span>
                             </div>
@@ -357,7 +378,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                     </div>
 
                     {/* Telegram Channel Bottom Discussion Bar */}
-                    <div className="px-3.5 py-2.5 bg-[#141d27] border-t border-white/5 flex items-center justify-between text-xs font-semibold text-cyan-400 cursor-pointer hover:bg-[#192430] transition-colors">
+                    <div className="px-4 py-3 bg-[#141d27] border-t border-white/5 flex items-center justify-between text-xs font-semibold text-cyan-400 cursor-pointer hover:bg-[#192430] transition-colors">
                         <div className="flex items-center gap-2">
                             <MessageCircle className="w-4 h-4" />
                             <span>Leave a comment</span>
@@ -370,97 +391,135 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     );
 };
 
-// Official Telegram HTML Renderer with real interactive spoilers and expandable quotes
-export const TelegramOfficialHtmlRenderer: React.FC<{ html: string }> = ({ html }) => {
+// Official Telegram HTML & Rich Formatting Renderer (Matching Telegram Desktop / TDesktop)
+export const TelegramOfficialHtmlRenderer: React.FC<{ html: string; activeCover?: string }> = ({
+    html,
+    activeCover,
+}) => {
     if (!html || html.trim() === '') {
         return <div className="text-gray-500 italic text-xs">Escribe una plantilla para previsualizar...</div>;
     }
 
-    // Process Telegram Expandable Blockquotes and Spoilers
-    return <TelegramParsedContent content={html} />;
-};
+    const processedHtml = useMemo(() => {
+        let text = html;
 
-const TelegramParsedContent: React.FC<{ content: string }> = ({ content }) => {
-    // Process Expandable Blockquotes
-    const parts = useMemo(() => {
-        let text = content
+        // 1. Unescape HTML entities
+        text = text
             .replace(/&lt;/g, '<')
             .replace(/&gt;/g, '>')
-            .replace(/&amp;/g, '&')
-            .replace(/<p>/gi, '')
-            .replace(/<\/p>/gi, '<br/>')
+            .replace(/&amp;/g, '&');
+
+        // 2. Handle <img> tags by substituting sample cover photo banner
+        text = text.replace(/<img[^>]*>/gi, () => {
+            return `<div class="my-2 rounded-xl overflow-hidden border border-white/10 bg-black/40"><img src="${
+                activeCover || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600'
+            }" class="w-full max-h-[360px] object-cover" alt="Cover" /></div>`;
+        });
+
+        // 3. Handle <table>...</table> by converting to a clean Telegram Desktop structured info box
+        text = text.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (_match, tableBody) => {
+            // Convert tr/td to clean rows
+            const rows = tableBody
+                .replace(/<tr[^>]*>([\s\S]*?)<\/tr>/gi, (_m: string, rowContent: string) => {
+                    const cells: string[] = [];
+                    rowContent.replace(/<td[^>]*>([\s\S]*?)<\/td>/gi, (_cm: string, cellText: string) => {
+                        cells.push(cellText.trim());
+                        return '';
+                    });
+                    if (cells.length >= 2) {
+                        return `<div class="py-1.5 px-3 flex items-center justify-between text-xs border-b border-white/5 last:border-b-0"><span class="text-slate-400 font-medium">${cells[0]}</span><span class="text-white font-bold">${cells[1]}</span></div>`;
+                    } else if (cells.length === 1) {
+                        return `<div class="py-1.5 px-3 text-xs border-b border-white/5 last:border-b-0">${cells[0]}</div>`;
+                    }
+                    return '';
+                });
+
+            return `<div class="my-3 rounded-2xl bg-[#131b24] border border-[#243343] overflow-hidden">${rows}</div>`;
+        });
+
+        // 4. Headers (h2, h3, h4, h5, h6)
+        text = text
+            .replace(/<h2>(.*?)<\/h2>/gi, '<div class="text-base font-black text-white tracking-tight my-1">$1</div>')
+            .replace(/<h3>(.*?)<\/h3>/gi, '<div class="text-sm font-black text-white my-1">$1</div>')
+            .replace(/<h4>(.*?)<\/h4>/gi, '<div class="text-xs font-bold text-slate-200 my-0.5">$1</div>')
+            .replace(/<h5>(.*?)<\/h5>/gi, '<div class="text-xs font-semibold text-cyan-300 my-0.5">$1</div>')
+            .replace(/<h6>(.*?)<\/h6>/gi, '<div class="text-xs font-bold text-indigo-300 my-0.5">$1</div>');
+
+        // 5. Telegram official inline tags
+        text = text
+            // Bold
+            .replace(/<b>(.*?)<\/b>/gi, '<strong class="font-bold text-white">$1</strong>')
+            .replace(/<strong>(.*?)<\/strong>/gi, '<strong class="font-bold text-white">$1</strong>')
+            // Italic
+            .replace(/<i>(.*?)<\/i>/gi, '<em class="italic text-slate-200">$1</em>')
+            .replace(/<em>(.*?)<\/em>/gi, '<em class="italic text-slate-200">$1</em>')
+            // Underline
+            .replace(/<u>(.*?)<\/u>/gi, '<span class="underline underline-offset-2">$1</span>')
+            .replace(/<ins>(.*?)<\/ins>/gi, '<span class="underline underline-offset-2">$1</span>')
+            // Strike
+            .replace(/<s>(.*?)<\/s>/gi, '<span class="line-through text-slate-400">$1</span>')
+            .replace(/<strike>(.*?)<\/strike>/gi, '<span class="line-through text-slate-400">$1</span>')
+            .replace(/<del>(.*?)<\/del>/gi, '<span class="line-through text-slate-400">$1</span>')
+            // Telegram Expandable Blockquote
+            .replace(
+                /<blockquote expandable>(.*?)<\/blockquote>/gis,
+                '<details open class="group my-2 pl-3 py-1.5 border-l-2 border-[#5288c1] bg-[#1d2a3a]/60 rounded-r-xl text-slate-200 text-xs"><summary class="cursor-pointer font-bold text-cyan-300 select-none pb-1">Ver sinopsis / contenido desplegable</summary><div class="pt-1 italic leading-relaxed">$1</div></details>'
+            )
+            // Regular Telegram Blockquote
+            .replace(
+                /<blockquote>(.*?)<\/blockquote>/gis,
+                '<div class="pl-3 py-1.5 my-2 border-l-2 border-[#5288c1] bg-[#1d2a3a]/60 rounded-r-xl italic text-slate-200 text-xs leading-relaxed">$1</div>'
+            )
+            // Details / Summary as Expandable blockquote
+            .replace(
+                /<details open>(.*?)<\/details>/gis,
+                '<div class="my-2 pl-3 py-1.5 border-l-2 border-[#5288c1] bg-[#1d2a3a]/60 rounded-r-xl text-slate-200 text-xs">$1</div>'
+            )
+            .replace(
+                /<details>(.*?)<\/details>/gis,
+                '<details class="my-2 pl-3 py-1.5 border-l-2 border-[#5288c1] bg-[#1d2a3a]/60 rounded-r-xl text-slate-200 text-xs">$1</details>'
+            )
+            .replace(
+                /<summary>(.*?)<\/summary>/gi,
+                '<summary class="cursor-pointer font-bold text-cyan-300 select-none pb-1">$1</summary>'
+            )
+            // Telegram Spoiler (Interactive Click-to-reveal)
+            .replace(
+                /<tg-spoiler>(.*?)<\/tg-spoiler>/gi,
+                '<span class="bg-[#3b4b5c] hover:bg-[#4b5d70] active:bg-transparent cursor-pointer px-1.5 py-0.5 rounded text-white select-none transition-colors border border-white/10" onclick="this.style.backgroundColor=\'transparent\'; this.style.borderColor=\'transparent\';">$1</span>'
+            )
+            .replace(
+                /<span class="tg-spoiler">(.*?)<\/span>/gi,
+                '<span class="bg-[#3b4b5c] hover:bg-[#4b5d70] active:bg-transparent cursor-pointer px-1.5 py-0.5 rounded text-white select-none transition-colors border border-white/10" onclick="this.style.backgroundColor=\'transparent\'; this.style.borderColor=\'transparent\';">$1</span>'
+            )
+            // Code & Pre
+            .replace(
+                /<code>(.*?)<\/code>/gi,
+                '<code class="px-1.5 py-0.5 rounded bg-[#0e1621] text-cyan-300 font-mono text-xs border border-white/10">$1</code>'
+            )
+            .replace(
+                /<pre>(.*?)<\/pre>/gis,
+                '<pre class="p-2.5 rounded-xl bg-[#0e1621] text-cyan-300 font-mono text-xs overflow-x-auto border border-white/10 my-1.5">$1</pre>'
+            )
+            // Telegram Links
+            .replace(
+                /<a href="([^"]+)">(.*?)<\/a>/gi,
+                '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-[#64b5f6] hover:underline font-medium">$2</a>'
+            )
+            // Divider
+            .replace(/<hr\s*\/?>/gi, '<div class="my-3 border-t border-[#243343]"></div>')
+            // Hashtags
+            .replace(/(#[a-zA-Z0-9_]+)/g, '<span class="text-[#64b5f6] font-medium">$1</span>')
+            // Linebreaks
             .replace(/\n/g, '<br/>');
 
         return text;
-    }, [content]);
+    }, [html, activeCover]);
 
     return (
         <div
-            className="text-[13px] leading-relaxed text-slate-100 select-text font-sans space-y-1.5"
-            dangerouslySetInnerHTML={{
-                __html: parts
-                    // Bold
-                    .replace(/<b>(.*?)<\/b>/gi, '<strong class="font-bold text-white">$1</strong>')
-                    .replace(/<strong>(.*?)<\/strong>/gi, '<strong class="font-bold text-white">$1</strong>')
-                    // Italic
-                    .replace(/<i>(.*?)<\/i>/gi, '<em class="italic text-slate-200">$1</em>')
-                    .replace(/<em>(.*?)<\/em>/gi, '<em class="italic text-slate-200">$1</em>')
-                    // Underline
-                    .replace(/<u>(.*?)<\/u>/gi, '<span class="underline underline-offset-2">$1</span>')
-                    .replace(/<ins>(.*?)<\/ins>/gi, '<span class="underline underline-offset-2">$1</span>')
-                    // Strike
-                    .replace(/<s>(.*?)<\/s>/gi, '<span class="line-through text-slate-400">$1</span>')
-                    .replace(/<strike>(.*?)<\/strike>/gi, '<span class="line-through text-slate-400">$1</span>')
-                    .replace(/<del>(.*?)<\/del>/gi, '<span class="line-through text-slate-400">$1</span>')
-                    // Telegram Expandable Blockquote
-                    .replace(
-                        /<blockquote expandable>(.*?)<\/blockquote>/gis,
-                        '<details open class="group my-2 pl-3 py-1 border-l-2 border-[#5288c1] bg-[#1d2a3a]/60 rounded-r-lg text-slate-200 text-xs"><summary class="cursor-pointer font-bold text-cyan-300 select-none pb-1">Ver contenido desplegable</summary><div class="pt-1 italic">$1</div></details>'
-                    )
-                    // Regular Telegram Blockquote
-                    .replace(
-                        /<blockquote>(.*?)<\/blockquote>/gis,
-                        '<div class="pl-3 py-1 my-2 border-l-2 border-[#5288c1] bg-[#1d2a3a]/60 rounded-r-lg italic text-slate-200 text-xs">$1</div>'
-                    )
-                    // Details / Summary as Expandable blockquote
-                    .replace(
-                        /<details open>(.*?)<\/details>/gis,
-                        '<div class="my-2 pl-3 py-1 border-l-2 border-[#5288c1] bg-[#1d2a3a]/60 rounded-r-lg text-slate-200 text-xs">$1</div>'
-                    )
-                    .replace(
-                        /<details>(.*?)<\/details>/gis,
-                        '<details class="my-2 pl-3 py-1 border-l-2 border-[#5288c1] bg-[#1d2a3a]/60 rounded-r-lg text-slate-200 text-xs">$1</details>'
-                    )
-                    .replace(
-                        /<summary>(.*?)<\/summary>/gi,
-                        '<summary class="cursor-pointer font-bold text-cyan-300 select-none pb-1">$1</summary>'
-                    )
-                    // Telegram Spoiler (Click to reveal with blur/shimmer)
-                    .replace(
-                        /<tg-spoiler>(.*?)<\/tg-spoiler>/gi,
-                        '<span class="bg-[#3b4b5c] hover:bg-[#4b5d70] active:bg-transparent cursor-pointer px-1.5 py-0.5 rounded text-white select-none transition-colors border border-white/10" onclick="this.style.backgroundColor=\'transparent\'; this.style.borderColor=\'transparent\';">$1</span>'
-                    )
-                    .replace(
-                        /<span class="tg-spoiler">(.*?)<\/span>/gi,
-                        '<span class="bg-[#3b4b5c] hover:bg-[#4b5d70] active:bg-transparent cursor-pointer px-1.5 py-0.5 rounded text-white select-none transition-colors border border-white/10" onclick="this.style.backgroundColor=\'transparent\'; this.style.borderColor=\'transparent\';">$1</span>'
-                    )
-                    // Telegram Code & Pre
-                    .replace(
-                        /<code>(.*?)<\/code>/gi,
-                        '<code class="px-1.5 py-0.5 rounded bg-[#0e1621] text-cyan-300 font-mono text-xs border border-white/10">$1</code>'
-                    )
-                    .replace(
-                        /<pre>(.*?)<\/pre>/gis,
-                        '<pre class="p-2.5 rounded-xl bg-[#0e1621] text-cyan-300 font-mono text-xs overflow-x-auto border border-white/10 my-1.5">$1</pre>'
-                    )
-                    // Telegram Links
-                    .replace(
-                        /<a href="([^"]+)">(.*?)<\/a>/gi,
-                        '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-[#64b5f6] hover:underline font-medium">$2</a>'
-                    )
-                    // Hashtags styling
-                    .replace(/(#[a-zA-Z0-9_]+)/g, '<span class="text-[#64b5f6] font-medium">$1</span>')
-            }}
+            className="text-[13px] sm:text-[14px] leading-relaxed text-slate-100 select-text font-sans space-y-2"
+            dangerouslySetInnerHTML={{ __html: processedHtml }}
         />
     );
 };
