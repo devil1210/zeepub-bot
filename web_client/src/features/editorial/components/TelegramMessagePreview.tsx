@@ -92,51 +92,51 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     const [copied, setCopied] = useState(false);
     const [previewWidth, setPreviewWidth] = useState<'desktop' | 'mobile'>('desktop');
 
-    // Default book matching the user's exact screenshot (Accel World Vol. 25)
+    // Default book matching the user's real screenshot (Alya Sometimes Hides Her Feelings in Russian Vol. 3)
     const activeBook = useMemo(() => {
         if (selectedBook) return selectedBook;
         if (sampleBook) return sampleBook;
         if (previewBook) return previewBook;
 
         return {
-            serie: 'Accel World',
-            series: 'Accel World',
-            series_english: 'Accel World',
-            series_name: 'Accel World',
-            romaji_title: '',
-            series_spanish: '',
-            titulo: 'Accel World - V25 [ShinsengumiTL]',
-            title: 'Accel World - V25 [ShinsengumiTL]',
-            volumen: '25',
-            volume: '25',
-            autor: 'Reki Kawahara',
-            author: 'Reki Kawahara',
-            illustrator: 'HIMA',
-            ilustrador: 'HIMA',
-            layout_by: 'Zeedif',
-            maquetador: 'Zeedif',
+            serie: 'Alya Sometimes Hides Her Feelings in Russian',
+            series: 'Alya Sometimes Hides Her Feelings in Russian',
+            series_english: 'Alya Sometimes Hides Her Feelings in Russian',
+            series_name: 'Alya Sometimes Hides Her Feelings in Russian',
+            romaji_title: 'Tokidoki Bosotto Russiago de Dereru Tonari no Arya-san',
+            series_spanish: 'Alya-san, quien se sienta a mi lado, a veces susurra cosas dulces en ruso',
+            titulo: 'Alya-san, quien se sienta a mi lado, a veces susurra cosas dulces en ruso',
+            title: 'Alya-san, quien se sienta a mi lado, a veces susurra cosas dulces en ruso',
+            volumen: '3.0',
+            volume: '3.0',
+            autor: 'SunsunSUN',
+            author: 'SunsunSUN',
+            illustrator: 'Momoco',
+            ilustrador: 'Momoco',
+            layout_by: 'Yayo',
+            maquetador: 'Yayo',
             tipo: 'Novela Ligera',
-            demography: 'Kodomo',
-            genres: '#Acción #Aventura #Ciencia_ficción #Comedia #Escolar #Fantasía #Romance',
-            traductor: 'McKight',
-            translator: 'McKight',
-            editorial: 'Shinsengumi Translations',
+            demography: 'Shoujo',
+            genres: '#Comedia #Romance #Escolar',
+            traductor: 'Vlady Pasos',
+            translator: 'Vlady Pasos',
+            editorial: 'Darkness Dragons Translation',
             formato: 'EPUB 3.0',
             version: 'EPUB 3.0',
             paginas: '280',
             palabras: '74,500',
             reading_time: '4h 15m',
-            size_mb: '23.9 MB',
-            tamaño: '23.9 MB',
+            size_mb: '14.1 MB',
+            tamaño: '14.1 MB',
             fecha: '02-09-2026',
-            published_at: '2020',
+            published_at: '2024',
             sinopsis:
-                'Haruyuki Arita es un estudiante de secundaria con sobrepeso y baja autoestima que sufre acoso escolar constante. Su único refugio es el mundo virtual...',
-            slug: 'Accel_World',
+                'Alisa Mikhailovna Kujou es la "princesa solitaria" de la academia Seirei. Es una belleza mitad rusa y mitad japonesa con cabello plateado...',
+            slug: 'Tokidoki_Bosotto_Russiago_De_Dereru_Tonari_No_Aryasan',
             download_link: 'https://dl.zeepubs.com/QfFLyhydJK',
-            filename: 'Accel world - V25 [ShinsengumiTL].epub',
+            filename: 'Alya_san,_quien_se_sienta_a_ ... ces_susurra_cosas_dulce.epub',
             link: 'https://dl.zeepubs.com/QfFLyhydJK',
-            cover_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600',
+            cover_url: '',
         };
     }, [selectedBook, sampleBook, previewBook]);
 
@@ -213,7 +213,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
 
     const handleSelectRealBook = (b: any) => {
         const seriesName = b.series_name || b.series || b.title || 'Serie';
-        const formattedSize = b.file_size ? `${(b.file_size / (1024 * 1024)).toFixed(1)} MB` : (b.size_mb || '23.9 MB');
+        const formattedSize = b.file_size ? `${(b.file_size / (1024 * 1024)).toFixed(1)} MB` : (b.size_mb || '14.1 MB');
         const tagsStr = Array.isArray(b.genres)
             ? b.genres.map((g: string) => (g.startsWith('#') ? g : `#${g}`)).join(' ')
             : (b.genres || '#NovelaLigera');
@@ -233,14 +233,14 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
             author: b.author || 'Autor desconocido',
             illustrator: b.illustrator || 'Ilustrador oficial',
             ilustrador: b.illustrator || 'Ilustrador oficial',
-            layout_by: b.layout_by || 'Zeedif',
-            maquetador: b.layout_by || 'Zeedif',
+            layout_by: b.layout_by || 'Yayo',
+            maquetador: b.layout_by || 'Yayo',
             tipo: b.book_type || 'Novela Ligera',
-            demography: b.demography || 'Kodomo',
+            demography: b.demography || 'Shoujo',
             genres: tagsStr,
-            traductor: b.translator || 'McKight',
-            translator: b.translator || 'McKight',
-            editorial: b.workgroup_name || b.publisher || 'Shinsengumi Translations',
+            traductor: b.translator || 'Vlady Pasos',
+            translator: b.translator || 'Vlady Pasos',
+            editorial: b.workgroup_name || b.publisher || 'Darkness Dragons Translation',
             formato: b.epub_version || 'EPUB 3.0',
             version: 'EPUB 3.0',
             paginas: b.page_count ? String(b.page_count) : '280',
@@ -251,7 +251,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
             fecha: new Date().toLocaleDateString('es-ES'),
             published_at: '2024',
             sinopsis: b.sinopsis || b.description || 'Sinopsis disponible en la biblioteca.',
-            slug: seriesName.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_'),
+            slug: (b.romaji_title || seriesName).replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_'),
             download_link: `https://dl.zeepubs.com/${b.short_link || b.book_hash || b.id}`,
             filename: b.filename || `${seriesName} - V${b.volume || 1}.epub`,
             link: `https://dl.zeepubs.com/${b.short_link || b.book_hash || b.id}`,
@@ -432,7 +432,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                         )}
 
                         <div className="pt-1 flex justify-end text-[11px] text-[#8fa0b5] font-mono">
-                            <span>9:33</span>
+                            <span>12:16</span>
                         </div>
                     </div>
                 </div>
@@ -457,7 +457,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => handleSearchLibrary(e.target.value)}
-                                placeholder="Escribe el nombre de la serie (ej. Accel World, Baccano)..."
+                                placeholder="Escribe el nombre de la serie (ej. Alya, Baccano)..."
                                 autoFocus
                                 className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                             />
@@ -535,6 +535,14 @@ export const TelegramRichMessageLiveRenderer: React.FC<{ html: string; book: any
         const hasDocument = /<tg-document/i.test(text);
         text = text.replace(/<tg-document[^>]*>/gi, '');
 
+        // Extract bottom slug / hashtags
+        let bottomHashtags: string[] = [];
+        text = text.replace(/<hr\s*\/?>/gi, '');
+        text = text.replace(/(?:<p>)?(#[a-zA-Z0-9_]+)(?:<\/p>)?/g, (_m, tag) => {
+            bottomHashtags.push(tag);
+            return '';
+        });
+
         // Extract Ficha Técnica details
         let fichaRows: Array<[string, string]> = [];
         const fichaMatch = text.match(/<details[^>]*open[^>]*>[\s\S]*?<summary>[\s\S]*?Ficha Técnica[\s\S]*?<\/summary>([\s\S]*?)<\/details>/i) ||
@@ -601,6 +609,7 @@ export const TelegramRichMessageLiveRenderer: React.FC<{ html: string; book: any
             sinopsisText,
             archivoRows,
             hasDocument,
+            bottomHashtags,
         };
     }, [html]);
 
@@ -610,28 +619,19 @@ export const TelegramRichMessageLiveRenderer: React.FC<{ html: string; book: any
     }, [parsed.rawText]);
 
     return (
-        <div className="space-y-2 text-[13px] text-slate-100">
+        <div className="space-y-1 text-[13.5px] text-slate-100">
             {/* Titles, Flags, Volume & Genres Chips */}
-            <div className="space-y-1">
+            <div className="space-y-0.5">
                 {renderedLines.map((line, idx) => {
                     if (line === '§§FICHA§§' || line === '§§SINOPSIS§§' || line === '§§ARCHIVO§§') {
                         return null;
                     }
 
-                    // Hashtag
-                    if (line.startsWith('#')) {
-                        return (
-                            <div key={idx} className="pt-1 text-[#5288c1] font-medium text-[13px] hover:underline cursor-pointer">
-                                {line}
-                            </div>
-                        );
-                    }
-
                     // Genres line with tag icon
-                    if (line.includes('🏷️') || line.includes('#')) {
+                    if (line.includes('🏷️') || line.includes('🏷')) {
                         const cleanLine = line.replace(/<\/?(p|i|em|b|strong)[^>]*>/gi, '').trim();
                         return (
-                            <div key={idx} className="text-[#5288c1] font-medium text-xs leading-relaxed">
+                            <div key={idx} className="text-[#5288c1] italic font-normal text-[12.5px] leading-relaxed pt-0.5 pb-1">
                                 {renderWithTwemoji(cleanLine)}
                             </div>
                         );
@@ -642,7 +642,7 @@ export const TelegramRichMessageLiveRenderer: React.FC<{ html: string; book: any
                     if (!cleanTitle) return null;
 
                     return (
-                        <div key={idx} className="font-bold text-white text-[14.5px] leading-tight flex items-center">
+                        <div key={idx} className="font-bold text-white text-[13.5px] sm:text-[14px] leading-snug flex items-center">
                             {renderWithTwemoji(cleanTitle)}
                         </div>
                     );
@@ -651,7 +651,7 @@ export const TelegramRichMessageLiveRenderer: React.FC<{ html: string; book: any
 
             {/* Ficha Técnica Section (^ 📋 Ficha Técnica) */}
             {parsed.fichaRows.length > 0 && (
-                <div className="pt-1">
+                <div className="pt-0.5">
                     <button
                         type="button"
                         onClick={() => setOpenFicha(!openFicha)}
@@ -662,12 +662,12 @@ export const TelegramRichMessageLiveRenderer: React.FC<{ html: string; book: any
                     </button>
 
                     {openFicha && (
-                        <div className="mt-1 rounded-xl bg-[#131d27] border border-[#223143] overflow-hidden text-xs divide-y divide-[#223143]">
+                        <div className="mt-1 rounded-xl bg-[#131d27] border border-[#243447] overflow-hidden text-xs divide-y divide-[#243447]">
                             {parsed.fichaRows.map(([label, val], idx) => {
                                 const isHashtag = val.startsWith('#');
                                 return (
                                     <div key={idx} className="flex">
-                                        <div className="w-[38%] py-1.5 px-3 bg-[#101822] text-[#8fa0b5] font-medium border-r border-[#223143] shrink-0 truncate flex items-center gap-1">
+                                        <div className="w-[38%] py-1.5 px-3 bg-[#111923] text-[#8fa0b5] font-medium border-r border-[#243447] shrink-0 truncate flex items-center gap-1">
                                             {renderWithTwemoji(label)}
                                         </div>
                                         <div className={`w-[62%] py-1.5 px-3 bg-[#141f2d] ${isHashtag ? 'text-[#5288c1] font-medium' : 'text-slate-100'} truncate flex items-center`}>
@@ -712,10 +712,10 @@ export const TelegramRichMessageLiveRenderer: React.FC<{ html: string; book: any
                         <span>📁 Ver Detalles del Archivo</span>
                     </button>
                     {openArchivo && (
-                        <div className="mt-1.5 rounded-xl bg-[#131d27] border border-[#223143] overflow-hidden text-xs divide-y divide-[#223143] animate-in fade-in duration-150">
+                        <div className="mt-1.5 rounded-xl bg-[#131d27] border border-[#243447] overflow-hidden text-xs divide-y divide-[#243447] animate-in fade-in duration-150">
                             {parsed.archivoRows.map(([label, val], idx) => (
                                 <div key={idx} className="flex">
-                                    <div className="w-[38%] py-1.5 px-3 bg-[#101822] text-[#8fa0b5] font-medium border-r border-[#223143] shrink-0 truncate flex items-center gap-1">
+                                    <div className="w-[38%] py-1.5 px-3 bg-[#111923] text-[#8fa0b5] font-medium border-r border-[#243447] shrink-0 truncate flex items-center gap-1">
                                         {renderWithTwemoji(label)}
                                     </div>
                                     <div className="w-[62%] py-1.5 px-3 bg-[#141f2d] text-slate-100 truncate flex items-center">
@@ -730,8 +730,8 @@ export const TelegramRichMessageLiveRenderer: React.FC<{ html: string; book: any
 
             {/* Telegram Document Attachment Box (<tg-document src="tg://document?id=epub_file" />) */}
             {parsed.hasDocument && (
-                <div className="my-2.5 p-2.5 rounded-xl bg-[#131d27] border border-[#223143] flex items-center gap-3 select-none">
-                    <div className="w-10 h-10 rounded-full bg-[#5288c1] flex items-center justify-center shrink-0 shadow-md">
+                <div className="my-2.5 p-2.5 rounded-xl bg-[#131d27] border border-[#243447] flex items-center gap-3 select-none">
+                    <div className="w-10 h-10 rounded-full bg-[#2481cc] flex items-center justify-center shrink-0 shadow-md">
                         <ArrowDown className="w-5 h-5 text-white stroke-[2.5]" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -739,9 +739,16 @@ export const TelegramRichMessageLiveRenderer: React.FC<{ html: string; book: any
                             {book.filename || `${book.series || book.title} - V${book.volumen || book.volume}.epub`}
                         </div>
                         <div className="text-[11px] text-[#8fa0b5] font-medium">
-                            {book.size_mb || book.tamaño || '23.9 MB'}
+                            {book.size_mb || book.tamaño || '14.1 MB'}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Bottom Hashtags (Placed AFTER Document, strictly at the bottom) */}
+            {parsed.bottomHashtags.length > 0 && (
+                <div className="pt-1 text-[#5288c1] font-medium text-[13px] hover:underline cursor-pointer">
+                    {parsed.bottomHashtags.join(' ')}
                 </div>
             )}
         </div>
