@@ -1,25 +1,20 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-    Send,
     Check,
     Copy,
-    AlertTriangle,
     ChevronDown,
     ChevronUp,
-    FileText,
-    MessageCircle,
-    Heart,
-    Eye,
-    Sparkles,
-    ExternalLink,
-    Flame,
-    Smile,
     Monitor,
     Smartphone,
     Search,
     BookOpen,
     Loader2,
-    X
+    X,
+    Download,
+    ArrowLeft,
+    Home,
+    XCircle,
+    Eye
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 
@@ -48,57 +43,53 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searching, setSearching] = useState(false);
 
-    const [reactionCount, setReactionCount] = useState(2);
-    const [hasReacted, setHasReacted] = useState(false);
     const [copied, setCopied] = useState(false);
     const [previewWidth, setPreviewWidth] = useState<'desktop' | 'mobile'>('desktop');
 
-    // Default book if none selected
+    // Default book matching real library
     const activeBook = useMemo(() => {
         if (selectedBook) return selectedBook;
         if (sampleBook) return sampleBook;
         if (previewBook) return previewBook;
 
         return {
-            serie: 'Baccano!',
-            series: 'Baccano!',
-            series_english: 'Baccano!',
-            series_name: 'Baccano!',
-            romaji_title: 'Baccano!',
-            series_spanish: 'Baccano! 1931 El gran ferrocarril del desorden',
-            titulo: 'El gran ferrocarril del desorden EPISODIO EXPRESO',
-            title: 'El gran ferrocarril del desorden EPISODIO EXPRESO',
-            volumen: '3',
-            volume: '3',
-            autor: 'Ryohgo Narita',
-            author: 'Ryohgo Narita',
-            illustrator: 'Katsumi Enami',
-            ilustrador: 'Katsumi Enami',
-            layout_by: 'Kuranan',
-            maquetador: 'Kuranan',
+            serie: 'Cause I Will Hate You',
+            series: 'Cause I Will Hate You',
+            series_english: 'Cause I Will Hate You',
+            series_name: 'Cause I Will Hate You',
+            romaji_title: 'Anata no Koto wo, Kirai ni Naru kara',
+            series_spanish: 'Porque Llegaré a Odiarte',
+            titulo: 'Porque Llegaré a Odiarte',
+            title: 'Porque Llegaré a Odiarte',
+            volumen: '1',
+            volume: '1',
+            autor: 'Yuu Hidaka',
+            author: 'Yuu Hidaka',
+            illustrator: 'Sako',
+            ilustrador: 'Sako',
+            layout_by: 'Zhi',
+            maquetador: 'Zhi',
             tipo: 'Novela Ligera',
-            demography: 'Seinen',
-            genres: '#Maduro #Acción #Aventura #Comedia #Drama #Histórico #Misterio #Psicológico #Romance #Sobrenatural #Terror',
-            traductor: 'Clixea',
-            translator: 'Clixea',
-            editorial: 'Lanove Translations',
+            demography: 'Shounen',
+            genres: 'Juvenil, Drama, Escolar, Recuentos de la vida, Romance',
+            traductor: 'Mayu',
+            translator: 'Mayu',
+            editorial: "Tamashi's Project",
             formato: 'EPUB 3.0',
-            version: 'Epub 3.0',
-            paginas: '280',
-            palabras: '74,500',
-            reading_time: '4h 15m',
-            size_mb: '3.04 MB',
-            tamaño: '3.04 MB',
-            fecha: '27/11/2025',
-            published_at: '08/10/2003',
+            version: 'EPUB 3.0',
+            paginas: '240',
+            palabras: '68,200',
+            reading_time: '3h 50m',
+            size_mb: '3.1 MB',
+            tamaño: '3.1 MB',
+            fecha: '02-09-2026',
+            published_at: '2024',
             sinopsis:
-                'En el Manhattan de 1930, un anciano es atacado por el matón Dallas Genoard y salvado por Firo Prochainezo, de la familia Martillo Camorra. Sin embargo, Dallas vuelve a atacar al hombre y le quita las botellas de alcohol que llevaba. Sin que Dallas lo sepa, las botellas contienen un elixir de inmortalidad que el hombre ha recreado para el alquimista inmortal Szilard Quates...',
-            slug: 'Baccano',
+                'Una historia emotiva y conmovedora sobre dos jóvenes cuyas vidas se entrelazan en la escuela secundaria...',
+            slug: 'Cause_I_Will_Hate_You',
             download_link: 'https://dl.zeepubs.com/QfFLyhydJK',
-            filename: 'Baccano! - V03 [LANOVE].epub',
+            filename: 'Cause I Will Hate You - Vol 1.epub',
             link: 'https://dl.zeepubs.com/QfFLyhydJK',
-            hashtags: '#Baccano #ZeePubs',
-            archivo: '',
             cover_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600',
         };
     }, [selectedBook, sampleBook, previewBook]);
@@ -135,7 +126,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                     translator: v.translator,
                     synopsis: v.synopsis || v.description,
                     cover_url: v.cover_url || v.cover_thumb || v.cover_high,
-                    genres: v.genres || v.series_info?.tags,
+                    genres: Array.isArray(v.genres) ? v.genres.join(', ') : v.genres,
                 });
             }
 
@@ -153,7 +144,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                         translator: s.translator,
                         synopsis: s.synopsis || s.description,
                         cover_url: s.cover_url || s.cover_thumb,
-                        genres: s.genres,
+                        genres: Array.isArray(s.genres) ? s.genres.join(', ') : s.genres,
                     });
                 }
             }
@@ -168,7 +159,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
 
     const handleSelectRealBook = (b: any) => {
         const seriesName = b.series_name || b.series || b.title || 'Serie';
-        const genresList = Array.isArray(b.genres) ? b.genres.map((g: string) => `#${g}`).join(' ') : (b.genres || '#NovelaLigera');
+        const genresList = Array.isArray(b.genres) ? b.genres.join(', ') : (b.genres || 'Novela Ligera');
         const formattedSize = b.file_size ? `${(b.file_size / (1024 * 1024)).toFixed(2)} MB` : (b.size_mb || '3.5 MB');
 
         setSelectedBook({
@@ -189,27 +180,25 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
             layout_by: b.layout_by || 'ZeePubs',
             maquetador: b.layout_by || 'ZeePubs',
             tipo: b.book_type || 'Novela Ligera',
-            demography: b.demography || 'Seinen',
+            demography: b.demography || 'Shounen',
             genres: genresList,
             traductor: b.translator || 'Fansub',
             translator: b.translator || 'Fansub',
             editorial: b.workgroup_name || b.publisher || 'Editorial Digital',
             formato: b.epub_version || 'EPUB 3.0',
-            version: 'Epub 3.0',
-            paginas: b.page_count ? String(b.page_count) : '280',
-            palabras: b.word_count ? Number(b.word_count).toLocaleString() : '75,000',
-            reading_time: b.reading_time ? `${Math.floor(b.reading_time / 60)}h ${b.reading_time % 60}m` : '4h 10m',
+            version: 'EPUB 3.0',
+            paginas: b.page_count ? String(b.page_count) : '240',
+            palabras: b.word_count ? Number(b.word_count).toLocaleString() : '68,000',
+            reading_time: b.reading_time ? `${Math.floor(b.reading_time / 60)}h ${b.reading_time % 60}m` : '3h 45m',
             size_mb: formattedSize,
             tamaño: formattedSize,
             fecha: new Date().toLocaleDateString('es-ES'),
-            published_at: new Date().toLocaleDateString('es-ES'),
+            published_at: new Date().getFullYear().toString(),
             sinopsis: b.synopsis || b.description || 'Sinopsis disponible en la biblioteca.',
             slug: seriesName.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_'),
             download_link: `https://dl.zeepubs.com/${b.short_link || b.book_hash || b.id}`,
             filename: b.filename || `${b.title}.epub`,
             link: `https://dl.zeepubs.com/${b.short_link || b.book_hash || b.id}`,
-            hashtags: `#${seriesName.replace(/[^a-zA-Z0-9]/g, '')} #ZeePubs`,
-            archivo: '',
             cover_url: b.cover_url || b.cover_thumb || '',
         });
         setIsSearchOpen(false);
@@ -262,24 +251,13 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const toggleReaction = () => {
-        if (hasReacted) {
-            setReactionCount((c) => Math.max(0, c - 1));
-            setHasReacted(false);
-        } else {
-            setReactionCount((c) => c + 1);
-            setHasReacted(true);
-        }
-    };
-
     const currentCover =
         coverUrl ||
         activeBook.cover_url ||
         activeBook.cover_vertical ||
         activeBook.cover;
 
-    const hasEmbeddedImg = evaluatedText.includes('<img');
-    const isFacebookTemplate = platform === 'facebook' || evaluatedText.includes('Descarga:') || evaluatedText.includes('Publicación para Facebook');
+    const isFacebookTemplate = platform === 'facebook' || evaluatedText.includes('Plantilla de Publicación para Facebook') || evaluatedText.includes('Descarga:');
 
     return (
         <div className="flex flex-col h-full w-full space-y-3 font-sans select-none animate-in fade-in duration-200">
@@ -332,7 +310,6 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                                 ? 'bg-red-500/20 text-red-300 border-red-500/30'
                                 : 'bg-slate-900 text-gray-300 border-white/10'
                         }`}
-                        title="Límite oficial de Telegram: 4096 caracteres para mensajes enriquecidos"
                     >
                         {charCount} / {maxChars} carácteres
                     </span>
@@ -348,117 +325,99 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                 </div>
             </div>
 
-            {/* Official Telegram Channel Window Container */}
-            <div className="flex-1 bg-slate-950/90 rounded-3xl border border-white/10 p-4 sm:p-6 overflow-y-auto shadow-2xl flex flex-col items-center justify-start min-h-[580px] 2xl:min-h-[660px]">
-                {/* Telegram Post Card (TDesktop style) */}
+            {/* Official Telegram Post Card (Matching Exact Dark Telegram UI) */}
+            <div className="flex-1 bg-[#0e1621] rounded-3xl border border-white/10 p-3 sm:p-5 overflow-y-auto shadow-2xl flex flex-col items-center justify-start min-h-[580px] 2xl:min-h-[660px]">
                 <div
-                    className={`w-full transition-all duration-300 bg-[#0e1621] text-gray-100 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl font-sans ${
-                        previewWidth === 'desktop' ? 'max-w-[720px]' : 'max-w-[420px]'
+                    className={`w-full transition-all duration-300 bg-[#17212b] text-slate-100 rounded-2xl border border-[#232e3c] overflow-hidden shadow-2xl font-sans ${
+                        previewWidth === 'desktop' ? 'max-w-[480px]' : 'max-w-[380px]'
                     }`}
                 >
-                    {/* Channel Header */}
-                    <div className="flex items-center justify-between px-4 py-3 bg-[#17212b] border-b border-white/5">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-md shrink-0">
-                                ZP
-                            </div>
-                            <div>
-                                <div className="text-xs font-bold text-white flex items-center gap-2">
-                                    ZeePubs • Biblioteca Digital
-                                    <span className="text-[9px] px-1.5 py-0.2 bg-cyan-500/20 text-cyan-300 rounded font-black">
-                                        CANAL
-                                    </span>
-                                </div>
-                                <div className="text-[10px] text-gray-400">@ZeePubs</div>
-                            </div>
-                        </div>
-
-                        <span className="text-[10px] text-gray-400 font-mono">18:00</span>
-                    </div>
-
-                    {/* Top Cover Banner */}
-                    {!hasEmbeddedImg && currentCover && (
-                        <div className="relative w-full bg-black/60 max-h-[460px] overflow-hidden border-b border-white/5 flex items-center justify-center">
+                    {/* Top Cover with Blurred Wings Backdrop (Exact Telegram Photo Presentation) */}
+                    {currentCover && (
+                        <div className="relative w-full h-[380px] sm:h-[440px] bg-[#0c1219] overflow-hidden flex items-center justify-center border-b border-[#232e3c]">
+                            {/* Blurred Ambient Backdrop */}
                             <img
                                 src={currentCover}
                                 alt=""
-                                className="w-full h-full max-h-[460px] object-cover object-center"
+                                className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-125"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+                            {/* Sharp Foreground Cover */}
+                            <img
+                                src={currentCover}
+                                alt=""
+                                className="relative max-h-full max-w-full object-contain z-10 drop-shadow-2xl"
+                            />
                         </div>
                     )}
 
                     {/* Telegram Caption Body */}
-                    <div className="p-4 sm:p-5 space-y-3.5 text-[13px] sm:text-[14px] leading-relaxed select-text">
+                    <div className="p-3.5 sm:p-4 space-y-2 text-[13px] leading-snug select-text">
                         {isFacebookTemplate ? (
-                            /* EXACT FACEBOOK TEMPLATE MESSAGE SENT TO TELEGRAM */
-                            <div className="space-y-3">
-                                <div className="space-y-1">
-                                    <div className="text-sm font-bold text-white flex items-center gap-2">
+                            /* FACEBOOK COPY TEMPLATE AS DELIVERED TO TELEGRAM */
+                            <div className="space-y-2.5">
+                                <div className="space-y-0.5">
+                                    <div className="text-[13px] font-bold text-white flex items-center gap-1.5">
                                         <span>📋</span> <span>Plantilla de Publicación para Facebook</span>
                                     </div>
-                                    <div className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                                    <div className="text-[12px] font-bold text-slate-300 flex items-center gap-1.5">
                                         <span>📖</span> <span>{activeBook.series || activeBook.title} - Vol. {activeBook.volumen || activeBook.volume}</span>
                                     </div>
-                                    <div className="text-[11px] text-gray-400 italic">
+                                    <div className="text-[11px] text-gray-400 italic pt-0.5">
                                         Toca el recuadro de abajo para copiar el texto con todos sus saltos de línea:
                                     </div>
                                 </div>
 
-                                {/* Monospace Copy Box */}
-                                <div className="rounded-xl bg-[#0a0f19] border border-cyan-500/30 overflow-hidden shadow-inner">
-                                    <div className="flex items-center justify-between px-3 py-1.5 bg-cyan-950/40 border-b border-cyan-500/20 text-[10px] text-cyan-300 font-mono font-bold">
+                                <div className="rounded-xl bg-[#0e1621] border border-[#2b394a] overflow-hidden">
+                                    <div className="flex items-center justify-between px-3 py-1 bg-[#131d27] border-b border-[#2b394a] text-[10px] text-[#5288c1] font-mono font-bold">
                                         <span>copy</span>
                                         <Copy className="w-3 h-3 cursor-pointer hover:text-white" onClick={handleCopy} />
                                     </div>
-                                    <pre className="p-3.5 text-xs text-sky-200 font-mono whitespace-pre-wrap leading-relaxed select-all">
+                                    <pre className="p-3 text-[11.5px] text-sky-200 font-mono whitespace-pre-wrap leading-relaxed select-all">
                                         {evaluatedText}
                                     </pre>
                                 </div>
                             </div>
                         ) : (
-                            /* OFFICIAL TELEGRAM RICH HTML RENDERER */
-                            <TelegramOfficialHtmlRenderer html={evaluatedText} activeCover={currentCover} />
+                            /* OFFICIAL TELEGRAM BOT POST RENDERER */
+                            <TelegramBotPostRenderer html={evaluatedText} />
                         )}
 
-                        {/* Telegram Message Footer: Reactions, Views, Timestamp */}
-                        <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-1.5">
+                        <div className="pt-1 flex justify-end text-[11px] text-[#8fa0b5] font-mono">
+                            <span>18:00</span>
+                        </div>
+                    </div>
+
+                    {/* Bottom Inline Keyboard Actions (Telegram Interactive Buttons) */}
+                    {!isFacebookTemplate && (
+                        <div className="p-2.5 bg-[#131d27] border-t border-[#232e3c] space-y-1.5">
+                            <button
+                                type="button"
+                                className="w-full py-2 px-3 rounded-xl bg-[#243447] hover:bg-[#2b3e55] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                            >
+                                <Download className="w-3.5 h-3.5 text-sky-400" /> Descargar EPUB
+                            </button>
+                            <div className="grid grid-cols-3 gap-1.5">
                                 <button
                                     type="button"
-                                    onClick={toggleReaction}
-                                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
-                                        hasReacted
-                                            ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                                            : 'bg-[#17212b] text-gray-300 hover:text-white border border-white/5'
-                                    }`}
+                                    className="py-1.5 px-2 rounded-xl bg-[#243447] hover:bg-[#2b3e55] text-slate-200 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
                                 >
-                                    <Heart className={`w-3.5 h-3.5 ${hasReacted ? 'fill-rose-500 text-rose-500' : ''}`} />
-                                    <span>{reactionCount}</span>
+                                    <ArrowLeft className="w-3 h-3" /> Volver
                                 </button>
-                                <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-[#17212b] text-gray-300 text-xs border border-white/5">
-                                    <Flame className="w-3 h-3 text-amber-400 fill-amber-400" />
-                                    <span>2</span>
-                                </span>
-                            </div>
-
-                            <div className="flex items-center gap-2 text-[11px] text-gray-400 font-mono">
-                                <span className="flex items-center gap-1">
-                                    <Eye className="w-3.5 h-3.5" /> 57
-                                </span>
-                                <span>18:00</span>
+                                <button
+                                    type="button"
+                                    className="py-1.5 px-2 rounded-xl bg-[#243447] hover:bg-[#2b3e55] text-slate-200 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
+                                >
+                                    <Home className="w-3 h-3 text-amber-400" /> Inicio
+                                </button>
+                                <button
+                                    type="button"
+                                    className="py-1.5 px-2 rounded-xl bg-[#243447] hover:bg-[#2b3e55] text-slate-200 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
+                                >
+                                    <XCircle className="w-3 h-3 text-rose-400" /> Salir
+                                </button>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Telegram Channel Bottom Discussion Bar */}
-                    <div className="px-4 py-3 bg-[#17212b] border-t border-white/5 flex items-center justify-between text-xs font-semibold text-cyan-400 cursor-pointer hover:bg-slate-800 transition-colors">
-                        <div className="flex items-center gap-2">
-                            <MessageCircle className="w-4 h-4" />
-                            <span>Leave a comment</span>
-                        </div>
-                        <span className="text-gray-400 text-sm font-bold">›</span>
-                    </div>
+                    )}
                 </div>
             </div>
 
@@ -481,7 +440,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => handleSearchLibrary(e.target.value)}
-                                placeholder="Escribe el nombre de la serie (ej. Arifureta, Baccano, Mushoku)..."
+                                placeholder="Escribe el nombre de la serie (ej. Cause I Will Hate You, Baccano)..."
                                 autoFocus
                                 className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                             />
@@ -494,7 +453,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                                 </div>
                             ) : searchResults.length === 0 ? (
                                 <div className="py-8 text-center text-xs text-gray-500">
-                                    {searchQuery ? 'No se encontraron resultados para esta búsqueda' : 'Escribe para buscar cualquier serie o libro'}
+                                    {searchQuery ? 'No se encontraron resultados' : 'Escribe para buscar'}
                                 </div>
                             ) : (
                                 searchResults.map((bk) => (
@@ -535,140 +494,175 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     );
 };
 
-// Official Telegram HTML & Rich Formatting Renderer (Matching Telegram Desktop / TDesktop)
-export const TelegramOfficialHtmlRenderer: React.FC<{ html: string; activeCover?: string }> = ({
-    html,
-    activeCover,
-}) => {
+// Official Telegram Bot Post Renderer (Replicating Telegram UI Exactly)
+export const TelegramBotPostRenderer: React.FC<{ html: string }> = ({ html }) => {
+    const [openSinopsis, setOpenSinopsis] = useState(false);
+    const [openArchivo, setOpenArchivo] = useState(false);
+
     if (!html || html.trim() === '') {
         return <div className="text-gray-500 italic text-xs">Escribe una plantilla para previsualizar...</div>;
     }
 
-    const processedHtml = useMemo(() => {
-        let text = html;
-
-        // 1. Unescape HTML entities
-        text = text
+    // Parse sections
+    const parsed = useMemo(() => {
+        let text = html
             .replace(/&lt;/g, '<')
             .replace(/&gt;/g, '>')
             .replace(/&amp;/g, '&');
 
-        // 2. Handle hashtags BEFORE adding any HTML tags with classes to prevent regex destruction
-        text = text.replace(/(#[a-zA-Z0-9_]+)/g, '§TAG§$1§ENDTAG§');
+        // Remove <img ... /> tag since cover is displayed on top
+        text = text.replace(/<img[^>]*>/gi, '');
+        // Remove <tg-document ... />
+        text = text.replace(/<tg-document[^>]*>/gi, '');
 
-        // 3. Handle <img> tags by substituting sample cover photo banner
-        text = text.replace(/<img[^>]*>/gi, () => {
-            return `<div class="my-2 rounded-xl overflow-hidden border border-white/10 bg-black/40"><img src="${
-                activeCover || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600'
-            }" class="w-full max-h-[360px] object-cover" alt="" /></div>`;
-        });
+        // Extract sinopsis details
+        let sinopsisText = '';
+        const sinopsisMatch = text.match(/<details[^>]*>[\s\S]*?<summary>[\s\S]*?Sinopsis[\s\S]*?<\/summary>([\s\S]*?)<\/details>/i);
+        if (sinopsisMatch) {
+            sinopsisText = sinopsisMatch[1]
+                .replace(/<blockquote[^>]*>/gi, '')
+                .replace(/<\/blockquote>/gi, '')
+                .replace(/<[^>]+>/g, '')
+                .trim();
+            text = text.replace(sinopsisMatch[0], '§§SINOPSIS§§');
+        }
 
-        // 4. Handle <table>...</table> by converting to a clean Telegram Desktop structured info box
-        text = text.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (_match, tableBody) => {
-            const rows: string[] = [];
-            tableBody.replace(/<tr[^>]*>([\s\S]*?)<\/tr>/gi, (_m: string, rowContent: string) => {
-                const cells: string[] = [];
-                rowContent.replace(/<td[^>]*>([\s\S]*?)<\/td>/gi, (_cm: string, cellText: string) => {
-                    cells.push(cellText.trim());
-                    return '';
-                });
-                if (cells.length >= 2) {
-                    rows.push(
-                        `<div class="py-2 px-3.5 flex items-center justify-between text-xs border-b border-slate-800/80 last:border-b-0 gap-4"><span class="text-slate-400 font-medium shrink-0 flex items-center gap-1.5">${cells[0]}</span><span class="text-white font-bold text-right truncate">${cells[1]}</span></div>`
-                    );
-                } else if (cells.length === 1) {
-                    rows.push(
-                        `<div class="py-2 px-3.5 text-xs border-b border-slate-800/80 last:border-b-0">${cells[0]}</div>`
-                    );
-                }
+        // Extract archivo details
+        let archivoRows: Array<[string, string]> = [];
+        const archivoMatch = text.match(/<details[^>]*>[\s\S]*?<summary>[\s\S]*?Detalles del Archivo[\s\S]*?<\/summary>([\s\S]*?)<\/details>/i);
+        if (archivoMatch) {
+            const tableContent = archivoMatch[1];
+            tableContent.replace(/<tr[^>]*>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<\/tr>/gi, (_m, c1, c2) => {
+                archivoRows.push([c1.replace(/<[^>]+>/g, '').trim(), c2.replace(/<[^>]+>/g, '').trim()]);
                 return '';
             });
+            text = text.replace(archivoMatch[0], '§§ARCHIVO§§');
+        }
 
-            return `<div class="my-3 rounded-2xl bg-[#0a0f19] border border-slate-800 overflow-hidden divide-y divide-slate-800/50 shadow-md">${rows.join('')}</div>`;
-        });
+        // Extract main table
+        let mainTableRows: Array<[string, string]> = [];
+        const mainTableMatch = text.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
+        if (mainTableMatch) {
+            const tableContent = mainTableMatch[1];
+            tableContent.replace(/<tr[^>]*>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<\/tr>/gi, (_m, c1, c2) => {
+                mainTableRows.push([c1.replace(/<[^>]+>/g, '').trim(), c2.replace(/<[^>]+>/g, '').trim()]);
+                return '';
+            });
+            text = text.replace(mainTableMatch[0], '§§MAINTABLE§§');
+        }
 
-        // 5. Headers with precise Telegram sizes (h3, h4, h5, h6)
-        text = text
-            .replace(/<h2>(.*?)<\/h2>/gi, '<div class="text-base font-black text-white tracking-tight my-1">$1</div>')
-            .replace(/<h3>(.*?)<\/h3>/gi, '<div class="text-[15px] font-black text-white tracking-tight my-1">$1</div>')
-            .replace(/<h4>(.*?)<\/h4>/gi, '<div class="text-[13px] font-bold text-slate-300 my-0.5">$1</div>')
-            .replace(/<h5>(.*?)<\/h5>/gi, '<div class="text-[13px] font-semibold text-cyan-300 my-0.5">$1</div>')
-            .replace(/<h6>(.*?)<\/h6>/gi, '<div class="text-[13px] font-bold text-indigo-300 my-0.5">$1</div>');
+        return {
+            rawText: text,
+            sinopsisText,
+            archivoRows,
+            mainTableRows,
+        };
+    }, [html]);
 
-        // 6. Telegram official inline tags
-        text = text
-            // Bold
-            .replace(/<b>(.*?)<\/b>/gi, '<strong class="font-bold text-white">$1</strong>')
-            .replace(/<strong>(.*?)<\/strong>/gi, '<strong class="font-bold text-white">$1</strong>')
-            // Italic
-            .replace(/<i>(.*?)<\/i>/gi, '<em class="italic text-slate-200">$1</em>')
-            .replace(/<em>(.*?)<\/em>/gi, '<em class="italic text-slate-200">$1</em>')
-            // Underline
-            .replace(/<u>(.*?)<\/u>/gi, '<span class="underline underline-offset-2">$1</span>')
-            .replace(/<ins>(.*?)<\/ins>/gi, '<span class="underline underline-offset-2">$1</span>')
-            // Strike
-            .replace(/<s>(.*?)<\/s>/gi, '<span class="line-through text-slate-400">$1</span>')
-            .replace(/<strike>(.*?)<\/strike>/gi, '<span class="line-through text-slate-400">$1</span>')
-            .replace(/<del>(.*?)<\/del>/gi, '<span class="line-through text-slate-400">$1</span>')
-            // Telegram Expandable Blockquote
-            .replace(
-                /<blockquote expandable>(.*?)<\/blockquote>/gis,
-                '<details open class="group my-2 pl-3.5 py-2 border-l-2 border-sky-400 bg-sky-950/30 rounded-r-xl text-slate-200 text-xs"><summary class="cursor-pointer font-bold text-sky-300 select-none pb-1">Ver contenido desplegable</summary><div class="pt-1 italic leading-relaxed">$1</div></details>'
-            )
-            // Regular Telegram Blockquote
-            .replace(
-                /<blockquote>(.*?)<\/blockquote>/gis,
-                '<div class="pl-3.5 py-2 my-2 border-l-2 border-sky-400 bg-sky-950/30 rounded-r-xl italic text-slate-200 text-xs leading-relaxed">$1</div>'
-            )
-            // Details / Summary as Expandable Accordion
-            .replace(
-                /<details open>(.*?)<\/details>/gis,
-                '<details open class="my-2.5 rounded-2xl bg-[#0a0f19] border border-slate-800 p-3.5 text-xs">$1</details>'
-            )
-            .replace(
-                /<details>(.*?)<\/details>/gis,
-                '<details class="my-2.5 rounded-2xl bg-[#0a0f19] border border-slate-800 p-3.5 text-xs">$1</details>'
-            )
-            .replace(
-                /<summary>(.*?)<\/summary>/gi,
-                '<summary class="cursor-pointer font-bold text-sky-300 select-none flex items-center gap-1.5 pb-1">$1</summary>'
-            )
-            // Telegram Spoiler
-            .replace(
-                /<tg-spoiler>(.*?)<\/tg-spoiler>/gi,
-                '<span class="bg-slate-700 hover:bg-slate-600 active:bg-transparent cursor-pointer px-1.5 py-0.5 rounded text-white select-none transition-colors border border-white/10" onclick="this.style.backgroundColor=\'transparent\'; this.style.borderColor=\'transparent\';">$1</span>'
-            )
-            // Code & Pre
-            .replace(
-                /<code>(.*?)<\/code>/gi,
-                '<code class="px-1.5 py-0.5 rounded bg-slate-950 text-cyan-300 font-mono text-xs border border-white/10">$1</code>'
-            )
-            .replace(
-                /<pre>(.*?)<\/pre>/gis,
-                '<pre class="p-2.5 rounded-xl bg-slate-950 text-cyan-300 font-mono text-xs overflow-x-auto border border-white/10 my-1.5">$1</pre>'
-            )
-            // Telegram Links
-            .replace(
-                /<a href="([^"]+)">(.*?)<\/a>/gi,
-                '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-sky-400 hover:underline font-medium">$2</a>'
-            )
-            // Divider
-            .replace(/<hr\s*\/?>/gi, '<div class="my-3 border-t border-slate-800"></div>')
-            // Restore hashtags safely
-            .replace(/§TAG§(#[a-zA-Z0-9_]+)§ENDTAG§/g, '<span class="text-sky-400 font-medium">$1</span>')
-            // Clean paragraph tags
-            .replace(/<\/p>/gi, '')
-            .replace(/<p>/gi, '')
-            // Linebreaks
-            .replace(/\n/g, '<br/>');
-
-        return text;
-    }, [html, activeCover]);
+    // Render remaining title / hashtag lines
+    const renderedLines = useMemo(() => {
+        const lines = parsed.rawText.split('\n').map((l) => l.trim()).filter((l) => l && l !== '<hr/>');
+        return lines;
+    }, [parsed.rawText]);
 
     return (
-        <div
-            className="text-[13px] sm:text-[14px] leading-relaxed text-slate-100 select-text font-sans space-y-2"
-            dangerouslySetInnerHTML={{ __html: processedHtml }}
-        />
+        <div className="space-y-2 text-[13px] text-slate-100">
+            {/* Titles, Flags & Headings */}
+            <div className="space-y-0.5">
+                {renderedLines.map((line, idx) => {
+                    if (line === '§§MAINTABLE§§' || line === '§§SINOPSIS§§' || line === '§§ARCHIVO§§') {
+                        return null;
+                    }
+
+                    // Hashtag
+                    if (line.startsWith('#')) {
+                        return (
+                            <div key={idx} className="pt-1.5 text-[#5288c1] font-medium text-[12.5px] hover:underline cursor-pointer">
+                                {line}
+                            </div>
+                        );
+                    }
+
+                    // Standard Title line (clean bold text with flag)
+                    const cleanHtml = line
+                        .replace(/<\/?(h\d|p|b|strong)[^>]*>/gi, '')
+                        .trim();
+
+                    if (!cleanHtml) return null;
+
+                    return (
+                        <div key={idx} className="font-bold text-white text-[13.5px] leading-tight">
+                            {cleanHtml}
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Ficha Técnica Table */}
+            {parsed.mainTableRows.length > 0 && (
+                <div className="my-2 rounded-xl bg-[#131d27] border border-[#223143] overflow-hidden text-xs divide-y divide-[#223143]">
+                    {parsed.mainTableRows.map(([label, val], idx) => {
+                        const isHashtag = val.startsWith('#');
+                        return (
+                            <div key={idx} className="flex">
+                                <div className="w-[38%] py-1.5 px-3 bg-[#111923] text-[#8fa0b5] font-medium border-r border-[#223143] shrink-0 truncate">
+                                    {label}
+                                </div>
+                                <div className={`w-[62%] py-1.5 px-3 bg-[#141f2d] ${isHashtag ? 'text-[#5288c1] font-medium' : 'text-slate-100'} truncate`}>
+                                    {val}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Expandable Sinopsis Accordion */}
+            {parsed.sinopsisText && (
+                <div className="pt-0.5">
+                    <button
+                        type="button"
+                        onClick={() => setOpenSinopsis(!openSinopsis)}
+                        className="py-1 px-0.5 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors w-full text-left"
+                    >
+                        {openSinopsis ? <ChevronUp className="w-3.5 h-3.5 text-[#5288c1]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#5288c1]" />}
+                        <span>📖 Ver Sinopsis</span>
+                    </button>
+                    {openSinopsis && (
+                        <div className="mt-1 pl-3 py-1.5 border-l-2 border-[#5288c1] bg-[#131d27]/70 rounded-r-xl text-xs text-slate-200 italic leading-relaxed animate-in fade-in duration-150">
+                            {parsed.sinopsisText}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Expandable Detalles del Archivo Accordion */}
+            {parsed.archivoRows.length > 0 && (
+                <div className="pt-0.5">
+                    <button
+                        type="button"
+                        onClick={() => setOpenArchivo(!openArchivo)}
+                        className="py-1 px-0.5 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors w-full text-left"
+                    >
+                        {openArchivo ? <ChevronUp className="w-3.5 h-3.5 text-[#5288c1]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#5288c1]" />}
+                        <span>📁 Ver Detalles del Archivo</span>
+                    </button>
+                    {openArchivo && (
+                        <div className="mt-1.5 rounded-xl bg-[#131d27] border border-[#223143] overflow-hidden text-xs divide-y divide-[#223143] animate-in fade-in duration-150">
+                            {parsed.archivoRows.map(([label, val], idx) => (
+                                <div key={idx} className="flex">
+                                    <div className="w-[38%] py-1.5 px-3 bg-[#111923] text-[#8fa0b5] font-medium border-r border-[#223143] shrink-0 truncate">
+                                        {label}
+                                    </div>
+                                    <div className="w-[62%] py-1.5 px-3 bg-[#141f2d] text-slate-100 truncate">
+                                        {val}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
     );
 };
