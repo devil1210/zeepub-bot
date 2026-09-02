@@ -41,6 +41,7 @@ const EditorialDuplicates = React.lazy(() => import('@features/editorial/pages/E
 const EditorialObservatory = React.lazy(() => import('@features/editorial/pages/EditorialObservatory').then(m => ({ default: m.EditorialObservatory })));
 const EditorialUpload = React.lazy(() => import('@features/editorial/pages/EditorialUpload').then(m => ({ default: m.EditorialUpload })));
 const EditorialSeriesDetail = React.lazy(() => import('@features/editorial/pages/EditorialSeriesDetail').then(m => ({ default: m.EditorialSeriesDetail })));
+const EditorialPostEdit = React.lazy(() => import('@features/editorial/pages/EditorialPostEdit').then(m => ({ default: m.EditorialPostEdit })));
 
 import { Series, Volume } from '@shared/types';
 import { LoginGate } from '@components/LoginGate';
@@ -229,6 +230,7 @@ const AppContent: React.FC = () => {
               <Route path="/app-v2/datagrid" element={<Navigate to="/app-v2/series" replace />} />
               <Route path="/app-v2/calendar" element={<EditorialCalendar />} />
               <Route path="/app-v2/posts" element={<EditorialPosts />} />
+              <Route path="/app-v2/posts/:id" element={<EditorialPostEdit />} />
               <Route path="/app-v2/templates" element={<EditorialTemplates />} />
               <Route path="/app-v2/fansubs" element={
                 <ProtectedAdminRoute>

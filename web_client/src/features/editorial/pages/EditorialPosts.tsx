@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Send,
     ExternalLink,
@@ -13,12 +14,11 @@ import {
     BookOpen
 } from 'lucide-react';
 import { api } from '@shared/services/api';
-import { EditPublishedPostModal } from '../components/EditPublishedPostModal';
 
 export const EditorialPosts: React.FC = () => {
+    const navigate = useNavigate();
     const [posts, setPosts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editingPost, setEditingPost] = useState<any | null>(null);
 
     const fetchPosts = async () => {
         setLoading(true);
@@ -46,7 +46,7 @@ export const EditorialPosts: React.FC = () => {
     }, []);
 
     return (
-        <div className="w-full max-w-[2100px] mx-auto space-y-6 animate-in fade-in duration-300">
+        <div className="w-full max-w-[2400px] mx-auto space-y-6 animate-in fade-in duration-300">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
@@ -54,7 +54,7 @@ export const EditorialPosts: React.FC = () => {
                         <Send className="w-7 h-7 text-indigo-400" /> Historial de Publicaciones
                     </h2>
                     <p className="text-xs sm:text-sm text-gray-400 mt-1">
-                        Registro de volúmenes lanzados exitosamente en Telegram y Facebook con opción de edición in-place.
+                        Registro de volúmenes lanzados exitosamente en Telegram y Facebook con editor en página dedicada y simulador oficial.
                     </p>
                 </div>
 
@@ -112,7 +112,7 @@ export const EditorialPosts: React.FC = () => {
                                             <span>•</span>
                                             <span className="flex items-center gap-1 text-gray-400 font-mono text-[11px]">
                                                 <Calendar className="w-3 h-3" />
-                                                {post.published_at ? new Date(post.published_at).toLocaleString() : 'Reciente'}
+                                                {post.published_at ? new Date(post.published_at).toLocaleString('es-ES') : 'Reciente'}
                                             </span>
                                         </div>
                                     </div>
@@ -120,11 +120,12 @@ export const EditorialPosts: React.FC = () => {
 
                                 <div className="flex items-center gap-3 self-end md:self-center shrink-0">
                                     <button
-                                        onClick={() => setEditingPost(post)}
-                                        className="px-4 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white text-xs font-bold flex items-center gap-2 border border-indigo-500/30 transition-all active:scale-95 shadow-md"
-                                        title="Editar mensaje en Telegram"
+                                        onClick={() => navigate(`/app-v2/posts/${post.id}`)}
+                                        className="px-4 py-2.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-xs font-bold flex items-center gap-2 border border-indigo-500/30 transition-all active:scale-95 shadow-md group"
+                                        title="Abrir editor de post en pantalla completa"
                                     >
-                                        <Edit3 className="w-4 h-4" /> Editar en Telegram
+                                        <Edit3 className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                                        <span>Editar en Telegram</span>
                                     </button>
                                 </div>
                             </div>
@@ -132,14 +133,6 @@ export const EditorialPosts: React.FC = () => {
                     </div>
                 )}
             </div>
-
-            {/* Edit Sent Post Modal */}
-            <EditPublishedPostModal
-                isOpen={!!editingPost}
-                post={editingPost}
-                onClose={() => setEditingPost(null)}
-                onSuccess={fetchPosts}
-            />
         </div>
     );
 };
