@@ -24,54 +24,13 @@ export interface TelegramMessagePreviewProps {
     isCaptionMode?: boolean;
 }
 
-// Renders flag emojis with robust Twemoji SVG fallback so Windows never renders ugly 'GB'/'JP'/'ES' letters
-export const renderWithTwemoji = (text: string) => {
-    if (!text) return null;
-    const parts = text.split(/(🇬🇧|🇯🇵|🇪🇸|🇺🇸)/g);
-
-    return parts.map((part, i) => {
-        if (part === '🇬🇧') {
-            return (
-                <img
-                    key={i}
-                    src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ec-1f1e7.svg"
-                    className="w-4 h-4 inline-block mr-1.5 align-middle shadow-sm rounded-sm"
-                    alt="🇬🇧"
-                />
-            );
-        }
-        if (part === '🇯🇵') {
-            return (
-                <img
-                    key={i}
-                    src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ef-1f1f5.svg"
-                    className="w-4 h-4 inline-block mr-1.5 align-middle shadow-sm rounded-sm"
-                    alt="🇯🇵"
-                />
-            );
-        }
-        if (part === '🇪🇸') {
-            return (
-                <img
-                    key={i}
-                    src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ea-1f1f8.svg"
-                    className="w-4 h-4 inline-block mr-1.5 align-middle shadow-sm rounded-sm"
-                    alt="🇪🇸"
-                />
-            );
-        }
-        if (part === '🇺🇸') {
-            return (
-                <img
-                    key={i}
-                    src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1fa-1f1f8.svg"
-                    className="w-4 h-4 inline-block mr-1.5 align-middle shadow-sm rounded-sm"
-                    alt="🇺🇸"
-                />
-            );
-        }
-        return part;
-    });
+// Convert emoji flags (🇬🇧, 🇯🇵, 🇪🇸, 🇺🇸) into Twemoji SVG images so Windows never renders letters
+const renderTwemojiInHtml = (htmlStr: string): string => {
+    return htmlStr
+        .replace(/🇬🇧/g, '<img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ec-1f1e7.svg" class="w-4 h-4 inline-block mr-1 align-text-bottom shadow-sm rounded-sm" alt="🇬🇧" />')
+        .replace(/🇯🇵/g, '<img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ef-1f1f5.svg" class="w-4 h-4 inline-block mr-1 align-text-bottom shadow-sm rounded-sm" alt="🇯🇵" />')
+        .replace(/🇪🇸/g, '<img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1ea-1f1f8.svg" class="w-4 h-4 inline-block mr-1 align-text-bottom shadow-sm rounded-sm" alt="🇪🇸" />')
+        .replace(/🇺🇸/g, '<img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1fa-1f1f8.svg" class="w-4 h-4 inline-block mr-1 align-text-bottom shadow-sm rounded-sm" alt="🇺🇸" />');
 };
 
 export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
@@ -82,7 +41,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     previewBook,
     coverUrl,
 }) => {
-    const inputContent = rawTemplate || templateContent || '';
+    const inputContent = rawTemplate !== undefined ? rawTemplate : (templateContent !== undefined ? templateContent : '');
     const [selectedBook, setSelectedBook] = useState<any | null>(null);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -92,7 +51,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     const [copied, setCopied] = useState(false);
     const [previewWidth, setPreviewWidth] = useState<'desktop' | 'mobile'>('desktop');
 
-    // Default book matching the user's real screenshot (Alya Sometimes Hides Her Feelings in Russian Vol. 3)
+    // Default book matching real library
     const activeBook = useMemo(() => {
         if (selectedBook) return selectedBook;
         if (sampleBook) return sampleBook;
@@ -260,7 +219,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
         setIsSearchOpen(false);
     };
 
-    // Evaluate Template Variables & Conditionals strictly
+    // Evaluate Template Variables & Conditionals strictly on EVERY keystroke
     const evaluatedText = useMemo(() => {
         if (!inputContent) return '';
         let text = inputContent;
@@ -313,7 +272,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
         activeBook.cover_vertical ||
         activeBook.cover;
 
-    const isFacebookTemplate = platform === 'facebook' || evaluatedText.includes('Plantilla de Publicación para Facebook') || evaluatedText.includes('Descarga:');
+    const isFacebookTemplate = platform === 'facebook' || evaluatedText.includes('Plantilla de Publicación para Facebook') || (evaluatedText.includes('Descarga:') && !evaluatedText.includes('<table'));
 
     return (
         <div className="flex flex-col h-full w-full space-y-3 font-sans select-none animate-in fade-in duration-200">
@@ -427,8 +386,8 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                                 </div>
                             </div>
                         ) : (
-                            /* OFFICIAL TELEGRAM BOT POST RENDERER */
-                            <TelegramRichMessageLiveRenderer html={evaluatedText} book={activeBook} />
+                            /* LIVE TELEGRAM RICH MESSAGE DYNAMIC RENDERER */
+                            <TelegramRichDynamicHtmlRenderer text={evaluatedText} book={activeBook} />
                         )}
 
                         <div className="pt-1 flex justify-end text-[11px] text-[#8fa0b5] font-mono">
@@ -511,246 +470,82 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     );
 };
 
-// Precise Telegram Rich Message Renderer (Matching Real Telegram Post Pixel-for-Pixel)
-export const TelegramRichMessageLiveRenderer: React.FC<{ html: string; book: any }> = ({ html, book }) => {
-    const [openFicha, setOpenFicha] = useState(true); // Open by default (<details open>)
-    const [openSinopsis, setOpenSinopsis] = useState(false);
-    const [openArchivo, setOpenArchivo] = useState(false);
+// Truly Dynamic Telegram HTML Transformer (Updates LIVE on every keystroke)
+export const TelegramRichDynamicHtmlRenderer: React.FC<{ text: string; book: any }> = ({ text, book }) => {
+    const transformedHtml = useMemo(() => {
+        if (!text || text.trim() === '') return '<div class="text-gray-500 italic text-xs">Escribe una plantilla para previsualizar...</div>';
 
-    if (!html || html.trim() === '') {
-        return <div className="text-gray-500 italic text-xs">Escribe una plantilla para previsualizar...</div>;
-    }
+        let s = text;
 
-    // Parse blocks
-    const parsed = useMemo(() => {
-        let text = html
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&amp;/g, '&');
+        // 1. Remove top <img ... /> since cover image is displayed at top
+        s = s.replace(/<img[^>]*>/gi, '');
 
-        // Remove <img ... />
-        text = text.replace(/<img[^>]*>/gi, '');
+        // 2. Transform <tg-document ... /> into Telegram document card
+        const filename = book?.filename || `${book?.series || book?.title || 'Libro'} - V${book?.volumen || book?.volume || '1'}.epub`;
+        const filesize = book?.size_mb || book?.tamaño || '14.1 MB';
+        s = s.replace(
+            /<tg-document[^>]*\/?>/gi,
+            `<div class="my-2.5 p-2.5 rounded-xl bg-[#131d27] border border-[#243447] flex items-center gap-3 select-none"><div class="w-10 h-10 rounded-full bg-[#2481cc] flex items-center justify-center shrink-0 shadow-md text-white font-bold"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg></div><div class="min-w-0 flex-1"><div class="text-xs font-bold text-white truncate">${filename}</div><div class="text-[11px] text-[#8fa0b5] font-medium">${filesize}</div></div></div>`
+        );
 
-        // Has Document Tag?
-        const hasDocument = /<tg-document/i.test(text);
-        text = text.replace(/<tg-document[^>]*>/gi, '');
-
-        // Extract bottom slug / hashtags
-        let bottomHashtags: string[] = [];
-        text = text.replace(/<hr\s*\/?>/gi, '');
-        text = text.replace(/(?:<p>)?(#[a-zA-Z0-9_]+)(?:<\/p>)?/g, (_m, tag) => {
-            bottomHashtags.push(tag);
-            return '';
-        });
-
-        // Extract Ficha Técnica details
-        let fichaRows: Array<[string, string]> = [];
-        const fichaMatch = text.match(/<details[^>]*open[^>]*>[\s\S]*?<summary>[\s\S]*?Ficha Técnica[\s\S]*?<\/summary>([\s\S]*?)<\/details>/i) ||
-                           text.match(/<details[^>]*>[\s\S]*?<summary>[\s\S]*?Ficha Técnica[\s\S]*?<\/summary>([\s\S]*?)<\/details>/i);
-        if (fichaMatch) {
-            const tableContent = fichaMatch[1];
-            tableContent.replace(/<tr[^>]*>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<\/tr>/gi, (_m, c1, c2) => {
-                const label = c1.replace(/<[^>]+>/g, '').trim();
-                const val = c2.replace(/<[^>]+>/g, '').trim();
-                if (label && val) {
-                    fichaRows.push([label, val]);
-                }
-                return '';
-            });
-            text = text.replace(fichaMatch[0], '§§FICHA§§');
-        } else {
-            // Check for standalone <table>
-            const tableMatch = text.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
-            if (tableMatch) {
-                const tableContent = tableMatch[1];
-                tableContent.replace(/<tr[^>]*>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<\/tr>/gi, (_m, c1, c2) => {
-                    const label = c1.replace(/<[^>]+>/g, '').trim();
-                    const val = c2.replace(/<[^>]+>/g, '').trim();
-                    if (label && val) {
-                        fichaRows.push([label, val]);
-                    }
+        // 3. Transform <table> into Telegram 2-column key-value table
+        s = s.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (_match, tableBody) => {
+            const rows: string[] = [];
+            tableBody.replace(/<tr[^>]*>([\s\S]*?)<\/tr>/gi, (_m: string, rowContent: string) => {
+                const cells: string[] = [];
+                rowContent.replace(/<td[^>]*>([\s\S]*?)<\/td>/gi, (_cm: string, cellText: string) => {
+                    cells.push(cellText.trim());
                     return '';
                 });
-                text = text.replace(tableMatch[0], '§§FICHA§§');
-            }
-        }
-
-        // Extract sinopsis details
-        let sinopsisText = '';
-        const sinopsisMatch = text.match(/<details[^>]*>[\s\S]*?<summary>[\s\S]*?Sinopsis[\s\S]*?<\/summary>([\s\S]*?)<\/details>/i);
-        if (sinopsisMatch) {
-            sinopsisText = sinopsisMatch[1]
-                .replace(/<blockquote[^>]*>/gi, '')
-                .replace(/<\/blockquote>/gi, '')
-                .replace(/<[^>]+>/g, '')
-                .trim();
-            text = text.replace(sinopsisMatch[0], '§§SINOPSIS§§');
-        }
-
-        // Extract archivo details
-        let archivoRows: Array<[string, string]> = [];
-        const archivoMatch = text.match(/<details[^>]*>[\s\S]*?<summary>[\s\S]*?Detalles del Archivo[\s\S]*?<\/summary>([\s\S]*?)<\/details>/i);
-        if (archivoMatch) {
-            const tableContent = archivoMatch[1];
-            tableContent.replace(/<tr[^>]*>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<td[^>]*>(.*?)<\/td>[\s\S]*?<\/tr>/gi, (_m, c1, c2) => {
-                const label = c1.replace(/<[^>]+>/g, '').trim();
-                const val = c2.replace(/<[^>]+>/g, '').trim();
-                if (label && val) {
-                    archivoRows.push([label, val]);
+                if (cells.length >= 2) {
+                    const isHashtag = cells[1].startsWith('#');
+                    rows.push(
+                        `<div class="flex border-b border-[#243447] last:border-b-0"><div class="w-[38%] py-1.5 px-3 bg-[#111923] text-[#8fa0b5] font-medium border-r border-[#243447] shrink-0 truncate flex items-center">${cells[0]}</div><div class="w-[62%] py-1.5 px-3 bg-[#141f2d] ${isHashtag ? 'text-[#5288c1] font-medium' : 'text-slate-100'} truncate flex items-center">${cells[1]}</div></div>`
+                    );
+                } else if (cells.length === 1) {
+                    rows.push(
+                        `<div class="py-1.5 px-3 bg-[#141f2d] text-slate-100 border-b border-[#243447] last:border-b-0">${cells[0]}</div>`
+                    );
                 }
                 return '';
             });
-            text = text.replace(archivoMatch[0], '§§ARCHIVO§§');
-        }
 
-        return {
-            rawText: text,
-            fichaRows,
-            sinopsisText,
-            archivoRows,
-            hasDocument,
-            bottomHashtags,
-        };
-    }, [html]);
+            return `<div class="my-1.5 rounded-xl bg-[#131d27] border border-[#243447] overflow-hidden text-xs divide-y divide-[#243447] shadow-sm">${rows.join('')}</div>`;
+        });
 
-    const renderedLines = useMemo(() => {
-        const lines = parsed.rawText.split('\n').map((l) => l.trim()).filter((l) => l && l !== '<hr/>' && l !== '<hr>');
-        return lines;
-    }, [parsed.rawText]);
+        // 4. Transform <details open> and <details> into Telegram interactive details
+        s = s.replace(/<details\s+open[^>]*>([\s\S]*?)<\/details>/gi, '<details open class="group/det my-1 text-xs select-none">$1</details>');
+        s = s.replace(/<details[^>]*>([\s\S]*?)<\/details>/gi, '<details class="group/det my-1 text-xs select-none">$1</details>');
+
+        // 5. Transform <summary> into Telegram collapsible header with chevron
+        s = s.replace(/<summary[^>]*>([\s\S]*?)<\/summary>/gi, '<summary class="py-1 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors list-none outline-none"><span class="text-[#5288c1] font-bold text-xs select-none inline-block transform transition-transform group-open/det:rotate-180">∨</span><span>$1</span></summary>');
+
+        // 6. Transform <blockquote> into Telegram blue-bordered blockquote
+        s = s.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, '<div class="my-1.5 pl-3 py-1.5 border-l-2 border-[#5288c1] bg-[#131d27]/70 rounded-r-xl text-xs text-slate-200 italic leading-relaxed">$1</div>');
+
+        // 7. Transform Headings (h3, h4, h5, h6)
+        s = s.replace(/<h3>(.*?)<\/h3>/gi, '<div class="font-bold text-white text-[14px] leading-snug my-0.5">$1</div>');
+        s = s.replace(/<h4>(.*?)<\/h4>/gi, '<div class="font-bold text-white text-[13.5px] leading-snug my-0.5">$1</div>');
+        s = s.replace(/<h5>(.*?)<\/h5>/gi, '<div class="font-bold text-white text-[13.5px] leading-snug my-0.5">$1</div>');
+        s = s.replace(/<h6>(.*?)<\/h6>/gi, '<div class="font-bold text-white text-[13.5px] leading-snug my-0.5">$1</div>');
+
+        // 8. Transform <p> and <hr/>
+        s = s.replace(/<hr\s*\/?>/gi, '');
+        s = s.replace(/<p>(.*?)<\/p>/gi, '<div class="leading-snug my-0.5">$1</div>');
+
+        // 9. Hashtags in text (e.g. #Tag) -> link color
+        s = s.replace(/(#[a-zA-Z0-9_]+)/g, '<span class="text-[#5288c1] font-medium hover:underline cursor-pointer">$1</span>');
+
+        // 10. Flag Emojis -> SVG
+        s = renderTwemojiInHtml(s);
+
+        return s;
+    }, [text, book]);
 
     return (
-        <div className="space-y-1 text-[13.5px] text-slate-100">
-            {/* Titles, Flags, Volume & Genres Chips */}
-            <div className="space-y-0.5">
-                {renderedLines.map((line, idx) => {
-                    if (line === '§§FICHA§§' || line === '§§SINOPSIS§§' || line === '§§ARCHIVO§§') {
-                        return null;
-                    }
-
-                    // Genres line with tag icon
-                    if (line.includes('🏷️') || line.includes('🏷')) {
-                        const cleanLine = line.replace(/<\/?(p|i|em|b|strong)[^>]*>/gi, '').trim();
-                        return (
-                            <div key={idx} className="text-[#5288c1] italic font-normal text-[12.5px] leading-relaxed pt-0.5 pb-1">
-                                {renderWithTwemoji(cleanLine)}
-                            </div>
-                        );
-                    }
-
-                    // Title line
-                    const cleanTitle = line.replace(/<\/?(h\d|p|b|strong)[^>]*>/gi, '').trim();
-                    if (!cleanTitle) return null;
-
-                    return (
-                        <div key={idx} className="font-bold text-white text-[13.5px] sm:text-[14px] leading-snug flex items-center">
-                            {renderWithTwemoji(cleanTitle)}
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Ficha Técnica Section (^ 📋 Ficha Técnica) */}
-            {parsed.fichaRows.length > 0 && (
-                <div className="pt-0.5">
-                    <button
-                        type="button"
-                        onClick={() => setOpenFicha(!openFicha)}
-                        className="py-1 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors w-full text-left"
-                    >
-                        {openFicha ? <ChevronUp className="w-3.5 h-3.5 text-[#5288c1]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#5288c1]" />}
-                        <span>📋 Ficha Técnica</span>
-                    </button>
-
-                    {openFicha && (
-                        <div className="mt-1 rounded-xl bg-[#131d27] border border-[#243447] overflow-hidden text-xs divide-y divide-[#243447]">
-                            {parsed.fichaRows.map(([label, val], idx) => {
-                                const isHashtag = val.startsWith('#');
-                                return (
-                                    <div key={idx} className="flex">
-                                        <div className="w-[38%] py-1.5 px-3 bg-[#111923] text-[#8fa0b5] font-medium border-r border-[#243447] shrink-0 truncate flex items-center gap-1">
-                                            {renderWithTwemoji(label)}
-                                        </div>
-                                        <div className={`w-[62%] py-1.5 px-3 bg-[#141f2d] ${isHashtag ? 'text-[#5288c1] font-medium' : 'text-slate-100'} truncate flex items-center`}>
-                                            {renderWithTwemoji(val)}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Expandable Sinopsis Accordion (∨ 📖 Ver Sinopsis) */}
-            {parsed.sinopsisText && (
-                <div className="pt-0.5">
-                    <button
-                        type="button"
-                        onClick={() => setOpenSinopsis(!openSinopsis)}
-                        className="py-1 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors w-full text-left"
-                    >
-                        {openSinopsis ? <ChevronUp className="w-3.5 h-3.5 text-[#5288c1]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#5288c1]" />}
-                        <span>📖 Ver Sinopsis</span>
-                    </button>
-                    {openSinopsis && (
-                        <div className="mt-1 pl-3 py-1.5 border-l-2 border-[#5288c1] bg-[#131d27]/70 rounded-r-xl text-xs text-slate-200 italic leading-relaxed animate-in fade-in duration-150">
-                            {parsed.sinopsisText}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Expandable Detalles del Archivo Accordion (∨ 📁 Ver Detalles del Archivo) */}
-            {parsed.archivoRows.length > 0 && (
-                <div className="pt-0.5">
-                    <button
-                        type="button"
-                        onClick={() => setOpenArchivo(!openArchivo)}
-                        className="py-1 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors w-full text-left"
-                    >
-                        {openArchivo ? <ChevronUp className="w-3.5 h-3.5 text-[#5288c1]" /> : <ChevronDown className="w-3.5 h-3.5 text-[#5288c1]" />}
-                        <span>📁 Ver Detalles del Archivo</span>
-                    </button>
-                    {openArchivo && (
-                        <div className="mt-1.5 rounded-xl bg-[#131d27] border border-[#243447] overflow-hidden text-xs divide-y divide-[#243447] animate-in fade-in duration-150">
-                            {parsed.archivoRows.map(([label, val], idx) => (
-                                <div key={idx} className="flex">
-                                    <div className="w-[38%] py-1.5 px-3 bg-[#111923] text-[#8fa0b5] font-medium border-r border-[#243447] shrink-0 truncate flex items-center gap-1">
-                                        {renderWithTwemoji(label)}
-                                    </div>
-                                    <div className="w-[62%] py-1.5 px-3 bg-[#141f2d] text-slate-100 truncate flex items-center">
-                                        {renderWithTwemoji(val)}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Telegram Document Attachment Box (<tg-document src="tg://document?id=epub_file" />) */}
-            {parsed.hasDocument && (
-                <div className="my-2.5 p-2.5 rounded-xl bg-[#131d27] border border-[#243447] flex items-center gap-3 select-none">
-                    <div className="w-10 h-10 rounded-full bg-[#2481cc] flex items-center justify-center shrink-0 shadow-md">
-                        <ArrowDown className="w-5 h-5 text-white stroke-[2.5]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold text-white truncate">
-                            {book.filename || `${book.series || book.title} - V${book.volumen || book.volume}.epub`}
-                        </div>
-                        <div className="text-[11px] text-[#8fa0b5] font-medium">
-                            {book.size_mb || book.tamaño || '14.1 MB'}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Bottom Hashtags (Placed AFTER Document, strictly at the bottom) */}
-            {parsed.bottomHashtags.length > 0 && (
-                <div className="pt-1 text-[#5288c1] font-medium text-[13px] hover:underline cursor-pointer">
-                    {parsed.bottomHashtags.join(' ')}
-                </div>
-            )}
-        </div>
+        <div
+            className="space-y-1 text-[13.5px] text-slate-100"
+            dangerouslySetInnerHTML={{ __html: transformedHtml }}
+        />
     );
 };
