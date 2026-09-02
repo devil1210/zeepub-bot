@@ -218,6 +218,36 @@ const AppContent: React.FC = () => {
               <Route path="/app-v2/calendar" element={<EditorialCalendar />} />
               <Route path="/app-v2/posts" element={<EditorialPosts />} />
               <Route path="/app-v2/templates" element={<EditorialTemplates />} />
+              <Route path="/app-v2/datagrid" element={
+                <ProtectedAdminRoute>
+                  <PageWrapper Component={SeriesManagerPage} />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/app-v2/ai" element={
+                <ProtectedAdminRoute>
+                  <PageWrapper Component={AIHub} />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/app-v2/channels" element={
+                <ProtectedAdminRoute>
+                  <PageWrapper Component={Admin} props={{ defaultView: 'publisher' }} />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/app-v2/duplicates" element={
+                <ProtectedAdminRoute>
+                  <PageWrapper Component={Admin} props={{ defaultView: 'duplicates' }} />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/app-v2/genres" element={
+                <ProtectedAdminRoute>
+                  <PageWrapper Component={Admin} props={{ defaultView: 'audit' }} />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/app-v2/observatory" element={
+                <ProtectedAdminRoute>
+                  <PageWrapper Component={Admin} props={{ defaultView: 'observatory' }} />
+                </ProtectedAdminRoute>
+              } />
               <Route path="/app-v2/users" element={
                 <ProtectedAdminRoute>
                   <EditorialUsers />

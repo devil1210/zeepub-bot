@@ -10,15 +10,18 @@ import {
     Loader2,
     ChevronLeft,
     ChevronRight,
-    Sparkles
+    Sparkles,
+    Edit3
 } from 'lucide-react';
 import { api } from '@shared/services/api';
+import { SchedulePostModal } from '../components/SchedulePostModal';
 
 export const EditorialCalendar: React.FC = () => {
     const [queue, setQueue] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [actionMsg, setActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [editingItem, setEditingItem] = useState<any | null>(null);
 
     const fetchQueue = async () => {
         setLoading(true);
@@ -58,21 +61,39 @@ export const EditorialCalendar: React.FC = () => {
         }
     };
 
+    const handleEditPost = (item: any) => {
+        setEditingItem({
+            id: item.book_hash,
+            book_hash: item.book_hash,
+            title: item.series || 'Novela',
+            volume: item.volume || 1,
+            channel_id: item.channel_id,
+            template_id: item.template_id,
+            scheduled_for: item.scheduled_for,
+        });
+    };
+
     const getStatusPill = (status: string) => {
-        switch (status) {
+        const st = (status || '').toLowerCase();
+        switch (st) {
             case 'pending':
+            case 'scheduled':
+            case 'programado':
                 return (
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
                         <Clock className="w-3 h-3" /> Programado
                     </span>
                 );
+            case 'sent':
             case 'published':
+            case 'completado':
                 return (
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3" /> Publicado
                     </span>
                 );
             case 'failed':
+            case 'fallido':
                 return (
                     <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20 flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" /> Fallido
@@ -108,7 +129,7 @@ export const EditorialCalendar: React.FC = () => {
                     >
                         <option value="all">Todos los Estados</option>
                         <option value="pending">⏳ Programadas (Pendientes)</option>
-                        <option value="published">✅ Publicadas</option>
+                        <option value="sent">✅ Publicadas (Sent)</option>
                         <option value="failed">❌ Fallidas</option>
                     </select>
 
@@ -187,6 +208,14 @@ export const EditorialCalendar: React.FC = () => {
 
                                 {/* Actions */}
                                 <div className="flex items-center gap-2 self-end sm:self-center">
+                                    {(item.status === 'pending' || item.status === 'scheduled') && (
+                                        <button
+                                            onClick={() => handleEditPost(item)}
+                                            className="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 text-xs font-bold flex items-center gap-1 transition-all border border-indigo-500/30"
+                                        >
+                                            <Edit3 className="w-3.5 h-3.5" /> Editar
+                                        </button>
+                                    )}
                                     {item.status === 'failed' && (
                                         <button
                                             onClick={() => handleRetry(item.id)}
@@ -195,7 +224,7 @@ export const EditorialCalendar: React.FC = () => {
                                             Reintentar
                                         </button>
                                     )}
-                                    {item.status === 'pending' && (
+                                    {(item.status === 'pending' || item.status === 'scheduled') && (
                                         <button
                                             onClick={() => handleCancel(item.id)}
                                             className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition-all"
@@ -209,6 +238,15 @@ export const EditorialCalendar: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Edit / Reschedule Modal */}
+            <SchedulePostModal
+                isOpen={!!editingItem}
+                book={editingItem}
+                onClose={() => setEditingItem(null)}
+                onSuccess={fetchQueue}
+            />
         </div>
     );
 };
+

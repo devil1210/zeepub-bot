@@ -35,9 +35,10 @@ import { useTelegram } from '@shared/contexts/TelegramContext';
 
 interface AdminProps {
   onNavigate?: (tab: string) => void;
+  defaultView?: 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads' | 'publisher' | 'observatory' | 'bulk-review' | 'audit' | 'datagrid';
 }
 
-export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
+export const Admin: React.FC<AdminProps> = ({ onNavigate, defaultView }) => {
   const { settings } = useTheme();
   const { webApp } = useTelegram();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -46,8 +47,8 @@ export const Admin: React.FC<AdminProps> = ({ onNavigate }) => {
   const isViewSelectorOpen = navState.isMenuOpen;
   const setIsViewSelectorOpen = setMenuOpen;
 
-  // Derived state from URL
-  const currentView = (searchParams.get('view') as 'monitor' | 'system' | 'access' | 'interface' | 'duplicates' | 'uploads' | 'publisher' | 'observatory' | 'bulk-review' | 'audit' | 'datagrid') || 'monitor';
+  // Derived state from URL or prop
+  const currentView = (searchParams.get('view') as any) || defaultView || 'monitor';
   const selectedUserId = searchParams.get('userId');
   const tierName = searchParams.get('tierName');
   const tierColor = searchParams.get('tierColor');

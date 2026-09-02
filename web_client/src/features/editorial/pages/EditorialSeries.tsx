@@ -27,10 +27,38 @@ export const EditorialSeries: React.FC = () => {
     const fetchSeries = async () => {
         setLoading(true);
         try {
-            const res = await api.searchBooks(searchQuery, page, 'all', 'a-z');
-            const items = res?.results || [];
-            setSeriesList(items);
-            setTotalPages(res?.totalPages || 1);
+            // First try getLibraryGrid for full admin series metadata
+            const gridRes = await api.getLibraryGrid({
+                query: searchQuery,
+                page,
+                limit: 18,
+                sort_by: 'name_asc',
+            });
+
+            if (gridRes?.series && gridRes.series.length > 0) {
+                const items = gridRes.series.map((s: any) => ({
+                    ...s,
+                    id: s.id,
+                    series_hash: s.id,
+                    name: s.name,
+                    englishTitle: s.series_english || s.name,
+                    spanishTitle: s.series_spanish,
+                    author: s.author,
+                    volumesCount: s.book_count || s.books?.length || 1,
+                    coverUrl: s.cover_url || `/api/library/covers/${s.id}.jpg`,
+                }));
+                setSeriesList(items);
+                setTotalPages(gridRes.pagination?.total_pages || 1);
+            } else {
+                // Fallback to searchBooks
+                const res = await api.searchBooks(searchQuery, page, 'all', 'a-z');
+                const items = (res?.results || []).map((s: any) => ({
+                    ...s,
+                    coverUrl: s.coverUrl || s.cover_url || (s.series_hash || s.id ? `/api/library/covers/${s.series_hash || s.id}.jpg` : null),
+                }));
+                setSeriesList(items);
+                setTotalPages(res?.totalPages || 1);
+            }
         } catch (err) {
             console.error('Error cargando series:', err);
         } finally {
@@ -46,6 +74,14 @@ export const EditorialSeries: React.FC = () => {
         e.preventDefault();
         setPage(1);
         fetchSeries();
+    };
+
+    const getSeriesCover = (s: any) => {
+        if (s.coverUrl && (s.coverUrl.startsWith('http') || s.coverUrl.startsWith('/'))) return s.coverUrl;
+        if (s.cover_url && (s.cover_url.startsWith('http') || s.cover_url.startsWith('/'))) return s.cover_url;
+        const sId = s.series_hash || s.id;
+        if (sId) return `/api/library/covers/${sId}.jpg`;
+        return null;
     };
 
     return (
@@ -108,6 +144,7 @@ export const EditorialSeries: React.FC = () => {
                         const mainTitle = s.englishTitle || s.name_english || s.title || s.name;
                         const romajiTitle = s.romajiTitle || s.name;
                         const spanishTitle = s.spanishTitle || s.name_spanish;
+                        const coverSrc = getSeriesCover(s);
 
                         return (
                             <div
@@ -117,11 +154,17 @@ export const EditorialSeries: React.FC = () => {
                                 <div className="flex gap-4">
                                     {/* Cover */}
                                     <div className="w-16 h-24 rounded-xl bg-slate-800 border border-white/10 overflow-hidden shrink-0 shadow-lg">
-                                        {s.coverUrl || s.coverThumbUrl ? (
+                                        {coverSrc ? (
                                             <img
-                                                src={s.coverUrl || s.coverThumbUrl}
+                                                src={coverSrc}
                                                 alt=""
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                onError={(e) => {
+                                                    const target = e.currentTarget;
+                                                    if (!target.src.includes('_original.jpg') && sId) {
+                                                        target.src = `/api/library/covers/${sId}_original.jpg`;
+                                                    }
+                                                }}
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-gray-600">

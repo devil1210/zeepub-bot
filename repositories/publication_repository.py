@@ -186,7 +186,13 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
             selectinload(PublicationQueue.channel), selectinload(PublicationQueue.template)
         )
         if status:
-            stmt = stmt.where(PublicationQueue.status == status)
+            st = status.lower()
+            if st in ("sent", "published", "completado"):
+                stmt = stmt.where(PublicationQueue.status.in_(["sent", "published"]))
+            elif st in ("pending", "scheduled", "programado"):
+                stmt = stmt.where(PublicationQueue.status.in_(["pending", "scheduled"]))
+            else:
+                stmt = stmt.where(PublicationQueue.status == status)
         stmt = stmt.order_by(PublicationQueue.scheduled_for.desc()).limit(limit)
         result = await session.execute(stmt)
         return list(result.scalars().all())

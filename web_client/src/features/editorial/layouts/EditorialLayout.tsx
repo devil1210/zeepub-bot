@@ -15,7 +15,13 @@ import {
     ArrowLeft,
     Sparkles,
     Menu,
-    X
+    X,
+    Table,
+    BrainCircuit,
+    Building2,
+    GitMerge,
+    Tags,
+    Activity
 } from 'lucide-react';
 import { GlobalSearchModal } from '../components/GlobalSearchModal';
 import { useTelegram } from '@shared/contexts/TelegramContext';
@@ -27,21 +33,28 @@ interface EditorialLayoutProps {
 export const EditorialLayout: React.FC<EditorialLayoutProps> = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, isAdmin } = useTelegram();
+    const { user, isAdmin, isStaff } = useTelegram();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+    const hasAdminAccess = isAdmin || isStaff;
 
     const navItems = [
         { path: '/app-v2', label: 'Dashboard', icon: LayoutDashboard, exact: true },
         { path: '/app-v2/library', label: 'Biblioteca EPUBs', icon: BookOpen },
-        { path: '/app-v2/series', label: 'Series', icon: Layers },
-        { path: '/app-v2/volumes', label: 'Volúmenes', icon: BookOpen },
-        { path: '/app-v2/calendar', label: 'Calendario', icon: Calendar },
-        { path: '/app-v2/posts', label: 'Publicaciones', icon: Send },
-        { path: '/app-v2/templates', label: 'Plantillas', icon: FileCode2 },
-        { path: '/app-v2/users', label: 'Usuarios', icon: Users, adminOnly: true },
+        { path: '/app-v2/series', label: 'Catálogo de Series', icon: Layers },
+        { path: '/app-v2/volumes', label: 'Matriz de Volúmenes', icon: BookOpen },
+        { path: '/app-v2/datagrid', label: 'Editor DataGrid (Excel)', icon: Table, adminOnly: true },
+        { path: '/app-v2/calendar', label: 'Agenda y Calendario', icon: Calendar },
+        { path: '/app-v2/posts', label: 'Historial de Posts', icon: Send },
+        { path: '/app-v2/templates', label: 'Plantillas de Copys', icon: FileCode2 },
+        { path: '/app-v2/ai', label: 'Hub de IA (Gemini)', icon: BrainCircuit, adminOnly: true },
+        { path: '/app-v2/channels', label: 'Fansubs y Canales', icon: Building2, adminOnly: true },
+        { path: '/app-v2/duplicates', label: 'Gestor de Duplicados', icon: GitMerge, adminOnly: true },
+        { path: '/app-v2/genres', label: 'Auditoría de Géneros', icon: Tags, adminOnly: true },
+        { path: '/app-v2/observatory', label: 'Observatorio del Sistema', icon: Activity, adminOnly: true },
+        { path: '/app-v2/users', label: 'Usuarios y Roles', icon: Users, adminOnly: true },
         { path: '/app-v2/settings', label: 'Ajustes & Logs', icon: Settings },
-        { path: '/app-v2/legacy', label: 'Herramientas Admin', icon: Wrench, adminOnly: true },
     ];
 
     const handleGlobalSearchSelect = (type: 'epub' | 'series' | 'volume', id: string) => {

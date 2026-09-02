@@ -9,8 +9,17 @@ export const EditorialPosts: React.FC = () => {
     const fetchPosts = async () => {
         setLoading(true);
         try {
-            const res = await api.pubGetQueue('published', 50);
-            setPosts(res?.items || []);
+            // Query both 'sent' and all items as fallback to capture completed posts
+            const res = await api.pubGetQueue('sent', 50);
+            let items = res?.items || [];
+            if (items.length === 0) {
+                const allRes = await api.pubGetQueue(undefined, 100);
+                items = (allRes?.items || []).filter((i: any) => {
+                    const st = (i.status || '').toLowerCase();
+                    return st === 'sent' || st === 'published' || st === 'completado';
+                });
+            }
+            setPosts(items);
         } catch (err) {
             console.error('Error cargando historial de posts:', err);
         } finally {

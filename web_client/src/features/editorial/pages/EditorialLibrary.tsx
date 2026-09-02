@@ -40,12 +40,39 @@ export const EditorialLibrary: React.FC = () => {
                 missing_filter: missingFilter === 'all' ? undefined : missingFilter,
                 page,
                 limit: 15,
-                sort_by: 'updated',
+                sort_by: 'updated_desc',
             });
 
-            setBooks(res?.books || []);
-            setTotalPages(res?.pagination?.total_pages || 1);
-            setTotalItems(res?.pagination?.total || 0);
+            const seriesList = res?.series || [];
+            let allBooks = seriesList.flatMap((s: any) =>
+                (s.books || []).map((b: any) => ({
+                    ...b,
+                    series_name: s.series_english || s.name,
+                    series_spanish: s.series_spanish,
+                    author: s.author,
+                    demography: s.demographics?.[0] || s.book_type,
+                    cover_image: b.cover_url || s.cover_url || `/api/library/covers/${b.id}.jpg`,
+                }))
+            );
+
+            if (allBooks.length === 0) {
+                const volRes = await api.searchVolumes(searchQuery, page, 20);
+                const items = volRes?.results || volRes?.items || [];
+                allBooks = items.map((b: any) => ({
+                    ...b,
+                    series_name: b.series_info?.series_name || b.series_name || b.title,
+                    series_spanish: b.series_info?.series_spanish || b.series_spanish,
+                    author: b.author || b.series_info?.author,
+                    cover_image: b.cover_high || b.cover_medium || `/api/library/covers/${b.id || b.book_hash}.jpg`,
+                }));
+                setTotalPages(volRes?.totalPages || 1);
+                setTotalItems(volRes?.totalItems || items.length);
+            } else {
+                setTotalPages(res?.pagination?.total_pages || 1);
+                setTotalItems(res?.total_books || allBooks.length);
+            }
+
+            setBooks(allBooks);
         } catch (err) {
             console.error('Error cargando biblioteca editorial:', err);
         } finally {
