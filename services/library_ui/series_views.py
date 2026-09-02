@@ -67,7 +67,11 @@ async def mostrar_volumenes_local(
     thread_id = get_thread_id(update)
     st = state_manager.get_user_state(uid)
 
-    # 1. Obtener volúmenes de la serie
+    # 1. Resolver el hash completo de la serie inmediatamente si viene recortado a 16 caracteres
+    full_series_hash = await LibraryService.resolve_series_hash(series_hash)
+    series_hash = full_series_hash or series_hash
+
+    # 2. Obtener volúmenes de la serie
     volumes = await LibraryService.get_series_volumes(series_hash)
     if not volumes:
         if update.callback_query:
@@ -91,11 +95,6 @@ async def mostrar_volumenes_local(
             return 999.0
 
     volumes.sort(key=parse_vol_num)
-
-    # Re-poblar estado si cambió de serie, si no hay libros o si la llave seleccionada no pertenece a esta serie
-    # 1. Resolver el hash completo de la serie si viene recortado a 16 caracteres
-    full_series_hash = await LibraryService.resolve_series_hash(series_hash)
-    series_hash = full_series_hash or series_hash
 
     is_same_series = bool(
         st.get("current_series_hash")

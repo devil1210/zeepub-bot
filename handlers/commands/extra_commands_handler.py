@@ -77,9 +77,13 @@ class ExtraCommandsHandler:
         btn_rows = []
         current_btn_row = []
 
+        from utils.helpers import resolve_series_title
+
+        user_lang_pref = st.get("title_language", "english")
+
         for idx, s in enumerate(top_series):
             medal = medals[idx] if idx < len(medals) else f"#{idx+1}"
-            s_name = s.get("name") or "Sin título"
+            s_name = resolve_series_title(s, preference=user_lang_pref)
             dl_cnt = s.get("download_count", 0)
             table_cells.append([
                 {"text": f"{medal} {idx+1}", "align": "center"},
@@ -90,6 +94,7 @@ class ExtraCommandsHandler:
             s_id = s.get("id", "")
             if s_id:
                 s_short = s_id[:16]
+                state_manager.register_series_key(s_short, s_id)
                 current_btn_row.append({"text": f"{medal} {s_name[:12]}", "callback_data": f"local_series|{s_short}"})
                 if len(current_btn_row) == 2:
                     btn_rows.append(current_btn_row)
@@ -147,8 +152,12 @@ class ExtraCommandsHandler:
         btn_rows = []
         current_btn_row = []
 
+        from utils.helpers import resolve_series_title
+
+        user_lang_pref = st.get("title_language", "english")
+
         for b in items:
-            title = b.get("title") or b.get("english_title") or "Novela"
+            title = resolve_series_title(b, preference=user_lang_pref)
             vol = b.get("volume", 1)
             b_hash = b.get("id") or b.get("book_hash") or ""
             table_cells.append([
@@ -156,7 +165,9 @@ class ExtraCommandsHandler:
                 {"text": f"Vol. {vol}", "align": "right"},
             ])
             if b_hash:
-                current_btn_row.append({"text": f"📚 {title[:14]} (V{vol})", "callback_data": f"lib|{b_hash[:16]}"})
+                b_short = b_hash[:16]
+                state_manager.register_book_key(b_short, b)
+                current_btn_row.append({"text": f"📚 {title[:14]} (V{vol})", "callback_data": f"lib|{b_short}"})
                 if len(current_btn_row) == 2:
                     btn_rows.append(current_btn_row)
                     current_btn_row = []

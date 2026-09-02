@@ -52,7 +52,7 @@ class RichMessageService:
         payload = {
             "chat_id": chat_id,
             "rich_message": rich_payload,
-            **kwargs
+            **{k: v for k, v in kwargs.items() if v is not None}
         }
         if "reply_markup" in payload:
             markup = payload["reply_markup"]
@@ -111,7 +111,7 @@ class RichMessageService:
             "chat_id": chat_id,
             "message_id": message_id,
             "rich_message": rich_payload,
-            **kwargs,
+            **{k: v for k, v in kwargs.items() if v is not None},
         }
         if "reply_markup" in payload:
             markup = payload["reply_markup"]

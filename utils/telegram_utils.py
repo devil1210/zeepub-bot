@@ -3,20 +3,34 @@ from telegram import Update
 
 def get_thread_id(update: Update) -> int | None:
     """
-    Extrae el message_thread_id de un Update de Telegram.
+    Extrae el message_thread_id de un Update de Telegram de forma robusta.
     Retorna None si no hay thread_id (chat privado o grupo sin topics).
     """
     if not update:
         return None
 
-    # Intentar desde message
-    if hasattr(update, "message") and update.message:
-        return getattr(update.message, "message_thread_id", None)
+    # 1. effective_message es el más confiable en python-telegram-bot
+    eff = getattr(update, "effective_message", None)
+    if eff:
+        tid = getattr(eff, "message_thread_id", None)
+        if tid is not None:
+            return tid
+        if getattr(eff, "is_topic_message", False):
+            reply_to = getattr(eff, "reply_to_message", None)
+            if reply_to:
+                return getattr(reply_to, "message_thread_id", None) or getattr(reply_to, "message_id", None)
 
-    # Intentar desde callback_query.message
+    # 2. Fallbacks directos
+    if hasattr(update, "message") and update.message:
+        tid = getattr(update.message, "message_thread_id", None)
+        if tid is not None:
+            return tid
+
     if hasattr(update, "callback_query") and update.callback_query:
         if hasattr(update.callback_query, "message") and update.callback_query.message:
-            return getattr(update.callback_query.message, "message_thread_id", None)
+            tid = getattr(update.callback_query.message, "message_thread_id", None)
+            if tid is not None:
+                return tid
 
     return None
 
