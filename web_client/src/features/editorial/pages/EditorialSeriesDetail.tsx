@@ -33,6 +33,9 @@ import {
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 import { SchedulePostModal } from '../components/SchedulePostModal';
+import { SeriesMergeModal } from '../components/SeriesMergeModal';
+import { SeriesAttachModal } from '../components/SeriesAttachModal';
+import { SeriesEditTab } from '../components/SeriesEditTab';
 
 interface SeriesDetail {
     id: string;
@@ -711,331 +714,61 @@ export const EditorialSeriesDetail: React.FC = () => {
 
             {/* TAB 2: METADATA & LINKING EDITOR (Admin tools) */}
             {activeTab === 'edit' && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    {/* Left Form: Series Metadata (6 cols) */}
-                    <form
-                        onSubmit={handleSaveMetadata}
-                        className="lg:col-span-6 bg-slate-900/50 border border-white/10 rounded-3xl p-6 sm:p-7 space-y-5 backdrop-blur-xl shadow-xl"
-                    >
-                        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                <FileSpreadsheet className="w-4 h-4 text-indigo-400" /> Metadatos Principales de la Serie
-                            </h3>
-                            <button
-                                type="button"
-                                onClick={() => setIsMergeModalOpen(true)}
-                                className="px-3 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-xs font-bold border border-purple-500/30 flex items-center gap-1.5 transition-all"
-                            >
-                                <GitMerge className="w-3.5 h-3.5" /> Fusionar Serie
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">
-                                    Título en Inglés (Oficial Internacional)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={seriesEnglish}
-                                    onChange={(e) => setSeriesEnglish(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-bold"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">
-                                    Título en Español
-                                </label>
-                                <input
-                                    type="text"
-                                    value={seriesSpanish}
-                                    onChange={(e) => setSeriesSpanish(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-bold text-amber-300"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">
-                                    Título en Japonés / Romaji
-                                </label>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Autor</label>
-                                    <input
-                                        type="text"
-                                        value={author}
-                                        onChange={(e) => setAuthor(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Ilustrador</label>
-                                    <input
-                                        type="text"
-                                        value={illustrator}
-                                        onChange={(e) => setIllustrator(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Tipo de Obra</label>
-                                    <select
-                                        value={bookType}
-                                        onChange={(e) => setBookType(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-bold"
-                                    >
-                                        <option value="Novela Ligera">Novela Ligera</option>
-                                        <option value="Web Novel">Web Novel</option>
-                                        <option value="Manga">Manga</option>
-                                        <option value="Novela Visual">Novela Visual</option>
-                                        <option value="Libro General">Libro General</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Demografía</label>
-                                    <select
-                                        value={demography}
-                                        onChange={(e) => setDemography(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-bold"
-                                    >
-                                        <option value="Seinen">Seinen</option>
-                                        <option value="Shounen">Shounen</option>
-                                        <option value="Josei">Josei</option>
-                                        <option value="Shoujo">Shoujo</option>
-                                        <option value="General">General</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">URL Portada</label>
-                                <input
-                                    type="text"
-                                    value={coverUrl}
-                                    onChange={(e) => setCoverUrl(e.target.value)}
-                                    placeholder="https://... o /api/library/covers/..."
-                                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white font-mono"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">Sinopsis de la Serie</label>
-                                <textarea
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    rows={4}
-                                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white leading-relaxed"
-                                />
-                            </div>
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={isSaving}
-                            className="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/30 transition-all active:scale-95 disabled:opacity-50"
-                        >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            <span>Guardar Metadatos</span>
-                        </button>
-                    </form>
-
-                    {/* Right Column: Aliases + Volume Linking (6 cols) */}
-                    <div className="lg:col-span-6 space-y-6">
-                        {/* Aliases Card */}
-                        <div className="bg-slate-900/50 border border-white/10 rounded-3xl p-6 space-y-4 backdrop-blur-xl shadow-xl">
-                            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                    <Tag className="w-4 h-4 text-cyan-400" /> Siglas y Títulos Alias ({aliases.length})
-                                </h3>
-                            </div>
-
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={newAliasInput}
-                                    onChange={(e) => setNewAliasInput(e.target.value)}
-                                    placeholder="Ej. Toaru Majutsu no Index, Index..."
-                                    className="flex-1 px-3.5 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleAddAlias}
-                                    disabled={addingAlias}
-                                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md"
-                                >
-                                    + Añadir
-                                </button>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2 pt-2">
-                                {aliases.map((al) => (
-                                    <span
-                                        key={al.id}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-xs text-gray-200"
-                                    >
-                                        <span>{al.alias}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveAlias(al.id)}
-                                            className="text-gray-500 hover:text-red-400 transition-colors"
-                                        >
-                                            <X className="w-3.5 h-3.5" />
-                                        </button>
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Linked Books Management Card */}
-                        <div className="bg-slate-900/50 border border-white/10 rounded-3xl p-6 space-y-4 backdrop-blur-xl shadow-xl">
-                            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                    <BookOpen className="w-4 h-4 text-indigo-400" /> Gestión de Volúmenes Vinculados ({books.length})
-                                </h3>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAttachModalOpen(true)}
-                                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md"
-                                >
-                                    <Plus className="w-3.5 h-3.5" /> Vincular Tomo
-                                </button>
-                            </div>
-
-                            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-                                {books.map((b) => (
-                                    <div
-                                        key={b.id}
-                                        className="p-3 rounded-2xl bg-slate-950/70 border border-white/5 flex items-center justify-between gap-3 text-xs"
-                                    >
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-mono font-bold shrink-0">
-                                                Vol. {b.volume}
-                                            </span>
-                                            <span className="text-white truncate font-medium">{b.spanish_title || b.title}</span>
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => handleUnlinkBook(b.id, b.title)}
-                                            className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors shrink-0"
-                                            title="Desvincular volumen"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <SeriesEditTab
+                    seriesEnglish={seriesEnglish}
+                    setSeriesEnglish={setSeriesEnglish}
+                    seriesSpanish={seriesSpanish}
+                    setSeriesSpanish={setSeriesSpanish}
+                    name={name}
+                    setName={setName}
+                    author={author}
+                    setAuthor={setAuthor}
+                    illustrator={illustrator}
+                    setIllustrator={setIllustrator}
+                    bookType={bookType}
+                    setBookType={setBookType}
+                    demography={demography}
+                    setDemography={setDemography}
+                    coverUrl={coverUrl}
+                    setCoverUrl={setCoverUrl}
+                    description={description}
+                    setDescription={setDescription}
+                    isSaving={isSaving}
+                    onSaveMetadata={handleSaveMetadata}
+                    onOpenMergeModal={() => setIsMergeModalOpen(true)}
+                    aliases={aliases}
+                    newAliasInput={newAliasInput}
+                    setNewAliasInput={setNewAliasInput}
+                    addingAlias={addingAlias}
+                    onAddAlias={handleAddAlias}
+                    onRemoveAlias={handleRemoveAlias}
+                    books={books}
+                    onOpenAttachModal={() => setIsAttachModalOpen(true)}
+                    onUnlinkBook={handleUnlinkBook}
+                />
             )}
 
             {/* Merge Modal */}
-            {isMergeModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                <GitMerge className="w-4 h-4 text-purple-400" /> Fusionar con Otra Serie
-                            </h3>
-                            <button onClick={() => setIsMergeModalOpen(false)} className="text-gray-400 hover:text-white">
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <p className="text-xs text-gray-400">
-                            Introduce el hash o identificador de la serie duplicada que deseas absorber dentro de esta serie principal.
-                        </p>
-                        <input
-                            type="text"
-                            value={mergeSourceHash}
-                            onChange={(e) => setMergeSourceHash(e.target.value)}
-                            placeholder="series_hash_de_la_serie_duplicada"
-                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white font-mono"
-                        />
-                        <div className="flex justify-end gap-2 pt-2">
-                            <button
-                                onClick={() => setIsMergeModalOpen(false)}
-                                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleMergeSeries}
-                                disabled={merging || !mergeSourceHash.trim()}
-                                className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold shadow-lg disabled:opacity-50"
-                            >
-                                {merging ? 'Fusionando...' : 'Confirmar Fusión'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <SeriesMergeModal
+                isOpen={isMergeModalOpen}
+                onClose={() => setIsMergeModalOpen(false)}
+                mergeSourceHash={mergeSourceHash}
+                setMergeSourceHash={setMergeSourceHash}
+                onConfirmMerge={handleMergeSeries}
+                merging={merging}
+            />
 
             {/* Attach Volume Modal */}
-            {isAttachModalOpen && (
-                <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 max-w-xl w-full space-y-4 shadow-2xl">
-                        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                                <Link2 className="w-4 h-4 text-indigo-400" /> Vincular Libro EPUB a la Serie
-                            </h3>
-                            <button onClick={() => setIsAttachModalOpen(false)} className="text-gray-400 hover:text-white">
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearchBooksToAttach()}
-                                placeholder="Buscar libro por título o hash..."
-                                className="flex-1 px-3.5 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white"
-                            />
-                            <button
-                                onClick={handleSearchBooksToAttach}
-                                disabled={searching}
-                                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md"
-                            >
-                                {searching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-                            </button>
-                        </div>
-
-                        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                            {searchResults.map((sb) => (
-                                <div
-                                    key={sb.id}
-                                    className="p-3 rounded-2xl bg-slate-950/70 border border-white/5 flex items-center justify-between gap-3 text-xs"
-                                >
-                                    <div className="min-w-0">
-                                        <div className="font-bold text-white truncate">{sb.title}</div>
-                                        <div className="text-[10px] text-gray-400">Vol. {sb.volume || '—'} • {sb.author || 'Sin autor'}</div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleAttachBook(sb.id)}
-                                        className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shrink-0"
-                                    >
-                                        Vincular
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
+            <SeriesAttachModal
+                isOpen={isAttachModalOpen}
+                onClose={() => setIsAttachModalOpen(false)}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                onSearch={handleSearchBooksToAttach}
+                searching={searching}
+                searchResults={searchResults}
+                onAttach={handleAttachBook}
+            />
 
             {/* Schedule Modal */}
             {scheduleBook && (
