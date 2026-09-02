@@ -188,12 +188,22 @@ class PublicationRepository(BaseRepository[PublicationQueue]):
         if status and status.lower() not in ("all", "todos", "none", "*"):
             st = status.lower()
             if st in ("sent", "published", "completado"):
-                stmt = stmt.where(PublicationQueue.status.in_(["sent", "published"]))
+                stmt = stmt.where(PublicationQueue.status.in_(["sent", "published"])).order_by(
+                    PublicationQueue.published_at.desc().nullslast(),
+                    PublicationQueue.scheduled_for.desc()
+                )
             elif st in ("pending", "scheduled", "programado"):
-                stmt = stmt.where(PublicationQueue.status.in_(["pending", "scheduled"]))
+                stmt = stmt.where(PublicationQueue.status.in_(["pending", "scheduled"])).order_by(
+                    PublicationQueue.scheduled_for.asc()
+                )
             else:
-                stmt = stmt.where(PublicationQueue.status == status)
-        stmt = stmt.order_by(PublicationQueue.scheduled_for.desc()).limit(limit)
+                stmt = stmt.where(PublicationQueue.status == status).order_by(
+                    PublicationQueue.scheduled_for.desc()
+                )
+        else:
+            stmt = stmt.order_by(PublicationQueue.scheduled_for.desc())
+
+        stmt = stmt.limit(limit)
         result = await session.execute(stmt)
         return list(result.scalars().all())
 

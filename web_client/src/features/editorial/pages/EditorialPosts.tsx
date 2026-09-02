@@ -62,7 +62,7 @@ export const EditorialPosts: React.FC = () => {
     const fetchPosts = async () => {
         setLoading(true);
         try {
-            const res = await api.pubGetQueue('all', 150);
+            const res = await api.pubGetQueue('sent', 150);
             const items = res?.items || [];
             setPosts(items);
         } catch (err) {
