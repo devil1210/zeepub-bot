@@ -2,15 +2,12 @@ import React, { useState, useMemo } from 'react';
 import {
     Check,
     Copy,
-    ChevronDown,
-    ChevronUp,
     Monitor,
     Smartphone,
     Search,
     BookOpen,
     Loader2,
-    X,
-    ArrowDown
+    X
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 
@@ -276,6 +273,26 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
 
     return (
         <div className="flex flex-col h-full w-full space-y-3 font-sans select-none animate-in fade-in duration-200">
+            {/* Embedded styles for pristine Telegram simulation */}
+            <style>{`
+                .tg-msg-table { margin: 6px 0; border-radius: 12px; background: #131d27; border: 1px solid #243447; overflow: hidden; font-size: 12px; width: 100%; }
+                .tg-msg-row { display: flex; border-bottom: 1px solid #243447; }
+                .tg-msg-row:last-child { border-bottom: none; }
+                .tg-msg-label { width: 38%; padding: 6px 12px; background: #111923; color: #8fa0b5; font-weight: 500; border-right: 1px solid #243447; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; }
+                .tg-msg-val { width: 62%; padding: 6px 12px; background: #141f2d; color: #f1f5f9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; }
+                .tg-msg-hashtag { color: #5288c1; font-weight: 500; text-decoration: none; cursor: pointer; }
+                .tg-msg-hashtag:hover { text-decoration: underline; }
+                .tg-msg-quote { margin: 6px 0; padding: 6px 12px; border-left: 2px solid #5288c1; background: rgba(19, 29, 39, 0.7); border-radius: 0 12px 12px 0; font-size: 12px; color: #cbd5e1; font-style: italic; line-height: 1.5; }
+                .tg-msg-doc { margin: 10px 0; padding: 10px; border-radius: 12px; background: #131d27; border: 1px solid #243447; display: flex; align-items: center; gap: 12px; user-select: none; }
+                .tg-msg-doc-icon { width: 40px; height: 40px; border-radius: 50%; background: #2481cc; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: white; }
+                .tg-msg-doc-name { font-size: 12px; font-weight: bold; color: white; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .tg-msg-doc-size { font-size: 11px; color: #8fa0b5; font-weight: 500; }
+                .tg-msg-summary { padding: 4px 0; font-size: 12px; color: #8fa0b5; display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 500; user-select: none; outline: none; list-style: none; }
+                .tg-msg-summary:hover { color: white; }
+                .tg-msg-chevron { color: #5288c1; font-weight: bold; font-size: 11px; display: inline-block; transition: transform 0.2s; }
+                details[open] > summary .tg-msg-chevron { transform: rotate(180deg); }
+            `}</style>
+
             {/* Control Header Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-xs">
                 {/* Real Book Selector Trigger */}
@@ -485,7 +502,7 @@ export const TelegramRichDynamicHtmlRenderer: React.FC<{ text: string; book: any
         const filesize = book?.size_mb || book?.tamaño || '14.1 MB';
         s = s.replace(
             /<tg-document[^>]*\/?>/gi,
-            `<div class="my-2.5 p-2.5 rounded-xl bg-[#131d27] border border-[#243447] flex items-center gap-3 select-none"><div class="w-10 h-10 rounded-full bg-[#2481cc] flex items-center justify-center shrink-0 shadow-md text-white font-bold"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg></div><div class="min-w-0 flex-1"><div class="text-xs font-bold text-white truncate">${filename}</div><div class="text-[11px] text-[#8fa0b5] font-medium">${filesize}</div></div></div>`
+            `<div class="tg-msg-doc"><div class="tg-msg-doc-icon"><svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg></div><div style="min-width:0;flex:1;"><div class="tg-msg-doc-name">${filename}</div><div class="tg-msg-doc-size">${filesize}</div></div></div>`
         );
 
         // 3. Transform <table> into Telegram 2-column key-value table
@@ -499,42 +516,43 @@ export const TelegramRichDynamicHtmlRenderer: React.FC<{ text: string; book: any
                 });
                 if (cells.length >= 2) {
                     const isHashtag = cells[1].startsWith('#');
+                    const valContent = isHashtag ? `<span class="tg-msg-hashtag">${cells[1]}</span>` : cells[1];
                     rows.push(
-                        `<div class="flex border-b border-[#243447] last:border-b-0"><div class="w-[38%] py-1.5 px-3 bg-[#111923] text-[#8fa0b5] font-medium border-r border-[#243447] shrink-0 truncate flex items-center">${cells[0]}</div><div class="w-[62%] py-1.5 px-3 bg-[#141f2d] ${isHashtag ? 'text-[#5288c1] font-medium' : 'text-slate-100'} truncate flex items-center">${cells[1]}</div></div>`
+                        `<div class="tg-msg-row"><div class="tg-msg-label">${cells[0]}</div><div class="tg-msg-val">${valContent}</div></div>`
                     );
                 } else if (cells.length === 1) {
                     rows.push(
-                        `<div class="py-1.5 px-3 bg-[#141f2d] text-slate-100 border-b border-[#243447] last:border-b-0">${cells[0]}</div>`
+                        `<div class="tg-msg-row"><div class="tg-msg-val" style="width:100%;">${cells[0]}</div></div>`
                     );
                 }
                 return '';
             });
 
-            return `<div class="my-1.5 rounded-xl bg-[#131d27] border border-[#243447] overflow-hidden text-xs divide-y divide-[#243447] shadow-sm">${rows.join('')}</div>`;
+            return `<div class="tg-msg-table">${rows.join('')}</div>`;
         });
 
         // 4. Transform <details open> and <details> into Telegram interactive details
-        s = s.replace(/<details\s+open[^>]*>([\s\S]*?)<\/details>/gi, '<details open class="group/det my-1 text-xs select-none">$1</details>');
-        s = s.replace(/<details[^>]*>([\s\S]*?)<\/details>/gi, '<details class="group/det my-1 text-xs select-none">$1</details>');
+        s = s.replace(/<details\s+open[^>]*>([\s\S]*?)<\/details>/gi, '<details open style="margin: 4px 0; font-size: 12px; user-select: none;">$1</details>');
+        s = s.replace(/<details[^>]*>([\s\S]*?)<\/details>/gi, '<details style="margin: 4px 0; font-size: 12px; user-select: none;">$1</details>');
 
         // 5. Transform <summary> into Telegram collapsible header with chevron
-        s = s.replace(/<summary[^>]*>([\s\S]*?)<\/summary>/gi, '<summary class="py-1 text-xs text-[#8fa0b5] hover:text-white flex items-center gap-1.5 cursor-pointer font-medium select-none transition-colors list-none outline-none"><span class="text-[#5288c1] font-bold text-xs select-none inline-block transform transition-transform group-open/det:rotate-180">∨</span><span>$1</span></summary>');
+        s = s.replace(/<summary[^>]*>([\s\S]*?)<\/summary>/gi, '<summary class="tg-msg-summary"><span class="tg-msg-chevron">∨</span><span>$1</span></summary>');
 
         // 6. Transform <blockquote> into Telegram blue-bordered blockquote
-        s = s.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, '<div class="my-1.5 pl-3 py-1.5 border-l-2 border-[#5288c1] bg-[#131d27]/70 rounded-r-xl text-xs text-slate-200 italic leading-relaxed">$1</div>');
+        s = s.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, '<div class="tg-msg-quote">$1</div>');
 
         // 7. Transform Headings (h3, h4, h5, h6)
-        s = s.replace(/<h3>(.*?)<\/h3>/gi, '<div class="font-bold text-white text-[14px] leading-snug my-0.5">$1</div>');
-        s = s.replace(/<h4>(.*?)<\/h4>/gi, '<div class="font-bold text-white text-[13.5px] leading-snug my-0.5">$1</div>');
-        s = s.replace(/<h5>(.*?)<\/h5>/gi, '<div class="font-bold text-white text-[13.5px] leading-snug my-0.5">$1</div>');
-        s = s.replace(/<h6>(.*?)<\/h6>/gi, '<div class="font-bold text-white text-[13.5px] leading-snug my-0.5">$1</div>');
+        s = s.replace(/<h3>(.*?)<\/h3>/gi, '<div style="font-weight: bold; color: white; font-size: 14px; line-height: 1.3; margin: 2px 0;">$1</div>');
+        s = s.replace(/<h4>(.*?)<\/h4>/gi, '<div style="font-weight: bold; color: white; font-size: 13.5px; line-height: 1.3; margin: 2px 0;">$1</div>');
+        s = s.replace(/<h5>(.*?)<\/h5>/gi, '<div style="font-weight: bold; color: white; font-size: 13.5px; line-height: 1.3; margin: 2px 0;">$1</div>');
+        s = s.replace(/<h6>(.*?)<\/h6>/gi, '<div style="font-weight: bold; color: white; font-size: 13.5px; line-height: 1.3; margin: 2px 0;">$1</div>');
 
         // 8. Transform <p> and <hr/>
         s = s.replace(/<hr\s*\/?>/gi, '');
-        s = s.replace(/<p>(.*?)<\/p>/gi, '<div class="leading-snug my-0.5">$1</div>');
+        s = s.replace(/<p>(.*?)<\/p>/gi, '<div style="line-height: 1.3; margin: 2px 0;">$1</div>');
 
-        // 9. Hashtags in text (e.g. #Tag) -> link color
-        s = s.replace(/(#[a-zA-Z0-9_]+)/g, '<span class="text-[#5288c1] font-medium hover:underline cursor-pointer">$1</span>');
+        // 9. Hashtags in text (e.g. #Tag, #Romance) -> link color ONLY outside of HTML attributes
+        s = s.replace(/(^|[\s>(])#([a-zA-Z0-9_]+)/g, '$1<span class="tg-msg-hashtag">#$2</span>');
 
         // 10. Flag Emojis -> SVG
         s = renderTwemojiInHtml(s);
