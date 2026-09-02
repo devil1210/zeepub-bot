@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Send, Calendar, Clock, X, CheckCircle2, AlertCircle, Loader2, Sparkles, Copy, Check } from 'lucide-react';
+import { Send, Calendar, Clock, X, CheckCircle2, AlertCircle, Loader2, Sparkles, Copy, Check, Globe } from 'lucide-react';
 import { api } from '@shared/services/api';
 
 interface SchedulePostModalProps {
@@ -21,17 +21,23 @@ export const SchedulePostModal: React.FC<SchedulePostModalProps> = ({
     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
     const [scheduledDate, setScheduledDate] = useState<string>('');
     const [scheduledTime, setScheduledTime] = useState<string>('18:00');
-    const [customCaption, setCustomCaption] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [copied, setCopied] = useState(false);
 
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Horario Local';
+
     useEffect(() => {
         if (isOpen) {
-            // Default scheduled date to tomorrow at 18:00
+            // Default scheduled date to tomorrow at 18:00 (Local Time)
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
-            setScheduledDate(tomorrow.toISOString().split('T')[0]);
+            
+            const year = tomorrow.getFullYear();
+            const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+            const day = String(tomorrow.getDate()).padStart(2, '0');
+            setScheduledDate(`${year}-${month}-${day}`);
+            setScheduledTime('18:00');
 
             // Fetch active channels and templates
             api.pubGetChannels().then((res: any) => {
@@ -91,14 +97,22 @@ export const SchedulePostModal: React.FC<SchedulePostModalProps> = ({
                 await api.publishToChannel(book.id || book.book_hash, selectedChannel);
                 setStatusMsg({ type: 'success', text: '¡Publicación enviada exitosamente al canal!' });
             } else {
-                const scheduleIso = `${scheduledDate}T${scheduledTime}:00`;
+                // Convert User Local Date + Time to ISO UTC representation
+                const localDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
+                const scheduleIso = isNaN(localDateTime.getTime())
+                    ? `${scheduledDate}T${scheduledTime}:00Z`
+                    : localDateTime.toISOString();
+
                 await api.pubSchedule({
                     book_hash: book.id || book.book_hash,
                     channel_id: selectedChannel,
                     scheduled_for: scheduleIso,
                     template_id: selectedTemplate || undefined,
                 });
-                setStatusMsg({ type: 'success', text: `Publicación programada para el ${scheduledDate} a las ${scheduledTime}` });
+                setStatusMsg({
+                    type: 'success',
+                    text: `Publicación programada para el ${scheduledDate} a las ${scheduledTime} (${userTimeZone})`,
+                });
             }
 
             setTimeout(() => {
@@ -114,6 +128,9 @@ export const SchedulePostModal: React.FC<SchedulePostModalProps> = ({
 
     if (!isOpen || !book) return null;
 
+    const localDateTimePreview = new Date(`${scheduledDate}T${scheduledTime}:00`);
+    const validDate = !isNaN(localDateTimePreview.getTime());
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
             <div className="relative w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -128,7 +145,7 @@ export const SchedulePostModal: React.FC<SchedulePostModalProps> = ({
                                 Programar Publicación Editorial
                             </h3>
                             <p className="text-xs text-gray-400 truncate max-w-sm">
-                                {book.title} (Vol. {book.volume || 1})
+                                {book.series_name || book.title} (Vol. {book.volume || 1})
                             </p>
                         </div>
                     </div>
@@ -179,30 +196,50 @@ export const SchedulePostModal: React.FC<SchedulePostModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Schedule Date & Time */}
-                    <div className="grid grid-cols-2 gap-4 bg-white/[0.02] p-4 rounded-2xl border border-white/5">
-                        <div>
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-1.5">
-                                <Calendar className="w-3.5 h-3.5 text-indigo-400" /> Fecha de Publicación
-                            </label>
-                            <input
-                                type="date"
-                                value={scheduledDate}
-                                onChange={(e) => setScheduledDate(e.target.value)}
-                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                            />
+                    {/* Schedule Date & Time (User Local Timezone) */}
+                    <div className="bg-white/[0.02] p-4 rounded-2xl border border-white/5 space-y-3">
+                        <div className="flex items-center justify-between text-[11px] text-gray-400">
+                            <span className="font-bold uppercase flex items-center gap-1.5 text-indigo-300">
+                                <Globe className="w-3.5 h-3.5" /> Zona Horaria Local:
+                            </span>
+                            <span className="font-mono text-white bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-500/30">
+                                {userTimeZone}
+                            </span>
                         </div>
-                        <div>
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 text-indigo-400" /> Hora (UTC)
-                            </label>
-                            <input
-                                type="time"
-                                value={scheduledTime}
-                                onChange={(e) => setScheduledTime(e.target.value)}
-                                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
-                            />
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-1.5">
+                                    <Calendar className="w-3.5 h-3.5 text-indigo-400" /> Fecha de Publicación
+                                </label>
+                                <input
+                                    type="date"
+                                    value={scheduledDate}
+                                    onChange={(e) => setScheduledDate(e.target.value)}
+                                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 flex items-center gap-1.5">
+                                    <Clock className="w-3.5 h-3.5 text-indigo-400" /> Hora Local
+                                </label>
+                                <input
+                                    type="time"
+                                    value={scheduledTime}
+                                    onChange={(e) => setScheduledTime(e.target.value)}
+                                    className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                                />
+                            </div>
                         </div>
+
+                        {validDate && (
+                            <div className="text-[11px] text-gray-400 bg-black/40 px-3 py-2 rounded-xl border border-white/5 flex items-center justify-between">
+                                <span>Se publicará a tu hora local:</span>
+                                <strong className="text-emerald-400 font-mono">
+                                    {localDateTimePreview.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} a las {scheduledTime}
+                                </strong>
+                            </div>
+                        )}
                     </div>
 
                     {/* Live Preview Box */}
@@ -220,27 +257,28 @@ export const SchedulePostModal: React.FC<SchedulePostModalProps> = ({
                                 {copied ? 'Copiado' : 'Copiar Copy'}
                             </button>
                         </div>
-                        <div className="p-4 rounded-2xl bg-black/50 border border-white/10 font-mono text-xs text-gray-300 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                        <div className="p-3.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-gray-300 whitespace-pre-wrap max-h-36 overflow-y-auto leading-relaxed">
                             {getPreviewText()}
                         </div>
                     </div>
                 </div>
 
-                {/* Footer Actions */}
-                <div className="p-4 border-t border-white/10 bg-slate-950/60 flex items-center justify-between">
+                {/* Footer Controls */}
+                <div className="px-6 py-4 border-t border-white/10 bg-slate-950/60 flex items-center justify-between gap-3">
                     <button
                         type="button"
                         onClick={() => handleSchedule(true)}
                         disabled={loading}
-                        className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold transition-all border border-white/10 active:scale-95 disabled:opacity-50"
+                        className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-bold border border-white/10 transition-all disabled:opacity-50"
                     >
-                        🚀 Postear Ahora
+                        Publicar Inmediatamente
                     </button>
-                    <div className="flex items-center gap-3">
+
+                    <div className="flex items-center gap-2">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white"
+                            className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white transition-all"
                         >
                             Cancelar
                         </button>
@@ -248,10 +286,10 @@ export const SchedulePostModal: React.FC<SchedulePostModalProps> = ({
                             type="button"
                             onClick={() => handleSchedule(false)}
                             disabled={loading}
-                            className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
+                            className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all active:scale-95 disabled:opacity-50"
                         >
                             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
-                            Programar Publicación
+                            <span>Guardar en Agenda</span>
                         </button>
                     </div>
                 </div>
