@@ -29,7 +29,9 @@ import {
     Star,
     Building2,
     FileSpreadsheet,
-    Edit3
+    Edit3,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 import { SchedulePostModal } from '../components/SchedulePostModal';
@@ -122,6 +124,54 @@ export const EditorialSeriesDetail: React.FC = () => {
 
     // Quick Schedule Modal
     const [scheduleBook, setScheduleBook] = useState<any | null>(null);
+
+    // Synopsis Expand State
+    const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
+
+    const formatSynopsis = (desc?: string, expanded: boolean = false) => {
+        if (!desc) return null;
+        const clean = desc
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n\n')
+            .replace(/<p[^>]*>/gi, '');
+
+        const paragraphs = clean
+            .split(/\n\s*\n|\n/)
+            .map((p) => p.trim())
+            .filter(Boolean);
+
+        if (paragraphs.length === 0) return null;
+
+        const isLong = paragraphs.length > 1 || clean.length > 200;
+
+        return (
+            <div className="space-y-2 pt-1">
+                <div
+                    className={`space-y-2 text-xs sm:text-sm text-gray-300/90 leading-relaxed font-normal ${
+                        !expanded && isLong ? 'line-clamp-3' : ''
+                    }`}
+                >
+                    {paragraphs.map((para, idx) => (
+                        <p key={idx}>{para}</p>
+                    ))}
+                </div>
+
+                {isLong && (
+                    <button
+                        type="button"
+                        onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
+                        className="text-xs font-bold text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 mt-1 transition-colors cursor-pointer"
+                    >
+                        <span>{expanded ? 'Mostrar menos' : 'Leer sinopsis completa'}</span>
+                        {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                )}
+            </div>
+        );
+    };
 
     const showToast = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
         setToast({ text, type });
@@ -482,11 +532,7 @@ export const EditorialSeriesDetail: React.FC = () => {
                         )}
 
                         {/* Series Synopsis */}
-                        {series.description && (
-                            <p className="text-xs sm:text-sm text-gray-300/90 line-clamp-3 leading-relaxed pt-1 font-normal">
-                                {series.description}
-                            </p>
-                        )}
+                        {series.description && formatSynopsis(series.description, isSynopsisExpanded)}
                     </div>
                 </div>
 

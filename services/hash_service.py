@@ -45,6 +45,15 @@ class HashService:
         if uuid:
             uuid_norm = cls.norm_string(uuid)
             identity = f"uuid:{uuid_norm}"
+            # Prevenir colisiones de fansubs que reutilizan el mismo UUID en variantes Color vs BN o Sin Censura
+            if color_mode and color_mode != "bw":
+                identity += f"|color:{color_mode}"
+            if is_uncensored:
+                identity += f"|uncensored:{is_uncensored}"
+            if edition:
+                ed_clean = cls.norm_string(edition)
+                if ed_clean:
+                    identity += f"|edition:{ed_clean}"
             return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
         s_norm = cls.norm_string(series)

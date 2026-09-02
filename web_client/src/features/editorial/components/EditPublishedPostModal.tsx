@@ -41,7 +41,11 @@ export const EditPublishedPostModal: React.FC<EditPublishedPostModalProps> = ({
 
     const buildDefaultCaption = (tplContent?: string) => {
         const seriesName = post.series || post.series_name || 'Novela Ligera';
-        const vol = post.volume || 1;
+        const isOneShot =
+            post.volume === 'Único' ||
+            post.edition === 'Volumen Único' ||
+            (post.title && /volumen\s*único|volumen\s*unico|one[\s\-_]*shot/i.test(post.title));
+        const vol = isOneShot ? 'Único' : (post.volume !== undefined && post.volume !== null ? post.volume : 1);
         const author = post.author || 'Autor';
         const synopsis = post.synopsis || post.description || 'Sinopsis no disponible.';
         const hashtags = `#${seriesName.replace(/[^a-zA-Z0-9]/g, '')} #ZeePubs`;

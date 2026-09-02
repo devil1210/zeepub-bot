@@ -342,6 +342,13 @@ def clean_romaji_title(title: str) -> str:
     )
     clean = volume_separator_pattern.sub("", clean).strip()
 
+    # Remover sufijos de volumen único / one-shot (ej. - Volumen Único, - Tomo Único, - One-Shot)
+    unique_separator_pattern = re.compile(
+        r"\s*[\-\–\—\−\―\~～\|¦║]?\s*(?:Volumen|Vol\.?|Tomo\.?)?\s*(?:Único|Unico|One[\s\-_]*Shot|Unitario|Completo)\s*$",
+        re.IGNORECASE,
+    )
+    clean = unique_separator_pattern.sub("", clean).strip()
+
     # Limpieza final de espacios repetidos
     return re.sub(r"\s+", " ", clean).strip()
 
@@ -398,6 +405,10 @@ def parse_metadata_from_title(
             r"^capítulo\s*\d+",
             r"^chapter\s*\d+",
             r"^\d+$",
+            r"^(?:volumen|vol\.?|tomo\.?)\s*(?:único|unico)",
+            r"^one[\s\-_]*shot",
+            r"^(?:volumen|tomo)\s*(?:completo|unitario)",
+            r"^(?:único|unico)$",
         ]
 
         for i, part in enumerate(parts):
@@ -728,9 +739,22 @@ def process_book_identity_comprehensive(
         if meta.get("color_mode", "bw") == "bw":
             if any(
                 x in fname_lower
-                for x in ["[color]", "(color)", "[full color]", "color version"]
-            ):
+                for x in ["[color]", "(color)", "[full color]", "color version", " [color", "ln color"]
+            ) or re.search(r"[\s\-_\[(]color[\])\s\-_]", fname_lower):
                 meta["color_mode"] = "color"
+            elif any(
+                x in fname_lower
+                for x in ["[bn]", "(bn)", "[b&w]", "(b&w)", "[b/n]", "[blanco y negro]", "normal"]
+            ):
+                meta["color_mode"] = "bw"
+
+        if any(
+            x in fname_lower
+            for x in ["volumen único", "volumen unico", "tomo único", "tomo unico", "one-shot", "oneshot"]
+        ):
+            if not meta.get("edition"):
+                meta["edition"] = "Volumen Único"
+
         if not meta.get("is_uncensored"):
             if any(
                 x in fname_lower

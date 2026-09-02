@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -83,6 +84,20 @@ class PublisherService:
             or getattr(book, "romaji_title", None)
             or ""
         )
+        if romaji_t:
+            romaji_t = re.sub(
+                r"\s*[\-\–\—\−\―\~～\|¦║]?\s*(?:volumen|vol\.?|tomo\.?)?\s*(?:único|unico|one[\s\-_]*shot|unitario|completo)\s*$",
+                "",
+                romaji_t,
+                flags=re.IGNORECASE,
+            ).strip()
+            romaji_t = re.sub(
+                r"\s*[\-\–\—\−\―\~～\|¦║]?\s*(?:volumen|vol\.?|v|tomo\.?)\s*\d+.*$",
+                "",
+                romaji_t,
+                flags=re.IGNORECASE,
+            ).strip()
+
         s_slug = (
             (getattr(series_info, "slug", None) if series_info and getattr(series_info, "slug", "") not in ("Volumen_Unico", "Volumen_unico", "volumen_unico") else None)
             or (getattr(series_info, "series_spanish", None) if series_info else None)
@@ -94,8 +109,35 @@ class PublisherService:
 
         vol = getattr(book, "volume", None)
         vol_str = ""
-        if vol is not None:
-            vol_str = str(int(vol)) if hasattr(vol, "is_integer") and vol.is_integer() else str(vol)
+        is_unique_vol = False
+
+        raw_vol_text = str(vol or "").lower()
+        edition_text = str(getattr(book, "edition", "") or "").lower()
+        title_text = f"{getattr(book, 'title', '')} {getattr(book, 'filename', '')} {getattr(series_info, 'name', '')}".lower()
+
+        if (
+            "único" in raw_vol_text
+            or "unico" in raw_vol_text
+            or "único" in edition_text
+            or "unico" in edition_text
+            or "volumen único" in title_text
+            or "volumen unico" in title_text
+            or "tomo único" in title_text
+            or "tomo unico" in title_text
+            or "one-shot" in title_text
+            or "oneshot" in title_text
+            or getattr(book, "is_one_shot", False)
+        ):
+            is_unique_vol = True
+
+        if is_unique_vol:
+            vol_str = "Único"
+        elif vol is not None:
+            try:
+                v_float = float(vol)
+                vol_str = str(int(v_float)) if v_float.is_integer() else str(v_float)
+            except (ValueError, TypeError):
+                vol_str = str(vol)
 
         # Formateo de fechas
         fecha_act = ""

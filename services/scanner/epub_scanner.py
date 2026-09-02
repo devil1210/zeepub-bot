@@ -178,6 +178,16 @@ class EpubScanner:
         try:
             filename = os.path.basename(filepath)
             stat = os.stat(filepath)
+
+            if not series_provider:
+                from services.scanner.series_scanner import SeriesScanner
+
+                series_provider = SeriesScanner.get_or_create_series
+
+            if not translator_provider:
+                from services.scanner.library_scanner import LibraryScanner
+
+                translator_provider = LibraryScanner.sync_translator_group
             mtime = datetime.fromtimestamp(stat.st_mtime)
             size = stat.st_size
 
@@ -323,7 +333,42 @@ class EpubScanner:
                         hash_conflict.file_modified_at = mtime
                         hash_conflict.source = source
                         book = hash_conflict
-                    else:
+                    elif (
+                        (hash_conflict.volume is not None and identity["volume"] is not None and hash_conflict.volume != identity["volume"])
+                        or (hash_conflict.color_mode != identity["color_mode"])
+                    ):
+                        logger.warning(
+                            f"⚠️ Colisión de UUID detectada entre tomos o variantes distintas ({hash_conflict.filename} vs {filename}). Generando hash desacoplado."
+                        )
+                        target_book_hash = cls.generate_book_hash(
+                            series_name=identity["series"],
+                            author=identity["author"],
+                            book_type=identity["book_type"],
+                            volume=identity["volume"],
+                            translator=identity["translator"],
+                            layout_by=identity["layout_by"],
+                            language=identity["language"],
+                            edition=identity["edition"] or meta.get("edition"),
+                            is_uncensored=identity["is_uncensored"],
+                            color_mode=identity["color_mode"],
+                            uuid=None,
+                        )
+                        conflict_stmt = (
+                            select(LocalBook)
+                            .options(
+                                selectinload(LocalBook.series_info),
+                                selectinload(LocalBook.genres),
+                                selectinload(LocalBook.demographics),
+                            )
+                            .where(
+                                LocalBook.book_hash == target_book_hash,
+                                LocalBook.filepath != filepath,
+                            )
+                        )
+                        conflict_res = await session.execute(conflict_stmt)
+                        hash_conflict = conflict_res.scalar_one_or_none()
+
+                    if hash_conflict and os.path.exists(hash_conflict.filepath):
                         logger.warning(
                             f"📕 Duplicado ignorado (ya existe en DB): {filename}"
                         )
@@ -398,7 +443,7 @@ class EpubScanner:
                     book = LocalBook(
                         id=target_book_hash,
                         filepath=filepath,
-                        source_id=source.id if source else 1,
+                        source_id=getattr(source, "id", source) if isinstance(source, int) or hasattr(source, "id") else 1,
                         genres=[],
                         demographics=[],
                     )
