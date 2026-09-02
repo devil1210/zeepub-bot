@@ -47,10 +47,8 @@ export const EditorialLayout: React.FC<EditorialLayoutProps> = ({ children }) =>
         {
             title: 'BIBLIOTECA & CATÁLOGO',
             items: [
-                { path: '/app-v2/library', label: 'Biblioteca de EPUBs', icon: BookOpen },
-                { path: '/app-v2/series', label: 'Catálogo de Series', icon: Layers },
-                { path: '/app-v2/volumes', label: 'Matriz de Volúmenes', icon: BookOpen },
-                { path: '/app-v2/datagrid', label: 'Gestor Masivo (DataGrid)', icon: Table, adminOnly: true },
+                { path: '/app-v2/volumes', label: 'Matriz de Volúmenes & EPUBs', icon: BookOpen },
+                { path: '/app-v2/series', label: 'Catálogo & DataGrid de Series', icon: Layers },
             ],
         },
         {
@@ -59,15 +57,14 @@ export const EditorialLayout: React.FC<EditorialLayoutProps> = ({ children }) =>
                 { path: '/app-v2/calendar', label: 'Agenda & Calendario', icon: Calendar },
                 { path: '/app-v2/posts', label: 'Historial de Posts', icon: Send },
                 { path: '/app-v2/templates', label: 'Plantillas & Rich Messages', icon: FileCode2 },
-                { path: '/app-v2/channels', label: 'Fansubs & Canales', icon: Building2, adminOnly: true },
+                { path: '/app-v2/fansubs', label: 'Directorio de Fansubs', icon: Building2, adminOnly: true },
             ],
         },
         {
             title: 'HERRAMIENTAS & SISTEMA',
             items: [
                 { path: '/app-v2/ai', label: 'Hub de IA (Gemini)', icon: BrainCircuit, adminOnly: true },
-                { path: '/app-v2/duplicates', label: 'Gestor de Duplicados', icon: GitMerge, adminOnly: true },
-                { path: '/app-v2/genres', label: 'Auditoría de Géneros', icon: Tags, adminOnly: true },
+                { path: '/app-v2/duplicates', label: 'Gestor de Duplicados & Hash', icon: GitMerge, adminOnly: true },
                 { path: '/app-v2/observatory', label: 'Observatorio del Sistema', icon: Activity, adminOnly: true },
                 { path: '/app-v2/users', label: 'Usuarios y Permisos', icon: Users, adminOnly: true },
                 { path: '/app-v2/settings', label: 'Configuración & Logs', icon: Settings },

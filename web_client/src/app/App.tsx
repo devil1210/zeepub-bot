@@ -35,6 +35,9 @@ const EditorialTemplates = React.lazy(() => import('@features/editorial/pages/Ed
 const EditorialUsers = React.lazy(() => import('@features/editorial/pages/EditorialUsers').then(m => ({ default: m.EditorialUsers })));
 const EditorialSettings = React.lazy(() => import('@features/editorial/pages/EditorialSettings').then(m => ({ default: m.EditorialSettings })));
 const EditorialLegacyTools = React.lazy(() => import('@features/editorial/pages/EditorialLegacyTools').then(m => ({ default: m.EditorialLegacyTools })));
+const EditorialAIHub = React.lazy(() => import('@features/editorial/pages/EditorialAIHub').then(m => ({ default: m.EditorialAIHub })));
+const EditorialFansubs = React.lazy(() => import('@features/editorial/pages/EditorialFansubs').then(m => ({ default: m.EditorialFansubs })));
+const EditorialDuplicates = React.lazy(() => import('@features/editorial/pages/EditorialDuplicates').then(m => ({ default: m.EditorialDuplicates })));
 
 import { Series, Volume } from '@shared/types';
 import { LoginGate } from '@components/LoginGate';
@@ -212,30 +215,27 @@ const AppContent: React.FC = () => {
           <EditorialLayout>
             <Routes>
               <Route path="/app-v2" element={<EditorialDashboard />} />
-              <Route path="/app-v2/library" element={<EditorialLibrary />} />
-              <Route path="/app-v2/series" element={<EditorialSeries />} />
               <Route path="/app-v2/volumes" element={<EditorialVolumes />} />
+              <Route path="/app-v2/library" element={<Navigate to="/app-v2/volumes" replace />} />
+              <Route path="/app-v2/series" element={<EditorialSeries />} />
+              <Route path="/app-v2/datagrid" element={<Navigate to="/app-v2/series" replace />} />
               <Route path="/app-v2/calendar" element={<EditorialCalendar />} />
               <Route path="/app-v2/posts" element={<EditorialPosts />} />
               <Route path="/app-v2/templates" element={<EditorialTemplates />} />
-              <Route path="/app-v2/datagrid" element={
+              <Route path="/app-v2/fansubs" element={
                 <ProtectedAdminRoute>
-                  <PageWrapper Component={SeriesManagerPage} />
+                  <EditorialFansubs />
                 </ProtectedAdminRoute>
               } />
+              <Route path="/app-v2/channels" element={<Navigate to="/app-v2/fansubs" replace />} />
               <Route path="/app-v2/ai" element={
                 <ProtectedAdminRoute>
-                  <PageWrapper Component={AIHub} />
-                </ProtectedAdminRoute>
-              } />
-              <Route path="/app-v2/channels" element={
-                <ProtectedAdminRoute>
-                  <PageWrapper Component={Admin} props={{ defaultView: 'publisher' }} />
+                  <EditorialAIHub />
                 </ProtectedAdminRoute>
               } />
               <Route path="/app-v2/duplicates" element={
                 <ProtectedAdminRoute>
-                  <PageWrapper Component={Admin} props={{ defaultView: 'duplicates' }} />
+                  <EditorialDuplicates />
                 </ProtectedAdminRoute>
               } />
               <Route path="/app-v2/genres" element={

@@ -58,10 +58,40 @@ export const EditorialSettings: React.FC = () => {
         setTimeout(() => setStatusMsg(null), 2500);
     };
 
-    const filteredLogs = logs
-        .split('\n')
-        .filter((line) => (logSearch ? line.toLowerCase().includes(logSearch.toLowerCase()) : true))
-        .join('\n');
+    const rawLogText = useMemo(() => {
+        if (!logs) return '';
+        if (typeof logs === 'string') return logs;
+        if (Array.isArray(logs)) {
+            return logs
+                .map((l: any) => {
+                    if (typeof l === 'string') return l;
+                    if (l && typeof l === 'object') {
+                        const time = l.time || '';
+                        const lvl = l.level || 'INFO';
+                        const msg = l.msg || l.message || JSON.stringify(l);
+                        return `[${time}] ${lvl}: ${msg}`;
+                    }
+                    return String(l);
+                })
+                .join('\n');
+        }
+        if (typeof logs === 'object') {
+            try {
+                return JSON.stringify(logs, null, 2);
+            } catch {
+                return String(logs);
+            }
+        }
+        return String(logs);
+    }, [logs]);
+
+    const filteredLogs = useMemo(() => {
+        if (!rawLogText) return '';
+        return rawLogText
+            .split('\n')
+            .filter((line) => (logSearch ? line.toLowerCase().includes(logSearch.toLowerCase()) : true))
+            .join('\n');
+    }, [rawLogText, logSearch]);
 
     return (
         <div className="w-full max-w-[2200px] mx-auto space-y-6 animate-in fade-in duration-300">
