@@ -187,10 +187,29 @@ export const EditorialSeries: React.FC = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Footer Action */}
-                                            <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-indigo-400 font-bold group-hover:text-indigo-300">
-                                                <span>Ver Tomos & Volúmenes</span>
-                                                <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                                            {/* Footer Actions */}
+                                            <div className="pt-2 border-t border-white/5 flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/app-v2/series/${s.series_hash || s.id}`);
+                                                    }}
+                                                    className="flex-1 py-1.5 px-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 hover:text-white text-[11px] font-bold border border-indigo-500/30 transition-all flex items-center justify-center gap-1"
+                                                >
+                                                    <Edit3 className="w-3 h-3" /> Editar Serie
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        navigate(`/app-v2/volumes?series=${encodeURIComponent(s.name || s.series_english || '')}`);
+                                                    }}
+                                                    className="py-1.5 px-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[11px] font-bold border border-white/5 transition-all flex items-center justify-center gap-1"
+                                                    title="Ver volúmenes"
+                                                >
+                                                    <BookOpen className="w-3 h-3" />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
