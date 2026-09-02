@@ -347,6 +347,46 @@ export const api = {
     updatePublishedPost: (bookId: string, caption?: string, platforms: string[] = ['facebook']) =>
         rpc('pub_update_post', { book_id: bookId, caption, platforms }),
 
+    // Publisher & Schedule Queue
+    pubGetQueue: (status?: string, limit: number = 50) =>
+        rpc('pub_get_queue', { status, limit }),
+
+    pubGetChannels: () =>
+        rpc('pub_get_channels', {}),
+
+    pubSaveChannel: (channelData: any) =>
+        rpc('pub_save_channel', channelData),
+
+    pubDeleteChannel: (id: number) =>
+        rpc('pub_delete_channel', { id }),
+
+    pubGetTemplates: (platform?: string) =>
+        rpc('pub_get_templates', { platform }),
+
+    pubSaveTemplate: (templateData: any) =>
+        rpc('pub_save_template', templateData),
+
+    pubDeleteTemplate: (id: number) =>
+        rpc('pub_delete_template', { id }),
+
+    pubRestoreTemplates: () =>
+        rpc('pub_restore_templates', {}),
+
+    pubSchedule: (scheduleData: {
+        book_hash: string;
+        channel_id: number;
+        scheduled_for: string;
+        template_id?: number;
+        template_ids?: number[];
+        payload?: any;
+    }) => rpc('pub_schedule', scheduleData),
+
+    pubRetry: (queueId: number) =>
+        rpc('pub_retry', { queue_id: queueId }),
+
+    pubCancel: (queueId: number) =>
+        rpc('pub_cancel', { queue_id: queueId }),
+
     getUploadHistory: (limit: number = 100, offset: number = 0) =>
         apiClient.get(`/api/admin/upload-history?limit=${limit}&offset=${offset}`).then(res => res.data),
 

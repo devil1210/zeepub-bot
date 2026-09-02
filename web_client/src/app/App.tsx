@@ -23,6 +23,19 @@ const FansubDetailPage = React.lazy(() => import('@features/publisher/pages/Fans
 const SeriesDetailPage = React.lazy(() => import('@features/admin/pages/SeriesDetailPage').then(m => ({ default: m.SeriesDetailPage })));
 const SeriesManagerPage = React.lazy(() => import('@features/admin/pages/SeriesManagerPage').then(m => ({ default: m.SeriesManagerPage })));
 
+// V2 Editorial Console Pages
+const EditorialLayout = React.lazy(() => import('@features/editorial/layouts/EditorialLayout').then(m => ({ default: m.EditorialLayout })));
+const EditorialDashboard = React.lazy(() => import('@features/editorial/pages/EditorialDashboard').then(m => ({ default: m.EditorialDashboard })));
+const EditorialLibrary = React.lazy(() => import('@features/editorial/pages/EditorialLibrary').then(m => ({ default: m.EditorialLibrary })));
+const EditorialSeries = React.lazy(() => import('@features/editorial/pages/EditorialSeries').then(m => ({ default: m.EditorialSeries })));
+const EditorialVolumes = React.lazy(() => import('@features/editorial/pages/EditorialVolumes').then(m => ({ default: m.EditorialVolumes })));
+const EditorialCalendar = React.lazy(() => import('@features/editorial/pages/EditorialCalendar').then(m => ({ default: m.EditorialCalendar })));
+const EditorialPosts = React.lazy(() => import('@features/editorial/pages/EditorialPosts').then(m => ({ default: m.EditorialPosts })));
+const EditorialTemplates = React.lazy(() => import('@features/editorial/pages/EditorialTemplates').then(m => ({ default: m.EditorialTemplates })));
+const EditorialUsers = React.lazy(() => import('@features/editorial/pages/EditorialUsers').then(m => ({ default: m.EditorialUsers })));
+const EditorialSettings = React.lazy(() => import('@features/editorial/pages/EditorialSettings').then(m => ({ default: m.EditorialSettings })));
+const EditorialLegacyTools = React.lazy(() => import('@features/editorial/pages/EditorialLegacyTools').then(m => ({ default: m.EditorialLegacyTools })));
+
 import { Series, Volume } from '@shared/types';
 import { LoginGate } from '@components/LoginGate';
 import { registerServiceWorker } from '@shared/utils/serviceWorker';
@@ -100,7 +113,7 @@ const TelegramNavigationHandler: React.FC = () => {
       }
     };
 
-    const rootPaths = ['/', '/search', '/library', '/requests', '/settings', '/downloads', '/admin'];
+    const rootPaths = ['/', '/search', '/library', '/requests', '/settings', '/downloads', '/admin', '/app-v2'];
     const isRoot = navState.historyStack.length <= 1 && rootPaths.includes(location.pathname);
 
     if (isRoot) {
@@ -176,6 +189,9 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const { user, status, ready } = useTelegram();
 
+  // Check if current route is part of v2 Editorial Console
+  const isV2 = location.pathname.startsWith('/app-v2');
+
   // Determine active tab for Layout
   const getActiveTab = (pathname: string) => {
     if (pathname === '/') return 'dashboard';
@@ -184,6 +200,37 @@ const AppContent: React.FC = () => {
 
   if (!ready) {
     return <PageLoader />;
+  }
+
+  if (isV2) {
+    return (
+      <>
+        <ScrollToTop />
+        <HistoryTracker />
+        <TelegramNavigationHandler />
+        <Suspense fallback={<PageLoader />}>
+          <EditorialLayout>
+            <Routes>
+              <Route path="/app-v2" element={<EditorialDashboard />} />
+              <Route path="/app-v2/library" element={<EditorialLibrary />} />
+              <Route path="/app-v2/series" element={<EditorialSeries />} />
+              <Route path="/app-v2/volumes" element={<EditorialVolumes />} />
+              <Route path="/app-v2/calendar" element={<EditorialCalendar />} />
+              <Route path="/app-v2/posts" element={<EditorialPosts />} />
+              <Route path="/app-v2/templates" element={<EditorialTemplates />} />
+              <Route path="/app-v2/users" element={
+                <ProtectedAdminRoute>
+                  <EditorialUsers />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/app-v2/settings" element={<EditorialSettings />} />
+              <Route path="/app-v2/legacy" element={<EditorialLegacyTools />} />
+              <Route path="/app-v2/*" element={<Navigate to="/app-v2" replace />} />
+            </Routes>
+          </EditorialLayout>
+        </Suspense>
+      </>
+    );
   }
 
   return (

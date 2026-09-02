@@ -166,6 +166,22 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
                 <Building2 className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
                 <span className="text-sm font-medium">Fansubs / Grupos</span>
               </button>
+
+              {/* V2 Beta Promo */}
+              <div className="pt-2">
+                <button
+                  onClick={() => navigate('/app-v2')}
+                  className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-indigo-600/30 via-purple-600/20 to-blue-600/30 border border-indigo-500/40 text-white hover:border-indigo-400 transition-all group shadow-lg"
+                >
+                  <div className="text-left">
+                    <div className="text-xs font-black text-indigo-300 flex items-center gap-1">
+                      ✨ Consola Editorial
+                    </div>
+                    <div className="text-[10px] text-gray-400">Probar v2 Beta</div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-indigo-400 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
             </div>
           )}
         </nav>
