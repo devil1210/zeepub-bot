@@ -111,6 +111,36 @@ export const EditorialPostEdit: React.FC = () => {
         }
     };
 
+    const formatDateSafe = (dateStr?: string | null) => {
+        if (!dateStr) return 'Reciente';
+        try {
+            const cleaned = String(dateStr).replace(/\+00:00Z$/, 'Z').replace(/\+00:00$/, 'Z');
+            const d = new Date(cleaned);
+            if (!isNaN(d.getTime())) {
+                return d.toLocaleString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            }
+            const d2 = new Date(String(dateStr).replace('Z', ''));
+            if (!isNaN(d2.getTime())) {
+                return d2.toLocaleString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
+            }
+            return dateStr;
+        } catch {
+            return dateStr || 'Reciente';
+        }
+    };
+
     if (loading) {
         return (
             <div className="w-full py-32 flex flex-col items-center justify-center gap-4">
@@ -176,7 +206,7 @@ export const EditorialPostEdit: React.FC = () => {
                             <span>•</span>
                             <span className="flex items-center gap-1 font-mono text-gray-400 text-[11px]">
                                 <Calendar className="w-3 h-3" />
-                                {post.published_at ? new Date(post.published_at).toLocaleString('es-ES') : 'Completado'}
+                                {formatDateSafe(post.published_at || post.scheduled_for)}
                             </span>
                             {post.post_url && (
                                 <>

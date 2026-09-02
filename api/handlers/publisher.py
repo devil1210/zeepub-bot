@@ -92,6 +92,20 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
                 if b.id:
                     book_info_map[str(b.id)] = info
 
+    def _fmt_iso(dt):
+        if not dt:
+            return None
+        if isinstance(dt, str):
+            return dt.replace("+00:00Z", "Z").replace("+00:00", "Z")
+        if hasattr(dt, "isoformat"):
+            s = dt.isoformat()
+            if s.endswith("+00:00"):
+                return s[:-6] + "Z"
+            elif not s.endswith("Z") and "+" not in s:
+                return s + "Z"
+            return s
+        return str(dt)
+
     # Format queue items
     queue_formatted = [
         {
@@ -101,9 +115,9 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
             "channel_id": i.channel_id,
             "template_id": i.template_id,
             "platform": i.channel.platform if i.channel else "telegram",
-            "scheduled_for": (i.scheduled_for.isoformat() + "Z") if i.scheduled_for else None,
+            "scheduled_for": _fmt_iso(i.scheduled_for),
             "status": i.status,
-            "published_at": (i.published_at.isoformat() + "Z") if i.published_at else None,
+            "published_at": _fmt_iso(i.published_at),
             "error": i.error_message,
             "payload": i.payload,
             "caption": (i.payload.get("caption") if i.payload else None),
@@ -123,18 +137,18 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
             "publication_id": bp.id,
             "book_hash": book_info_map.get(str(bp.book_id), {}).get("book_hash") or bp.book_id,
             "book_id": bp.book_id,
-            "channel": bp.channel.name if bp.channel else "Página de Facebook",
+            "channel": bp.channel.name if bp.channel else "ZeePubs Oficial",
             "channel_id": bp.channel_id,
             "platform": "facebook",
             "post_id": bp.post_id,
             "post_url": bp.post_url or f"https://www.facebook.com/{bp.post_id}",
             "scheduled_for": None,
             "status": "published",
-            "published_at": (bp.published_at.isoformat() + "Z") if bp.published_at else None,
+            "published_at": _fmt_iso(bp.published_at or bp.created_at),
             "error": None,
             "caption": bp.caption,
             "payload": {"caption": bp.caption, "post_url": bp.post_url},
-            "series": book_info_map.get(str(bp.book_id), {}).get("series"),
+            "series": book_info_map.get(str(bp.book_id), {}).get("series") or "Publicación Facebook",
             "series_spanish": book_info_map.get(str(bp.book_id), {}).get("series_spanish"),
             "volume": book_info_map.get(str(bp.book_id), {}).get("volume"),
             "author": book_info_map.get(str(bp.book_id), {}).get("author"),
