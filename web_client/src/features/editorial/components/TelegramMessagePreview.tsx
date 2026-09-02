@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     Send,
     Check,
@@ -15,8 +15,13 @@ import {
     Flame,
     Smile,
     Monitor,
-    Smartphone
+    Smartphone,
+    Search,
+    BookOpen,
+    Loader2,
+    X
 } from 'lucide-react';
+import { api } from '@shared/services/api';
 
 export interface TelegramMessagePreviewProps {
     rawTemplate?: string;
@@ -28,126 +33,6 @@ export interface TelegramMessagePreviewProps {
     isCaptionMode?: boolean;
 }
 
-export const SAMPLE_NOVELS = [
-    {
-        id: 'baccano',
-        name: 'Baccano! (Vol. 3)',
-        cover: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
-        cover_vertical: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80',
-        serie: 'Baccano!',
-        series: 'Baccano!',
-        series_english: 'Baccano!',
-        series_name: 'Baccano!',
-        romaji_title: 'Baccano!',
-        series_spanish: 'Baccano! 1931: El gran ferrocarril del desorden',
-        titulo: 'El gran ferrocarril del desorden EPISODIO EXPRESO',
-        title: 'El gran ferrocarril del desorden EPISODIO EXPRESO',
-        volumen: '3',
-        volume: '3',
-        autor: 'Ryohgo Narita',
-        author: 'Ryohgo Narita',
-        illustrator: 'Katsumi Enami',
-        ilustrador: 'Katsumi Enami',
-        layout_by: '#Kuranam',
-        maquetador: '#Kuranam',
-        tipo: 'Novela Ligera',
-        demography: 'Seinen',
-        genres: '#Maduro #Acción #Aventura #Comedia #Drama #Histórico #Misterio #Psicológico #Romance #Sobrenatural #Terror',
-        traductor: 'Clixea',
-        translator: 'Clixea',
-        editorial: 'Lanove Translations',
-        size_mb: '3.0 MB',
-        tamaño: '3.0 MB',
-        fecha: '02/09/2026',
-        published_at: '01/09/2026',
-        sinopsis:
-            'A bordo del Flying Pussyfoot, un tren transcontinental de lujo que viaja de Chicago a Nueva York, múltiples facciones con intereses contrapuestos desatan un torbellino de violencia, conspiraciones y caos inmortal.',
-        slug: 'Baccano',
-        download_link: 'https://t.me/zeepub_bot?start=dl_baccano_03',
-        filename: 'Baccano! - V03 [LANOVE].epub',
-        link: 'https://t.me/zeepub_bot?start=dl_baccano_03',
-        hashtags: '#Baccano #ZeePubs',
-    },
-    {
-        id: 'mushoku',
-        name: 'Mushoku Tensei (Vol. 26)',
-        cover: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&auto=format&fit=crop&q=80',
-        cover_vertical: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&auto=format&fit=crop&q=80',
-        serie: 'Mushoku Tensei: Isekai Ittara Honki Dasu',
-        series: 'Mushoku Tensei: Isekai Ittara Honki Dasu',
-        series_english: 'Mushoku Tensei: Jobless Reincarnation',
-        series_name: 'Mushoku Tensei: Isekai Ittara Honki Dasu',
-        romaji_title: 'Mushoku Tensei: Isekai Ittara Honki Dasu',
-        series_spanish: 'Mushoku Tensei: Reencarnación de un Desempleado',
-        titulo: 'Edición Especial Ilustrada - Fin de Viaje',
-        title: 'Edición Especial Ilustrada - Fin de Viaje',
-        volumen: '26',
-        volume: '26',
-        autor: 'Rifujin na Magonote',
-        author: 'Rifujin na Magonote',
-        illustrator: 'SiroTaka',
-        ilustrador: 'SiroTaka',
-        layout_by: '#ZeePubs_Team',
-        maquetador: '#ZeePubs_Team',
-        tipo: 'Novela Ligera',
-        demography: 'Seinen',
-        genres: '#Fantasía #Isekai #Aventura #Drama #Magia #Reencarnación',
-        traductor: 'Kuro-TL',
-        translator: 'Kuro-TL',
-        editorial: 'Seven Seas Entertainment',
-        size_mb: '14.85 MB',
-        tamaño: '14.85 MB',
-        fecha: '02/09/2026',
-        published_at: '02/09/2026',
-        sinopsis:
-            'La batalla final ha concluido. Rudeus Greyrat contempla su vida entera, recordando su viaje desde un mundo donde lo perdió todo hasta forjar una familia y un legado imborrable en las tierras mágicas.',
-        slug: 'Mushoku_Tensei',
-        download_link: 'https://t.me/zeepub_bot?start=dl_mushoku_26',
-        filename: 'Mushoku Tensei - V26 [FINAL].epub',
-        link: 'https://t.me/zeepub_bot?start=dl_mushoku_26',
-        hashtags: '#MushokuTensei #ZeePubs',
-    },
-    {
-        id: 'index',
-        name: 'A Certain Magical Index (Vol. 1)',
-        cover: 'https://images.unsplash.com/photo-1532012164546-f432f2e3edd7?w=600&auto=format&fit=crop&q=80',
-        cover_vertical: 'https://images.unsplash.com/photo-1532012164546-f432f2e3edd7?w=600&auto=format&fit=crop&q=80',
-        serie: 'A Certain Magical Index',
-        series: 'A Certain Magical Index',
-        series_english: 'A Certain Magical Index',
-        series_name: 'A Certain Magical Index',
-        romaji_title: 'Toaru Majutsu no Index',
-        series_spanish: 'Un Cierto Índice Mágico',
-        titulo: 'Tomo 1 - El Encuentro con Index',
-        title: 'Tomo 1 - El Encuentro con Index',
-        volumen: '1',
-        volume: '1',
-        autor: 'Kazuma Kamachi',
-        author: 'Kazuma Kamachi',
-        illustrator: 'Kiyotaka Haimura',
-        ilustrador: 'Kiyotaka Haimura',
-        layout_by: '#Lestat',
-        maquetador: '#Lestat',
-        tipo: 'Novela Ligera',
-        demography: 'Shounen',
-        genres: '#Acción #CienciaFicción #Magia #Sobrenatural',
-        traductor: 'Lestat Lamperouge',
-        translator: 'Lestat Lamperouge',
-        editorial: 'Index Scanlation',
-        size_mb: '4.2 MB',
-        tamaño: '4.2 MB',
-        fecha: '02/09/2026',
-        published_at: '02/09/2026',
-        sinopsis:
-            'Touma Kamijou es un estudiante de Ciudad Academia con una mano derecha que anula cualquier poder sobrenatural. Un día encuentra colgada en su balcón a una monja llamada Index que huye de hechiceros.',
-        slug: 'Toaru_Majutsu_no_Index',
-        download_link: 'https://t.me/zeepub_bot?start=dl_index_01',
-        filename: 'Toaru Majutsu no Index - Vol 01.epub',
-        link: 'https://t.me/zeepub_bot?start=dl_index_01',
-        hashtags: '#Index #Toaru #ZeePubs',
-    },
-];
-
 export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     rawTemplate,
     templateContent,
@@ -157,23 +42,127 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     coverUrl,
 }) => {
     const inputContent = rawTemplate || templateContent || '';
-    const [selectedSampleId, setSelectedSampleId] = useState('baccano');
+    const [selectedBook, setSelectedBook] = useState<any | null>(null);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searching, setSearching] = useState(false);
+
     const [reactionCount, setReactionCount] = useState(1);
     const [hasReacted, setHasReacted] = useState(false);
     const [copied, setCopied] = useState(false);
     const [previewWidth, setPreviewWidth] = useState<'desktop' | 'mobile'>('desktop');
 
-    const activeSample = useMemo(() => {
-        const found = SAMPLE_NOVELS.find((n) => n.id === selectedSampleId) || SAMPLE_NOVELS[0];
-        const merged = { ...found, ...(sampleBook || {}), ...(previewBook || {}) };
-        return merged;
-    }, [selectedSampleId, sampleBook, previewBook]);
+    // Default book if none selected
+    const activeBook = useMemo(() => {
+        if (selectedBook) return selectedBook;
+        if (sampleBook) return sampleBook;
+        if (previewBook) return previewBook;
 
-    // Evaluate Template Variables & Conditionals
-    const evaluatedText = useMemo(() => {
-        if (!inputContent) {
-            return `📚 <b>${activeSample.series_english || activeSample.serie}</b>\n📖 <b>Volumen ${activeSample.volumen}</b>\n\n🏷️ ${activeSample.genres || activeSample.hashtags}\n\n<blockquote>👤 <b>Autor:</b> ${activeSample.autor}\n🎨 <b>Ilustrador:</b> ${activeSample.illustrator}\n🌐 <b>Traducción:</b> ${activeSample.traductor}\n🏢 <b>Grupo:</b> ${activeSample.editorial}</blockquote>\n\n📝 <b>Sinopsis:</b>\n<blockquote expandable>${activeSample.sinopsis}</blockquote>\n\n#${activeSample.slug}`;
+        return {
+            serie: 'Baccano!',
+            series: 'Baccano!',
+            series_english: 'Baccano!',
+            series_name: 'Baccano!',
+            romaji_title: 'Baccano!',
+            series_spanish: 'Baccano! 1931: El gran ferrocarril del desorden',
+            titulo: 'El gran ferrocarril del desorden EPISODIO EXPRESO',
+            title: 'El gran ferrocarril del desorden EPISODIO EXPRESO',
+            volumen: '3',
+            volume: '3',
+            autor: 'Ryohgo Narita',
+            author: 'Ryohgo Narita',
+            illustrator: 'Katsumi Enami',
+            ilustrador: 'Katsumi Enami',
+            layout_by: 'Kuranam',
+            maquetador: 'Kuranam',
+            tipo: 'Novela Ligera',
+            demography: 'Seinen',
+            genres: '#Maduro #Acción #Aventura #Comedia #Drama #Histórico #Misterio #Psicológico #Romance #Sobrenatural #Terror',
+            traductor: 'Clixea',
+            translator: 'Clixea',
+            editorial: 'Lanove Translations',
+            size_mb: '3.0 MB',
+            tamaño: '3.0 MB',
+            fecha: '02-09-2026',
+            published_at: '02-09-2026',
+            sinopsis:
+                'A bordo del Flying Pussyfoot, un tren transcontinental de lujo que viaja de Chicago a Nueva York, múltiples facciones con intereses contrapuestos desatan un torbellino de violencia, conspiraciones y caos inmortal.',
+            slug: 'Baccano',
+            download_link: 'https://t.me/zeepub_bot?start=dl_baccano_03',
+            filename: 'Baccano! - V03 [LANOVE].epub',
+            link: 'https://t.me/zeepub_bot?start=dl_baccano_03',
+            hashtags: '#Baccano #ZeePubs',
+            cover_url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600',
+        };
+    }, [selectedBook, sampleBook, previewBook]);
+
+    // Live search in user's real library
+    const handleSearchLibrary = async (q: string) => {
+        setSearchQuery(q);
+        if (!q.trim() || q.length < 2) {
+            setSearchResults([]);
+            return;
         }
+
+        setSearching(true);
+        try {
+            const res = await api.getVolumes({ query: q, limit: 12 });
+            const list = res?.volumes || res?.books || res?.items || [];
+            setSearchResults(list);
+        } catch (err) {
+            console.error('Error buscando libros en biblioteca:', err);
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    const handleSelectRealBook = (b: any) => {
+        const seriesName = b.series_name || b.series || b.title || 'Serie';
+        const genresList = Array.isArray(b.genres) ? b.genres.map((g: string) => `#${g}`).join(' ') : (b.genres || '#NovelaLigera');
+        const formattedSize = b.file_size ? `${(b.file_size / (1024 * 1024)).toFixed(1)} MB` : (b.size_mb || '3.5 MB');
+
+        setSelectedBook({
+            serie: seriesName,
+            series: seriesName,
+            series_english: b.series_english || seriesName,
+            series_name: seriesName,
+            romaji_title: b.romaji_title || seriesName,
+            series_spanish: b.series_spanish || b.title,
+            titulo: b.title,
+            title: b.title,
+            volumen: String(b.volume || 1),
+            volume: String(b.volume || 1),
+            autor: b.author || 'Autor desconocido',
+            author: b.author || 'Autor desconocido',
+            illustrator: b.illustrator || 'Ilustrador oficial',
+            ilustrador: b.illustrator || 'Ilustrador oficial',
+            layout_by: b.layout_by || 'ZeePubs',
+            maquetador: b.layout_by || 'ZeePubs',
+            tipo: b.book_type || 'Novela Ligera',
+            demography: b.demography || 'Seinen',
+            genres: genresList,
+            traductor: b.translator || 'Fansub',
+            translator: b.translator || 'Fansub',
+            editorial: b.workgroup_name || b.publisher || 'Editorial Digital',
+            size_mb: formattedSize,
+            tamaño: formattedSize,
+            fecha: new Date().toLocaleDateString('es-ES'),
+            published_at: new Date().toLocaleDateString('es-ES'),
+            sinopsis: b.synopsis || b.description || 'Sinopsis disponible en la biblioteca.',
+            slug: seriesName.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_'),
+            download_link: `https://t.me/zeepub_bot?start=dl_${b.book_hash || b.id}`,
+            filename: b.filename || `${b.title}.epub`,
+            link: `https://t.me/zeepub_bot?start=dl_${b.book_hash || b.id}`,
+            hashtags: `#${seriesName.replace(/[^a-zA-Z0-9]/g, '')} #ZeePubs`,
+            cover_url: b.cover_url || b.cover_thumb || '',
+        });
+        setIsSearchOpen(false);
+    };
+
+    // Evaluate Template Variables & Conditionals strictly
+    const evaluatedText = useMemo(() => {
+        if (!inputContent) return '';
         let text = inputContent;
 
         // 1. Unescape HTML entities
@@ -184,29 +173,31 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
             .replace(/&quot;/g, '"')
             .replace(/&#39;/g, "'");
 
-        // 2. Process negative conditionals: [?!key]...[/?]
+        // 2. Process negative conditionals: [?!key]...[/?] (multiline support)
         text = text.replace(/\[\?!([a-zA-Z0-9_]+)\]([\s\S]*?)\[\/\?\]/g, (_match, key, content) => {
-            const val = activeSample[key as keyof typeof activeSample];
+            const val = activeBook[key as keyof typeof activeBook];
             return !val || String(val).trim() === '' ? content : '';
         });
 
-        // 3. Process positive conditionals: [?key]...[/?]
+        // 3. Process positive conditionals: [?key]...[/?] (multiline support)
         text = text.replace(/\[\?([a-zA-Z0-9_]+)\]([\s\S]*?)\[\/\?\]/g, (_match, key, content) => {
-            const val = activeSample[key as keyof typeof activeSample];
+            const val = activeBook[key as keyof typeof activeBook];
             return val && String(val).trim() !== '' ? content : '';
         });
 
-        // 4. Substitute placeholders: {key}
+        // 4. Clean up any lingering conditional tags
+        text = text.replace(/\[\?[a-zA-Z0-9_]+\]/g, '').replace(/\[\/\?\]/g, '');
+
+        // 5. Substitute placeholders: {key}
         text = text.replace(/\{([a-zA-Z0-9_]+)\}/g, (_match, key) => {
-            const val = activeSample[key as keyof typeof activeSample];
+            const val = activeBook[key as keyof typeof activeBook];
             return val !== undefined && val !== null ? String(val) : '';
         });
 
         return text;
-    }, [inputContent, activeSample]);
+    }, [inputContent, activeBook]);
 
     const charCount = evaluatedText.length;
-    // Telegram Bot API: 4096 for rich text messages, 1024 for photo caption
     const maxChars = 4096;
     const isOverLimit = charCount > maxChars;
 
@@ -228,41 +219,39 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
 
     const currentCover =
         coverUrl ||
-        activeSample.cover_url ||
-        activeSample.cover_vertical ||
-        activeSample.cover;
+        activeBook.cover_url ||
+        activeBook.cover_vertical ||
+        activeBook.cover;
 
-    // Check if the template contains explicit <img> tag or if we should show header cover
     const hasEmbeddedImg = evaluatedText.includes('<img');
 
     return (
         <div className="flex flex-col h-full w-full space-y-3 font-sans select-none animate-in fade-in duration-200">
             {/* Control Header Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-xs">
-                {/* Sample Selector */}
+                {/* Real Book Selector Trigger */}
                 <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-gray-400 uppercase">Muestra:</span>
-                    <select
-                        value={selectedSampleId}
-                        onChange={(e) => setSelectedSampleId(e.target.value)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-900 border border-white/10 text-xs text-indigo-300 font-bold focus:outline-none focus:border-indigo-500"
+                    <button
+                        type="button"
+                        onClick={() => setIsSearchOpen(true)}
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-indigo-500/30 text-xs text-indigo-300 font-bold flex items-center gap-2 transition-all shadow-md active:scale-95 group"
                     >
-                        {SAMPLE_NOVELS.map((nov) => (
-                            <option key={nov.id} value={nov.id}>
-                                {nov.name}
-                            </option>
-                        ))}
-                    </select>
+                        <BookOpen className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
+                        <span className="truncate max-w-[220px]">
+                            {activeBook.series || activeBook.title} (Vol. {activeBook.volumen || activeBook.volume})
+                        </span>
+                        <Search className="w-3 h-3 text-gray-400 ml-1" />
+                    </button>
 
-                    {/* View Switcher: Desktop (TDesktop) vs Mobile */}
-                    <div className="flex items-center gap-1 bg-slate-900 border border-white/10 p-0.5 rounded-xl ml-2">
+                    {/* View Switcher: Desktop vs Mobile */}
+                    <div className="flex items-center gap-1 bg-slate-900 border border-white/10 p-0.5 rounded-xl">
                         <button
                             type="button"
                             onClick={() => setPreviewWidth('desktop')}
                             className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
-                                previewWidth === 'desktop' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'
+                                previewWidth === 'desktop' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'
                             }`}
-                            title="Vista Telegram Desktop (tdesktop)"
+                            title="Vista Telegram Desktop"
                         >
                             <Monitor className="w-3.5 h-3.5" />
                         </button>
@@ -270,7 +259,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                             type="button"
                             onClick={() => setPreviewWidth('mobile')}
                             className={`p-1.5 rounded-lg text-xs font-bold transition-all ${
-                                previewWidth === 'mobile' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'
+                                previewWidth === 'mobile' ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'
                             }`}
                             title="Vista Telegram Móvil"
                         >
@@ -279,7 +268,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                     </div>
                 </div>
 
-                {/* Character Counter & Copy Action */}
+                {/* Character Counter & Copy */}
                 <div className="flex items-center gap-2">
                     <span
                         className={`text-[11px] font-mono px-2.5 py-1 rounded-lg border ${
@@ -304,14 +293,14 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
             </div>
 
             {/* Official Telegram Channel Window Container */}
-            <div className="flex-1 bg-[#0e1621] rounded-3xl border border-white/10 p-4 sm:p-6 overflow-y-auto shadow-2xl flex flex-col items-center justify-start min-h-[500px]">
-                {/* Telegram Post Card: Expands gracefully up to 720px in Desktop mode, or 420px in Mobile mode */}
+            <div className="flex-1 bg-[#0e1621] rounded-3xl border border-white/10 p-4 sm:p-6 overflow-y-auto shadow-2xl flex flex-col items-center justify-start min-h-[580px] 2xl:min-h-[660px]">
+                {/* Telegram Post Card (TDesktop style) */}
                 <div
                     className={`w-full transition-all duration-300 bg-[#182533] text-gray-100 rounded-2xl border border-[#243343] overflow-hidden shadow-2xl font-sans ${
                         previewWidth === 'desktop' ? 'max-w-[720px]' : 'max-w-[420px]'
                     }`}
                 >
-                    {/* Channel Header (TDesktop style) */}
+                    {/* Channel Header */}
                     <div className="flex items-center justify-between px-4 py-3 bg-[#17212b] border-b border-white/5">
                         <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-md shrink-0">
@@ -331,7 +320,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                         <span className="text-[10px] text-gray-400 font-mono">18:00</span>
                     </div>
 
-                    {/* Top Cover Banner if not embedded via <img /> */}
+                    {/* Top Cover Banner if no embedded <img /> tag */}
                     {!hasEmbeddedImg && currentCover && (
                         <div className="relative w-full bg-black/60 max-h-[420px] overflow-hidden border-b border-white/5 flex items-center justify-center">
                             <img
@@ -343,7 +332,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                         </div>
                     )}
 
-                    {/* Telegram Caption Body (Evaluated strictly with Official Telegram Formatting) */}
+                    {/* Telegram Caption Body */}
                     <div className="p-4 sm:p-5 space-y-3.5 text-[13px] sm:text-[14px] leading-relaxed select-text">
                         <TelegramOfficialHtmlRenderer html={evaluatedText} activeCover={currentCover} />
 
@@ -387,6 +376,76 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Library Search Modal */}
+            {isSearchOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl p-6 space-y-4">
+                        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                <BookOpen className="w-4 h-4 text-indigo-400" /> Seleccionar Libro de tu Biblioteca Real
+                            </h3>
+                            <button onClick={() => setIsSearchOpen(false)} className="p-1 text-gray-400 hover:text-white">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="relative">
+                            <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => handleSearchLibrary(e.target.value)}
+                                placeholder="Escribe el nombre de la serie, tomo o autor..."
+                                autoFocus
+                                className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                            />
+                        </div>
+
+                        <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+                            {searching ? (
+                                <div className="py-8 flex justify-center">
+                                    <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                                </div>
+                            ) : searchResults.length === 0 ? (
+                                <div className="py-8 text-center text-xs text-gray-500">
+                                    {searchQuery ? 'No se encontraron libros' : 'Escribe para buscar cualquier libro de tu biblioteca'}
+                                </div>
+                            ) : (
+                                searchResults.map((bk) => (
+                                    <div
+                                        key={bk.id || bk.book_hash}
+                                        onClick={() => handleSelectRealBook(bk)}
+                                        className="p-3 rounded-xl bg-slate-950 hover:bg-indigo-600/20 border border-white/5 hover:border-indigo-500/40 flex items-center justify-between gap-3 text-xs cursor-pointer transition-all group"
+                                    >
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-10 h-14 rounded-lg bg-slate-900 border border-white/5 overflow-hidden shrink-0 flex items-center justify-center">
+                                                {bk.cover_url || bk.cover_thumb ? (
+                                                    <img src={bk.cover_url || bk.cover_thumb} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <BookOpen className="w-4 h-4 text-gray-600" />
+                                                )}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="font-bold text-white group-hover:text-indigo-300 transition-colors truncate">
+                                                    {bk.series_name || bk.title}
+                                                </div>
+                                                <div className="text-[10px] text-gray-400">
+                                                    Vol. {bk.volume || 1} • {bk.author || 'Autor'} • {bk.translator || 'Fansub'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <span className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[11px] font-bold shrink-0">
+                                            Probar
+                                        </span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -413,28 +472,31 @@ export const TelegramOfficialHtmlRenderer: React.FC<{ html: string; activeCover?
         text = text.replace(/<img[^>]*>/gi, () => {
             return `<div class="my-2 rounded-xl overflow-hidden border border-white/10 bg-black/40"><img src="${
                 activeCover || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600'
-            }" class="w-full max-h-[360px] object-cover" alt="Cover" /></div>`;
+            }" class="w-full max-h-[360px] object-cover" alt="" /></div>`;
         });
 
         // 3. Handle <table>...</table> by converting to a clean Telegram Desktop structured info box
         text = text.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (_match, tableBody) => {
-            // Convert tr/td to clean rows
-            const rows = tableBody
-                .replace(/<tr[^>]*>([\s\S]*?)<\/tr>/gi, (_m: string, rowContent: string) => {
-                    const cells: string[] = [];
-                    rowContent.replace(/<td[^>]*>([\s\S]*?)<\/td>/gi, (_cm: string, cellText: string) => {
-                        cells.push(cellText.trim());
-                        return '';
-                    });
-                    if (cells.length >= 2) {
-                        return `<div class="py-1.5 px-3 flex items-center justify-between text-xs border-b border-white/5 last:border-b-0"><span class="text-slate-400 font-medium">${cells[0]}</span><span class="text-white font-bold">${cells[1]}</span></div>`;
-                    } else if (cells.length === 1) {
-                        return `<div class="py-1.5 px-3 text-xs border-b border-white/5 last:border-b-0">${cells[0]}</div>`;
-                    }
+            const rows: string[] = [];
+            tableBody.replace(/<tr[^>]*>([\s\S]*?)<\/tr>/gi, (_m: string, rowContent: string) => {
+                const cells: string[] = [];
+                rowContent.replace(/<td[^>]*>([\s\S]*?)<\/td>/gi, (_cm: string, cellText: string) => {
+                    cells.push(cellText.trim());
                     return '';
                 });
+                if (cells.length >= 2) {
+                    rows.push(
+                        `<div class="py-1.5 px-3 flex items-center justify-between text-xs border-b border-white/5 last:border-b-0"><span class="text-slate-400 font-medium">${cells[0]}</span><span class="text-white font-bold">${cells[1]}</span></div>`
+                    );
+                } else if (cells.length === 1) {
+                    rows.push(
+                        `<div class="py-1.5 px-3 text-xs border-b border-white/5 last:border-b-0">${cells[0]}</div>`
+                    );
+                }
+                return '';
+            });
 
-            return `<div class="my-3 rounded-2xl bg-[#131b24] border border-[#243343] overflow-hidden">${rows}</div>`;
+            return `<div class="my-3 rounded-2xl bg-[#131b24] border border-[#243343] overflow-hidden">${rows.join('')}</div>`;
         });
 
         // 4. Headers (h2, h3, h4, h5, h6)
