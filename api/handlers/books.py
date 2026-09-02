@@ -112,7 +112,14 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
             if series
             else rep.get("demographics", []),
             "tags": series.tags_json if series else rep.get("tags", []),
+            "genres": series.tags_json if series else rep.get("tags", []),
             "book_type": series.book_type if series else rep.get("book_type"),
+            "illustrator": (series.illustrator if series else None) or rep.get("illustrator") or rep.get("artist") or "",
+            "slug": (series.slug if series else None) or rep.get("slug") or "",
+            "editorial": (series.publisher if series else None) or rep.get("publisher") or rep.get("workgroup_name") or "",
+            "publisher": (series.publisher if series else None) or rep.get("publisher") or "",
+            "translator": rep.get("translator") or "",
+            "layout_by": rep.get("layout_by") or "",
             "is_series": True,
             "volumes": volumes,
         }
@@ -162,6 +169,18 @@ async def handle_book_detail(data: dict[str, Any], user_data: dict[str, Any]):
                         local_book["spanish_title"] = (
                             series_meta.series_spanish or series_meta.name_spanish
                         )
+                    if not local_book.get("illustrator") and series_meta.illustrator:
+                        local_book["illustrator"] = series_meta.illustrator
+                    if not local_book.get("slug") and series_meta.slug:
+                        local_book["slug"] = series_meta.slug
+                    if not local_book.get("genres") and series_meta.tags_json:
+                        local_book["genres"] = series_meta.tags_json
+                    if not local_book.get("demographics") and series_meta.demographics_json:
+                        local_book["demographics"] = series_meta.demographics_json
+                    if not local_book.get("publisher") and series_meta.publisher:
+                        local_book["publisher"] = series_meta.publisher
+                    if not local_book.get("editorial") and series_meta.publisher:
+                        local_book["editorial"] = series_meta.publisher
             else:
                 local_book["volumes"] = [local_book]
 

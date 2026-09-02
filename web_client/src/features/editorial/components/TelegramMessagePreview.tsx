@@ -30,6 +30,25 @@ const renderTwemojiInHtml = (htmlStr: string): string => {
         .replace(/🇺🇸/g, '<img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f1fa-1f1f8.svg" class="w-4 h-4 inline-block mr-1 align-text-bottom shadow-sm rounded-sm" alt="🇺🇸" />');
 };
 
+// Robust Genre Formatter (Converts arrays, comma/semicolon-separated strings to Telegram hashtags)
+const formatGenres = (rawGenres: any): string => {
+    if (!rawGenres) return '#NovelaLigera';
+    let list: string[] = [];
+    if (Array.isArray(rawGenres)) {
+        list = rawGenres;
+    } else if (typeof rawGenres === 'string') {
+        list = rawGenres.split(/[,;|]/).map((s) => s.trim()).filter(Boolean);
+    }
+    if (list.length === 0) return '#NovelaLigera';
+    return list
+        .map((g) => {
+            const clean = g.replace(/^#+/, '').trim().replace(/\s+/g, '_');
+            return clean ? `#${clean}` : '';
+        })
+        .filter(Boolean)
+        .join(' ');
+};
+
 export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
     rawTemplate,
     templateContent,
@@ -116,12 +135,10 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
 
             const combined: any[] = [];
             for (const v of volumesList) {
-                const tagsStr = Array.isArray(v.genres)
-                    ? v.genres.map((g: string) => (g.startsWith('#') ? g : `#${g}`)).join(' ')
-                    : (v.genres || '#NovelaLigera');
-
+                const tagsStr = formatGenres(v.genres || v.tags);
                 combined.push({
                     id: v.id || v.book_hash,
+                    book_hash: v.id || v.book_hash,
                     title: v.title,
                     series_name: v.series_name || v.series_info?.series_name || v.title,
                     series_english: v.series_info?.series_english || v.series_name,
@@ -129,7 +146,9 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                     romaji_title: v.series_info?.romaji_title || v.title,
                     volume: v.volume || 1,
                     author: v.author || v.series_info?.author,
+                    illustrator: v.illustrator || v.series_info?.illustrator,
                     translator: v.translator,
+                    layout_by: v.layout_by,
                     synopsis: v.synopsis || v.description,
                     cover_url: v.cover_url || v.cover_thumb || v.cover_high,
                     genres: tagsStr,
@@ -138,12 +157,10 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
 
             if (combined.length === 0) {
                 for (const s of seriesList) {
-                    const tagsStr = Array.isArray(s.genres)
-                        ? s.genres.map((g: string) => (g.startsWith('#') ? g : `#${g}`)).join(' ')
-                        : (s.genres || '#NovelaLigera');
-
+                    const tagsStr = formatGenres(s.genres || s.tags);
                     combined.push({
                         id: s.id || s.series_hash,
+                        book_hash: s.id || s.series_hash,
                         title: s.name || s.title,
                         series_name: s.series_english || s.name || s.title,
                         series_english: s.series_english || s.name,
@@ -151,7 +168,9 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                         romaji_title: s.title,
                         volume: 1,
                         author: s.author,
+                        illustrator: s.illustrator,
                         translator: s.translator,
+                        layout_by: s.layout_by,
                         synopsis: s.synopsis || s.description,
                         cover_url: s.cover_url || s.cover_thumb,
                         genres: tagsStr,
@@ -167,53 +186,66 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
         }
     };
 
-    const handleSelectRealBook = (b: any) => {
+    const handleSelectRealBook = async (b: any) => {
+        setIsSearchOpen(false);
         const seriesName = b.series_name || b.series || b.title || 'Serie';
-        const formattedSize = b.file_size ? `${(b.file_size / (1024 * 1024)).toFixed(1)} MB` : (b.size_mb || '14.1 MB');
-        const tagsStr = Array.isArray(b.genres)
-            ? b.genres.map((g: string) => (g.startsWith('#') ? g : `#${g}`)).join(' ')
-            : (b.genres || '#NovelaLigera');
+        let fullDetail: any = null;
+
+        try {
+            fullDetail = await api.getBookDetail(b.id || b.book_hash);
+        } catch (e) {
+            console.warn('No se pudo cargar detalle completo, usando datos básicos:', e);
+        }
+
+        const d = fullDetail || {};
+        const rep = (d.volumes && d.volumes[0]) || {};
+
+        const rawGenres = d.genres || d.tags || b.genres || rep.genres || rep.tags;
+        const formattedGenres = formatGenres(rawGenres);
+
+        const formattedSize = d.file_size
+            ? `${(d.file_size / (1024 * 1024)).toFixed(1)} MB`
+            : (d.size_mb || b.size_mb || rep.size_mb || '14.1 MB');
 
         setSelectedBook({
-            serie: seriesName,
-            series: seriesName,
-            series_english: b.series_english || seriesName,
-            series_name: seriesName,
-            romaji_title: b.romaji_title || '',
-            series_spanish: b.series_spanish || '',
-            titulo: b.title,
-            title: b.title,
-            volumen: String(b.volume || 1),
-            volume: String(b.volume || 1),
-            autor: b.author || 'Autor desconocido',
-            author: b.author || 'Autor desconocido',
-            illustrator: b.illustrator || 'Ilustrador oficial',
-            ilustrador: b.illustrator || 'Ilustrador oficial',
-            layout_by: b.layout_by || 'Yayo',
-            maquetador: b.layout_by || 'Yayo',
-            tipo: b.book_type || 'Novela Ligera',
-            demography: b.demography || 'Shoujo',
-            genres: tagsStr,
-            traductor: b.translator || 'Vlady Pasos',
-            translator: b.translator || 'Vlady Pasos',
-            editorial: b.workgroup_name || b.publisher || 'Darkness Dragons Translation',
-            formato: b.epub_version || 'EPUB 3.0',
-            version: 'EPUB 3.0',
-            paginas: b.page_count ? String(b.page_count) : '280',
-            palabras: b.word_count ? Number(b.word_count).toLocaleString() : '74,500',
-            reading_time: b.reading_time ? `${Math.floor(b.reading_time / 60)}h ${b.reading_time % 60}m` : '4h 15m',
+            serie: d.romaji_title || d.series_english || seriesName,
+            series: d.romaji_title || d.series_english || seriesName,
+            series_english: d.english_title || d.series_english || b.series_english || seriesName,
+            series_name: d.romaji_title || d.series_english || seriesName,
+            romaji_title: d.romaji_title || d.romaji || b.romaji_title || '',
+            series_spanish: d.spanish_title || d.series_spanish || b.series_spanish || '',
+            titulo: d.title || b.title,
+            title: d.title || b.title,
+            volumen: String(d.volume || b.volume || rep.volume || 1),
+            volume: String(d.volume || b.volume || rep.volume || 1),
+            autor: d.author || b.author || rep.author || 'Autor desconocido',
+            author: d.author || b.author || rep.author || 'Autor desconocido',
+            illustrator: d.illustrator || b.illustrator || rep.illustrator || rep.artist || 'Ilustrador oficial',
+            ilustrador: d.illustrator || b.illustrator || rep.illustrator || rep.artist || 'Ilustrador oficial',
+            layout_by: d.layout_by || b.layout_by || rep.layout_by || 'Yayo',
+            maquetador: d.layout_by || b.layout_by || rep.layout_by || 'Yayo',
+            tipo: d.book_type || b.book_type || rep.book_type || 'Novela Ligera',
+            demography: (Array.isArray(d.demographics) ? d.demographics[0] : d.demographics) || b.demography || 'Shoujo',
+            genres: formattedGenres,
+            traductor: d.translator || b.translator || rep.translator || 'Vlady Pasos',
+            translator: d.translator || b.translator || rep.translator || 'Vlady Pasos',
+            editorial: d.editorial || d.publisher || b.editorial || rep.publisher || rep.workgroup_name || 'Darkness Dragons Translation',
+            formato: d.epub_version || b.epub_version || 'EPUB 3.0',
+            version: d.epub_version || b.epub_version || 'EPUB 3.0',
+            paginas: d.page_count ? String(d.page_count) : (b.page_count ? String(b.page_count) : '280'),
+            palabras: d.word_count ? Number(d.word_count).toLocaleString() : '74,500',
+            reading_time: d.reading_time ? `${Math.floor(d.reading_time / 60)}h ${d.reading_time % 60}m` : '4h 15m',
             size_mb: formattedSize,
             tamaño: formattedSize,
             fecha: new Date().toLocaleDateString('es-ES'),
-            published_at: '2024',
-            sinopsis: b.sinopsis || b.description || 'Sinopsis disponible en la biblioteca.',
-            slug: (b.romaji_title || seriesName).replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_'),
-            download_link: `https://dl.zeepubs.com/${b.short_link || b.book_hash || b.id}`,
-            filename: b.filename || `${seriesName} - V${b.volume || 1}.epub`,
-            link: `https://dl.zeepubs.com/${b.short_link || b.book_hash || b.id}`,
-            cover_url: b.cover_url || b.cover_thumb || '',
+            published_at: d.published_at || b.published_at || '2024',
+            sinopsis: d.summary || d.description || d.sinopsis || b.synopsis || b.description || 'Sinopsis disponible en la biblioteca.',
+            slug: (d.slug || b.slug || d.romaji_title || seriesName).replace(/^#+/, '').replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_'),
+            download_link: `https://dl.zeepubs.com/${d.short_link || d.book_hash || b.id}`,
+            filename: d.filename || b.filename || `${seriesName} - V${d.volume || b.volume || 1}.epub`,
+            link: `https://dl.zeepubs.com/${d.short_link || d.book_hash || b.id}`,
+            cover_url: d.cover || (d.coverUrl && d.coverUrl.cover_high) || b.cover_url || b.cover_thumb || '',
         });
-        setIsSearchOpen(false);
     };
 
     // Evaluate Template Variables & Conditionals strictly on EVERY keystroke
@@ -433,7 +465,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => handleSearchLibrary(e.target.value)}
-                                placeholder="Escribe el nombre de la serie (ej. Alya, Baccano)..."
+                                placeholder="Escribe el nombre de la serie (ej. Alya, Baccano, Arifureta)..."
                                 autoFocus
                                 className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                             />
@@ -467,7 +499,7 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
                                                 <div className="font-bold text-white group-hover:text-indigo-300 transition-colors truncate">
                                                     {bk.series_name || bk.title}
                                                 </div>
-                                                <div className="text-[10px] text-gray-400">
+                                                <div className="text-[10px] text-gray-400 truncate">
                                                     Vol. {bk.volume || 1} • {bk.author || 'Autor'} {bk.translator ? `• ${bk.translator}` : ''}
                                                 </div>
                                             </div>
@@ -531,9 +563,11 @@ export const TelegramRichDynamicHtmlRenderer: React.FC<{ text: string; book: any
             return `<div class="tg-msg-table">${rows.join('')}</div>`;
         });
 
-        // 4. Transform <details open> and <details> into Telegram interactive details
-        s = s.replace(/<details\s+open[^>]*>([\s\S]*?)<\/details>/gi, '<details open style="margin: 4px 0; font-size: 12px; user-select: none;">$1</details>');
-        s = s.replace(/<details[^>]*>([\s\S]*?)<\/details>/gi, '<details style="margin: 4px 0; font-size: 12px; user-select: none;">$1</details>');
+        // 4. Transform <details open> and <details> into Telegram interactive details cleanly (preserving open attribute!)
+        s = s.replace(/<details([^>]*)>/gi, (_match, attrs) => {
+            const isOpen = /\bopen\b/i.test(attrs);
+            return `<details ${isOpen ? 'open ' : ''}style="margin: 4px 0; font-size: 12px; user-select: none;">`;
+        });
 
         // 5. Transform <summary> into Telegram collapsible header with chevron
         s = s.replace(/<summary[^>]*>([\s\S]*?)<\/summary>/gi, '<summary class="tg-msg-summary"><span class="tg-msg-chevron">∨</span><span>$1</span></summary>');

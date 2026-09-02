@@ -146,7 +146,8 @@ export const EditorialSeriesDetail: React.FC = () => {
                 setAliases(s.aliases || []);
 
                 // Sort books by volume numeric
-                const sortedBooks = [...(res.books || [])].sort((a, b) => {
+                const rawBooks = res.books || s.books || [];
+                const sortedBooks = [...rawBooks].sort((a, b) => {
                     const volA = parseFloat(String(a.volume)) || 0;
                     const volB = parseFloat(String(b.volume)) || 0;
                     return volA - volB;

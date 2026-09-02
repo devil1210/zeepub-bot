@@ -407,6 +407,59 @@ export const api = {
     adminGetSeriesDetail: (seriesId: string) =>
         rpc('admin_get_series_detail', { series_id: seriesId }),
 
+    getSeriesDetail: async (seriesId: string) => {
+        try {
+            const res = await rpc('admin_get_series_detail', { series_id: seriesId });
+            if (res && res.success && res.series) return res;
+        } catch (e) {
+            console.warn('admin_get_series_detail failed, falling back:', e);
+        }
+        try {
+            const gridRes = await rpc('admin_get_library_grid', { query: seriesId, limit: 1 });
+            if (gridRes && gridRes.series && gridRes.series.length > 0) {
+                const found = gridRes.series.find((s: any) => s.id === seriesId || s.series_hash === seriesId || s.slug === seriesId) || gridRes.series[0];
+                return { success: true, series: found, books: found.books || [] };
+            }
+        } catch (e) {}
+        try {
+            const detailRes = await rpc('book-detail', { bookId: seriesId.startsWith('series_') ? seriesId : `series_${seriesId}` });
+            if (detailRes) {
+                return {
+                    success: true,
+                    series: {
+                        id: detailRes.series_hash || seriesId,
+                        series_hash: detailRes.series_hash || seriesId,
+                        name: detailRes.romaji_title || detailRes.title,
+                        series_english: detailRes.english_title || detailRes.title,
+                        series_spanish: detailRes.spanish_title || '',
+                        author: detailRes.author || '',
+                        illustrator: detailRes.illustrator || '',
+                        description: detailRes.summary || '',
+                        cover_url: detailRes.cover || '',
+                        book_type: detailRes.book_type || 'Novela Ligera',
+                        demographics: detailRes.demographics || [],
+                        tags: detailRes.tags || detailRes.genres || [],
+                        books: detailRes.volumes || detailRes.books || []
+                    },
+                    books: detailRes.volumes || detailRes.books || []
+                };
+            }
+        } catch (e) {}
+        return { success: false, message: 'Serie no encontrada' };
+    },
+
+    updateSeries: (seriesId: string, data: any) =>
+        rpc('admin_update_series_grid', { series_id: seriesId, ...data }),
+
+    addSeriesAlias: (seriesId: string, alias: string) =>
+        rpc('admin_add_series_alias', { series_id: seriesId, alias }),
+
+    deleteSeriesAlias: (aliasId: number) =>
+        rpc('admin_delete_series_alias', { alias_id: aliasId }),
+
+    updateBookMetadata: (bookId: string, data: any) =>
+        rpc('admin_update_book_grid', { book_id: bookId, ...data }),
+
     updateSeriesGrid: (seriesId: string, data: any) =>
         rpc('admin_update_series_grid', { series_id: seriesId, ...data }),
 
