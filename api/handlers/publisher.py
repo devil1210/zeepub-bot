@@ -29,50 +29,117 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
     # Enrichment: Pre-fetch book info for the whole queue
     book_hashes = {i.book_hash for i in items}
     book_info_map = {}
+
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from core.db_manager_pg import pg_manager
+    from models.library import LocalBook
+    from models.communications import BookPublication
+
+    fb_items = []
+    # If looking for sent/published posts or all posts, also include synced Facebook publications
+    if not status or status.lower() in ("sent", "published", "completado", "all"):
+        async with pg_manager.get_session() as session:
+            stmt_bp = (
+                select(BookPublication)
+                .options(selectinload(BookPublication.channel))
+                .order_by(BookPublication.published_at.desc())
+                .limit(limit)
+            )
+            bp_res = await session.execute(stmt_bp)
+            raw_bp = bp_res.scalars().all()
+            for bp in raw_bp:
+                fb_items.append(bp)
+                if bp.book_id:
+                    book_hashes.add(bp.book_id)
+
     if book_hashes:
-        from sqlalchemy import select
-        from sqlalchemy.orm import selectinload
-
-        from core.db_manager_pg import pg_manager
-        from models.library import LocalBook
-
         async with pg_manager.get_session() as session:
             stmt = (
                 select(LocalBook)
                 .options(selectinload(LocalBook.series_info))
-                .where(LocalBook.book_hash.in_(list(book_hashes)))
+                .where(
+                    (LocalBook.book_hash.in_(list(book_hashes)))
+                    | (LocalBook.id.in_(list(book_hashes)))
+                )
             )
             result = await session.execute(stmt)
             for b in result.scalars():
-                book_info_map[b.book_hash] = {
+                info = {
                     "series": (b.series_info.series_name if b.series_info else b.title),
                     "series_spanish": (
                         b.series_info.series_spanish if b.series_info else b.series_spanish or b.title
                     ),
+                    "series_english": (
+                        b.series_info.series_english if b.series_info else b.title
+                    ),
                     "volume": b.volume,
+                    "author": b.author,
+                    "cover_url": b.cover_url or b.cover_thumb or "",
+                    "book_hash": b.book_hash,
                 }
+                book_info_map[b.book_hash] = info
+                book_info_map[str(b.id)] = info
 
-    return {
-        "items": [
-            {
-                "id": i.id,
-                "book_hash": i.book_hash,
-                "channel": i.channel.name if i.channel else "Unknown",
-                "channel_id": i.channel_id,
-                "template_id": i.template_id,
-                "platform": i.channel.platform if i.channel else "Unknown",
-                "scheduled_for": (i.scheduled_for.isoformat() + "Z") if i.scheduled_for else None,
-                "status": i.status,
-                "published_at": (i.published_at.isoformat() + "Z") if i.published_at else None,
-                "error": i.error_message,
-                "payload": i.payload,
-                "series": book_info_map.get(i.book_hash, {}).get("series"),
-                "series_spanish": book_info_map.get(i.book_hash, {}).get("series_spanish"),
-                "volume": book_info_map.get(i.book_hash, {}).get("volume"),
-            }
-            for i in items
-        ]
-    }
+    # Format queue items
+    queue_formatted = [
+        {
+            "id": i.id,
+            "book_hash": i.book_hash,
+            "channel": i.channel.name if i.channel else "Canal Oficial",
+            "channel_id": i.channel_id,
+            "template_id": i.template_id,
+            "platform": i.channel.platform if i.channel else "telegram",
+            "scheduled_for": (i.scheduled_for.isoformat() + "Z") if i.scheduled_for else None,
+            "status": i.status,
+            "published_at": (i.published_at.isoformat() + "Z") if i.published_at else None,
+            "error": i.error_message,
+            "payload": i.payload,
+            "caption": (i.payload.get("caption") if i.payload else None),
+            "series": book_info_map.get(i.book_hash, {}).get("series"),
+            "series_spanish": book_info_map.get(i.book_hash, {}).get("series_spanish"),
+            "volume": book_info_map.get(i.book_hash, {}).get("volume"),
+            "author": book_info_map.get(i.book_hash, {}).get("author"),
+            "cover_url": book_info_map.get(i.book_hash, {}).get("cover_url"),
+        }
+        for i in items
+    ]
+
+    # Format Facebook publication records
+    fb_formatted = [
+        {
+            "id": f"fb_{bp.id}",
+            "publication_id": bp.id,
+            "book_hash": book_info_map.get(str(bp.book_id), {}).get("book_hash") or bp.book_id,
+            "book_id": bp.book_id,
+            "channel": bp.channel.name if bp.channel else "Página de Facebook",
+            "channel_id": bp.channel_id,
+            "platform": "facebook",
+            "post_id": bp.post_id,
+            "post_url": bp.post_url or f"https://www.facebook.com/{bp.post_id}",
+            "scheduled_for": None,
+            "status": "published",
+            "published_at": (bp.published_at.isoformat() + "Z") if bp.published_at else None,
+            "error": None,
+            "caption": bp.caption,
+            "payload": {"caption": bp.caption, "post_url": bp.post_url},
+            "series": book_info_map.get(str(bp.book_id), {}).get("series"),
+            "series_spanish": book_info_map.get(str(bp.book_id), {}).get("series_spanish"),
+            "volume": book_info_map.get(str(bp.book_id), {}).get("volume"),
+            "author": book_info_map.get(str(bp.book_id), {}).get("author"),
+            "cover_url": book_info_map.get(str(bp.book_id), {}).get("cover_url"),
+        }
+        for bp in fb_items
+    ]
+
+    # Merge and sort by published_at / scheduled_for desc
+    combined = queue_formatted + fb_formatted
+    combined.sort(
+        key=lambda x: x.get("published_at") or x.get("scheduled_for") or "",
+        reverse=True,
+    )
+
+    return {"items": combined[:limit]}
 
 
 async def handle_pub_get_channels(data: dict[str, Any], user_data: dict[str, Any]):

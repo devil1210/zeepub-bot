@@ -13,7 +13,8 @@ import {
     BookOpen,
     Sparkles,
     LayoutTemplate,
-    ExternalLink
+    ExternalLink,
+    Globe
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 import { TelegramRichMessageEditor } from '../components/TelegramRichMessageEditor';
@@ -36,11 +37,17 @@ export const EditorialPostEdit: React.FC = () => {
             // 1. Fetch queue items to find this post
             const queueRes = await api.pubGetQueue(undefined, 100);
             const items = queueRes?.items || [];
-            const found = items.find((i: any) => String(i.id) === String(id) || String(i.book_hash) === String(id));
+            const found = items.find(
+                (i: any) =>
+                    String(i.id) === String(id) ||
+                    String(i.book_hash) === String(id) ||
+                    String(i.post_id) === String(id) ||
+                    (i.publication_id && String(i.publication_id) === String(id))
+            );
 
             if (found) {
                 setPost(found);
-                const initialCaption = found.payload?.caption || found.caption || '';
+                const initialCaption = found.caption || found.payload?.caption || '';
                 setCaption(initialCaption);
             }
 
@@ -59,6 +66,8 @@ export const EditorialPostEdit: React.FC = () => {
         fetchPostAndTemplates();
     }, [id]);
 
+    const isFacebook = (post?.platform || '').toLowerCase() === 'facebook';
+
     const handleApplyTemplate = (tpl: any) => {
         if (!tpl?.content || !post) return;
         setCaption(tpl.content);
@@ -76,17 +85,27 @@ export const EditorialPostEdit: React.FC = () => {
         setStatusMsg(null);
 
         try {
+            if (post.publication_id) {
+                await api.updatePublicationCaption(post.publication_id, caption);
+            }
+
             await api.pubUpdatePost({
-                book_id: post.book_hash || post.id,
+                book_id: post.book_hash || post.book_id || post.id,
                 book_hash: post.book_hash,
                 caption: caption,
-                platforms: [post.platform ? post.platform.toLowerCase() : 'telegram'],
+                platforms: [isFacebook ? 'facebook' : 'telegram'],
             });
 
-            setStatusMsg({ type: 'success', text: '¡Mensaje actualizado exitosamente en Telegram!' });
+            setStatusMsg({
+                type: 'success',
+                text: `¡Publicación actualizada exitosamente en ${isFacebook ? 'Facebook' : 'Telegram'}!`,
+            });
         } catch (err: any) {
             console.error('Error actualizando post:', err);
-            setStatusMsg({ type: 'error', text: err.message || 'Error al actualizar el mensaje en Telegram' });
+            setStatusMsg({
+                type: 'error',
+                text: err.message || `Error al actualizar el mensaje en ${isFacebook ? 'Facebook' : 'Telegram'}`,
+            });
         } finally {
             setSaving(false);
         }
@@ -130,26 +149,48 @@ export const EditorialPostEdit: React.FC = () => {
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                                {post.series || 'Publicación'}
+                                {post.series || post.series_name || 'Publicación'}
                             </h2>
-                            <span className="px-2.5 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-black">
-                                Vol. {post.volume || 1}
-                            </span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-black uppercase">
+                            {post.volume && (
+                                <span className="px-2.5 py-0.5 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-black">
+                                    Vol. {post.volume}
+                                </span>
+                            )}
+                            <span
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase border ${
+                                    isFacebook
+                                        ? 'bg-blue-500/10 text-blue-300 border-blue-500/30'
+                                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                }`}
+                            >
                                 {post.platform || 'Telegram'}
                             </span>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
                             <span className="flex items-center gap-1 text-gray-300">
-                                <Building2 className="w-3.5 h-3.5 text-indigo-400" /> {post.channel || 'Canal Oficial'}
+                                {isFacebook ? <Globe className="w-3.5 h-3.5 text-blue-400" /> : <Building2 className="w-3.5 h-3.5 text-indigo-400" />}
+                                {post.channel || (isFacebook ? 'Página Oficial Facebook' : 'Canal Oficial')}
                             </span>
                             <span>•</span>
                             <span className="flex items-center gap-1 font-mono text-gray-400 text-[11px]">
                                 <Calendar className="w-3 h-3" />
                                 {post.published_at ? new Date(post.published_at).toLocaleString('es-ES') : 'Completado'}
                             </span>
+                            {post.post_url && (
+                                <>
+                                    <span>•</span>
+                                    <a
+                                        href={post.post_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sky-400 hover:underline flex items-center gap-1"
+                                    >
+                                        <ExternalLink className="w-3 h-3" /> Ver Post Online
+                                    </a>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -165,10 +206,14 @@ export const EditorialPostEdit: React.FC = () => {
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-black flex items-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 transition-all disabled:opacity-50"
+                        className={`px-6 py-2.5 rounded-xl text-white text-xs font-black flex items-center gap-2 shadow-lg active:scale-95 transition-all disabled:opacity-50 ${
+                            isFacebook
+                                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-600/30'
+                                : 'bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 shadow-indigo-600/30'
+                        }`}
                     >
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        <span>Guardar y Actualizar en Telegram</span>
+                        <span>{isFacebook ? 'Guardar y Actualizar en Facebook' : 'Guardar y Actualizar en Telegram'}</span>
                     </button>
                 </div>
             </div>
@@ -211,13 +256,13 @@ export const EditorialPostEdit: React.FC = () => {
                 </div>
             )}
 
-            {/* 50/50 2K Grid: Editor on Left, Official Live Simulator on Right */}
+            {/* 50/50 2K Grid: Editor on Left, Live Simulator on Right */}
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
                 {/* 1. Left 6 cols: Rich Copy Editor */}
                 <div className="xl:col-span-6 space-y-3 bg-slate-900/40 border border-white/10 rounded-3xl p-5 sm:p-6 backdrop-blur-2xl shadow-2xl flex flex-col">
                     <div className="flex items-center justify-between pb-2 border-b border-white/5">
                         <label className="text-xs font-bold text-white uppercase flex items-center gap-2">
-                            <LayoutTemplate className="w-4 h-4 text-indigo-400" /> Contenido del Mensaje
+                            <LayoutTemplate className="w-4 h-4 text-indigo-400" /> Contenido del Mensaje ({isFacebook ? 'Facebook' : 'Telegram'})
                         </label>
                         <span className="text-[11px] text-gray-400 font-mono">
                             Modifica el texto para editar el post en vivo
@@ -227,15 +272,15 @@ export const EditorialPostEdit: React.FC = () => {
                     <TelegramRichMessageEditor
                         value={caption}
                         onChange={setCaption}
-                        platform={(post.platform || 'telegram').toLowerCase()}
+                        platform={isFacebook ? 'facebook' : 'telegram'}
                     />
                 </div>
 
-                {/* 2. Right 6 cols: Official Telegram Live Simulator */}
+                {/* 2. Right 6 cols: Official Live Simulator */}
                 <div className="xl:col-span-6 space-y-3 bg-slate-900/40 border border-white/10 rounded-3xl p-5 sm:p-6 backdrop-blur-2xl shadow-2xl flex flex-col">
                     <div className="flex items-center justify-between pb-2 border-b border-white/5">
                         <label className="text-xs font-bold text-white uppercase flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-amber-400" /> Previsualización en Vivo (Simulador Oficial)
+                            <Sparkles className="w-4 h-4 text-amber-400" /> Previsualización en Vivo ({isFacebook ? 'Facebook' : 'Telegram'})
                         </label>
                         <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
                             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Tiempo Real
@@ -245,7 +290,7 @@ export const EditorialPostEdit: React.FC = () => {
                     <div className="flex-1 min-h-[600px]">
                         <TelegramMessagePreview
                             rawTemplate={caption}
-                            platform={(post.platform || 'telegram').toLowerCase()}
+                            platform={isFacebook ? 'facebook' : 'telegram'}
                             sampleBook={{
                                 serie: post.series || post.series_name,
                                 series: post.series || post.series_name,
@@ -263,7 +308,7 @@ export const EditorialPostEdit: React.FC = () => {
                                 editorial: post.workgroup_name || post.publisher || 'Editorial',
                                 sinopsis: post.synopsis || post.description || 'Sinopsis del libro.',
                                 slug: (post.series || 'Novela').replace(/[^a-zA-Z0-9]/g, '_'),
-                                download_link: `https://t.me/zeepub_bot?start=dl_${post.book_hash || post.id}`,
+                                download_link: `https://dl.zeepubs.com/${post.book_hash || post.id}`,
                                 cover_url: post.cover_url || post.cover_thumb || '',
                             }}
                         />
