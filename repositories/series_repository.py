@@ -302,9 +302,21 @@ class SeriesRepository(BaseRepository[SeriesMetadata]):
                 elif sort_by == "rating":
                     stmt = stmt.order_by(SeriesMetadata.rating_average.desc())
                 elif sort_by == "z-a":
-                    stmt = stmt.order_by(func.lower(SeriesMetadata.series_name).desc())
+                    stmt = stmt.order_by(
+                        func.lower(
+                            func.coalesce(
+                                SeriesMetadata.name_english, SeriesMetadata.name
+                            )
+                        ).desc()
+                    )
                 else:
-                    stmt = stmt.order_by(func.lower(SeriesMetadata.series_name).asc())
+                    stmt = stmt.order_by(
+                        func.lower(
+                            func.coalesce(
+                                SeriesMetadata.name_english, SeriesMetadata.name
+                            )
+                        ).asc()
+                    )
 
                 # 6. Conteo y Paginación
                 count_stmt = select(func.count()).select_from(stmt.subquery())

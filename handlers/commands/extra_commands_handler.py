@@ -215,6 +215,48 @@ class ExtraCommandsHandler:
                 parse_mode="HTML",
             )
 
+    async def handle_idioma(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Permite al usuario seleccionar su preferencia de visualización de títulos."""
+        uid = update.effective_user.id
+        chat_id = update.effective_chat.id
+        thread_id = get_thread_id(update)
+        st = state_manager.get_user_state(uid)
+
+        current = st.get("title_language", "english")
+        lang_names = {"english": "🇬🇧 Inglés Oficial", "romaji": "🇯🇵 Romaji / Japonés", "spanish": "🇪🇸 Español"}
+
+        blocks = [
+            {"type": "heading", "size": 2, "text": "🌐 Idioma de Títulos del Catálogo"},
+            {
+                "type": "paragraph",
+                "text": f"Preferencia actual: <b>{lang_names.get(current, '🇬🇧 Inglés Oficial')}</b>\n\n"
+                        "Selecciona cómo deseas que se muestren los nombres de las series y libros en tus listas:",
+            },
+            {
+                "type": "buttons",
+                "align": "center",
+                "buttons": [
+                    {"text": f"{'✅ ' if current=='english' else ''}🇬🇧 Inglés Oficial", "callback_data": "set_title_lang|english"},
+                    {"text": f"{'✅ ' if current=='romaji' else ''}🇯🇵 Romaji", "callback_data": "set_title_lang|romaji"},
+                    {"text": f"{'✅ ' if current=='spanish' else ''}🇪🇸 Español", "callback_data": "set_title_lang|spanish"},
+                ],
+            },
+            {
+                "type": "buttons",
+                "align": "center",
+                "buttons": [
+                    {"text": "📖 Ver Catálogo", "callback_data": "nav_local|all_series"},
+                    {"text": "🏠 Menú Principal", "callback_data": "volver_menu"},
+                ],
+            },
+        ]
+
+        await RichMessageService.send_rich_message(
+            chat_id=chat_id,
+            blocks=blocks,
+            message_thread_id=thread_id,
+        )
+
     # ==========================================
     # 🛡️ COMANDOS DE ADMINISTRACIÓN
     # ==========================================

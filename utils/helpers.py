@@ -23,6 +23,7 @@ from utils.metadata_utils import (
     normalize_demography,  # noqa: F401
     parse_metadata_from_title,  # noqa: F401
     process_book_identity_comprehensive,  # noqa: F401
+    resolve_series_title,  # noqa: F401
     resolve_title_cascade,  # noqa: F401
 )
 

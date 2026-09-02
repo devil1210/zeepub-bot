@@ -11,6 +11,17 @@ interface SearchCardListProps {
 }
 
 export const SearchCardList: React.FC<SearchCardListProps> = React.memo(({ series, settings, onClick }) => {
+    const pref = settings?.titleLanguage || 'english';
+    const mainTitle = pref === 'spanish'
+        ? (series.spanishTitle || series.englishTitle || series.title)
+        : pref === 'romaji'
+            ? (series.romajiTitle || series.title || series.englishTitle)
+            : (series.englishTitle || series.romajiTitle || series.title);
+
+    const subTitle = pref === 'english'
+        ? (series.romajiTitle && series.romajiTitle !== mainTitle ? series.romajiTitle : (series.spanishTitle !== mainTitle ? series.spanishTitle : null))
+        : (series.englishTitle && series.englishTitle !== mainTitle ? series.englishTitle : (series.romajiTitle !== mainTitle ? series.romajiTitle : null));
+
     return (
         <div
             onClick={onClick}
@@ -19,7 +30,7 @@ export const SearchCardList: React.FC<SearchCardListProps> = React.memo(({ serie
             {/* Left: Cover Image */}
             <div className="relative shrink-0 w-[100px] sm:w-[120px] aspect-[2/3] shadow-2xl rounded-premium-sm overflow-hidden bg-white/5 border border-white/10 group-hover:scale-[1.03] transition-transform duration-700">
                 <ProgressiveImage
-                    alt={series.title}
+                    alt={mainTitle}
                     className="w-full h-full object-contain transition-all duration-1000 group-hover:scale-110"
                     src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality)}
                 />
@@ -32,11 +43,11 @@ export const SearchCardList: React.FC<SearchCardListProps> = React.memo(({ serie
                 <div className="flex justify-between items-start gap-4 mb-2.5">
                     <div className="flex-1 min-w-0 flex flex-col">
                         <h3 className="text-white font-black text-base sm:text-lg md:text-xl leading-tight line-clamp-2 tracking-tight group-hover:text-primary transition-colors">
-                            {series.englishTitle || series.title}
+                            {mainTitle}
                         </h3>
-                        {series.romajiTitle && series.romajiTitle !== (series.englishTitle || series.title) && (
+                        {subTitle && (
                             <p className="text-gray-500 text-[10px] sm:text-xs font-medium italic mt-1 line-clamp-1 opacity-70">
-                                {series.romajiTitle}
+                                {subTitle}
                             </p>
                         )}
                     </div>

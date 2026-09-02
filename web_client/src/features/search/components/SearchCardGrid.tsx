@@ -11,6 +11,17 @@ interface SearchCardGridProps {
 }
 
 export const SearchCardGrid: React.FC<SearchCardGridProps> = React.memo(({ series, settings, onClick }) => {
+    const pref = settings?.titleLanguage || 'english';
+    const mainTitle = pref === 'spanish'
+        ? (series.spanishTitle || series.englishTitle || series.title)
+        : pref === 'romaji'
+            ? (series.romajiTitle || series.title || series.englishTitle)
+            : (series.englishTitle || series.romajiTitle || series.title);
+
+    const subTitle = pref === 'english'
+        ? (series.romajiTitle && series.romajiTitle !== mainTitle ? series.romajiTitle : (series.spanishTitle !== mainTitle ? series.spanishTitle : null))
+        : (series.englishTitle && series.englishTitle !== mainTitle ? series.englishTitle : (series.romajiTitle !== mainTitle ? series.romajiTitle : null));
+
     return (
         <div
             onClick={onClick}
@@ -19,7 +30,7 @@ export const SearchCardGrid: React.FC<SearchCardGridProps> = React.memo(({ serie
             {/* Image Container */}
             <div className="relative aspect-[2/3] overflow-hidden bg-black/80">
                 <ProgressiveImage
-                    alt={series.title}
+                    alt={mainTitle}
                     className="object-contain w-full h-full group-hover:scale-110 transition-transform duration-1000 opacity-90 group-hover:opacity-100"
                     src={getCoverUrl(series.coverUrl, series.coverThumbUrl, settings.coverQuality === 'pequeña' ? 'mediana' : settings.coverQuality)}
                 />
@@ -50,11 +61,11 @@ export const SearchCardGrid: React.FC<SearchCardGridProps> = React.memo(({ serie
                         </div>
                     </div>
                     <h3 className="text-white font-black text-base leading-tight line-clamp-2 drop-shadow-xl group-hover:text-primary transition-colors">
-                        {series.englishTitle || series.title}
+                        {mainTitle}
                     </h3>
-                    {series.romajiTitle && series.romajiTitle !== (series.englishTitle || series.title) && (
+                    {subTitle && (
                         <p className="text-gray-400 text-[10px] italic font-medium mt-1 line-clamp-1 truncate opacity-80">
-                            {series.romajiTitle}
+                            {subTitle}
                         </p>
                     )}
                     <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mt-1.5 truncate">

@@ -25,6 +25,7 @@ interface ThemeSettings {
   borderWidth: number;
   listMode: 'infinite' | 'paginated';
   performanceMode: boolean;
+  titleLanguage?: 'english' | 'romaji' | 'spanish';
 }
 
 interface ThemeContextType {
@@ -57,6 +58,7 @@ const defaultSettings: ThemeSettings = {
   borderWidth: 1,
   listMode: 'paginated',
   performanceMode: false,
+  titleLanguage: 'english',
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

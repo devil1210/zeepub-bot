@@ -421,6 +421,29 @@ class CallbackHandlerV6(BaseCommandHandler):
             elif data in ("buscar", "search_init"):
                 await pedir_termino_busqueda(update, context, force_new=False)
 
+            # 13. Idioma de Títulos del Catálogo
+            elif data.startswith("set_title_lang|"):
+                lang = data.split("|")[1]
+                st["title_language"] = lang
+                try:
+                    from repositories.user_repository import user_repo
+                    await user_repo.update_user_settings(uid, {"titleLanguage": lang, "language_code": lang})
+                except Exception as e:
+                    logger.debug(f"Error persistiendo preferencia de idioma: {e}")
+
+                lang_names = {
+                    "english": "🇬🇧 Inglés Oficial",
+                    "romaji": "🇯🇵 Romaji / Japonés",
+                    "spanish": "🇪🇸 Español",
+                }
+                await query.answer(f"✅ Preferencia guardada: {lang_names.get(lang, lang)}", show_alert=True)
+
+                if st.get("current_view") == "series_list":
+                    await mostrar_series(update, context, origin_type=st.get("origin_type", "all_series"), page=st.get("current_page", 1))
+                else:
+                    from handlers.commands.extra_commands_handler import ExtraCommandsHandler
+                    await ExtraCommandsHandler(context.application).handle_idioma(update, context)
+
             else:
                 logger.info(f"Callback no manejado: {data}")
 

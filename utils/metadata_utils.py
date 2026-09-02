@@ -278,13 +278,28 @@ def resolve_title_cascade(data: dict[str, Any]) -> tuple[str, str | None, str | 
     if t_es and t_es == t_en:
         t_es = None
 
-    # 5. Si t_es sigue vacío pero data contiene un título en español
-    if not t_es:
-        candidate_es = data.get("series_name") or data.get("title")
-        if candidate_es and candidate_es != t_en and is_spanish_string(candidate_es):
-            t_es = candidate_es
-
     return t_en, t_jp, t_es
+
+
+def resolve_series_title(data: dict[str, Any], preference: str = "english") -> str:
+    """
+    Resuelve el título canónico para visualización de series/libros según la preferencia de idioma:
+    - 'english' (por defecto oficial): name_english -> name (romaji) -> name_spanish
+    - 'romaji': name (romaji) -> name_english -> name_spanish
+    - 'spanish': name_spanish -> name_english -> name (romaji)
+    """
+    if not isinstance(data, dict):
+        return str(data) if data else "Novela"
+
+    t_en, t_jp, t_es = resolve_title_cascade(data)
+    pref = (preference or "english").lower().strip()
+
+    if pref == "spanish":
+        return t_es or t_en or t_jp or "Novela"
+    elif pref in ("romaji", "japanese", "jp"):
+        return t_jp or t_en or t_es or "Novela"
+    else:  # default "english"
+        return t_en or t_jp or t_es or "Novela"
 
 
 def clean_romaji_title(title: str) -> str:

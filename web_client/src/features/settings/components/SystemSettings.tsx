@@ -42,14 +42,16 @@ export const SystemSettings: React.FC<SystemSettingsProps> = ({ settings, update
                     </div>
 
                     <div className="space-y-4">
-                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">Localización</label>
+                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] px-1">Idioma de Títulos</label>
                         <div className="relative group/select">
-                            <select className="block w-full px-5 py-4 text-[13px] font-black border border-white/5 bg-white/[0.03] text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary rounded-premium-sm appearance-none group-hover/select:bg-white/[0.05] transition-all uppercase tracking-widest">
-                                <option>English (US)</option>
-                                <option selected>Español</option>
-                                <option>Français</option>
-                                <option>Русский</option>
-                                <option>简体中文</option>
+                            <select
+                                value={settings.titleLanguage || 'english'}
+                                onChange={(e) => updateSettings({ titleLanguage: e.target.value })}
+                                className="block w-full px-5 py-4 text-[13px] font-black border border-white/5 bg-white/[0.03] text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary rounded-premium-sm appearance-none group-hover/select:bg-white/[0.05] transition-all uppercase tracking-widest cursor-pointer"
+                            >
+                                <option value="english" className="bg-slate-900 text-white">🇬🇧 English (Oficial)</option>
+                                <option value="romaji" className="bg-slate-900 text-white">🇯🇵 Romaji / Original</option>
+                                <option value="spanish" className="bg-slate-900 text-white">🇪🇸 Español</option>
                             </select>
                             <div className="absolute inset-y-0 right-0 flex items-center pr-5 pointer-events-none text-gray-600 group-hover/select:text-primary transition-colors">
                                 <ChevronRight className="w-5 h-5 rotate-90" />

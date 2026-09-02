@@ -112,6 +112,9 @@ class HandlerManagerV6:
             CommandHandler(["genero", "generos"], self.extra_h.handle_genero)
         )
         self.app.add_handler(
+            CommandHandler(["idioma", "preferencias", "lang"], self.extra_h.handle_idioma)
+        )
+        self.app.add_handler(
             CommandHandler(["stats", "diagnostico"], self.extra_h.handle_stats_admin)
         )
         self.app.add_handler(

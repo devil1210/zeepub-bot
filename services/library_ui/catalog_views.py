@@ -221,10 +221,14 @@ async def mostrar_series(
         st["series_map"] = {}
     items = []
 
+    from utils.helpers import resolve_series_title
+
+    user_lang_pref = st.get("title_language", "english")
+
     for i, s in enumerate(data["items"]):
         s_hash = s.get("series_hash") or s.get("id")
         href = f"local_series|{s_hash}"
-        series_title = s.get("name") or s.get("series_name") or s.get("title", "Novela")
+        series_title = resolve_series_title(s, preference=user_lang_pref)
         book_count = s.get("book_count") or s.get("count") or 1
         st["colecciones"][i] = {"titulo": series_title, "href": href}
         st["series_map"][i] = s_hash

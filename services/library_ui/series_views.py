@@ -77,7 +77,10 @@ async def mostrar_volumenes_local(
         return
 
     meta_serie = await LibraryService.get_series_metadata(series_hash)
-    series_name = meta_serie.series_name if meta_serie else "Serie"
+    user_lang_pref = st.get("title_language", "english")
+    from utils.helpers import resolve_series_title
+    meta_dict = meta_serie.to_dict() if hasattr(meta_serie, "to_dict") else (meta_serie if isinstance(meta_serie, dict) else {})
+    series_name = resolve_series_title(meta_dict, preference=user_lang_pref) if meta_dict else (meta_serie.series_name if meta_serie else "Serie")
 
     # Ordenar volúmenes numéricamente de menor a mayor
     def parse_vol_num(v):
