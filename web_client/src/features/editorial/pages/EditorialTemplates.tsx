@@ -63,8 +63,9 @@ export const EditorialTemplates: React.FC = () => {
     const handleCreateNew = () => {
         setSelectedTemplate({ id: null });
         setFormData({
-            name: 'Nueva Plantilla',
-            content: '📚 <b>{serie}</b> [?volumen]║ <b>Vol. {volumen}</b>[/?]\n#{slug}\n\n[?autor]✍️ <b>Autor:</b> {autor}\n[/?][?illustrator]🎨 <b>Ilustrador:</b> {illustrator}\n[/?][?traductor]🌐 <b>Traducción:</b> {traductor}\n[/?][?editorial]🏢 <b>Grupo:</b> {editorial}\n[/?]\n[?sinopsis]📝 <b>Sinopsis:</b>\n<blockquote expandable>{sinopsis}</blockquote>\n[/?]\n\n#{slug}',
+            name: 'Nueva Plantilla Telegram',
+            content:
+                '📚 <b>{serie}</b> [?volumen]║ <b>Vol. {volumen}</b>[/?]\n#{slug}\n\n[?autor]✍️ <b>Autor:</b> {autor}\n[/?][?illustrator]🎨 <b>Ilustrador:</b> {illustrator}\n[/?][?traductor]🌐 <b>Traducción:</b> {traductor}\n[/?][?editorial]🏢 <b>Grupo:</b> {editorial}\n[/?]\n[?sinopsis]📝 <b>Sinopsis:</b>\n<blockquote expandable>{sinopsis}</blockquote>\n[/?]\n\n#{slug}',
             platform: 'telegram',
             is_default: false,
         });
@@ -119,28 +120,28 @@ export const EditorialTemplates: React.FC = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
-            {/* Header */}
+        <div className="w-full max-w-[2200px] mx-auto space-y-6 animate-in fade-in duration-300">
+            {/* Top Bar Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                        <FileCode2 className="w-6 h-6 text-indigo-400" /> Biblioteca de Plantillas Editorial
+                    <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                        <FileCode2 className="w-7 h-7 text-indigo-400" /> Biblioteca de Plantillas Editorial
                     </h2>
-                    <p className="text-xs text-gray-400 mt-1">
-                        Estructura copys dinámicos enriquecidos para Telegram y publicaciones de Facebook con simulador en tiempo real.
+                    <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                        Estructura copys dinámicos enriquecidos para Telegram y publicaciones de Facebook con simulador oficial de canales.
                     </p>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleRestoreDefaults}
-                        className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-bold border border-white/10 flex items-center gap-1.5 transition-all"
+                        className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-xs font-bold border border-white/10 flex items-center gap-2 transition-all"
                     >
-                        <RotateCcw className="w-3.5 h-3.5" /> Restaurar Predeterminadas
+                        <RotateCcw className="w-4 h-4" /> Restaurar Predeterminadas
                     </button>
                     <button
                         onClick={handleCreateNew}
-                        className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
+                        className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 transition-all"
                     >
                         <Plus className="w-4 h-4" /> Nueva Plantilla
                     </button>
@@ -149,38 +150,45 @@ export const EditorialTemplates: React.FC = () => {
 
             {statusMsg && (
                 <div
-                    className={`p-3 rounded-xl flex items-center gap-2 text-xs font-medium ${
+                    className={`p-3.5 rounded-2xl flex items-center gap-2.5 text-xs font-medium ${
                         statusMsg.type === 'success'
                             ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
                             : 'bg-red-500/10 text-red-300 border border-red-500/20'
                     }`}
                 >
-                    {statusMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                    {statusMsg.type === 'success' ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                        <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                    )}
                     <span>{statusMsg.text}</span>
                 </div>
             )}
 
-            {/* Main Layout Grid: Sidebar List + Editor Workspace */}
+            {/* 3-Column Wide 2K Layout: Templates List + Rich Editor + Channel Simulator */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                {/* Left: Template Selector Sidebar */}
-                <div className="lg:col-span-4 bg-slate-900/40 border border-white/10 rounded-2xl p-4 backdrop-blur-xl h-fit space-y-3">
-                    <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2">
-                        Plantillas Disponibles ({templates.length})
+                {/* 1. Left Column: Templates Sidebar (3 cols on lg, 2 cols on 2K) */}
+                <div className="lg:col-span-4 xl:col-span-3 2xl:col-span-3 bg-slate-900/40 border border-white/10 rounded-3xl p-4 sm:p-5 backdrop-blur-xl h-fit space-y-3 shadow-xl">
+                    <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-2 flex items-center justify-between">
+                        <span>Plantillas Guardadas</span>
+                        <span className="px-2 py-0.5 rounded-full bg-white/10 text-white font-mono text-[10px]">
+                            {templates.length}
+                        </span>
                     </div>
 
                     {loading ? (
-                        <div className="py-12 flex justify-center">
-                            <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                        <div className="py-16 flex justify-center">
+                            <Loader2 className="w-7 h-7 text-indigo-500 animate-spin" />
                         </div>
                     ) : (
-                        <div className="space-y-2">
+                        <div className="space-y-2 max-h-[75vh] overflow-y-auto pr-1">
                             {templates.map((tpl) => (
                                 <button
                                     key={tpl.id}
                                     onClick={() => selectTemplate(tpl)}
-                                    className={`w-full p-3 rounded-xl text-left transition-all border flex items-center justify-between group ${
+                                    className={`w-full p-3.5 rounded-2xl text-left transition-all border flex items-center justify-between group ${
                                         selectedTemplate?.id === tpl.id
-                                            ? 'bg-indigo-600/20 border-indigo-500/40 text-white shadow-lg'
+                                            ? 'bg-indigo-600/20 border-indigo-500/50 text-white shadow-xl'
                                             : 'bg-white/[0.02] border-white/5 text-gray-300 hover:bg-white/[0.06]'
                                     }`}
                                 >
@@ -188,7 +196,7 @@ export const EditorialTemplates: React.FC = () => {
                                         <div className="text-xs font-bold truncate group-hover:text-white">
                                             {tpl.name}
                                         </div>
-                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">
+                                        <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5 font-medium">
                                             {tpl.platform} {tpl.is_default ? '• Predeterminada' : ''}
                                         </div>
                                     </div>
@@ -207,51 +215,49 @@ export const EditorialTemplates: React.FC = () => {
                     )}
                 </div>
 
-                {/* Right: Rich Editor & Live Telegram Simulator */}
-                <div className="lg:col-span-8">
+                {/* 2. Middle & Right Columns: Editor + Live Simulator (9 cols on lg, 9 cols on 2K) */}
+                <div className="lg:col-span-8 xl:col-span-9 2xl:col-span-9">
                     {selectedTemplate ? (
                         <form
                             onSubmit={handleSave}
-                            className="bg-slate-900/50 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-6 backdrop-blur-xl shadow-2xl"
+                            className="bg-slate-900/50 border border-white/10 rounded-3xl p-5 sm:p-7 space-y-6 backdrop-blur-2xl shadow-2xl"
                         >
-                            {/* Template Meta Inputs */}
+                            {/* Meta inputs */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">
+                                    <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">
                                         Nombre de la Plantilla
                                     </label>
                                     <input
                                         type="text"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                                        className="w-full px-4 py-2.5 bg-slate-950/80 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1">
+                                    <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">
                                         Plataforma Objetivo
                                     </label>
                                     <select
                                         value={formData.platform}
                                         onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500"
+                                        className="w-full px-4 py-2.5 bg-slate-950/80 border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 font-bold"
                                     >
                                         <option value="telegram">Telegram (Canal / Grupo con Rich HTML)</option>
-                                        <option value="facebook">Facebook (Página Oficial / Copys)</option>
+                                        <option value="facebook">Facebook (Página Oficial / Copys Limpios)</option>
                                     </select>
                                 </div>
                             </div>
 
-                            {/* 2-Column Split: Editor + Live Preview */}
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                                {/* Editor Column */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <label className="text-[11px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
-                                            <LayoutTemplate className="w-3.5 h-3.5 text-indigo-400" /> Editor de Copy
-                                        </label>
-                                    </div>
+                            {/* Split Grid: Editor (Left) & Channel Simulator (Right) */}
+                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                                {/* Editor (7 cols) */}
+                                <div className="xl:col-span-7 space-y-2">
+                                    <label className="text-[11px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
+                                        <LayoutTemplate className="w-3.5 h-3.5 text-indigo-400" /> Editor de Copy
+                                    </label>
 
                                     <TelegramRichMessageEditor
                                         value={formData.content}
@@ -260,15 +266,13 @@ export const EditorialTemplates: React.FC = () => {
                                     />
                                 </div>
 
-                                {/* Preview Column */}
-                                <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <label className="text-[11px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
-                                            <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Simulador {formData.platform === 'facebook' ? 'Facebook' : 'Telegram'}
-                                        </label>
-                                    </div>
+                                {/* Simulator (5 cols) */}
+                                <div className="xl:col-span-5 space-y-2">
+                                    <label className="text-[11px] font-bold text-gray-400 uppercase flex items-center gap-1.5">
+                                        <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Simulador Oficial de Canal
+                                    </label>
 
-                                    <div className="h-[460px]">
+                                    <div className="h-[520px] 2xl:h-[580px]">
                                         <TelegramMessagePreview
                                             rawTemplate={formData.content}
                                             platform={formData.platform as 'telegram' | 'facebook'}
@@ -278,15 +282,15 @@ export const EditorialTemplates: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Actions */}
+                            {/* Actions Bar */}
                             <div className="pt-4 border-t border-white/10 flex items-center justify-between">
                                 {selectedTemplate.id ? (
                                     <button
                                         type="button"
                                         onClick={handleDelete}
-                                        className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold flex items-center gap-1.5 transition-all"
+                                        className="px-4 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold flex items-center gap-2 transition-all"
                                     >
-                                        <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                                        <Trash2 className="w-4 h-4" /> Eliminar Plantilla
                                     </button>
                                 ) : (
                                     <div />
@@ -295,15 +299,15 @@ export const EditorialTemplates: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={isSaving}
-                                    className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 transition-all disabled:opacity-50"
+                                    className="px-7 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2.5 shadow-xl shadow-indigo-600/30 active:scale-95 transition-all disabled:opacity-50"
                                 >
                                     {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                    <span>Guardar Plantilla</span>
+                                    <span>Guardar y Aplicar Plantilla</span>
                                 </button>
                             </div>
                         </form>
                     ) : (
-                        <div className="py-24 text-center text-gray-500 text-xs bg-slate-900/30 rounded-2xl border border-white/5">
+                        <div className="py-32 text-center text-gray-500 text-xs bg-slate-900/30 rounded-3xl border border-white/5">
                             Selecciona una plantilla de la lista o crea una nueva para comenzar a editar.
                         </div>
                     )}

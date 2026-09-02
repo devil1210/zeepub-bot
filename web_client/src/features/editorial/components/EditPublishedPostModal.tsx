@@ -71,16 +71,16 @@ export const EditPublishedPostModal: React.FC<EditPublishedPostModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-slate-950 border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 lg:p-10 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="relative w-full max-w-6xl 2xl:max-w-7xl h-[88vh] flex flex-col bg-slate-950 border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
                 {/* Header */}
-                <div className="p-5 border-b border-white/10 flex items-center justify-between bg-slate-900/50">
+                <div className="p-5 sm:p-6 border-b border-white/10 flex items-center justify-between bg-slate-900/60 backdrop-blur-xl">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                             <Edit3 className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 className="text-base font-bold text-white flex items-center gap-2">
+                            <h3 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                                 Editar Mensaje Publicado en Telegram
                             </h3>
                             <p className="text-xs text-gray-400">
@@ -113,7 +113,7 @@ export const EditPublishedPostModal: React.FC<EditPublishedPostModalProps> = ({
 
                         <button
                             onClick={onClose}
-                            className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                            className="p-2.5 rounded-2xl text-gray-400 hover:text-white hover:bg-white/10 transition-all"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -121,9 +121,9 @@ export const EditPublishedPostModal: React.FC<EditPublishedPostModalProps> = ({
                 </div>
 
                 {/* Body Content */}
-                <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left: Editor */}
-                    <div className={`space-y-4 ${viewMode === 'preview' ? 'hidden lg:block' : 'block'}`}>
+                <div className="flex-1 overflow-y-auto p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Left: Editor (7 cols) */}
+                    <div className={`space-y-3 lg:col-span-7 ${viewMode === 'preview' ? 'hidden lg:block' : 'block'}`}>
                         <div className="flex items-center justify-between">
                             <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
                                 Contenido / Caption de Telegram
@@ -138,18 +138,18 @@ export const EditPublishedPostModal: React.FC<EditPublishedPostModalProps> = ({
                         />
                     </div>
 
-                    {/* Right: Live Telegram Simulator */}
-                    <div className={`space-y-4 ${viewMode === 'editor' ? 'hidden lg:block' : 'block'}`}>
+                    {/* Right: Live Telegram Simulator (5 cols) */}
+                    <div className={`space-y-3 lg:col-span-5 ${viewMode === 'editor' ? 'hidden lg:block' : 'block'}`}>
                         <div className="flex items-center justify-between">
                             <label className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Previsualización en Vivo (Simulador Telegram)
+                                Previsualización en Vivo (Simulador Oficial)
                             </label>
                             <span className="text-[11px] text-indigo-400 font-semibold flex items-center gap-1">
-                                <Sparkles className="w-3 h-3" /> Tiempo Real
+                                <Sparkles className="w-3.5 h-3.5" /> Tiempo Real
                             </span>
                         </div>
 
-                        <div className="h-[420px]">
+                        <div className="h-[480px] 2xl:h-[540px]">
                             <TelegramMessagePreview
                                 rawTemplate={caption}
                                 platform="telegram"
@@ -166,26 +166,26 @@ export const EditPublishedPostModal: React.FC<EditPublishedPostModalProps> = ({
 
                 {/* Alerts */}
                 {error && (
-                    <div className="mx-5 mb-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
+                    <div className="mx-6 mb-3 p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
                         <span>{error}</span>
                     </div>
                 )}
 
                 {successMsg && (
-                    <div className="mx-5 mb-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <div className="mx-6 mb-3 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
                         <span>{successMsg}</span>
                     </div>
                 )}
 
                 {/* Footer */}
-                <div className="p-5 border-t border-white/10 bg-slate-900/50 flex items-center justify-end gap-3">
+                <div className="p-5 sm:p-6 border-t border-white/10 bg-slate-900/60 backdrop-blur-xl flex items-center justify-end gap-3">
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={loading}
-                        className="px-4 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                        className="px-5 py-2.5 rounded-xl text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all"
                     >
                         Cancelar
                     </button>
@@ -193,7 +193,7 @@ export const EditPublishedPostModal: React.FC<EditPublishedPostModalProps> = ({
                         type="button"
                         onClick={handleSave}
                         disabled={loading}
-                        className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+                        className="px-7 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2.5 transition-all shadow-xl shadow-indigo-600/30 disabled:opacity-50"
                     >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                         <span>Guardar y Actualizar en Telegram</span>

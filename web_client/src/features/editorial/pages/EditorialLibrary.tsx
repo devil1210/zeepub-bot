@@ -120,7 +120,7 @@ export const EditorialLibrary: React.FC = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
+        <div className="w-full max-w-[2100px] mx-auto space-y-6 animate-in fade-in duration-300">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
