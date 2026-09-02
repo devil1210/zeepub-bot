@@ -38,6 +38,8 @@ const EditorialLegacyTools = React.lazy(() => import('@features/editorial/pages/
 const EditorialAIHub = React.lazy(() => import('@features/editorial/pages/EditorialAIHub').then(m => ({ default: m.EditorialAIHub })));
 const EditorialFansubs = React.lazy(() => import('@features/editorial/pages/EditorialFansubs').then(m => ({ default: m.EditorialFansubs })));
 const EditorialDuplicates = React.lazy(() => import('@features/editorial/pages/EditorialDuplicates').then(m => ({ default: m.EditorialDuplicates })));
+const EditorialObservatory = React.lazy(() => import('@features/editorial/pages/EditorialObservatory').then(m => ({ default: m.EditorialObservatory })));
+const EditorialUpload = React.lazy(() => import('@features/editorial/pages/EditorialUpload').then(m => ({ default: m.EditorialUpload })));
 
 import { Series, Volume } from '@shared/types';
 import { LoginGate } from '@components/LoginGate';
@@ -245,7 +247,12 @@ const AppContent: React.FC = () => {
               } />
               <Route path="/app-v2/observatory" element={
                 <ProtectedAdminRoute>
-                  <PageWrapper Component={Admin} props={{ defaultView: 'observatory' }} />
+                  <EditorialObservatory />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/app-v2/upload" element={
+                <ProtectedAdminRoute>
+                  <EditorialUpload />
                 </ProtectedAdminRoute>
               } />
               <Route path="/app-v2/users" element={

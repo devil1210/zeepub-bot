@@ -198,7 +198,7 @@ export const EditorialLayout: React.FC<EditorialLayoutProps> = ({ children }) =>
                     {/* Quick Actions */}
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={() => navigate('/upload')}
+                            onClick={() => navigate('/app-v2/upload')}
                             className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all"
                         >
                             <UploadCloud className="w-4 h-4" />

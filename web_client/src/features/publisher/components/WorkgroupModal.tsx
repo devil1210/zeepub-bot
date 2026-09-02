@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Globe, Facebook, MessageSquare, Heart, Twitter, Coffee, Save, Trash2, Building2 } from 'lucide-react';
-import { useTheme } from '@shared/contexts/ThemeContext';
+import { X, Globe, Facebook, MessageSquare, Heart, Twitter, Coffee, Save, Trash2, Building2, Tag, Loader2, Sparkles } from 'lucide-react';
 import { TranslatorsGroupItem, GroupContactLinks } from '../services/workgroupsApi';
 
 interface WorkgroupModalProps {
@@ -24,7 +23,6 @@ export const WorkgroupModal: React.FC<WorkgroupModalProps> = ({
     onDelete,
     group
 }) => {
-    const { settings } = useTheme();
     const [name, setName] = useState('');
     const [siglas, setSiglas] = useState('');
     const [description, setDescription] = useState('');
@@ -102,228 +100,206 @@ export const WorkgroupModal: React.FC<WorkgroupModalProps> = ({
 
     const handleDelete = async () => {
         if (!group?.id || !onDelete) return;
-        if (!window.confirm(`¿Estás seguro de eliminar el grupo "${group.name}"?`)) return;
+        if (!confirm(`¿Eliminar definitivamente el grupo "${group.name}"?`)) return;
 
         setDeleting(true);
         try {
             await onDelete(group.id);
             onClose();
         } catch (err: any) {
-            setError(err.message || 'Error al eliminar el grupo');
+            setError(err.message || 'Error al eliminar');
         } finally {
             setDeleting(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div
-                className="w-full max-w-lg glass-panel rounded-premium overflow-hidden border border-white/10 flex flex-col max-h-[90vh] shadow-2xl"
-                style={{
-                    background: `rgba(var(--glass-rgb), 0.92)`,
-                    backdropFilter: `blur(${settings.glassBlur + 4}px)`
-                }}
-            >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="relative w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-950/60">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                        <div className="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                             <Building2 className="w-5 h-5" />
                         </div>
                         <div>
-                            <h2 className="text-sm font-bold text-white">
-                                {group ? 'Editar Grupo Traductor' : 'Nuevo Grupo Traductor / Fansub'}
-                            </h2>
-                            <p className="text-[11px] text-gray-400">
+                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                                {group ? 'Editar Grupo Traductor / Fansub' : 'Nuevo Grupo Traductor / Fansub'}
+                            </h3>
+                            <p className="text-xs text-gray-400">
                                 Redes y enlaces oficiales para plantillas de publicación
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                    >
-                        <X className="w-4 h-4" />
+                    <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Form Body */}
-                <form onSubmit={handleSubmit} className="p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
-                    {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs flex items-center gap-2">
-                            <span>{error}</span>
-                        </div>
-                    )}
+                {error && (
+                    <div className="mx-6 mt-4 p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs text-red-300 font-medium">
+                        {error}
+                    </div>
+                )}
 
-                    {/* Basic Info */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="sm:col-span-2 flex flex-col gap-1">
-                            <label className="text-[11px] font-bold text-gray-300">
-                                Nombre del Grupo / Fansub <span className="text-primary">*</span>
+                {/* Form Body */}
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="sm:col-span-2">
+                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">
+                                Nombre del Grupo / Fansub <span className="text-indigo-400">*</span>
                             </label>
                             <input
                                 type="text"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="Ej. Tamashi's Project, MK & LnF"
-                                className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-all"
+                                placeholder="Ej. Tamashi's Project, Lanove, MK & LnF"
+                                className="w-full px-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
                                 required
                             />
                         </div>
 
-                        <div className="flex flex-col gap-1">
-                            <label className="text-[11px] font-bold text-gray-300">Siglas / Tag</label>
+                        <div>
+                            <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">
+                                Siglas / Tag
+                            </label>
                             <input
                                 type="text"
                                 value={siglas}
                                 onChange={(e) => setSiglas(e.target.value)}
-                                placeholder="Ej. [TP], [MK]"
-                                className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-all"
+                                placeholder="Ej. [TP], [LANOVE]"
+                                className="w-full px-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
                             />
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                        <label className="text-[11px] font-bold text-gray-300">Descripción / Notas</label>
+                    <div>
+                        <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1.5">
+                            Descripción / Notas
+                        </label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Información interna, proyectos activos o notas editoriales..."
                             rows={2}
-                            placeholder="Información interna o notas sobre este grupo..."
-                            className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary resize-none transition-all"
+                            className="w-full px-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 resize-none"
                         />
                     </div>
 
-                    {/* Social & Contact Links */}
-                    <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
-                        <h3 className="text-[11px] font-black uppercase tracking-wider text-primary">
+                    {/* Contact Links Grid */}
+                    <div className="pt-3 border-t border-white/5 space-y-3">
+                        <div className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider">
                             Enlaces Oficiales de Contacto
-                        </h3>
+                        </div>
                         <p className="text-[10px] text-gray-400">
-                            Disponibles como {'{grupo_web}'}, {'{grupo_fb}'}, {'{grupo_discord}'}, etc.
+                            Disponibles en variables de plantilla como <code>{'{grupo_web}'}</code>, <code>{'{grupo_fb}'}</code>, etc.
                         </p>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
-                            {/* Web */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-gray-400 flex items-center gap-1.5">
-                                    <Globe className="w-3.5 h-3.5 text-blue-400" /> Sitio Web Oficial
-                                </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div className="relative">
+                                <Globe className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
                                     type="url"
                                     value={links.web || ''}
                                     onChange={(e) => handleLinkChange('web', e.target.value)}
-                                    placeholder="https://mitraductor.com"
-                                    className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-primary transition-all"
+                                    placeholder="https://sitio-oficial.com"
+                                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
                                 />
                             </div>
 
-                            {/* Facebook */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-gray-400 flex items-center gap-1.5">
-                                    <Facebook className="w-3.5 h-3.5 text-blue-500" /> Página de Facebook
-                                </label>
+                            <div className="relative">
+                                <Facebook className="w-3.5 h-3.5 text-blue-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
                                     type="url"
                                     value={links.fb || ''}
                                     onChange={(e) => handleLinkChange('fb', e.target.value)}
-                                    placeholder="https://facebook.com/mifansub"
-                                    className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-primary transition-all"
+                                    placeholder="https://facebook.com/fansub"
+                                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
                                 />
                             </div>
 
-                            {/* Discord */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-gray-400 flex items-center gap-1.5">
-                                    <MessageSquare className="w-3.5 h-3.5 text-indigo-400" /> Servidor de Discord
-                                </label>
+                            <div className="relative">
+                                <MessageSquare className="w-3.5 h-3.5 text-indigo-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
                                     type="url"
                                     value={links.discord || ''}
                                     onChange={(e) => handleLinkChange('discord', e.target.value)}
                                     placeholder="https://discord.gg/invitacion"
-                                    className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-primary transition-all"
+                                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
                                 />
                             </div>
 
-                            {/* Patreon */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-gray-400 flex items-center gap-1.5">
-                                    <Heart className="w-3.5 h-3.5 text-red-400" /> Patreon / Membresía
-                                </label>
+                            <div className="relative">
+                                <Heart className="w-3.5 h-3.5 text-pink-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
                                     type="url"
                                     value={links.patreon || ''}
                                     onChange={(e) => handleLinkChange('patreon', e.target.value)}
                                     placeholder="https://patreon.com/fansub"
-                                    className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-primary transition-all"
+                                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
                                 />
                             </div>
 
-                            {/* Twitter / X */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-gray-400 flex items-center gap-1.5">
-                                    <Twitter className="w-3.5 h-3.5 text-sky-400" /> Twitter / X
-                                </label>
+                            <div className="relative">
+                                <Twitter className="w-3.5 h-3.5 text-sky-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
                                     type="url"
                                     value={links.twitter || ''}
                                     onChange={(e) => handleLinkChange('twitter', e.target.value)}
                                     placeholder="https://x.com/fansub"
-                                    className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-primary transition-all"
+                                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
                                 />
                             </div>
 
-                            {/* Donations / Ko-fi */}
-                            <div className="flex flex-col gap-1">
-                                <label className="text-[10px] font-bold text-gray-400 flex items-center gap-1.5">
-                                    <Coffee className="w-3.5 h-3.5 text-amber-400" /> Donaciones / Ko-fi
-                                </label>
+                            <div className="relative">
+                                <Coffee className="w-3.5 h-3.5 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
                                     type="url"
                                     value={links.donations || ''}
                                     onChange={(e) => handleLinkChange('donations', e.target.value)}
                                     placeholder="https://ko-fi.com/fansub"
-                                    className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-primary transition-all"
+                                    className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
                                 />
                             </div>
                         </div>
                     </div>
-
-                    {/* Actions Footer */}
-                    <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-2">
-                        {group?.id && onDelete ? (
-                            <button
-                                type="button"
-                                onClick={handleDelete}
-                                disabled={deleting || saving}
-                                className="px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50"
-                            >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                {deleting ? 'Eliminando...' : 'Eliminar'}
-                            </button>
-                        ) : <div />}
-
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                disabled={saving}
-                                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 rounded-xl text-xs font-semibold transition-all"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                className="px-5 py-2 bg-primary hover:brightness-110 text-white rounded-xl text-xs font-bold shadow-lg shadow-primary/20 flex items-center gap-1.5 active:scale-95 transition-all disabled:opacity-50"
-                            >
-                                <Save className="w-3.5 h-3.5" />
-                                {saving ? 'Guardando...' : 'Guardar Grupo'}
-                            </button>
-                        </div>
-                    </div>
                 </form>
+
+                {/* Footer Controls */}
+                <div className="px-6 py-4 border-t border-white/10 bg-slate-950/60 flex items-center justify-between">
+                    {group?.id && onDelete ? (
+                        <button
+                            type="button"
+                            onClick={handleDelete}
+                            disabled={deleting}
+                            className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold border border-red-500/20 flex items-center gap-1.5 transition-all"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Eliminar</span>
+                        </button>
+                    ) : (
+                        <div />
+                    )}
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 text-xs font-bold text-gray-400 hover:text-white transition-all"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={saving}
+                            className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 active:scale-95 transition-all disabled:opacity-50"
+                        >
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                            <span>Guardar Grupo</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );
