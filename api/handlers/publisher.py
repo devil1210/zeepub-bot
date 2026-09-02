@@ -61,9 +61,9 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
                 "channel_id": i.channel_id,
                 "template_id": i.template_id,
                 "platform": i.channel.platform if i.channel else "Unknown",
-                "scheduled_for": i.scheduled_for.isoformat(),
+                "scheduled_for": (i.scheduled_for.isoformat() + "Z") if i.scheduled_for else None,
                 "status": i.status,
-                "published_at": i.published_at.isoformat() if i.published_at else None,
+                "published_at": (i.published_at.isoformat() + "Z") if i.published_at else None,
                 "error": i.error_message,
                 "payload": i.payload,
                 "series": book_info_map.get(i.book_hash, {}).get("series"),
@@ -336,10 +336,12 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
 
     # Parse ISO date and convert to naive UTC (SQLAlchemy DateTime default)
     try:
-        # First ensure we handle 'Z' or other offsets to get a consistent UTC time
-        # Then strip the timezone info to make it naive for the DB column
         dt_aware = datetime.fromisoformat(scheduled_for_str.replace("Z", "+00:00"))
-        scheduled_for = dt_aware.replace(tzinfo=None)
+        if dt_aware.tzinfo is not None:
+            from datetime import timezone
+            scheduled_for = dt_aware.astimezone(timezone.utc).replace(tzinfo=None)
+        else:
+            scheduled_for = dt_aware
     except Exception as e:
         logger.error(f"Error parsing date {scheduled_for_str}: {e}")
         raise HTTPException(status_code=400, detail="Formato de fecha inválido") from e
@@ -397,7 +399,11 @@ async def handle_pub_update_queue_item(data: dict[str, Any], user_data: dict[str
                     scheduled_for_str = data["scheduled_for"]
                     # Parse ISO date
                     dt_aware = datetime.fromisoformat(scheduled_for_str.replace("Z", "+00:00"))
-                    item.scheduled_for = dt_aware.replace(tzinfo=None)
+                    if dt_aware.tzinfo is not None:
+                        from datetime import timezone
+                        item.scheduled_for = dt_aware.astimezone(timezone.utc).replace(tzinfo=None)
+                    else:
+                        item.scheduled_for = dt_aware
                 except Exception as e:
                     logger.error(f"Error parsing date: {e}")
 
