@@ -191,6 +191,30 @@ export const EditorialBookDetail: React.FC = () => {
         return `${minutes} min/ ${hoursStr} horas`;
     };
 
+    const renderFormattedText = (text: string): React.ReactNode => {
+        const tokens = text.split(/(<(?:b|strong|i|em)>.*?<\/(?:b|strong|i|em)>)/gi);
+        return tokens.map((token, i) => {
+            const bMatch = token.match(/^<(?:b|strong)>(.*?)<\/(?:b|strong)>$/i);
+            if (bMatch) {
+                return (
+                    <strong key={i} className="font-bold text-white">
+                        {bMatch[1]}
+                    </strong>
+                );
+            }
+            const iMatch = token.match(/^<(?:i|em)>(.*?)<\/(?:i|em)>$/i);
+            if (iMatch) {
+                return (
+                    <em key={i} className="italic text-gray-200">
+                        {iMatch[1]}
+                    </em>
+                );
+            }
+            const cleanText = token.replace(/<[^>]+>/g, '');
+            return cleanText;
+        });
+    };
+
     const formatDescription = (desc?: string) => {
         if (!desc) return <p className="italic text-gray-500 text-xs">Sin sinopsis registrada para este volumen.</p>;
         const clean = desc
@@ -206,14 +230,21 @@ export const EditorialBookDetail: React.FC = () => {
             .map((p) => p.trim())
             .filter(Boolean);
 
-        if (paragraphs.length === 0) {
+        const filteredParagraphs = paragraphs.filter((p) => {
+            const stripped = p.replace(/<[^>]+>/g, '').trim().toUpperCase();
+            return !/^(?:AUTOR|AUTORA|TRADUCCI[OÓ]N|TRADUCTOR|CORRECCI[OÓ]N|CORRECTOR|MAQUETACI[OÓ]N|MAQUETADOR)\s*:/i.test(stripped);
+        });
+
+        const finalParas = filteredParagraphs.length > 0 ? filteredParagraphs : paragraphs;
+
+        if (finalParas.length === 0) {
             return <p className="italic text-gray-500 text-xs">Sin sinopsis registrada para este volumen.</p>;
         }
 
         return (
             <div className="space-y-3 leading-relaxed text-xs sm:text-sm text-gray-300 font-normal">
-                {paragraphs.map((para, idx) => (
-                    <p key={idx}>{para}</p>
+                {finalParas.map((para, idx) => (
+                    <p key={idx}>{renderFormattedText(para)}</p>
                 ))}
             </div>
         );
@@ -263,8 +294,25 @@ export const EditorialBookDetail: React.FC = () => {
     const genres = series?.tags || book.genres || book.tags || [];
     const publications = book.publications || [];
 
-    const canonicalEnglishTitle = seriesTitle;
-    let spanishTitle = series?.series_spanish || series?.name_spanish || book.series_spanish || book.spanish_title || (isSpanishText(book.title) ? book.title : null);
+    const canonicalEnglishTitle = (
+        series?.series_english ||
+        series?.name_english ||
+        book.series_english ||
+        book.english_title ||
+        (series?.name && !isSpanishText(series.name) ? series.name : null) ||
+        book.title ||
+        ''
+    ).replace(/[\s\:\-\–\—\.]+$/, '').trim();
+
+    let spanishTitle = (
+        series?.series_spanish ||
+        series?.name_spanish ||
+        book.series_spanish ||
+        book.spanish_title ||
+        (isSpanishText(book.title) ? book.title : null) ||
+        ''
+    ).replace(/[\s\:\-\–\—\.]+$/, '').trim();
+
     if (spanishTitle && spanishTitle.includes('. ') && !spanishTitle.includes(': ')) {
         const parts = spanishTitle.split('. ');
         if (parts.length === 2 && parts[0].trim().length > 2) {
@@ -272,13 +320,15 @@ export const EditorialBookDetail: React.FC = () => {
         }
     }
 
-    const romajiTitle =
+    const romajiTitle = (
         series?.series_romaji ||
         series?.romaji ||
         series?.romaji_title ||
         book.series_romaji ||
         book.romaji_title ||
-        (series?.name && series.name !== canonicalEnglishTitle && series.name !== spanishTitle ? series.name : null);
+        (series?.name && series.name !== canonicalEnglishTitle && series.name !== spanishTitle ? series.name : null) ||
+        ''
+    ).replace(/[\s\:\-\–\—\.]+$/, '').trim();
 
     return (
         <div className="w-full max-w-[2000px] mx-auto space-y-6 animate-in fade-in duration-300">

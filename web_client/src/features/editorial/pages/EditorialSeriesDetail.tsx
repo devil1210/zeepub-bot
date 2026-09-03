@@ -130,6 +130,30 @@ export const EditorialSeriesDetail: React.FC = () => {
     // Synopsis Expand State
     const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
+    const renderFormattedText = (text: string): React.ReactNode => {
+        const tokens = text.split(/(<(?:b|strong|i|em)>.*?<\/(?:b|strong|i|em)>)/gi);
+        return tokens.map((token, i) => {
+            const bMatch = token.match(/^<(?:b|strong)>(.*?)<\/(?:b|strong)>$/i);
+            if (bMatch) {
+                return (
+                    <strong key={i} className="font-bold text-white">
+                        {bMatch[1]}
+                    </strong>
+                );
+            }
+            const iMatch = token.match(/^<(?:i|em)>(.*?)<\/(?:i|em)>$/i);
+            if (iMatch) {
+                return (
+                    <em key={i} className="italic text-gray-200">
+                        {iMatch[1]}
+                    </em>
+                );
+            }
+            const cleanText = token.replace(/<[^>]+>/g, '');
+            return cleanText;
+        });
+    };
+
     const formatSynopsis = (desc?: string, expanded: boolean = false) => {
         if (!desc) return null;
         const clean = desc
@@ -145,9 +169,16 @@ export const EditorialSeriesDetail: React.FC = () => {
             .map((p) => p.trim())
             .filter(Boolean);
 
-        if (paragraphs.length === 0) return null;
+        const filteredParagraphs = paragraphs.filter((p) => {
+            const stripped = p.replace(/<[^>]+>/g, '').trim().toUpperCase();
+            return !/^(?:AUTOR|AUTORA|TRADUCCI[OÓ]N|TRADUCTOR|CORRECCI[OÓ]N|CORRECTOR|MAQUETACI[OÓ]N|MAQUETADOR)\s*:/i.test(stripped);
+        });
 
-        const isLong = paragraphs.length > 1 || clean.length > 200;
+        const finalParas = filteredParagraphs.length > 0 ? filteredParagraphs : paragraphs;
+
+        if (finalParas.length === 0) return null;
+
+        const isLong = finalParas.length > 1 || clean.length > 200;
 
         return (
             <div className="space-y-2 pt-1">
@@ -156,8 +187,8 @@ export const EditorialSeriesDetail: React.FC = () => {
                         !expanded && isLong ? 'line-clamp-3' : ''
                     }`}
                 >
-                    {paragraphs.map((para, idx) => (
-                        <p key={idx}>{para}</p>
+                    {finalParas.map((para, idx) => (
+                        <p key={idx}>{renderFormattedText(para)}</p>
                     ))}
                 </div>
 
@@ -396,7 +427,7 @@ export const EditorialSeriesDetail: React.FC = () => {
         );
     }
 
-    const seriesMainTitle = series.series_english || series.name;
+    const seriesMainTitle = (series.series_english || series.name || '').replace(/[\s\:\-\–\—\.]+$/, '').trim();
     const seriesHeroCover = series.cover_url || (books[0]?.cover_url) || `/api/library/covers/${series.series_hash || series.id}.jpg`;
 
     return (
@@ -489,14 +520,14 @@ export const EditorialSeriesDetail: React.FC = () => {
                             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
                                 {seriesMainTitle}
                             </h1>
-                            {series.series_spanish && series.series_spanish !== seriesMainTitle && (
+                            {series.series_spanish && series.series_spanish.replace(/[\s\:\-\–\—\.]+$/, '').trim() !== seriesMainTitle && (
                                 <h3 className="text-base sm:text-lg font-bold text-amber-300/90 flex items-center gap-2">
-                                    <span>🇪🇸</span> {series.series_spanish}
+                                    <span>🇪🇸</span> {series.series_spanish.replace(/[\s\:\-\–\—\.]+$/, '').trim()}
                                 </h3>
                             )}
-                            {series.name && series.name !== seriesMainTitle && (
+                            {series.name && series.name.replace(/[\s\:\-\–\—\.]+$/, '').trim() !== seriesMainTitle && (
                                 <h4 className="text-xs sm:text-sm text-gray-400 font-medium flex items-center gap-2">
-                                    <span>🇯🇵</span> {series.name}
+                                    <span>🇯🇵</span> {series.name.replace(/[\s\:\-\–\—\.]+$/, '').trim()}
                                 </h4>
                             )}
                         </div>

@@ -107,9 +107,21 @@ class TestTitleResolution(unittest.TestCase):
 
     def test_resolve_series_title_standalone_name(self):
         from utils.metadata_utils import resolve_series_title
+
         data = {"name": "Date A Live"}
         title = resolve_series_title(data, "english")
         self.assertEqual(title, "Date A Live")
+
+    def test_resolve_title_cascade_trailing_punctuation(self):
+        data = {
+            "english_title": "Mushoku Tensei: Jobless Reincarnation -",
+            "romaji_title": "Mushoku Tensei:",
+            "spanish_title": "Mushoku Tensei: Reencarnación de un Desempleado:",
+        }
+        t_en, t_jp, t_es = resolve_title_cascade(data)
+        self.assertEqual(t_en, "Mushoku Tensei: Jobless Reincarnation")
+        self.assertEqual(t_jp, "Mushoku Tensei")
+        self.assertEqual(t_es, "Mushoku Tensei: Reencarnación de un Desempleado")
 
 
 if __name__ == "__main__":

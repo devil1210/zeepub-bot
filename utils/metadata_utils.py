@@ -307,6 +307,16 @@ def resolve_title_cascade(data: dict[str, Any]) -> tuple[str, str | None, str | 
     if t_es and t_es == t_en:
         t_es = None
 
+    def _clean_trailing(val: str | None) -> str | None:
+        if not val:
+            return None
+        s = re.sub(r"[\s\:\-\–\—\.]+$", "", str(val)).strip()
+        return s or None
+
+    t_en = _clean_trailing(t_en) or "Sin título"
+    t_jp = _clean_trailing(t_jp)
+    t_es = _clean_trailing(t_es)
+
     return t_en, t_jp, t_es
 
 
@@ -592,7 +602,19 @@ def process_book_identity_comprehensive(
         return {}
 
     # Limpiar placeholders y dummies del diccionario de metadatos OPF
-    for k in ["title", "series", "author", "translator", "publisher", "illustrator", "description", "isbn", "asin", "author_jap", "illustrator_jap"]:
+    for k in [
+        "title",
+        "series",
+        "author",
+        "translator",
+        "publisher",
+        "illustrator",
+        "description",
+        "isbn",
+        "asin",
+        "author_jap",
+        "illustrator_jap",
+    ]:
         if is_dummy_value(meta.get(k)):
             meta[k] = None
 
@@ -657,7 +679,11 @@ def process_book_identity_comprehensive(
             romaji_from_series = series_parsed_meta.get("romaji")
     else:
         # Si no hay tag de serie en el metadato, usar el del nombre del archivo
-        series = parsed_filename.get("series_clean") or parsed_filename.get("series") or "Unknown"
+        series = (
+            parsed_filename.get("series_clean")
+            or parsed_filename.get("series")
+            or "Unknown"
+        )
 
     volume = meta.get("volume")
     translator = meta.get("translator")
@@ -746,18 +772,40 @@ def process_book_identity_comprehensive(
         if meta.get("color_mode", "bw") == "bw":
             if any(
                 x in fname_lower
-                for x in ["[color]", "(color)", "[full color]", "color version", " [color", "ln color"]
+                for x in [
+                    "[color]",
+                    "(color)",
+                    "[full color]",
+                    "color version",
+                    " [color",
+                    "ln color",
+                ]
             ) or re.search(r"[\s\-_\[(]color[\])\s\-_]", fname_lower):
                 meta["color_mode"] = "color"
             elif any(
                 x in fname_lower
-                for x in ["[bn]", "(bn)", "[b&w]", "(b&w)", "[b/n]", "[blanco y negro]", "normal"]
+                for x in [
+                    "[bn]",
+                    "(bn)",
+                    "[b&w]",
+                    "(b&w)",
+                    "[b/n]",
+                    "[blanco y negro]",
+                    "normal",
+                ]
             ):
                 meta["color_mode"] = "bw"
 
         if any(
             x in fname_lower
-            for x in ["volumen único", "volumen unico", "tomo único", "tomo unico", "one-shot", "oneshot"]
+            for x in [
+                "volumen único",
+                "volumen unico",
+                "tomo único",
+                "tomo unico",
+                "one-shot",
+                "oneshot",
+            ]
         ):
             if not meta.get("edition"):
                 meta["edition"] = "Volumen Único"
