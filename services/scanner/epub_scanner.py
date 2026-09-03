@@ -333,46 +333,17 @@ class EpubScanner:
                         hash_conflict.file_modified_at = mtime
                         hash_conflict.source = source
                         book = hash_conflict
-                    elif (
-                        (hash_conflict.volume is not None and identity["volume"] is not None and hash_conflict.volume != identity["volume"])
-                        or (hash_conflict.color_mode != identity["color_mode"])
-                    ):
+                    else:
+                        # Conflicto con archivo existente: Mismo UUID pero archivos distintos.
+                        # El UUID en ZeePub debe ser único; si se repite, es error del maquetador al reutilizar plantilla.
+                        is_reused_uuid = (
+                            (hash_conflict.volume is not None and identity["volume"] is not None and hash_conflict.volume != identity["volume"])
+                            or (hash_conflict.color_mode != identity["color_mode"])
+                        )
+                        orig_fname = os.path.basename(hash_conflict.filepath)
                         logger.warning(
-                            f"⚠️ Colisión de UUID detectada entre tomos o variantes distintas ({hash_conflict.filename} vs {filename}). Generando hash desacoplado."
+                            f"📕 Duplicado por colisión de UUID: {filename} colisiona con {orig_fname}. Requiere corrección del maquetador."
                         )
-                        target_book_hash = cls.generate_book_hash(
-                            series_name=identity["series"],
-                            author=identity["author"],
-                            book_type=identity["book_type"],
-                            volume=identity["volume"],
-                            translator=identity["translator"],
-                            layout_by=identity["layout_by"],
-                            language=identity["language"],
-                            edition=identity["edition"] or meta.get("edition"),
-                            is_uncensored=identity["is_uncensored"],
-                            color_mode=identity["color_mode"],
-                            uuid=None,
-                        )
-                        conflict_stmt = (
-                            select(LocalBook)
-                            .options(
-                                selectinload(LocalBook.series_info),
-                                selectinload(LocalBook.genres),
-                                selectinload(LocalBook.demographics),
-                            )
-                            .where(
-                                LocalBook.book_hash == target_book_hash,
-                                LocalBook.filepath != filepath,
-                            )
-                        )
-                        conflict_res = await session.execute(conflict_stmt)
-                        hash_conflict = conflict_res.scalar_one_or_none()
-
-                    if hash_conflict and os.path.exists(hash_conflict.filepath):
-                        logger.warning(
-                            f"📕 Duplicado ignorado (ya existe en DB): {filename}"
-                        )
-                        # Registrar duplicado si es necesario
                         from models.library import DuplicateBook
 
                         dup_stmt = select(DuplicateBook).where(
@@ -381,11 +352,13 @@ class EpubScanner:
                         dup_res = await session.execute(dup_stmt)
                         dup_exists = dup_res.scalar_one_or_none()
                         if not dup_exists:
+                            base_title = identity.get("title") or hash_conflict.title or filename
+                            dup_title = f"[UUID DUPLICADO] {base_title} (Reutilizado con {orig_fname})" if is_reused_uuid else base_title
                             new_duplicate = DuplicateBook(
                                 book_hash=target_book_hash,
                                 original_filepath=hash_conflict.filepath,
                                 duplicate_filepath=filepath,
-                                title=identity.get("title") or hash_conflict.title,
+                                title=dup_title,
                                 author=identity.get("author") or hash_conflict.author,
                             )
                             session.add(new_duplicate)

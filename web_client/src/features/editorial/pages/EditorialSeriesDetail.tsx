@@ -69,6 +69,8 @@ interface AssociatedBook {
     spanish_title?: string;
     volume: number | string;
     edition?: string;
+    color_mode?: string;
+    is_uncensored?: boolean;
     translator?: string;
     layout_by?: string;
     editor?: string;
@@ -647,7 +649,21 @@ export const EditorialSeriesDetail: React.FC = () => {
 
                                         {/* Volume Badge Ribbon */}
                                         <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-indigo-600/90 backdrop-blur-md text-white text-[11px] font-black shadow-lg font-mono">
-                                            Vol. {b.volume}
+                                            {b.volume === 0 || b.edition === 'Volumen Único' ? 'Único' : `Vol. ${b.volume}`}
+                                        </div>
+
+                                        {/* Floating Quality Badges on Cover (Color / S/C) */}
+                                        <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-10">
+                                            {b.color_mode === 'color' && (
+                                                <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
+                                                    COLOR
+                                                </span>
+                                            )}
+                                            {b.is_uncensored && (
+                                                <span className="bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
+                                                    S/C
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 
@@ -657,8 +673,20 @@ export const EditorialSeriesDetail: React.FC = () => {
                                             {b.spanish_title || b.title}
                                         </h4>
                                         <div className="flex items-center justify-between text-[10px] text-gray-400">
-                                            <span className="truncate">✍️ {b.translator || 'Sin traductor'}</span>
-                                            {b.size_mb && <span className="font-mono text-gray-500">{b.size_mb} MB</span>}
+                                            <div className="flex items-center gap-1.5 truncate">
+                                                <span className="truncate">✍️ {b.translator || 'Sin traductor'}</span>
+                                                {b.color_mode === 'color' && (
+                                                    <span className="px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-300 font-black text-[8px] uppercase tracking-wider">
+                                                        Color
+                                                    </span>
+                                                )}
+                                                {b.is_uncensored && (
+                                                    <span className="px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-black text-[8px] uppercase tracking-wider">
+                                                        S/C
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {b.size_mb && <span className="font-mono text-gray-500 shrink-0">{b.size_mb} MB</span>}
                                         </div>
                                     </div>
 
@@ -715,8 +743,18 @@ export const EditorialSeriesDetail: React.FC = () => {
                                         <div className="min-w-0 space-y-1">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-mono text-xs font-black">
-                                                    Volumen {b.volume}
+                                                    {b.volume === 0 || b.edition === 'Volumen Único' ? 'Volumen Único' : `Volumen ${b.volume}`}
                                                 </span>
+                                                {b.color_mode === 'color' && (
+                                                    <span className="px-2 py-0.5 rounded bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[9px] font-black tracking-wider uppercase shadow-md">
+                                                        COLOR
+                                                    </span>
+                                                )}
+                                                {b.is_uncensored && (
+                                                    <span className="px-2 py-0.5 rounded bg-red-600/30 text-red-400 border border-red-500/30 text-[9px] font-black tracking-wider uppercase">
+                                                        S/C
+                                                    </span>
+                                                )}
                                                 <h4 className="text-sm font-bold text-white truncate group-hover:text-indigo-300 transition-colors">
                                                     {b.spanish_title || b.title}
                                                 </h4>

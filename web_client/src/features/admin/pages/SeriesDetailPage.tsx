@@ -35,6 +35,8 @@ interface AssociatedBook {
     title: string;
     volume: number | string;
     edition?: string;
+    color_mode?: string;
+    is_uncensored?: boolean;
     translator?: string;
     layout_by?: string;
     editor?: string;

@@ -13,5 +13,8 @@ description: Valida sintaxis, calidad de código (Linter/Formatter) y cumplimien
 3. Aplicar formato de código automático:
    `ruff format . --exclude .agent`
 
-4. Notificar cumplimiento de estándares:
+4. Verificar tipos estáticos en Frontend (TypeScript):
+   `cd web_client && npx tsc --noEmit`
+
+5. Notificar cumplimiento de estándares:
    `echo "[SUCCESS] Auditoría de calidad completada. El código es apto para producción."`

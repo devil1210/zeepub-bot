@@ -281,6 +281,20 @@ export const EditorialVolumes: React.FC = () => {
                                         Volumen {vol.volume || '?'}
                                     </div>
 
+                                    {/* Quality Badges */}
+                                    <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-10">
+                                        {vol.color_mode === 'color' && (
+                                            <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
+                                                COLOR
+                                            </span>
+                                        )}
+                                        {vol.is_uncensored && (
+                                            <span className="bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
+                                                S/C
+                                            </span>
+                                        )}
+                                    </div>
+
                                     {/* Missing Metadata Badges */}
                                     {issues.length > 0 && (
                                         <div className="absolute top-2.5 right-2.5 flex flex-col gap-1 items-end">

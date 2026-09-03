@@ -354,6 +354,20 @@ export const EditorialBookDetail: React.FC = () => {
                                     <span className="text-xs">Sin Portada</span>
                                 </div>
                             )}
+
+                            {/* Floating Quality Badges on Cover (Color / S/C) */}
+                            <div className="absolute bottom-3.5 left-3.5 flex items-center gap-2 z-10">
+                                {book.color_mode === 'color' && (
+                                    <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[9px] font-black px-2.5 py-1 rounded-lg shadow-2xl border border-white/20 uppercase tracking-widest">
+                                        A COLOR
+                                    </span>
+                                )}
+                                {book.is_uncensored && (
+                                    <span className="bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-lg shadow-2xl border border-white/20 uppercase tracking-widest">
+                                        SIN CENSURA
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -476,13 +490,26 @@ export const EditorialBookDetail: React.FC = () => {
 
                 {/* 2. RIGHT COLUMN: Meta + Synopsis + Specs + Publications (8 cols on lg/xl) */}
                 <div className="lg:col-span-8 xl:col-span-8 space-y-6">
-                    {/* Workgroup / Fansub Badge */}
-                    {book.workgroup || book.editorial || book.grupo_traductor ? (
-                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-600/10 border border-indigo-500/30 text-indigo-300 text-xs font-black tracking-wider">
-                            <Building2 className="w-3.5 h-3.5 text-indigo-400" />
-                            <span>{book.workgroup || book.editorial || book.grupo_traductor}</span>
-                        </div>
-                    ) : null}
+                    {/* Header Badges Row */}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {book.workgroup || book.editorial || book.grupo_traductor ? (
+                            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-600/10 border border-indigo-500/30 text-indigo-300 text-xs font-black tracking-wider">
+                                <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+                                <span>{book.workgroup || book.editorial || book.grupo_traductor}</span>
+                            </div>
+                        ) : null}
+
+                        {book.color_mode === 'color' && (
+                            <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg shadow-orange-500/20">
+                                A Color
+                            </span>
+                        )}
+                        {book.is_uncensored && (
+                            <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg shadow-red-500/10">
+                                Sin Censura
+                            </span>
+                        )}
+                    </div>
 
                     {/* Big Title Header: 3 Titles Cascade matching EditorialSeriesDetail */}
                     <div className="space-y-2">
@@ -532,19 +559,29 @@ export const EditorialBookDetail: React.FC = () => {
                         </span>
                     </div>
 
-                    {/* Genre Chips */}
-                    {genres && genres.length > 0 && (
-                        <div className="flex items-center gap-2 flex-wrap">
-                            {genres.map((g: string, idx: number) => (
+                    {/* Genre & Edition Chips */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {book.color_mode === 'color' && (
+                            <span className="px-3 py-1 rounded-xl bg-orange-500/15 border border-orange-500/30 text-[10px] font-black uppercase tracking-wider text-orange-300 shadow-sm">
+                                🎨 A Color
+                            </span>
+                        )}
+                        {book.is_uncensored && (
+                            <span className="px-3 py-1 rounded-xl bg-red-500/15 border border-red-500/30 text-[10px] font-black uppercase tracking-wider text-red-300 shadow-sm">
+                                🔞 Sin Censura
+                            </span>
+                        )}
+                        {genres && genres.length > 0 && (
+                            genres.map((g: string, idx: number) => (
                                 <span
                                     key={idx}
                                     className="px-3 py-1 rounded-xl bg-slate-900/80 border border-white/10 text-[10px] font-black uppercase tracking-wider text-gray-300 hover:text-white hover:border-indigo-500/40 transition-colors cursor-default"
                                 >
                                     {g}
                                 </span>
-                            ))}
-                        </div>
-                    )}
+                            ))
+                        )}
+                    </div>
 
                     {/* Synopsis Card */}
                     <div className="p-6 sm:p-7 rounded-3xl bg-slate-900/50 border border-white/10 backdrop-blur-xl shadow-xl space-y-3">
@@ -677,6 +714,18 @@ export const EditorialBookDetail: React.FC = () => {
                                         <span className="text-gray-400 font-medium">TAMAÑO</span>
                                         <span className="font-mono font-bold text-emerald-400">
                                             {book.size_mb ? `${book.size_mb} MB` : (book.file_size ? `${(book.file_size / 1024 / 1024).toFixed(2)} MB` : '—')}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">MODO DE COLOR</span>
+                                        <span className={`font-bold ${book.color_mode === 'color' ? 'text-orange-400' : 'text-gray-300'}`}>
+                                            {book.color_mode === 'color' ? '🎨 A Color' : 'Blanco y Negro'}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-gray-400 font-medium">CENSURA</span>
+                                        <span className={`font-bold ${book.is_uncensored ? 'text-red-400' : 'text-gray-300'}`}>
+                                            {book.is_uncensored ? '🔞 Sin Censura' : 'Estándar'}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center py-2 border-b border-white/5">

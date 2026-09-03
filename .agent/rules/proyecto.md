@@ -17,7 +17,9 @@ Este archivo es la **Única Fuente de Verdad** para el comportamiento del asiste
     - **Backend**: Seguir `python-patterns` (idiomático, async, type hints) y `backend-dev-guidelines`.
     - **Frontend**: Stack React + Vite + Tailwind/CSS + React Router. Usar `react-patterns`. Evitar librerías UI pesadas (MUI) salvo indicación expresa.
     - **DB**: **PostgreSQL** para todo (Local e InsForge).
-5.  **Validación Pre-Vuelo**: Antes de push/commit: check de sintaxis (`py_compile`), linter (`ruff check`) y formatter (`ruff format`).
+5.  **Validación Pre-Vuelo Estricta**: Antes de push/commit y antes de dar por finalizada cualquier ejecución:
+    - **Backend**: Check de sintaxis (`py_compile`), linter (`ruff check`) y formatter (`ruff format`).
+    - **Frontend**: Chequeo estricto de tipos de TypeScript en archivos modificados o creados (`npx tsc --noEmit` en `web_client`). Prohibido finalizar la respuesta si quedan errores de tipo (`ts(2339)`, propiedades no existentes en interfaces o tipos desalineados).
 6.  **Normalización de Datos**: El hash del libro es sagrado. Usar siempre `utils.helpers` e integrar IA (`services/ai_service`) como paso previo para `series_spanish` y `volume`.
 7.  **Single Floating Nav**: Todas las páginas deben integrarse en `UniversalFloatingNav.tsx` vía `NavigationContext.tsx`. Prohibido crear navbars paralelas.
 8.  **Operación Local Estricta**: El bot opera exclusivamente con archivos locales. Se eliminan todas las dependencias y referencias a Kavita u OPDS externo para la gestión de la biblioteca.
@@ -31,6 +33,7 @@ Este archivo es la **Única Fuente de Verdad** para el comportamiento del asiste
     - Funciones concisas y enfocadas: evitar funciones que hagan demasiadas cosas. Si crece demasiado, extraer helpers.
     - Extraer helpers, mixins y utilities antes de que el archivo crezca.
     - Prohibido añadir nueva funcionalidad a un archivo que ya supere el límite sin refactorizar primero.
+15. **Integridad de Tipado TypeScript en Frontend**: Todo nuevo campo o atributo consumido en componentes React/TSX (como `color_mode`, `is_uncensored`, `edition`, etc.) DEBE estar explícitamente declarado en sus interfaces correspondientes (`AssociatedBook`, `Book`, `Volume`, `SeriesDetail`, etc.). Antes de dar por concluida la ejecución, validar que ningún archivo modificado presente errores `ts(2339)` ("Property does not exist on type") ni fallos de tipado estático.
 
 ## 🚀 Capacidades Core Activas (v3.5.0)
 
