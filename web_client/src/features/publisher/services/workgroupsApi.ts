@@ -16,6 +16,8 @@ export interface TranslatorsGroupItem {
     description?: string | null;
     preferred_link?: string;
     books_count: number;
+    bad_metadata_count?: number;
+    good_metadata_count?: number;
     links: GroupContactLinks;
     created_at?: string;
 }
@@ -25,16 +27,33 @@ export interface AttachedBookItem {
     title: string;
     spanish_title?: string;
     english_title?: string;
+    series_spanish?: string;
+    series_id?: string;
     author?: string;
+    publisher?: string;
+    filepath?: string;
+    filename?: string;
     cover_low?: string;
     cover_thumb?: string;
     role?: string;
     volume?: number;
+    has_bad_metadata?: boolean;
+    metadata_issue?: string | null;
 }
 
 export interface WorkgroupDetailResponse {
     group: TranslatorsGroupItem;
     books: AttachedBookItem[];
+}
+
+export interface WorkgroupMergeResponse {
+    success: boolean;
+    target_id: number;
+    target_name: string;
+    merged_count: number;
+    merged_ids?: number[];
+    books_reassigned: number;
+    message: string;
 }
 
 export const workgroupsApi = {
@@ -59,6 +78,13 @@ export const workgroupsApi = {
 
     async delete(id: number): Promise<{ success: boolean }> {
         return await api.rpc<{ success: boolean }>('workgroup_delete', { id });
+    },
+
+    async merge(targetId: number, sourceIds: number[]): Promise<WorkgroupMergeResponse> {
+        return await api.rpc<WorkgroupMergeResponse>('workgroup_merge', {
+            target_id: targetId,
+            source_ids: sourceIds
+        });
     },
 
     async attachBook(groupId: number, bookId: string, role: string = 'translator'): Promise<{ success: boolean }> {

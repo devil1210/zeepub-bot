@@ -146,6 +146,7 @@ from api.handlers.workgroup import (
     handle_workgroup_detach_book,
     handle_workgroup_get_all,
     handle_workgroup_get_detail,
+    handle_workgroup_merge,
     handle_workgroup_save,
 )
 
@@ -276,5 +277,6 @@ __all__ = [
     "handle_workgroup_detach_book",
     "handle_workgroup_get_all",
     "handle_workgroup_get_detail",
+    "handle_workgroup_merge",
     "handle_workgroup_save",
 ]

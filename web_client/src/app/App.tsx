@@ -37,6 +37,7 @@ const EditorialSettings = React.lazy(() => import('@features/editorial/pages/Edi
 const EditorialLegacyTools = React.lazy(() => import('@features/editorial/pages/EditorialLegacyTools').then(m => ({ default: m.EditorialLegacyTools })));
 const EditorialAIHub = React.lazy(() => import('@features/editorial/pages/EditorialAIHub').then(m => ({ default: m.EditorialAIHub })));
 const EditorialFansubs = React.lazy(() => import('@features/editorial/pages/EditorialFansubs').then(m => ({ default: m.EditorialFansubs })));
+const EditorialFansubDetail = React.lazy(() => import('@features/editorial/pages/EditorialFansubDetail').then(m => ({ default: m.EditorialFansubDetail })));
 const EditorialDuplicates = React.lazy(() => import('@features/editorial/pages/EditorialDuplicates').then(m => ({ default: m.EditorialDuplicates })));
 const EditorialObservatory = React.lazy(() => import('@features/editorial/pages/EditorialObservatory').then(m => ({ default: m.EditorialObservatory })));
 const EditorialUpload = React.lazy(() => import('@features/editorial/pages/EditorialUpload').then(m => ({ default: m.EditorialUpload })));
@@ -234,6 +235,11 @@ const AppContent: React.FC = () => {
               <Route path="/app-v2/fansubs" element={
                 <ProtectedAdminRoute>
                   <EditorialFansubs />
+                </ProtectedAdminRoute>
+              } />
+              <Route path="/app-v2/fansubs/:id" element={
+                <ProtectedAdminRoute>
+                  <EditorialFansubDetail />
                 </ProtectedAdminRoute>
               } />
               <Route path="/app-v2/channels" element={<Navigate to="/app-v2/fansubs" replace />} />

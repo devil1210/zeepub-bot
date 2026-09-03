@@ -165,3 +165,33 @@ async def test_distinct_individual_translator_and_group_template():
         assert "💬 Discord Grupo: https://discord.gg/novelas" in rendered
 
 
+def test_check_epub_metadata_issue():
+    from api.handlers.workgroup import check_epub_metadata_issue
+
+    # Caso 1: Coincidencia exacta
+    has_bad, issue = check_epub_metadata_issue("Tamashi's Project", "Tamashi's Project")
+    assert not has_bad
+    assert issue is None
+
+    # Caso 2: Punto final sobrante
+    has_bad, issue = check_epub_metadata_issue("Tamashi's Project.", "Tamashi's Project")
+    assert has_bad
+    assert "Punto final" in issue
+
+    # Caso 3: Todo en mayúsculas
+    has_bad, issue = check_epub_metadata_issue("TAMASHI'S PROJECT", "Tamashi's Project")
+    assert has_bad
+    assert "mayúsculas" in issue
+
+    # Caso 4: Publisher vacío o None
+    has_bad, issue = check_epub_metadata_issue(None, "Tamashi's Project")
+    assert has_bad
+    assert "vacía" in issue
+
+    # Caso 5: Nombre totalmente diferente
+    has_bad, issue = check_epub_metadata_issue("Otro Fansub Distinto", "Tamashi's Project")
+    assert has_bad
+    assert "difiere" in issue
+
+
+

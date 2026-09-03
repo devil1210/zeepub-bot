@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 from fastapi import HTTPException
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import selectinload
 
 from api.handlers.helpers import check_admin, check_staff
@@ -159,8 +159,37 @@ async def handle_workgroup_delete(data: dict[str, Any], user_data: dict[str, Any
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def check_epub_metadata_issue(epub_publisher: str | None, group_name: str) -> tuple[bool, str | None]:
+    """
+    Evalúa si la metadata del publisher dentro del archivo EPUB tiene discrepancias con el nombre canónico del grupo.
+    Retorna (has_bad_metadata, issue_description).
+    """
+    raw_pub = (epub_publisher or "").strip()
+    canon_name = (group_name or "").strip()
+    
+    if not raw_pub:
+        return True, "Etiqueta dc:publisher vacía o ausente dentro del EPUB"
+    
+    if raw_pub == canon_name:
+        return False, None
+        
+    # Casos comunes de discrepancia
+    if raw_pub.rstrip(".") == canon_name.rstrip("."):
+        if raw_pub.endswith(".") and not canon_name.endswith("."):
+            return True, f"Punto final sobrante en EPUB: '{raw_pub}' (debe ser '{canon_name}')"
+        if canon_name.endswith(".") and not raw_pub.endswith("."):
+            return True, f"Falta punto final en EPUB: '{raw_pub}' (debe ser '{canon_name}')"
+            
+    if raw_pub.lower() == canon_name.lower():
+        if raw_pub.isupper() and not canon_name.isupper():
+            return True, f"Todo en mayúsculas en EPUB: '{raw_pub}' (debe ser '{canon_name}')"
+        return True, f"Diferencia de mayúsculas/minúsculas: '{raw_pub}' (debe ser '{canon_name}')"
+        
+    return True, f"Publisher en archivo difiere: '{raw_pub}' (debe ser '{canon_name}')"
+
+
 async def handle_workgroup_get_detail(data: dict[str, Any], user_data: dict[str, Any]):
-    """Retorna los datos completos de un fansub/grupo y todos los libros EPUB vinculados a él."""
+    """Retorna los datos completos de un fansub/grupo y todos los libros EPUB vinculados a él con auditoría de metadatos."""
     check_staff(user_data)
     
     group_id = data.get("id")
@@ -199,34 +228,56 @@ async def handle_workgroup_get_detail(data: dict[str, Any], user_data: dict[str,
             for b in direct_books:
                 role = "translator" if b.translator_group_id == group.id else ("editor" if b.editor_group_id == group.id else "layout")
                 cover = getattr(b, "cover_low", None) or getattr(b, "cover_medium", None) or getattr(b, "cover_thumb", None) or getattr(b, "cover_url", None)
+                epub_pub = getattr(b, "publisher", None)
+                has_bad, issue = check_epub_metadata_issue(epub_pub, group.name)
                 books_map[b.id] = {
                     "id": b.id,
                     "title": b.title or "Sin título",
                     "spanish_title": getattr(b, "spanish_title", None),
                     "english_title": getattr(b, "english_title", None),
+                    "series_spanish": getattr(b, "series_spanish", None),
+                    "series_id": getattr(b, "series_id", None),
                     "author": getattr(b, "author", None),
+                    "publisher": epub_pub,
+                    "filepath": getattr(b, "filepath", None),
+                    "filename": getattr(b, "filename", None),
                     "cover_low": cover,
                     "cover_thumb": cover,
                     "role": role,
                     "volume": getattr(b, "volume", None),
+                    "has_bad_metadata": has_bad,
+                    "metadata_issue": issue,
                 }
                 
             for bw in bw_list:
                 if bw.book and bw.book.id not in books_map:
                     bk = bw.book
                     cover = getattr(bk, "cover_low", None) or getattr(bk, "cover_medium", None) or getattr(bk, "cover_thumb", None) or getattr(bk, "cover_url", None)
+                    epub_pub = getattr(bk, "publisher", None)
+                    has_bad, issue = check_epub_metadata_issue(epub_pub, group.name)
                     books_map[bk.id] = {
                         "id": bk.id,
                         "title": bk.title or "Sin título",
                         "spanish_title": getattr(bk, "spanish_title", None),
                         "english_title": getattr(bk, "english_title", None),
+                        "series_spanish": getattr(bk, "series_spanish", None),
+                        "series_id": getattr(bk, "series_id", None),
                         "author": getattr(bk, "author", None),
+                        "publisher": epub_pub,
+                        "filepath": getattr(bk, "filepath", None),
+                        "filename": getattr(bk, "filename", None),
                         "cover_low": cover,
                         "cover_thumb": cover,
                         "role": bw.role or "translator",
                         "volume": getattr(bk, "volume", None),
+                        "has_bad_metadata": has_bad,
+                        "metadata_issue": issue,
                     }
                     
+            books_list = list(books_map.values())
+            bad_count = sum(1 for bk in books_list if bk.get("has_bad_metadata"))
+            good_count = len(books_list) - bad_count
+            
             return {
                 "group": {
                     "id": group.id,
@@ -235,10 +286,12 @@ async def handle_workgroup_get_detail(data: dict[str, Any], user_data: dict[str,
                     "description": group.description,
                     "preferred_link": group.get_preferred_link(),
                     "links": group.get_links_dict(),
-                    "books_count": len(books_map),
+                    "books_count": len(books_list),
+                    "bad_metadata_count": bad_count,
+                    "good_metadata_count": good_count,
                     "created_at": group.created_at.isoformat() if group.created_at else None,
                 },
-                "books": list(books_map.values())
+                "books": books_list
             }
     except HTTPException:
         raise
@@ -307,4 +360,148 @@ async def handle_workgroup_detach_book(data: dict[str, Any], user_data: dict[str
             return {"success": True}
     except Exception as e:
         logger.error(f"Error desvinculando libro {book_id} de grupo {group_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def handle_workgroup_merge(data: dict[str, Any], user_data: dict[str, Any]):
+    """
+    Fusiona uno o varios grupos traductores fuente dentro de un grupo traductor canónico de destino.
+    Reasigna todos los libros (translator, editor, layout y BookWorkgroup), consolida enlaces
+    y elimina los grupos fuente redundantes.
+    """
+    check_admin(user_data)
+    
+    target_id_raw = data.get("target_id")
+    source_ids_raw = data.get("source_ids")
+    
+    if not target_id_raw:
+        raise HTTPException(status_code=400, detail="target_id requerido")
+    try:
+        target_id = int(target_id_raw)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="target_id inválido")
+        
+    if not source_ids_raw:
+        raise HTTPException(status_code=400, detail="source_ids requerido (lista de IDs a fusionar)")
+        
+    if isinstance(source_ids_raw, (int, str)):
+        source_ids = [int(source_ids_raw)]
+    elif isinstance(source_ids_raw, list):
+        source_ids = [int(x) for x in source_ids_raw if x is not None]
+    else:
+        raise HTTPException(status_code=400, detail="Formato de source_ids no soportado")
+        
+    source_ids = [sid for sid in set(source_ids) if sid != target_id]
+    if not source_ids:
+        raise HTTPException(status_code=400, detail="Debe especificar al menos un grupo fuente distinto del destino")
+        
+    try:
+        async with pg_manager.get_session() as session:
+            # 1. Obtener grupo destino
+            stmt_target = select(TranslatorsGroup).options(
+                selectinload(TranslatorsGroup.contact_links)
+            ).where(TranslatorsGroup.id == target_id)
+            res_target = await session.execute(stmt_target)
+            target_group = res_target.scalar_one_or_none()
+            if not target_group:
+                raise HTTPException(status_code=404, detail="Grupo canónico destino no encontrado")
+                
+            # 2. Obtener grupos fuente
+            stmt_sources = select(TranslatorsGroup).options(
+                selectinload(TranslatorsGroup.contact_links)
+            ).where(TranslatorsGroup.id.in_(source_ids))
+            res_sources = await session.execute(stmt_sources)
+            sources = res_sources.scalars().all()
+            if not sources:
+                raise HTTPException(status_code=404, detail="No se encontraron los grupos fuente especificados")
+                
+            found_source_ids = [s.id for s in sources]
+            
+            # 3. Reasignar libros directos (LocalBook)
+            res_trans = await session.execute(
+                update(LocalBook)
+                .where(LocalBook.translator_group_id.in_(found_source_ids))
+                .values(translator_group_id=target_id)
+            )
+            res_edit = await session.execute(
+                update(LocalBook)
+                .where(LocalBook.editor_group_id.in_(found_source_ids))
+                .values(editor_group_id=target_id)
+            )
+            res_layout = await session.execute(
+                update(LocalBook)
+                .where(LocalBook.layout_group_id.in_(found_source_ids))
+                .values(layout_group_id=target_id)
+            )
+            total_reassigned = (res_trans.rowcount or 0) + (res_edit.rowcount or 0) + (res_layout.rowcount or 0)
+            
+            # 4. Reasignar BookWorkgroup evitando colisiones de clave única
+            existing_bw_res = await session.execute(
+                select(BookWorkgroup.book_id, BookWorkgroup.role)
+                .where(BookWorkgroup.workgroup_id == target_id)
+            )
+            existing_bw_keys = set(existing_bw_res.all())
+            
+            source_bw_res = await session.execute(
+                select(BookWorkgroup)
+                .where(BookWorkgroup.workgroup_id.in_(found_source_ids))
+            )
+            source_bw_list = source_bw_res.scalars().all()
+            
+            for bw in source_bw_list:
+                key = (bw.book_id, bw.role)
+                if key in existing_bw_keys:
+                    await session.delete(bw)
+                else:
+                    bw.workgroup_id = target_id
+                    existing_bw_keys.add(key)
+                    
+            # 5. Consolidar metadatos y enlaces si destino carece de ellos
+            if not target_group.siglas:
+                for s in sources:
+                    if s.siglas:
+                        target_group.siglas = s.siglas
+                        break
+            if not target_group.description:
+                for s in sources:
+                    if s.description:
+                        target_group.description = s.description
+                        break
+                        
+            target_platforms = {cl.platform.lower(): cl for cl in target_group.contact_links if cl.platform}
+            for s in sources:
+                for cl in s.contact_links:
+                    plat = (cl.platform or "").lower()
+                    if plat and plat not in target_platforms and cl.url:
+                        new_link = GroupContactLink(group_id=target_id, platform=plat, url=cl.url)
+                        session.add(new_link)
+                        target_platforms[plat] = new_link
+                        
+            # 6. Eliminar grupos fuente absorbidos
+            for s in sources:
+                await session.execute(
+                    delete(GroupContactLink).where(GroupContactLink.group_id == s.id)
+                )
+                await session.delete(s)
+                
+            await session.commit()
+            
+            logger.info(
+                f"🔀 Fusión completada: {len(sources)} grupos {found_source_ids} absorbidos en '{target_group.name}' (#{target_id}). "
+                f"{total_reassigned} libros reasignados."
+            )
+            
+            return {
+                "success": True,
+                "target_id": target_id,
+                "target_name": target_group.name,
+                "merged_count": len(sources),
+                "merged_ids": found_source_ids,
+                "books_reassigned": total_reassigned,
+                "message": f"Se fusionaron {len(sources)} grupo(s) con éxito en '{target_group.name}'."
+            }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en handle_workgroup_merge: {e}")
         raise HTTPException(status_code=500, detail=str(e))

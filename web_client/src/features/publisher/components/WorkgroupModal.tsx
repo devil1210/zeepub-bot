@@ -11,8 +11,8 @@ interface WorkgroupModalProps {
         siglas?: string;
         description?: string;
         links: GroupContactLinks;
-    }) => Promise<void>;
-    onDelete?: (id: number) => Promise<void>;
+    }) => Promise<any> | any;
+    onDelete?: (id: number) => Promise<any> | any;
     group: TranslatorsGroupItem | null;
 }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
     Building2,
     Search,
@@ -16,17 +17,26 @@ import {
     AlertCircle,
     BookOpen,
     Tag,
-    ExternalLink
+    ExternalLink,
+    GitMerge
 } from 'lucide-react';
-import { workgroupsApi, TranslatorsGroupItem } from '@features/publisher/services/workgroupsApi';
+import {
+    workgroupsApi,
+    TranslatorsGroupItem,
+    WorkgroupMergeResponse
+} from '@features/publisher/services/workgroupsApi';
 import { WorkgroupModal } from '@features/publisher/components/WorkgroupModal';
+import { FansubMergeModal } from '../components/FansubMergeModal';
 
 export const EditorialFansubs: React.FC = () => {
+    const navigate = useNavigate();
     const [workgroups, setWorkgroups] = useState<TranslatorsGroupItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedWorkgroup, setSelectedWorkgroup] = useState<TranslatorsGroupItem | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
+    const [mergeTargetId, setMergeTargetId] = useState<number | null>(null);
     const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     const fetchWorkgroups = async () => {
@@ -89,12 +99,23 @@ export const EditorialFansubs: React.FC = () => {
                     </p>
                 </div>
 
-                <button
-                    onClick={handleCreate}
-                    className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-xl shadow-indigo-600/30 active:scale-95 transition-all"
-                >
-                    <Plus className="w-4 h-4" /> Nuevo Grupo Traductor
-                </button>
+                <div className="flex items-center gap-2.5">
+                    <button
+                        onClick={() => {
+                            setMergeTargetId(null);
+                            setIsMergeModalOpen(true);
+                        }}
+                        className="px-4 py-2.5 rounded-2xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-bold flex items-center gap-2 shadow-lg transition-all active:scale-95"
+                    >
+                        <GitMerge className="w-4 h-4 text-purple-400" /> Fusionar Grupos
+                    </button>
+                    <button
+                        onClick={handleCreate}
+                        className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-xl shadow-indigo-600/30 active:scale-95 transition-all"
+                    >
+                        <Plus className="w-4 h-4" /> Nuevo Grupo Traductor
+                    </button>
+                </div>
             </div>
 
             {statusMsg && (
@@ -147,14 +168,22 @@ export const EditorialFansubs: React.FC = () => {
                                 <div className="space-y-3">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-black text-sm shrink-0">
+                                            <Link
+                                                to={`/app-v2/fansubs/${wg.id}`}
+                                                className="w-10 h-10 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-black text-sm shrink-0 transition-all hover:scale-105"
+                                                title="Ver detalle y auditoría"
+                                            >
                                                 {wg.name?.[0]?.toUpperCase() || 'F'}
-                                            </div>
+                                            </Link>
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-2">
-                                                    <h3 className="text-xs font-bold text-white group-hover:text-indigo-300 transition-colors truncate">
+                                                    <Link
+                                                        to={`/app-v2/fansubs/${wg.id}`}
+                                                        className="text-xs font-bold text-white hover:text-indigo-300 transition-colors truncate block"
+                                                        title="Abrir página de detalle y auditoría"
+                                                    >
                                                         {wg.name}
-                                                    </h3>
+                                                    </Link>
                                                     {wg.siglas && (
                                                         <span className="px-1.5 py-0.5 rounded bg-white/10 text-gray-300 text-[10px] font-mono font-bold shrink-0">
                                                             {wg.siglas}
@@ -168,6 +197,16 @@ export const EditorialFansubs: React.FC = () => {
                                         </div>
 
                                         <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => {
+                                                    setMergeTargetId(wg.id);
+                                                    setIsMergeModalOpen(true);
+                                                }}
+                                                className="p-1.5 rounded-lg bg-white/5 hover:bg-purple-500/20 text-gray-400 hover:text-purple-300 transition-all"
+                                                title="Fusionar duplicados dentro de este grupo"
+                                            >
+                                                <GitMerge className="w-3.5 h-3.5" />
+                                            </button>
                                             <button
                                                 onClick={() => handleEdit(wg)}
                                                 className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white transition-all"
@@ -262,12 +301,19 @@ export const EditorialFansubs: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* Footer: Books Count */}
+                                {/* Footer: Books Count and Audit Link */}
                                 <div className="pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400 font-mono">
                                     <div className="flex items-center gap-1.5">
                                         <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-                                        <span>{wg.books_count || 0} libros asociados</span>
+                                        <span>{wg.books_count || 0} libros</span>
                                     </div>
+                                    <Link
+                                        to={`/app-v2/fansubs/${wg.id}`}
+                                        className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 transition-colors"
+                                    >
+                                        <span>Auditoría</span>
+                                        <ExternalLink className="w-3 h-3" />
+                                    </Link>
                                 </div>
                             </div>
                         );
@@ -275,7 +321,7 @@ export const EditorialFansubs: React.FC = () => {
                 </div>
             )}
 
-            {/* Modal */}
+            {/* Modals */}
             <WorkgroupModal
                 isOpen={isModalOpen}
                 group={selectedWorkgroup}
@@ -287,6 +333,20 @@ export const EditorialFansubs: React.FC = () => {
                     setStatusMsg({ type: 'success', text: 'Grupo traductor guardado con éxito' });
                 }}
                 onDelete={handleDelete}
+            />
+
+            <FansubMergeModal
+                isOpen={isMergeModalOpen}
+                onClose={() => setIsMergeModalOpen(false)}
+                workgroups={workgroups}
+                initialTargetId={mergeTargetId}
+                onMergeSuccess={(res) => {
+                    fetchWorkgroups();
+                    setStatusMsg({
+                        type: 'success',
+                        text: res.message || `Fusión completada con éxito.`
+                    });
+                }}
             />
         </div>
     );
