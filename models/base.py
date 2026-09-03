@@ -23,7 +23,11 @@ class Base(AsyncAttrs, DeclarativeBase):
 
             # Obtener el descriptor de la clase
             cls_attr = getattr(self.__class__, attr, None)
-            if isinstance(cls_attr, (property, hybrid_property)) or attr.endswith(
+            is_hybrid = isinstance(cls_attr, hybrid_property) or (
+                hasattr(cls_attr, "descriptor")
+                and isinstance(cls_attr.descriptor, hybrid_property)
+            )
+            if isinstance(cls_attr, property) or is_hybrid or attr.endswith(
                 "_hash"
             ):
                 try:

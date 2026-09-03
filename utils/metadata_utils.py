@@ -247,20 +247,26 @@ def resolve_title_cascade(data: dict[str, Any]) -> tuple[str, str | None, str | 
     """
     Resuelve de forma robusta la jerarquía de títulos:
     (title_en [🇬🇧], title_jp [🇯🇵], title_es [🇪🇸]).
+    Garantiza compatibilidad tanto con libros (title, english_title, spanish_title)
+    como con series (name, name_english, name_spanish, series_name, series_english, series_spanish).
     Garantiza que un título en español nunca se marque como japonés/romaji,
     y evita duplicaciones entre banderas.
     """
     t_en = (
         data.get("english_title")
+        or data.get("name_english")
         or data.get("series_english")
         or data.get("title")
         or data.get("titulo")
+        or data.get("series_name")
+        or data.get("name")
         or "Sin título"
     )
     t_jp = (
         data.get("romaji_title")
         or data.get("series_romaji")
         or data.get("series_name")
+        or data.get("name")
         or data.get("title_japanese")
         or data.get("title_jp")
         or data.get("romaji")
@@ -268,6 +274,7 @@ def resolve_title_cascade(data: dict[str, Any]) -> tuple[str, str | None, str | 
     )
     t_es = (
         data.get("spanish_title")
+        or data.get("name_spanish")
         or data.get("title_spanish")
         or data.get("title_es")
         or data.get("series_spanish")

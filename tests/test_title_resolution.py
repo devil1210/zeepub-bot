@@ -93,6 +93,24 @@ class TestTitleResolution(unittest.TestCase):
         self.assertIsNone(t_jp)
         self.assertIsNone(t_es)
 
+    def test_resolve_title_cascade_series_dict(self):
+        # Format returned by Series.to_dict() from repository
+        data = {
+            "name": "Adachi to Shimamura",
+            "name_english": "Adachi and Shimamura",
+            "name_spanish": "Adachi y Shimamura",
+        }
+        t_en, t_jp, t_es = resolve_title_cascade(data)
+        self.assertEqual(t_en, "Adachi and Shimamura")
+        self.assertEqual(t_jp, "Adachi to Shimamura")
+        self.assertEqual(t_es, "Adachi y Shimamura")
+
+    def test_resolve_series_title_standalone_name(self):
+        from utils.metadata_utils import resolve_series_title
+        data = {"name": "Date A Live"}
+        title = resolve_series_title(data, "english")
+        self.assertEqual(title, "Date A Live")
+
 
 if __name__ == "__main__":
     unittest.main()
