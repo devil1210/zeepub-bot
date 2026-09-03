@@ -83,21 +83,35 @@ async def mostrar_volumenes_local(
     meta_serie = await LibraryService.get_series_metadata(series_hash)
     user_lang_pref = st.get("title_language", "english")
     from utils.helpers import resolve_series_title
-    meta_dict = meta_serie.to_dict() if hasattr(meta_serie, "to_dict") else (meta_serie if isinstance(meta_serie, dict) else {})
-    series_name = resolve_series_title(meta_dict, preference=user_lang_pref) if meta_dict else (meta_serie.series_name if meta_serie else "Serie")
+
+    meta_dict = (
+        meta_serie.to_dict()
+        if hasattr(meta_serie, "to_dict")
+        else (meta_serie if isinstance(meta_serie, dict) else {})
+    )
+    series_name = (
+        resolve_series_title(meta_dict, preference=user_lang_pref)
+        if meta_dict
+        else (meta_serie.series_name if meta_serie else "Serie")
+    )
 
     # Ordenar volúmenes numéricamente de menor a mayor
     def parse_vol_num(v):
         vol_raw = v.get("volume")
         try:
-            return float(vol_raw) if vol_raw is not None and str(vol_raw).strip() != "" else 0.0
+            return (
+                float(vol_raw)
+                if vol_raw is not None and str(vol_raw).strip() != ""
+                else 0.0
+            )
         except (ValueError, TypeError):
             return 999.0
 
     volumes.sort(key=parse_vol_num)
 
     is_same_series = bool(
-        st.get("current_series_hash")
+        st.get("current_view") == "volumes_local"
+        and st.get("current_series_hash")
         and (
             st["current_series_hash"] == series_hash
             or st["current_series_hash"].startswith(series_hash)
@@ -115,7 +129,9 @@ async def mostrar_volumenes_local(
     if need_rebuild:
         prev_target_hash = None
         if selected_key and selected_key in st.get("libros", {}):
-            prev_target_hash = st["libros"][selected_key].get("book_hash") or st["libros"][selected_key].get("id")
+            prev_target_hash = st["libros"][selected_key].get("book_hash") or st[
+                "libros"
+            ][selected_key].get("id")
         elif selected_key:
             prev_target_hash = selected_key
 
@@ -136,7 +152,9 @@ async def mostrar_volumenes_local(
 
             vol_str = "Volumen Único" if vol_display == 0 else f"Vol. {vol_display}"
             translator = v.get("translator")
-            tr_acronym = v.get("translator_siglas") or get_translator_acronym(translator)
+            tr_acronym = v.get("translator_siglas") or get_translator_acronym(
+                translator
+            )
             is_color = v.get("color_mode") == "color"
             color_tag = " [🎨]" if is_color else ""
             display = f"📖 {vol_str} [{tr_acronym}]{color_tag}"
@@ -166,7 +184,11 @@ async def mostrar_volumenes_local(
             if v_hash:
                 state_manager.register_book_key(v_hash, st["libros"][key])
 
-            if prev_target_hash and (v_hash == prev_target_hash or key == prev_target_hash or prev_target_hash.startswith(key)):
+            if prev_target_hash and (
+                v_hash == prev_target_hash
+                or key == prev_target_hash
+                or prev_target_hash.startswith(key)
+            ):
                 matched_key = key
 
         if matched_key:
@@ -179,7 +201,9 @@ async def mostrar_volumenes_local(
     all_book_items = list(st["libros"].items())
     total_volumes = len(all_book_items)
     page_size = 8
-    total_vol_pages = (total_volumes + page_size - 1) // page_size if total_volumes > 12 else 1
+    total_vol_pages = (
+        (total_volumes + page_size - 1) // page_size if total_volumes > 12 else 1
+    )
 
     vol_page = st.get("vol_page", 1)
     if not (1 <= vol_page <= total_vol_pages):
@@ -187,11 +211,17 @@ async def mostrar_volumenes_local(
 
     if selected_key and selected_key in st["libros"]:
         active_key = selected_key
-        active_idx = next((i for i, (k, _) in enumerate(all_book_items) if k == active_key), 0)
+        active_idx = next(
+            (i for i, (k, _) in enumerate(all_book_items) if k == active_key), 0
+        )
         vol_page = (active_idx // page_size) + 1 if total_volumes > 12 else 1
     else:
         start_idx = (vol_page - 1) * page_size if total_volumes > 12 else 0
-        end_idx = min(start_idx + page_size, total_volumes) if total_volumes > 12 else total_volumes
+        end_idx = (
+            min(start_idx + page_size, total_volumes)
+            if total_volumes > 12
+            else total_volumes
+        )
         page_items = all_book_items[start_idx:end_idx]
         active_key = page_items[0][0]
 
@@ -211,7 +241,10 @@ async def mostrar_volumenes_local(
             active_book.update(meta_enriched)
 
     # 4. Resolver portada del volumen activo con caché de Telegram file_id
-    from services.cover_service import get_cached_cover_file_id, set_cached_cover_file_id
+    from services.cover_service import (
+        get_cached_cover_file_id,
+        set_cached_cover_file_id,
+    )
 
     cover_raw = (
         active_book.get("cover_high")
@@ -225,6 +258,7 @@ async def mostrar_volumenes_local(
     )
     if not cover_raw and book_id:
         from utils.library_db import COVERS_DIR
+
         for ext in [
             f"{book_id}_high.jpg",
             f"{book_id}.jpg",
@@ -249,7 +283,9 @@ async def mostrar_volumenes_local(
     if cached_fid:
         cover_media = cached_fid
         has_cover = True
-        logger.debug(f"⚡ [mostrar_volumenes_local] Reutilizando file_id de Telegram instantáneo: {cached_fid[:15]}...")
+        logger.debug(
+            f"⚡ [mostrar_volumenes_local] Reutilizando file_id de Telegram instantáneo: {cached_fid[:15]}..."
+        )
     else:
         cover_data = await resolve_cover_data(cover_raw)
         if cover_data:
@@ -259,7 +295,9 @@ async def mostrar_volumenes_local(
             elif isinstance(cover_data, str) and os.path.exists(cover_data):
                 try:
                     with open(cover_data, "rb") as f:
-                        files = {"tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")}
+                        files = {
+                            "tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")
+                        }
                 except Exception as e:
                     logger.warning(f"Error al leer archivo de portada local: {e}")
 
@@ -286,12 +324,24 @@ async def mostrar_volumenes_local(
             # Fila de control de paginación de volúmenes
             s_short = series_hash[:16] if series_hash else ""
             prev_cb = f"vol_page|{s_short}|{vol_page - 1}" if vol_page > 1 else "noop"
-            next_cb = f"vol_page|{s_short}|{vol_page + 1}" if vol_page < total_vol_pages else "noop"
-            volume_rows.append([
-                {"text": "◀️" if vol_page > 1 else "▫️", "callback_data": prev_cb},
-                {"text": f"📚 Volúmenes ({vol_page}/{total_vol_pages})", "callback_data": "noop"},
-                {"text": "▶️" if vol_page < total_vol_pages else "▫️", "callback_data": next_cb},
-            ])
+            next_cb = (
+                f"vol_page|{s_short}|{vol_page + 1}"
+                if vol_page < total_vol_pages
+                else "noop"
+            )
+            volume_rows.append(
+                [
+                    {"text": "◀️" if vol_page > 1 else "▫️", "callback_data": prev_cb},
+                    {
+                        "text": f"📚 Volúmenes ({vol_page}/{total_vol_pages})",
+                        "callback_data": "noop",
+                    },
+                    {
+                        "text": "▶️" if vol_page < total_vol_pages else "▫️",
+                        "callback_data": next_cb,
+                    },
+                ]
+            )
         else:
             current_row = []
             for k, bk in all_book_items:
@@ -316,7 +366,9 @@ async def mostrar_volumenes_local(
 
     # 6. Cuota y rol
     left = await downloads_left(uid)
-    can_download = True if left == "ilimitadas" else (isinstance(left, int) and left > 0)
+    can_download = (
+        True if left == "ilimitadas" else (isinstance(left, int) and left > 0)
+    )
     is_staff = await check_is_admin_or_staff(uid, update.effective_user)
     series_hash_short = series_hash[:16] if series_hash else None
 
@@ -438,7 +490,11 @@ async def mostrar_detalles_libro(
     libro = st["libros"][key]
 
     # Si pertenece a una serie, delegar al carrusel unificado de volúmenes
-    series_hash = libro.get("series_hash") or meta.get("series_hash") or st.get("current_series_hash")
+    series_hash = (
+        libro.get("series_hash")
+        or meta.get("series_hash")
+        or st.get("current_series_hash")
+    )
     if series_hash:
         return await mostrar_volumenes_local(
             update,
@@ -477,23 +533,17 @@ async def mostrar_detalles_libro(
 
     if cover_data:
         if isinstance(cover_data, bytes):
-            files = {
-                "tomozaki_cover": ("cover.jpg", cover_data, "image/jpeg")
-            }
+            files = {"tomozaki_cover": ("cover.jpg", cover_data, "image/jpeg")}
         elif isinstance(cover_data, str) and os.path.exists(cover_data):
             try:
                 with open(cover_data, "rb") as f:
-                    files = {
-                        "tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")
-                    }
+                    files = {"tomozaki_cover": ("cover.jpg", f.read(), "image/jpeg")}
             except Exception as e:
                 logger.warning(f"Error al leer archivo de portada local: {e}")
 
     left = await downloads_left(uid)
     can_download = (
-        True
-        if left == "ilimitadas"
-        else (isinstance(left, int) and left > 0)
+        True if left == "ilimitadas" else (isinstance(left, int) and left > 0)
     )
     is_staff = await check_is_admin_or_staff(uid, update.effective_user)
     series_hash = st.get("current_series_hash") or libro.get("series_hash")
@@ -553,9 +603,7 @@ async def mostrar_detalles_libro(
             if msg:
                 st["last_detalles_msg_ids"].append(msg.message_id)
         elif res_html.get("result", {}).get("message_id"):
-            st["last_detalles_msg_ids"].append(
-                res_html["result"]["message_id"]
-            )
+            st["last_detalles_msg_ids"].append(res_html["result"]["message_id"])
     else:
         rich_msg_id = res.get("result", {}).get("message_id")
         if rich_msg_id:

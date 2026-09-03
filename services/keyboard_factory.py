@@ -5,7 +5,6 @@ Implementa estilos de botones nativos de Telegram Bot API 7.0+ (style: primary, 
 soporte para custom emoji IDs animados, semiótica visual estricta y arquitectura Zero Dead-Ends.
 """
 
-
 from typing import List, Optional
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -19,7 +18,9 @@ class BotKeyboards:
         text: str,
         callback_data: Optional[str] = None,
         url: Optional[str] = None,
-        style: Optional[str] = None,  # "primary" (azul) | "success" (verde) | "danger" (rojo)
+        style: Optional[
+            str
+        ] = None,  # "primary" (azul) | "success" (verde) | "danger" (rojo)
         icon_custom_emoji_id: Optional[str] = None,
         disabled: bool = False,
     ) -> InlineKeyboardButton:
@@ -82,7 +83,9 @@ class BotKeyboards:
                     BotKeyboards.btn(
                         "🌐 Abrir ZeePub Web", url=webapp_url, style="primary"
                     ),
-                    BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger"),
+                    BotKeyboards.btn(
+                        "❌ Salir", callback_data="cerrar", style="danger"
+                    ),
                 ]
             )
         else:
@@ -102,9 +105,7 @@ class BotKeyboards:
         """
         keyboard = []
         for i in range(0, len(genres), 2):
-            row = [
-                BotKeyboards.btn(f"🏷️ {genres[i]}", callback_data=f"gen|{genres[i]}")
-            ]
+            row = [BotKeyboards.btn(f"🏷️ {genres[i]}", callback_data=f"gen|{genres[i]}")]
             if i + 1 < len(genres):
                 row.append(
                     BotKeyboards.btn(
@@ -143,9 +144,9 @@ class BotKeyboards:
         for item in items:
             title = item.get("title", "Novela")
             idx = item.get("index", 0)
-            if len(title) > 34:
-                title = title[:31] + "..."
-            keyboard.append([BotKeyboards.btn(f"📁 {title}", callback_data=f"col|{idx}")])
+            s_hash = item.get("series_hash")
+            cb = f"col|{str(s_hash)[:24]}" if s_hash else f"col|{idx}"
+            keyboard.append([BotKeyboards.btn(f"📁 {title}", callback_data=cb)])
 
         # 2. Fila de Paginación Inteligente
         nav_row = []
@@ -164,7 +165,9 @@ class BotKeyboards:
 
         # Indicador central de página
         display_total = max(1, total_pages)
-        nav_row.append(BotKeyboards.btn(f"📄 {page}/{display_total}", callback_data="noop"))
+        nav_row.append(
+            BotKeyboards.btn(f"📄 {page}/{display_total}", callback_data="noop")
+        )
 
         if page < total_pages:
             nav_row.append(
@@ -175,7 +178,9 @@ class BotKeyboards:
                 )
             )
         else:
-            nav_row.append(BotKeyboards.btn(f"⛔ {display_total}", callback_data="noop"))
+            nav_row.append(
+                BotKeyboards.btn(f"⛔ {display_total}", callback_data="noop")
+            )
 
         keyboard.append(nav_row)
 
@@ -227,7 +232,9 @@ class BotKeyboards:
             nav_row.append(BotKeyboards.btn("⛔ 1", callback_data="noop"))
 
         display_total = max(1, total_pages)
-        nav_row.append(BotKeyboards.btn(f"📄 {page}/{display_total}", callback_data="noop"))
+        nav_row.append(
+            BotKeyboards.btn(f"📄 {page}/{display_total}", callback_data="noop")
+        )
 
         if page < total_pages:
             nav_row.append(
@@ -238,7 +245,9 @@ class BotKeyboards:
                 )
             )
         else:
-            nav_row.append(BotKeyboards.btn(f"⛔ {display_total}", callback_data="noop"))
+            nav_row.append(
+                BotKeyboards.btn(f"⛔ {display_total}", callback_data="noop")
+            )
 
         keyboard.append(nav_row)
 
@@ -265,7 +274,9 @@ class BotKeyboards:
             display_auth = f"✍️ {auth}"
             if len(display_auth) > 34:
                 display_auth = display_auth[:31] + "..."
-            keyboard.append([BotKeyboards.btn(display_auth, callback_data=f"aut|{auth}")])
+            keyboard.append(
+                [BotKeyboards.btn(display_auth, callback_data=f"aut|{auth}")]
+            )
 
         nav_row = []
         if page > 1:
@@ -278,7 +289,9 @@ class BotKeyboards:
             nav_row.append(BotKeyboards.btn("⛔ 1", callback_data="noop"))
 
         display_total = max(1, total_pages)
-        nav_row.append(BotKeyboards.btn(f"📄 {page}/{display_total}", callback_data="noop"))
+        nav_row.append(
+            BotKeyboards.btn(f"📄 {page}/{display_total}", callback_data="noop")
+        )
 
         if page < total_pages:
             nav_row.append(
@@ -287,7 +300,9 @@ class BotKeyboards:
                 )
             )
         else:
-            nav_row.append(BotKeyboards.btn(f"⛔ {display_total}", callback_data="noop"))
+            nav_row.append(
+                BotKeyboards.btn(f"⛔ {display_total}", callback_data="noop")
+            )
 
         keyboard.append(nav_row)
 
@@ -399,7 +414,9 @@ class BotKeyboards:
                 ),
             ],
             [
-                BotKeyboards.btn("⬅️ Volver al Libro", callback_data=f"info_libro|{key}"),
+                BotKeyboards.btn(
+                    "⬅️ Volver al Libro", callback_data=f"info_libro|{key}"
+                ),
                 BotKeyboards.btn("🏠 Inicio", callback_data="volver_menu"),
                 BotKeyboards.btn("❌ Salir", callback_data="cerrar", style="danger"),
             ],
@@ -436,7 +453,9 @@ class BotKeyboards:
                 ),
             ],
             [
-                BotKeyboards.btn("⬅️ Volver a Opciones", callback_data=f"pub_menu|{key}"),
+                BotKeyboards.btn(
+                    "⬅️ Volver a Opciones", callback_data=f"pub_menu|{key}"
+                ),
                 BotKeyboards.btn("❌ Cancelar", callback_data="cerrar", style="danger"),
             ],
         ]
@@ -488,17 +507,17 @@ class BotKeyboards:
 
         for s in series_items:
             title = s.get("title", "Serie")
-            if len(title) > 34:
-                title = title[:31] + "..."
-            keyboard.append(
-                [BotKeyboards.btn(f"📁 {title}", callback_data=f"col|{s['index']}")]
-            )
+            s_hash = s.get("series_hash")
+            cb = f"col|{str(s_hash)[:24]}" if s_hash else f"col|{s['index']}"
+            keyboard.append([BotKeyboards.btn(f"📁 {title}", callback_data=cb)])
 
         for b in books_items:
             display = b.get("display") or f"📕 {b.get('title', 'Libro')}"
             if len(display) > 34:
                 display = display[:31] + "..."
-            keyboard.append([BotKeyboards.btn(display, callback_data=f"lib|{b['key']}")])
+            keyboard.append(
+                [BotKeyboards.btn(display, callback_data=f"lib|{b['key']}")]
+            )
 
         keyboard.append(
             [

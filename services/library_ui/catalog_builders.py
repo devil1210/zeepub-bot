@@ -74,7 +74,10 @@ def build_main_menu_rich_blocks(
             "type": "buttons",
             "align": "center",
             "buttons": [
-                {"text": "📖 Catálogo de Series", "callback_data": "nav_local|all_series"},
+                {
+                    "text": "📖 Catálogo de Series",
+                    "callback_data": "nav_local|all_series",
+                },
                 {"text": "⭐ Novedades", "callback_data": "nav_local|newest"},
             ],
         },
@@ -221,13 +224,26 @@ def build_series_catalog_rich_blocks(
                     "is_compact": True,
                     "cells": [
                         [
-                            {"text": f"{i + 1}. {item.get('title', 'Novela')}", "align": "left"},
-                            {"text": f"{item.get('book_count', 1)} vols", "align": "left"},
+                            {
+                                "text": f"{i + 1}. {item.get('title', 'Novela')}",
+                                "align": "left",
+                            },
+                            {
+                                "text": f"{item.get('book_count', 1)} vols",
+                                "align": "left",
+                            },
                         ]
                         for i, item in enumerate(items)
                     ]
                     if items
-                    else [[{"text": "No se encontraron series en esta página", "align": "left"}]],
+                    else [
+                        [
+                            {
+                                "text": "No se encontraron series en esta página",
+                                "align": "left",
+                            }
+                        ]
+                    ],
                 }
             ],
         },
@@ -237,7 +253,7 @@ def build_series_catalog_rich_blocks(
         s_title = item.get("title", "Novela")
         idx = item.get("index", 0)
         s_hash = item.get("series_hash")
-        cb = f"col|{s_hash}" if s_hash and len(str(s_hash)) <= 45 else f"col|{idx}"
+        cb = f"col|{str(s_hash)[:24]}" if s_hash else f"col|{idx}"
         if len(s_title) > 34:
             s_title = s_title[:31] + "..."
         blocks.append(
@@ -259,9 +275,7 @@ def build_series_catalog_rich_blocks(
     else:
         nav_row.append({"text": "⛔ 1", "callback_data": "noop"})
 
-    nav_row.append(
-        {"text": f"📄 {page}/{total_pages}", "callback_data": "noop"}
-    )
+    nav_row.append({"text": f"📄 {page}/{total_pages}", "callback_data": "noop"})
 
     if page < total_pages:
         nav_row.append(
@@ -337,7 +351,14 @@ def build_authors_rich_blocks(
                         for i, a in enumerate(authors)
                     ]
                     if authors
-                    else [[{"text": "No se encontraron autores en esta página", "align": "left"}]],
+                    else [
+                        [
+                            {
+                                "text": "No se encontraron autores en esta página",
+                                "align": "left",
+                            }
+                        ]
+                    ],
                 }
             ],
         },
@@ -347,7 +368,10 @@ def build_authors_rich_blocks(
         row = [{"text": f"✍️ {authors[i]}", "callback_data": f"aut|{authors[i]}"}]
         if i + 1 < len(authors):
             row.append(
-                {"text": f"✍️ {authors[i + 1]}", "callback_data": f"aut|{authors[i + 1]}"}
+                {
+                    "text": f"✍️ {authors[i + 1]}",
+                    "callback_data": f"aut|{authors[i + 1]}",
+                }
             )
         blocks.append({"type": "buttons", "align": "center", "buttons": row})
 
@@ -362,9 +386,7 @@ def build_authors_rich_blocks(
     else:
         nav_row.append({"text": "⛔ 1", "callback_data": "noop"})
 
-    nav_row.append(
-        {"text": f"📄 {page}/{total_pages}", "callback_data": "noop"}
-    )
+    nav_row.append({"text": f"📄 {page}/{total_pages}", "callback_data": "noop"})
 
     if page < total_pages:
         nav_row.append(
@@ -418,42 +440,56 @@ def build_search_prompt_rich_blocks(
             "is_striped": True,
             "is_compact": True,
             "cells": [
-                [{"text": "🎯 Estado", "align": "left"}, {"text": status_text, "align": "left"}],
-                [{"text": "✍️ Instrucción", "align": "left"}, {"text": inst_text, "align": "left"}],
+                [
+                    {"text": "🎯 Estado", "align": "left"},
+                    {"text": status_text, "align": "left"},
+                ],
+                [
+                    {"text": "✍️ Instrucción", "align": "left"},
+                    {"text": inst_text, "align": "left"},
+                ],
             ],
         },
     ]
 
     if include_buttons:
-        blocks.extend([
-            {
-                "type": "details",
-                "summary": "💡 Consejos de Búsqueda",
-                "is_open": False,
-                "blocks": [
-                    {
-                        "type": "paragraph",
-                        "text": "• Escribe el nombre parcial: \"Mushoku\", \"Arifureta\", \"Tomozaki\"\n• O busca por autor: \"Rifujin\", \"Yaku\"\n• También puedes escribir directo: /search <término>",
-                    }
-                ],
-            },
-            {
-                "type": "buttons",
-                "align": "center",
-                "buttons": [
-                    {"text": "📖 Catálogo Completo", "callback_data": "nav_local|all_series"},
-                    {"text": "🏷️ Explorar Géneros", "callback_data": "nav_local|genres"},
-                ],
-            },
-            {
-                "type": "buttons",
-                "align": "center",
-                "buttons": [
-                    {"text": "🏠 Inicio", "callback_data": "volver_menu"},
-                    {"text": "❌ Cancelar", "callback_data": "salir"},
-                ],
-            },
-        ])
+        blocks.extend(
+            [
+                {
+                    "type": "details",
+                    "summary": "💡 Consejos de Búsqueda",
+                    "is_open": False,
+                    "blocks": [
+                        {
+                            "type": "paragraph",
+                            "text": '• Escribe el nombre parcial: "Mushoku", "Arifureta", "Tomozaki"\n• O busca por autor: "Rifujin", "Yaku"\n• También puedes escribir directo: /search <término>',
+                        }
+                    ],
+                },
+                {
+                    "type": "buttons",
+                    "align": "center",
+                    "buttons": [
+                        {
+                            "text": "📖 Catálogo Completo",
+                            "callback_data": "nav_local|all_series",
+                        },
+                        {
+                            "text": "🏷️ Explorar Géneros",
+                            "callback_data": "nav_local|genres",
+                        },
+                    ],
+                },
+                {
+                    "type": "buttons",
+                    "align": "center",
+                    "buttons": [
+                        {"text": "🏠 Inicio", "callback_data": "volver_menu"},
+                        {"text": "❌ Cancelar", "callback_data": "salir"},
+                    ],
+                },
+            ]
+        )
 
     blocks.append({"type": "divider"})
     blocks.append({"type": "paragraph", "text": "#ZeePubs #Buscador"})
@@ -484,7 +520,12 @@ def format_item_badges(item: dict) -> str:
     if item.get("color_mode") == "color" or item.get("is_color") or item.get("color"):
         badges.append("[🎨]")
 
-    if item.get("is_uncensored") or item.get("uncensored") or "[sc]" in title_raw or "sin censura" in title_raw:
+    if (
+        item.get("is_uncensored")
+        or item.get("uncensored")
+        or "[sc]" in title_raw
+        or "sin censura" in title_raw
+    ):
         badges.append("[SC]")
 
     return " ".join(badges)
@@ -503,7 +544,7 @@ def build_search_results_rich_blocks(
         {
             "type": "heading",
             "size": 2,
-            "text": f"🔍 Resultados: \"{query}\"",
+            "text": f'🔍 Resultados: "{query}"',
         },
         {
             "type": "table",
@@ -511,8 +552,14 @@ def build_search_results_rich_blocks(
             "is_striped": True,
             "is_compact": True,
             "cells": [
-                [{"text": "🎯 Término buscado", "align": "left"}, {"text": query, "align": "left"}],
-                [{"text": "📁 Series encontradas", "align": "left"}, {"text": f"{total_s} series", "align": "left"}],
+                [
+                    {"text": "🎯 Término buscado", "align": "left"},
+                    {"text": query, "align": "left"},
+                ],
+                [
+                    {"text": "📁 Series encontradas", "align": "left"},
+                    {"text": f"{total_s} series", "align": "left"},
+                ],
             ],
         },
     ]
@@ -524,12 +571,22 @@ def build_search_results_rich_blocks(
             badges = format_item_badges(s)
             disp_name = f"{name} {badges}".strip() if badges else name
             cnt = s.get("book_count") or 1
-            table_rows.append([{"text": f"📁 {disp_name}", "align": "left"}, {"text": f"{cnt} vols", "align": "left"}])
+            table_rows.append(
+                [
+                    {"text": f"📁 {disp_name}", "align": "left"},
+                    {"text": f"{cnt} vols", "align": "left"},
+                ]
+            )
         for b in standalone_books:
             b_title = b.get("title", "Libro")
             b_badges = format_item_badges(b)
             disp_b_title = f"{b_title} {b_badges}".strip() if b_badges else b_title
-            table_rows.append([{"text": f"📕 {disp_b_title}", "align": "left"}, {"text": "Individual", "align": "left"}])
+            table_rows.append(
+                [
+                    {"text": f"📕 {disp_b_title}", "align": "left"},
+                    {"text": "Individual", "align": "left"},
+                ]
+            )
 
         blocks.append(
             {
@@ -541,7 +598,9 @@ def build_search_results_rich_blocks(
                         "type": "table",
                         "is_bordered": True,
                         "is_compact": True,
-                        "cells": table_rows if table_rows else [[{"text": "Sin resultados", "align": "left"}]],
+                        "cells": table_rows
+                        if table_rows
+                        else [[{"text": "Sin resultados", "align": "left"}]],
                     }
                 ],
             }
@@ -559,14 +618,14 @@ def build_search_results_rich_blocks(
         badges = format_item_badges(s)
         cnt = s.get("book_count") or 1
         s_hash = s.get("series_hash")
-        cb = f"col|{s_hash}" if s_hash and len(str(s_hash)) <= 45 else f"col|{i}"
-        
+        cb = f"col|{str(s_hash)[:24]}" if s_hash else f"col|{i}"
+
         badges_str = f" {badges}" if badges else ""
         vols_str = f" ({cnt} vols)"
         target_max = 52
         available_name_len = target_max - len(badges_str) - len(vols_str) - len("📁 ")
         if len(name) > available_name_len:
-            short_name = name[:max(10, available_name_len - 3)] + "..."
+            short_name = name[: max(10, available_name_len - 3)] + "..."
         else:
             short_name = name
         btn_label = f"📁 {short_name}{badges_str}{vols_str}"
@@ -586,7 +645,7 @@ def build_search_results_rich_blocks(
         target_max = 52
         available_title_len = target_max - len(b_badges_str) - len("📕 ")
         if len(title) > available_title_len:
-            short_title = title[:max(10, available_title_len - 3)] + "..."
+            short_title = title[: max(10, available_title_len - 3)] + "..."
         else:
             short_title = title
         btn_label = f"📕 {short_title}{b_badges_str}"
@@ -612,4 +671,3 @@ def build_search_results_rich_blocks(
     blocks.append({"type": "divider"})
     blocks.append({"type": "paragraph", "text": "#ZeePubs #Resultados"})
     return blocks
-

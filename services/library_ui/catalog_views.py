@@ -236,14 +236,18 @@ async def mostrar_series(
         if s_hash:
             state_manager.register_series_key(str(i), s_hash)
             state_manager.register_series_key(s_hash, s_hash)
-        items.append({
-            "title": series_title,
-            "index": i,
-            "book_count": book_count,
-            "series_hash": s_hash,
-        })
+        items.append(
+            {
+                "title": series_title,
+                "index": i,
+                "book_count": book_count,
+                "series_hash": s_hash,
+            }
+        )
 
-    total_pages = (data["total"] + page_size - 1) // page_size if data["total"] > 0 else 1
+    total_pages = (
+        (data["total"] + page_size - 1) // page_size if data["total"] > 0 else 1
+    )
     st["current_view"] = "series_list"
     st["titulo"] = title
 
@@ -467,12 +471,16 @@ async def pedir_termino_busqueda(
     else:
         from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-        search_cancel_kb = InlineKeyboardMarkup([
+        search_cancel_kb = InlineKeyboardMarkup(
             [
-                InlineKeyboardButton("🏠 Menú Principal", callback_data="volver_menu"),
-                InlineKeyboardButton("❌ Cancelar", callback_data="cerrar"),
+                [
+                    InlineKeyboardButton(
+                        "🏠 Menú Principal", callback_data="volver_menu"
+                    ),
+                    InlineKeyboardButton("❌ Cancelar", callback_data="cerrar"),
+                ]
             ]
-        ])
+        )
         text = (
             "🔍 <b>Buscador ZeePubs</b>\n\n"
             "¿Qué novela ligera estás buscando?\n"
@@ -504,19 +512,23 @@ async def mostrar_resultados_locales(
 
     st["libros"] = {}
     st["colecciones"] = {}
+    st["current_series_hash"] = None
+    st["current_view"] = "search_results"
     if "series_map" not in st:
         st["series_map"] = {}
     series_items = []
 
     # 1. Agregar Series (Resultados agrupados)
-    found_series_hashes = set()
+    found_series_hashes = {
+        s.get("series_hash") or s.get("id")
+        for s in (series or [])
+        if s.get("series_hash") or s.get("id")
+    }
     if series:
         for i, s in enumerate(series):
             if i >= 10:
                 break
             s_hash = s.get("series_hash") or s.get("id")
-            if s_hash:
-                found_series_hashes.add(s_hash)
             href = f"local_series|{s_hash}"
             series_title = (
                 s.get("series_english")
@@ -529,19 +541,23 @@ async def mostrar_resultados_locales(
             st["series_map"][i] = s_hash
             st["series_map"][str(i)] = s_hash
             if s_hash:
+                st["series_map"][str(s_hash)[:24]] = s_hash
                 state_manager.register_series_key(str(i), s_hash)
                 state_manager.register_series_key(s_hash, s_hash)
-            series_items.append({
-                "title": series_title,
-                "name": s.get("name"),
-                "name_english": s.get("name_english"),
-                "book_type": s.get("book_type"),
-                "color_mode": s.get("color_mode"),
-                "is_uncensored": s.get("is_uncensored"),
-                "index": i,
-                "book_count": s.get("book_count") or 1,
-                "series_hash": s_hash,
-            })
+                state_manager.register_series_key(str(s_hash)[:24], s_hash)
+            series_items.append(
+                {
+                    "title": series_title,
+                    "name": s.get("name"),
+                    "name_english": s.get("name_english"),
+                    "book_type": s.get("book_type"),
+                    "color_mode": s.get("color_mode"),
+                    "is_uncensored": s.get("is_uncensored"),
+                    "index": i,
+                    "book_count": s.get("book_count") or 1,
+                    "series_hash": s_hash,
+                }
+            )
 
     # 2. Agregar Libros "Sueltos"
     books_items = []
@@ -573,14 +589,16 @@ async def mostrar_resultados_locales(
                 "portada": b.get("cover_medium") or b.get("cover_low"),
                 "hash": b.get("book_hash") or b.get("id"),
             }
-            books_items.append({
-                "key": key,
-                "title": display_title,
-                "display": display,
-                "book_type": b.get("book_type") or b.get("categoria"),
-                "color_mode": b.get("color_mode"),
-                "is_uncensored": b.get("is_uncensored"),
-            })
+            books_items.append(
+                {
+                    "key": key,
+                    "title": display_title,
+                    "display": display,
+                    "book_type": b.get("book_type") or b.get("categoria"),
+                    "color_mode": b.get("color_mode"),
+                    "is_uncensored": b.get("is_uncensored"),
+                }
+            )
 
     st["current_view"] = "search_results"
     st["last_search_query"] = query
@@ -655,5 +673,3 @@ async def ejecutar_busqueda_local(
         books_standalone=books,
         force_new=force_new,
     )
-
-

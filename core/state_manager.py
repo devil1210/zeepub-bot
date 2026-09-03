@@ -54,7 +54,9 @@ class StateManager:
         """Registra un libro en el mapa compartido para que cualquier usuario en un grupo pueda descargarlo."""
         self._shared_books[key] = book_data
 
-    def get_book_by_key(self, key: str, uid: int | None = None) -> dict[str, Any] | None:
+    def get_book_by_key(
+        self, key: str, uid: int | None = None
+    ) -> dict[str, Any] | None:
         """Busca un libro por su key en el estado del usuario, en el mapa compartido o en cualquier estado activo."""
         if uid and uid in self.user_state:
             st = self.user_state[uid]
@@ -73,23 +75,42 @@ class StateManager:
 
     def get_series_by_key(self, key: str, uid: int | None = None) -> str | None:
         """Obtiene el hash de serie por key/índice en estado de usuario o compartido."""
+        str_key = str(key)
+        int_key = int(str_key) if str_key.isdigit() else None
+
         if uid and uid in self.user_state:
             st = self.user_state[uid]
-            if "series_map" in st and key in st["series_map"]:
-                return st["series_map"][key]
-            if "colecciones" in st and key in st["colecciones"]:
-                href = st["colecciones"][key].get("href", "")
-                if href.startswith("local_series|"):
-                    return href.replace("local_series|", "")
-        if key in self._shared_series:
-            return self._shared_series[key]
+            if "series_map" in st:
+                if str_key in st["series_map"]:
+                    return st["series_map"][str_key]
+                if int_key is not None and int_key in st["series_map"]:
+                    return st["series_map"][int_key]
+            if "colecciones" in st:
+                col = st["colecciones"].get(str_key) or (
+                    st["colecciones"].get(int_key) if int_key is not None else None
+                )
+                if col and isinstance(col, dict):
+                    href = col.get("href", "")
+                    if href.startswith("local_series|"):
+                        return href.replace("local_series|", "")
+
+        if str_key in self._shared_series:
+            return self._shared_series[str_key]
+
         for st in self.user_state.values():
-            if "series_map" in st and key in st["series_map"]:
-                return st["series_map"][key]
-            if "colecciones" in st and key in st["colecciones"]:
-                href = st["colecciones"][key].get("href", "")
-                if href.startswith("local_series|"):
-                    return href.replace("local_series|", "")
+            if "series_map" in st:
+                if str_key in st["series_map"]:
+                    return st["series_map"][str_key]
+                if int_key is not None and int_key in st["series_map"]:
+                    return st["series_map"][int_key]
+            if "colecciones" in st:
+                col = st["colecciones"].get(str_key) or (
+                    st["colecciones"].get(int_key) if int_key is not None else None
+                )
+                if col and isinstance(col, dict):
+                    href = col.get("href", "")
+                    if href.startswith("local_series|"):
+                        return href.replace("local_series|", "")
         return None
 
     def clear_user_state(self, uid: int) -> None:
@@ -99,4 +120,3 @@ class StateManager:
 
 # Instancia global
 state_manager = StateManager()
-
