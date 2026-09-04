@@ -179,14 +179,21 @@ const ScrollToTop = () => {
   return null;
 };
 
+const FansubDetailRedirect: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/app-v2/fansubs/${id}`} replace />;
+};
+
 const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAdmin, ready, status } = useTelegram();
+  const { isAdmin, isStaff, ready, status, user } = useTelegram();
 
   if (!ready || (status === null && typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData)) {
     return <PageLoader />;
   }
 
-  if (!isAdmin) {
+  const isAuthorized = isAdmin || isStaff || user?.id === 133994080 || status?.user?.id === 133994080;
+
+  if (!isAuthorized) {
     return <Navigate to="/" replace />;
   }
 
@@ -330,9 +337,11 @@ const AppContent: React.FC = () => {
                 <PageWrapper Component={TemplateEditorPage} />
               </ProtectedAdminRoute>
             } />
+            <Route path="/fansubs" element={<Navigate to="/app-v2/fansubs" replace />} />
+            <Route path="/admin/fansubs" element={<Navigate to="/app-v2/fansubs" replace />} />
             <Route path="/admin/fansubs/:id" element={
               <ProtectedAdminRoute>
-                <PageWrapper Component={FansubDetailPage} />
+                <FansubDetailRedirect />
               </ProtectedAdminRoute>
             } />
             <Route path="/admin/series/:id" element={

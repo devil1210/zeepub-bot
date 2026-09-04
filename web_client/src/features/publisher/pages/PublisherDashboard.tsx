@@ -594,7 +594,7 @@ export const PublisherDashboard: React.FC = () => {
                                 {workgroups.map((group) => (
                                     <div
                                         key={group.id}
-                                        onClick={() => navigate(`/admin/fansubs/${group.id}`)}
+                                        onClick={() => navigate(`/app-v2/fansubs/${group.id}`)}
                                         className="glass-panel rounded-premium p-4 flex flex-col justify-between gap-3 border border-white/5 hover:border-primary/50 hover:bg-white/[0.04] transition-all group cursor-pointer"
                                     >
                                         <div className="flex flex-col gap-2">
@@ -622,7 +622,7 @@ export const PublisherDashboard: React.FC = () => {
 
                                                 <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                                     <button
-                                                        onClick={() => navigate(`/admin/fansubs/${group.id}`)}
+                                                        onClick={() => navigate(`/app-v2/fansubs/${group.id}`)}
                                                         className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
                                                         title="Ver y Editar Fansub"
                                                     >

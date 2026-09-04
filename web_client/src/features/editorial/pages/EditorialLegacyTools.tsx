@@ -8,13 +8,21 @@ import {
     Sparkles,
     Activity,
     ArrowRight,
-    Sliders
+    Sliders,
+    Building2
 } from 'lucide-react';
 
 export const EditorialLegacyTools: React.FC = () => {
     const navigate = useNavigate();
 
     const tools = [
+        {
+            title: 'Directorio & Fusión de Fansubs',
+            desc: 'Auditoría de EPUBs asociados por grupo, detección de metadatos discordantes y herramienta de fusión.',
+            icon: Building2,
+            color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+            action: () => navigate('/app-v2/fansubs'),
+        },
         {
             title: 'DataGrid Editor (Modo Excel)',
             desc: 'Editor masivo de metadatos de series y volúmenes con guardado por lotes.',

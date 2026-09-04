@@ -353,13 +353,14 @@ export const TelegramProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const isRealAdmin =
     isAdminFromAccess ||
-    status?.isAdmin === true ||
+    (status as any)?.isAdmin === true ||
     status?.user?.is_real_admin === true ||
     status?.user?.role === 'admin' ||
     status?.user?.level === 'admin' ||
     status?.user?.level === 'Administrador' ||
     status?.user?.status_label === 'Admin 🛠️' ||
-    status?.user?.id === 133994080;
+    status?.user?.id === 133994080 ||
+    user?.id === 133994080;
 
   const isAdmin =
     simulatedLevel !== null
