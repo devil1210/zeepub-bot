@@ -18,7 +18,8 @@ import {
     BookOpen,
     Tag,
     ExternalLink,
-    GitMerge
+    GitMerge,
+    AlertTriangle
 } from 'lucide-react';
 import {
     workgroupsApi,
@@ -33,7 +34,7 @@ export const EditorialFansubs: React.FC = () => {
     const [workgroups, setWorkgroups] = useState<TranslatorsGroupItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [bookFilter, setBookFilter] = useState<'with_books' | 'without_books' | 'all'>('with_books');
+    const [bookFilter, setBookFilter] = useState<'with_books' | 'with_issues' | 'without_books' | 'all'>('with_books');
     const [selectedWorkgroup, setSelectedWorkgroup] = useState<TranslatorsGroupItem | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
@@ -96,10 +97,12 @@ export const EditorialFansubs: React.FC = () => {
     };
 
     const countWithBooks = workgroups.filter((w) => (w.books_count || 0) > 0).length;
+    const countWithIssues = workgroups.filter((w) => (w.bad_metadata_count || 0) > 0).length;
     const countWithoutBooks = workgroups.filter((w) => (w.books_count || 0) === 0).length;
 
     const filtered = workgroups.filter((w) => {
         if (bookFilter === 'with_books' && (w.books_count || 0) === 0) return false;
+        if (bookFilter === 'with_issues' && (w.bad_metadata_count || 0) === 0) return false;
         if (bookFilter === 'without_books' && (w.books_count || 0) > 0) return false;
 
         if (!searchQuery.trim()) return true;
@@ -218,6 +221,33 @@ export const EditorialFansubs: React.FC = () => {
 
                     <button
                         type="button"
+                        onClick={() => setBookFilter('with_issues')}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            bookFilter === 'with_issues'
+                                ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                                : countWithIssues > 0
+                                ? 'text-amber-400 hover:text-amber-200 hover:bg-amber-500/10'
+                                : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                        title="Ver fansubs con volúmenes que presentan observaciones o discrepancias en el OPF"
+                    >
+                        <AlertTriangle className={`w-3.5 h-3.5 ${bookFilter === 'with_issues' ? 'text-white' : 'text-amber-400'}`} />
+                        <span>Con Obs. OPF</span>
+                        <span
+                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                                bookFilter === 'with_issues'
+                                    ? 'bg-amber-900/80 text-amber-200'
+                                    : countWithIssues > 0
+                                    ? 'bg-amber-500/20 text-amber-300'
+                                    : 'bg-white/10 text-gray-400'
+                            }`}
+                        >
+                            {countWithIssues}
+                        </span>
+                    </button>
+
+                    <button
+                        type="button"
                         onClick={() => setBookFilter('without_books')}
                         className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                             bookFilter === 'without_books'
@@ -273,17 +303,26 @@ export const EditorialFansubs: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-5">
                     {filtered.map((wg) => {
                         const hasLinks = wg.links && Object.values(wg.links).some((v) => Boolean(v));
+                        const hasIssues = (wg.bad_metadata_count || 0) > 0;
                         return (
                             <div
                                 key={wg.id}
-                                className="bg-slate-900/50 border border-white/10 hover:border-indigo-500/40 rounded-3xl p-5 shadow-xl hover:shadow-2xl transition-all flex flex-col justify-between space-y-4 backdrop-blur-xl group"
+                                className={`border rounded-3xl p-5 shadow-xl hover:shadow-2xl transition-all flex flex-col justify-between space-y-4 backdrop-blur-xl group ${
+                                    hasIssues
+                                        ? 'bg-slate-900/60 border-amber-500/30 hover:border-amber-400/50 shadow-amber-950/10'
+                                        : 'bg-slate-900/50 border-white/10 hover:border-indigo-500/40'
+                                }`}
                             >
                                 <div className="space-y-3">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex items-center gap-3">
                                             <Link
                                                 to={`/app-v2/fansubs/${wg.id}`}
-                                                className="w-10 h-10 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 flex items-center justify-center font-black text-sm shrink-0 transition-all hover:scale-105"
+                                                className={`w-10 h-10 rounded-2xl border flex items-center justify-center font-black text-sm shrink-0 transition-all hover:scale-105 ${
+                                                    hasIssues
+                                                        ? 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                                        : 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border-indigo-500/20'
+                                                }`}
                                                 title="Ver detalle y auditoría"
                                             >
                                                 {wg.name?.[0]?.toUpperCase() || 'F'}
@@ -292,7 +331,9 @@ export const EditorialFansubs: React.FC = () => {
                                                 <div className="flex items-center gap-2">
                                                     <Link
                                                         to={`/app-v2/fansubs/${wg.id}`}
-                                                        className="text-xs font-bold text-white hover:text-indigo-300 transition-colors truncate block"
+                                                        className={`text-xs font-bold transition-colors truncate block ${
+                                                            hasIssues ? 'text-white hover:text-amber-300' : 'text-white hover:text-indigo-300'
+                                                        }`}
                                                         title="Abrir página de detalle y auditoría"
                                                     >
                                                         {wg.name}
@@ -300,6 +341,15 @@ export const EditorialFansubs: React.FC = () => {
                                                     {wg.siglas && (
                                                         <span className="px-1.5 py-0.5 rounded bg-white/10 text-gray-300 text-[10px] font-mono font-bold shrink-0">
                                                             {wg.siglas}
+                                                        </span>
+                                                    )}
+                                                    {hasIssues && (
+                                                        <span
+                                                            className="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold flex items-center gap-1 shrink-0"
+                                                            title={`${wg.bad_metadata_count} volumen(es) con observaciones en el metadato dc:publisher del OPF`}
+                                                        >
+                                                            <AlertTriangle className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                                                            <span>{wg.bad_metadata_count} con obs.</span>
                                                         </span>
                                                     )}
                                                 </div>
@@ -415,14 +465,30 @@ export const EditorialFansubs: React.FC = () => {
                                 </div>
 
                                 {/* Footer: Books Count and Audit Link */}
-                                <div className="pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400 font-mono">
-                                    <div className="flex items-center gap-1.5">
-                                        <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-                                        <span>{wg.books_count || 0} libros</span>
+                                <div className="pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] font-mono">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5 text-gray-400">
+                                            <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+                                            <span>{wg.books_count || 0} libros</span>
+                                        </div>
+                                        {hasIssues && (
+                                            <span
+                                                className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-bold flex items-center gap-1"
+                                                title={`${wg.bad_metadata_count} volumen(es) con observaciones en el metadato dc:publisher`}
+                                            >
+                                                <AlertTriangle className="w-2.5 h-2.5 text-amber-400" />
+                                                <span>{wg.bad_metadata_count} obs.</span>
+                                            </span>
+                                        )}
                                     </div>
                                     <Link
                                         to={`/app-v2/fansubs/${wg.id}`}
-                                        className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 transition-colors"
+                                        className={`text-[11px] font-bold flex items-center gap-1 transition-colors ${
+                                            hasIssues
+                                                ? 'text-amber-400 hover:text-amber-300'
+                                                : 'text-indigo-400 hover:text-indigo-300'
+                                        }`}
+                                        title="Abrir auditoría de volúmenes"
                                     >
                                         <span>Auditoría</span>
                                         <ExternalLink className="w-3 h-3" />

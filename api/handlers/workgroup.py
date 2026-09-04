@@ -13,8 +13,51 @@ from services.workgroup_service import WorkgroupService
 logger = logging.getLogger(__name__)
 
 
+def check_epub_metadata_issue(
+    epub_publisher: str | None, group_name: str
+) -> tuple[bool, str | None]:
+    """
+    Evalúa si la metadata del publisher dentro del archivo EPUB tiene discrepancias con el nombre canónico del grupo.
+    Retorna (has_bad_metadata, issue_description).
+    """
+    raw_pub = (epub_publisher or "").strip()
+    canon_name = (group_name or "").strip()
+
+    if not raw_pub:
+        return True, "Etiqueta dc:publisher vacía o ausente dentro del EPUB"
+
+    if raw_pub == canon_name:
+        return False, None
+
+    # Casos comunes de discrepancia
+    if raw_pub.rstrip(".") == canon_name.rstrip("."):
+        if raw_pub.endswith(".") and not canon_name.endswith("."):
+            return (
+                True,
+                f"Punto final sobrante en EPUB: '{raw_pub}' (debe ser '{canon_name}')",
+            )
+        if canon_name.endswith(".") and not raw_pub.endswith("."):
+            return (
+                True,
+                f"Falta punto final en EPUB: '{raw_pub}' (debe ser '{canon_name}')",
+            )
+
+    if raw_pub.lower() == canon_name.lower():
+        if raw_pub.isupper() and not canon_name.isupper():
+            return (
+                True,
+                f"Todo en mayúsculas en EPUB: '{raw_pub}' (debe ser '{canon_name}')",
+            )
+        return (
+            True,
+            f"Diferencia de mayúsculas/minúsculas: '{raw_pub}' (debe ser '{canon_name}')",
+        )
+
+    return True, f"Publisher en archivo difiere: '{raw_pub}' (debe ser '{canon_name}')"
+
+
 async def handle_workgroup_get_all(data: dict[str, Any], user_data: dict[str, Any]):
-    """Retorna la lista completa de grupos traductores con sus enlaces y estadísticas."""
+    """Retorna la lista completa de grupos traductores con sus enlaces y estadísticas (incluyendo auditoría OPF)."""
     check_staff(user_data)
 
     try:
@@ -28,29 +71,41 @@ async def handle_workgroup_get_all(data: dict[str, Any], user_data: dict[str, An
             res = await session.execute(stmt)
             groups = res.scalars().all()
 
-            # Obtener conteo exhaustivo de libros asociados a cada grupo (vía translator, editor, layout o BookWorkgroup)
-            count_stmt = text("""
+            # Obtener libros asociados y su metadato publisher para auditoría OPF
+            books_stmt = text("""
                 WITH linked AS (
-                    SELECT translator_group_id AS group_id, id AS book_id FROM books WHERE translator_group_id IS NOT NULL
-                    UNION ALL
-                    SELECT editor_group_id AS group_id, id AS book_id FROM books WHERE editor_group_id IS NOT NULL
-                    UNION ALL
-                    SELECT layout_group_id AS group_id, id AS book_id FROM books WHERE layout_group_id IS NOT NULL
-                    UNION ALL
-                    SELECT workgroup_id AS group_id, book_id FROM book_workgroups
+                    SELECT translator_group_id AS group_id, id AS book_id, publisher FROM books WHERE translator_group_id IS NOT NULL
+                    UNION
+                    SELECT editor_group_id AS group_id, id AS book_id, publisher FROM books WHERE editor_group_id IS NOT NULL
+                    UNION
+                    SELECT layout_group_id AS group_id, id AS book_id, publisher FROM books WHERE layout_group_id IS NOT NULL
+                    UNION
+                    SELECT bw.workgroup_id AS group_id, bk.id AS book_id, bk.publisher FROM book_workgroups bw JOIN books bk ON bk.id = bw.book_id
                 )
-                SELECT group_id, COUNT(DISTINCT book_id)
+                SELECT group_id, book_id, publisher
                 FROM linked
-                GROUP BY group_id
             """)
-            count_res = await session.execute(count_stmt)
-            counts_map = {
-                row[0]: row[1] for row in count_res.all() if row[0] is not None
-            }
+            books_res = await session.execute(books_stmt)
+            group_books_map: dict[int, dict[int, str | None]] = {}
+            for gid, bid, pub in books_res.all():
+                if gid is not None:
+                    if gid not in group_books_map:
+                        group_books_map[gid] = {}
+                    group_books_map[gid][bid] = pub
 
             result = []
             for g in groups:
                 links_dict = g.get_links_dict()
+                books_for_group = group_books_map.get(g.id, {})
+                books_count = len(books_for_group)
+                bad_count = 0
+                if books_count > 0:
+                    for pub in books_for_group.values():
+                        has_bad, _ = check_epub_metadata_issue(pub, g.name)
+                        if has_bad:
+                            bad_count += 1
+                good_count = books_count - bad_count
+
                 result.append(
                     {
                         "id": g.id,
@@ -58,7 +113,9 @@ async def handle_workgroup_get_all(data: dict[str, Any], user_data: dict[str, An
                         "siglas": g.siglas,
                         "description": g.description,
                         "preferred_link": g.get_preferred_link(),
-                        "books_count": counts_map.get(g.id, 0),
+                        "books_count": books_count,
+                        "bad_metadata_count": bad_count,
+                        "good_metadata_count": good_count,
                         "links": links_dict,
                         "created_at": g.created_at.isoformat()
                         if g.created_at
@@ -259,47 +316,7 @@ async def handle_workgroup_purge_empty(data: dict[str, Any], user_data: dict[str
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def check_epub_metadata_issue(
-    epub_publisher: str | None, group_name: str
-) -> tuple[bool, str | None]:
-    """
-    Evalúa si la metadata del publisher dentro del archivo EPUB tiene discrepancias con el nombre canónico del grupo.
-    Retorna (has_bad_metadata, issue_description).
-    """
-    raw_pub = (epub_publisher or "").strip()
-    canon_name = (group_name or "").strip()
 
-    if not raw_pub:
-        return True, "Etiqueta dc:publisher vacía o ausente dentro del EPUB"
-
-    if raw_pub == canon_name:
-        return False, None
-
-    # Casos comunes de discrepancia
-    if raw_pub.rstrip(".") == canon_name.rstrip("."):
-        if raw_pub.endswith(".") and not canon_name.endswith("."):
-            return (
-                True,
-                f"Punto final sobrante en EPUB: '{raw_pub}' (debe ser '{canon_name}')",
-            )
-        if canon_name.endswith(".") and not raw_pub.endswith("."):
-            return (
-                True,
-                f"Falta punto final en EPUB: '{raw_pub}' (debe ser '{canon_name}')",
-            )
-
-    if raw_pub.lower() == canon_name.lower():
-        if raw_pub.isupper() and not canon_name.isupper():
-            return (
-                True,
-                f"Todo en mayúsculas en EPUB: '{raw_pub}' (debe ser '{canon_name}')",
-            )
-        return (
-            True,
-            f"Diferencia de mayúsculas/minúsculas: '{raw_pub}' (debe ser '{canon_name}')",
-        )
-
-    return True, f"Publisher en archivo difiere: '{raw_pub}' (debe ser '{canon_name}')"
 
 
 async def handle_workgroup_get_detail(data: dict[str, Any], user_data: dict[str, Any]):
