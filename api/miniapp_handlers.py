@@ -149,6 +149,7 @@ from api.handlers.workgroup import (
     handle_workgroup_merge,
     handle_workgroup_purge_empty,
     handle_workgroup_save,
+    handle_workgroup_sync_books,
 )
 
 __all__ = [
@@ -281,4 +282,5 @@ __all__ = [
     "handle_workgroup_merge",
     "handle_workgroup_purge_empty",
     "handle_workgroup_save",
+    "handle_workgroup_sync_books",
 ]

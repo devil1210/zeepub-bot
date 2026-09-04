@@ -670,3 +670,109 @@ async def handle_workgroup_merge(data: dict[str, Any], user_data: dict[str, Any]
     except Exception as e:
         logger.error(f"Error en handle_workgroup_merge: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def handle_workgroup_sync_books(data: dict[str, Any], user_data: dict[str, Any]):
+    """Re-escanea y sincroniza la metadata desde los archivos EPUB físicos para una lista de libros.
+
+    Permite verificar de inmediato si correcciones en el OPF (como dc:publisher) fueron aplicadas.
+    """
+    check_staff(user_data)
+
+    book_ids = data.get("book_ids") or []
+    if not book_ids or not isinstance(book_ids, list):
+        raise HTTPException(status_code=400, detail="book_ids es requerido y debe ser una lista")
+
+    import os
+    from datetime import datetime
+    from services.epub_service import parse_opf_from_epub
+
+    synced_items = []
+    failed_items = []
+
+    try:
+        async with pg_manager.get_session() as session:
+            stmt = select(LocalBook).where(LocalBook.id.in_(book_ids))
+            res = await session.execute(stmt)
+            books = res.scalars().all()
+
+            for b in books:
+                if not b.filepath or not os.path.exists(b.filepath):
+                    failed_items.append({
+                        "id": b.id,
+                        "title": b.title,
+                        "reason": f"Archivo no encontrado en disco: {b.filepath or 'Sin ruta'}"
+                    })
+                    continue
+
+                try:
+                    # Parsear OPF actualizado directamente desde el archivo EPUB en disco
+                    opf_meta = await parse_opf_from_epub(b.filepath)
+                    if opf_meta:
+                        # 1. dc:publisher
+                        new_pub = opf_meta.get("publisher")
+                        if new_pub is not None:
+                            b.publisher = new_pub.strip() if isinstance(new_pub, str) else new_pub
+
+                        # 2. Sinopsis
+                        if opf_meta.get("sinopsis"):
+                            b.description = opf_meta.get("sinopsis")
+
+                        # 3. Flags especiales (is_uncensored, color_mode)
+                        if opf_meta.get("is_uncensored") is not None:
+                            b.is_uncensored = bool(opf_meta.get("is_uncensored"))
+                        if opf_meta.get("color_mode"):
+                            b.color_mode = opf_meta.get("color_mode")
+
+                        # 4. ISBN / ASIN / Versión EPUB
+                        if opf_meta.get("isbn"):
+                            b.isbn = opf_meta.get("isbn")
+                        if opf_meta.get("asin"):
+                            b.asin = opf_meta.get("asin")
+                        if opf_meta.get("epub_version"):
+                            b.epub_version = opf_meta.get("epub_version")
+
+                        # 5. Timestamp y tamaño de archivo
+                        try:
+                            mtime = os.path.getmtime(b.filepath)
+                            b.file_modified_at = datetime.fromtimestamp(mtime)
+                            b.file_size = os.path.getsize(b.filepath)
+                        except Exception:
+                            pass
+
+                        synced_items.append({
+                            "id": b.id,
+                            "title": b.title,
+                            "publisher": b.publisher,
+                            "color_mode": b.color_mode,
+                            "is_uncensored": b.is_uncensored
+                        })
+                except Exception as ex:
+                    logger.warning(f"Error al parsear EPUB {b.filepath}: {ex}")
+                    failed_items.append({
+                        "id": b.id,
+                        "title": b.title,
+                        "reason": str(ex)
+                    })
+
+            await session.commit()
+
+        logger.info(
+            f"🔄 Sincronización de libros completada: {len(synced_items)} actualizados, "
+            f"{len(failed_items)} fallidos de {len(book_ids)} solicitados."
+        )
+
+        return {
+            "success": True,
+            "synced_count": len(synced_items),
+            "failed_count": len(failed_items),
+            "synced": synced_items,
+            "failed": failed_items,
+            "message": f"Se sincronizaron con éxito {len(synced_items)} libro(s) desde sus archivos EPUB."
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en handle_workgroup_sync_books: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+

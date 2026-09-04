@@ -66,6 +66,8 @@ export const EditorialFansubDetail: React.FC = () => {
     });
     const [isSaving, setIsSaving] = useState(false);
     const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [isSyncingBooks, setIsSyncingBooks] = useState(false);
+    const [syncingBookId, setSyncingBookId] = useState<string | null>(null);
 
     const loadData = async () => {
         if (!id) return;
@@ -109,6 +111,67 @@ export const EditorialFansubDetail: React.FC = () => {
         navigator.clipboard.writeText(path);
         setCopiedPathId(bookId);
         setTimeout(() => setCopiedPathId(null), 2000);
+    };
+
+    const handleSyncFilteredBooks = async () => {
+        if (!id || filteredBooks.length === 0 || isSyncingBooks) return;
+        try {
+            setIsSyncingBooks(true);
+            setStatusMsg(null);
+            const bookIds = filteredBooks.map((b) => b.id);
+            const res = await workgroupsApi.syncBooks(Number(id), bookIds);
+            if (res && res.success) {
+                setStatusMsg({
+                    type: 'success',
+                    text: `✅ ${res.message || `Sincronizados ${res.synced_count} libros desde sus archivos EPUB.`}`
+                });
+                await loadData();
+                setTimeout(() => setStatusMsg(null), 6000);
+            } else {
+                setStatusMsg({
+                    type: 'error',
+                    text: res?.message || 'Error al sincronizar libros.'
+                });
+            }
+        } catch (err: any) {
+            console.error('Error sincronizando libros filtrados:', err);
+            setStatusMsg({
+                type: 'error',
+                text: err.message || 'Error de conexión al sincronizar libros.'
+            });
+        } finally {
+            setIsSyncingBooks(false);
+        }
+    };
+
+    const handleSyncSingleBook = async (bookId: string) => {
+        if (!id || syncingBookId || isSyncingBooks) return;
+        try {
+            setSyncingBookId(bookId);
+            setStatusMsg(null);
+            const res = await workgroupsApi.syncBooks(Number(id), [bookId]);
+            if (res && res.success) {
+                setStatusMsg({
+                    type: 'success',
+                    text: `✅ ${res.message || 'Libro sincronizado con éxito desde su archivo EPUB.'}`
+                });
+                await loadData();
+                setTimeout(() => setStatusMsg(null), 5000);
+            } else {
+                setStatusMsg({
+                    type: 'error',
+                    text: res?.message || 'Error al sincronizar el libro.'
+                });
+            }
+        } catch (err: any) {
+            console.error('Error sincronizando libro:', err);
+            setStatusMsg({
+                type: 'error',
+                text: err.message || 'Error al sincronizar el libro.'
+            });
+        } finally {
+            setSyncingBookId(null);
+        }
     };
 
     const handleSaveGroup = async (e?: React.FormEvent) => {
@@ -427,6 +490,33 @@ export const EditorialFansubDetail: React.FC = () => {
                 </button>
             </div>
 
+            {/* Floating Global Status / Sync Alert */}
+            {statusMsg && (
+                <div
+                    className={`p-4 rounded-2xl text-xs font-bold flex items-center justify-between gap-3 shadow-lg border backdrop-blur-xl animate-in fade-in duration-300 ${
+                        statusMsg.type === 'success'
+                            ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 shadow-emerald-950/30'
+                            : 'bg-red-950/40 border-red-500/40 text-red-300 shadow-red-950/30'
+                    }`}
+                >
+                    <div className="flex items-center gap-2.5">
+                        {statusMsg.type === 'success' ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        ) : (
+                            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                        )}
+                        <span>{statusMsg.text}</span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setStatusMsg(null)}
+                        className="p-1 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
+                    >
+                        <X className="w-3.5 h-3.5" />
+                    </button>
+                </div>
+            )}
+
             {/* TAB 1: EPUB AUDIT & BOOKS LIST */}
             {activeTab === 'audit' && (
                 <div className="space-y-4">
@@ -473,39 +563,71 @@ export const EditorialFansubDetail: React.FC = () => {
                             </button>
                         </div>
 
-                        {/* Search Input */}
-                        <div className="relative min-w-[280px]">
-                            <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Filtrar por título, volumen, archivo..."
-                                className="w-full pl-9 pr-4 py-1.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
-                            />
-                            {searchQuery && (
-                                <button
-                                    onClick={() => setSearchQuery('')}
-                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
-                                >
-                                    <X className="w-3.5 h-3.5" />
-                                </button>
-                            )}
+                        {/* Actions & Search */}
+                        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                            {/* Botón de Sincronización de Libros Filtrados */}
+                            <button
+                                type="button"
+                                onClick={handleSyncFilteredBooks}
+                                disabled={isSyncingBooks || filteredBooks.length === 0}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-lg whitespace-nowrap active:scale-95 ${
+                                    isSyncingBooks
+                                        ? 'bg-indigo-600/50 text-indigo-200 cursor-wait border border-indigo-400/30'
+                                        : filteredBooks.length === 0
+                                        ? 'bg-slate-800/40 text-gray-500 border border-white/5 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white border border-white/20 shadow-indigo-600/25'
+                                }`}
+                                title="Re-escanear metadatos directamente de los archivos EPUB filtrados para comprobar si se corrigió el OPF en disco"
+                            >
+                                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingBooks ? 'animate-spin' : ''}`} />
+                                <span>{isSyncingBooks ? 'Sincronizando...' : `Sincronizar filtrados (${filteredBooks.length})`}</span>
+                            </button>
+
+                            {/* Search Input */}
+                            <div className="relative min-w-[240px]">
+                                <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Filtrar por título, volumen, archivo..."
+                                    className="w-full pl-9 pr-4 py-1.5 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                                    >
+                                        <X className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
 
                     {/* Notice for Typesetter / Maquetador */}
                     {badCount > 0 && filterMode === 'bad' && (
-                        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-3 backdrop-blur-md">
-                            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                            <div className="space-y-1">
-                                <p className="font-bold">
-                                    Guía para el Maquetador: {badCount} archivos requieren corrección en sus metadatos internos
-                                </p>
-                                <p className="text-gray-300 leading-relaxed text-[11px]">
-                                    El campo <code className="bg-black/30 px-1 py-0.5 rounded font-mono text-amber-300">dc:publisher</code> dentro del OPF del EPUB no coincide exactamente con el nombre oficial del grupo <strong>"{group.name}"</strong> (por ejemplo: mayúsculas incorrectas, un punto final extra o un texto distinto). Puedes copiar la ruta del archivo con el botón de portapapeles, corregirlo con tu editor de EPUB (Sigil/Calibre) y volver a subirlo.
-                                </p>
+                        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 backdrop-blur-md">
+                            <div className="flex items-start gap-3">
+                                <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                    <p className="font-bold">
+                                        Guía para el Maquetador: {badCount} archivos requieren corrección en sus metadatos internos
+                                    </p>
+                                    <p className="text-gray-300 leading-relaxed text-[11px]">
+                                        El campo <code className="bg-black/30 px-1 py-0.5 rounded font-mono text-amber-300">dc:publisher</code> dentro del OPF del EPUB no coincide exactamente con el nombre oficial del grupo <strong>"{group.name}"</strong> (por ejemplo: mayúsculas incorrectas, un punto final extra o un texto distinto). Puedes copiar la ruta del archivo, corregirlo con tu editor (Sigil/Calibre) y usar el botón de sincronización para verificar de inmediato.
+                                    </p>
+                                </div>
                             </div>
+                            <button
+                                type="button"
+                                onClick={handleSyncFilteredBooks}
+                                disabled={isSyncingBooks || filteredBooks.length === 0}
+                                className="shrink-0 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black flex items-center gap-2 shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${isSyncingBooks ? 'animate-spin' : ''}`} />
+                                <span>{isSyncingBooks ? 'Comprobando...' : 'Comprobar correcciones ahora'}</span>
+                            </button>
                         </div>
                     )}
 
@@ -580,27 +702,43 @@ export const EditorialFansubDetail: React.FC = () => {
                                                         {b.filename || b.filepath || b.id}
                                                     </div>
                                                     {b.filepath && (
-                                                        <button
-                                                            onClick={() => handleCopyPath(b.id, b.filepath!)}
-                                                            className={`p-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
-                                                                isCopied
-                                                                    ? 'bg-emerald-500 text-black'
-                                                                    : 'bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white'
-                                                            }`}
-                                                            title="Copiar ruta absoluta del archivo EPUB para el maquetador"
-                                                        >
-                                                            {isCopied ? (
-                                                                <>
-                                                                    <Check className="w-3 h-3 stroke-[3]" />
-                                                                    <span>¡Copiado!</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <Copy className="w-3 h-3" />
-                                                                    <span>Copiar Ruta</span>
-                                                                </>
-                                                            )}
-                                                        </button>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <button
+                                                                onClick={() => handleCopyPath(b.id, b.filepath!)}
+                                                                className={`p-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                                                                    isCopied
+                                                                        ? 'bg-emerald-500 text-black'
+                                                                        : 'bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white'
+                                                                }`}
+                                                                title="Copiar ruta absoluta del archivo EPUB para el maquetador"
+                                                            >
+                                                                {isCopied ? (
+                                                                    <>
+                                                                        <Check className="w-3 h-3 stroke-[3]" />
+                                                                        <span>¡Copiado!</span>
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Copy className="w-3 h-3" />
+                                                                        <span>Copiar Ruta</span>
+                                                                    </>
+                                                                )}
+                                                            </button>
+
+                                                            <button
+                                                                onClick={() => handleSyncSingleBook(b.id)}
+                                                                disabled={syncingBookId === b.id || isSyncingBooks}
+                                                                className={`p-1.5 rounded-lg text-[10px] font-bold flex items-center gap-1 transition-all ${
+                                                                    syncingBookId === b.id
+                                                                        ? 'bg-indigo-600/40 text-indigo-300'
+                                                                        : 'bg-white/5 hover:bg-indigo-600/20 text-gray-300 hover:text-indigo-300'
+                                                                }`}
+                                                                title="Re-escanear este archivo EPUB en disco para actualizar sus metadatos"
+                                                            >
+                                                                <RefreshCw className={`w-3 h-3 ${syncingBookId === b.id ? 'animate-spin' : ''}`} />
+                                                                <span>{syncingBookId === b.id ? 'Sincronizando...' : 'Re-escanear'}</span>
+                                                            </button>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>

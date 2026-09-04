@@ -104,5 +104,17 @@ export const workgroupsApi = {
 
     async purgeEmpty(): Promise<{ success: boolean; deleted_count: number; message: string }> {
         return await api.rpc<{ success: boolean; deleted_count: number; message: string }>('workgroup_purge_empty');
+    },
+
+    async syncBooks(groupId: number, bookIds: string[]): Promise<{
+        success: boolean;
+        synced_count: number;
+        failed_count: number;
+        message: string;
+    }> {
+        return await api.rpc('workgroup_sync_books', {
+            group_id: groupId,
+            book_ids: bookIds
+        });
     }
 };

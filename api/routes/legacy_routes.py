@@ -171,6 +171,8 @@ class LegacyRoutes:
             "workgroup-merge": miniapp_handlers.handle_workgroup_merge,
             "workgroup_purge_empty": miniapp_handlers.handle_workgroup_purge_empty,
             "workgroup-purge-empty": miniapp_handlers.handle_workgroup_purge_empty,
+            "workgroup_sync_books": miniapp_handlers.handle_workgroup_sync_books,
+            "workgroup-sync-books": miniapp_handlers.handle_workgroup_sync_books,
         }
 
     def get_router(self) -> APIRouter:
