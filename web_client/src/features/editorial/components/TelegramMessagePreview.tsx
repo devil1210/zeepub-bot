@@ -276,10 +276,36 @@ export const TelegramMessagePreview: React.FC<TelegramMessagePreviewProps> = ({
         // 4. Clean up any leftover conditional tags
         text = text.replace(/\[\?[a-zA-Z0-9_]+\]/g, '').replace(/\[\/\?\]/g, '');
 
+        // Check if template explicitly specifies group link variables
+        const hasExplicitGroupLinks = /\{(editorial_links|grupo_links|traductor_links)\}/i.test(text);
+        const groupLinksText = String(
+            (activeBook as any).editorial_links ||
+            (activeBook as any).grupo_links ||
+            (activeBook as any).traductor_links ||
+            ''
+        ).trim();
+
+        let autoInjectTarget: string | null = null;
+        if (!hasExplicitGroupLinks && groupLinksText) {
+            for (const candidate of ['editorial', 'grupo_traductor', 'grupo']) {
+                if (text.includes(`{${candidate}}`)) {
+                    const regexInTd = new RegExp(`<td[^>]*>[^<]*\\{${candidate}\\}[^<]*<\\/td>`, 'i');
+                    if (!regexInTd.test(text)) {
+                        autoInjectTarget = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+
         // 5. Substitute placeholders: {key}
         text = text.replace(/\{([a-zA-Z0-9_]+)\}/g, (_match, key) => {
             const val = activeBook[key as keyof typeof activeBook];
-            return val !== undefined && val !== null ? String(val) : '';
+            let strVal = val !== undefined && val !== null ? String(val) : '';
+            if (key === autoInjectTarget && strVal) {
+                strVal = `${strVal}\n${groupLinksText}`;
+            }
+            return strVal;
         });
 
         return text;

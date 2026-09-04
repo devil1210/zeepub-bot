@@ -326,6 +326,10 @@ class WorkgroupService:
         res["grupo_discord"] = g_links.get("discord", "")
         res["grupo_patreon"] = g_links.get("patreon", "")
         res["grupo_twitter"] = g_links.get("twitter", "")
+        res["grupo_telegram"] = g_links.get("telegram", "")
+        res["grupo_kofi"] = g_links.get("kofi", "")
+        res["grupo_instagram"] = g_links.get("instagram", "")
+        res["grupo_youtube"] = g_links.get("youtube", "")
 
         formatted_g = []
         if res["grupo_web"]:
@@ -334,10 +338,34 @@ class WorkgroupService:
             formatted_g.append(f"📘 Facebook: {res['grupo_fb']}")
         if res["grupo_discord"]:
             formatted_g.append(f"💬 Discord: {res['grupo_discord']}")
+        if res["grupo_telegram"]:
+            formatted_g.append(f"✈️ Telegram: {res['grupo_telegram']}")
         if res["grupo_patreon"]:
             formatted_g.append(f"🧡 Patreon: {res['grupo_patreon']}")
+        if res["grupo_kofi"]:
+            formatted_g.append(f"☕ Ko-fi: {res['grupo_kofi']}")
         if res["grupo_twitter"]:
             formatted_g.append(f"🐦 Twitter: {res['grupo_twitter']}")
+        if res["grupo_instagram"]:
+            formatted_g.append(f"📸 Instagram: {res['grupo_instagram']}")
+        if res["grupo_youtube"]:
+            formatted_g.append(f"▶️ YouTube: {res['grupo_youtube']}")
+
+        known_platforms = {
+            "web",
+            "fb",
+            "discord",
+            "telegram",
+            "patreon",
+            "kofi",
+            "twitter",
+            "instagram",
+            "youtube",
+        }
+        for k, v in g_links.items():
+            if k not in known_platforms and v:
+                formatted_g.append(f"🔗 {k.capitalize()}: {v}")
+
         res["grupo_links"] = "\n".join(formatted_g)
 
         # Tags de Traductor (Persona / Individual)
@@ -349,7 +377,20 @@ class WorkgroupService:
         res["traductor_discord"] = res["grupo_discord"]
         res["traductor_patreon"] = res["grupo_patreon"]
         res["traductor_twitter"] = res["grupo_twitter"]
+        res["traductor_telegram"] = res["grupo_telegram"]
         res["traductor_links"] = res["grupo_links"]
+
+        # Tags de Editorial / Publisher (Mapeados al grupo traductor para plantillas con {editorial})
+        res["editorial"] = group_name
+        res["publisher"] = group_name
+        res["editorial_link"] = preferred_group_link
+        res["editorial_web"] = res["grupo_web"]
+        res["editorial_fb"] = res["grupo_fb"]
+        res["editorial_discord"] = res["grupo_discord"]
+        res["editorial_patreon"] = res["grupo_patreon"]
+        res["editorial_twitter"] = res["grupo_twitter"]
+        res["editorial_telegram"] = res["grupo_telegram"]
+        res["editorial_links"] = res["grupo_links"]
 
         # 2. Resolver Editor
         e_name = raw_meta.get("editor") or (

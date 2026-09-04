@@ -300,6 +300,48 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 "grupo_links": data.get("grupo_links")
                 or data.get("traductor_links")
                 or "",
+                "editorial": data.get("editorial")
+                or data.get("publisher")
+                or data.get("grupo")
+                or data.get("grupo_traductor")
+                or "",
+                "publisher": data.get("publisher")
+                or data.get("editorial")
+                or data.get("grupo")
+                or data.get("grupo_traductor")
+                or "",
+                "editorial_link": data.get("editorial_link")
+                or data.get("grupo_link")
+                or data.get("traductor_link")
+                or "",
+                "editorial_links": data.get("editorial_links")
+                or data.get("grupo_links")
+                or data.get("traductor_links")
+                or "",
+                "editorial_web": data.get("editorial_web")
+                or data.get("grupo_web")
+                or data.get("traductor_web")
+                or "",
+                "editorial_fb": data.get("editorial_fb")
+                or data.get("grupo_fb")
+                or data.get("traductor_fb")
+                or "",
+                "editorial_discord": data.get("editorial_discord")
+                or data.get("grupo_discord")
+                or data.get("traductor_discord")
+                or "",
+                "editorial_telegram": data.get("editorial_telegram")
+                or data.get("grupo_telegram")
+                or data.get("traductor_telegram")
+                or "",
+                "editorial_patreon": data.get("editorial_patreon")
+                or data.get("grupo_patreon")
+                or data.get("traductor_patreon")
+                or "",
+                "editorial_twitter": data.get("editorial_twitter")
+                or data.get("grupo_twitter")
+                or data.get("traductor_twitter")
+                or "",
                 "editor": data.get("editor") or data.get("corrector") or "",
                 "editor_link": data.get("editor_link") or "",
                 "editor_web": data.get("editor_web") or "",
@@ -446,6 +488,50 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
         # Manejar {var:.2f} y similares eliminando el formato (ya que pre-formateamos)
         result_str = re.sub(r"\{(\w+):.*?\}", r"{\1}", result_str)
 
+        # Inyección automática de links de Fansub / Grupo Traductor:
+        # Si la plantilla no incluye variables explícitas de links
+        # y existen links configurados para el grupo, anexarlos automáticamente debajo del grupo traductor
+        has_explicit_group_links = any(
+            var in result_str
+            for var in (
+                "{editorial_links}",
+                "{grupo_links}",
+                "{traductor_links}",
+                "{grupo_web}",
+                "{grupo_fb}",
+                "{grupo_discord}",
+                "{grupo_telegram}",
+                "{grupo_link}",
+                "{traductor_web}",
+                "{traductor_fb}",
+                "{traductor_discord}",
+                "{traductor_telegram}",
+                "{traductor_link}",
+                "{editorial_web}",
+                "{editorial_fb}",
+                "{editorial_discord}",
+                "{editorial_telegram}",
+                "{editorial_link}",
+            )
+        )
+        group_links_text = (
+            mapping.get("editorial_links")
+            or mapping.get("grupo_links")
+            or mapping.get("traductor_links")
+            or ""
+        ).strip()
+
+        # Determinar cuál placeholder de grupo se utilizará para anexar los links automáticamente
+        auto_inject_target = None
+        if not has_explicit_group_links and group_links_text:
+            for candidate in ("editorial", "grupo_traductor", "grupo"):
+                if f"{{{candidate}}}" in result_str:
+                    # Comprobar que no esté dentro de tags HTML como <td>, <th>, <a> o <code>
+                    pattern_in_tag = rf"<(?:td|th|a|code)[^>]*>[^<]*\{{{candidate}\}}[^<]*<\/(?:td|th|a|code)>"
+                    if not re.search(pattern_in_tag, result_str, re.IGNORECASE):
+                        auto_inject_target = candidate
+                        break
+
         placeholders = set(re.findall(r"\{(\w+)\}", result_str))
         for p in placeholders:
             val = mapping.get(p, "")
@@ -454,6 +540,11 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
                 val = "Desconocido"
             elif not val and (p == "tamaño" or p == "size_mb"):
                 val = "0.00 MB"
+
+            # Si este placeholder es el elegido para auto-inyectar los links del grupo
+            if p == auto_inject_target and val:
+                val = f"{val}\n{group_links_text}"
+
             result_str = result_str.replace(f"{{{p}}}", val)
 
         # Normalizar hashtags duplicados (ej: ##Zack -> #Zack)

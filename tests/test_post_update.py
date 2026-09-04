@@ -23,6 +23,9 @@ async def test_update_published_book_facebook_success():
     mock_group.contact_links = [GroupContactLink(platform="website", url="https://mushoku.fans")]
 
     mock_session = AsyncMock()
+    mock_exec_res = MagicMock()
+    mock_exec_res.scalar_one_or_none.return_value = mock_book
+    mock_session.execute.return_value = mock_exec_res
     service = PublisherService(mock_session)
 
     service.book_repo = AsyncMock()
@@ -54,6 +57,9 @@ async def test_update_published_book_no_fb_post_id():
     )
 
     mock_session = AsyncMock()
+    mock_exec_res = MagicMock()
+    mock_exec_res.scalar_one_or_none.return_value = mock_book
+    mock_session.execute.return_value = mock_exec_res
     service = PublisherService(mock_session)
     service.book_repo = AsyncMock()
     service.book_repo.get_by_hash.return_value = mock_book

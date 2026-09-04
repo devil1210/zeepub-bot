@@ -74,8 +74,27 @@ async def preparar_post_facebook(update, context: ContextTypes.DEFAULT_TYPE, uid
     from utils.helpers import clean_caption_for_facebook
     from utils.template_engine import apply_publication_template
 
-    raw_fb_caption = apply_publication_template(TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta)
-    fb_caption_text = clean_caption_for_facebook(raw_fb_caption, public_link=public_link)
+    if not meta.get("grupo_links") and not meta.get("editorial_links"):
+        try:
+            from services.workgroup_service import workgroup_service
+
+            credits_meta = await workgroup_service.resolve_book_workgroup_credits(
+                book_id=user_state.get("book_id"),
+                raw_meta=meta,
+                public_link=public_link,
+            )
+            meta.update(credits_meta)
+        except Exception as e:
+            logger.warning(
+                "Error resolviendo créditos de workgroup en facebook_service: %s", e
+            )
+
+    raw_fb_caption = apply_publication_template(
+        TelegramPublisherProvider.FB_CAPTION_TEMPLATE, meta
+    )
+    fb_caption_text = clean_caption_for_facebook(
+        raw_fb_caption, public_link=public_link
+    )
     fb_caption = f"<b>Vista Previa Facebook:</b>\n\n{fb_caption_text}"
 
     # Guardar en estado para publicación

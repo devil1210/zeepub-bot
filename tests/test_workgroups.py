@@ -194,4 +194,63 @@ def test_check_epub_metadata_issue():
     assert "difiere" in issue
 
 
+@pytest.mark.asyncio
+async def test_auto_inject_fansub_links_under_editorial():
+    """Valida que los links de fansub se inyecten automáticamente bajo {editorial} si la plantilla no los pide explícitamente."""
+    from utils.template_engine import apply_publication_template
+
+    group = TranslatorsGroup(name="Tamashi's Project")
+    group.contact_links = [
+        GroupContactLink(platform="web", url="https://tamaship.com/"),
+        GroupContactLink(platform="facebook", url="https://facebook.com/tamashi"),
+        GroupContactLink(platform="discord", url="https://discord.gg/tamashi"),
+    ]
+
+    with patch.object(WorkgroupService, "get_by_name", return_value=group), \
+         patch.object(WorkgroupService, "get_by_id", return_value=None):
+        raw = {
+            "traductor": "Mayu",
+            "editorial": "Tamashi's Project",
+        }
+        res = await WorkgroupService.resolve_book_workgroup_credits(
+            book_id="book_uuid_auto_links",
+            raw_meta=raw,
+        )
+
+        data = {
+            "title": "Reincarnated as the Villain",
+            "volume": "1",
+            "traductor": "Mayu",
+        }
+        data.update(res)
+
+        # 1. Plantilla estándar estilo Facebook (sin variables de links explícitas)
+        template_standard = (
+            "🌐 Traducción: {traductor}\n"
+            "[?editorial]🏢 Grupo Traductor: {editorial}\n[/?]"
+            "📝 Sinopsis: ..."
+        )
+        rendered = apply_publication_template(template_standard, data)
+
+        assert "🏢 Grupo Traductor: Tamashi's Project" in rendered
+        assert "🌐 Web: https://tamaship.com/" in rendered
+        assert "📘 Facebook: https://facebook.com/tamashi" in rendered
+        assert "💬 Discord: https://discord.gg/tamashi" in rendered
+
+        # 2. Plantilla con links explícitos: no debe duplicar los links
+        template_explicit = (
+            "🏢 Grupo Traductor: {editorial}\n"
+            "Enlaces:\n{editorial_links}"
+        )
+        rendered_explicit = apply_publication_template(template_explicit, data)
+        # Debe aparecer exactamente una vez cada link
+        assert rendered_explicit.count("🌐 Web: https://tamaship.com/") == 1
+
+        # 3. Plantilla dentro de tabla HTML <td>: no debe meter saltos de línea dentro de la celda
+        template_table = "<tr><td><b>🏢 Grupo Traductor</b></td><td>{editorial}</td></tr>"
+        rendered_table = apply_publication_template(template_table, data)
+        assert "<td>Tamashi's Project</td>" in rendered_table
+
+
+
 
