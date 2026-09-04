@@ -142,6 +142,8 @@ async def handle_admin_get_library_grid(data: dict[str, Any], user_data: dict[st
                     "title": b.title or "",
                     "volume": b.volume if b.volume is not None else "",
                     "edition": b.edition or "",
+                    "color_mode": b.color_mode or ("color" if "[color]" in (b.filename or "").lower() else "bw"),
+                    "is_uncensored": bool(b.is_uncensored),
                     "translator": b.translator or "",
                     "layout_by": b.layout_by or "",
                     "filename": b.filename or "",

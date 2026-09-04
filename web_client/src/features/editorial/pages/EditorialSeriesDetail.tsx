@@ -211,6 +211,23 @@ export const EditorialSeriesDetail: React.FC = () => {
         setTimeout(() => setToast(null), 4000);
     };
 
+    const checkIsColor = (b: AssociatedBook) => {
+        return (
+            b.color_mode === 'color' ||
+            Boolean(b.edition && b.edition.toLowerCase().includes('color')) ||
+            Boolean(b.filename && b.filename.toLowerCase().includes('[color]')) ||
+            Boolean(b.title && b.title.toLowerCase().includes('[color]'))
+        );
+    };
+
+    const checkIsUncensored = (b: AssociatedBook) => {
+        return (
+            Boolean(b.is_uncensored) ||
+            Boolean(b.edition && (b.edition.toLowerCase().includes('s/c') || b.edition.toLowerCase().includes('sin censura'))) ||
+            Boolean(b.filename && (b.filename.toLowerCase().includes('[s/c]') || b.filename.toLowerCase().includes('sin censura')))
+        );
+    };
+
     const fetchSeriesData = async () => {
         if (!id) return;
         setLoading(true);
@@ -231,12 +248,22 @@ export const EditorialSeriesDetail: React.FC = () => {
                 setCoverUrl(s.cover_url || '');
                 setAliases(s.aliases || []);
 
-                // Sort books by volume numeric
-                const rawBooks = res.books || s.books || [];
-                const sortedBooks = [...rawBooks].sort((a, b) => {
+                // Deduplicate and sort books by volume numeric
+                const rawBooks: AssociatedBook[] = res.books || s.books || [];
+                const uniqueMap = new Map<string, AssociatedBook>();
+                rawBooks.forEach((b: AssociatedBook) => {
+                    const key = b.id || b.book_hash;
+                    if (key && !uniqueMap.has(key)) {
+                        uniqueMap.set(key, b);
+                    }
+                });
+                const sortedBooks = Array.from(uniqueMap.values()).sort((a, b) => {
                     const volA = parseFloat(String(a.volume)) || 0;
                     const volB = parseFloat(String(b.volume)) || 0;
-                    return volA - volB;
+                    if (volA !== volB) return volA - volB;
+                    const isColorA = (a.color_mode === 'color' || (a.edition && a.edition.toLowerCase().includes('color')) || (a.filename && a.filename.toLowerCase().includes('[color]')));
+                    const isColorB = (b.color_mode === 'color' || (b.edition && b.edition.toLowerCase().includes('color')) || (b.filename && b.filename.toLowerCase().includes('[color]')));
+                    return (isColorA ? 1 : 0) - (isColorB ? 1 : 0);
                 });
                 setBooks(sortedBooks);
             } else {
@@ -683,14 +710,14 @@ export const EditorialSeriesDetail: React.FC = () => {
                                             {b.volume === 0 || b.edition === 'Volumen Único' ? 'Único' : `Vol. ${b.volume}`}
                                         </div>
 
-                                        {/* Floating Quality Badges on Cover (Color / S/C) */}
-                                        <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-10">
-                                            {b.color_mode === 'color' && (
-                                                <span className="bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
+                                        {/* Floating Quality Badges on Cover (Color / S/C - matching v1) */}
+                                        <div className="absolute bottom-2.5 right-2.5 flex flex-col items-end gap-1.5 z-10">
+                                            {checkIsColor(b) && (
+                                                <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
                                                     COLOR
                                                 </span>
                                             )}
-                                            {b.is_uncensored && (
+                                            {checkIsUncensored(b) && (
                                                 <span className="bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
                                                     S/C
                                                 </span>
@@ -700,18 +727,25 @@ export const EditorialSeriesDetail: React.FC = () => {
 
                                     {/* Book Info */}
                                     <div className="pt-3 space-y-1 min-w-0">
-                                        <h4 className="text-xs font-bold text-white truncate group-hover:text-indigo-300 transition-colors">
-                                            {b.spanish_title || b.title}
-                                        </h4>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <h4 className="text-xs font-bold text-white truncate group-hover:text-indigo-300 transition-colors flex-1 min-w-0">
+                                                {b.spanish_title || b.title}
+                                            </h4>
+                                            {checkIsColor(b) && (
+                                                <span className="px-1.5 py-0.5 rounded bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[8px] font-black uppercase tracking-wider shrink-0 shadow">
+                                                    COLOR
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="flex items-center justify-between text-[10px] text-gray-400">
                                             <div className="flex items-center gap-1.5 truncate">
                                                 <span className="truncate">✍️ {b.translator || 'Sin traductor'}</span>
-                                                {b.color_mode === 'color' && (
-                                                    <span className="px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-300 font-black text-[8px] uppercase tracking-wider">
-                                                        Color
+                                                {b.edition && b.edition !== 'Regular' && (
+                                                    <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-bold text-[8px] uppercase tracking-wider">
+                                                        {b.edition}
                                                     </span>
                                                 )}
-                                                {b.is_uncensored && (
+                                                {checkIsUncensored(b) && (
                                                     <span className="px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-black text-[8px] uppercase tracking-wider">
                                                         S/C
                                                     </span>
@@ -776,12 +810,12 @@ export const EditorialSeriesDetail: React.FC = () => {
                                                 <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-mono text-xs font-black">
                                                     {b.volume === 0 || b.edition === 'Volumen Único' ? 'Volumen Único' : `Volumen ${b.volume}`}
                                                 </span>
-                                                {b.color_mode === 'color' && (
+                                                {checkIsColor(b) && (
                                                     <span className="px-2 py-0.5 rounded bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[9px] font-black tracking-wider uppercase shadow-md">
                                                         COLOR
                                                     </span>
                                                 )}
-                                                {b.is_uncensored && (
+                                                {checkIsUncensored(b) && (
                                                     <span className="px-2 py-0.5 rounded bg-red-600/30 text-red-400 border border-red-500/30 text-[9px] font-black tracking-wider uppercase">
                                                         S/C
                                                     </span>

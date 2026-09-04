@@ -835,11 +835,21 @@ async def handle_admin_get_series_detail(data: dict[str, Any], user_data: dict[s
                 "books": [
                     {
                         "id": b.id,
+                        "book_hash": b.id,
                         "title": b.title,
+                        "spanish_title": getattr(b, "spanish_title", None) or b.title,
                         "volume": b.volume,
+                        "edition": b.edition or "",
+                        "color_mode": b.color_mode or ("color" if "[color]" in (b.filename or "").lower() else "bw"),
+                        "is_uncensored": bool(b.is_uncensored),
                         "translator": b.translator or "",
                         "layout_by": b.layout_by or "",
-                        "cover_url": b.cover_low or b.cover_medium
+                        "editor": getattr(b, "editor", "") or "",
+                        "filename": b.filename or "",
+                        "file_size": b.file_size or 0,
+                        "size_mb": f"{(b.file_size / (1024 * 1024)):.2f}" if b.file_size else "0",
+                        "cover_url": b.cover_high or b.cover_medium or b.cover_low or "",
+                        "cover_thumb": b.cover_low or b.cover_medium or "",
                     }
                     for b in (series.books or [])
                 ]
