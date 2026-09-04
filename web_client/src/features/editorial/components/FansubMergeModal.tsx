@@ -24,12 +24,14 @@ interface FansubMergeModalProps {
     onMergeSuccess: (res: WorkgroupMergeResponse) => void;
 }
 
+const EMPTY_SOURCES: number[] = [];
+
 export const FansubMergeModal: React.FC<FansubMergeModalProps> = ({
     isOpen,
     onClose,
     workgroups,
     initialTargetId = null,
-    initialSourceIds = [],
+    initialSourceIds = EMPTY_SOURCES,
     onMergeSuccess
 }) => {
     const [targetId, setTargetId] = useState<number | null>(initialTargetId);
@@ -39,15 +41,18 @@ export const FansubMergeModal: React.FC<FansubMergeModalProps> = ({
     const [merging, setMerging] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+    const prevIsOpenRef = React.useRef(false);
+
     useEffect(() => {
-        if (isOpen) {
-            setTargetId(initialTargetId);
-            setSelectedSourceIds(initialSourceIds.filter((id) => id !== initialTargetId));
+        if (isOpen && !prevIsOpenRef.current) {
+            setTargetId(initialTargetId ?? null);
+            setSelectedSourceIds(initialSourceIds ? initialSourceIds.filter((id) => id !== initialTargetId) : []);
             setSearchTarget('');
             setSearchSource('');
             setErrorMsg(null);
         }
-    }, [isOpen, initialTargetId, initialSourceIds]);
+        prevIsOpenRef.current = isOpen;
+    }, [isOpen, initialTargetId]);
 
     if (!isOpen) return null;
 
@@ -56,15 +61,15 @@ export const FansubMergeModal: React.FC<FansubMergeModalProps> = ({
     const availableSources = workgroups.filter(
         (w) => w.id !== targetId &&
         (!searchSource.trim() ||
-            w.name.toLowerCase().includes(searchSource.toLowerCase()) ||
-            w.siglas?.toLowerCase().includes(searchSource.toLowerCase()) ||
+            (w.name || '').toLowerCase().includes(searchSource.toLowerCase()) ||
+            (w.siglas || '').toLowerCase().includes(searchSource.toLowerCase()) ||
             String(w.id).includes(searchSource.trim()))
     );
 
     const filteredTargets = workgroups.filter(
         (w) => !searchTarget.trim() ||
-            w.name.toLowerCase().includes(searchTarget.toLowerCase()) ||
-            w.siglas?.toLowerCase().includes(searchTarget.toLowerCase()) ||
+            (w.name || '').toLowerCase().includes(searchTarget.toLowerCase()) ||
+            (w.siglas || '').toLowerCase().includes(searchTarget.toLowerCase()) ||
             String(w.id).includes(searchTarget.trim())
     );
 
@@ -156,14 +161,23 @@ export const FansubMergeModal: React.FC<FansubMergeModalProps> = ({
                         </label>
 
                         <div className="relative">
-                            <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                             <input
                                 type="text"
                                 value={searchTarget}
                                 onChange={(e) => setSearchTarget(e.target.value)}
                                 placeholder="Filtrar grupos por nombre o siglas..."
-                                className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                                className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                             />
+                            {searchTarget && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchTarget('')}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-0.5 transition-colors"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            )}
                         </div>
 
                         <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1 border border-white/5 rounded-2xl p-2 bg-slate-950/40">
@@ -227,14 +241,23 @@ export const FansubMergeModal: React.FC<FansubMergeModalProps> = ({
                         </div>
 
                         <div className="relative">
-                            <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                             <input
                                 type="text"
                                 value={searchSource}
                                 onChange={(e) => setSearchSource(e.target.value)}
                                 placeholder="Buscar duplicados a absorber..."
-                                className="w-full pl-9 pr-3 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                                className="w-full pl-9 pr-8 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
                             />
+                            {searchSource && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchSource('')}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-0.5 transition-colors"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            )}
                         </div>
 
                         <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1 border border-white/5 rounded-2xl p-2 bg-slate-950/40">
