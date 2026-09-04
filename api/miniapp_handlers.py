@@ -58,12 +58,12 @@ from api.handlers.admin import (
     handle_admin_stats,
     handle_admin_stop_scan,
     handle_admin_sync_facebook_publications,
-    handle_admin_update_publication_caption,
     handle_admin_sync_library_cloud,
     handle_admin_sync_themes,
     handle_admin_sync_users_cloud,
     handle_admin_update_book_grid,
     handle_admin_update_covers,
+    handle_admin_update_publication_caption,
     handle_admin_update_series_grid,
     handle_admin_update_system,
     handle_get_upload_history,
@@ -147,6 +147,7 @@ from api.handlers.workgroup import (
     handle_workgroup_get_all,
     handle_workgroup_get_detail,
     handle_workgroup_merge,
+    handle_workgroup_purge_empty,
     handle_workgroup_save,
 )
 
@@ -278,5 +279,6 @@ __all__ = [
     "handle_workgroup_get_all",
     "handle_workgroup_get_detail",
     "handle_workgroup_merge",
+    "handle_workgroup_purge_empty",
     "handle_workgroup_save",
 ]
