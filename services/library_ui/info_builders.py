@@ -8,14 +8,17 @@ from typing import Any
 
 def build_status_rich_blocks(
     user_name: str,
-    role_name: str,
-    downloads_str: str,
-    user_id: int,
-    joined_date: str,
-    last_download_str: str,
+    role_name: str = "",
+    downloads_str: str = "",
+    user_id: int | str = 0,
+    joined_date: str = "",
+    last_download_str: str = "",
     webapp_url: str = "",
+    user_rank: str = "",
+    **kwargs: Any,
 ) -> list[dict[str, Any]]:
     """Construye Bloques Nativos para la pantalla de Estado / Perfil."""
+    effective_role = user_rank or role_name or "Lector"
     blocks: list[dict[str, Any]] = [
         {
             "type": "heading",
@@ -34,7 +37,7 @@ def build_status_rich_blocks(
                 ],
                 [
                     {"text": "⭐ Nivel / Rango", "align": "left"},
-                    {"text": role_name, "align": "left"},
+                    {"text": effective_role, "align": "left"},
                 ],
                 [
                     {"text": "📥 Cuota de Hoy", "align": "left"},
