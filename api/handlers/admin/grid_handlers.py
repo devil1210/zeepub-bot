@@ -10,8 +10,31 @@ from core.db_manager_pg import pg_manager
 from models.library import Book, Series
 from services.cache_service import cache_manager
 from utils.metadata_utils import generar_slug_from_meta
+from api.handlers.helpers import check_staff
 
 logger = logging.getLogger(__name__)
+
+
+def check_book_metadata_issues(
+    book: Book, series_spanish_name: str | None = None
+) -> list[str]:
+    """Identifica discrepancias y omisiones de metadatos en un libro para el maquetador."""
+    issues = []
+    if book.volume is None or book.volume == "":
+        issues.append("Falta número de volumen")
+    if not (
+        book.spanish_title
+        or getattr(book, "series_spanish", None)
+        or series_spanish_name
+    ):
+        issues.append("Sin título en español")
+    if not book.author:
+        issues.append("Sin autor registrado")
+    if not (book.translator or book.translator_group_id):
+        issues.append("Sin traductor o fansub asignado")
+    if not book.publisher:
+        issues.append("Sin publisher en OPF/BD")
+    return issues
 
 
 def _sanitize_slug(slug_str: str | None) -> str | None:
@@ -29,7 +52,9 @@ def _sanitize_slug(slug_str: str | None) -> str | None:
     return cleaned
 
 
-async def handle_admin_get_library_grid(data: dict[str, Any], user_data: dict[str, Any]) -> dict[str, Any]:
+async def handle_admin_get_library_grid(
+    data: dict[str, Any], user_data: dict[str, Any]
+) -> dict[str, Any]:
     """
     Retorna la lista jerárquica de Series con sus Volúmenes/EPUBs asociados
     con soporte para búsqueda, filtros de consistencia y paginación rápida.
@@ -75,21 +100,51 @@ async def handle_admin_get_library_grid(data: dict[str, Any], user_data: dict[st
 
         # Filtros de consistencia y metadatos faltantes
         if missing_filter == "no_slug":
-            base_stmt = base_stmt.where(or_(Series.slug.is_(None), Series.slug == "", Series.slug == "#"))
+            base_stmt = base_stmt.where(
+                or_(Series.slug.is_(None), Series.slug == "", Series.slug == "#")
+            )
         elif missing_filter == "no_english":
-            base_stmt = base_stmt.where(or_(Series.name_english.is_(None), Series.name_english == ""))
+            base_stmt = base_stmt.where(
+                or_(Series.name_english.is_(None), Series.name_english == "")
+            )
         elif missing_filter == "no_spanish":
-            base_stmt = base_stmt.where(or_(Series.name_spanish.is_(None), Series.name_spanish == ""))
+            base_stmt = base_stmt.where(
+                or_(Series.name_spanish.is_(None), Series.name_spanish == "")
+            )
         elif missing_filter == "no_illustrator":
-            base_stmt = base_stmt.where(or_(Series.illustrator.is_(None), Series.illustrator == ""))
+            base_stmt = base_stmt.where(
+                or_(Series.illustrator.is_(None), Series.illustrator == "")
+            )
         elif missing_filter == "no_synopsis":
-            base_stmt = base_stmt.where(or_(Series.description.is_(None), Series.description == ""))
+            base_stmt = base_stmt.where(
+                or_(Series.description.is_(None), Series.description == "")
+            )
         elif missing_filter == "no_translator":
             # Series que tengan al menos 1 libro sin traductor
             no_trans_series_stmt = select(Book.series_id).where(
-                or_(Book.translator.is_(None), Book.translator == "", Book.translator.ilike("Desconocid%"))
+                or_(
+                    Book.translator.is_(None),
+                    Book.translator == "",
+                    Book.translator.ilike("Desconocid%"),
+                )
             )
             base_stmt = base_stmt.where(Series.id.in_(no_trans_series_stmt))
+        elif missing_filter in ("with_issues", "with_obs", "bad_metadata"):
+            # Series que tengan al menos 1 libro con discrepancias u omisiones
+            issues_series_stmt = select(Book.series_id).where(
+                or_(
+                    Book.volume.is_(None),
+                    Book.spanish_title.is_(None),
+                    Book.spanish_title == "",
+                    Book.publisher.is_(None),
+                    Book.publisher == "",
+                    Book.translator.is_(None),
+                    Book.translator == "",
+                    Book.author.is_(None),
+                    Book.author == "",
+                )
+            )
+            base_stmt = base_stmt.where(Series.id.in_(issues_series_stmt))
         elif missing_filter == "single_volume":
             base_stmt = base_stmt.where(Series.book_count == 1)
         elif missing_filter == "multi_volume":
@@ -99,7 +154,9 @@ async def handle_admin_get_library_grid(data: dict[str, Any], user_data: dict[st
         if book_type_filter:
             base_stmt = base_stmt.where(Series.book_type.ilike(f"%{book_type_filter}%"))
         if demography_filter:
-            base_stmt = base_stmt.where(Series.demographics_json.cast(func.text).ilike(f"%{demography_filter}%"))
+            base_stmt = base_stmt.where(
+                Series.demographics_json.cast(func.text).ilike(f"%{demography_filter}%")
+            )
 
         # Conteo total de series coincidentes
         count_stmt = select(func.count()).select_from(base_stmt.subquery())
@@ -113,13 +170,17 @@ async def handle_admin_get_library_grid(data: dict[str, Any], user_data: dict[st
         if sort_by == "name_desc":
             base_stmt = base_stmt.order_by(Series.name.desc())
         elif sort_by == "books_desc":
-            base_stmt = base_stmt.order_by(Series.book_count.desc().nullslast(), Series.name.asc())
+            base_stmt = base_stmt.order_by(
+                Series.book_count.desc().nullslast(), Series.name.asc()
+            )
         elif sort_by == "updated_desc":
             base_stmt = base_stmt.order_by(Series.updated_at.desc().nullslast())
         else:
             base_stmt = base_stmt.order_by(Series.name.asc())
 
-        base_stmt = base_stmt.options(selectinload(Series.books)).offset(offset).limit(limit)
+        base_stmt = (
+            base_stmt.options(selectinload(Series.books)).offset(offset).limit(limit)
+        )
 
         res = await session.execute(base_stmt)
         series_list = res.scalars().unique().all()
@@ -129,53 +190,86 @@ async def handle_admin_get_library_grid(data: dict[str, Any], user_data: dict[st
             # Ordenar volúmenes por volumen ascendente
             sorted_books = sorted(
                 s.books,
-                key=lambda b: (b.volume is None, b.volume if b.volume is not None else 9999, b.filename or "")
+                key=lambda b: (
+                    b.volume is None,
+                    b.volume if b.volume is not None else 9999,
+                    b.filename or "",
+                ),
             )
 
             books_payload = []
+            bad_count = 0
             for b in sorted_books:
-                size_mb = f"{(b.file_size / (1024 * 1024)):.2f} MB" if b.file_size else "0 MB"
-                books_payload.append({
-                    "id": b.id,
-                    "book_hash": b.id,
-                    "series_id": b.series_id,
-                    "title": b.title or "",
-                    "volume": b.volume if b.volume is not None else "",
-                    "edition": b.edition or "",
-                    "color_mode": b.color_mode or ("color" if "[color]" in (b.filename or "").lower() else "bw"),
-                    "is_uncensored": bool(b.is_uncensored),
-                    "translator": b.translator or "",
-                    "layout_by": b.layout_by or "",
-                    "filename": b.filename or "",
-                    "file_size": b.file_size or 0,
-                    "size_mb": size_mb,
-                    "filepath": b.filepath or "",
-                    "cover_url": b.cover_high or b.cover_medium or b.cover_low or "",
-                    "language": b.language or "es",
-                    "updated_at": b.file_modified_at.isoformat() if b.file_modified_at else None,
-                })
+                size_mb = (
+                    f"{(b.file_size / (1024 * 1024)):.2f} MB" if b.file_size else "0 MB"
+                )
+                b_issues = check_book_metadata_issues(b, s.name_spanish or s.name)
+                has_bad = len(b_issues) > 0
+                if has_bad:
+                    bad_count += 1
 
-            results.append({
-                "id": s.id,
-                "series_hash": s.id,
-                "name": s.name,
-                "series_english": s.name_english or "",
-                "series_spanish": s.name_spanish or "",
-                "slug": s.slug or "",
-                "author": s.author or "",
-                "author_jap": s.author_jap or "",
-                "illustrator": s.illustrator or "",
-                "illustrator_jap": s.illustrator_jap or "",
-                "description": s.description or "",
-                "publisher": s.publisher or "",
-                "book_type": s.book_type or "Novela Ligera",
-                "demographics": s.demographics_json or [],
-                "tags": s.tags_json or [],
-                "cover_url": s.cover_url or "",
-                "book_count": len(books_payload),
-                "books": books_payload,
-                "updated_at": s.updated_at.isoformat() if s.updated_at else None,
-            })
+                books_payload.append(
+                    {
+                        "id": b.id,
+                        "book_hash": b.id,
+                        "series_id": b.series_id,
+                        "title": b.title or "",
+                        "spanish_title": b.spanish_title or "",
+                        "english_title": b.english_title or "",
+                        "volume": b.volume if b.volume is not None else "",
+                        "edition": b.edition or "",
+                        "color_mode": b.color_mode
+                        or (
+                            "color" if "[color]" in (b.filename or "").lower() else "bw"
+                        ),
+                        "is_uncensored": bool(b.is_uncensored),
+                        "translator": b.translator or "",
+                        "layout_by": b.layout_by or "",
+                        "publisher": b.publisher or "",
+                        "filename": b.filename or "",
+                        "file_size": b.file_size or 0,
+                        "size_mb": size_mb,
+                        "filepath": b.filepath or "",
+                        "cover_url": b.cover_high
+                        or b.cover_medium
+                        or b.cover_low
+                        or "",
+                        "language": b.language or "es",
+                        "has_bad_metadata": has_bad,
+                        "metadata_issues": b_issues,
+                        "metadata_issue": b_issues[0] if b_issues else None,
+                        "updated_at": b.file_modified_at.isoformat()
+                        if b.file_modified_at
+                        else None,
+                    }
+                )
+
+            results.append(
+                {
+                    "id": s.id,
+                    "series_hash": s.id,
+                    "name": s.name,
+                    "series_english": s.name_english or "",
+                    "series_spanish": s.name_spanish or "",
+                    "slug": s.slug or "",
+                    "author": s.author or "",
+                    "author_jap": s.author_jap or "",
+                    "illustrator": s.illustrator or "",
+                    "illustrator_jap": s.illustrator_jap or "",
+                    "description": s.description or "",
+                    "publisher": s.publisher or "",
+                    "book_type": s.book_type or "Novela Ligera",
+                    "demographics": s.demographics_json or [],
+                    "tags": s.tags_json or [],
+                    "cover_url": s.cover_url or "",
+                    "book_count": len(books_payload),
+                    "bad_metadata_count": bad_count,
+                    "good_metadata_count": len(books_payload) - bad_count,
+                    "has_bad_metadata": bad_count > 0,
+                    "books": books_payload,
+                    "updated_at": s.updated_at.isoformat() if s.updated_at else None,
+                }
+            )
 
         pages = (total_series + limit - 1) // limit if total_series > 0 else 1
 
@@ -201,13 +295,19 @@ async def handle_admin_get_library_grid(data: dict[str, Any], user_data: dict[st
         }
 
 
-async def handle_admin_update_series_grid(data: dict[str, Any], user_data: dict[str, Any]) -> dict[str, Any]:
+async def handle_admin_update_series_grid(
+    data: dict[str, Any], user_data: dict[str, Any]
+) -> dict[str, Any]:
     """Actualiza metadatos de una Serie desde la vista Data Grid."""
     series_id = data.get("series_id") or data.get("id")
     if not series_id:
         raise HTTPException(status_code=400, detail="series_id es requerido")
 
-    clean_id = series_id.replace("series_", "") if series_id.startswith("series_") else series_id
+    clean_id = (
+        series_id.replace("series_", "")
+        if series_id.startswith("series_")
+        else series_id
+    )
 
     async with pg_manager.get_session() as session:
         stmt = select(Series).where(
@@ -241,7 +341,10 @@ async def handle_admin_update_series_grid(data: dict[str, Any], user_data: dict[
                 await session.execute(
                     update(Book)
                     .where(Book.series_id == series.id)
-                    .values(series_english=series.name_english, english_title=series.name_english)
+                    .values(
+                        series_english=series.name_english,
+                        english_title=series.name_english,
+                    )
                 )
         if "series_spanish" in data or "name_spanish" in data:
             val = data.get("series_spanish", data.get("name_spanish"))
@@ -250,7 +353,10 @@ async def handle_admin_update_series_grid(data: dict[str, Any], user_data: dict[
                 await session.execute(
                     update(Book)
                     .where(Book.series_id == series.id)
-                    .values(series_spanish=series.name_spanish, spanish_title=series.name_spanish)
+                    .values(
+                        series_spanish=series.name_spanish,
+                        spanish_title=series.name_spanish,
+                    )
                 )
         if "slug" in data:
             raw_slug = data.get("slug")
@@ -282,6 +388,7 @@ async def handle_admin_update_series_grid(data: dict[str, Any], user_data: dict[
         if "demographics" in data or "demographics_json" in data:
             val = data.get("demographics") or data.get("demographics_json")
             from utils.metadata_utils import normalize_demographics_list
+
             series.demographics_json = normalize_demographics_list(val)
         if "tags" in data or "tags_json" in data or "genres" in data:
             val = data.get("tags") or data.get("tags_json") or data.get("genres")
@@ -305,11 +412,13 @@ async def handle_admin_update_series_grid(data: dict[str, Any], user_data: dict[
                 "author": series.author or "",
                 "illustrator": series.illustrator or "",
                 "book_type": series.book_type or "",
-            }
+            },
         }
 
 
-async def handle_admin_update_book_grid(data: dict[str, Any], user_data: dict[str, Any]) -> dict[str, Any]:
+async def handle_admin_update_book_grid(
+    data: dict[str, Any], user_data: dict[str, Any]
+) -> dict[str, Any]:
     """Actualiza metadatos de un Libro/Volumen individual desde la vista Data Grid."""
     book_id = data.get("book_id") or data.get("id")
     if not book_id:
@@ -373,11 +482,13 @@ async def handle_admin_update_book_grid(data: dict[str, Any], user_data: dict[st
                 "volume": book.volume,
                 "translator": book.translator or "",
                 "layout_by": book.layout_by or "",
-            }
+            },
         }
 
 
-async def handle_admin_bulk_save_grid(data: dict[str, Any], user_data: dict[str, Any]) -> dict[str, Any]:
+async def handle_admin_bulk_save_grid(
+    data: dict[str, Any], user_data: dict[str, Any]
+) -> dict[str, Any]:
     """Guarda múltiples series y libros modificados en una sola transacción atómica."""
     series_updates = data.get("series_updates") or []
     book_updates = data.get("book_updates") or []
@@ -459,7 +570,9 @@ async def handle_admin_bulk_save_grid(data: dict[str, Any], user_data: dict[str,
     }
 
 
-async def handle_admin_recalculate_series_slug(data: dict[str, Any], user_data: dict[str, Any]) -> dict[str, Any]:
+async def handle_admin_recalculate_series_slug(
+    data: dict[str, Any], user_data: dict[str, Any]
+) -> dict[str, Any]:
     """Genera y actualiza automáticamente el slug canónico para una serie según sus metadatos."""
     series_id = data.get("series_id") or data.get("id")
     if not series_id:
@@ -489,5 +602,90 @@ async def handle_admin_recalculate_series_slug(data: dict[str, Any], user_data: 
         return {
             "success": True,
             "slug": formatted_slug,
-            "message": f"Slug actualizado a {formatted_slug}"
+            "message": f"Slug actualizado a {formatted_slug}",
         }
+
+
+async def handle_admin_sync_books(
+    data: dict[str, Any], user_data: dict[str, Any]
+) -> dict[str, Any]:
+    """Re-escanea y sincroniza la metadata física desde los archivos EPUB en disco."""
+    check_staff(user_data)
+    book_ids = data.get("book_ids") or []
+    if not book_ids or not isinstance(book_ids, list):
+        raise HTTPException(
+            status_code=400, detail="book_ids es requerido y debe ser una lista"
+        )
+
+    import os
+    from datetime import datetime, timezone
+    from services.epub_service import parse_opf_from_epub
+
+    synced_items = []
+    failed_items = []
+
+    async with pg_manager.get_session() as session:
+        stmt = select(Book).where(Book.id.in_(book_ids))
+        res = await session.execute(stmt)
+        books = res.scalars().all()
+
+        for b in books:
+            if not b.filepath or not os.path.exists(b.filepath):
+                failed_items.append(
+                    {
+                        "id": b.id,
+                        "title": b.title,
+                        "reason": f"Archivo no encontrado en disco: {b.filepath or 'Sin ruta'}",
+                    }
+                )
+                continue
+
+            try:
+                opf_meta = await parse_opf_from_epub(b.filepath)
+                if opf_meta:
+                    if opf_meta.get("publisher"):
+                        b.publisher = str(opf_meta["publisher"]).strip()
+                    if opf_meta.get("sinopsis"):
+                        b.description = opf_meta["sinopsis"]
+                    if opf_meta.get("is_uncensored") is not None:
+                        b.is_uncensored = bool(opf_meta.get("is_uncensored"))
+                    if opf_meta.get("color_mode"):
+                        b.color_mode = opf_meta.get("color_mode")
+                    if opf_meta.get("volume_index") is not None:
+                        try:
+                            b.volume = float(opf_meta["volume_index"])
+                        except (ValueError, TypeError):
+                            pass
+                    try:
+                        mtime = os.path.getmtime(b.filepath)
+                        b.file_modified_at = datetime.fromtimestamp(
+                            mtime, tz=timezone.utc
+                        )
+                        b.file_size = os.path.getsize(b.filepath)
+                    except Exception:
+                        pass
+
+                    synced_items.append(
+                        {
+                            "id": b.id,
+                            "title": b.title,
+                            "publisher": b.publisher,
+                            "volume": b.volume,
+                        }
+                    )
+            except Exception as ex:
+                logger.warning(f"Error parseando EPUB {b.filepath}: {ex}")
+                failed_items.append({"id": b.id, "reason": str(ex)})
+
+        await session.commit()
+        for item in synced_items:
+            await cache_manager.delete_book(item["id"])
+
+    return {
+        "success": True,
+        "synced_count": len(synced_items),
+        "failed_count": len(failed_items),
+        "synced_items": synced_items,
+        "failed_items": failed_items,
+        "message": f"Sincronizados {len(synced_items)} libros desde sus archivos EPUB.",
+    }

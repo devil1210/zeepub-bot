@@ -407,6 +407,9 @@ export const api = {
     adminGetSeriesDetail: (seriesId: string) =>
         rpc('admin_get_series_detail', { series_id: seriesId }),
 
+    adminSyncBooks: (params: { book_ids?: (number | string)[]; series_id?: string }) =>
+        rpc('admin_sync_books', params),
+
     getSeriesDetail: async (seriesId: string) => {
         try {
             const res = await rpc('admin_get_series_detail', { series_id: seriesId });

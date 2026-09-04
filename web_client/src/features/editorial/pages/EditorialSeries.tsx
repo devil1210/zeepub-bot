@@ -14,7 +14,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Filter,
-    Plus
+    Plus,
+    AlertTriangle
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 import { DataGridEditor } from '@features/admin/pages/DataGridEditor';
@@ -26,6 +27,7 @@ export const EditorialSeries: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [missingFilter, setMissingFilter] = useState<'all' | 'with_issues'>('all');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalSeries, setTotalSeries] = useState(0);
@@ -43,13 +45,14 @@ export const EditorialSeries: React.FC = () => {
         loadingMoreRef.current = loadingMore;
     }, [page, totalPages, loading, loadingMore]);
 
-    const fetchSeries = async (pageToFetch = 1, append = false) => {
+    const fetchSeries = async (pageToFetch = 1, append = false, currentFilter = missingFilter) => {
         if (append) setLoadingMore(true);
         else setLoading(true);
 
         try {
             const res = await api.getLibraryGrid({
                 query: searchQuery.trim() || undefined,
+                missing_filter: currentFilter === 'with_issues' ? 'with_issues' : undefined,
                 page: pageToFetch,
                 limit: 30,
             });
@@ -179,25 +182,64 @@ export const EditorialSeries: React.FC = () => {
             {/* VIEW 1: Visual Cards View */}
             {viewMode === 'visual' ? (
                 <div className="space-y-6">
-                    {/* Search Bar */}
-                    <form onSubmit={handleSearchSubmit} className="flex gap-2">
-                        <div className="relative flex-1">
-                            <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Buscar serie por nombre canónico, título en español, autor o alias..."
-                                className="w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
-                            />
+                    {/* Search & Audit Filter Bar */}
+                    <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+                        <form onSubmit={handleSearchSubmit} className="flex gap-2 flex-1">
+                            <div className="relative flex-1">
+                                <Search className="w-4 h-4 text-gray-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Buscar serie por nombre canónico, título en español, autor o alias..."
+                                    className="w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-white/10 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
+                            >
+                                Buscar
+                            </button>
+                        </form>
+
+                        {/* Audit OPF Filter Buttons */}
+                        <div className="flex items-center gap-1.5 p-1 bg-slate-900/60 border border-white/10 rounded-2xl shrink-0 backdrop-blur-xl">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMissingFilter('all');
+                                    setPage(1);
+                                    pageRef.current = 1;
+                                    fetchSeries(1, false, 'all');
+                                }}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                    missingFilter === 'all'
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                        : 'text-gray-400 hover:text-white'
+                                }`}
+                            >
+                                📚 Todas las Series
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMissingFilter('with_issues');
+                                    setPage(1);
+                                    pageRef.current = 1;
+                                    fetchSeries(1, false, 'with_issues');
+                                }}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                    missingFilter === 'with_issues'
+                                        ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/30'
+                                        : 'text-amber-400/90 hover:text-amber-300 hover:bg-amber-500/10'
+                                }`}
+                            >
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                <span>⚠️ Con Obs. OPF (Fansub)</span>
+                            </button>
                         </div>
-                        <button
-                            type="submit"
-                            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 active:scale-95"
-                        >
-                            Buscar
-                        </button>
-                    </form>
+                    </div>
 
                     {/* Widescreen Series Grid */}
                     {loading ? (
@@ -206,18 +248,27 @@ export const EditorialSeries: React.FC = () => {
                         </div>
                     ) : seriesList.length === 0 ? (
                         <div className="py-24 text-center text-gray-500 text-xs bg-slate-900/30 rounded-3xl border border-white/5">
-                            No se encontraron series registradas.
+                            {missingFilter === 'with_issues'
+                                ? '¡Excelente! No hay series con volúmenes observados de metadatos OPF.'
+                                : 'No se encontraron series registradas.'}
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6 gap-5">
                             {seriesList.map((s) => {
                                 const cover = getSeriesCover(s);
                                 const count = s.book_count || s.books?.length || 0;
+                                const hasObs = s.has_bad_metadata || (s.bad_metadata_count && s.bad_metadata_count > 0);
+                                const obsCount = s.bad_metadata_count || 0;
+
                                 return (
                                     <div
                                         key={s.id || s.series_hash}
                                         onClick={() => navigate(`/app-v2/volumes?series=${encodeURIComponent(s.name || s.series_english || '')}`)}
-                                        className="bg-slate-900/40 border border-white/10 hover:border-indigo-500/50 rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all flex flex-col group cursor-pointer backdrop-blur-xl"
+                                        className={`rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all flex flex-col group cursor-pointer backdrop-blur-xl border ${
+                                            hasObs
+                                                ? 'bg-amber-950/20 border-amber-500/50 hover:border-amber-400 shadow-amber-500/5'
+                                                : 'bg-slate-900/40 border-white/10 hover:border-indigo-500/50'
+                                        }`}
                                     >
                                         {/* Cover Banner */}
                                         <div className="relative aspect-[2/3] max-h-56 bg-slate-950 overflow-hidden border-b border-white/5">
@@ -240,6 +291,13 @@ export const EditorialSeries: React.FC = () => {
                                             <div className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-md bg-indigo-500/80 backdrop-blur-md text-[9px] font-black uppercase text-white shadow">
                                                 {s.book_type || 'Novela Ligera'}
                                             </div>
+
+                                            {/* OPF Observation Badge */}
+                                            {hasObs && (
+                                                <div className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black uppercase shadow-lg border border-amber-300/40 animate-pulse">
+                                                    ⚠️ {obsCount > 0 ? `${obsCount} con obs.` : 'Obs. OPF'}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Series Data */}
@@ -255,6 +313,16 @@ export const EditorialSeries: React.FC = () => {
                                                     <User className="w-3 h-3 text-indigo-400" />
                                                     <span className="truncate">{s.author || 'Autor desconocido'}</span>
                                                 </div>
+
+                                                {/* Discrepancy warning banner */}
+                                                {hasObs && (
+                                                    <div className="text-[10px] text-amber-300 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg flex items-center gap-1 mt-1.5">
+                                                        <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                                                        <span className="truncate">
+                                                            {obsCount > 0 ? `${obsCount} tomo(s) con obs. OPF` : 'Metadatos OPF discrepantes'}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Footer Actions */}

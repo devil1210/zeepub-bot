@@ -23,7 +23,11 @@ import {
     Clock,
     FileSpreadsheet,
     Hash,
-    Edit3
+    Edit3,
+    Copy,
+    Check,
+    RefreshCw,
+    AlertTriangle
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 import { publisherApi } from '@features/publisher/services/publisherApi';
@@ -31,7 +35,7 @@ import { useTelegram } from '@shared/contexts/TelegramContext';
 import { ReportIssueModal } from '@shared/components/ReportIssueModal';
 import { RatingModal } from '@features/book/components/RatingModal';
 import { SchedulePostModal } from '../components/SchedulePostModal';
-import { EditorialQuickEditDrawer } from '../components/EditorialQuickEditDrawer';
+import { EpubEditModal } from '../components/EpubEditModal';
 import { getCoverUrl } from '@shared/utils/imageUtils';
 
 export const EditorialBookDetail: React.FC = () => {
@@ -57,6 +61,37 @@ export const EditorialBookDetail: React.FC = () => {
     const [isDownloadingDirect, setIsDownloadingDirect] = useState(false);
     const [sendingTemplate, setSendingTemplate] = useState(false);
     const [feedbackMsg, setFeedbackMsg] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
+    const [copiedPath, setCopiedPath] = useState(false);
+    const [syncingBook, setSyncingBook] = useState(false);
+
+    const handleCopyFilepath = () => {
+        if (!book?.filepath) {
+            setFeedbackMsg({ type: 'error', text: 'Ruta física del EPUB no disponible en el registro.' });
+            return;
+        }
+        navigator.clipboard.writeText(book.filepath);
+        setCopiedPath(true);
+        setFeedbackMsg({ type: 'success', text: '¡Ruta absoluta del EPUB copiada al portapapeles!' });
+        setTimeout(() => setCopiedPath(false), 3000);
+    };
+
+    const handleSyncBook = async () => {
+        if (!book?.id) return;
+        setSyncingBook(true);
+        try {
+            const res = await api.adminSyncBooks({ book_ids: [Number(book.id)] });
+            if (res && res.success) {
+                setFeedbackMsg({ type: 'success', text: 'EPUB re-escaneado desde archivo OPF físico con éxito.' });
+                fetchBookData();
+            } else {
+                setFeedbackMsg({ type: 'error', text: res?.error || 'Error al sincronizar metadatos OPF.' });
+            }
+        } catch (err: any) {
+            setFeedbackMsg({ type: 'error', text: err.message || 'Error al conectar con el servidor.' });
+        } finally {
+            setSyncingBook(false);
+        }
+    };
 
     const fetchBookData = async () => {
         if (!id) return;
@@ -381,6 +416,81 @@ export const EditorialBookDetail: React.FC = () => {
                         <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
                     )}
                     <span>{feedbackMsg.text}</span>
+                </div>
+            )}
+
+            {/* Maquetador Audit Alert Banner if issues exist */}
+            {(book.has_bad_metadata || (book.metadata_issues && book.metadata_issues.length > 0)) && (
+                <div className="p-5 rounded-3xl bg-amber-500/10 border border-amber-500/30 backdrop-blur-xl shadow-xl shadow-amber-500/5 space-y-3 animate-in fade-in duration-300">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                            <div className="p-2.5 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 shrink-0">
+                                <AlertTriangle className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-sm font-black text-amber-300">
+                                        Observación de Metadatos OPF
+                                    </h4>
+                                    <span className="px-2 py-0.5 rounded-md bg-amber-500 text-slate-950 font-black text-[9px] uppercase">
+                                        Fansub Check
+                                    </span>
+                                </div>
+                                <p className="text-xs text-amber-200/80 mt-0.5">
+                                    {book.metadata_issue || 'Existen discrepancias entre el archivo físico OPF y la base de datos.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Action buttons for maquetador */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                                type="button"
+                                onClick={handleCopyFilepath}
+                                className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-amber-500/20 text-amber-200 text-xs font-bold flex items-center gap-1.5 border border-amber-500/30 transition-all active:scale-95"
+                                title={book.filepath || 'Ruta no disponible'}
+                            >
+                                {copiedPath ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-amber-400" />}
+                                <span>{copiedPath ? '¡Ruta Copiada!' : 'Copiar Ruta EPUB'}</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={handleSyncBook}
+                                disabled={syncingBook}
+                                className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-lg shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${syncingBook ? 'animate-spin' : ''}`} />
+                                <span>Re-escanear OPF</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setIsQuickEditOpen(true)}
+                                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg transition-all active:scale-95"
+                            >
+                                <Edit3 className="w-4 h-4" />
+                                <span>Editar</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Issue chips and file path preview */}
+                    <div className="pt-2 border-t border-amber-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-gray-400 text-[11px]">Discrepancias:</span>
+                            {(book.metadata_issues || []).map((iss: string, i: number) => (
+                                <span key={i} className="px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-200 text-[10px] font-mono border border-amber-500/30">
+                                    {iss}
+                                </span>
+                            ))}
+                        </div>
+                        {book.filepath && (
+                            <span className="text-[10px] text-gray-400 font-mono truncate max-w-md" title={book.filepath}>
+                                📁 {book.filepath}
+                            </span>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -932,12 +1042,11 @@ export const EditorialBookDetail: React.FC = () => {
                 />
             )}
 
-            {/* Quick Edit Drawer */}
+            {/* Full 2-Column Series-Style EPUB Edit Modal */}
             {isQuickEditOpen && (
-                <EditorialQuickEditDrawer
+                <EpubEditModal
                     isOpen={isQuickEditOpen}
-                    itemType="volume"
-                    itemData={{ ...book, series_info: series }}
+                    book={{ ...book, series_info: series }}
                     onClose={() => setIsQuickEditOpen(false)}
                     onSaveSuccess={() => {
                         fetchBookData();

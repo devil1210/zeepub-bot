@@ -100,6 +100,8 @@ class LegacyRoutes:
             "admin_force_sync": miniapp_handlers.handle_admin_force_sync,
             "admin_update_series_grid": miniapp_handlers.handle_admin_update_series_grid,
             "admin_update_book_grid": miniapp_handlers.handle_admin_update_book_grid,
+            "admin_sync_books": miniapp_handlers.handle_admin_sync_books,
+            "admin-sync-books": miniapp_handlers.handle_admin_sync_books,
             "admin_bulk_save_grid": miniapp_handlers.handle_admin_bulk_save_grid,
             "admin_recalculate_series_slug": miniapp_handlers.handle_admin_recalculate_series_slug,
             "bulk_analyze_library": miniapp_handlers.handle_bulk_analyze_library,

@@ -25,11 +25,18 @@ export interface Book {
   series?: string;
   cleanTitle?: string;
   is_uncensored?: boolean;
+  color_mode?: string;
+  publisher?: string;
+  filepath?: string;
+  has_bad_metadata?: boolean;
+  metadata_issues?: string[];
+  metadata_issue?: string;
   romaji_title?: string;
   jap_title?: string;
   illustrator?: string;
   layout_by?: string;
   isbn?: string;
+  short_link?: string;
   publications?: BookPublication[];
 }
 
@@ -63,6 +70,7 @@ export interface Volume {
   description?: string;
   romajiTitle?: string;
   romaji_title?: string;
+  romaji?: string;
   language?: string;
   size?: string;
   uploader?: string;
@@ -102,6 +110,14 @@ export interface Volume {
   is_uncensored?: boolean | number;
   color_mode?: string;
   publisher?: string;
+  filepath?: string;
+  has_bad_metadata?: boolean;
+  metadata_issues?: string[];
+  metadata_issue?: string;
+  english_title?: string;
+  englishTitle?: string;
+  spanish_title?: string;
+  spanishTitle?: string;
   file_size?: number;
   fileSize?: number;
   summary?: string;
@@ -115,6 +131,7 @@ export interface Series {
   series_hash?: string;
   book_hash?: string;
   title: string;
+  name?: string;
   author: string;
   coverUrl: string | CoverPaths;
   coverThumbUrl?: string;
@@ -133,12 +150,25 @@ export interface Series {
   status: 'Ongoing' | 'Completed';
   lastUpdated: string;
   romajiTitle?: string;
+  romaji?: string;
   seriesName?: string;
+  series_name?: string;
+  series_english?: string;
+  series_spanish?: string;
+  name_english?: string;
+  name_spanish?: string;
+  englishTitle?: string;
+  spanishTitle?: string;
+  seriesEnglish?: string;
+  seriesSpanish?: string;
   illustrator?: string;
   translator?: string;
   group?: string;
   is_uncensored?: boolean;
   color_mode?: string;
+  has_bad_metadata?: boolean;
+  bad_metadata_count?: number;
+  good_metadata_count?: number;
   demographics?: string[];
   tags?: string[];
   aliases?: Array<{ id: number; alias: string }>;

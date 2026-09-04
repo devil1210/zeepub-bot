@@ -2,6 +2,7 @@ from .grid_handlers import (
     handle_admin_bulk_save_grid,
     handle_admin_get_library_grid,
     handle_admin_recalculate_series_slug,
+    handle_admin_sync_books,
     handle_admin_update_book_grid,
     handle_admin_update_series_grid,
 )
@@ -119,6 +120,7 @@ __all__ = [
     "handle_admin_set_user_level",
     "handle_admin_stats",
     "handle_admin_stop_scan",
+    "handle_admin_sync_books",
     "handle_admin_sync_facebook_publications",
     "handle_admin_sync_library_cloud",
     "handle_admin_sync_themes",

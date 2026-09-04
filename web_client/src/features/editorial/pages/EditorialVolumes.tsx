@@ -18,10 +18,14 @@ import {
     Filter,
     Eye,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Copy,
+    Check,
+    RefreshCw,
+    AlertTriangle
 } from 'lucide-react';
 import { api } from '@shared/services/api';
-import { EditorialQuickEditDrawer } from '../components/EditorialQuickEditDrawer';
+import { EpubEditModal } from '../components/EpubEditModal';
 import { SchedulePostModal } from '../components/SchedulePostModal';
 
 export const EditorialVolumes: React.FC = () => {
@@ -38,6 +42,10 @@ export const EditorialVolumes: React.FC = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const [paginationMode, setPaginationMode] = useState<'infinite' | 'paged'>('infinite');
+
+    // Feedback states for maquetador
+    const [copiedVolumeId, setCopiedVolumeId] = useState<string | null>(null);
+    const [syncingVolumeId, setSyncingVolumeId] = useState<string | null>(null);
 
     // Refs to avoid stale closures in scroll/observer callbacks
     const pageRef = useRef(1);
@@ -166,7 +174,39 @@ export const EditorialVolumes: React.FC = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    const handleCopyFilepath = (e: React.MouseEvent, vol: any) => {
+        e.stopPropagation();
+        if (!vol.filepath) {
+            alert('Ruta de archivo no disponible para este tomo');
+            return;
+        }
+        navigator.clipboard.writeText(vol.filepath);
+        setCopiedVolumeId(String(vol.id));
+        setTimeout(() => setCopiedVolumeId(null), 2500);
+    };
+
+    const handleSyncSingleVolume = async (e: React.MouseEvent, vol: any) => {
+        e.stopPropagation();
+        const vId = String(vol.id);
+        setSyncingVolumeId(vId);
+        try {
+            const res = await api.adminSyncBooks({ book_ids: [Number(vId)] });
+            if (res && res.success) {
+                fetchVolumes(pageRef.current, false);
+            } else {
+                alert(res?.error || 'Error al re-escanear EPUB');
+            }
+        } catch (err: any) {
+            alert(err.message || 'Error al sincronizar tomo');
+        } finally {
+            setSyncingVolumeId(null);
+        }
+    };
+
     const getMissingStatus = (vol: any) => {
+        if (vol.metadata_issues && vol.metadata_issues.length > 0) {
+            return vol.metadata_issues;
+        }
         const issues: string[] = [];
         if (!vol.series_spanish && !vol.spanish_title) issues.push('Sin Español');
         if (!vol.volume) issues.push('Sin Volumen');
@@ -202,6 +242,7 @@ export const EditorialVolumes: React.FC = () => {
                 </span>
                 {[
                     { id: 'all', label: '📚 Todos los Volúmenes' },
+                    { id: 'with_issues', label: '⚠️ Con Obs. OPF (Fansub)' },
                     { id: 'missing_spanish', label: '🚨 Sin Título Español' },
                     { id: 'missing_volume', label: '⚠️ Sin Número de Tomo' },
                     { id: 'missing_cover', label: '🖼️ Sin Portada' },
@@ -215,13 +256,18 @@ export const EditorialVolumes: React.FC = () => {
                             setMissingFilter(chip.id);
                             setPage(1);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                             missingFilter === chip.id
-                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                ? chip.id === 'with_issues'
+                                    ? 'bg-amber-500 text-slate-950 font-black shadow-lg shadow-amber-500/30'
+                                    : 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                : chip.id === 'with_issues'
+                                ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30'
                                 : 'bg-white/5 text-gray-300 hover:text-white hover:bg-white/10 border border-white/5'
                         }`}
                     >
-                        {chip.label}
+                        {chip.id === 'with_issues' && <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />}
+                        <span>{chip.label}</span>
                     </button>
                 ))}
             </div>
@@ -259,10 +305,18 @@ export const EditorialVolumes: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6 gap-5">
                     {volumes.map((vol) => {
                         const issues = getMissingStatus(vol);
+                        const hasObs = vol.has_bad_metadata || (vol.metadata_issues && vol.metadata_issues.length > 0);
+                        const isSyncingThis = syncingVolumeId === String(vol.id);
+                        const isCopiedThis = copiedVolumeId === String(vol.id);
+
                         return (
                             <div
                                 key={vol.id || vol.book_hash}
-                                className="bg-slate-900/40 border border-white/10 hover:border-indigo-500/40 rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all flex flex-col group backdrop-blur-xl"
+                                className={`rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all flex flex-col group backdrop-blur-xl border ${
+                                    hasObs
+                                        ? 'bg-amber-950/20 border-amber-500/50 hover:border-amber-400 shadow-amber-500/5'
+                                        : 'bg-slate-900/40 border-white/10 hover:border-indigo-500/40'
+                                }`}
                             >
                                 {/* Cover Thumbnail Header */}
                                 <div className="relative aspect-[2/3] max-h-56 bg-slate-950 overflow-hidden border-b border-white/5">
@@ -281,6 +335,13 @@ export const EditorialVolumes: React.FC = () => {
                                         Volumen {vol.volume || '?'}
                                     </div>
 
+                                    {/* OPF Observation Badge */}
+                                    {hasObs && (
+                                        <div className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black uppercase shadow-lg border border-amber-300/40 animate-pulse">
+                                            ⚠️ Obs. OPF
+                                        </div>
+                                    )}
+
                                     {/* Quality Badges */}
                                     <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 z-10">
                                         {vol.color_mode === 'color' && (
@@ -294,20 +355,6 @@ export const EditorialVolumes: React.FC = () => {
                                             </span>
                                         )}
                                     </div>
-
-                                    {/* Missing Metadata Badges */}
-                                    {issues.length > 0 && (
-                                        <div className="absolute top-2.5 right-2.5 flex flex-col gap-1 items-end">
-                                            {issues.slice(0, 2).map((iss) => (
-                                                <span
-                                                    key={iss}
-                                                    className="px-2 py-0.5 rounded-md bg-red-500/80 backdrop-blur-md text-[9px] font-bold text-white shadow"
-                                                >
-                                                    {iss}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
 
                                 {/* Body Information */}
@@ -323,24 +370,72 @@ export const EditorialVolumes: React.FC = () => {
                                             <span>✍️ {vol.author || 'Desconocido'}</span>
                                             {vol.demography && <span>• {vol.demography}</span>}
                                         </div>
+
+                                        {/* Discrepancy Box for Maquetador */}
+                                        {hasObs && (
+                                            <div className="p-1.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1 mt-1">
+                                                <div className="text-[10px] text-amber-300 font-bold flex items-center gap-1">
+                                                    <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                                                    <span className="truncate">{vol.metadata_issue || 'Discrepancia OPF'}</span>
+                                                </div>
+                                                {vol.metadata_issues && vol.metadata_issues.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {vol.metadata_issues.map((iss: string, i: number) => (
+                                                            <span key={i} className="text-[8px] bg-amber-500/20 text-amber-200 px-1 py-0.2 rounded font-mono">
+                                                                {iss}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Action Buttons */}
                                     <div className="pt-2 border-t border-white/5 space-y-1.5">
+                                        {/* Edit & Publish */}
                                         <div className="grid grid-cols-2 gap-2">
                                             <button
                                                 type="button"
                                                 onClick={() => setSelectedVolumeForEdit(vol)}
-                                                className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1 border border-white/5 transition-all"
+                                                className="px-2.5 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1 border border-indigo-500/30 transition-all"
                                             >
-                                                <Edit3 className="w-3 h-3 text-indigo-400" /> Editar
+                                                <Edit3 className="w-3 h-3" /> Editar
                                             </button>
                                             <button
                                                 type="button"
                                                 onClick={() => setSelectedVolumeForSchedule(vol)}
-                                                className="px-2.5 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1 border border-indigo-500/30 transition-all shadow-sm"
+                                                className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1 border border-white/5 transition-all shadow-sm"
                                             >
                                                 <Send className="w-3 h-3" /> Publicar
+                                            </button>
+                                        </div>
+
+                                        {/* Maquetador Tools (Copy Path & Rescan) */}
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleCopyFilepath(e, vol)}
+                                                className={`flex-1 py-1 px-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-1 border transition-all ${
+                                                    isCopiedThis
+                                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                                        : 'bg-white/5 hover:bg-amber-500/20 text-gray-400 hover:text-amber-300 border-white/5'
+                                                }`}
+                                                title={vol.filepath || 'Copiar ruta física del archivo'}
+                                            >
+                                                {isCopiedThis ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                                <span>{isCopiedThis ? '¡Copiado!' : 'Copiar Ruta'}</span>
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleSyncSingleVolume(e, vol)}
+                                                disabled={isSyncingThis}
+                                                className="py-1 px-2 rounded-lg bg-white/5 hover:bg-cyan-500/20 text-gray-400 hover:text-cyan-300 text-[10px] font-bold flex items-center justify-center gap-1 border border-white/5 transition-all disabled:opacity-40"
+                                                title="Re-escanear desde archivo OPF físico"
+                                            >
+                                                <RefreshCw className={`w-3 h-3 ${isSyncingThis ? 'animate-spin text-cyan-400' : ''}`} />
+                                                <span>Re-escanear</span>
                                             </button>
                                         </div>
 
@@ -399,17 +494,18 @@ export const EditorialVolumes: React.FC = () => {
                 </div>
             )}
 
-            {/* Quick Edit Drawer */}
-            <EditorialQuickEditDrawer
-                isOpen={!!selectedVolumeForEdit}
-                itemType="volume"
-                itemData={selectedVolumeForEdit}
-                onClose={() => setSelectedVolumeForEdit(null)}
-                onSaveSuccess={() => {
-                    setSelectedVolumeForEdit(null);
-                    fetchVolumes();
-                }}
-            />
+            {/* Full 2-Column Series-Style EPUB Edit Modal */}
+            {selectedVolumeForEdit && (
+                <EpubEditModal
+                    isOpen={!!selectedVolumeForEdit}
+                    book={selectedVolumeForEdit}
+                    onClose={() => setSelectedVolumeForEdit(null)}
+                    onSaveSuccess={() => {
+                        setSelectedVolumeForEdit(null);
+                        fetchVolumes(pageRef.current, false);
+                    }}
+                />
+            )}
 
             {/* Schedule Post Modal */}
             <SchedulePostModal

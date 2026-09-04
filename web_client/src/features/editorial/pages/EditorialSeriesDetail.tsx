@@ -31,13 +31,17 @@ import {
     FileSpreadsheet,
     Edit3,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Copy,
+    AlertTriangle
 } from 'lucide-react';
 import { api } from '@shared/services/api';
 import { SchedulePostModal } from '../components/SchedulePostModal';
 import { SeriesMergeModal } from '../components/SeriesMergeModal';
 import { SeriesAttachModal } from '../components/SeriesAttachModal';
 import { SeriesEditTab } from '../components/SeriesEditTab';
+import { EpubEditModal } from '../components/EpubEditModal';
+import { SeriesVolumesTab } from '../components/SeriesVolumesTab';
 
 interface SeriesDetail {
     id: string;
@@ -60,6 +64,9 @@ interface SeriesDetail {
     aliases?: Array<{ id: number; alias: string }>;
     rating?: number;
     downloads?: number;
+    has_bad_metadata?: boolean;
+    bad_metadata_count?: number;
+    good_metadata_count?: number;
 }
 
 interface AssociatedBook {
@@ -74,7 +81,9 @@ interface AssociatedBook {
     translator?: string;
     layout_by?: string;
     editor?: string;
+    publisher?: string;
     filepath?: string;
+    filename?: string;
     cover_url?: string;
     cover_thumb?: string;
     size_mb?: string;
@@ -82,6 +91,9 @@ interface AssociatedBook {
     page_count?: number;
     word_count?: number;
     updated_at?: string;
+    has_bad_metadata?: boolean;
+    metadata_issues?: string[];
+    metadata_issue?: string;
 }
 
 export const EditorialSeriesDetail: React.FC = () => {
@@ -126,6 +138,12 @@ export const EditorialSeriesDetail: React.FC = () => {
 
     // Quick Schedule Modal
     const [scheduleBook, setScheduleBook] = useState<any | null>(null);
+
+    // EPUB Edit & Audit State
+    const [selectedBookForEdit, setSelectedBookForEdit] = useState<any | null>(null);
+    const [copiedBookId, setCopiedBookId] = useState<string | null>(null);
+    const [syncingBookId, setSyncingBookId] = useState<string | null>(null);
+    const [isSyncingAll, setIsSyncingAll] = useState(false);
 
     // Synopsis Expand State
     const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
@@ -209,6 +227,56 @@ export const EditorialSeriesDetail: React.FC = () => {
     const showToast = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
         setToast({ text, type });
         setTimeout(() => setToast(null), 4000);
+    };
+
+    const handleCopyFilepath = (e: React.MouseEvent, book: AssociatedBook) => {
+        e.stopPropagation();
+        if (!book.filepath) {
+            showToast('Ruta de archivo no disponible para este tomo', 'error');
+            return;
+        }
+        navigator.clipboard.writeText(book.filepath);
+        setCopiedBookId(String(book.id));
+        showToast('Ruta absoluta del EPUB copiada al portapapeles', 'success');
+        setTimeout(() => setCopiedBookId(null), 2500);
+    };
+
+    const handleSyncSingleBook = async (e: React.MouseEvent, book: AssociatedBook) => {
+        e.stopPropagation();
+        const bId = String(book.id);
+        setSyncingBookId(bId);
+        try {
+            const res = await api.adminSyncBooks({ book_ids: [Number(bId)] });
+            if (res && res.success) {
+                showToast(`EPUB re-escaneado desde archivo físico OPF con éxito`, 'success');
+                fetchSeriesData();
+            } else {
+                showToast(res?.error || 'Error al re-escanear EPUB', 'error');
+            }
+        } catch (err: any) {
+            showToast(err.message || 'Error al sincronizar libro', 'error');
+        } finally {
+            setSyncingBookId(null);
+        }
+    };
+
+    const handleSyncAllObserved = async () => {
+        const observedIds = books.filter(b => b.has_bad_metadata).map(b => Number(b.id));
+        if (observedIds.length === 0) return;
+        setIsSyncingAll(true);
+        try {
+            const res = await api.adminSyncBooks({ book_ids: observedIds, series_id: series?.id });
+            if (res && res.success) {
+                showToast(`Sincronizados ${res.synced || observedIds.length} tomos desde sus archivos OPF`, 'success');
+                fetchSeriesData();
+            } else {
+                showToast(res?.error || 'Error al sincronizar tomos observados', 'error');
+            }
+        } catch (err: any) {
+            showToast(err.message || 'Error al sincronizar tomos', 'error');
+        } finally {
+            setIsSyncingAll(false);
+        }
     };
 
     const checkIsColor = (b: AssociatedBook) => {
@@ -666,199 +734,21 @@ export const EditorialSeriesDetail: React.FC = () => {
 
             {/* TAB 1: VOLUMES EXPLORATION */}
             {activeTab === 'volumes' && (
-                <div className="space-y-4">
-                    {books.length === 0 ? (
-                        <div className="py-24 text-center bg-slate-900/40 border border-white/10 rounded-3xl p-8 space-y-3">
-                            <BookOpen className="w-12 h-12 text-gray-600 mx-auto" />
-                            <h3 className="text-base font-bold text-white">No hay volúmenes vinculados aún</h3>
-                            <p className="text-xs text-gray-400">
-                                Usa el botón "Vincular Tomo" o busca libros huérfanos para asignarlos a esta serie.
-                            </p>
-                            <button
-                                onClick={() => setIsAttachModalOpen(true)}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg"
-                            >
-                                <Plus className="w-4 h-4" /> Vincular Primer Tomo
-                            </button>
-                        </div>
-                    ) : volumeViewMode === 'grid' ? (
-                        /* Grid Mode for Volumes */
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-5">
-                            {books.map((b) => (
-                                <div
-                                    key={b.id}
-                                    onClick={() => navigate(`/app-v2/book/${b.id || b.book_hash}`)}
-                                    className="group relative rounded-3xl bg-slate-900/40 border border-white/10 hover:border-indigo-500/50 p-3.5 flex flex-col justify-between backdrop-blur-xl shadow-xl hover:shadow-2xl hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
-                                >
-                                    {/* Cover Frame */}
-                                    <div className="relative aspect-[2/3] rounded-2xl overflow-hidden bg-slate-950 border border-white/5 shadow-md">
-                                        {b.cover_url || b.cover_thumb ? (
-                                            <img
-                                                src={b.cover_url || b.cover_thumb}
-                                                alt={b.title}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full flex flex-col items-center justify-center text-gray-600 gap-2">
-                                                <BookOpen className="w-8 h-8" />
-                                                <span className="text-[10px]">Volumen {b.volume}</span>
-                                            </div>
-                                        )}
-
-                                        {/* Volume Badge Ribbon */}
-                                        <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-indigo-600/90 backdrop-blur-md text-white text-[11px] font-black shadow-lg font-mono">
-                                            {b.volume === 0 || b.edition === 'Volumen Único' ? 'Único' : `Vol. ${b.volume}`}
-                                        </div>
-
-                                        {/* Floating Quality Badges on Cover (Color / S/C - matching v1) */}
-                                        <div className="absolute bottom-2.5 right-2.5 flex flex-col items-end gap-1.5 z-10">
-                                            {checkIsColor(b) && (
-                                                <span className="bg-gradient-to-br from-orange-400 to-pink-500 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
-                                                    COLOR
-                                                </span>
-                                            )}
-                                            {checkIsUncensored(b) && (
-                                                <span className="bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-2xl border border-white/20 uppercase tracking-widest">
-                                                    S/C
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Book Info */}
-                                    <div className="pt-3 space-y-1 min-w-0">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                            <h4 className="text-xs font-bold text-white truncate group-hover:text-indigo-300 transition-colors flex-1 min-w-0">
-                                                {b.spanish_title || b.title}
-                                            </h4>
-                                            {checkIsColor(b) && (
-                                                <span className="px-1.5 py-0.5 rounded bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[8px] font-black uppercase tracking-wider shrink-0 shadow">
-                                                    COLOR
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center justify-between text-[10px] text-gray-400">
-                                            <div className="flex items-center gap-1.5 truncate">
-                                                <span className="truncate">✍️ {b.translator || 'Sin traductor'}</span>
-                                                {b.edition && b.edition !== 'Regular' && (
-                                                    <span className="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-bold text-[8px] uppercase tracking-wider">
-                                                        {b.edition}
-                                                    </span>
-                                                )}
-                                                {checkIsUncensored(b) && (
-                                                    <span className="px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-black text-[8px] uppercase tracking-wider">
-                                                        S/C
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {b.size_mb && <span className="font-mono text-gray-500 shrink-0">{b.size_mb} MB</span>}
-                                        </div>
-                                    </div>
-
-                                    {/* Card Hover Action Bar */}
-                                    <div className="pt-2.5 mt-2 border-t border-white/5 flex items-center justify-between gap-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={(e) => handleDirectDownload(e, b)}
-                                            className="p-1.5 rounded-lg bg-white/5 hover:bg-blue-600 text-gray-300 hover:text-white transition-all"
-                                            title="Descargar EPUB"
-                                        >
-                                            <Download className="w-3.5 h-3.5" />
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setScheduleBook(b);
-                                            }}
-                                            className="p-1.5 rounded-lg bg-white/5 hover:bg-indigo-600 text-gray-300 hover:text-white transition-all"
-                                            title="Programar publicación"
-                                        >
-                                            <Sparkles className="w-3.5 h-3.5" />
-                                        </button>
-
-                                        <span className="text-[10px] font-bold text-indigo-400 group-hover:underline flex items-center gap-0.5">
-                                            Ver <Eye className="w-3 h-3" />
-                                        </span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        /* List Mode for Volumes */
-                        <div className="rounded-3xl bg-slate-900/50 border border-white/10 backdrop-blur-xl shadow-xl overflow-hidden divide-y divide-white/5">
-                            {books.map((b) => (
-                                <div
-                                    key={b.id}
-                                    onClick={() => navigate(`/app-v2/book/${b.id || b.book_hash}`)}
-                                    className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-white/[0.03] transition-colors cursor-pointer group"
-                                >
-                                    <div className="flex items-center gap-4 min-w-0">
-                                        <div className="w-12 h-16 rounded-xl overflow-hidden bg-slate-950 border border-white/10 shrink-0">
-                                            {b.cover_url || b.cover_thumb ? (
-                                                <img src={b.cover_url || b.cover_thumb} alt={b.title} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-gray-600">
-                                                    <BookOpen className="w-4 h-4" />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="min-w-0 space-y-1">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <span className="px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-mono text-xs font-black">
-                                                    {b.volume === 0 || b.edition === 'Volumen Único' ? 'Volumen Único' : `Volumen ${b.volume}`}
-                                                </span>
-                                                {checkIsColor(b) && (
-                                                    <span className="px-2 py-0.5 rounded bg-gradient-to-r from-orange-400 to-pink-500 text-white text-[9px] font-black tracking-wider uppercase shadow-md">
-                                                        COLOR
-                                                    </span>
-                                                )}
-                                                {checkIsUncensored(b) && (
-                                                    <span className="px-2 py-0.5 rounded bg-red-600/30 text-red-400 border border-red-500/30 text-[9px] font-black tracking-wider uppercase">
-                                                        S/C
-                                                    </span>
-                                                )}
-                                                <h4 className="text-sm font-bold text-white truncate group-hover:text-indigo-300 transition-colors">
-                                                    {b.spanish_title || b.title}
-                                                </h4>
-                                            </div>
-                                            <div className="text-xs text-gray-400 flex items-center gap-3">
-                                                <span>✍️ {b.translator || 'Sin traductor'}</span>
-                                                {b.layout_by && <span>📓 #{b.layout_by}</span>}
-                                                {b.size_mb && <span className="font-mono">💾 {b.size_mb} MB</span>}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <button
-                                            type="button"
-                                            onClick={(e) => handleDirectDownload(e, b)}
-                                            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-blue-600 text-gray-300 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-all"
-                                        >
-                                            <Download className="w-3.5 h-3.5" />
-                                            <span className="hidden sm:inline">Descargar</span>
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                navigate(`/app-v2/book/${b.id || b.book_hash}`);
-                                            }}
-                                            className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black flex items-center gap-1.5 transition-all shadow-lg"
-                                        >
-                                            <Eye className="w-3.5 h-3.5" />
-                                            <span>Detalles</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <SeriesVolumesTab
+                    books={books}
+                    volumeViewMode={volumeViewMode}
+                    onOpenAttachModal={() => setIsAttachModalOpen(true)}
+                    onSyncAllObserved={handleSyncAllObserved}
+                    isSyncingAll={isSyncingAll}
+                    onCopyFilepath={handleCopyFilepath}
+                    copiedBookId={copiedBookId}
+                    onSyncSingleBook={handleSyncSingleBook}
+                    syncingBookId={syncingBookId}
+                    onEditBook={(b) => setSelectedBookForEdit(b)}
+                    onScheduleBook={(b) => setScheduleBook(b)}
+                    onDirectDownload={handleDirectDownload}
+                    onNavigateBook={(bId) => navigate(`/app-v2/book/${bId}`)}
+                />
             )}
 
             {/* TAB 2: METADATA & LINKING EDITOR (Admin tools) */}
@@ -927,6 +817,19 @@ export const EditorialSeriesDetail: React.FC = () => {
                     book={scheduleBook}
                     onSuccess={() => {
                         setScheduleBook(null);
+                        fetchSeriesData();
+                    }}
+                />
+            )}
+
+            {/* EPUB Edit Modal (Full 2-Column Series-Style Editor) */}
+            {selectedBookForEdit && (
+                <EpubEditModal
+                    isOpen={!!selectedBookForEdit}
+                    book={selectedBookForEdit}
+                    onClose={() => setSelectedBookForEdit(null)}
+                    onSaveSuccess={() => {
+                        setSelectedBookForEdit(null);
                         fetchSeriesData();
                     }}
                 />

@@ -776,13 +776,21 @@ async def handle_upload_confirm_internal(
         )
 
 
-async def handle_admin_get_series_detail(data: dict[str, Any], user_data: dict[str, Any]) -> dict[str, Any]:
+async def handle_admin_get_series_detail(
+    data: dict[str, Any], user_data: dict[str, Any]
+) -> dict[str, Any]:
     """Retorna los datos completos de una serie (metadatos, alias y volúmenes) para edición."""
-    series_id = (data.get("series_id") or data.get("id") or data.get("series_hash") or "").strip()
+    series_id = (
+        data.get("series_id") or data.get("id") or data.get("series_hash") or ""
+    ).strip()
     if not series_id:
         return {"success": False, "message": "ID de serie requerido"}
 
-    clean_id = series_id.replace("series_", "") if series_id.startswith("series_") else series_id
+    clean_id = (
+        series_id.replace("series_", "")
+        if series_id.startswith("series_")
+        else series_id
+    )
 
     from sqlalchemy import or_
     from sqlalchemy.orm import selectinload
@@ -792,10 +800,7 @@ async def handle_admin_get_series_detail(data: dict[str, Any], user_data: dict[s
     async with pg_manager.get_session() as session:
         stmt = (
             select(Series)
-            .options(
-                selectinload(Series.aliases),
-                selectinload(Series.books)
-            )
+            .options(selectinload(Series.aliases), selectinload(Series.books))
             .where(
                 or_(
                     Series.id == series_id,
@@ -819,8 +824,12 @@ async def handle_admin_get_series_detail(data: dict[str, Any], user_data: dict[s
                 "id": series.id,
                 "series_hash": series.id,
                 "name": series.name or "Sin Título",
-                "series_spanish": series.series_spanish or getattr(series, "name_spanish", "") or "",
-                "series_english": series.series_english or getattr(series, "name_english", "") or "",
+                "series_spanish": series.series_spanish
+                or getattr(series, "name_spanish", "")
+                or "",
+                "series_english": series.series_english
+                or getattr(series, "name_english", "")
+                or "",
                 "slug": series.slug or "",
                 "author": series.author or "",
                 "illustrator": series.illustrator or "",
@@ -831,28 +840,66 @@ async def handle_admin_get_series_detail(data: dict[str, Any], user_data: dict[s
                 "tags": series.tags_json or [],
                 "cover_url": series.cover_url or "",
                 "book_count": series.book_count or len(series.books or []),
-                "aliases": [{"id": a.id, "alias": a.alias} for a in (series.aliases or [])],
+                "aliases": [
+                    {"id": a.id, "alias": a.alias} for a in (series.aliases or [])
+                ],
                 "books": [
                     {
                         "id": b.id,
                         "book_hash": b.id,
                         "title": b.title,
                         "spanish_title": getattr(b, "spanish_title", None) or b.title,
+                        "english_title": getattr(b, "english_title", None) or "",
                         "volume": b.volume,
                         "edition": b.edition or "",
-                        "color_mode": b.color_mode or ("color" if "[color]" in (b.filename or "").lower() else "bw"),
+                        "color_mode": b.color_mode
+                        or (
+                            "color" if "[color]" in (b.filename or "").lower() else "bw"
+                        ),
                         "is_uncensored": bool(b.is_uncensored),
                         "translator": b.translator or "",
                         "layout_by": b.layout_by or "",
                         "editor": getattr(b, "editor", "") or "",
+                        "publisher": getattr(b, "publisher", "") or "",
+                        "filepath": getattr(b, "filepath", "") or "",
                         "filename": b.filename or "",
                         "file_size": b.file_size or 0,
-                        "size_mb": f"{(b.file_size / (1024 * 1024)):.2f}" if b.file_size else "0",
-                        "cover_url": b.cover_high or b.cover_medium or b.cover_low or "",
+                        "size_mb": f"{(b.file_size / (1024 * 1024)):.2f}"
+                        if b.file_size
+                        else "0",
+                        "cover_url": b.cover_high
+                        or b.cover_medium
+                        or b.cover_low
+                        or "",
                         "cover_thumb": b.cover_low or b.cover_medium or "",
+                        "has_bad_metadata": (
+                            b.volume is None
+                            or not (
+                                b.spanish_title
+                                or getattr(b, "series_spanish", None)
+                                or series.series_spanish
+                            )
+                            or not b.publisher
+                            or not b.translator
+                        ),
+                        "metadata_issues": [
+                            iss
+                            for iss in [
+                                "Falta número de volumen" if b.volume is None else None,
+                                "Sin título en español"
+                                if not (
+                                    b.spanish_title
+                                    or getattr(b, "series_spanish", None)
+                                    or series.series_spanish
+                                )
+                                else None,
+                                "Sin publisher en OPF/BD" if not b.publisher else None,
+                                "Sin traductor asignado" if not b.translator else None,
+                            ]
+                            if iss
+                        ],
                     }
                     for b in (series.books or [])
-                ]
-            }
+                ],
+            },
         }
-
