@@ -142,21 +142,12 @@ class CallbackHandlerV6(BaseCommandHandler):
 
             # 1. Menú Principal
             if data in ("main_menu", "volver_menu"):
-                if not is_downloaded_msg and query.message:
-                    try:
-                        await query.message.delete()
-                    except Exception:
-                        pass
-                await mostrar_menu_principal(update, context, force_new=True)
+                await mostrar_menu_principal(
+                    update, context, force_new=is_downloaded_msg
+                )
 
             # 2. Historial de Navegación Atrás
             elif data in ("nav_back", "volver", "volver_ultima"):
-                if not is_downloaded_msg and query.message:
-                    try:
-                        await query.message.delete()
-                    except Exception:
-                        pass
-
                 historial = st.get("historial", [])
                 if historial:
                     prev_state = historial.pop()
@@ -169,11 +160,14 @@ class CallbackHandlerV6(BaseCommandHandler):
                         )
                         if search_q:
                             await ejecutar_busqueda_local(
-                                update, context, query=search_q, force_new=True
+                                update,
+                                context,
+                                query=search_q,
+                                force_new=is_downloaded_msg,
                             )
                         else:
                             await mostrar_menu_principal(
-                                update, context, force_new=True
+                                update, context, force_new=is_downloaded_msg
                             )
                     elif view_type == "series_list":
                         _, orig_t, f_val, pg = prev_state
@@ -183,14 +177,16 @@ class CallbackHandlerV6(BaseCommandHandler):
                             origin_type=orig_t,
                             filter_val=f_val,
                             page=pg or 1,
-                            force_new=True,
+                            force_new=is_downloaded_msg,
                         )
                     elif view_type == "genres":
-                        await mostrar_generos(update, context, force_new=True)
+                        await mostrar_generos(
+                            update, context, force_new=is_downloaded_msg
+                        )
                     elif view_type == "authors":
                         pg = prev_state[1] if len(prev_state) > 1 else 1
                         await mostrar_autores_local(
-                            update, context, page=pg, force_new=True
+                            update, context, page=pg, force_new=is_downloaded_msg
                         )
                     elif view_type == "volumes_local":
                         series_h = prev_state[1] if len(prev_state) > 1 else None
@@ -199,21 +195,23 @@ class CallbackHandlerV6(BaseCommandHandler):
                                 update,
                                 context,
                                 series_hash=str(series_h),
-                                force_new=True,
+                                force_new=is_downloaded_msg,
                             )
                         else:
                             await mostrar_menu_principal(
-                                update, context, force_new=True
+                                update, context, force_new=is_downloaded_msg
                             )
                     elif view_type == "main":
-                        await mostrar_menu_principal(update, context, force_new=True)
+                        await mostrar_menu_principal(
+                            update, context, force_new=is_downloaded_msg
+                        )
                     else:
                         await mostrar_series(
                             update,
                             context,
                             origin_type="all_series",
                             page=1,
-                            force_new=True,
+                            force_new=is_downloaded_msg,
                         )
                 else:
                     # Fallback inteligente si el historial está vacío
@@ -222,7 +220,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                             update,
                             context,
                             query=st["last_search_query"],
-                            force_new=True,
+                            force_new=is_downloaded_msg,
                         )
                     elif st.get("origin_type"):
                         await mostrar_series(
@@ -231,27 +229,26 @@ class CallbackHandlerV6(BaseCommandHandler):
                             origin_type=st.get("origin_type", "all_series"),
                             filter_val=st.get("filter_val"),
                             page=st.get("current_page", 1),
-                            force_new=True,
+                            force_new=is_downloaded_msg,
                         )
                     elif st.get("prev_view_local") == "genres":
-                        await mostrar_generos(update, context, force_new=True)
+                        await mostrar_generos(
+                            update, context, force_new=is_downloaded_msg
+                        )
                     elif st.get("prev_view_local") == "authors":
                         await mostrar_autores_local(
                             update,
                             context,
                             page=st.get("current_page_b", 1),
-                            force_new=True,
+                            force_new=is_downloaded_msg,
                         )
                     else:
-                        await mostrar_menu_principal(update, context, force_new=True)
+                        await mostrar_menu_principal(
+                            update, context, force_new=is_downloaded_msg
+                        )
 
             # 3. Categorías de Navegación
             elif data.startswith("nav_local|"):
-                if not is_downloaded_msg and query.message:
-                    try:
-                        await query.message.delete()
-                    except Exception:
-                        pass
                 st.setdefault("historial", []).append(("main",))
                 category = data.split("|")[1]
                 if category == "all_series":
@@ -260,7 +257,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                         context,
                         origin_type="all_series",
                         page=1,
-                        force_new=True,
+                        force_new=is_downloaded_msg,
                     )
                 elif category == "newest":
                     await mostrar_series(
@@ -268,18 +265,22 @@ class CallbackHandlerV6(BaseCommandHandler):
                         context,
                         origin_type="newest",
                         page=1,
-                        force_new=True,
+                        force_new=is_downloaded_msg,
                     )
                 elif category == "genres":
-                    await mostrar_generos(update, context, force_new=True)
+                    await mostrar_generos(update, context, force_new=is_downloaded_msg)
                 elif category == "authors":
-                    await mostrar_autores_local(update, context, page=1, force_new=True)
+                    await mostrar_autores_local(
+                        update, context, page=1, force_new=is_downloaded_msg
+                    )
                 elif category in ("help", "ayuda"):
-                    await mostrar_ayuda(update, context, force_new=True)
+                    await mostrar_ayuda(update, context, force_new=is_downloaded_msg)
                 elif category in ("donations", "donar", "vip"):
-                    await mostrar_donaciones(update, context, force_new=True)
+                    await mostrar_donaciones(
+                        update, context, force_new=is_downloaded_msg
+                    )
                 elif category in ("rules", "reglas"):
-                    await mostrar_reglas(update, context, force_new=True)
+                    await mostrar_reglas(update, context, force_new=is_downloaded_msg)
 
             # 4. Filtro por Género
             elif data.startswith("gen|"):

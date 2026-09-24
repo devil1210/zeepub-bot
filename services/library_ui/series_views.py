@@ -3,8 +3,6 @@
 Vistas de Detalle de Libros y Carrusel de Volúmenes de Serie para Telegram Rich Messages.
 """
 
-import asyncio
-import io
 import logging
 import os
 import uuid
@@ -440,6 +438,7 @@ async def mostrar_volumenes_local(
         blocks=rich_blocks,
         files=files if files else None,
         message_thread_id=thread_id,
+        disable_notification=is_group,
     )
 
     # Programar temporizador de 10 minutos para mensaje nuevo

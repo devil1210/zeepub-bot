@@ -59,10 +59,12 @@ async def mostrar_ayuda(
         except Exception as e:
             logger.debug(f"[mostrar_ayuda] No se pudo editar in-place: {e}")
 
+    is_group = update.effective_chat.type in ("group", "supergroup")
     res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
+        disable_notification=is_group,
     )
     if not res or not res.get("ok"):
         reply_markup = InlineKeyboardMarkup(
@@ -121,10 +123,12 @@ async def mostrar_donaciones(
         except Exception as e:
             logger.debug(f"[mostrar_donaciones] No se pudo editar in-place: {e}")
 
+    is_group = update.effective_chat.type in ("group", "supergroup")
     res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
+        disable_notification=is_group,
     )
     if not res or not res.get("ok"):
         reply_markup = InlineKeyboardMarkup(
@@ -174,10 +178,12 @@ async def mostrar_reglas(
         except Exception as e:
             logger.debug(f"[mostrar_reglas] No se pudo editar in-place: {e}")
 
+    is_group = update.effective_chat.type in ("group", "supergroup")
     res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
+        disable_notification=is_group,
     )
     if not res or not res.get("ok"):
         reply_markup = InlineKeyboardMarkup(

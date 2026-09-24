@@ -106,6 +106,7 @@ async def mostrar_menu_principal(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
+        disable_notification=is_group,
     )
 
     # 5. Fallback tradicional si falla Rich Message
@@ -158,10 +159,12 @@ async def mostrar_generos(
         except Exception as e:
             logger.debug(f"[mostrar_generos] Falló edit_rich_message: {e}")
 
+    is_group = update.effective_chat.type in ("group", "supergroup")
     res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
+        disable_notification=is_group,
     )
 
     if not res or not res.get("ok"):
@@ -273,10 +276,12 @@ async def mostrar_series(
         except Exception as e:
             logger.debug(f"[mostrar_series] Falló edit_rich_message: {e}")
 
+    is_group = update.effective_chat.type in ("group", "supergroup")
     res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
+        disable_notification=is_group,
     )
 
     if not res or not res.get("ok"):
@@ -407,10 +412,12 @@ async def mostrar_autores_local(
         except Exception as e:
             logger.debug(f"[mostrar_autores_local] Falló edit_rich_message: {e}")
 
+    is_group = update.effective_chat.type in ("group", "supergroup")
     res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
+        disable_notification=is_group,
     )
 
     if not res or not res.get("ok"):
@@ -460,10 +467,12 @@ async def pedir_termino_busqueda(
         except Exception as e:
             logger.debug(f"[pedir_termino_busqueda] Falló edit_rich_message: {e}")
 
+    is_group = update.effective_chat.type in ("group", "supergroup")
     res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
+        disable_notification=is_group,
     )
 
     if res and res.get("ok"):
@@ -623,10 +632,12 @@ async def mostrar_resultados_locales(
         except Exception as e:
             logger.debug(f"[mostrar_resultados_locales] Falló edit_rich_message: {e}")
 
+    is_group = update.effective_chat.type in ("group", "supergroup")
     res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
+        disable_notification=is_group,
     )
 
     if not res or not res.get("ok"):
