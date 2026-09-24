@@ -27,6 +27,8 @@ class AIService:
     @classmethod
     def _get_client(cls):
         """Devuelve el cliente de Google GenAI."""
+        if not getattr(config, "ENABLE_AI", True):
+            return None
         if not config.GEMINI_API_KEY:
             return None
         if cls._client is None and genai:
@@ -43,6 +45,9 @@ class AIService:
         target_model: str | None = None,
     ) -> str | None:
         """Llamada a servicios de IA (Gemini o Perplexity)."""
+        if not getattr(config, "ENABLE_AI", True):
+            return None
+
         # 1. Perplexity Routing
         if target_model == "perplexity":
             return await cls._call_perplexity(
@@ -59,7 +64,13 @@ class AIService:
         models_to_try = (
             [target_model]
             if target_model
-            else [default_model, "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3-flash-preview"]
+            else [
+                default_model,
+                "gemini-3.5-flash-lite",
+                "gemini-3.1-flash-lite",
+                "gemini-2.5-flash",
+                "gemini-3-flash-preview",
+            ]
         )
         # Deduplicar preservando el orden
         models_to_try = list(dict.fromkeys(models_to_try))
@@ -706,7 +717,9 @@ class AIService:
         return sanitize_fs_segment(name)
 
     @classmethod
-    async def generate_recommendation_stream(cls, chat_id: int | str, user_history_summary: str, draft_id: str | None = None):
+    async def generate_recommendation_stream(
+        cls, chat_id: int | str, user_history_summary: str, draft_id: str | None = None
+    ):
         """
         Genera una recomendación interactiva usando streaming de Gemini (generate_content_stream)
         y actualiza el borrador en Telegram usando sendRichMessageDraft.
@@ -717,8 +730,11 @@ class AIService:
 
         # 1. Enviar el borrador inicial con el bloque Thinking para feedback visual
         from services.rich_message_service import RichMessageService
+
         blocks = [RichMessageService.create_thinking()]
-        res = await RichMessageService.send_rich_message_draft(chat_id, blocks, draft_id=draft_id)
+        res = await RichMessageService.send_rich_message_draft(
+            chat_id, blocks, draft_id=draft_id
+        )
 
         if not res or not res.get("ok"):
             logger.warning("[AIService] No se pudo enviar el borrador de pensamiento.")
@@ -741,9 +757,7 @@ class AIService:
 
             # Streaming de Gemini
             response_stream = client.models.generate_content_stream(
-                model="gemini-2.5-flash",
-                contents=prompt,
-                config=config_args
+                model="gemini-2.5-flash", contents=prompt, config=config_args
             )
 
             accumulated_text = ""
@@ -752,11 +766,13 @@ class AIService:
                     accumulated_text += chunk.text
                     # Actualizar el borrador de Telegram agregando el texto acumulado
                     # Reemplazamos el pensamiento inicial por el texto progresivo
-                    blocks = [
-                        RichMessageService.create_paragraph(accumulated_text)
-                    ]
-                    await RichMessageService.send_rich_message_draft(chat_id, blocks, draft_id=actual_draft_id)
-                    await asyncio.sleep(0.2)  # Delay menor para evitar colisiones/ratelimits en actualizaciones rápidas
+                    blocks = [RichMessageService.create_paragraph(accumulated_text)]
+                    await RichMessageService.send_rich_message_draft(
+                        chat_id, blocks, draft_id=actual_draft_id
+                    )
+                    await asyncio.sleep(
+                        0.2
+                    )  # Delay menor para evitar colisiones/ratelimits en actualizaciones rápidas
 
             # 3. Finalizar: Enviar el mensaje definitivo
             await RichMessageService.send_rich_message(chat_id, blocks)
@@ -764,4 +780,11 @@ class AIService:
         except Exception as e:
             logger.error(f"Error en generate_recommendation_stream: {e}", exc_info=True)
             # Intentar notificar error
-            await RichMessageService.send_rich_message(chat_id, [RichMessageService.create_paragraph("❌ Ha ocurrido un error al generar la recomendación.")])
+            await RichMessageService.send_rich_message(
+                chat_id,
+                [
+                    RichMessageService.create_paragraph(
+                        "❌ Ha ocurrido un error al generar la recomendación."
+                    )
+                ],
+            )

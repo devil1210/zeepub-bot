@@ -79,23 +79,17 @@ class HandlerManagerV6:
             CommandHandler(["start", "menu", "inicio"], self.start_h.handle)
         )
         self.app.add_handler(
-            CommandHandler(["catalog", "catalogo", "series"], self.handle_catalog_series)
+            CommandHandler(
+                ["catalog", "catalogo", "series"], self.handle_catalog_series
+            )
         )
-        self.app.add_handler(
-            CommandHandler(["ayuda", "help"], self.handle_help)
-        )
+        self.app.add_handler(CommandHandler(["ayuda", "help"], self.handle_help))
         self.app.add_handler(
             CommandHandler(["donar", "vip", "donaciones"], self.handle_donations)
         )
-        self.app.add_handler(
-            CommandHandler(["reglas", "rules"], self.handle_rules)
-        )
-        self.app.add_handler(
-            CommandHandler(["search", "buscar"], self.search_h.handle)
-        )
-        self.app.add_handler(
-            CommandHandler(["status", "perfil"], self.status_h.handle)
-        )
+        self.app.add_handler(CommandHandler(["reglas", "rules"], self.handle_rules))
+        self.app.add_handler(CommandHandler(["search", "buscar"], self.search_h.handle))
+        self.app.add_handler(CommandHandler(["status", "perfil"], self.status_h.handle))
         self.app.add_handler(
             CommandHandler(["cancel", "cancelar"], self.cancel_h.handle)
         )
@@ -112,13 +106,17 @@ class HandlerManagerV6:
             CommandHandler(["genero", "generos"], self.extra_h.handle_genero)
         )
         self.app.add_handler(
-            CommandHandler(["idioma", "preferencias", "lang"], self.extra_h.handle_idioma)
+            CommandHandler(
+                ["idioma", "preferencias", "lang"], self.extra_h.handle_idioma
+            )
         )
         self.app.add_handler(
             CommandHandler(["stats", "diagnostico"], self.extra_h.handle_stats_admin)
         )
         self.app.add_handler(
-            CommandHandler(["clearcache", "limpiarcache"], self.extra_h.handle_clearcache_admin)
+            CommandHandler(
+                ["clearcache", "limpiarcache"], self.extra_h.handle_clearcache_admin
+            )
         )
         self.app.add_handler(
             CommandHandler(["cola", "pubqueue"], self.extra_h.handle_cola_admin)
@@ -217,7 +215,9 @@ class HandlerManagerV6:
                         blocks=clean_blocks,
                     )
                 except Exception as e:
-                    logger.debug(f"No se pudieron quitar los botones del prompt previo: {e}")
+                    logger.debug(
+                        f"No se pudieron quitar los botones del prompt previo: {e}"
+                    )
                     try:
                         await context.bot.edit_message_reply_markup(
                             chat_id=update.effective_chat.id,
@@ -228,6 +228,76 @@ class HandlerManagerV6:
                         pass
 
             await self.search_h._search_by_term(update, context, text, thread_id)
+            return
+
+        # 3. Control de Inteligencia Artificial (Grupos y Privado)
+        # Si estamos en un grupo y la IA en grupos está desactivada para usuarios no administradores:
+        if (
+            is_group
+            and not getattr(config, "ENABLE_AI_IN_GROUPS", False)
+            and not is_admin
+        ):
+            from services.rich_message_service import RichMessageService
+
+            blocks = [
+                {
+                    "type": "heading",
+                    "size": 2,
+                    "text": "📚 Biblioteca ZeePub",
+                },
+                {
+                    "type": "paragraph",
+                    "text": (
+                        "¡Hola! En este grupo el chat libre con IA está desactivado para optimizar el servicio y evitar consumo innecesario.\n\n"
+                        "<b>✨ Te invitamos a explorar nuestra biblioteca usando los comandos disponibles:</b>\n"
+                        "• 🔍 <code>/buscar [título]</code> — Buscar novela o libro\n"
+                        "• 📖 <code>/catalogo</code> — Explorar catálogo completo\n"
+                        "• 🎲 <code>/random</code> — Novela recomendada al azar\n"
+                        "• 🏆 <code>/top</code> — Top 10 novelas más leídas\n"
+                        "• ✨ <code>/novedades</code> — Últimos volúmenes agregados\n"
+                        "• ℹ️ <code>/ayuda</code> — Guía completa de uso"
+                    ),
+                },
+                {
+                    "type": "buttons",
+                    "align": "center",
+                    "buttons": [
+                        {
+                            "text": "📖 Ver Catálogo",
+                            "callback_data": "nav_local|all_series",
+                        },
+                        {"text": "✨ Novedades", "callback_data": "nav_local|newest"},
+                    ],
+                },
+                {
+                    "type": "buttons",
+                    "align": "center",
+                    "buttons": [
+                        {"text": "🏠 Menú Principal", "callback_data": "volver_menu"},
+                        {"text": "ℹ️ Ayuda", "callback_data": "nav_local|help"},
+                    ],
+                },
+            ]
+            await RichMessageService.send_rich_message(
+                chat_id=update.effective_chat.id,
+                blocks=blocks,
+                message_thread_id=thread_id,
+            )
+            return
+
+        # Si la IA conversacional está desactivada globalmente (o no es admin):
+        ai_enabled = getattr(config, "ENABLE_AI", True) and getattr(
+            config, "ENABLE_AI_CHAT", True
+        )
+        if not ai_enabled and not is_admin:
+            # En chat privado con IA desactivada: si el usuario escribe un término, ejecutar búsqueda directa local
+            if len(text) >= 2:
+                await self.search_h._search_by_term(update, context, text, thread_id)
+            else:
+                await update.message.reply_text(
+                    "🔍 Para buscar una novela escribe <code>/buscar [título]</code> o usa <code>/catalogo</code>.",
+                    parse_mode="HTML",
+                )
             return
 
         # Enviar aviso de "escribiendo..." de Telegram para mejorar la UX
@@ -567,7 +637,11 @@ class HandlerManagerV6:
         chat = update.effective_chat
         cid = chat.id if chat else 0
         thread_id = get_thread_id(update)
-        username = f"@{user.username}" if user and user.username else (user.first_name if user else "Desconocido")
+        username = (
+            f"@{user.username}"
+            if user and user.username
+            else (user.first_name if user else "Desconocido")
+        )
 
         lines = [
             "🆔 <b>Información de Identidad • ZeePubs</b>\n",

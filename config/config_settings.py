@@ -42,14 +42,16 @@ class BotConfig:
 
     # Destinatarios de mensajes de estado del sistema, reportes automáticos y alertas críticas
     STATUS_ALERT_USERS: set[int] = field(
-        default_factory=lambda: {
-            int(x.strip())
-            for x in os.getenv(
-                "STATUS_ALERT_USERS", os.getenv("SUPER_ADMIN_ID", "133994080")
-            ).split(",")
-            if x.strip().isdigit()
-        }
-        or {133994080}
+        default_factory=lambda: (
+            {
+                int(x.strip())
+                for x in os.getenv(
+                    "STATUS_ALERT_USERS", os.getenv("SUPER_ADMIN_ID", "133994080")
+                ).split(",")
+                if x.strip().isdigit()
+            }
+            or {133994080}
+        )
     )
 
     # Correos de Administradores (Cloudflare Access / Auth)
@@ -95,8 +97,12 @@ class BotConfig:
 
     # Facebook Credentials
     FACEBOOK_PAGE_ACCESS_TOKEN: str = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN", "")
-    FACEBOOK_TEST_PAGE_ACCESS_TOKEN: str = os.getenv("FACEBOOK_TEST_PAGE_ACCESS_TOKEN", "")
-    FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN: str = os.getenv("FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN", "")
+    FACEBOOK_TEST_PAGE_ACCESS_TOKEN: str = os.getenv(
+        "FACEBOOK_TEST_PAGE_ACCESS_TOKEN", ""
+    )
+    FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN: str = os.getenv(
+        "FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN", ""
+    )
     FACEBOOK_GROUP_ID: str = os.getenv("FACEBOOK_GROUP_ID", "")
 
     def get_facebook_token(self, target_id: str | int | None = None) -> str:
@@ -107,24 +113,23 @@ class BotConfig:
         - Fallbacks en cascada si alguno no está definido.
         """
         tid_str = str(target_id) if target_id is not None else ""
-        
+
         # 1. Caso Página Oficial
         if tid_str in ("109113064138279",):
             if self.FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN:
                 return self.FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN
-        
+
         # 2. Caso Página de Pruebas
         if tid_str in ("61593375352202", str(self.FACEBOOK_GROUP_ID)):
             if self.FACEBOOK_TEST_PAGE_ACCESS_TOKEN:
                 return self.FACEBOOK_TEST_PAGE_ACCESS_TOKEN
-        
+
         # 3. Fallbacks
         return (
             self.FACEBOOK_PAGE_ACCESS_TOKEN
             or self.FACEBOOK_OFICIAL_PAGE_ACCESS_TOKEN
             or self.FACEBOOK_TEST_PAGE_ACCESS_TOKEN
         )
-
 
     # Twitter / X Credentials
     TWITTER_API_KEY: str = os.getenv("TWITTER_API_KEY", "")
@@ -211,6 +216,13 @@ class BotConfig:
         return key
 
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+
+    # Configuración de Inteligencia Artificial (Gemini)
+    ENABLE_AI: bool = os.getenv("ENABLE_AI", "True").lower() == "true"
+    ENABLE_AI_CHAT: bool = os.getenv("ENABLE_AI_CHAT", "True").lower() == "true"
+    ENABLE_AI_IN_GROUPS: bool = (
+        os.getenv("ENABLE_AI_IN_GROUPS", "False").lower() == "true"
+    )
 
     @property
     def PERPLEXITY_API_KEY(self) -> str:
