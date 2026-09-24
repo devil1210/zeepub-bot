@@ -42,11 +42,25 @@ class StartHandler(BaseCommandHandler):
         # Check for deep-linking arguments (e.g. /start link_b64email or /start series_hash)
         if context.args and len(context.args) > 0:
             arg = context.args[0]
-            if (
-                arg.startswith("series_")
-                or arg.startswith("serie_")
-                or arg.startswith("show_series_")
-            ):
+            if arg in ["bienvenida", "welcome"]:
+                from plugins.group_manager_plugin import build_welcome_message
+
+                bot_user = await context.bot.get_me()
+                bot_username = bot_user.username or "ZeePubBot"
+                text_priv, reply_markup = build_welcome_message(
+                    user_name=update.effective_user.first_name,
+                    bot_username=bot_username,
+                    is_ephemeral=False,
+                    is_private=True,
+                )
+                await update.effective_message.reply_text(
+                    text_priv,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                )
+                return
+
+            if arg.startswith(("series_", "serie_", "show_series_")):
                 series_hash_short = arg.split("_")[-1]
                 try:
                     from services.library_service import LibraryService
@@ -65,8 +79,9 @@ class StartHandler(BaseCommandHandler):
 
             if arg.startswith("auth_"):
                 try:
-                    from services.user_service import confirm_qr_auth_session
                     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+                    from services.user_service import confirm_qr_auth_session
 
                     tg_user = update.effective_user
                     ok = await confirm_qr_auth_session(
@@ -83,38 +98,50 @@ class StartHandler(BaseCommandHandler):
                             f"ha sido autorizada y vinculada en tiempo real con tu navegador web.\n\n"
                             f"Ya puedes regresar a la pantalla de tu navegador."
                         )
-                        reply_markup = InlineKeyboardMarkup([[
-                            InlineKeyboardButton("🌐 Volver a ZeePub Web", url="https://zp-dev.sp-core.vip")
-                        ]])
-                        await update.effective_message.reply_text(text, parse_mode="HTML", reply_markup=reply_markup)
+                        reply_markup = InlineKeyboardMarkup(
+                            [
+                                [
+                                    InlineKeyboardButton(
+                                        "🌐 Volver a ZeePub Web",
+                                        url="https://zp-dev.sp-core.vip",
+                                    )
+                                ]
+                            ]
+                        )
+                        await update.effective_message.reply_text(
+                            text, parse_mode="HTML", reply_markup=reply_markup
+                        )
                         return
                 except Exception as e:
                     logger.error(f"Error procesando token QR auth: {e}")
 
             if arg.startswith("link_"):
                 import base64
+
                 encoded_email = arg[5:]
                 try:
                     padded = encoded_email + "=" * (-len(encoded_email) % 4)
                     email = base64.urlsafe_b64decode(padded.encode()).decode("utf-8")
-                    
-                    from services.user_service import link_telegram_to_user
+
                     from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+                    from services.user_service import link_telegram_to_user
 
                     await link_telegram_to_user(
                         current_user_id=uid,
                         telegram_identifier=str(uid),
-                        bot=context.bot
+                        bot=context.bot,
                     )
 
                     tg_user = update.effective_user
                     from repositories.user_repository import user_repo
+
                     await user_repo.update_profile(
                         uid,
                         username=tg_user.username,
                         first_name=tg_user.first_name,
                         last_name=tg_user.last_name,
-                        email=email
+                        email=email,
                     )
 
                     text = (
@@ -123,10 +150,19 @@ class StartHandler(BaseCommandHandler):
                         f"ha sido vinculada exitosamente con tu sesión web (<b>{email}</b>).\n\n"
                         f"Ya puedes volver a la web y disfrutar de tus descargas y beneficios."
                     )
-                    reply_markup = InlineKeyboardMarkup([[
-                        InlineKeyboardButton("🌐 Volver a ZeePub Web", url="https://zp-dev.sp-core.vip")
-                    ]])
-                    await update.effective_message.reply_text(text, parse_mode="HTML", reply_markup=reply_markup)
+                    reply_markup = InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    "🌐 Volver a ZeePub Web",
+                                    url="https://zp-dev.sp-core.vip",
+                                )
+                            ]
+                        ]
+                    )
+                    await update.effective_message.reply_text(
+                        text, parse_mode="HTML", reply_markup=reply_markup
+                    )
                     return
                 except Exception as e:
                     logger.error(f"Error procesando deep link de vinculacion: {e}")
