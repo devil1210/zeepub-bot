@@ -5,7 +5,7 @@ Vistas para Información, Ayuda, Donaciones y Reglas usando Rich Messages.
 
 import logging
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from config.config_settings import config
@@ -29,13 +29,10 @@ async def check_is_admin_or_staff(uid: int, tg_user=None) -> bool:
         role = await get_user_role(uid)
         if role in ["admin", "staff", "publicador", "VIP", "editor"]:
             return True
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"Error consultando rol para {uid}: {e}")
 
-    if uid in getattr(config, "ADMIN_USERS", []):
-        return True
-
-    return False
+    return uid in getattr(config, "ADMIN_USERS", [])
 
 
 async def mostrar_ayuda(
@@ -62,11 +59,40 @@ async def mostrar_ayuda(
         except Exception as e:
             logger.debug(f"[mostrar_ayuda] No se pudo editar in-place: {e}")
 
-    await RichMessageService.send_rich_message(
+    res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
     )
+    if not res or not res.get("ok"):
+        reply_markup = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "📚 Catálogo", callback_data="nav_local|all_series"
+                    ),
+                    InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
+                ]
+            ]
+        )
+        help_text = (
+            f"<b>📖 Guía de Uso y Comandos • ZeePubs</b>\n\n"
+            f"¡Hola, <b>{user_name}</b>!\n\n"
+            f"• <code>/buscar &lt;título&gt;</code> - Buscar novelas por nombre o autor.\n"
+            f"• <code>/catalogo</code> - Explorar catálogo completo.\n"
+            f"• <code>/reglas</code> - Normas de convivencia del grupo.\n"
+            f"• <code>/estado</code> - Tu perfil y cuota diaria.\n"
+            f"• <code>/donar</code> - Información para apoyar el proyecto.\n"
+        )
+        if is_staff:
+            help_text += "\n<i>Comandos Staff:</i>\n• <code>/admin</code> - Panel de control\n• <code>/scan</code> - Re-escanear biblioteca"
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=help_text,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )
 
 
 async def mostrar_donaciones(
@@ -95,11 +121,36 @@ async def mostrar_donaciones(
         except Exception as e:
             logger.debug(f"[mostrar_donaciones] No se pudo editar in-place: {e}")
 
-    await RichMessageService.send_rich_message(
+    res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
     )
+    if not res or not res.get("ok"):
+        reply_markup = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton("☕ Donar en Ko-fi", url=donation_url),
+                    InlineKeyboardButton("⭐ Stars", callback_data="stars_menu"),
+                ],
+                [
+                    InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
+                ],
+            ]
+        )
+        don_text = (
+            f"<b>⭐ Apoyo y Membresías • ZeePubs</b>\n\n"
+            f"¡Hola, <b>{user_name}</b>!\n"
+            f"Tu apoyo voluntario nos ayuda a mantener y expandir la biblioteca con nuevas novelas maquetadas.\n\n"
+            f"Puedes apoyarnos mediante Ko-fi o estrellas nativas de Telegram."
+        )
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=don_text,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )
 
 
 async def mostrar_reglas(
@@ -123,8 +174,33 @@ async def mostrar_reglas(
         except Exception as e:
             logger.debug(f"[mostrar_reglas] No se pudo editar in-place: {e}")
 
-    await RichMessageService.send_rich_message(
+    res = await RichMessageService.send_rich_message(
         chat_id=chat_id,
         blocks=blocks,
         message_thread_id=thread_id,
     )
+    if not res or not res.get("ok"):
+        reply_markup = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "📚 Catálogo", callback_data="nav_local|all_series"
+                    ),
+                    InlineKeyboardButton("🏠 Inicio", callback_data="volver_menu"),
+                ]
+            ]
+        )
+        reglas_text = (
+            "<b>📜 Normas de la Comunidad • ZeePubs</b>\n\n"
+            "1. <b>Respeto y Convivencia:</b> Trata con respeto a todos los miembros y editores. Prohibido acoso o toxicidad.\n"
+            "2. <b>Sin Spam:</b> Prohibido flood, enlaces sospechosos o contenido explícito/NSFW.\n"
+            "3. <b>Uso Responsable:</b> Respeta las cuotas de descarga diarias y usa el buscador con moderación.\n\n"
+            "¡Disfruta de la lectura! ☕✨"
+        )
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=reglas_text,
+            reply_markup=reply_markup,
+            parse_mode="HTML",
+            message_thread_id=thread_id,
+        )

@@ -31,6 +31,10 @@ async def handle_admin_callback(
     if not query:
         return False
 
+    # Solo procesar callbacks dirigidos a administración
+    if not (data in ("admin_panel", "admin") or data.startswith("admin_")):
+        return False
+
     uid = update.effective_user.id
     thread_id = get_thread_id(update)
     is_staff = await check_is_admin_or_staff(uid, update.effective_user)
@@ -95,7 +99,9 @@ async def handle_admin_callback(
             user = update.effective_user
             chat = update.effective_chat
             cid = chat.id if chat else 0
-            username = f"@{user.username}" if user and user.username else user.first_name
+            username = (
+                f"@{user.username}" if user and user.username else user.first_name
+            )
 
             msg = (
                 f"🆔 <b>Identidad de Sesión</b>\n\n"
@@ -116,9 +122,11 @@ async def handle_admin_callback(
             return True
 
         elif act == "integrity":
-            await query.answer("🔍 Verificando integridad de la biblioteca...", show_alert=False)
-            from sqlalchemy import text
+            await query.answer(
+                "🔍 Verificando integridad de la biblioteca...", show_alert=False
+            )
             from core.postgres_manager import pg_manager
+            from sqlalchemy import text
 
             try:
                 async with pg_manager.get_session() as session:
