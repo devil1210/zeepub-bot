@@ -330,14 +330,14 @@ class GroupManagerPlugin(BasePlugin):
         user,
         reply_to_message_id: int | None = None,
     ):
-        """Procesa y coordina la bienvenida efímera al grupo, copia en privado y aviso a administradores."""
+        """Envía el mensaje de bienvenida efímero en el grupo (receiver_user_id) al nuevo usuario y a los administradores."""
         chat_id = chat.id
         user_id = user.id
 
-        # 1. Deduplicación por (chat_id, user_id) en ventana de 120 segundos
+        # 1. Deduplicación por (chat_id, user_id) en ventana de 60 segundos
         now = time.time()
         self._recent_welcomes = {
-            k: v for k, v in self._recent_welcomes.items() if now - v < 120
+            k: v for k, v in self._recent_welcomes.items() if now - v < 60
         }
         key = (chat_id, user_id)
         if key in self._recent_welcomes:
@@ -360,217 +360,96 @@ class GroupManagerPlugin(BasePlugin):
         if group and group.welcome_msg_slug:
             msg_data = await custom_messages_repo.get_message(group.welcome_msg_slug)
 
-        # 4. Obtener username del bot
-        bot_user = await context.bot.get_me()
-        bot_username = bot_user.username or "ZeePubBot"
+        safe_name = html.escape(user.first_name or "Lector")
+        if msg_data and msg_data.text_content:
+            welcome_text = msg_data.text_content.replace("[Nombre]", safe_name)
+            reply_markup = None
+        else:
+            welcome_text, reply_markup = build_welcome_html(user.first_name)
 
-        # 5. Enviar mensaje de bienvenida en grupo (efímero)
-        await self._send_welcome_group(
-            context, chat, user, msg_data, bot_username, reply_to_message_id
+        # 4. Enviar mensaje efímero en el grupo para el nuevo miembro (Only visible to you)
+        try:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=welcome_text,
+                parse_mode="HTML",
+                reply_markup=reply_markup,
+                reply_to_message_id=reply_to_message_id,
+                api_kwargs={"receiver_user_id": user_id},
+            )
+            logger.info(
+                f"[GroupManager] Mensaje efímero de bienvenida enviado en grupo {chat_id} a usuario {user_id} ({user.first_name})"
+            )
+        except Exception as e:
+            logger.warning(
+                f"[GroupManager] Error enviando bienvenida efímera a {user_id} en {chat_id}: {e}"
+            )
+
+        # 5. Enviar mensaje efímero en el grupo a los administradores (Only visible to you)
+        asyncio.create_task(
+            self._send_ephemeral_to_admins(
+                context.bot,
+                chat_id,
+                user,
+                welcome_text,
+                reply_markup,
+                reply_to_message_id,
+            )
         )
 
-        # 6. Enviar copia en privado al usuario
-        await self._send_welcome_private(context, user, msg_data, bot_username)
-
-        # 7. Notificar a los administradores del grupo
-        asyncio.create_task(self._notify_admins(context.bot, chat_id, chat.title, user))
-
-    async def _send_welcome_group(
+    async def _send_ephemeral_to_admins(
         self,
-        context: ContextTypes.DEFAULT_TYPE,
-        chat,
-        user,
-        msg_data,
-        bot_username: str,
+        bot,
+        chat_id: int,
+        new_user,
+        welcome_text: str,
+        reply_markup: InlineKeyboardMarkup | None,
         reply_to_message_id: int | None = None,
     ):
-        """Envía el mensaje de bienvenida efímero en el grupo y programa su autodestrucción."""
-        chat_id = chat.id
-        safe_name = html.escape(user.first_name or "Lector")
-        sent_msg = None
+        """Envía el mensaje efímero en el grupo a cada administrador para que también les aparezca a ellos (Only visible to you)."""
+        admin_ids: set[int] = set()
 
-        if msg_data and msg_data.text_content:
-            text_to_send = msg_data.text_content.replace("[Nombre]", safe_name)
-            text_to_send += "\n\n⏳ <i>Este mensaje en el grupo se autodestruirá en 2 minutos para mantener el chat limpio.</i>"
-            try:
-                sent_msg = await context.bot.send_message(
-                    chat_id=chat_id,
-                    text=text_to_send,
-                    parse_mode="HTML",
-                    reply_to_message_id=reply_to_message_id,
-                )
-            except Exception as e:
-                logger.warning(
-                    f"[GroupManager] Error enviando bienvenida custom en grupo: {e}"
-                )
-        elif msg_data and not msg_data.text_content:
-            try:
-                sent_msg = await context.bot.copy_message(
-                    chat_id=chat_id,
-                    from_chat_id=msg_data.source_chat_id,
-                    message_id=msg_data.source_message_id,
-                    reply_to_message_id=reply_to_message_id,
-                )
-            except Exception as e:
-                logger.error(
-                    f"[GroupManager] Error enviando copia de bienvenida en grupo: {e}"
-                )
-        else:
-            text_group, reply_markup = build_welcome_message(
-                user_name=user.first_name,
-                bot_username=bot_username,
-                is_ephemeral=True,
-                is_private=False,
-            )
-            try:
-                sent_msg = await context.bot.send_message(
-                    chat_id=chat_id,
-                    text=text_group,
-                    parse_mode="HTML",
-                    reply_markup=reply_markup,
-                    reply_to_message_id=reply_to_message_id,
-                )
-            except Exception as e:
-                logger.error(
-                    f"[GroupManager] Error enviando bienvenida Rich Message en grupo: {e}"
-                )
-
-        # Programar autodestrucción (efímero) tras 120 segundos
-        if sent_msg:
-            asyncio.create_task(
-                self._delete_message_after(
-                    context.bot, chat_id, sent_msg.message_id, delay_seconds=120
-                )
-            )
-
-    async def _delete_message_after(
-        self, bot, chat_id: int, message_id: int, delay_seconds: int = 120
-    ):
-        """Elimina el mensaje de bienvenida tras el tiempo especificado para mantener limpio el grupo."""
-        await asyncio.sleep(delay_seconds)
-        try:
-            await bot.delete_message(chat_id=chat_id, message_id=message_id)
-            logger.info(
-                f"[GroupManager] Mensaje efímero {message_id} en chat {chat_id} eliminado exitosamente."
-            )
-        except Exception as e:
-            logger.debug(
-                f"[GroupManager] No se pudo eliminar mensaje efímero {message_id} en {chat_id}: {e}"
-            )
-
-    async def _send_welcome_private(
-        self,
-        context: ContextTypes.DEFAULT_TYPE,
-        user,
-        msg_data,
-        bot_username: str,
-    ):
-        """Envía copia del mensaje de bienvenida por privado al usuario recién ingresado."""
-        user_id = user.id
-        safe_name = html.escape(user.first_name or "Lector")
-
-        try:
-            if msg_data and msg_data.text_content:
-                text_to_send = msg_data.text_content.replace("[Nombre]", safe_name)
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text=text_to_send,
-                    parse_mode="HTML",
-                )
-            elif msg_data and not msg_data.text_content:
-                await context.bot.copy_message(
-                    chat_id=user_id,
-                    from_chat_id=msg_data.source_chat_id,
-                    message_id=msg_data.source_message_id,
-                )
-            else:
-                text_priv, reply_markup = build_welcome_message(
-                    user_name=user.first_name,
-                    bot_username=bot_username,
-                    is_ephemeral=False,
-                    is_private=True,
-                )
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text=text_priv,
-                    parse_mode="HTML",
-                    reply_markup=reply_markup,
-                )
-            logger.info(
-                f"[GroupManager] Copia de bienvenida enviada por privado a {user_id} ({user.first_name})"
-            )
-        except Exception as e:
-            # Telegram 403 Forbidden ocurre si el usuario nunca ha iniciado el bot en privado
-            logger.info(
-                f"[GroupManager] No se pudo enviar copia privada a {user_id} (el usuario aún no ha iniciado el bot en privado): {e}"
-            )
-
-    async def _notify_admins(self, bot, chat_id: int, chat_title: str | None, new_user):
-        """Notifica a los administradores del grupo por privado sobre el ingreso del nuevo miembro."""
-        safe_name = html.escape(new_user.first_name or "Usuario")
-        username_str = f"(@{new_user.username})" if new_user.username else "(sin alias)"
-        group_name = html.escape(chat_title or f"Chat {chat_id}")
-
-        admin_notice = (
-            f"🔔 <b>Nuevo Miembro en Grupo • ZeePubs</b>\n\n"
-            f"📍 <b>Grupo:</b> {group_name}\n"
-            f'👤 <b>Usuario:</b> <a href="tg://user?id={new_user.id}">{safe_name}</a> {username_str}\n'
-            f"🆔 <b>ID:</b> <code>{new_user.id}</code>\n\n"
-            f"<i>Se ha enviado la bienvenida en el grupo (efímera, 2 min) y copia a su chat privado.</i>"
-        )
-
-        notified_ids: set[int] = set()
-
-        # 1. Obtener administradores del grupo de Telegram
+        # Obtener administradores del grupo
         try:
             admins = await bot.get_chat_administrators(chat_id)
             for admin in admins:
                 if (
                     admin.user
                     and not admin.user.is_bot
-                    and admin.user.id not in notified_ids
+                    and admin.user.id != new_user.id
                 ):
-                    try:
-                        await bot.send_message(
-                            chat_id=admin.user.id,
-                            text=admin_notice,
-                            parse_mode="HTML",
-                        )
-                        notified_ids.add(admin.user.id)
-                    except Exception as ex:
-                        logger.debug(
-                            f"[GroupManager] Admin {admin.user.id} no alcanzable por DM: {ex}"
-                        )
+                    admin_ids.add(admin.user.id)
         except Exception as e:
             logger.warning(
-                f"[GroupManager] Error obteniendo admins de chat {chat_id}: {e}"
+                f"[GroupManager] Error obteniendo administradores de {chat_id}: {e}"
             )
 
-        # 2. Notificar a los administradores globales (config.ADMIN_USERS)
-        for admin_id in getattr(config, "ADMIN_USERS", []):
-            if admin_id not in notified_ids:
-                try:
-                    await bot.send_message(
-                        chat_id=admin_id,
-                        text=admin_notice,
-                        parse_mode="HTML",
-                    )
-                    notified_ids.add(admin_id)
-                except Exception as ex:
-                    logger.debug(
-                        f"[GroupManager] Admin global {admin_id} no alcanzable por DM: {ex}"
-                    )
+        # Añadir administradores configurados en config.ADMIN_USERS
+        for admin_uid in getattr(config, "ADMIN_USERS", []):
+            if admin_uid != new_user.id:
+                admin_ids.add(admin_uid)
+
+        admin_header = f"🔔 <i>[Bienvenida enviada a {html.escape(new_user.first_name or 'Usuario')}]</i>\n\n"
+        admin_text = admin_header + welcome_text
+
+        for admin_id in admin_ids:
+            try:
+                await bot.send_message(
+                    chat_id=chat_id,
+                    text=admin_text,
+                    parse_mode="HTML",
+                    reply_markup=reply_markup,
+                    reply_to_message_id=reply_to_message_id,
+                    api_kwargs={"receiver_user_id": admin_id},
+                )
+            except Exception as ex:
+                logger.debug(
+                    f"[GroupManager] No se pudo enviar bienvenida efímera al admin {admin_id} en {chat_id}: {ex}"
+                )
 
 
-def build_welcome_message(
-    user_name: str,
-    bot_username: str = "ZeePubBot",
-    is_ephemeral: bool = False,
-    is_private: bool = False,
-) -> tuple[str, InlineKeyboardMarkup]:
-    """Construye el mensaje de bienvenida oficial en formato Rich HTML (Telegram 7.0+)
-    con blockquotes nativos y botones interactivos.
-    """
+def build_welcome_html(user_name: str) -> tuple[str, InlineKeyboardMarkup]:
+    """Construye el texto HTML enriquecido y botonera para la bienvenida oficial en grupo."""
     safe_name = html.escape(user_name or "Lector")
 
     text = (
@@ -580,56 +459,19 @@ def build_welcome_message(
         f"1. <b>Buscador Especializado:</b> Me conecto directo a nuestra biblioteca para entregarte los EPUBs exclusivos que nosotros mismos maquetamos.\n"
         f"2. <b>Moderador:</b> Cuidar que nuestra comunidad sea segura y divertida.</blockquote>\n\n"
         f"🚀 <b>¿Por dónde empezar?</b>\n"
+        f"— Escribe <code>/buscar &lt;título&gt;</code> para encontrar cualquier novela (en español, inglés o romaji).\n"
+        f"— Usa <code>/catalogo</code> para explorar todas las obras disponibles.\n"
+        f"— Consulta las <code>/reglas</code> de convivencia del grupo.\n"
+        f"— Usa <code>/ayuda</code> para ver todos los comandos disponibles.\n\n"
+        f"¡Ponte cómodo/a y disfruta de nuestras ediciones! ☕✨"
     )
 
-    if not is_private:
-        text += f'— Toca aquí 👉 <a href="https://t.me/{bot_username}?start=bienvenida">/start</a> para activarme en privado.\n'
-
-    text += (
-        "— Usa <code>/ayuda</code> o <code>/help</code> para ver todo lo que puedo hacer por ti.\n"
-        "— Escribe <code>/buscar &lt;título&gt;</code> seguido del nombre de la novela.\n"
-        "— Consulta las <code>/reglas</code>, son pocas pero es necesario cumplirlas.\n\n"
-        "<blockquote expandable>⚠️ <b>Nota Importante / Búsquedas:</b>\n"
-        "Mi base de datos trabaja con los títulos internacionales, así que por favor realiza tus búsquedas preferentemente en <b>INGLÉS</b> o romanji para encontrar lo que necesitas (Ej: <code>/buscar That Time I Got Reincarnated as a Slime</code> en lugar de <i>'Y me reencarné en un slime'</i>).</blockquote>\n\n"
-        "¡Ponte cómodo/a y disfruta de nuestras ediciones! ☕✨"
-    )
-
-    if is_ephemeral:
-        text += "\n\n⏳ <i>Este mensaje en el grupo se autodestruirá en 2 minutos para mantener el chat limpio.</i>"
-
-    buttons: list[list[InlineKeyboardButton]] = []
-    if not is_private:
-        buttons.append(
-            [
-                InlineKeyboardButton(
-                    "🤖 Activar en Privado",
-                    url=f"https://t.me/{bot_username}?start=bienvenida",
-                ),
-                InlineKeyboardButton("📜 Reglas", callback_data="nav_local|rules"),
-            ]
-        )
-        buttons.append(
-            [
-                InlineKeyboardButton(
-                    "📚 Catálogo Completo", callback_data="nav_local|all_series"
-                ),
-            ]
-        )
-    else:
-        buttons.append(
-            [
-                InlineKeyboardButton(
-                    "📚 Catálogo Completo", callback_data="nav_local|all_series"
-                ),
-                InlineKeyboardButton("📜 Reglas", callback_data="nav_local|rules"),
-            ]
-        )
-        buttons.append(
-            [
-                InlineKeyboardButton("ℹ️ Ayuda", callback_data="nav_local|help"),
-                InlineKeyboardButton("🏠 Menú Principal", callback_data="volver_menu"),
-            ]
-        )
-
+    buttons = [
+        [
+            InlineKeyboardButton("📚 Catálogo", callback_data="nav_local|all_series"),
+            InlineKeyboardButton("📜 Reglas", callback_data="nav_local|rules"),
+            InlineKeyboardButton("ℹ️ Ayuda", callback_data="nav_local|help"),
+        ]
+    ]
     reply_markup = InlineKeyboardMarkup(buttons)
     return text, reply_markup

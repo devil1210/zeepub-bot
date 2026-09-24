@@ -42,24 +42,6 @@ class StartHandler(BaseCommandHandler):
         # Check for deep-linking arguments (e.g. /start link_b64email or /start series_hash)
         if context.args and len(context.args) > 0:
             arg = context.args[0]
-            if arg in ["bienvenida", "welcome"]:
-                from plugins.group_manager_plugin import build_welcome_message
-
-                bot_user = await context.bot.get_me()
-                bot_username = bot_user.username or "ZeePubBot"
-                text_priv, reply_markup = build_welcome_message(
-                    user_name=update.effective_user.first_name,
-                    bot_username=bot_username,
-                    is_ephemeral=False,
-                    is_private=True,
-                )
-                await update.effective_message.reply_text(
-                    text_priv,
-                    parse_mode="HTML",
-                    reply_markup=reply_markup,
-                )
-                return
-
             if arg.startswith(("series_", "serie_", "show_series_")):
                 series_hash_short = arg.split("_")[-1]
                 try:
