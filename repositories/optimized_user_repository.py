@@ -117,9 +117,9 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
         # Supabase
         if self.supabase.is_active:
             try:
-                self.supabase.get_client().table("users").update({"level_id": level_id, "level": level_key}).eq(
-                    "telegram_id", telegram_id
-                ).execute()
+                self.supabase.get_client().table("users").update(
+                    {"level_id": level_id, "level": level_key}
+                ).eq("telegram_id", telegram_id).execute()
             except Exception:
                 pass
 
@@ -127,8 +127,11 @@ class OptimizedUserRepository(BaseRepository[dict[str, Any]]):
         await cache_manager.invalidate_user(telegram_id)
         try:
             async with pg_manager.get_session() as session:
-                from models.users import DownloadHistory
-                stmt = select(func.count(DownloadHistory.id)).where(DownloadHistory.user_id == telegram_id)
+                from models.download_models import DownloadHistory
+
+                stmt = select(func.count(DownloadHistory.id)).where(
+                    DownloadHistory.user_id == telegram_id
+                )
                 res = await session.execute(stmt)
                 return res.scalar() or 0
         except Exception as e:

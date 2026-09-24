@@ -75,7 +75,9 @@ class CallbackHandlerV6(BaseCommandHandler):
                         files=dl_files if dl_files else None,
                     )
                 except Exception as e:
-                    logger.warning(f"Error limpiando botones de mensaje descargado: {e}")
+                    logger.warning(
+                        f"Error limpiando botones de mensaje descargado: {e}"
+                    )
             st["downloaded_msgs"].discard(msg_id)
 
             if data in ("noop", "salir", "cerrar", "cerrar_mensaje"):
@@ -160,13 +162,19 @@ class CallbackHandlerV6(BaseCommandHandler):
                     prev_state = historial.pop()
                     view_type = prev_state[0]
                     if view_type == "search_results":
-                        search_q = prev_state[1] if len(prev_state) > 1 else st.get("last_search_query", "")
+                        search_q = (
+                            prev_state[1]
+                            if len(prev_state) > 1
+                            else st.get("last_search_query", "")
+                        )
                         if search_q:
                             await ejecutar_busqueda_local(
                                 update, context, query=search_q, force_new=True
                             )
                         else:
-                            await mostrar_menu_principal(update, context, force_new=True)
+                            await mostrar_menu_principal(
+                                update, context, force_new=True
+                            )
                     elif view_type == "series_list":
                         _, orig_t, f_val, pg = prev_state
                         await mostrar_series(
@@ -188,10 +196,15 @@ class CallbackHandlerV6(BaseCommandHandler):
                         series_h = prev_state[1] if len(prev_state) > 1 else None
                         if series_h:
                             await mostrar_volumenes_local(
-                                update, context, series_hash=str(series_h), force_new=True
+                                update,
+                                context,
+                                series_hash=str(series_h),
+                                force_new=True,
                             )
                         else:
-                            await mostrar_menu_principal(update, context, force_new=True)
+                            await mostrar_menu_principal(
+                                update, context, force_new=True
+                            )
                     elif view_type == "main":
                         await mostrar_menu_principal(update, context, force_new=True)
                     else:
@@ -206,7 +219,10 @@ class CallbackHandlerV6(BaseCommandHandler):
                     # Fallback inteligente si el historial está vacío
                     if st.get("last_search_query"):
                         await ejecutar_busqueda_local(
-                            update, context, query=st["last_search_query"], force_new=True
+                            update,
+                            context,
+                            query=st["last_search_query"],
+                            force_new=True,
                         )
                     elif st.get("origin_type"):
                         await mostrar_series(
@@ -221,7 +237,10 @@ class CallbackHandlerV6(BaseCommandHandler):
                         await mostrar_generos(update, context, force_new=True)
                     elif st.get("prev_view_local") == "authors":
                         await mostrar_autores_local(
-                            update, context, page=st.get("current_page_b", 1), force_new=True
+                            update,
+                            context,
+                            page=st.get("current_page_b", 1),
+                            force_new=True,
                         )
                     else:
                         await mostrar_menu_principal(update, context, force_new=True)
@@ -254,9 +273,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                 elif category == "genres":
                     await mostrar_generos(update, context, force_new=True)
                 elif category == "authors":
-                    await mostrar_autores_local(
-                        update, context, page=1, force_new=True
-                    )
+                    await mostrar_autores_local(update, context, page=1, force_new=True)
                 elif category in ("help", "ayuda"):
                     await mostrar_ayuda(update, context, force_new=True)
                 elif category in ("donations", "donar", "vip"):
@@ -274,7 +291,9 @@ class CallbackHandlerV6(BaseCommandHandler):
 
             # 5. Filtro por Autor
             elif data.startswith("aut|"):
-                st.setdefault("historial", []).append(("authors", st.get("current_page_b", 1)))
+                st.setdefault("historial", []).append(
+                    ("authors", st.get("current_page_b", 1))
+                )
                 author_name = data.split("|")[1]
                 await mostrar_series(
                     update,
@@ -287,9 +306,18 @@ class CallbackHandlerV6(BaseCommandHandler):
             # 6. Paginador de Series
             elif data.startswith("nav_p|"):
                 parts = data.split("|")
-                origin_type = parts[1]
-                filter_val = parts[2] if parts[2] else None
-                page = int(parts[3])
+                if len(parts) >= 4:
+                    origin_type = parts[1]
+                    filter_val = parts[2] if parts[2] else None
+                    page = int(parts[3]) if parts[3].isdigit() else 1
+                elif len(parts) == 3:
+                    origin_type = parts[1]
+                    filter_val = None
+                    page = int(parts[2]) if parts[2].isdigit() else 1
+                else:
+                    origin_type = "all_series"
+                    filter_val = None
+                    page = 1
                 await mostrar_series(
                     update,
                     context,
@@ -298,8 +326,51 @@ class CallbackHandlerV6(BaseCommandHandler):
                     page=page,
                 )
 
+            # 6.1 Paginador de Autores
+            elif data.startswith("nav_aut|") or data.startswith("nav_au|"):
+                parts = data.split("|")
+                page = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 1
+                await mostrar_autores_local(update, context, page=page)
+
+            # 6.2 Paginador de Libros
+            elif data.startswith("nav_b|"):
+                parts = data.split("|")
+                if len(parts) >= 4:
+                    origin_type = parts[1]
+                    filter_val = parts[2] if parts[2] else None
+                    page = int(parts[3]) if parts[3].isdigit() else 1
+                elif len(parts) == 3:
+                    origin_type = parts[1]
+                    filter_val = None
+                    page = int(parts[2]) if parts[2].isdigit() else 1
+                else:
+                    origin_type = "recent"
+                    filter_val = None
+                    page = 1
+                await mostrar_libros(
+                    update,
+                    context,
+                    origin_type=origin_type,
+                    filter_val=filter_val,
+                    page=page,
+                )
+
+            # 6.3 Mostrar Serie Post-Descarga
+            elif data.startswith("show_series|"):
+                s_hash = data.split("|")[1]
+                await mostrar_volumenes_local(update, context, series_hash=str(s_hash))
+
+            # 6.4 Volver a Información del Libro
+            elif data.startswith("info_libro|"):
+                b_key = data.split("|")[1]
+                await mostrar_detalles_libro(update, context, b_key)
+
             # 7. Selección de Serie / Colección
-            elif data.startswith("col|") or data.startswith("local_series|") or data.startswith("ser|"):
+            elif (
+                data.startswith("col|")
+                or data.startswith("local_series|")
+                or data.startswith("ser|")
+            ):
                 raw_val = data.split("|")[1]
                 series_hash = None
 
@@ -312,7 +383,9 @@ class CallbackHandlerV6(BaseCommandHandler):
                     series_hash = state_manager.get_series_by_key(raw_val, uid)
                     if not series_hash and raw_val.isdigit():
                         try:
-                            series_hash = state_manager.get_series_by_key(int(raw_val), uid)
+                            series_hash = state_manager.get_series_by_key(
+                                int(raw_val), uid
+                            )
                         except Exception:
                             pass
 
@@ -334,14 +407,18 @@ class CallbackHandlerV6(BaseCommandHandler):
                         st["historial"] = []
 
                     if curr_view == "search_results":
-                        st["historial"].append(("search_results", st.get("last_search_query", "")))
+                        st["historial"].append(
+                            ("search_results", st.get("last_search_query", ""))
+                        )
                     elif curr_view == "series_list":
-                        st["historial"].append((
-                            "series_list",
-                            st.get("origin_type", "all_series"),
-                            st.get("filter_val"),
-                            st.get("current_page", 1),
-                        ))
+                        st["historial"].append(
+                            (
+                                "series_list",
+                                st.get("origin_type", "all_series"),
+                                st.get("filter_val"),
+                                st.get("current_page", 1),
+                            )
+                        )
                     elif curr_view == "genres":
                         st["historial"].append(("genres",))
                     elif curr_view == "authors":
@@ -358,9 +435,13 @@ class CallbackHandlerV6(BaseCommandHandler):
                 key = data.split("|")[1]
                 curr_view = st.get("current_view")
                 if curr_view == "volumes_local" and st.get("current_series_hash"):
-                    st.setdefault("historial", []).append(("volumes_local", st.get("current_series_hash")))
+                    st.setdefault("historial", []).append(
+                        ("volumes_local", st.get("current_series_hash"))
+                    )
                 elif curr_view == "search_results":
-                    st.setdefault("historial", []).append(("search_results", st.get("last_search_query", "")))
+                    st.setdefault("historial", []).append(
+                        ("search_results", st.get("last_search_query", ""))
+                    )
                 await mostrar_detalles_libro(update, context, key)
 
             # 9. Cambio de Volumen en Serie (Carrusel Interactivo)
@@ -375,6 +456,7 @@ class CallbackHandlerV6(BaseCommandHandler):
                         series_h = book_data.get("series_hash")
                 if not series_h:
                     from handlers.commands.publish_callbacks import _resolve_libro
+
                     resolved_b = await _resolve_libro(st, key)
                     if resolved_b:
                         series_h = resolved_b.get("series_hash")
@@ -407,7 +489,9 @@ class CallbackHandlerV6(BaseCommandHandler):
             elif data == "subir_nivel":
                 prev_view = st.get("prev_view_local", "main")
                 if prev_view == "search_results" and st.get("last_search_query"):
-                    await ejecutar_busqueda_local(update, context, query=st["last_search_query"])
+                    await ejecutar_busqueda_local(
+                        update, context, query=st["last_search_query"]
+                    )
                 elif prev_view == "genres":
                     await mostrar_generos(update, context)
                 elif prev_view == "authors":
@@ -427,7 +511,10 @@ class CallbackHandlerV6(BaseCommandHandler):
                 st["title_language"] = lang
                 try:
                     from repositories.user_repository import user_repo
-                    await user_repo.update_user_settings(uid, {"titleLanguage": lang, "language_code": lang})
+
+                    await user_repo.update_user_settings(
+                        uid, {"titleLanguage": lang, "language_code": lang}
+                    )
                 except Exception as e:
                     logger.debug(f"Error persistiendo preferencia de idioma: {e}")
 
@@ -436,17 +523,32 @@ class CallbackHandlerV6(BaseCommandHandler):
                     "romaji": "🇯🇵 Romaji / Japonés",
                     "spanish": "🇪🇸 Español",
                 }
-                await query.answer(f"✅ Preferencia guardada: {lang_names.get(lang, lang)}", show_alert=True)
+                await query.answer(
+                    f"✅ Preferencia guardada: {lang_names.get(lang, lang)}",
+                    show_alert=True,
+                )
 
                 if st.get("current_view") == "series_list":
-                    await mostrar_series(update, context, origin_type=st.get("origin_type", "all_series"), page=st.get("current_page", 1))
+                    await mostrar_series(
+                        update,
+                        context,
+                        origin_type=st.get("origin_type", "all_series"),
+                        page=st.get("current_page", 1),
+                    )
                 else:
-                    from handlers.commands.extra_commands_handler import ExtraCommandsHandler
-                    await ExtraCommandsHandler(context.application).handle_idioma(update, context)
+                    from handlers.commands.extra_commands_handler import (
+                        ExtraCommandsHandler,
+                    )
+
+                    await ExtraCommandsHandler(context.application).handle_idioma(
+                        update, context
+                    )
 
             else:
                 logger.info(f"Callback no manejado: {data}")
 
         except Exception as e:
             logger.error(f"Error procesando callback: {e}", exc_info=True)
-            await query.answer("❌ Error en la navegación del catálogo.", show_alert=True)
+            await query.answer(
+                "❌ Error en la navegación del catálogo.", show_alert=True
+            )
