@@ -214,7 +214,9 @@ async def descargar_epub_pendiente(
             try:
                 delete_minutes_str = get_setting("auto_delete_time", "2")
                 delete_minutes = int(delete_minutes_str or "2")
-                delete_seconds = max(60, delete_minutes * 60) if delete_minutes > 0 else 120
+                delete_seconds = (
+                    max(60, delete_minutes * 60) if delete_minutes > 0 else 120
+                )
             except Exception:
                 delete_seconds = 120
 
@@ -287,12 +289,16 @@ async def descargar_epub_pendiente(
     ephemeral_notice = ""
     if delete_seconds > 0:
         mins = max(1, delete_seconds // 60)
-        ephemeral_notice = f"\n\n⏳ <i>Este archivo es efímero y se auto-eliminará en {mins} min.</i>"
+        ephemeral_notice = (
+            f"\n\n⏳ <i>Este archivo es efímero y se auto-eliminará en {mins} min.</i>"
+        )
 
     gratitude = (
         "\n\n✨ ¡Disfruta de tu lectura! Gracias por ser parte de nuestra comunidad. ❤️"
     )
-    compact_caption = f"<hr><hr>{info_template}{quota_text}{ephemeral_notice}{gratitude}"
+    compact_caption = (
+        f"<hr><hr>{info_template}{quota_text}{ephemeral_notice}{gratitude}"
+    )
 
     keyboard = [
         [
@@ -574,6 +580,7 @@ async def enviar_libro_directo(
         is_ephemeral = bool(is_group_chat and user_id and not is_authorized)
 
         from services.library_ui_service import build_book_rich_html
+
         html_content = build_book_rich_html(
             meta,
             has_cover=bool("tomozaki_cover" in files),
@@ -594,7 +601,6 @@ async def enviar_libro_directo(
             rich_kwargs["receiver_user_id"] = int(user_id)
 
         try:
-
             res = await RichMessageService.send_rich_message(
                 chat_id=destino,
                 html=html_content,
@@ -718,9 +724,7 @@ async def enviar_libro_directo(
                 target_bot = getattr(context_or_none, "bot", bot)
                 for mid in msg_ids:
                     try:
-                        await target_bot.delete_message(
-                            chat_id=destino, message_id=mid
-                        )
+                        await target_bot.delete_message(chat_id=destino, message_id=mid)
                         logger.info(
                             f"Mensaje efímero {mid} borrado tras {auto_delete_seconds}s en chat {destino}"
                         )
@@ -730,11 +734,13 @@ async def enviar_libro_directo(
                         )
 
             if job_queue:
+
                 async def _job_callback(ctx):
                     await _do_delete(ctx)
 
                 job_queue.run_once(_job_callback, when=auto_delete_seconds)
             else:
+
                 async def _asyncio_delete():
                     await asyncio.sleep(auto_delete_seconds)
                     await _do_delete()
@@ -752,6 +758,8 @@ async def enviar_libro_directo(
                 sent_doc=sent_doc,
                 download_url=download_url,
                 title=title,
+                target_chat_id=destino,
+                message_thread_id=message_thread_id,
             )
 
         # Limpieza

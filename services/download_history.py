@@ -6,7 +6,14 @@ from utils.logger import logger
 
 
 async def register_book_download(
-    bot, user_id: int, meta: dict[str, Any], sent_doc: Any, download_url: str | None, title: str
+    bot,
+    user_id: int,
+    meta: dict[str, Any],
+    sent_doc: Any,
+    download_url: str | None,
+    title: str,
+    target_chat_id: int | str | None = None,
+    message_thread_id: int | None = None,
 ) -> None:
     """
     Registra una descarga exitosa:
@@ -24,24 +31,41 @@ async def register_book_download(
     try:
         from services.history_service import log_published_book
 
-        msg_id = getattr(sent_doc, "message_id", None) or (
-            sent_doc.get("message_id") if isinstance(sent_doc, dict) else None
+        doc_item = (
+            sent_doc[-1]
+            if isinstance(sent_doc, list) and len(sent_doc) > 0
+            else sent_doc
         )
-        chat_obj = getattr(sent_doc, "chat", None)
-        chan_id = getattr(chat_obj, "id", None) if chat_obj else (
-            sent_doc.get("chat", {}).get("id") if isinstance(sent_doc, dict) else user_id
+        msg_id = getattr(doc_item, "message_id", None) or (
+            doc_item.get("message_id") if isinstance(doc_item, dict) else None
+        )
+        chat_obj = getattr(doc_item, "chat", None)
+        chan_id = (
+            getattr(chat_obj, "id", None)
+            if chat_obj
+            else (
+                doc_item.get("chat", {}).get("id")
+                if isinstance(doc_item, dict)
+                else user_id
+            )
         )
 
-        doc_obj = getattr(sent_doc, "document", None) or (
-            sent_doc.get("document") if isinstance(sent_doc, dict) else None
+        doc_obj = getattr(doc_item, "document", None) or (
+            doc_item.get("document") if isinstance(doc_item, dict) else None
         )
         file_info = {}
         if doc_obj:
             file_info = {
                 "file_size": getattr(doc_obj, "file_size", None)
-                or (doc_obj.get("file_size") if isinstance(doc_obj, dict) else meta.get("file_size")),
+                or (
+                    doc_obj.get("file_size")
+                    if isinstance(doc_obj, dict)
+                    else meta.get("file_size")
+                ),
                 "file_unique_id": getattr(doc_obj, "file_unique_id", None)
-                or (doc_obj.get("file_unique_id") if isinstance(doc_obj, dict) else None),
+                or (
+                    doc_obj.get("file_unique_id") if isinstance(doc_obj, dict) else None
+                ),
             }
 
         if msg_id and chan_id:
@@ -74,7 +98,12 @@ async def register_book_download(
 
     # 4. Registrar en historial detallado de descargas (download_repo y metrics_repo)
     try:
-        titulo_vol = meta.get("titulo_volumen") or meta.get("title") or meta.get("english_title") or title
+        titulo_vol = (
+            meta.get("titulo_volumen")
+            or meta.get("title")
+            or meta.get("english_title")
+            or title
+        )
         author = meta.get("autor", "Desconocido")
 
         # Enrich metadata if needed from title
@@ -162,10 +191,34 @@ async def register_book_download(
 
         restantes = await downloads_left(user_id)
         if restantes != "ilimitadas":
-            await bot.send_message(
-                chat_id=user_id,
-                text=f"📥 Te quedan {restantes} descargas disponibles para hoy.",
-            )
+            quota_text = f"📥 Te quedan {restantes} descargas disponibles para hoy."
+            dest_chat = target_chat_id or chan_id or user_id
+            is_group_chat = str(dest_chat).startswith("-")
+
+            if is_group_chat:
+                try:
+                    await bot.send_message(
+                        chat_id=dest_chat,
+                        text=quota_text,
+                        reply_to_message_id=msg_id,
+                        message_thread_id=message_thread_id,
+                        api_kwargs={"receiver_user_id": int(user_id)},
+                    )
+                    logger.info(
+                        f"Mensaje efímero de saldo ({restantes} restantes) enviado a user {user_id} en grupo {dest_chat}"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"No se pudo enviar mensaje efímero de saldo a {user_id} en grupo {dest_chat}: {e}"
+                    )
+            else:
+                try:
+                    await bot.send_message(
+                        chat_id=user_id,
+                        text=quota_text,
+                    )
+                except Exception as e:
+                    logger.warning(f"Error enviando saldo en privado a {user_id}: {e}")
 
     except Exception as e:
         logger.error(f"Error saving download history: {e}", exc_info=True)

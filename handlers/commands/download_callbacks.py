@@ -40,7 +40,9 @@ async def handle_download_callback(
     # 1. Propinas con Stars
     if data.startswith("stars_tip|"):
         stars_amount = int(data.split("|")[1])
-        await query.answer(f"⭐ Procesando aporte de {stars_amount} estrellas...", show_alert=False)
+        await query.answer(
+            f"⭐ Procesando aporte de {stars_amount} estrellas...", show_alert=False
+        )
         try:
             from services.payment_service import payment_service
 
@@ -62,7 +64,7 @@ async def handle_download_callback(
     download_prefixes = ("dl_confirm|", "b_dl|", "descargar_epub|", "dl|")
     if any(data.startswith(p) for p in download_prefixes):
         matched_prefix = next(p for p in download_prefixes if data.startswith(p))
-        key = data[len(matched_prefix):]
+        key = data[len(matched_prefix) :]
 
         # A. Buscar libro en el estado del usuario, en el mapa compartido o en cualquier estado activo
         libro_st = state_manager.get_book_by_key(key, uid)
@@ -96,13 +98,20 @@ async def handle_download_callback(
                 logger.warning(f"Error buscando libro en BD para key {key}: {e}")
 
         if not libro_st:
-            await query.answer("⚠️ Libro no encontrado o sesión expirada.", show_alert=True)
+            await query.answer(
+                "⚠️ Libro no encontrado o sesión expirada.", show_alert=True
+            )
             return True
 
         # B. Chequeo de Límites de Descarga
         left = await downloads_left(uid)
         is_admin_user = uid in getattr(config, "ADMIN_USERS", []) or uid == 133994080
-        if not is_admin_user and left != "ilimitadas" and isinstance(left, int) and left <= 0:
+        if (
+            not is_admin_user
+            and left != "ilimitadas"
+            and isinstance(left, int)
+            and left <= 0
+        ):
             await query.answer(
                 "🚫 Has alcanzado tu límite diario de descargas. Vuelve mañana o adquiere un rango con /donar.",
                 show_alert=True,
@@ -229,7 +238,10 @@ async def handle_download_callback(
                     }
                 )
 
-            from services.telegram_service import is_authorized_group, enviar_libro_directo
+            from services.telegram_service import (
+                is_authorized_group,
+                enviar_libro_directo,
+            )
 
             is_group = update.effective_chat.type in ("group", "supergroup")
             is_authorized = is_authorized_group(update.effective_chat.id)
@@ -280,7 +292,9 @@ async def handle_download_callback(
                     current_row = []
                     for k, bk in st["libros"].items():
                         vol_disp = bk.get("vol_display", bk.get("volume", 0))
-                        label = f"🔘 Vol. {vol_disp}" if k == key else f"Vol. {vol_disp}"
+                        label = (
+                            f"🔘 Vol. {vol_disp}" if k == key else f"Vol. {vol_disp}"
+                        )
                         cb = "noop" if k == key else f"sel_vol|{k}"
                         current_row.append({"text": label, "callback_data": cb})
                         if len(current_row) == 4:
@@ -310,9 +324,7 @@ async def handle_download_callback(
                     st.setdefault("downloaded_msgs", set()).add(
                         query.message.message_id
                     )
-                    st.setdefault("libros_downloaded", {})[
-                        query.message.message_id
-                    ] = {
+                    st.setdefault("libros_downloaded", {})[query.message.message_id] = {
                         "libro": libro_st,
                         "series_hash_short": series_hash_short,
                         "files": delivery_files,
@@ -358,23 +370,26 @@ async def handle_download_callback(
                             message_thread_id=thread_id,
                         )
 
-            # E. Registrar descarga en BD
-            meta_reg = {
-                "book_hash": book_hash,
-                "title": title,
-                "file_size": libro_st.get("file_size"),
-                "autor": libro_st.get("autor"),
-                "id": book_hash,
-                "coverUrl": libro_st.get("portada"),
-            }
-            await register_book_download(
-                bot=context.bot,
-                user_id=uid,
-                meta=meta_reg,
-                sent_doc=sent_doc,
-                download_url=None,
-                title=title,
-            )
+            # E. Registrar descarga en BD (solo en chat privado, ya que enviar_libro_directo ya la registró si fue en grupo)
+            if not is_group:
+                meta_reg = {
+                    "book_hash": book_hash,
+                    "title": title,
+                    "file_size": libro_st.get("file_size"),
+                    "autor": libro_st.get("autor"),
+                    "id": book_hash,
+                    "coverUrl": libro_st.get("portada"),
+                }
+                await register_book_download(
+                    bot=context.bot,
+                    user_id=uid,
+                    meta=meta_reg,
+                    sent_doc=sent_doc,
+                    download_url=None,
+                    title=title,
+                    target_chat_id=update.effective_chat.id,
+                    message_thread_id=thread_id,
+                )
 
             st["last_detalles_msg_ids"] = []
 
