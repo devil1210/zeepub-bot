@@ -58,6 +58,7 @@ class GroupManagerPlugin(BasePlugin):
             app.add_handler(CommandHandler("authorize_group", self.authorize_group))
             app.add_handler(CommandHandler("revoke_group", self.revoke_group))
             app.add_handler(CommandHandler("set_group_welcome", self.set_group_welcome))
+            app.add_handler(CommandHandler("test_welcome", self.test_welcome))
             # Rules command
             app.add_handler(CommandHandler("reglas", self.reglas))
             app.add_handler(CommandHandler("rules", self.reglas))
@@ -87,7 +88,27 @@ class GroupManagerPlugin(BasePlugin):
         pass
 
     def _is_admin(self, uid: int) -> bool:
-        return uid in config.ADMIN_USERS
+        return uid in config.ADMIN_USERS or (
+            getattr(config, "SUPER_ADMIN_ID", None) is not None
+            and uid == config.SUPER_ADMIN_ID
+        )
+
+    async def test_welcome(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Muestra de prueba del mensaje efímero de bienvenida (solo para administradores)."""
+        if not update.effective_user or not self._is_admin(update.effective_user.id):
+            return
+        chat = update.effective_chat
+        user = update.effective_user
+        reply_to_message_id = (
+            update.effective_message.message_id if update.effective_message else None
+        )
+        await self._process_welcome(
+            context,
+            chat,
+            user,
+            reply_to_message_id=reply_to_message_id,
+            force=True,
+        )
 
     async def authorize_group(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not self._is_admin(update.effective_user.id):
@@ -329,6 +350,7 @@ class GroupManagerPlugin(BasePlugin):
         chat,
         user,
         reply_to_message_id: int | None = None,
+        force: bool = False,
     ):
         """Envía el mensaje de bienvenida efímero en el grupo (receiver_user_id) al nuevo usuario y a los administradores."""
         chat_id = chat.id
@@ -340,7 +362,7 @@ class GroupManagerPlugin(BasePlugin):
             k: v for k, v in self._recent_welcomes.items() if now - v < 60
         }
         key = (chat_id, user_id)
-        if key in self._recent_welcomes:
+        if not force and key in self._recent_welcomes:
             logger.debug(
                 f"[GroupManager] Bienvenida omitida por duplicado reciente para {user_id} en {chat_id}"
             )
