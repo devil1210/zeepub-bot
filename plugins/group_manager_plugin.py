@@ -385,24 +385,7 @@ class GroupManagerPlugin(BasePlugin):
                 f"[GroupManager] Error enviando bienvenida efímera a {user_id} en {chat_id}: {e}"
             )
 
-        # 5. Copia privada al usuario (DM) si tiene chat abierto con el bot
-        try:
-            await context.bot.send_message(
-                chat_id=user_id,
-                text=welcome_text,
-                parse_mode="HTML",
-                reply_markup=reply_markup,
-            )
-            logger.info(
-                f"[GroupManager] Copia de bienvenida enviada por privado a {user_id} ({user.first_name})"
-            )
-        except Exception as e:
-            # Fallo esperado si el usuario aún no ha iniciado el bot por privado
-            logger.debug(
-                f"[GroupManager] No se pudo enviar copia privada a {user_id}: {e}"
-            )
-
-        # 6. Enviar mensaje efímero en el grupo a los administradores (Only visible to you)
+        # 5. Enviar mensaje efímero en el grupo a los administradores (Only visible to you)
         asyncio.create_task(
             self._send_ephemeral_to_admins(
                 context.bot,
