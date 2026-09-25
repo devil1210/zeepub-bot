@@ -56,6 +56,7 @@ async def mostrar_menu_principal(
     uid = update.effective_user.id
     chat_id = update.effective_chat.id
     thread_id = get_thread_id(update)
+    is_group = update.effective_chat.type in ("group", "supergroup")
     st = state_manager.get_user_state(uid)
 
     st["historial"] = []
