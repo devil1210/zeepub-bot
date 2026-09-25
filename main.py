@@ -3,6 +3,8 @@ import asyncio
 import logging
 import os
 
+from telegram import Update
+
 from config.config_settings import config
 from core.bot import ZeePubBot
 from core.optimized_sync_engine import optimized_sync_engine
@@ -97,7 +99,9 @@ async def initialize_application():
             f"{sync_result.get('updated', 0)} updated"
         )
     else:
-        logger.warning(f"Initial sync failed: {sync_result.get('error', 'Unknown error')}")
+        logger.warning(
+            f"Initial sync failed: {sync_result.get('error', 'Unknown error')}"
+        )
 
     # Schedule daily sync
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -161,12 +165,12 @@ async def run_bot():
     # NOTE: bot.app.initialize() is already called inside bot.initialize()
     # We just need to start the updater
     if bot.app.updater:
-        await bot.app.updater.start_polling()
+        await bot.app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
     else:
         # If bot.start() usually calls run_polling, we follow that pattern
         # but in our own loop. app.run_polling is blocking, so we use start_polling
         await bot.app.start()
-        await bot.app.updater.start_polling()
+        await bot.app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
 
     # Keep the loop alive
     try:

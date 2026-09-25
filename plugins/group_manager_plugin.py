@@ -385,7 +385,24 @@ class GroupManagerPlugin(BasePlugin):
                 f"[GroupManager] Error enviando bienvenida efímera a {user_id} en {chat_id}: {e}"
             )
 
-        # 5. Enviar mensaje efímero en el grupo a los administradores (Only visible to you)
+        # 5. Copia privada al usuario (DM) si tiene chat abierto con el bot
+        try:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=welcome_text,
+                parse_mode="HTML",
+                reply_markup=reply_markup,
+            )
+            logger.info(
+                f"[GroupManager] Copia de bienvenida enviada por privado a {user_id} ({user.first_name})"
+            )
+        except Exception as e:
+            # Fallo esperado si el usuario aún no ha iniciado el bot por privado
+            logger.debug(
+                f"[GroupManager] No se pudo enviar copia privada a {user_id}: {e}"
+            )
+
+        # 6. Enviar mensaje efímero en el grupo a los administradores (Only visible to you)
         asyncio.create_task(
             self._send_ephemeral_to_admins(
                 context.bot,
@@ -429,8 +446,19 @@ class GroupManagerPlugin(BasePlugin):
             if admin_uid != new_user.id:
                 admin_ids.add(admin_uid)
 
+        # Añadir SUPER_ADMIN_ID
+        if (
+            getattr(config, "SUPER_ADMIN_ID", None)
+            and config.SUPER_ADMIN_ID != new_user.id
+        ):
+            admin_ids.add(config.SUPER_ADMIN_ID)
+
         admin_header = f"🔔 <i>[Bienvenida enviada a {html.escape(new_user.first_name or 'Usuario')}]</i>\n\n"
         admin_text = admin_header + welcome_text
+
+        logger.info(
+            f"[GroupManager] Enviando bienvenida efímera a {len(admin_ids)} administradores en grupo {chat_id}: {admin_ids}"
+        )
 
         for admin_id in admin_ids:
             try:
@@ -442,8 +470,11 @@ class GroupManagerPlugin(BasePlugin):
                     reply_to_message_id=reply_to_message_id,
                     api_kwargs={"receiver_user_id": admin_id},
                 )
+                logger.info(
+                    f"[GroupManager] Bienvenida efímera entregada al admin {admin_id} en grupo {chat_id}"
+                )
             except Exception as ex:
-                logger.debug(
+                logger.warning(
                     f"[GroupManager] No se pudo enviar bienvenida efímera al admin {admin_id} en {chat_id}: {ex}"
                 )
 

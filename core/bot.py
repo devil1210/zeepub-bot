@@ -101,7 +101,8 @@ class ZeePubBot:
                     | filters.StatusUpdate.NEW_CHAT_MEMBERS
                     | filters.StatusUpdate.LEFT_CHAT_MEMBER,
                     chat_discovery_handler,
-                )
+                ),
+                group=20,
             )
             # Escuchar mensajes en grupos/canales también (si es admin y ve mensajes)
             # Usamos un filtro light para no procesar todo el texto aquí, mejor TypeHandler de Update
@@ -141,7 +142,7 @@ class ZeePubBot:
             asyncio.set_event_loop(loop)
 
         loop.run_until_complete(self.initialize())
-        self.app.run_polling()
+        self.app.run_polling(allowed_updates=Update.ALL_TYPES)
         loop.run_until_complete(session_manager.close())
 
     async def initialize(self):
@@ -299,7 +300,7 @@ class ZeePubBot:
                 logger.info(
                     f"Iniciando polling (intento {attempt + 1}/{max_retries})..."
                 )
-                await self.app.updater.start_polling()
+                await self.app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
                 logger.info("Bot iniciado en modo asíncrono (API).")
                 break
             except Exception as e:
@@ -325,7 +326,9 @@ class ZeePubBot:
             from telegram import MenuButtonDefault
 
             await self.app.bot.set_chat_menu_button(menu_button=MenuButtonDefault())
-            logger.info("Menu Button de Telegram configurado en modo estándar (Default).")
+            logger.info(
+                "Menu Button de Telegram configurado en modo estándar (Default)."
+            )
         except Exception as e:
             logger.error(f"Error configurando el Menu Button del bot: {e}")
 
