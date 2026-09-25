@@ -26,6 +26,7 @@ from .info_builders import (
     build_help_rich_blocks,
     build_rules_rich_blocks,
     build_status_rich_blocks,
+    build_welcome_rich_blocks,
 )
 
 __all__ = [
@@ -40,8 +41,10 @@ __all__ = [
     "build_donations_rich_blocks",
     "build_rules_rich_blocks",
     "build_help_rich_blocks",
+    "build_welcome_rich_blocks",
     "build_admin_panel_rich_blocks",
     "build_admin_scan_result_blocks",
+    "build_auto_delete_menu_blocks",
     # Book & Series Builders
     "build_book_rich_blocks",
     "build_book_rich_html",

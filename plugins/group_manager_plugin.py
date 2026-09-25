@@ -6,8 +6,6 @@ import time
 from telegram import (
     ChatMember,
     ChatMemberUpdated,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
     Update,
 )
 from telegram.ext import (
@@ -22,6 +20,8 @@ from config.config_settings import config
 from plugins.base_plugin import BasePlugin
 from repositories.custom_messages_repository import custom_messages_repo
 from repositories.group_settings_repository import group_settings_repo
+from services.library_ui import build_welcome_rich_blocks
+from services.rich_message_service import RichMessageService
 from utils.helpers import get_thread_id
 
 logger = logging.getLogger(__name__)
@@ -377,45 +377,73 @@ class GroupManagerPlugin(BasePlugin):
             )
             return
 
-        # 3. Obtener mensaje personalizado si tiene slug configurado
+        # 3. Obtener bloques para el mensaje enriquecido
         msg_data = None
         if group and group.welcome_msg_slug:
             msg_data = await custom_messages_repo.get_message(group.welcome_msg_slug)
 
-        safe_name = html.escape(user.first_name or "Lector")
+        user_name = user.first_name or "Lector"
         if msg_data and msg_data.text_content:
-            welcome_text = msg_data.text_content.replace("[Nombre]", safe_name)
-            reply_markup = None
+            custom_text = msg_data.text_content.replace(
+                "[Nombre]", html.escape(user_name)
+            )
+            user_blocks = [
+                {
+                    "type": "heading",
+                    "size": 2,
+                    "text": f"🎴 ¡Bienvenido/a, {html.escape(user_name)}! 📚",
+                },
+                {"type": "paragraph", "text": custom_text},
+                {
+                    "type": "buttons",
+                    "align": "center",
+                    "buttons": [
+                        {
+                            "text": "📚 Catálogo",
+                            "callback_data": "nav_local|all_series",
+                        },
+                        {"text": "📜 Reglas", "callback_data": "nav_local|rules"},
+                        {"text": "ℹ️ Ayuda", "callback_data": "nav_local|help"},
+                    ],
+                },
+                {"type": "divider"},
+                {"type": "paragraph", "text": "#ZeePubs #Bienvenida"},
+            ]
         else:
-            welcome_text, reply_markup = build_welcome_html(user.first_name)
+            user_blocks = build_welcome_rich_blocks(
+                user_name=user_name, is_admin_copy=False
+            )
 
-        # 4. Enviar mensaje efímero en el grupo para el nuevo miembro (Only visible to you)
+        # 4. Enviar Rich Message efímero en el grupo al nuevo miembro (Only visible to you)
         try:
-            await context.bot.send_message(
+            res = await RichMessageService.send_rich_message(
                 chat_id=chat_id,
-                text=welcome_text,
-                parse_mode="HTML",
-                reply_markup=reply_markup,
-                reply_to_message_id=reply_to_message_id,
-                api_kwargs={"receiver_user_id": user_id},
+                blocks=user_blocks,
+                receiver_user_id=user_id,
             )
-            logger.info(
-                f"[GroupManager] Mensaje efímero de bienvenida enviado en grupo {chat_id} a usuario {user_id} ({user.first_name})"
-            )
+            if res and res.get("ok"):
+                logger.info(
+                    f"[GroupManager] Rich Message efímero de bienvenida enviado en grupo {chat_id} a {user_id} ({user.first_name})"
+                )
+            else:
+                logger.warning(
+                    f"[GroupManager] Falló send_rich_message de bienvenida para {user_id} en {chat_id}: {res}"
+                )
         except Exception as e:
             logger.warning(
                 f"[GroupManager] Error enviando bienvenida efímera a {user_id} en {chat_id}: {e}"
             )
 
-        # 5. Enviar mensaje efímero en el grupo a los administradores (Only visible to you)
+        # 5. Enviar Rich Message efímero en el grupo a los administradores (Only visible to you)
+        admin_blocks = build_welcome_rich_blocks(
+            user_name=user_name, is_admin_copy=True
+        )
         asyncio.create_task(
             self._send_ephemeral_to_admins(
                 context.bot,
                 chat_id,
                 user,
-                welcome_text,
-                reply_markup,
-                reply_to_message_id,
+                admin_blocks,
             )
         )
 
@@ -424,11 +452,9 @@ class GroupManagerPlugin(BasePlugin):
         bot,
         chat_id: int,
         new_user,
-        welcome_text: str,
-        reply_markup: InlineKeyboardMarkup | None,
-        reply_to_message_id: int | None = None,
+        admin_blocks: list[dict],
     ):
-        """Envía el mensaje efímero en el grupo a cada administrador para que también les aparezca a ellos (Only visible to you)."""
+        """Envía el Rich Message efímero en el grupo a cada administrador para que también les aparezca a ellos (Only visible to you)."""
         admin_ids: set[int] = set()
 
         # Obtener administradores del grupo
@@ -458,56 +484,26 @@ class GroupManagerPlugin(BasePlugin):
         ):
             admin_ids.add(config.SUPER_ADMIN_ID)
 
-        admin_header = f"🔔 <i>[Bienvenida enviada a {html.escape(new_user.first_name or 'Usuario')}]</i>\n\n"
-        admin_text = admin_header + welcome_text
-
         logger.info(
-            f"[GroupManager] Enviando bienvenida efímera a {len(admin_ids)} administradores en grupo {chat_id}: {admin_ids}"
+            f"[GroupManager] Enviando bienvenida efímera Rich Message a {len(admin_ids)} administradores en grupo {chat_id}: {admin_ids}"
         )
 
         for admin_id in admin_ids:
             try:
-                await bot.send_message(
+                res = await RichMessageService.send_rich_message(
                     chat_id=chat_id,
-                    text=admin_text,
-                    parse_mode="HTML",
-                    reply_markup=reply_markup,
-                    reply_to_message_id=reply_to_message_id,
-                    api_kwargs={"receiver_user_id": admin_id},
+                    blocks=admin_blocks,
+                    receiver_user_id=admin_id,
                 )
-                logger.info(
-                    f"[GroupManager] Bienvenida efímera entregada al admin {admin_id} en grupo {chat_id}"
-                )
+                if res and res.get("ok"):
+                    logger.info(
+                        f"[GroupManager] Bienvenida efímera Rich Message entregada al admin {admin_id} en grupo {chat_id}"
+                    )
+                else:
+                    logger.warning(
+                        f"[GroupManager] No se pudo enviar bienvenida efímera Rich Message al admin {admin_id}: {res}"
+                    )
             except Exception as ex:
                 logger.warning(
-                    f"[GroupManager] No se pudo enviar bienvenida efímera al admin {admin_id} en {chat_id}: {ex}"
+                    f"[GroupManager] Error enviando bienvenida efímera al admin {admin_id} en {chat_id}: {ex}"
                 )
-
-
-def build_welcome_html(user_name: str) -> tuple[str, InlineKeyboardMarkup]:
-    """Construye el texto HTML enriquecido y botonera para la bienvenida oficial en grupo."""
-    safe_name = html.escape(user_name or "Lector")
-
-    text = (
-        f"¡Bienvenido/a a la biblioteca de Zeepubs, <b>{safe_name}</b>! 📚🎴\n\n"
-        f"Soy <b>ZeePub Bot</b>, tu asistente encargado de organizar las Novelas Ligeras y mantener el orden por aquí.\n\n"
-        f"<blockquote>🎯 <b>Misiones principales:</b>\n"
-        f"1. <b>Buscador Especializado:</b> Me conecto directo a nuestra biblioteca para entregarte los EPUBs exclusivos que nosotros mismos maquetamos.\n"
-        f"2. <b>Moderador:</b> Cuidar que nuestra comunidad sea segura y divertida.</blockquote>\n\n"
-        f"🚀 <b>¿Por dónde empezar?</b>\n"
-        f"— Escribe <code>/buscar &lt;título&gt;</code> para encontrar cualquier novela (en español, inglés o romaji).\n"
-        f"— Usa <code>/catalogo</code> para explorar todas las obras disponibles.\n"
-        f"— Consulta las <code>/reglas</code> de convivencia del grupo.\n"
-        f"— Usa <code>/ayuda</code> para ver todos los comandos disponibles.\n\n"
-        f"¡Ponte cómodo/a y disfruta de nuestras ediciones! ☕✨"
-    )
-
-    buttons = [
-        [
-            InlineKeyboardButton("📚 Catálogo", callback_data="nav_local|all_series"),
-            InlineKeyboardButton("📜 Reglas", callback_data="nav_local|rules"),
-            InlineKeyboardButton("ℹ️ Ayuda", callback_data="nav_local|help"),
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(buttons)
-    return text, reply_markup

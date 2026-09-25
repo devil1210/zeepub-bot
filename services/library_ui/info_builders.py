@@ -236,7 +236,9 @@ def build_rules_rich_blocks() -> list[dict[str, Any]]:
     ]
 
 
-def build_help_rich_blocks(user_rank: str = "Lector", is_staff: bool = False) -> list[dict[str, Any]]:
+def build_help_rich_blocks(
+    user_rank: str = "Lector", is_staff: bool = False
+) -> list[dict[str, Any]]:
     """Construye Bloques Nativos para la Guía de Ayuda."""
     blocks: list[dict[str, Any]] = [
         {
@@ -276,17 +278,90 @@ def build_help_rich_blocks(user_rank: str = "Lector", is_staff: bool = False) ->
             }
         )
 
-    blocks.extend([
+    blocks.extend(
+        [
+            {
+                "type": "buttons",
+                "align": "center",
+                "buttons": [
+                    {"text": "📖 Catálogo", "callback_data": "nav_local|all_series"},
+                    {"text": "🔍 Buscar", "callback_data": "buscar"},
+                    {"text": "🏠 Inicio", "callback_data": "volver_menu"},
+                ],
+            },
+            {"type": "divider"},
+            {"type": "paragraph", "text": "#ZeePubs #Ayuda"},
+        ]
+    )
+    return blocks
+
+
+def build_welcome_rich_blocks(
+    user_name: str,
+    is_admin_copy: bool = False,
+) -> list[dict[str, Any]]:
+    """Construye Bloques Nativos (Rich Messages) para la Bienvenida oficial en grupo."""
+    safe_name = user_name or "Lector"
+
+    if is_admin_copy:
+        heading_text = f"🔔 Bienvenida enviada • {safe_name}"
+        intro_text = f"Se ha entregado la bienvenida interactiva a <b>{safe_name}</b> en el grupo."
+    else:
+        heading_text = f"🎴 ¡Bienvenido/a a ZeePubs, {safe_name}! 📚"
+        intro_text = (
+            "Soy <b>ZeePub Bot</b>, tu asistente oficial para explorar y descargar "
+            "Novelas Ligeras maquetadas exclusivamente por nuestra comunidad."
+        )
+
+    return [
+        {
+            "type": "heading",
+            "size": 2,
+            "text": heading_text,
+        },
+        {
+            "type": "paragraph",
+            "text": intro_text,
+        },
+        {
+            "type": "details",
+            "summary": "🎯 Misiones Principales",
+            "is_open": True,
+            "blocks": [
+                {
+                    "type": "paragraph",
+                    "text": (
+                        "1. <b>Buscador Especializado:</b> Conexión directa a la biblioteca para entregarte los EPUBs exclusivos que nosotros mismos maquetamos.\n"
+                        "2. <b>Moderación Comunitaria:</b> Cuidar que el grupo sea un espacio seguro, ordenado y enfocado en la lectura."
+                    ),
+                }
+            ],
+        },
+        {
+            "type": "details",
+            "summary": "🚀 ¿Por dónde empezar?",
+            "is_open": True,
+            "blocks": [
+                {
+                    "type": "paragraph",
+                    "text": (
+                        "• <b>/buscar &lt;título&gt;</b> — Encuentra cualquier novela (español, inglés o romaji)\n"
+                        "• <b>/catalogo</b> — Explora géneros, autores y colecciones\n"
+                        "• <b>/reglas</b> — Consulta las normas de convivencia del grupo\n"
+                        "• <b>/ayuda</b> — Guía interactiva de uso y comandos"
+                    ),
+                }
+            ],
+        },
         {
             "type": "buttons",
             "align": "center",
             "buttons": [
-                {"text": "📖 Catálogo", "callback_data": "nav_local|all_series"},
-                {"text": "🔍 Buscar", "callback_data": "buscar"},
-                {"text": "🏠 Inicio", "callback_data": "volver_menu"},
+                {"text": "📚 Catálogo", "callback_data": "nav_local|all_series"},
+                {"text": "📜 Reglas", "callback_data": "nav_local|rules"},
+                {"text": "ℹ️ Ayuda", "callback_data": "nav_local|help"},
             ],
         },
         {"type": "divider"},
-        {"type": "paragraph", "text": "#ZeePubs #Ayuda"},
-    ])
-    return blocks
+        {"type": "paragraph", "text": "#ZeePubs #Bienvenida #Comunidad"},
+    ]
