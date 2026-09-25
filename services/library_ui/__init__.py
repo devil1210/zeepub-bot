@@ -28,6 +28,7 @@ from .builders import (
     build_search_results_rich_blocks,
     build_series_catalog_rich_blocks,
     build_status_rich_blocks,
+    build_welcome_rich_blocks,
 )
 from .catalog_views import (
     ejecutar_busqueda_local,
@@ -67,6 +68,7 @@ __all__ = [
     "build_donations_rich_blocks",
     "build_rules_rich_blocks",
     "build_help_rich_blocks",
+    "build_welcome_rich_blocks",
     "build_book_rich_blocks",
     "build_book_rich_html",
     # Catalog Views

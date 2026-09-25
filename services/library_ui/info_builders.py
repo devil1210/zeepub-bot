@@ -305,13 +305,19 @@ def build_welcome_rich_blocks(
 
     if is_admin_copy:
         heading_text = f"🔔 Bienvenida enviada • {safe_name}"
-        intro_text = f"Se ha entregado la bienvenida interactiva a <b>{safe_name}</b> en el grupo."
+        intro_content: list[Any] = [
+            "Se ha entregado la bienvenida interactiva a ",
+            {"type": "bold", "text": safe_name},
+            " en el grupo.",
+        ]
     else:
         heading_text = f"🎴 ¡Bienvenido/a a ZeePubs, {safe_name}! 📚"
-        intro_text = (
-            "Soy <b>ZeePub Bot</b>, tu asistente oficial para explorar y descargar "
-            "Novelas Ligeras maquetadas exclusivamente por nuestra comunidad."
-        )
+        intro_content = [
+            "Soy ",
+            {"type": "bold", "text": "ZeePub Bot"},
+            ", tu asistente oficial para explorar y descargar "
+            "Novelas Ligeras maquetadas exclusivamente por nuestra comunidad.",
+        ]
 
     return [
         {
@@ -321,7 +327,7 @@ def build_welcome_rich_blocks(
         },
         {
             "type": "paragraph",
-            "text": intro_text,
+            "text": intro_content,
         },
         {
             "type": "details",
@@ -330,10 +336,14 @@ def build_welcome_rich_blocks(
             "blocks": [
                 {
                     "type": "paragraph",
-                    "text": (
-                        "1. <b>Buscador Especializado:</b> Conexión directa a la biblioteca para entregarte los EPUBs exclusivos que nosotros mismos maquetamos.\n"
-                        "2. <b>Moderación Comunitaria:</b> Cuidar que el grupo sea un espacio seguro, ordenado y enfocado en la lectura."
-                    ),
+                    "text": [
+                        "1. ",
+                        {"type": "bold", "text": "Buscador Especializado:"},
+                        " Conexión directa a la biblioteca para entregarte los EPUBs exclusivos que nosotros mismos maquetamos.\n",
+                        "2. ",
+                        {"type": "bold", "text": "Moderación Comunitaria:"},
+                        " Cuidar que el grupo sea un espacio seguro, ordenado y enfocado en la lectura.",
+                    ],
                 }
             ],
         },
@@ -344,12 +354,20 @@ def build_welcome_rich_blocks(
             "blocks": [
                 {
                     "type": "paragraph",
-                    "text": (
-                        "• <b>/buscar &lt;título&gt;</b> — Encuentra cualquier novela (español, inglés o romaji)\n"
-                        "• <b>/catalogo</b> — Explora géneros, autores y colecciones\n"
-                        "• <b>/reglas</b> — Consulta las normas de convivencia del grupo\n"
-                        "• <b>/ayuda</b> — Guía interactiva de uso y comandos"
-                    ),
+                    "text": [
+                        "• ",
+                        {"type": "bold", "text": "/buscar <título>"},
+                        " — Encuentra cualquier novela (español, inglés o romaji)\n",
+                        "• ",
+                        {"type": "bold", "text": "/catalogo"},
+                        " — Explora géneros, autores y colecciones\n",
+                        "• ",
+                        {"type": "bold", "text": "/reglas"},
+                        " — Consulta las normas de convivencia del grupo\n",
+                        "• ",
+                        {"type": "bold", "text": "/ayuda"},
+                        " — Guía interactiva de uso y comandos",
+                    ],
                 }
             ],
         },
