@@ -179,10 +179,14 @@ class UploadService:
 
                         s_query = metadata.get("series") or metadata.get("title")
                         if s_query:
-                            matched_series = await series_repo.find_by_title_or_alias(s_query)
+                            matched_series = await series_repo.find_by_title_or_alias(
+                                s_query
+                            )
                             if matched_series:
-                                existing_book = await book_repo.get_by_series_and_volume(
-                                    matched_series.id, vol_parsed
+                                existing_book = (
+                                    await book_repo.get_by_series_and_volume(
+                                        matched_series.id, vol_parsed
+                                    )
                                 )
 
             if existing_book:
@@ -190,7 +194,9 @@ class UploadService:
                     "exists": True,
                     "path": existing_book.filepath,
                     "id": existing_book.id,
-                    "series": existing_book.series_info.name if existing_book.series_info else metadata.get("series"),
+                    "series": existing_book.series_info.name
+                    if existing_book.series_info
+                    else metadata.get("series"),
                     "volume": existing_book.volume,
                 }
             else:
@@ -299,15 +305,19 @@ class UploadService:
     def _apply_ai_enrichment(self, metadata: dict, ai_data: dict):
         """Aplica las mejoras detectadas por la IA."""
         if ai_data.get("series_name"):
-            metadata["series"] = ai_data["series_name"]
+            metadata["series"] = " ".join(str(ai_data["series_name"]).split()).strip()
         if ai_data.get("series_spanish"):
-            metadata["series_spanish"] = ai_data["series_spanish"]
+            metadata["series_spanish"] = " ".join(
+                str(ai_data["series_spanish"]).split()
+            ).strip()
         if ai_data.get("volume") is not None:
             metadata["volume"] = ai_data["volume"]
         if ai_data.get("group_full"):
-            metadata["group"] = ai_data["group_full"]
+            metadata["group"] = " ".join(str(ai_data["group_full"]).split()).strip()
         if ai_data.get("group_siglas"):
-            metadata["group_siglas"] = ai_data["group_siglas"]
+            metadata["group_siglas"] = " ".join(
+                str(ai_data["group_siglas"]).split()
+            ).strip()
         if ai_data.get("suggested_filename"):
             metadata["ai_filename"] = ai_data["suggested_filename"]
         if ai_data.get("is_uncensored") is not None:
@@ -413,7 +423,11 @@ class UploadService:
                     matched_series = await series_repo.find_by_title_or_alias(s_query)
 
             # C) Buscar por título en español
-            if not existing_series_book and not matched_series and metadata.get("series_spanish"):
+            if (
+                not existing_series_book
+                and not matched_series
+                and metadata.get("series_spanish")
+            ):
                 matched_series = await series_repo.find_by_title_or_alias(
                     metadata["series_spanish"]
                 )
@@ -445,7 +459,9 @@ class UploadService:
             # Sincronizar nombres si existen en DB
             if getattr(existing_series_book, "series_info", None):
                 if existing_series_book.series_info.name_spanish:
-                    metadata["series_spanish"] = existing_series_book.series_info.name_spanish
+                    metadata["series_spanish"] = (
+                        existing_series_book.series_info.name_spanish
+                    )
                 if existing_series_book.series_info.name:
                     metadata["series"] = existing_series_book.series_info.name
 
@@ -552,7 +568,9 @@ class UploadService:
                 ]
                 for f in files:
                     if " - V" in f and "[" in f and "].epub" in f:
-                        base_match = re.match(r"^(.*?)\s*-\s*V\d+", f, flags=re.IGNORECASE)
+                        base_match = re.match(
+                            r"^(.*?)\s*-\s*V\d+", f, flags=re.IGNORECASE
+                        )
                         if base_match:
                             existing_base = base_match.group(1).strip()
                             if existing_base:

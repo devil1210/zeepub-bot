@@ -8,7 +8,11 @@ import zipfile
 
 from PIL import Image
 
-from utils.string_utils import clean_series_type_tag, extract_book_type_from_series_tag
+from utils.string_utils import (
+    clean_series_type_tag,
+    extract_book_type_from_series_tag,
+    normalize_spaces,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +22,7 @@ def clean_metadata_tags(text):
     if not text:
         return text
     # 1. Quitar corchetes [TAG], [NL], [NW], [Fan Translation], etc.
-    cleaned = re.sub(r"\s*\[.*?\]\s*", " ", text)
+    cleaned = re.sub(r"\s*\[.*?\]\s*", " ", str(text))
     # 2. Quitar paréntesis comunes (Novela), (Manga), (Completo), etc.
     cleaned = re.sub(r"\s*\(.*?\)\s*", " ", cleaned)
     # 3. Quitar sufijos de volumen si se colaron (ej: - V01, : V01, - Vol. 1)
@@ -27,9 +31,8 @@ def clean_metadata_tags(text):
     )
     # 4. Quitar indicadores de volumen sueltos al final (ej: "Serie V01")
     cleaned = re.sub(r"\s+V\d+$", "", cleaned)
-    # 5. Limpiar espacios múltiples y caracteres sueltos al final
-    cleaned = re.sub(r"\s+", " ", cleaned)
-    cleaned = cleaned.strip().strip("-").strip(":").strip()
+    # 5. Limpiar saltos de línea, tabs, espacios múltiples y caracteres sueltos al final
+    cleaned = " ".join(cleaned.split()).strip().strip("-").strip(":").strip()
     return cleaned
 
 
@@ -116,7 +119,7 @@ class EpubMetadataExtractor:
                         main_title_node = title_nodes[0]
 
                     raw_title = (
-                        main_title_node.text.strip()
+                        normalize_spaces(main_title_node.text)
                         if (main_title_node is not None and main_title_node.text)
                         else ""
                     )
@@ -139,7 +142,7 @@ class EpubMetadataExtractor:
                                     r_lang = (
                                         get_attr_agnostic(r_el, "lang") or ""
                                     ).lower()
-                                    r_text = (r_el.text or "").strip()
+                                    r_text = normalize_spaces(r_el.text)
                                     if not r_text:
                                         continue
                                     if r_lang.startswith("es"):
@@ -166,10 +169,18 @@ class EpubMetadataExtractor:
                     if not romaji_title and raw_title and is_romaji_string(raw_title):
                         romaji_title = clean_romaji_title(raw_title)
 
-                    self.metadata["spanish_title"] = spanish_title
-                    self.metadata["english_title"] = english_title or raw_title
-                    self.metadata["romaji_title"] = romaji_title
-                    self.metadata["title"] = spanish_title or raw_title
+                    self.metadata["spanish_title"] = (
+                        normalize_spaces(spanish_title) or None
+                    )
+                    self.metadata["english_title"] = normalize_spaces(
+                        english_title or raw_title
+                    )
+                    self.metadata["romaji_title"] = (
+                        normalize_spaces(romaji_title) or None
+                    )
+                    self.metadata["title"] = normalize_spaces(
+                        spanish_title or raw_title
+                    )
 
                     self.metadata["publisher"] = self._get_dc_value(
                         metadata_node, "publisher"
@@ -373,7 +384,7 @@ class EpubMetadataExtractor:
                     series_romaji = None
 
                     if collection_node is not None:
-                        raw_series = (collection_node.text or "").strip()
+                        raw_series = normalize_spaces(collection_node.text)
                         inferred_type = extract_book_type_from_series_tag(raw_series)
                         if inferred_type and not self.metadata.get("book_type"):
                             self.metadata["book_type"] = inferred_type
@@ -384,7 +395,7 @@ class EpubMetadataExtractor:
                                 prop = (
                                     get_attr_agnostic(r_el, "property") or ""
                                 ).lower()
-                                r_text = (r_el.text or "").strip()
+                                r_text = normalize_spaces(r_el.text)
                                 if not r_text:
                                     continue
                                 if prop == "alternate-script":
@@ -413,9 +424,15 @@ class EpubMetadataExtractor:
                         elif not series_english:
                             series_english = raw_series
 
-                        self.metadata["series_spanish"] = series_spanish
-                        self.metadata["series_english"] = series_english
-                        self.metadata["series_romaji"] = series_romaji
+                        self.metadata["series_spanish"] = (
+                            normalize_spaces(series_spanish) or None
+                        )
+                        self.metadata["series_english"] = (
+                            normalize_spaces(series_english) or None
+                        )
+                        self.metadata["series_romaji"] = (
+                            normalize_spaces(series_romaji) or None
+                        )
                         self.metadata["series"] = clean_metadata_tags(
                             series_spanish or raw_series
                         )
@@ -567,7 +584,11 @@ class EpubMetadataExtractor:
 
     def _get_dc_value(self, node, tag):
         found = node.find(f"dc:{tag}", self.NAMESPACE)
-        return found.text if found is not None else None
+        if found is not None and found.text:
+            if tag in ("description",):
+                return found.text.strip()
+            return normalize_spaces(found.text)
+        return None
 
     def _calculate_technical_metrics(self, z, opf_root, base_dir):
         """

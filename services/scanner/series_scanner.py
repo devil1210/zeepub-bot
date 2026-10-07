@@ -395,11 +395,11 @@ class SeriesScanner:
                 romaji = data.get("romaji_title")
 
                 if spanish:
-                    series.series_spanish = spanish
+                    series.series_spanish = " ".join(str(spanish).split()).strip()
                 if english:
-                    series.series_english = english
+                    series.series_english = " ".join(str(english).split()).strip()
                 if romaji:
-                    series.name = romaji
+                    series.name = " ".join(str(romaji).split()).strip()
 
                 # Regenerar el slug e indicar el enriquecimiento en los logs
                 from services.scanner.slug_manager import SlugManager

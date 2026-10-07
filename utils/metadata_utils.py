@@ -310,7 +310,8 @@ def resolve_title_cascade(data: dict[str, Any]) -> tuple[str, str | None, str | 
     def _clean_trailing(val: str | None) -> str | None:
         if not val:
             return None
-        s = re.sub(r"[\s\:\-\–\—\.]+$", "", str(val)).strip()
+        s = " ".join(str(val).split())
+        s = re.sub(r"[\s\:\-\–\—\.]+$", "", s).strip()
         return s or None
 
     t_en = _clean_trailing(t_en) or "Sin título"
@@ -866,10 +867,29 @@ def process_book_identity_comprehensive(
             if (meta.get("title") and is_romaji_string(meta.get("title")))
             else None
         ),
-        "series_spanish": series_spanish or meta.get("series_spanish"),
-        "series_english": series_english or meta.get("series_english"),
-        "spanish_title": meta.get("spanish_title") or series_spanish or ui_title,
-        "english_title": meta.get("english_title"),
+        "series_spanish": (
+            " ".join(
+                str(series_spanish or meta.get("series_spanish") or "").split()
+            ).strip()
+            or None
+        ),
+        "series_english": (
+            " ".join(
+                str(series_english or meta.get("series_english") or "").split()
+            ).strip()
+            or None
+        ),
+        "spanish_title": (
+            " ".join(
+                str(
+                    meta.get("spanish_title") or series_spanish or ui_title or ""
+                ).split()
+            ).strip()
+            or None
+        ),
+        "english_title": (
+            " ".join(str(meta.get("english_title") or "").split()).strip() or None
+        ),
         "editor": meta.get("editor"),
         "is_standalone": meta.get("is_standalone", False),
         "uuid": meta.get("uuid"),
@@ -902,7 +922,8 @@ async def get_series_spanish_from_api(
             data = response.json()
             if data.get("totalItems", 0) > 0:
                 item = data["items"][0]["volumeInfo"]
-                return item.get("title")
+                raw_t = item.get("title")
+                return " ".join(str(raw_t).split()).strip() if raw_t else None
     except Exception:
         pass
     return None

@@ -223,36 +223,68 @@ def apply_publication_template(template_str: str, data: dict[str, Any]) -> str:
 
         mapping.update(
             {
-                "titulo": data.get("title") or data.get("titulo") or "",
-                "titulo_volumen": data.get("titulo_volumen") or data.get("title") or "",
-                "romaji_title": data.get("romaji_title") or data.get("romaji") or "",
-                "romaji": data.get("romaji") or data.get("romaji_title") or "",
-                "jap_title": data.get("jap_title") or "",
+                "titulo": " ".join(
+                    str(data.get("title") or data.get("titulo") or "").split()
+                ).strip(),
+                "titulo_volumen": " ".join(
+                    str(data.get("titulo_volumen") or data.get("title") or "").split()
+                ).strip(),
+                "romaji_title": " ".join(
+                    str(data.get("romaji_title") or data.get("romaji") or "").split()
+                ).strip(),
+                "romaji": " ".join(
+                    str(data.get("romaji") or data.get("romaji_title") or "").split()
+                ).strip(),
+                "jap_title": " ".join(str(data.get("jap_title") or "").split()).strip(),
                 "slug": slug,
-                "autor": data.get("author") or data.get("autor") or "",
-                "author_jap": data.get("author_jap") or "",
-                "illustrator": data.get("illustrator") or data.get("ilustrador") or "",
-                "illustrator_jap": data.get("illustrator_jap") or "",
-                "serie": data.get("serie")
-                or data.get("series_english")
-                or data.get("series")
-                or data.get("titulo_serie")
-                or "",
-                "series": data.get("series")
-                or data.get("serie")
-                or data.get("series_english")
-                or data.get("titulo_serie")
-                or "",
-                "series_english": data.get("series_english")
-                or data.get("serie")
-                or data.get("series")
-                or data.get("titulo_serie")
-                or "",
-                "series_spanish": data.get("series_spanish")
-                or data.get("series_name")
-                or data.get("title")
-                or data.get("titulo")
-                or "",
+                "autor": " ".join(
+                    str(data.get("author") or data.get("autor") or "").split()
+                ).strip(),
+                "author_jap": " ".join(
+                    str(data.get("author_jap") or "").split()
+                ).strip(),
+                "illustrator": " ".join(
+                    str(data.get("illustrator") or data.get("ilustrador") or "").split()
+                ).strip(),
+                "illustrator_jap": " ".join(
+                    str(data.get("illustrator_jap") or "").split()
+                ).strip(),
+                "serie": " ".join(
+                    str(
+                        data.get("serie")
+                        or data.get("series_english")
+                        or data.get("series")
+                        or data.get("titulo_serie")
+                        or ""
+                    ).split()
+                ).strip(),
+                "series": " ".join(
+                    str(
+                        data.get("series")
+                        or data.get("serie")
+                        or data.get("series_english")
+                        or data.get("titulo_serie")
+                        or ""
+                    ).split()
+                ).strip(),
+                "series_english": " ".join(
+                    str(
+                        data.get("series_english")
+                        or data.get("serie")
+                        or data.get("series")
+                        or data.get("titulo_serie")
+                        or ""
+                    ).split()
+                ).strip(),
+                "series_spanish": " ".join(
+                    str(
+                        data.get("series_spanish")
+                        or data.get("series_name")
+                        or data.get("title")
+                        or data.get("titulo")
+                        or ""
+                    ).split()
+                ).strip(),
                 "volumen": volume_clean,
                 "sinopsis": sinopsis_raw,
                 "resumen": data.get("summary") or data.get("resumen") or "",

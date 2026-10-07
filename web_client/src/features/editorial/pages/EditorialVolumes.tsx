@@ -508,14 +508,16 @@ export const EditorialVolumes: React.FC = () => {
             )}
 
             {/* Schedule Post Modal */}
-            <SchedulePostModal
-                isOpen={!!selectedVolumeForSchedule}
-                book={selectedVolumeForSchedule}
-                onClose={() => setSelectedVolumeForSchedule(null)}
-                onSuccess={() => {
-                    setSelectedVolumeForSchedule(null);
-                }}
-            />
+            {selectedVolumeForSchedule && (
+                <SchedulePostModal
+                    isOpen={!!selectedVolumeForSchedule}
+                    book={selectedVolumeForSchedule}
+                    onClose={() => setSelectedVolumeForSchedule(null)}
+                    onSuccess={() => {
+                        setSelectedVolumeForSchedule(null);
+                    }}
+                />
+            )}
         </div>
     );
 };

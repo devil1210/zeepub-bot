@@ -3,6 +3,13 @@ import re
 from typing import Any
 
 
+def normalize_spaces(s: Any) -> str:
+    """Colapsa cualquier salto de línea, tabulaciones y espacios múltiples en un único espacio."""
+    if s is None:
+        return ""
+    return " ".join(str(s).split()).strip()
+
+
 def norm_string(s: Any, lowercase: bool = True) -> str:
     if s is None:
         return ""
