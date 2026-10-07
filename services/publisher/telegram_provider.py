@@ -224,9 +224,7 @@ class TelegramPublisherProvider(PublisherProvider):
                         }
                     )
             except Exception as e:
-                logger.warning(
-                    f"Error preparando archivo epub para Rich Message: {e}"
-                )
+                logger.warning(f"Error preparando archivo epub para Rich Message: {e}")
 
         from services.library_ui_service import build_book_rich_blocks
         from services.rich_message_service import RichMessageService
@@ -274,18 +272,16 @@ class TelegramPublisherProvider(PublisherProvider):
                     if epub_data:
                         slug = book_data.get("slug")
                         if slug:
-                            final_caption = (
-                                slug if slug.startswith("#") else f"#{slug}"
-                            )
+                            final_caption = slug if slug.startswith("#") else f"#{slug}"
                         else:
                             title_en = (
                                 book_data.get("english_title")
                                 or book_data.get("series_english")
                                 or "book"
                             )
-                            clean_title = re.sub(
-                                r"[^\w\s]", "", title_en
-                            ).replace(" ", "_")
+                            clean_title = re.sub(r"[^\w\s]", "", title_en).replace(
+                                " ", "_"
+                            )
                             final_caption = f"#{clean_title}"
 
                         await send_doc_bytes(
@@ -392,50 +388,121 @@ class TelegramPublisherProvider(PublisherProvider):
         self,
         chat_id: str | int,
         message_id: str | int,
-        new_message: str,
+        new_message: str | None = None,
         cover: Any = None,
+        book_data: dict[str, Any] | None = None,
     ) -> bool:
         """
         Edita el mensaje/ficha existente de una publicación en Telegram.
-        Limpia señales internas de archivos (__ATTACH_FILE_SIGNAL__) y actualiza portada si corresponde.
+        Prioriza Rich Message estructurado si hay book_data o HTML complejo con tablas/detalles.
         """
-        if not chat_id or not message_id or not new_message:
+        if not chat_id or not message_id:
             return False
 
-        clean_message = (
-            new_message.replace("__ATTACH_FILE_SIGNAL__", "")
-            .replace("{archivo}", "")
-            .strip()
-        )
-
         try:
-            if not self.bot:
-                from api.main import bot as main_bot
-                self.bot = main_bot.app.bot
+            from services.cover_service import resolve_cover_data
+            from services.rich_message_service import RichMessageService
 
-            # Si se proporciona portada o ruta de portada, intentar edit_message_media
+            files = None
             if cover:
-                from telegram import InputMediaPhoto
-
-                from services.cover_service import resolve_cover_data
                 resolved_cover = await resolve_cover_data(cover)
                 if resolved_cover:
-                    try:
-                        if isinstance(resolved_cover, bytes):
-                            media = InputMediaPhoto(media=resolved_cover, caption=clean_message, parse_mode="HTML")
-                            await self.bot.edit_message_media(chat_id=chat_id, message_id=int(message_id), media=media)
-                            logger.info(f"✅ Portada y caption {message_id} en Telegram ({chat_id}) actualizados.")
-                            return True
-                        elif isinstance(resolved_cover, str) and os.path.exists(resolved_cover):
+                    if isinstance(resolved_cover, bytes):
+                        files = {
+                            "tomozaki_cover": (
+                                "cover.jpg",
+                                resolved_cover,
+                                "image/jpeg",
+                            )
+                        }
+                    elif isinstance(resolved_cover, str) and os.path.exists(
+                        resolved_cover
+                    ):
+                        try:
                             with open(resolved_cover, "rb") as f:
-                                media = InputMediaPhoto(media=f, caption=clean_message, parse_mode="HTML")
-                                await self.bot.edit_message_media(chat_id=chat_id, message_id=int(message_id), media=media)
-                            logger.info(f"✅ Portada y caption {message_id} en Telegram ({chat_id}) actualizados.")
-                            return True
-                    except Exception as e:
-                        logger.debug(f"Aviso edit_message_media en Telegram: {e}")
+                                files = {
+                                    "tomozaki_cover": (
+                                        "cover.jpg",
+                                        f.read(),
+                                        "image/jpeg",
+                                    )
+                                }
+                        except Exception as e:
+                            logger.warning(
+                                f"Error al leer archivo de portada local para edición: {e}"
+                            )
 
-            # Intentar edit_message_caption (para mensajes con foto existentes)
+            # 1. Si tenemos book_data completo, generar bloques nativos (Rich Blocks)
+            if book_data:
+                from services.library_ui_service import build_book_rich_blocks
+
+                rich_blocks = build_book_rich_blocks(
+                    book_data,
+                    has_cover=bool(files and "tomozaki_cover" in files),
+                    include_download=False,
+                    show_nav_buttons=False,
+                )
+                res = await RichMessageService.edit_rich_message(
+                    chat_id=chat_id,
+                    message_id=int(message_id),
+                    blocks=rich_blocks,
+                    files=files,
+                )
+                if res and res.get("ok"):
+                    logger.info(
+                        f"✅ Rich Message {message_id} en Telegram ({chat_id}) editado exitosamente."
+                    )
+                    return True
+
+            # 2. Si el mensaje contiene tags HTML ricos (table, details, etc.), editar con rich_message html
+            clean_message = (
+                (new_message or "")
+                .replace("__ATTACH_FILE_SIGNAL__", "")
+                .replace("{archivo}", "")
+                .strip()
+            )
+
+            if clean_message and any(
+                tag in clean_message
+                for tag in ("<table", "<details", "<h3", "<h4", "<h5")
+            ):
+                res = await RichMessageService.edit_rich_message(
+                    chat_id=chat_id,
+                    message_id=int(message_id),
+                    html=clean_message,
+                    files=files,
+                )
+                if res and res.get("ok"):
+                    logger.info(
+                        f"✅ Rich HTML {message_id} en Telegram ({chat_id}) editado exitosamente."
+                    )
+                    return True
+
+            if not self.bot:
+                from api.main import bot as main_bot
+
+                self.bot = main_bot.app.bot
+
+            # 3. Fallbacks tradicionales para mensajes estándar
+            if cover and files and "tomozaki_cover" in files:
+                from telegram import InputMediaPhoto
+
+                try:
+                    media = InputMediaPhoto(
+                        media=files["tomozaki_cover"][1],
+                        caption=clean_message,
+                        parse_mode="HTML",
+                    )
+                    await self.bot.edit_message_media(
+                        chat_id=chat_id, message_id=int(message_id), media=media
+                    )
+                    logger.info(
+                        f"✅ Portada y caption {message_id} en Telegram ({chat_id}) actualizados."
+                    )
+                    return True
+                except Exception as e:
+                    logger.debug(f"Aviso edit_message_media en Telegram: {e}")
+
             try:
                 await self.bot.edit_message_caption(
                     chat_id=chat_id,
@@ -443,12 +510,13 @@ class TelegramPublisherProvider(PublisherProvider):
                     caption=clean_message,
                     parse_mode="HTML",
                 )
-                logger.info(f"✅ Caption de publicación {message_id} en Telegram editado.")
+                logger.info(
+                    f"✅ Caption de publicación {message_id} en Telegram editado."
+                )
                 return True
             except Exception:
                 pass
 
-            # Fallback a edit_message_text (para mensajes de texto estándar)
             await self.bot.edit_message_text(
                 chat_id=chat_id,
                 message_id=int(message_id),

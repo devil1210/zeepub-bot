@@ -59,7 +59,9 @@ class PublisherService:
         if not book:
             return {}
 
-        series_info = getattr(book, "series_info", None) or getattr(book, "series", None)
+        series_info = getattr(book, "series_info", None) or getattr(
+            book, "series", None
+        )
 
         english_t = (
             (getattr(series_info, "series_english", None) if series_info else None)
@@ -75,7 +77,11 @@ class PublisherService:
             or ""
         )
         series_name_clean = getattr(series_info, "name", None) if series_info else None
-        if series_name_clean and series_name_clean.strip().lower() in ("volumen único", "volumen unico", "volumen_unico"):
+        if series_name_clean and series_name_clean.strip().lower() in (
+            "volumen único",
+            "volumen unico",
+            "volumen_unico",
+        ):
             series_name_clean = None
 
         romaji_t = (
@@ -99,7 +105,13 @@ class PublisherService:
             ).strip()
 
         s_slug = (
-            (getattr(series_info, "slug", None) if series_info and getattr(series_info, "slug", "") not in ("Volumen_Unico", "Volumen_unico", "volumen_unico") else None)
+            (
+                getattr(series_info, "slug", None)
+                if series_info
+                and getattr(series_info, "slug", "")
+                not in ("Volumen_Unico", "Volumen_unico", "volumen_unico")
+                else None
+            )
             or (getattr(series_info, "series_spanish", None) if series_info else None)
             or getattr(book, "slug", None)
             or spanish_t
@@ -171,13 +183,31 @@ class PublisherService:
         paginas_str = str(book.page_count) if getattr(book, "page_count", None) else ""
 
         # Formateo de géneros y demografías (Prioridad al libro específico sobre el agregado de la serie)
-        genres_list = getattr(book, "tags_json", None) or (getattr(series_info, "tags_json", None) if series_info else None) or []
-        genres_str = ", ".join(genres_list) if isinstance(genres_list, list) else str(genres_list or "")
+        genres_list = (
+            getattr(book, "tags_json", None)
+            or (getattr(series_info, "tags_json", None) if series_info else None)
+            or []
+        )
+        genres_str = (
+            ", ".join(genres_list)
+            if isinstance(genres_list, list)
+            else str(genres_list or "")
+        )
 
-        demo_list = getattr(book, "demographics_json", None) or (getattr(series_info, "demographics_json", None) if series_info else None) or []
+        demo_list = (
+            getattr(book, "demographics_json", None)
+            or (
+                getattr(series_info, "demographics_json", None) if series_info else None
+            )
+            or []
+        )
         demo_str = normalize_demography(demo_list)
 
-        dl_link = f"https://dl.zeepubs.com/{book.short_link}" if getattr(book, "short_link", None) else ""
+        dl_link = (
+            f"https://dl.zeepubs.com/{book.short_link}"
+            if getattr(book, "short_link", None)
+            else ""
+        )
 
         return {
             # Títulos y Series
@@ -190,10 +220,18 @@ class PublisherService:
             "romaji_title": romaji_t,
             "romaji": romaji_t,
             "title_romaji": romaji_t,
-            "jap_title": getattr(book, "author_jap", "") or getattr(book, "illustrator_jap", "") or "",
+            "jap_title": getattr(book, "author_jap", "")
+            or getattr(book, "illustrator_jap", "")
+            or "",
             "serie": english_t or spanish_t or book.title or "",
-            "series": (getattr(series_info, "name", None) if series_info else None) or english_t or spanish_t or book.title or "",
-            "series_name": (getattr(series_info, "name", None) if series_info else None) or english_t or "",
+            "series": (getattr(series_info, "name", None) if series_info else None)
+            or english_t
+            or spanish_t
+            or book.title
+            or "",
+            "series_name": (getattr(series_info, "name", None) if series_info else None)
+            or english_t
+            or "",
             "series_english": english_t,
             "series_spanish": spanish_t,
             "slug": s_slug,
@@ -202,12 +240,24 @@ class PublisherService:
             "volumen": vol_str or (vol if vol is not None else ""),
             "vol": vol_str or (vol if vol is not None else ""),
             # Créditos y Personas
-            "author": book.author or (getattr(series_info, "author", None) if series_info else "") or "",
-            "autor": book.author or (getattr(series_info, "author", None) if series_info else "") or "",
-            "illustrator": getattr(book, "illustrator", "") or (getattr(series_info, "illustrator", None) if series_info else "") or "",
-            "ilustrador": getattr(book, "illustrator", "") or (getattr(series_info, "illustrator", None) if series_info else "") or "",
-            "author_jap": getattr(book, "author_jap", "") or (getattr(series_info, "author_jap", None) if series_info else "") or "",
-            "illustrator_jap": getattr(book, "illustrator_jap", "") or (getattr(series_info, "illustrator_jap", None) if series_info else "") or "",
+            "author": book.author
+            or (getattr(series_info, "author", None) if series_info else "")
+            or "",
+            "autor": book.author
+            or (getattr(series_info, "author", None) if series_info else "")
+            or "",
+            "illustrator": getattr(book, "illustrator", "")
+            or (getattr(series_info, "illustrator", None) if series_info else "")
+            or "",
+            "ilustrador": getattr(book, "illustrator", "")
+            or (getattr(series_info, "illustrator", None) if series_info else "")
+            or "",
+            "author_jap": getattr(book, "author_jap", "")
+            or (getattr(series_info, "author_jap", None) if series_info else "")
+            or "",
+            "illustrator_jap": getattr(book, "illustrator_jap", "")
+            or (getattr(series_info, "illustrator_jap", None) if series_info else "")
+            or "",
             "layout_by": " ".join(
                 m.strip() if m.strip().startswith("#") else f"#{m.strip()}"
                 for m in (getattr(book, "layout_by", "") or "").split(",")
@@ -222,15 +272,32 @@ class PublisherService:
             "translator": getattr(book, "translator", "") or "",
             "editor": getattr(book, "editor", "") or "",
             # Textos descriptivos (Prioridad: sinopsis del volumen sobre la de la serie)
-            "sinopsis": book.description or (getattr(series_info, "description", None) if series_info else None) or "",
-            "description": book.description or (getattr(series_info, "description", None) if series_info else None) or "",
-            "resumen": book.description or (getattr(series_info, "description", None) if series_info else None) or "",
+            "sinopsis": book.description
+            or (getattr(series_info, "description", None) if series_info else None)
+            or "",
+            "description": book.description
+            or (getattr(series_info, "description", None) if series_info else None)
+            or "",
+            "resumen": book.description
+            or (getattr(series_info, "description", None) if series_info else None)
+            or "",
             # Metadatos del libro
-            "tipo": (getattr(series_info, "book_type", None) if series_info else None) or "Novela Ligera",
-            "book_type": (getattr(series_info, "book_type", None) if series_info else None) or "Novela Ligera",
-            "categoria": (getattr(series_info, "book_type", None) if series_info else None) or "Novela Ligera",
-            "publisher": getattr(book, "publisher", "") or (getattr(series_info, "publisher", None) if series_info else "") or "",
-            "editorial": getattr(book, "publisher", "") or (getattr(series_info, "publisher", None) if series_info else "") or "",
+            "tipo": (getattr(series_info, "book_type", None) if series_info else None)
+            or "Novela Ligera",
+            "book_type": (
+                getattr(series_info, "book_type", None) if series_info else None
+            )
+            or "Novela Ligera",
+            "categoria": (
+                getattr(series_info, "book_type", None) if series_info else None
+            )
+            or "Novela Ligera",
+            "publisher": getattr(book, "publisher", "")
+            or (getattr(series_info, "publisher", None) if series_info else "")
+            or "",
+            "editorial": getattr(book, "publisher", "")
+            or (getattr(series_info, "publisher", None) if series_info else "")
+            or "",
             "genres": genres_str,
             "generos": genres_str,
             "tags": genres_str,
@@ -269,7 +336,9 @@ class PublisherService:
             "color_mode": getattr(book, "color_mode", "") or "",
             "rating": str(getattr(book, "rating_average", 0.0) or 0.0),
             "votes": str(getattr(book, "rating_count", 0) or 0),
-            "reading_time": f"{book.reading_time} min" if getattr(book, "reading_time", None) else "",
+            "reading_time": f"{book.reading_time} min"
+            if getattr(book, "reading_time", None)
+            else "",
             # Enlaces y Archivo
             "download_link": dl_link,
             "enlace_descarga": dl_link,
@@ -288,8 +357,14 @@ class PublisherService:
             "cover_high": getattr(book, "cover_high", None),
             "cover_medium": getattr(book, "cover_medium", None),
             "cover_low": getattr(book, "cover_low", None),
-            "portada": (getattr(series_info, "cover_url", None) if series_info else None)
-            or (getattr(book, "cover_medium", None) or getattr(book, "cover_low", None) or ""),
+            "portada": (
+                getattr(series_info, "cover_url", None) if series_info else None
+            )
+            or (
+                getattr(book, "cover_medium", None)
+                or getattr(book, "cover_low", None)
+                or ""
+            ),
         }
 
     async def schedule_publication(
@@ -303,7 +378,9 @@ class PublisherService:
         """Programa una nueva publicación."""
         if scheduled_for is not None:
             if hasattr(scheduled_for, "tzinfo") and scheduled_for.tzinfo is not None:
-                scheduled_for = scheduled_for.astimezone(timezone.utc).replace(tzinfo=None)
+                scheduled_for = scheduled_for.astimezone(timezone.utc).replace(
+                    tzinfo=None
+                )
         else:
             scheduled_for = datetime.utcnow()
 
@@ -360,13 +437,19 @@ class PublisherService:
                     cover_quality = "high"
                     template_id_to_use = item.template_id
                     if not template_id_to_use and item.channel:
-                        platform_templates = await self.repo.get_templates(platform=item.channel.platform)
-                        def_tpl = next((t for t in platform_templates if t.is_default), None) or (platform_templates[0] if platform_templates else None)
+                        platform_templates = await self.repo.get_templates(
+                            platform=item.channel.platform
+                        )
+                        def_tpl = next(
+                            (t for t in platform_templates if t.is_default), None
+                        ) or (platform_templates[0] if platform_templates else None)
                         if def_tpl:
                             template_id_to_use = def_tpl.id
 
                     if template_id_to_use:
-                        template = await self.repo.get_template_by_id(template_id_to_use)
+                        template = await self.repo.get_template_by_id(
+                            template_id_to_use
+                        )
                         if template and template.content:
                             # Para Telegram, siempre dejar que TelegramPublisherProvider
                             # use su generador dinámico nativo idéntico al de enviar_libro_directo (Rich Blocks)
@@ -400,7 +483,9 @@ class PublisherService:
                             thread_id = item.channel.config.get("message_thread_id")
                             channel_token = item.channel.config.get("page_access_token")
 
-                        item_payload = item.payload if isinstance(item.payload, dict) else {}
+                        item_payload = (
+                            item.payload if isinstance(item.payload, dict) else {}
+                        )
 
                         scheduled_time_ts = item_payload.get("scheduled_publish_time")
 
@@ -430,11 +515,15 @@ class PublisherService:
                     item.error_message = str(e)
                     await self.session.commit()
 
-    async def process_queue_item_direct(self, queue_item_id: int, options_extra: dict[str, Any] | None = None) -> bool:
+    async def process_queue_item_direct(
+        self, queue_item_id: int, options_extra: dict[str, Any] | None = None
+    ) -> bool:
         """Procesa directamente un ítem específico de la cola (ej. para scheduled post en Meta)."""
         item = await self.repo.get_with_details(queue_item_id)
         if not item or not item.channel:
-            logger.warning(f"process_queue_item_direct: item {queue_item_id} o canal no encontrado")
+            logger.warning(
+                f"process_queue_item_direct: item {queue_item_id} o canal no encontrado"
+            )
             return False
 
         try:
@@ -448,11 +537,13 @@ class PublisherService:
                     book_data = self._build_book_data_dict(book)
                     from services.workgroup_service import workgroup_service
 
-                    credits_meta = await workgroup_service.resolve_book_workgroup_credits(
-                        book_id=book.id,
-                        book_obj=book,
-                        raw_meta=book_data,
-                        public_link=book_data.get("download_link"),
+                    credits_meta = (
+                        await workgroup_service.resolve_book_workgroup_credits(
+                            book_id=book.id,
+                            book_obj=book,
+                            raw_meta=book_data,
+                            public_link=book_data.get("download_link"),
+                        )
                     )
                     book_data.update(credits_meta)
 
@@ -464,9 +555,20 @@ class PublisherService:
             cover_quality = "high"
             if item.template and platform != "telegram":
                 caption = apply_publication_template(item.template.content, book_data)
-                if item.template.extra_config and "cover_quality" in item.template.extra_config:
+                if (
+                    item.template.extra_config
+                    and "cover_quality" in item.template.extra_config
+                ):
                     saved_q = item.template.extra_config["cover_quality"]
-                    cover_quality = "high" if saved_q == "grande" else "medium" if saved_q == "mediana" else "low" if saved_q == "pequeña" else saved_q
+                    cover_quality = (
+                        "high"
+                        if saved_q == "grande"
+                        else "medium"
+                        if saved_q == "mediana"
+                        else "low"
+                        if saved_q == "pequeña"
+                        else saved_q
+                    )
 
             if provider:
                 thread_id = None
@@ -629,10 +731,16 @@ class PublisherService:
 
             if not raw_caption:
                 try:
-                    platform_templates = await self.repo.get_templates(platform="facebook")
-                    def_tpl = next((t for t in platform_templates if t.is_default), None) or (platform_templates[0] if platform_templates else None)
+                    platform_templates = await self.repo.get_templates(
+                        platform="facebook"
+                    )
+                    def_tpl = next(
+                        (t for t in platform_templates if t.is_default), None
+                    ) or (platform_templates[0] if platform_templates else None)
                     if def_tpl and def_tpl.content:
-                        raw_caption = apply_publication_template(def_tpl.content, book_data)
+                        raw_caption = apply_publication_template(
+                            def_tpl.content, book_data
+                        )
                 except Exception:
                     pass
 
@@ -659,17 +767,24 @@ class PublisherService:
                     # Buscar canal correspondiente en la BD para obtener su token específico
                     channel_token = None
                     from models.communications import PublicationChannel
-                    stmt_ch = select(PublicationChannel).where(PublicationChannel.platform == "facebook")
+
+                    stmt_ch = select(PublicationChannel).where(
+                        PublicationChannel.platform == "facebook"
+                    )
                     all_fb_chans = (await self.session.execute(stmt_ch)).scalars().all()
                     if target_page_id:
                         for ch in all_fb_chans:
                             if str(ch.target_id) == str(target_page_id) and ch.config:
-                                channel_token = ch.config.get("page_access_token") or ch.config.get("access_token")
+                                channel_token = ch.config.get(
+                                    "page_access_token"
+                                ) or ch.config.get("access_token")
                                 break
                     if not channel_token and all_fb_chans:
                         for ch in all_fb_chans:
                             if ch.is_active and ch.config:
-                                channel_token = ch.config.get("page_access_token") or ch.config.get("access_token")
+                                channel_token = ch.config.get(
+                                    "page_access_token"
+                                ) or ch.config.get("access_token")
                                 if channel_token:
                                     break
 
@@ -704,9 +819,16 @@ class PublisherService:
                     tg_caption = None
                     if template_id:
                         tpl = await self.repo.get_template_by_id(template_id)
-                        if tpl and tpl.content and not getattr(tpl, "is_default", False):
+                        if (
+                            tpl
+                            and tpl.content
+                            and not getattr(tpl, "is_default", False)
+                        ):
                             from utils.template_engine import apply_publication_template
-                            tg_caption = apply_publication_template(tpl.content, book_data)
+
+                            tg_caption = apply_publication_template(
+                                tpl.content, book_data
+                            )
 
                     if not tg_caption and new_caption:
                         tg_caption = new_caption
@@ -722,6 +844,7 @@ class PublisherService:
                         message_id=tg_msg_id,
                         new_message=tg_caption or "",
                         cover=cover_val,
+                        book_data=book_data,
                     )
                     results["platforms"]["telegram"] = tg_ok
                     if tg_ok:
@@ -883,12 +1006,16 @@ class PublisherServiceWrapper:
             await service.process_queue()
 
     @classmethod
-    async def process_queue_item_direct(cls, queue_item_id: int, options_extra: dict[str, Any] | None = None) -> bool:
+    async def process_queue_item_direct(
+        cls, queue_item_id: int, options_extra: dict[str, Any] | None = None
+    ) -> bool:
         from core.db_manager_pg import pg_manager
 
         async with pg_manager.get_session() as session:
             service = PublisherService(session)
-            return await service.process_queue_item_direct(queue_item_id, options_extra=options_extra)
+            return await service.process_queue_item_direct(
+                queue_item_id, options_extra=options_extra
+            )
 
     @classmethod
     async def update_published_book(
