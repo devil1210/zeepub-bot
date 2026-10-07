@@ -453,6 +453,10 @@ class TelegramPublisherProvider(PublisherProvider):
                         f"✅ Rich Message {message_id} en Telegram ({chat_id}) editado exitosamente."
                     )
                     return True
+                logger.warning(
+                    f"⚠️ Falló edición Rich Message {message_id} en Telegram ({chat_id}): {res}"
+                )
+                return False
 
             # 2. Si el mensaje contiene tags HTML ricos (table, details, etc.), editar con rich_message html
             clean_message = (
@@ -477,6 +481,10 @@ class TelegramPublisherProvider(PublisherProvider):
                         f"✅ Rich HTML {message_id} en Telegram ({chat_id}) editado exitosamente."
                     )
                     return True
+                logger.warning(
+                    f"⚠️ Falló edición Rich HTML {message_id} en Telegram ({chat_id}): {res}"
+                )
+                return False
 
             if not self.bot:
                 from api.main import bot as main_bot

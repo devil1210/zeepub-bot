@@ -138,6 +138,12 @@ class RichMessageService:
 
                 result = response.json()
                 if not result.get("ok"):
+                    desc = result.get("description", "")
+                    if "message is not modified" in desc.lower():
+                        logger.debug(
+                            f"[RichMessageService] Mensaje {message_id} no modificado (contenido idéntico)."
+                        )
+                        return {"ok": True, "result": True, "not_modified": True}
                     logger.error(
                         f"[RichMessageService] Error en edit_rich_message: {result}"
                     )
