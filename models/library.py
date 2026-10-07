@@ -265,6 +265,7 @@ class Book(Base):
 
     isbn: Mapped[str | None] = mapped_column(String(50))
     asin: Mapped[str | None] = mapped_column(String(50))
+    uuid: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)
     epub_version: Mapped[str | None] = mapped_column(String(20))
     word_count: Mapped[int | None] = mapped_column(Integer)
     page_count: Mapped[int | None] = mapped_column(Integer)
@@ -397,7 +398,10 @@ class Book(Base):
         back_populates="book", cascade="all, delete-orphan"
     )
     publications: Mapped[list["BookPublication"]] = relationship(
-        "BookPublication", back_populates="book", cascade="all, delete-orphan", lazy="selectin"
+        "BookPublication",
+        back_populates="book",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
 

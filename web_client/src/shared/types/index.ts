@@ -36,6 +36,8 @@ export interface Book {
   illustrator?: string;
   layout_by?: string;
   isbn?: string;
+  asin?: string;
+  uuid?: string;
   short_link?: string;
   publications?: BookPublication[];
 }
@@ -98,6 +100,7 @@ export interface Volume {
   group?: string;
   isbn?: string;
   asin?: string;
+  uuid?: string;
   modifiedAt?: string;
   modified_at?: string;
   modifiedAtOpf?: string;

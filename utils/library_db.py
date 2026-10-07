@@ -35,7 +35,9 @@ def create_library_engine():
 
     # If it's the async url, convert back to sync for this module
     if "+asyncpg" in db_url:
-        db_url = db_url.replace("+asyncpg", "", 1)
+        db_url = db_url.replace("+asyncpg", "+psycopg2", 1)
+    elif db_url.startswith("postgresql://") and "+psycopg2" not in db_url:
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 
     # Fallback 'db' to 'localhost' if running outside Docker (common for local agents)
     # Testing host 'db' reaches vs 'localhost'

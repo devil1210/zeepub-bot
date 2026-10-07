@@ -58,12 +58,25 @@ def normalize_author_name(name: str) -> str:
     return clean_name
 
 
+_HTML_TAG_REGEX = re.compile(
+    r"</?(?:p|div|span|b|i|em|strong|u|s|small|big|sup|sub|pre|blockquote|ul|ol|li|table|tbody|thead|tr|td|th|a|font|center)(?:\s[^>]*)?/?>",
+    re.IGNORECASE,
+)
+
+
 def limpiar_html_basico(texto_html: str) -> str:
+    """
+    Limpia etiquetas HTML de una sinopsis o texto manteniendo saltos de línea y entidades decodificadas.
+    Compatible con EPUB 3.4 / ZeeTools: solo elimina etiquetas HTML estándar, preservando texto
+    narrativo entre corchetes angulares (ej: '<Familia Hestia>', '<Status>').
+    """
     if not texto_html:
         return ""
-    texto_html = texto_html.replace("<br>", "\n").replace("<br/>", "\n")
-    texto_limpio = re.sub(r"<.*?>", "", texto_html)
-    return "\n".join([ln.rstrip() for ln in texto_limpio.strip().splitlines() if ln.strip()])
+    texto = re.sub(r"<br\s*/?>", "\n", texto_html, flags=re.IGNORECASE)
+    texto = re.sub(r"</p>\s*<p[^>]*>", "\n\n", texto, flags=re.IGNORECASE)
+    texto = _HTML_TAG_REGEX.sub("", texto)
+    texto = html.unescape(texto)
+    return "\n".join([ln.rstrip() for ln in texto.strip().splitlines() if ln.strip()])
 
 
 def escapar_html(texto: str) -> str:
@@ -157,38 +170,98 @@ def clean_caption_for_facebook(caption: str, public_link: str | None = None) -> 
     # 1. Reemplazar enlaces Markdown [anchor](url)
     def repl_md(match):
         anchor, url = match.group(1).strip(), match.group(2).strip()
-        if not anchor or anchor.lower() in ("pulsa aquí", "pulsa aqui", "click aquí", "click aqui", "aquí", "aqui", "link", "descarga", "descargar"):
+        if not anchor or anchor.lower() in (
+            "pulsa aquí",
+            "pulsa aqui",
+            "click aquí",
+            "click aqui",
+            "aquí",
+            "aqui",
+            "link",
+            "descarga",
+            "descargar",
+        ):
             return url
         return f"{anchor}: {url}"
 
-    fb_caption = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', repl_md, fb_caption)
+    fb_caption = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", repl_md, fb_caption)
 
     # 2. Reemplazar enlaces HTML <a href="url">anchor</a>
     def repl_html(match):
         url, anchor = match.group(1).strip(), match.group(2).strip()
-        if not anchor or anchor.lower() in ("pulsa aquí", "pulsa aqui", "click aquí", "click aqui", "aquí", "aqui", "link", "descarga", "descargar"):
+        if not anchor or anchor.lower() in (
+            "pulsa aquí",
+            "pulsa aqui",
+            "click aquí",
+            "click aqui",
+            "aquí",
+            "aqui",
+            "link",
+            "descarga",
+            "descargar",
+        ):
             return url
         return f"{anchor}: {url}"
 
-    fb_caption = re.sub(r'<a\s+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>', repl_html, fb_caption, flags=re.IGNORECASE)
+    fb_caption = re.sub(
+        r'<a\s+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>',
+        repl_html,
+        fb_caption,
+        flags=re.IGNORECASE,
+    )
 
     # 3. Limpiar saltos de línea HTML y etiquetas restantes
-    fb_caption = re.sub(r'<(br|/p|/div|hr)\s*/?>', '\n', fb_caption, flags=re.IGNORECASE)
-    fb_caption = re.sub(r'<p[^>]*>', '', fb_caption, flags=re.IGNORECASE)
-    fb_caption = re.sub(r'<[^>]+>', '', fb_caption).strip()
+    fb_caption = re.sub(
+        r"<(br|/p|/div|hr)\s*/?>", "\n", fb_caption, flags=re.IGNORECASE
+    )
+    fb_caption = re.sub(r"<p[^>]*>", "", fb_caption, flags=re.IGNORECASE)
+    fb_caption = re.sub(r"<[^>]+>", "", fb_caption).strip()
 
     # 4. Eliminar "Pulsa aquí" si venía como texto plano previo ("Descarga: Pulsa aquí: https://...")
-    fb_caption = re.sub(r'(Descarga:\s*)Pulsa aqu[íi]:?\s*', r'\1', fb_caption, flags=re.IGNORECASE)
-    fb_caption = re.sub(r'Pulsa aqu[íi]:?\s*', '', fb_caption, flags=re.IGNORECASE)
-    fb_caption = re.sub(r'Descarga:\s*:\s*', 'Descarga: ', fb_caption, flags=re.IGNORECASE)
+    fb_caption = re.sub(
+        r"(Descarga:\s*)Pulsa aqu[íi]:?\s*", r"\1", fb_caption, flags=re.IGNORECASE
+    )
+    fb_caption = re.sub(r"Pulsa aqu[íi]:?\s*", "", fb_caption, flags=re.IGNORECASE)
+    fb_caption = re.sub(
+        r"Descarga:\s*:\s*", "Descarga: ", fb_caption, flags=re.IGNORECASE
+    )
 
     # 5. Añadir enlace público si existe y no está ya en la descripción
     if public_link and public_link not in fb_caption and "http" not in fb_caption:
         fb_caption = f"{fb_caption}\n\n⬇️ Descarga: {public_link}"
 
     # 6. Normalizar saltos de línea y longitud
-    fb_caption = re.sub(r'\n{3,}', '\n\n', fb_caption)
+    fb_caption = re.sub(r"\n{3,}", "\n\n", fb_caption)
     if len(fb_caption) > 2100:
         fb_caption = fb_caption[:2097] + "..."
 
     return fb_caption
+
+
+def clean_series_type_tag(series: str | None) -> str:
+    """
+    Elimina sufijos de tipo de libro añadidos en ZeeTools 0.4.5: [N], [NL], [NW].
+    Ejemplo: 'The Eminence in Shadow [NL]' -> 'The Eminence in Shadow'
+    """
+    if not series:
+        return ""
+    return re.sub(
+        r"\s*\[(?:N|NL|NW)\]$", "", str(series).strip(), flags=re.IGNORECASE
+    ).strip()
+
+
+def extract_book_type_from_series_tag(series: str | None) -> str | None:
+    """
+    Infiere el tipo de libro a partir del tag sufijo de ZeeTools si está presente:
+    [N] -> 'Novela'
+    [NL] -> 'Novela ligera'
+    [NW] -> 'Novela web'
+    """
+    if not series:
+        return None
+    m = re.search(r"\[(N|NL|NW)\]$", str(series).strip(), flags=re.IGNORECASE)
+    if not m:
+        return None
+    tag = m.group(1).upper()
+    mapping = {"N": "Novela", "NL": "Novela ligera", "NW": "Novela web"}
+    return mapping.get(tag)

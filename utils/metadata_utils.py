@@ -678,10 +678,14 @@ def process_book_identity_comprehensive(
             )
             romaji_from_series = series_parsed_meta.get("romaji")
     else:
-        # Si no hay tag de serie en el metadato, usar el del nombre del archivo
+        # Si no hay tag de serie en el metadato, usar fallback ordenado (novela autoconclusiva / standalone / filename)
         series = (
-            parsed_filename.get("series_clean")
+            series_spanish
+            or meta.get("spanish_title")
+            or meta.get("title")
+            or parsed_filename.get("series_clean")
             or parsed_filename.get("series")
+            or parsed_filename.get("clean_title")
             or "Unknown"
         )
 
@@ -716,6 +720,7 @@ def process_book_identity_comprehensive(
     # Título de visualización: Filename limpio (título en español) > dc:title
     ui_title = (
         parsed_filename.get("clean_title")
+        or meta.get("spanish_title")
         or meta.get("title")
         or original_filename
         or "Sin título"
@@ -730,8 +735,26 @@ def process_book_identity_comprehensive(
         if fn_series and not is_romaji_string(fn_series):
             series_spanish = fn_series
 
+    # Blindaje contra "Unknown" o "Volumen Único" en novelas autoconclusivas
+    if not series or series.strip().lower() in (
+        "unknown",
+        "volumen único",
+        "volumen unico",
+        "volumen_unico",
+    ):
+        series = (
+            series_spanish
+            or meta.get("spanish_title")
+            or ui_title
+            or meta.get("title")
+            or "Unknown"
+        )
+
     # Limpieza final de strings
     if series and series != "Unknown":
+        series = re.sub(
+            r"\s*[-–—]\s*Volumen\s*[Úu]nico\s*$", "", series, flags=re.IGNORECASE
+        ).strip()
         series = clean_romaji_title(series)
     if romaji_from_series:
         romaji_from_series = clean_romaji_title(romaji_from_series)
@@ -845,6 +868,10 @@ def process_book_identity_comprehensive(
         ),
         "series_spanish": series_spanish or meta.get("series_spanish"),
         "series_english": series_english or meta.get("series_english"),
+        "spanish_title": meta.get("spanish_title") or series_spanish or ui_title,
+        "english_title": meta.get("english_title"),
+        "editor": meta.get("editor"),
+        "is_standalone": meta.get("is_standalone", False),
         "uuid": meta.get("uuid"),
         "isbn": meta.get("isbn"),
         "asin": meta.get("asin"),

@@ -8,6 +8,7 @@ import zipfile
 from typing import Any
 
 from utils.helpers import is_demographic_tag, limpiar_html_basico, normalize_demography
+from utils.string_utils import clean_series_type_tag, extract_book_type_from_series_tag
 
 
 def extract_internal_title(data_or_path: bytes | str) -> str | None:
@@ -22,7 +23,9 @@ def extract_internal_title(data_or_path: bytes | str) -> str | None:
             zf = zipfile.ZipFile(data_or_path)
 
         # Buscar archivos candidatos
-        candidates = [n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()]
+        candidates = [
+            n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()
+        ]
 
         # Regex específica para span class grande (Título en Español Puro)
         pattern_grande = re.compile(
@@ -40,7 +43,9 @@ def extract_internal_title(data_or_path: bytes | str) -> str | None:
             r'<(\w+)[^>]*epub:type="fulltitle"[^>]*>(.*?)</\1>',
             re.IGNORECASE | re.DOTALL,
         )
-        title_pat = re.compile(r'epub:type="title"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL)
+        title_pat = re.compile(
+            r'epub:type="title"[^>]*>(.*?)<', re.IGNORECASE | re.DOTALL
+        )
 
         for name in candidates:
             try:
@@ -102,7 +107,9 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         try:
             container = z.read("META-INF/container.xml")
             tree = ET.fromstring(container)
-            for rf in tree.findall(".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile"):
+            for rf in tree.findall(
+                ".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile"
+            ):
                 path = rf.attrib.get("full-path", "")
                 if path.lower().endswith(".opf"):
                     return z.read(path)
@@ -169,8 +176,15 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         root = ET.fromstring(data)
         out: dict[str, Any] = {
             "titulo_volumen": None,
+            "spanish_title": None,
+            "english_title": None,
+            "romaji_title": None,
             "titulo_serie": None,
+            "series_spanish": None,
+            "series_english": None,
+            "series_romaji": None,
             "volume_index": None,
+            "is_standalone": False,
             "autores": [],
             "ilustrador": None,
             "generos": [],
@@ -178,6 +192,7 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
             "categoria": None,
             "maquetadores": [],
             "traductor": None,
+            "editor": None,
             "publisher": None,
             "publisher_url": None,
             "sinopsis": None,
@@ -192,103 +207,265 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         }
 
         # Version EPUB: <package version="...">
-        # root es el elemento <package>
         version = root.attrib.get("version")
         out["epub_version"] = version
         logger.debug(f"EPUB version extracted: {version}")
 
+        # Mapa de refinamientos EPUB 3 (id_objetivo -> lista de elementos meta)
+        meta_refines: dict[str, list[ET.Element]] = {}
+        for el in root.iter():
+            if local_name(el).lower() == "meta":
+                ref = el.attrib.get("refines") or el.attrib.get(
+                    "{http://www.idpf.org/2007/opf}refines"
+                )
+                if ref:
+                    target_id = ref.lstrip("#")
+                    meta_refines.setdefault(target_id, []).append(el)
+
         # Fecha modificación: dcterms:modified
-        # Ejemplo: <meta property="dcterms:modified">2022-07-03T10:28:12Z</meta>
         for el in root.iter():
             ln = local_name(el).lower()
             if ln == "meta":
-                # Obtener atributos property y name ignorando namespaces
                 attribs = {local_name_attr(k).lower(): v for k, v in el.attrib.items()}
                 prop = attribs.get("property", "")
                 name = attribs.get("name", "")
-
                 if "modified" in prop or "modified" in name:
                     if el.text:
                         raw_date = el.text.strip()
                         out["fecha_modificacion"] = parse_date(raw_date)
-                        logger.debug(f"Modified date found: {raw_date} -> {out['fecha_modificacion']}")
+                        logger.debug(
+                            f"Modified date found: {raw_date} -> {out['fecha_modificacion']}"
+                        )
                         break
 
         # Fecha publicación: dc:date
-        # Ejemplo: <dc:date>2020-07-02T00:00:00Z</dc:date>
         for el in root.iter():
             ln = local_name(el).lower()
             if ln == "date":
-                # Verificar si es dc:date (aunque local_name ya lo filtra, aseguramos que sea fecha)
                 if el.text:
                     raw_date = el.text.strip()
-                    # Si ya tenemos una fecha, solo sobrescribimos si el evento es 'publication'
-                    attribs = {local_name_attr(k).lower(): v for k, v in el.attrib.items()}
+                    attribs = {
+                        local_name_attr(k).lower(): v for k, v in el.attrib.items()
+                    }
                     event = attribs.get("event", "")
-
                     parsed = parse_date(raw_date)
                     if not out["fecha_publicacion"]:
                         out["fecha_publicacion"] = parsed
                         logger.debug(f"Publication date found: {raw_date} -> {parsed}")
                     elif event == "publication":
                         out["fecha_publicacion"] = parsed
-                        logger.debug(f"Publication date (event=publication) found: {raw_date} -> {parsed}")
+                        logger.debug(
+                            f"Publication date (event=publication) found: {raw_date} -> {parsed}"
+                        )
                         break
 
-        # Título volumen: primer <dc:title> o <title>
-        # Título volumen: primer <dc:title> o <title> (Limpiar Romaji del volumen del título principal)
+        # Título volumen y variantes multilingües (EPUB 3.4 / ZeeTools)
         from utils.metadata_utils import clean_english_title, clean_romaji_title
-        for el in root.iter():
-            if local_name(el).lower() == "title" and el.text:
-                out["titulo_volumen"] = el.text.strip()
-                # Extraemos el Romaji limpio del título (Ore dake Haireru Kakushi Dungeon - Volumen 01 [GET] -> Ore dake Haireru Kakushi Dungeon)
-                out["romaji_title"] = clean_romaji_title(el.text.strip())
+
+        title_elements = [
+            el
+            for el in root.iter()
+            if local_name(el).lower() in ("title", "dc:title") and el.text
+        ]
+        main_title_el = None
+        for tel in title_elements:
+            tid = tel.attrib.get("id") or tel.attrib.get(
+                "{http://www.idpf.org/2007/opf}id"
+            )
+            if tid and tid in meta_refines:
+                for r_el in meta_refines[tid]:
+                    prop = (r_el.attrib.get("property") or "").lower()
+                    if (
+                        prop == "title-type"
+                        and (r_el.text or "").strip().lower() == "main"
+                    ):
+                        main_title_el = tel
+                        break
+            if main_title_el:
                 break
 
-        # Metadata extendida: Series y Volumen Index
-        collection_ids = {}  # id -> title (para refines)
+        if not main_title_el and title_elements:
+            main_title_el = title_elements[0]
 
-        # Primera pasada: Recolectar Series ID si existen
+        raw_title = main_title_el.text.strip() if main_title_el else ""
+        title_lang = ""
+        if main_title_el is not None:
+            title_lang = (
+                main_title_el.attrib.get("{http://www.w3.org/XML/1998/namespace}lang")
+                or main_title_el.attrib.get("xml:lang")
+                or main_title_el.attrib.get("lang")
+                or ""
+            ).lower()
+
+        spanish_title = None
+        romaji_title = None
+        english_title = None
+
+        if main_title_el is not None:
+            tid = main_title_el.attrib.get("id") or main_title_el.attrib.get(
+                "{http://www.idpf.org/2007/opf}id"
+            )
+            if tid and tid in meta_refines:
+                for r_el in meta_refines[tid]:
+                    prop = (r_el.attrib.get("property") or "").lower()
+                    if prop == "alternate-script":
+                        r_lang = (
+                            r_el.attrib.get(
+                                "{http://www.w3.org/XML/1998/namespace}lang"
+                            )
+                            or r_el.attrib.get("xml:lang")
+                            or r_el.attrib.get("lang")
+                            or ""
+                        ).lower()
+                        r_text = (r_el.text or "").strip()
+                        if not r_text:
+                            continue
+                        if r_lang.startswith("es"):
+                            spanish_title = r_text
+                        elif r_lang.startswith(("ja-latn", "ko-latn", "zh-latn")):
+                            romaji_title = r_text
+                        elif r_lang.startswith("en"):
+                            english_title = r_text
+
+        if title_lang.startswith("es"):
+            if not spanish_title:
+                spanish_title = raw_title
+        elif title_lang.startswith("en"):
+            if not english_title:
+                english_title = raw_title
+        elif title_lang.startswith(("ja-latn", "ko-latn", "zh-latn")):
+            if not romaji_title:
+                romaji_title = raw_title
+
+        if not romaji_title and raw_title:
+            romaji_title = clean_romaji_title(raw_title)
+
+        out["spanish_title"] = spanish_title
+        out["english_title"] = english_title or raw_title
+        out["romaji_title"] = romaji_title
+        out["titulo_volumen"] = spanish_title or raw_title
+
+        # Metadata de Series y Colecciones (belongs-to-collection o calibre:series)
+        series_el = None
         for el in root.iter():
             if local_name(el).lower() == "meta":
-                prop = el.attrib.get("property", "") or el.attrib.get("{http://www.idpf.org/2007/opf}property", "")
+                prop = el.attrib.get("property", "") or el.attrib.get(
+                    "{http://www.idpf.org/2007/opf}property", ""
+                )
                 if prop == "belongs-to-collection" and el.text:
-                    # Limpiamos el inglés del belongs-to-collection (The Hidden Dungeon Only I Can Enter [NL] -> The Hidden Dungeon Only I Can Enter)
-                    out["titulo_serie"] = clean_english_title(el.text.strip())
-                    if el.attrib.get("id"):
-                        collection_ids[el.attrib.get("id")] = out["titulo_serie"]
+                    series_el = el
+                    break
 
-        # Segunda pasada: Otras propiedades
-        for el in root.iter():
-            if local_name(el).lower() == "meta":
-                attribs = {local_name_attr(k).lower(): v for k, v in el.attrib.items()}
-                prop = attribs.get("property", "")
-                name = attribs.get("name", "")
-                content = attribs.get("content", "")
-                text_val = el.text.strip() if el.text else ""
+        series_spanish = None
+        series_english = None
+        series_romaji = None
 
-                # Fallback Series (Calibre)
-                if name == "calibre:series" and not out["titulo_serie"]:
-                    out["titulo_serie"] = content
+        if series_el is not None:
+            raw_series = (series_el.text or "").strip()
+            inferred_type = extract_book_type_from_series_tag(raw_series)
+            if inferred_type and not out.get("categoria"):
+                out["categoria"] = inferred_type
+            raw_series = clean_series_type_tag(raw_series)
+            series_lang = (
+                series_el.attrib.get("{http://www.w3.org/XML/1998/namespace}lang")
+                or series_el.attrib.get("xml:lang")
+                or series_el.attrib.get("lang")
+                or ""
+            ).lower()
+            sid = series_el.attrib.get("id") or series_el.attrib.get(
+                "{http://www.idpf.org/2007/opf}id"
+            )
 
-                # Volume Index
-                # 1. group-position (Standard EPUB3)
-                if prop == "group-position":
-                    # Check refines match if strictly needed, or just take it if simple
-                    refines = attribs.get("refines", "").replace("#", "")
-                    if not refines or refines in collection_ids or not collection_ids:
-                        # Si no hay refines, o coincide con la serie detectada
+            if sid and sid in meta_refines:
+                for r_el in meta_refines[sid]:
+                    prop = (r_el.attrib.get("property") or "").lower()
+                    r_text = (r_el.text or "").strip()
+                    if not r_text:
+                        continue
+                    if prop == "alternate-script":
+                        r_lang = (
+                            r_el.attrib.get(
+                                "{http://www.w3.org/XML/1998/namespace}lang"
+                            )
+                            or r_el.attrib.get("xml:lang")
+                            or r_el.attrib.get("lang")
+                            or ""
+                        ).lower()
+                        if r_lang.startswith("es"):
+                            series_spanish = r_text
+                        elif r_lang.startswith(("ja-latn", "ko-latn", "zh-latn")):
+                            series_romaji = r_text
+                        elif r_lang.startswith("en"):
+                            series_english = clean_english_title(r_text)
+                    elif prop == "group-position":
                         try:
-                            out["volume_index"] = float(text_val)
+                            out["volume_index"] = float(r_text)
                         except Exception:
                             pass
 
-                # 2. calibre:series_index
-                elif name == "calibre:series_index":
+            if series_lang.startswith("es"):
+                if not series_spanish:
+                    series_spanish = raw_series
+            else:
+                if not series_english:
+                    series_english = clean_english_title(raw_series)
+
+            out["series_spanish"] = series_spanish
+            out["series_english"] = series_english
+            out["series_romaji"] = series_romaji
+            out["titulo_serie"] = (
+                series_spanish or series_english or clean_english_title(raw_series)
+            )
+        else:
+            # Fallback Calibre si no hubo belongs-to-collection
+            calibre_series = None
+            calibre_idx = None
+            for el in root.iter():
+                if local_name(el).lower() == "meta":
+                    attribs = {
+                        local_name_attr(k).lower(): v for k, v in el.attrib.items()
+                    }
+                    name = attribs.get("name", "")
+                    content = attribs.get("content", "")
+                    if name == "calibre:series" and content:
+                        calibre_series = content.strip()
+                    elif name == "calibre:series_index" and content:
+                        calibre_idx = content.strip()
+
+            if calibre_series:
+                inferred_type = extract_book_type_from_series_tag(calibre_series)
+                if inferred_type and not out.get("categoria"):
+                    out["categoria"] = inferred_type
+                calibre_series = clean_series_type_tag(calibre_series)
+                out["titulo_serie"] = calibre_series
+                out["series_english"] = clean_english_title(calibre_series)
+                if calibre_idx:
                     try:
-                        out["volume_index"] = float(content)
+                        out["volume_index"] = float(calibre_idx)
                     except Exception:
                         pass
+            else:
+                # Novela autoconclusiva / Standalone (ZeeTools 0.4.0-0.4.3 elimina belongs-to-collection)
+                out["is_standalone"] = True
+                standalone_name = out["spanish_title"] or out["titulo_volumen"]
+                out["titulo_serie"] = standalone_name
+                out["series_spanish"] = standalone_name
+                if out["volume_index"] is None:
+                    out["volume_index"] = 1.0
+
+        # Si aún no tenemos volume_index, revisar si hay group-position suelto
+        if out["volume_index"] is None:
+            for el in root.iter():
+                if local_name(el).lower() == "meta":
+                    prop = el.attrib.get("property", "") or el.attrib.get(
+                        "{http://www.idpf.org/2007/opf}property", ""
+                    )
+                    if prop == "group-position" and el.text:
+                        try:
+                            out["volume_index"] = float(el.text.strip())
+                            break
+                        except Exception:
+                            pass
 
         # Creators & contributors
         contributors = []
@@ -333,9 +510,13 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         if any(x in all_subjects for x in ["sin censura", "uncensored", "no censura"]):
             out["is_uncensored"] = 1
 
-        if any(x in all_subjects for x in ["ilustraciones a color", "color", "full color"]):
+        if any(
+            x in all_subjects for x in ["ilustraciones a color", "color", "full color"]
+        ):
             out["color_mode"] = "color"
-        elif any(x in all_subjects for x in ["blanco y negro", "b&w", "grayscale", "b/n"]):
+        elif any(
+            x in all_subjects for x in ["blanco y negro", "b&w", "grayscale", "b/n"]
+        ):
             out["color_mode"] = "bw"
 
         # Meta properties Zeepub
@@ -375,104 +556,134 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
             if local_name(el).lower() in ("publisher", "dc:publisher") and el.text:
                 out["publisher"] = el.text.strip()
 
-        # Identificadores: ISBN, ASIN (dc:identifier)
+        # Identificadores: ISBN, ASIN, UUID (dc:identifier)
+        unique_id = (root.attrib.get("unique-identifier") or "").strip()
+
         for el in root.iter():
             if local_name(el).lower() in ("identifier", "dc:identifier") and el.text:
                 txt = el.text.strip()
                 lower_txt = txt.lower()
+                el_id = (
+                    el.attrib.get("id")
+                    or el.attrib.get("{http://www.idpf.org/2007/opf}id")
+                    or ""
+                )
+                scheme = (
+                    el.attrib.get("scheme")
+                    or el.attrib.get("{http://www.idpf.org/2007/opf}scheme")
+                    or ""
+                ).lower()
 
-                # Limpieza básica
+                # 1. UUID v7 / Identificador único
+                if lower_txt.startswith("urn:uuid:"):
+                    clean_uuid = txt[9:].strip()
+                    out["uuid"] = clean_uuid
+                    continue
+                elif (el_id == unique_id or el_id.lower() == "bookid") and re.match(
+                    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+                    txt,
+                    re.IGNORECASE,
+                ):
+                    out["uuid"] = txt
+                    continue
+
+                # 2. ASIN
+                if lower_txt.startswith("urn:amazon:"):
+                    out["asin"] = txt[11:].strip()
+                    continue
+                elif lower_txt.startswith("urn:asin:"):
+                    out["asin"] = txt[9:].strip()
+                    continue
+                elif el_id.lower() in ("amazon-id", "asin") or scheme in (
+                    "amazon",
+                    "asin",
+                    "mobi-asin",
+                ):
+                    out["asin"] = txt
+                    continue
+                elif re.match(r"^B[0-9A-Z]{9}$", txt):
+                    out["asin"] = txt
+                    continue
+
+                # 3. ISBN
                 clean_val = txt
                 if lower_txt.startswith("urn:isbn:"):
                     clean_val = txt[9:].strip()
                 elif lower_txt.startswith("isbn:"):
                     clean_val = txt[5:].strip()
-                elif lower_txt.startswith("urn:uuid:"):
-                    clean_val = txt[9:].strip()
-                    out["uuid"] = clean_val
-                    continue
-                elif lower_txt.startswith("urn:asin:"):
-                    clean_val = txt[9:].strip()
-                    out["asin"] = clean_val
-                    continue
-                elif lower_txt.startswith("urn:"):
-                    clean_val = txt[4:].strip()
 
-                import re
-
-                if re.match(
-                    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
-                    clean_val,
-                    re.IGNORECASE,
-                ):
-                    if not out.get("uuid"):
-                        out["uuid"] = clean_val
-                    continue
-
-                if "asin" in lower_txt:
-                    out["asin"] = clean_val
-                    continue
-
-                # Detectar explícitamente si es ISBN
                 is_isbn = False
-                if "isbn" in lower_txt:
+                if (
+                    "isbn" in lower_txt
+                    or scheme == "isbn"
+                    or el_id.lower() in ("isbn", "isbn13", "isbn10")
+                ):
                     is_isbn = True
-                else:
-                    # Check atributos (scheme, id)
-                    for k, v in el.attrib.items():
-                        attr_val = v.lower()
-                        attr_name = local_name_attr(k).lower()
-                        if ("scheme" in attr_name and "isbn" in attr_val) or ("id" in attr_name and "isbn" in attr_val):
+                elif el_id and el_id in meta_refines:
+                    for r_el in meta_refines[el_id]:
+                        prop = (r_el.attrib.get("property") or "").lower()
+                        r_val = (r_el.text or "").strip().lower()
+                        if prop == "identifier-type" and r_val in ("15", "02", "isbn"):
                             is_isbn = True
                             break
-
-                # Fallback: si es puramente numérico (o X) de 10/13 dígitos y no tenemos nada
-                import re
-
-                candidate = re.sub(r"[^0-9X]", "", clean_val.upper())
-
-                if not is_isbn and len(candidate) in (10, 13) and not out["isbn"]:
-                    # Asumimos que podría ser ISBN si no hay otro identifier mejor
-                    # Pero es arriesgado sin etiqueta explícita.
-                    pass
+                        elif prop == "identifier-type" and r_val == "amazon":
+                            out["asin"] = txt
 
                 if is_isbn:
-                    if len(candidate) in (10, 13):
-                        # Prioridad: Prefiere ISBN-13
-                        current = out.get("isbn")
-                        if not current or len(re.sub(r"[^0-9X]", "", current)) == 10 and len(candidate) == 13:
+                    cand = re.sub(r"[^0-9X]", "", clean_val.upper())
+                    if len(cand) in (10, 13):
+                        curr = out.get("isbn")
+                        if not curr or (
+                            len(re.sub(r"[^0-9X]", "", curr)) == 10 and len(cand) == 13
+                        ):
                             out["isbn"] = clean_val
 
-        # Fallback: Buscar ISBN en dc:source o dc:relation si aun no tenemos
-        if not out["isbn"]:
-            for el in root.iter():
-                if local_name(el).lower() in ("source", "dc:source", "relation", "dc:relation") and el.text:
-                    txt = el.text.strip()
-                    lower_txt = txt.lower()
-                    if "isbn" in lower_txt:
-                        # Extract potential ISBN part
-                        # Simple regex for cleaner extraction from strings like "ISBN: 978..."
-                        import re
+                # 4. URI / URL Publisher (ZeeTools 0.4.4 uri-id o esquema uri)
+                if el_id.lower() in ("uri-id", "url-id") or lower_txt.startswith(
+                    ("urn:uri:", "http://", "https://")
+                ):
+                    clean_uri = txt
+                    if lower_txt.startswith("urn:uri:"):
+                        clean_uri = txt[8:].strip()
+                    if not out["publisher_url"]:
+                        out["publisher_url"] = clean_uri
 
-                        match = re.search(
-                            r"(?:ISBN(?:\-1[03])?:?\s*)?([0-9X\-]{10,17})",
-                            txt,
-                            re.IGNORECASE,
-                        )
-                        if match:
-                            candidate_raw = match.group(1)
-                            clean_cand = re.sub(r"[^0-9X]", "", candidate_raw.upper())
-                            if len(clean_cand) in (10, 13):
-                                out["isbn"] = candidate_raw
-                                break
+        # Fallback: Buscar ISBN o URL en dc:source o dc:relation si aun no tenemos
+        for el in root.iter():
+            if (
+                local_name(el).lower()
+                in ("source", "dc:source", "relation", "dc:relation")
+                and el.text
+            ):
+                txt = el.text.strip()
+                lower_txt = txt.lower()
+                if not out["isbn"] and "isbn" in lower_txt:
+                    match = re.search(
+                        r"(?:ISBN(?:\-1[03])?:?\s*)?([0-9X\-]{10,17})",
+                        txt,
+                        re.IGNORECASE,
+                    )
+                    if match:
+                        candidate_raw = match.group(1)
+                        clean_cand = re.sub(r"[^0-9X]", "", candidate_raw.upper())
+                        if len(clean_cand) in (10, 13):
+                            out["isbn"] = candidate_raw
+                elif not out["publisher_url"] and lower_txt.startswith(
+                    ("http://", "https://")
+                ):
+                    out["publisher_url"] = txt
 
         # Roles meta: map id->role
         roles: dict[str, str] = {}
         for el in root.iter():
             if local_name(el).lower() == "meta":
-                prop = el.attrib.get("property", "") or el.attrib.get("{http://www.idpf.org/2007/opf}property", "")
+                prop = el.attrib.get("property", "") or el.attrib.get(
+                    "{http://www.idpf.org/2007/opf}property", ""
+                )
                 if prop.lower() == "role":
-                    ref = el.attrib.get("refines", "") or el.attrib.get("{http://www.idpf.org/2007/opf}refines", "")
+                    ref = el.attrib.get("refines", "") or el.attrib.get(
+                        "{http://www.idpf.org/2007/opf}refines", ""
+                    )
                     if ref and el.text:
                         roles[ref.lstrip("#")] = el.text.strip().lower()
 
@@ -486,6 +697,8 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                 out["maquetadores"].append(name)
             elif role in ("trl", "translator"):
                 out["traductor"] = name
+            elif role in ("edt", "editor"):
+                out["editor"] = name
             elif role in ("ill", "illustrator", "artist"):
                 out["ilustrador"] = name
             elif role in ("aut", "author") and not out["autores"]:
@@ -549,7 +762,9 @@ def extract_cover_from_epub(data_or_path: bytes | str) -> bytes | None:
             tree = ET.fromstring(container)
             opf_path = next(
                 rf.attrib["full-path"]
-                for rf in tree.findall(".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile")
+                for rf in tree.findall(
+                    ".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile"
+                )
                 if rf.attrib.get("full-path", "").lower().endswith(".opf")
             )
         except StopIteration:
@@ -642,7 +857,13 @@ async def enrich_metadata_from_epub(
             for key in (
                 "titulo_serie",
                 "titulo_volumen",
+                "spanish_title",
+                "english_title",
                 "romaji_title",
+                "series_spanish",
+                "series_english",
+                "series_romaji",
+                "is_standalone",
                 "ilustrador",
                 "categoria",
                 "publisher",
@@ -651,6 +872,7 @@ async def enrich_metadata_from_epub(
                 "demografia",
                 "maquetadores",
                 "traductor",
+                "editor",
                 "sinopsis",
                 "epub_version",
                 "fecha_modificacion",
@@ -658,11 +880,16 @@ async def enrich_metadata_from_epub(
                 "is_uncensored",
                 "color_mode",
                 "volume_index",
+                "isbn",
+                "asin",
+                "uuid",
             ):
-                if opf_meta.get(key):
+                if opf_meta.get(key) is not None:
                     meta[key] = opf_meta[key]
         else:
-            logger.warning("OPF metadata parsing returned None - no metadata extracted from OPF")
+            logger.warning(
+                "OPF metadata parsing returned None - no metadata extracted from OPF"
+            )
     except Exception as e:
         logger.error(f"enrich_metadata_from_epub: OPF parse failed: {e}", exc_info=True)
 
@@ -683,20 +910,28 @@ async def enrich_metadata_from_epub(
 
     # Extract filename title from URL
     try:
-        filename_title = unquote(urlparse(epub_url).path.split("/")[-1]).replace(".epub", "")
+        filename_title = unquote(urlparse(epub_url).path.split("/")[-1]).replace(
+            ".epub", ""
+        )
         meta["filename_title"] = filename_title
         logger.debug(f"Filename title extracted: {filename_title}")
     except Exception as e:
-        logger.error(f"enrich_metadata_from_epub: filename extraction failed: {e}", exc_info=True)
+        logger.error(
+            f"enrich_metadata_from_epub: filename extraction failed: {e}", exc_info=True
+        )
 
     # Extract publisher URL from HTML (prioritized over OPF)
     try:
         html_publisher_url = extract_publisher_url_from_html(epub_bytes)
         if html_publisher_url:
             meta["publisher_url"] = html_publisher_url
-            logger.debug(f"enrich_metadata_from_epub: publisher_url updated from HTML: {html_publisher_url}")
+            logger.debug(
+                f"enrich_metadata_from_epub: publisher_url updated from HTML: {html_publisher_url}"
+            )
     except Exception as e:
-        logger.debug(f"enrich_metadata_from_epub: HTML publisher URL extraction failed: {e}")
+        logger.debug(
+            f"enrich_metadata_from_epub: HTML publisher URL extraction failed: {e}"
+        )
 
     logger.info(f"Metadata enrichment completed. Keys present: {list(meta.keys())}")
     return meta
@@ -716,7 +951,9 @@ def extract_publisher_url_from_html(data_or_path: bytes | str) -> str | None:
             zf = zipfile.ZipFile(data_or_path)
 
         # Buscar archivos candidatos
-        candidates = [n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()]
+        candidates = [
+            n for n in zf.namelist() if "title" in n.lower() or "titulo" in n.lower()
+        ]
 
         # Regex patterns
         # Busca el bloque de Página Web

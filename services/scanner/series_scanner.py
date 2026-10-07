@@ -17,6 +17,7 @@ from services.ai_service import AIService
 from services.scanner.scanner_helpers import ScannerHelpers
 from utils.helpers import generar_slug_from_meta, normalize_demographics_list
 from utils.logger import logger
+from utils.string_utils import clean_series_type_tag
 
 
 class SeriesScanner:
@@ -44,11 +45,32 @@ class SeriesScanner:
         Usa los datos pre-extraídos de 'book.extracted_data'.
         """
         identity = getattr(book, "extracted_data", {})
+        calc_series_name = clean_series_type_tag(
+            identity.get("series")
+            or identity.get("series_spanish")
+            or identity.get("spanish_title")
+            or identity.get("title")
+            or "Unknown"
+        )
+        if calc_series_name.strip().lower() in (
+            "volumen único",
+            "volumen unico",
+            "volumen_unico",
+            "unknown",
+            "",
+        ):
+            calc_series_name = clean_series_type_tag(
+                identity.get("series_spanish")
+                or identity.get("spanish_title")
+                or identity.get("title")
+                or "Unknown"
+            )
+
         series_hash = (
             identity.get("series_hash")
             or getattr(book, "series_id", None)
             or cls.generate_series_hash(
-                series_name=identity.get("series") or "Unknown",
+                series_name=calc_series_name,
                 author=identity.get("author") or "Unknown",
                 book_type=identity.get("book_type") or "Light Novel",
             )
@@ -125,19 +147,35 @@ class SeriesScanner:
 
         if not series:
             series_name = identity.get("series") or "Unknown"
-            if series_name.strip().lower() in ("volumen único", "volumen unico", "volumen_unico", "unknown", ""):
+            if series_name.strip().lower() in (
+                "volumen único",
+                "volumen unico",
+                "volumen_unico",
+                "unknown",
+                "",
+            ):
                 series_name = (
                     identity.get("series_spanish")
-                    or identity.get("series_english")
+                    or identity.get("spanish_title")
                     or identity.get("title")
+                    or identity.get("series_english")
                     or "Unknown"
                 )
 
             # Limpiar sufijos de volumen del nombre de la serie
-            series_name = re.sub(r"\s*[-–—]\s*Volumen\s*[Úu]nico\s*$", "", series_name, flags=re.IGNORECASE).strip()
+            series_name = re.sub(
+                r"\s*[-–—]\s*Volumen\s*[Úu]nico\s*$",
+                "",
+                series_name,
+                flags=re.IGNORECASE,
+            ).strip()
 
             romaji_val = identity.get("romaji_title") or series_name
-            if romaji_val.strip().lower() in ("volumen único", "volumen unico", "volumen_unico"):
+            if romaji_val.strip().lower() in (
+                "volumen único",
+                "volumen unico",
+                "volumen_unico",
+            ):
                 romaji_val = series_name
 
             series = SeriesMetadata(

@@ -8,6 +8,8 @@ import zipfile
 
 from PIL import Image
 
+from utils.string_utils import clean_series_type_tag, extract_book_type_from_series_tag
+
 logger = logging.getLogger(__name__)
 
 
@@ -67,49 +69,6 @@ class EpubMetadataExtractor:
                 # 3. Extraer Metadatos Básicos
                 metadata_node = opf_root.find("opf:metadata", self.NAMESPACE)
                 if metadata_node is not None:
-                    # Clean title from tags like [ShinsengumiTL]
-                    raw_title = self._get_dc_value(metadata_node, "title")
-                    self.metadata["title"] = raw_title
-                    if raw_title:
-                        from utils.metadata_utils import (
-                            clean_romaji_title,
-                            is_romaji_string,
-                        )
-
-                        if is_romaji_string(raw_title):
-                            self.metadata["romaji_title"] = clean_romaji_title(
-                                raw_title
-                            )
-                    self.metadata["publisher"] = self._get_dc_value(
-                        metadata_node, "publisher"
-                    )
-                    self.metadata["language"] = self._get_dc_value(
-                        metadata_node, "language"
-                    )
-                    self.metadata["description"] = self._get_dc_value(
-                        metadata_node, "description"
-                    )
-                    self.metadata["book_type"] = self._get_dc_value(
-                        metadata_node, "type"
-                    )
-                    self.metadata["published_at"] = self._get_dc_value(
-                        metadata_node, "date"
-                    )
-
-                    # Extraer fecha de modificación de dc:date (específico de EPUB2/Calibre)
-                    for date_node in metadata_node.findall("dc:date", self.NAMESPACE):
-                        if (
-                            date_node.get("{http://www.idpf.org/2007/opf}event")
-                            == "modification"
-                        ):
-                            self.metadata["modified_at_opf"] = date_node.text
-                            break
-
-                    # 3.1 Mapear Roles de Creadores y Contribuidores
-                    creators = {}  # id -> text
-                    contributors = {}  # id -> text
-                    creators_jap = {}  # id -> jap_text
-                    role_map = {}  # id -> role (aut, ill, trl, mrk)
 
                     def get_attr_agnostic(node, attr_name):
                         """Obtiene un atributo sin importar si tiene namespace."""
@@ -120,13 +79,144 @@ class EpubMetadataExtractor:
                                 return v
                         return None
 
-                    # Extraer toda la info de los meta tags en una sola pasada
+                    # Mapear meta tags y refinamientos EPUB 3
                     meta_tags = []
+                    refines_map: dict[str, list] = {}
                     for child in metadata_node:
                         tag_name = (
                             child.tag.split("}")[-1] if "}" in child.tag else child.tag
                         )
+                        if tag_name == "meta":
+                            meta_tags.append(child)
+                            ref = get_attr_agnostic(child, "refines")
+                            if ref:
+                                cid = ref.replace("#", "")
+                                refines_map.setdefault(cid, []).append(child)
 
+                    # Título y alternate-script (ZeeTools 0.4.0-0.4.3)
+                    title_nodes = metadata_node.findall("dc:title", self.NAMESPACE)
+                    main_title_node = None
+                    for tn in title_nodes:
+                        tid = get_attr_agnostic(tn, "id")
+                        if tid and tid in refines_map:
+                            for r_el in refines_map[tid]:
+                                prop = (
+                                    get_attr_agnostic(r_el, "property") or ""
+                                ).lower()
+                                if (
+                                    prop == "title-type"
+                                    and (r_el.text or "").strip().lower() == "main"
+                                ):
+                                    main_title_node = tn
+                                    break
+                        if main_title_node:
+                            break
+
+                    if not main_title_node and title_nodes:
+                        main_title_node = title_nodes[0]
+
+                    raw_title = (
+                        main_title_node.text.strip()
+                        if (main_title_node is not None and main_title_node.text)
+                        else ""
+                    )
+                    title_lang = (
+                        get_attr_agnostic(main_title_node, "lang") or ""
+                    ).lower()
+
+                    spanish_title = None
+                    romaji_title = None
+                    english_title = None
+
+                    if main_title_node is not None:
+                        tid = get_attr_agnostic(main_title_node, "id")
+                        if tid and tid in refines_map:
+                            for r_el in refines_map[tid]:
+                                prop = (
+                                    get_attr_agnostic(r_el, "property") or ""
+                                ).lower()
+                                if prop == "alternate-script":
+                                    r_lang = (
+                                        get_attr_agnostic(r_el, "lang") or ""
+                                    ).lower()
+                                    r_text = (r_el.text or "").strip()
+                                    if not r_text:
+                                        continue
+                                    if r_lang.startswith("es"):
+                                        spanish_title = r_text
+                                    elif r_lang.startswith(
+                                        ("ja-latn", "ko-latn", "zh-latn")
+                                    ):
+                                        romaji_title = r_text
+                                    elif r_lang.startswith("en"):
+                                        english_title = r_text
+
+                    if title_lang.startswith("es"):
+                        if not spanish_title:
+                            spanish_title = raw_title
+                    elif title_lang.startswith("en"):
+                        if not english_title:
+                            english_title = raw_title
+
+                    from utils.metadata_utils import (
+                        clean_romaji_title,
+                        is_romaji_string,
+                    )
+
+                    if not romaji_title and raw_title and is_romaji_string(raw_title):
+                        romaji_title = clean_romaji_title(raw_title)
+
+                    self.metadata["spanish_title"] = spanish_title
+                    self.metadata["english_title"] = english_title or raw_title
+                    self.metadata["romaji_title"] = romaji_title
+                    self.metadata["title"] = spanish_title or raw_title
+
+                    self.metadata["publisher"] = self._get_dc_value(
+                        metadata_node, "publisher"
+                    )
+                    self.metadata["language"] = self._get_dc_value(
+                        metadata_node, "language"
+                    ) or (title_lang if title_lang else "es")
+
+                    from utils.helpers import limpiar_html_basico
+
+                    raw_desc = self._get_dc_value(metadata_node, "description")
+                    self.metadata["description"] = (
+                        limpiar_html_basico(raw_desc) if raw_desc else None
+                    )
+
+                    self.metadata["book_type"] = self._get_dc_value(
+                        metadata_node, "type"
+                    )
+                    self.metadata["published_at"] = self._get_dc_value(
+                        metadata_node, "date"
+                    )
+
+                    # Extraer fecha de modificación de dc:date o dcterms:modified
+                    for date_node in metadata_node.findall("dc:date", self.NAMESPACE):
+                        if (
+                            date_node.get("{http://www.idpf.org/2007/opf}event")
+                            == "modification"
+                        ):
+                            self.metadata["modified_at_opf"] = date_node.text
+                            break
+
+                    for meta in meta_tags:
+                        prop = get_attr_agnostic(meta, "property")
+                        if prop == "dcterms:modified" and meta.text:
+                            self.metadata["modified_at_opf"] = meta.text.strip()
+                            break
+
+                    # 3.1 Mapear Roles de Creadores y Contribuidores
+                    creators = {}  # id -> text
+                    contributors = {}  # id -> text
+                    creators_jap = {}  # id -> jap_text
+                    role_map = {}  # id -> role (aut, ill, trl, mrk)
+
+                    for child in metadata_node:
+                        tag_name = (
+                            child.tag.split("}")[-1] if "}" in child.tag else child.tag
+                        )
                         if tag_name == "creator":
                             cid = get_attr_agnostic(child, "id")
                             if cid:
@@ -135,26 +225,18 @@ class EpubMetadataExtractor:
                             cid = get_attr_agnostic(child, "id")
                             if cid:
                                 contributors[cid] = child.text
-                        elif tag_name == "meta":
-                            meta_tags.append(child)
-                            refines = get_attr_agnostic(child, "refines")
-                            # EPUB3 uses 'property', EPUB2 uses 'name'
-                            prop = get_attr_agnostic(
-                                child, "property"
-                            ) or get_attr_agnostic(child, "name")
 
-                            if refines:
-                                cid = refines.replace("#", "")
-                                if prop == "role":
-                                    role_map[cid] = child.text
-                                elif prop == "alternate-script" and (
-                                    get_attr_agnostic(child, "lang") in ("ja", "ja-JP")
-                                    or child.get(
-                                        "{http://www.w3.org/XML/1998/namespace}lang"
-                                    )
-                                    in ("ja", "ja-JP")
-                                ):
-                                    creators_jap[cid] = child.text
+                    for cid, r_list in refines_map.items():
+                        for r_el in r_list:
+                            prop = get_attr_agnostic(
+                                r_el, "property"
+                            ) or get_attr_agnostic(r_el, "name")
+                            if prop == "role" and r_el.text:
+                                role_map[cid] = r_el.text.strip().lower()
+                            elif prop == "alternate-script":
+                                r_lang = (get_attr_agnostic(r_el, "lang") or "").lower()
+                                if r_lang in ("ja", "ja-jp") and r_el.text:
+                                    creators_jap[cid] = r_el.text.strip()
 
                     # Asignar personas
                     self.metadata["author"] = self._get_dc_value(
@@ -163,6 +245,7 @@ class EpubMetadataExtractor:
                     self.metadata["author_jap"] = None
                     self.metadata["illustrator"] = None
                     self.metadata["illustrator_jap"] = None
+                    self.metadata["editor"] = None
                     layout_by_list = []  # Acumular todos los maquetadores
 
                     for cid, text in creators.items():
@@ -175,33 +258,36 @@ class EpubMetadataExtractor:
                         elif role == "ill":
                             self.metadata["illustrator"] = text
                             self.metadata["illustrator_jap"] = jap_name
+                        elif role in ("edt", "editor"):
+                            self.metadata["editor"] = text
 
                     for cid, text in contributors.items():
                         role = role_map.get(cid)
                         jap_name = creators_jap.get(cid)
-                        if role == "trl":
+                        if role in ("trl", "translator"):
                             self.metadata["translator"] = text
-                        elif role == "mrk":
-                            # Acumular todos los maquetadores, no sobrescribir
+                        elif role in ("edt", "editor"):
+                            self.metadata["editor"] = text
+                        elif role in ("mrk", "dst", "mqt", "mkr"):
                             if text and text not in layout_by_list:
                                 layout_by_list.append(text)
-                        elif role == "ill":
+                        elif role in ("ill", "illustrator"):
                             if not self.metadata.get("illustrator"):
                                 self.metadata["illustrator"] = text
                             if not self.metadata.get("illustrator_jap"):
                                 self.metadata["illustrator_jap"] = jap_name
 
-                    # Guardar todos los maquetadores como string "Zack, Saosora"
                     if layout_by_list:
                         self.metadata["layout_by"] = ", ".join(layout_by_list)
 
-                    # 3.2 Identificadores (ISBN, ASIN, URI, UUID)
+                    # 3.2 Identificadores (ISBN, ASIN, URI, UUID v7)
                     uuid_val = None
                     unique_id_ref = opf_root.get("unique-identifier")
 
                     for ident in metadata_node.findall("dc:identifier", self.NAMESPACE):
                         id_text = (ident.text or "").strip()
                         id_attr_id = get_attr_agnostic(ident, "id")
+                        scheme = (get_attr_agnostic(ident, "scheme") or "").lower()
 
                         clean_id = re.sub(
                             r"^urn:(isbn|amazon|uri|uuid|asin):",
@@ -211,28 +297,61 @@ class EpubMetadataExtractor:
                         ).strip()
 
                         lower_id = id_text.lower()
-                        if "isbn" in lower_id:
+                        if (
+                            "isbn" in lower_id
+                            or scheme == "isbn"
+                            or id_attr_id in ("isbn", "isbn13", "isbn10")
+                        ):
                             if (not self.metadata.get("isbn")) or ("978" in clean_id):
                                 self.metadata["isbn"] = clean_id
-                        elif "amazon" in lower_id or "asin" in lower_id:
+                        elif (
+                            "amazon" in lower_id
+                            or "asin" in lower_id
+                            or scheme in ("amazon", "asin", "mobi-asin")
+                            or re.match(r"^B[0-9A-Z]{9}$", clean_id)
+                        ):
                             self.metadata["asin"] = clean_id
-                        elif "uri" in lower_id:
+                        elif "uri" in lower_id or (
+                            id_attr_id and id_attr_id.lower() in ("uri-id", "url-id")
+                        ):
                             self.metadata["uri"] = clean_id
+                            if not self.metadata.get("publisher_url"):
+                                self.metadata["publisher_url"] = id_text
+
+                        # Refinements de identifier-type
+                        if id_attr_id and id_attr_id in refines_map:
+                            for r_el in refines_map[id_attr_id]:
+                                prop = (
+                                    get_attr_agnostic(r_el, "property") or ""
+                                ).lower()
+                                r_val = (r_el.text or "").strip().lower()
+                                if prop == "identifier-type":
+                                    if r_val == "amazon":
+                                        self.metadata["asin"] = clean_id
+                                    elif r_val in ("15", "02", "isbn"):
+                                        self.metadata["isbn"] = clean_id
 
                         # Extraer UUID con prioridad
-                        is_unique = unique_id_ref and id_attr_id == unique_id_ref
+                        is_unique = (
+                            unique_id_ref and id_attr_id == unique_id_ref
+                        ) or id_attr_id.lower() == "bookid"
                         is_uuid_format = lower_id.startswith("urn:uuid:") or re.match(
                             r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
                             clean_id,
                             re.IGNORECASE,
                         )
 
-                        # Guardamos en uuid_val solo si cumple con el formato UUID estricto
                         if is_uuid_format:
                             if is_unique or not uuid_val:
                                 uuid_val = clean_id
 
                     self.metadata["uuid"] = uuid_val
+
+                    # Extraer dc:source (publicación original de novelas web, ZeeTools 0.4.5)
+                    source_val = self._get_dc_value(metadata_node, "source")
+                    if source_val and source_val.startswith(("http://", "https://")):
+                        if not self.metadata.get("publisher_url"):
+                            self.metadata["publisher_url"] = source_val
 
                     # 3.3 Etiquetas (Géneros)
                     tags = []
@@ -241,20 +360,69 @@ class EpubMetadataExtractor:
                             tags.append(subject.text)
                     self.metadata["tags"] = tags
 
-                    # 3.4 Series y Volumen (EPUB3 / Calibre)
-                    collection_ids = {}
-
-                    # PASADA 1: Buscar en pertenece-a-colección (belongs-to-collection) - EPUB3
+                    # 3.4 Series y Volumen (EPUB3 / ZeeTools 0.4.3 / Calibre)
+                    collection_node = None
                     for meta in meta_tags:
                         prop = get_attr_agnostic(meta, "property")
                         if prop == "belongs-to-collection":
-                            val = (meta.text or "").strip()
-                            if val:
-                                self.metadata["series"] = clean_metadata_tags(val)
-                                break
+                            collection_node = meta
+                            break
 
-                    # PASADA 2: Buscar en calibre:series o etiquetas equivalentes (EPUB2)
-                    if not self.metadata.get("series"):
+                    series_spanish = None
+                    series_english = None
+                    series_romaji = None
+
+                    if collection_node is not None:
+                        raw_series = (collection_node.text or "").strip()
+                        inferred_type = extract_book_type_from_series_tag(raw_series)
+                        if inferred_type and not self.metadata.get("book_type"):
+                            self.metadata["book_type"] = inferred_type
+                        raw_series = clean_series_type_tag(raw_series)
+                        sid = get_attr_agnostic(collection_node, "id")
+                        if sid and sid in refines_map:
+                            for r_el in refines_map[sid]:
+                                prop = (
+                                    get_attr_agnostic(r_el, "property") or ""
+                                ).lower()
+                                r_text = (r_el.text or "").strip()
+                                if not r_text:
+                                    continue
+                                if prop == "alternate-script":
+                                    r_lang = (
+                                        get_attr_agnostic(r_el, "lang") or ""
+                                    ).lower()
+                                    if r_lang.startswith("es"):
+                                        series_spanish = r_text
+                                    elif r_lang.startswith(
+                                        ("ja-latn", "ko-latn", "zh-latn")
+                                    ):
+                                        series_romaji = r_text
+                                    elif r_lang.startswith("en"):
+                                        series_english = r_text
+                                elif prop == "group-position":
+                                    try:
+                                        self.metadata["volume"] = float(r_text)
+                                    except Exception:
+                                        pass
+
+                        s_lang = (
+                            get_attr_agnostic(collection_node, "lang") or ""
+                        ).lower()
+                        if s_lang.startswith("es") and not series_spanish:
+                            series_spanish = raw_series
+                        elif not series_english:
+                            series_english = raw_series
+
+                        self.metadata["series_spanish"] = series_spanish
+                        self.metadata["series_english"] = series_english
+                        self.metadata["series_romaji"] = series_romaji
+                        self.metadata["series"] = clean_metadata_tags(
+                            series_spanish or raw_series
+                        )
+                    else:
+                        # Fallback Calibre
+                        calibre_s = None
+                        calibre_v = None
                         for meta in meta_tags:
                             name = get_attr_agnostic(meta, "name")
                             prop = get_attr_agnostic(meta, "property")
@@ -264,39 +432,57 @@ class EpubMetadataExtractor:
                             ):
                                 val = get_attr_agnostic(meta, "content") or meta.text
                                 if val:
-                                    self.metadata["series"] = clean_metadata_tags(val)
-                                    break
-
-                    # PASADA 3: Volumen / Indice
-                    for meta in meta_tags:
-                        name = get_attr_agnostic(meta, "name")
-                        prop = get_attr_agnostic(meta, "property")
-                        content = get_attr_agnostic(meta, "content")
-
-                        # Indices de volumen
-                        if name in ("calibre:series_index", "series_index") or prop in (
-                            "calibre:series_index",
-                            "series_index",
-                        ):
-                            if not self.metadata.get("volume"):
-                                try:
-                                    self.metadata["volume"] = float(
-                                        content or meta.text
+                                    inferred_type = extract_book_type_from_series_tag(
+                                        val
                                     )
-                                except (ValueError, TypeError, Exception):
-                                    pass
+                                    if inferred_type and not self.metadata.get(
+                                        "book_type"
+                                    ):
+                                        self.metadata["book_type"] = inferred_type
+                                    calibre_s = clean_series_type_tag(
+                                        clean_metadata_tags(val)
+                                    )
+                            elif name in (
+                                "calibre:series_index",
+                                "series_index",
+                            ) or prop in ("calibre:series_index", "series_index"):
+                                content = (
+                                    get_attr_agnostic(meta, "content") or meta.text
+                                )
+                                if content:
+                                    try:
+                                        calibre_v = float(content)
+                                    except Exception:
+                                        pass
 
-                        elif prop == "group-position":
-                            ref = (get_attr_agnostic(meta, "refines") or "").replace(
-                                "#", ""
-                            )
-                            if ref == "serie" or ref in collection_ids:
+                        if calibre_s:
+                            self.metadata["series"] = calibre_s
+                            self.metadata["series_english"] = calibre_s
+                            if calibre_v is not None and not self.metadata.get(
+                                "volume"
+                            ):
+                                self.metadata["volume"] = calibre_v
+                        else:
+                            # Standalone / Novela autoconclusiva (ZeeTools 0.4.0-0.4.3 elimina belongs-to-collection)
+                            self.metadata["is_standalone"] = True
+                            st_title = self.metadata.get(
+                                "spanish_title"
+                            ) or self.metadata.get("title")
+                            self.metadata["series"] = st_title
+                            self.metadata["series_spanish"] = st_title
+                            if not self.metadata.get("volume"):
+                                self.metadata["volume"] = 1.0
+
+                    # group-position suelto si aun no hay volumen
+                    if not self.metadata.get("volume"):
+                        for meta in meta_tags:
+                            prop = get_attr_agnostic(meta, "property")
+                            if prop == "group-position" and meta.text:
                                 try:
-                                    self.metadata["volume"] = float(meta.text)
-                                except (ValueError, TypeError, Exception):
+                                    self.metadata["volume"] = float(meta.text.strip())
+                                    break
+                                except Exception:
                                     pass
-                        elif prop == "dcterms:modified":
-                            self.metadata["modified_at_opf"] = meta.text
 
                     # 3.4.1 Detección automática de características de edición
                     all_tags_text = " ".join(tags).lower()

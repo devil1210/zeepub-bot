@@ -433,7 +433,7 @@ class RichMessageService:
                     b_copy["text"] = parsed["text"]
                     if parsed.get("entities"):
                         b_copy["entities"] = parsed["entities"]
-            elif b_type == "details":
+            elif b_type in ("details", "blockquote"):
                 if "blocks" in b_copy and isinstance(b_copy["blocks"], list):
                     b_copy["blocks"] = cls._normalize_blocks(b_copy["blocks"])
 

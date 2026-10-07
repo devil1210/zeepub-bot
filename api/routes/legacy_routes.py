@@ -326,6 +326,48 @@ class LegacyRoutes:
             },
         )
 
+    async def get_public_workgroups(self):
+        """
+        Endpoint público para ZeeTools y herramientas externas.
+        Devuelve el directorio completo de grupos/editoriales, siglas oficiales y enlaces.
+        """
+        from core.db_manager_pg import pg_manager
+        from models.library import TranslatorsGroup
+        from sqlalchemy import select
+        from sqlalchemy.orm import selectinload
+
+        try:
+            async with pg_manager.get_session() as session:
+                stmt = (
+                    select(TranslatorsGroup)
+                    .options(selectinload(TranslatorsGroup.contact_links))
+                    .order_by(TranslatorsGroup.name.asc())
+                )
+                res = await session.execute(stmt)
+                groups = res.scalars().all()
+
+                data = [
+                    {
+                        "id": g.id,
+                        "name": g.name,
+                        "siglas": g.siglas or "",
+                        "url": g.get_preferred_link() or "",
+                        "description": g.description or "",
+                        "links": g.get_links_dict(),
+                    }
+                    for g in groups
+                ]
+                return JSONResponse(
+                    content=data,
+                    headers={
+                        "Cache-Control": "public, max-age=600",
+                        "Access-Control-Allow-Origin": "*",
+                    },
+                )
+        except Exception as e:
+            logger.error(f"Error sirviendo /api/tools/groups: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
     def register_routes(self):
         """Register endpoints."""
         self.router.add_api_route(
@@ -345,4 +387,16 @@ class LegacyRoutes:
             self.handle_direct_download,
             methods=["GET"],
             summary="Direct EPUB File Download",
+        )
+        self.router.add_api_route(
+            "/tools/groups",
+            self.get_public_workgroups,
+            methods=["GET"],
+            summary="ZeeTools Public Groups Directory",
+        )
+        self.router.add_api_route(
+            "/public/groups",
+            self.get_public_workgroups,
+            methods=["GET"],
+            summary="Public Groups Directory",
         )

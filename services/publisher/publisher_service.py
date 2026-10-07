@@ -221,10 +221,10 @@ class PublisherService:
             "traductor": getattr(book, "translator", "") or "",
             "translator": getattr(book, "translator", "") or "",
             "editor": getattr(book, "editor", "") or "",
-            # Textos descriptivos
-            "sinopsis": (getattr(series_info, "description", None) if series_info else None) or book.description or "",
-            "description": (getattr(series_info, "description", None) if series_info else None) or book.description or "",
-            "resumen": (getattr(series_info, "description", None) if series_info else None) or book.description or "",
+            # Textos descriptivos (Prioridad: sinopsis del volumen sobre la de la serie)
+            "sinopsis": book.description or (getattr(series_info, "description", None) if series_info else None) or "",
+            "description": book.description or (getattr(series_info, "description", None) if series_info else None) or "",
+            "resumen": book.description or (getattr(series_info, "description", None) if series_info else None) or "",
             # Metadatos del libro
             "tipo": (getattr(series_info, "book_type", None) if series_info else None) or "Novela Ligera",
             "book_type": (getattr(series_info, "book_type", None) if series_info else None) or "Novela Ligera",

@@ -95,11 +95,16 @@ class EpubScanner:
         """Copia campos de metadata de un objeto LocalBook a otro existente."""
         target_book.title = source_book.title
         target_book.romaji_title = source_book.romaji_title
+        target_book.spanish_title = source_book.spanish_title
+        target_book.english_title = source_book.english_title
+        target_book.series_spanish = source_book.series_spanish
+        target_book.series_english = source_book.series_english
         target_book.is_uncensored = source_book.is_uncensored
         target_book.color_mode = source_book.color_mode
         target_book.edition = source_book.edition
         target_book.isbn = source_book.isbn
         target_book.asin = source_book.asin
+        target_book.uuid = source_book.uuid
         target_book.epub_version = source_book.epub_version
         target_book.modified_at_opf = source_book.modified_at_opf
         target_book.published_at = source_book.published_at
@@ -107,6 +112,13 @@ class EpubScanner:
         target_book.page_count = source_book.page_count
         target_book.reading_time = source_book.reading_time
         target_book.file_size = source_book.file_size
+        target_book.editor = source_book.editor
+        target_book.translator = source_book.translator
+        target_book.layout_by = source_book.layout_by
+        target_book.author = source_book.author
+        target_book.publisher = source_book.publisher
+        target_book.illustrator = source_book.illustrator
+        target_book.description = source_book.description
 
     @staticmethod
     async def enrich_from_isbn(book: LocalBook) -> bool:
@@ -337,9 +349,10 @@ class EpubScanner:
                         # Conflicto con archivo existente: Mismo UUID pero archivos distintos.
                         # El UUID en ZeePub debe ser único; si se repite, es error del maquetador al reutilizar plantilla.
                         is_reused_uuid = (
-                            (hash_conflict.volume is not None and identity["volume"] is not None and hash_conflict.volume != identity["volume"])
-                            or (hash_conflict.color_mode != identity["color_mode"])
-                        )
+                            hash_conflict.volume is not None
+                            and identity["volume"] is not None
+                            and hash_conflict.volume != identity["volume"]
+                        ) or (hash_conflict.color_mode != identity["color_mode"])
                         orig_fname = os.path.basename(hash_conflict.filepath)
                         logger.warning(
                             f"📕 Duplicado por colisión de UUID: {filename} colisiona con {orig_fname}. Requiere corrección del maquetador."
@@ -352,8 +365,14 @@ class EpubScanner:
                         dup_res = await session.execute(dup_stmt)
                         dup_exists = dup_res.scalar_one_or_none()
                         if not dup_exists:
-                            base_title = identity.get("title") or hash_conflict.title or filename
-                            dup_title = f"[UUID DUPLICADO] {base_title} (Reutilizado con {orig_fname})" if is_reused_uuid else base_title
+                            base_title = (
+                                identity.get("title") or hash_conflict.title or filename
+                            )
+                            dup_title = (
+                                f"[UUID DUPLICADO] {base_title} (Reutilizado con {orig_fname})"
+                                if is_reused_uuid
+                                else base_title
+                            )
                             new_duplicate = DuplicateBook(
                                 book_hash=target_book_hash,
                                 original_filepath=hash_conflict.filepath,
@@ -416,7 +435,9 @@ class EpubScanner:
                     book = LocalBook(
                         id=target_book_hash,
                         filepath=filepath,
-                        source_id=getattr(source, "id", source) if isinstance(source, int) or hasattr(source, "id") else 1,
+                        source_id=getattr(source, "id", source)
+                        if isinstance(source, int) or hasattr(source, "id")
+                        else 1,
                         genres=[],
                         demographics=[],
                     )
@@ -470,6 +491,9 @@ class EpubScanner:
                     identity.get("series_english") or book.series_english
                 )
                 book.uuid = identity.get("uuid") or book.uuid
+                book.editor = (
+                    identity.get("editor") or meta.get("editor") or book.editor
+                )
 
                 # Campos adicionales desde OPF Meta
                 book.publisher = meta.get("publisher") or book.publisher
@@ -487,11 +511,13 @@ class EpubScanner:
                 book.reading_time = meta.get("reading_time") or book.reading_time
 
                 # Parsear fecha de publicación (dc:date original)
-                published_date_str = meta.get("published_at") or meta.get("fecha_publicacion")
+                published_date_str = meta.get("published_at") or meta.get(
+                    "fecha_publicacion"
+                )
                 if published_date_str:
-                    book.published_at = (
-                        cls.parse_opf_date(published_date_str) or getattr(book, "published_at", None)
-                    )
+                    book.published_at = cls.parse_opf_date(
+                        published_date_str
+                    ) or getattr(book, "published_at", None)
 
                 # Parsear fecha de modificación de metadatos (evitar DataError con asyncpg si es string)
                 opf_date_str = meta.get("modified_at_opf")
@@ -503,11 +529,14 @@ class EpubScanner:
                 # Tags y Clasificación (JSON - Legacy)
                 from utils.metadata_utils import is_dummy_value
 
-                raw_tags = [t for t in (meta.get("tags") or []) if not is_dummy_value(t)]
-                raw_demo = (
-                    [d for d in (meta.get("demographics") or meta.get("demografia") or []) if not is_dummy_value(d)]
-                    or [t for t in raw_tags if is_demographic_tag(t)]
-                )
+                raw_tags = [
+                    t for t in (meta.get("tags") or []) if not is_dummy_value(t)
+                ]
+                raw_demo = [
+                    d
+                    for d in (meta.get("demographics") or meta.get("demografia") or [])
+                    if not is_dummy_value(d)
+                ] or [t for t in raw_tags if is_demographic_tag(t)]
                 book_demographics = normalize_demographics_list(raw_demo)
                 book_tags = [t for t in raw_tags if not is_demographic_tag(t)]
 

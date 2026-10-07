@@ -5,7 +5,6 @@ Constructores de Bloques Nativos (Rich Blocks) y HTML para Fichas de Libros y Vo
 
 import logging
 import re
-from typing import Optional
 
 from utils.helpers import (
     format_genre_chips,
@@ -132,7 +131,7 @@ def build_book_rich_html(
         try:
             size_bytes = int(libro.get("file_size"))
             size_val = f"{size_bytes / (1024 * 1024):.2f} MB"
-        except Exception:
+        except (ValueError, TypeError):
             size_val = "Desconocido"
     if not size_val:
         size_val = "Desconocido"
@@ -186,6 +185,121 @@ def build_book_rich_html(
     html_parts.append("<p>⠀</p>")
 
     return "\n".join(html_parts)
+
+
+def html_to_rich_blocks_text(html_text: str) -> list | str:
+    """
+    Convierte una cadena HTML en una estructura de texto compatible con Telegram Bot API Rich Blocks:
+    una lista compuesta por cadenas de texto plano y objetos estructurados como:
+    {"type": "bold", "text": "..."} o {"type": "italic", "text": "..."}.
+    """
+    if not html_text:
+        return ""
+
+    s = str(html_text).strip()
+
+    # 1. Normalizar artefactos markdown como > al inicio de citas o líneas
+    s = re.sub(r"(<i>\s*)>\s*", r"\1", s, flags=re.IGNORECASE)
+    s = re.sub(r"(^|\n)\s*>\s*", r"\1", s)
+
+    # 2. Separar título inicial si viene pegado a <br>
+    s = re.sub(r"</b>\s*(?:<br\s*/?>\s*)+", "</b>\n\n", s, flags=re.IGNORECASE)
+
+    # 3. Agrupaciones de <br> (2 o más) representan cambio de párrafo limpio
+    s = re.sub(r"(?:<br\s*/?>\s*){2,}", "\n\n", s, flags=re.IGNORECASE)
+
+    # 4. <br> individual es un salto de línea simple dentro del mismo bloque (listas, autores, etc.)
+    s = re.sub(r"<br\s*/?>", "\n", s, flags=re.IGNORECASE)
+
+    # 5. Etiquetas de párrafo <p>...</p>
+    s = re.sub(r"</p>\s*<p[^>]*>", "\n\n", s, flags=re.IGNORECASE)
+    s = re.sub(r"</?p[^>]*>", "\n", s, flags=re.IGNORECASE)
+
+    # 6. Colapsar más de 2 saltos de línea consecutivos a exactamente 2 (\n\n)
+    s = re.sub(r"\n{3,}", "\n\n", s).strip()
+
+    # Regex para extraer tags soportados: <b>, <strong>, <i>, <em>, <a>
+    tag_pattern = r'<(b|strong|i|em|a)(?:\s+href=["\']([^"\']+)["\'])?>(.*?)</\1>'
+    tag_re = re.compile(tag_pattern, re.IGNORECASE | re.DOTALL)
+
+    result = []
+    last_idx = 0
+
+    def clean_text(t: str) -> str:
+        t = re.sub(r"<[^>]+>", "", t)
+        return (
+            t.replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", '"')
+        )
+
+    for match in tag_re.finditer(s):
+        start_text = s[last_idx:match.start()]
+        if start_text:
+            cleaned_start = clean_text(start_text)
+            if cleaned_start:
+                result.append(cleaned_start)
+
+        tag = match.group(1).lower()
+        href = match.group(2)
+        content = match.group(3)
+        cleaned_content = clean_text(content)
+
+        if cleaned_content:
+            if tag in ("b", "strong"):
+                result.append({"type": "bold", "text": cleaned_content})
+            elif tag in ("i", "em"):
+                result.append({"type": "italic", "text": cleaned_content})
+            elif tag == "a" and href:
+                result.append({"type": "url", "text": cleaned_content, "url": href})
+            else:
+                result.append(cleaned_content)
+
+        last_idx = match.end()
+
+    residual = s[last_idx:]
+    if residual:
+        cleaned_res = clean_text(residual)
+        if cleaned_res:
+            result.append(cleaned_res)
+
+    if not result:
+        return ""
+    if len(result) == 1 and isinstance(result[0], str):
+        return result[0]
+    return result
+
+
+def format_synopsis_rich_block(raw_synopsis: str | None) -> dict | None:
+    """
+    Normaliza el HTML de la sinopsis preservando negritas, cursivas y saltos de línea
+    estructurados (evitando saltos dobles) y devuelve el bloque details/blockquote con
+    la estructura de RichText nativa de Telegram Bot API.
+    """
+    if not raw_synopsis:
+        return None
+
+    rich_text = html_to_rich_blocks_text(raw_synopsis)
+    if not rich_text:
+        return None
+
+    return {
+        "type": "details",
+        "summary": "📖 Ver Sinopsis",
+        "is_open": False,
+        "blocks": [
+            {
+                "type": "blockquote",
+                "blocks": [
+                    {
+                        "type": "paragraph",
+                        "text": rich_text,
+                    }
+                ],
+            }
+        ],
+    }
 
 
 def build_book_rich_blocks(
@@ -313,7 +427,7 @@ def build_book_rich_blocks(
         {
             "type": "details",
             "summary": "📋 Ficha Técnica",
-            "is_open": False if collapsed else True,
+            "is_open": not collapsed,
             "blocks": [
                 {
                     "type": "table",
@@ -326,29 +440,14 @@ def build_book_rich_blocks(
         }
     )
 
-    sinopsis = libro.get("sinopsis") or libro.get("description")
-    if sinopsis:
-        sinopsis_clean = re.sub(r"<[^>]+>", "", str(sinopsis)).strip()
-        if len(sinopsis_clean) > 800:
-            sinopsis_clean = sinopsis_clean[:790] + "..."
-        blocks.append(
-            {
-                "type": "details",
-                "summary": "📖 Ver Sinopsis",
-                "is_open": False,
-                "blocks": [
-                    {
-                        "type": "blockquote",
-                        "blocks": [
-                            {
-                                "type": "paragraph",
-                                "text": sinopsis_clean,
-                            }
-                        ],
-                    }
-                ],
-            }
-        )
+    # Sinopsis enriquecida con soporte completo de entidades y párrafos
+    sinopsis_val = libro.get("sinopsis") or libro.get("description")
+    sinopsis_block = format_synopsis_rich_block(sinopsis_val)
+    if sinopsis_block:
+        blocks.append(sinopsis_block)
+
+
+
 
     tech_cells = []
     formato = libro.get("epub_version") or "EPUB 3.0"
