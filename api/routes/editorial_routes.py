@@ -235,7 +235,7 @@ class EditorialRoutes:
             total_count = (await session.execute(count_stmt)).scalar() or 0
 
             # Fetch page
-            stmt = stmt.order_by(Book.updated_at.desc().nullslast(), Book.id.desc()).offset(offset).limit(page_size)
+            stmt = stmt.order_by(Book.indexed_at.desc().nullslast(), Book.id.desc()).offset(offset).limit(page_size)
             result = await session.execute(stmt)
             books = result.scalars().all()
 
@@ -266,7 +266,8 @@ class EditorialRoutes:
                     "filepath": b.filepath or "",
                     "filename": b.filename or "",
                     "file_size": b.file_size or 0,
-                    "updated_at": b.updated_at.isoformat() if b.updated_at else None,
+                    "updated_at": (b.indexed_at or b.created_at).isoformat() if (b.indexed_at or b.created_at) else None,
+                    "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
                 })
 
             return {
