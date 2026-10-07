@@ -779,3 +779,37 @@ async def handle_ai_recalculate_all_slugs(data: dict[str, Any], user_data: dict[
         "updated_count": results.get("updated"),
         "total": results.get("processed"),
     }
+
+
+async def handle_ai_suggest_metadata(data: dict[str, Any], user_data: dict[str, Any]):
+    """Sugiere metadatos canónicos de un libro/volumen usando Gemini."""
+    check_staff(user_data)
+    title = data.get("title") or data.get("raw_title") or ""
+    if not title:
+        raise HTTPException(status_code=400, detail="title es requerido")
+
+    prompt = f"""
+    Eres un bibliotecario y catalogador experto de novelas ligeras y manga en español.
+    Dado el siguiente nombre o título de archivo EPUB:
+    "{title}"
+
+    Analiza y extrae/sugiere los metadatos más limpios y canónicos:
+    1. spanish_title: Título oficial o más conocido en español (sin número de volumen ni extensiones).
+    2. english_title: Título oficial en inglés / internacional.
+    3. author: Nombre del autor.
+    4. volume: Número del volumen (ej: 1, 2, 4.5) como número flotante o entero, o null si no se identifica.
+    5. demography: Shonen, Shojo, Seinen, Josei o General.
+
+    Responde ÚNICAMENTE un objeto JSON válido con los campos: spanish_title, english_title, author, volume, demography.
+    """
+    try:
+        response_text = await AIService._call_ai(prompt, json_mode=True)
+        if not response_text:
+            return {"success": False, "message": "No se recibió respuesta de IA"}
+        cleaned_json = AIService._extract_json_from_text(response_text)
+        metadata = json.loads(cleaned_json)
+        return {"success": True, "metadata": metadata}
+    except Exception as e:
+        logger.error(f"Error sugiriendo metadatos con IA: {e}")
+        return {"success": False, "message": str(e)}
+

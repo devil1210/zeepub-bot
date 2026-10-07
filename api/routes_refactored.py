@@ -6,6 +6,7 @@ from .routes.admin_routes import AdminRoutes
 from .routes.agent_routes import AgentRoutes
 from .routes.auth_routes import AuthRoutes
 from .routes.config_routes import ConfigRoutes
+from .routes.editorial_routes import EditorialRoutes
 from .routes.legacy_routes import LegacyRoutes
 from .routes.library_routes import LibraryRoutes
 from .routes.media_routes import MediaRoutes
@@ -31,6 +32,7 @@ class RoutesManager:
         self.legacy_routes = LegacyRoutes()
         self.upload_routes = UploadRoutes()  # 📤 REST upload endpoints para Web App
         self.agent_routes = AgentRoutes()  # 🌉 Puente MCP → SPbot
+        self.editorial_routes = EditorialRoutes()  # 📚 REST editorial endpoints para ZeeTools
 
         # Register endpoint methods into routers
         self.library_routes.register_routes()
@@ -41,6 +43,7 @@ class RoutesManager:
         self.legacy_routes.register_routes()
         self.upload_routes.register_routes()
         self.agent_routes.register_routes()
+        self.editorial_routes.register_routes()
 
     def register_all_routes(self, app):
         """
@@ -58,6 +61,7 @@ class RoutesManager:
             app.include_router(self.legacy_routes.get_router())
             app.include_router(self.upload_routes.get_router())  # 📤 Upload REST & history
             app.include_router(self.agent_routes.get_router())  # 🌉 Puente MCP
+            app.include_router(self.editorial_routes.get_router())  # 📚 Editorial / ZeeTools REST
 
             logger.info("✅ All API routes registered successfully")
 

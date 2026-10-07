@@ -81,6 +81,7 @@ from api.handlers.ai import (
     handle_ai_reset_series,
     handle_ai_scan_series,
     handle_ai_stats,
+    handle_ai_suggest_metadata,
     handle_ai_toggle_background_scan,
 )
 from api.handlers.books import (

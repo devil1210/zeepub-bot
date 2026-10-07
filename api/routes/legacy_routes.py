@@ -124,6 +124,8 @@ class LegacyRoutes:
             "ai_apply_merge": miniapp_handlers.handle_ai_apply_merge,
             "ai_reset_series": miniapp_handlers.handle_ai_reset_series,
             "ai_recalculate_all_slugs": miniapp_handlers.handle_ai_recalculate_all_slugs,
+            "ai_suggest_metadata": miniapp_handlers.handle_ai_suggest_metadata,
+            "ai-suggest-metadata": miniapp_handlers.handle_ai_suggest_metadata,
             "admin_get_ai_scan_status": miniapp_handlers.handle_admin_get_ai_scan_status,
             # Observatory Actions
             "observatory_overview": miniapp_handlers.handle_observatory_overview,
