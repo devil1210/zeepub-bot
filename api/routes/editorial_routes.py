@@ -83,31 +83,33 @@ class EditorialRoutes:
         return self.router
 
     def register_routes(self):
-        # 1. Volúmenes / Tomos
-        self.router.add_api_route(
-            "/volumes",
-            self.get_volumes,
-            methods=["GET"],
-            summary="Listar tomos con filtros avanzados",
-        )
-        self.router.add_api_route(
-            "/volumes/{book_hash}",
-            self.get_volume_detail,
-            methods=["GET"],
-            summary="Obtener detalle completo de un volumen",
-        )
-        self.router.add_api_route(
-            "/volumes/{book_hash}",
-            self.update_volume,
-            methods=["PUT", "PATCH"],
-            summary="Actualizar metadatos de un volumen",
-        )
-        self.router.add_api_route(
-            "/volumes/{book_hash}/sync_file",
-            self.sync_volume_file,
-            methods=["POST"],
-            summary="Re-escanear metadatos directamente del archivo EPUB físico",
-        )
+        # 1. Volúmenes / Tomos (Soporte para singular /volume y plural /volumes)
+        for prefix in ["/volumes", "/volume"]:
+            self.router.add_api_route(
+                prefix,
+                self.get_volumes,
+                methods=["GET"],
+                summary="Listar tomos con filtros avanzados",
+            )
+            self.router.add_api_route(
+                f"{prefix}/{{book_hash}}",
+                self.get_volume_detail,
+                methods=["GET"],
+                summary="Obtener detalle completo de un volumen",
+            )
+            self.router.add_api_route(
+                f"{prefix}/{{book_hash}}",
+                self.update_volume,
+                methods=["PUT", "PATCH", "POST"],
+                summary="Actualizar metadatos de un volumen",
+            )
+            for sync_suffix in ["/sync_file", "/sync-file"]:
+                self.router.add_api_route(
+                    f"{prefix}/{{book_hash}}{sync_suffix}",
+                    self.sync_volume_file,
+                    methods=["POST", "GET"],
+                    summary="Re-escanear metadatos directamente del archivo EPUB físico",
+                )
 
         # 2. Series
         self.router.add_api_route(
@@ -138,18 +140,20 @@ class EditorialRoutes:
         )
 
         # 4. Publicación en Telegram
-        self.router.add_api_route(
-            "/publisher/schedule",
-            self.schedule_publication,
-            methods=["POST"],
-            summary="Programar publicación de tomo en Telegram",
-        )
-        self.router.add_api_route(
-            "/publisher/publish_now",
-            self.publish_now,
-            methods=["POST"],
-            summary="Publicar tomo inmediatamente en Telegram",
-        )
+        for sched_path in ["/publisher/schedule", "/publish/schedule"]:
+            self.router.add_api_route(
+                sched_path,
+                self.schedule_publication,
+                methods=["POST"],
+                summary="Programar publicación de tomo en Telegram",
+            )
+        for pub_path in ["/publisher/publish_now", "/publish/now"]:
+            self.router.add_api_route(
+                pub_path,
+                self.publish_now,
+                methods=["POST"],
+                summary="Publicar tomo inmediatamente en Telegram",
+            )
 
         # 5. Directorio de Fansubs para ZeeTools
         self.router.add_api_route(
