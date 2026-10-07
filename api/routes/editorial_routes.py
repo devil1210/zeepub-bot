@@ -181,7 +181,7 @@ class EditorialRoutes:
         offset = (page - 1) * page_size
 
         async with pg_manager.get_session() as session:
-            stmt = select(Book).options(selectinload(Book.series_rel))
+            stmt = select(Book).options(selectinload(Book.series_info))
 
             if series_id:
                 clean_sid = series_id.replace("series_", "")
@@ -241,7 +241,7 @@ class EditorialRoutes:
 
             items = []
             for b in books:
-                s_rel = b.series_rel
+                s_rel = b.series_info
                 s_name = (s_rel.name if s_rel else None) or b.series_name or b.series_spanish or b.title
                 items.append({
                     "id": b.id,
@@ -285,7 +285,7 @@ class EditorialRoutes:
 
         clean_hash = book_hash.strip()
         async with pg_manager.get_session() as session:
-            stmt = select(Book).options(selectinload(Book.series_rel)).where(
+            stmt = select(Book).options(selectinload(Book.series_info)).where(
                 or_(
                     Book.id == clean_hash,
                     Book.hash_md5 == clean_hash,
@@ -298,7 +298,7 @@ class EditorialRoutes:
             if not b:
                 raise HTTPException(status_code=404, detail="Volumen no encontrado")
 
-            s_rel = b.series_rel
+            s_rel = b.series_info
             return {
                 "success": True,
                 "book": {
