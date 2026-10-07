@@ -112,7 +112,7 @@ export const EpubEditModal: React.FC<EpubEditModalProps> = ({
         setAiSuggesting(true);
         setStatusMsg(null);
         try {
-            const rawTitle = formData.title || bookData.filename || '';
+            const rawTitle = formData.title || currentBook?.filename || '';
             const res = await api.rpc('ai_suggest_metadata', { title: rawTitle });
             if (res && res.metadata) {
                 setFormData((prev: any) => ({
@@ -133,7 +133,7 @@ export const EpubEditModal: React.FC<EpubEditModalProps> = ({
     };
 
     const handleSyncPhysicalEpub = async () => {
-        const bId = bookData.id || bookData.book_hash;
+        const bId = currentBook?.id || currentBook?.book_hash;
         if (!bId || isSyncing) return;
         setIsSyncing(true);
         setStatusMsg(null);
@@ -169,7 +169,7 @@ export const EpubEditModal: React.FC<EpubEditModalProps> = ({
         setSaving(true);
         setStatusMsg(null);
         try {
-            const bId = bookData.book_hash || bookData.id;
+            const bId = currentBook?.book_hash || currentBook?.id;
             await api.updateBookGrid(bId, {
                 title: formData.english_title || formData.title,
                 english_title: formData.english_title,
@@ -228,7 +228,7 @@ export const EpubEditModal: React.FC<EpubEditModalProps> = ({
                                 )}
                             </h2>
                             <p className="text-xs text-gray-400 truncate max-w-xl">
-                                {formData.spanish_title || formData.title || bookData.filename}
+                                {formData.spanish_title || formData.title || currentBook?.filename}
                             </p>
                         </div>
                     </div>
@@ -282,7 +282,7 @@ export const EpubEditModal: React.FC<EpubEditModalProps> = ({
                                 <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                                     <FileSpreadsheet className="w-4 h-4 text-indigo-400" /> Metadatos Principales del Volumen
                                 </h3>
-                                <span className="text-[10px] text-gray-400 font-mono">ID: {bookData.id}</span>
+                                <span className="text-[10px] text-gray-400 font-mono">ID: {currentBook?.id}</span>
                             </div>
 
                             {/* Título en Español */}
@@ -475,9 +475,9 @@ export const EpubEditModal: React.FC<EpubEditModalProps> = ({
                                 </h4>
                                 <div className="flex gap-4 items-center">
                                     <div className="w-20 h-28 rounded-xl bg-slate-900 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
-                                        {formData.cover_url || bookData.cover_image || bookData.cover_thumb ? (
+                                        {formData.cover_url || currentBook?.cover_image || currentBook?.cover_thumb ? (
                                             <img
-                                                src={formData.cover_url || bookData.cover_image || bookData.cover_thumb}
+                                                src={formData.cover_url || currentBook?.cover_image || currentBook?.cover_thumb}
                                                 alt="Portada"
                                                 className="w-full h-full object-cover"
                                             />
@@ -524,9 +524,9 @@ export const EpubEditModal: React.FC<EpubEditModalProps> = ({
                                     <div className="flex items-center gap-2">
                                         <div
                                             className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-white/5 font-mono text-[10px] text-gray-300 truncate flex-1"
-                                            title={formData.filepath || bookData.filepath || bookData.filename}
+                                            title={formData.filepath || currentBook?.filepath || currentBook?.filename}
                                         >
-                                            {formData.filepath || bookData.filepath || bookData.filename || 'Ruta no especificada'}
+                                            {formData.filepath || currentBook?.filepath || currentBook?.filename || 'Ruta no especificada'}
                                         </div>
                                         <button
                                             type="button"
@@ -581,13 +581,13 @@ export const EpubEditModal: React.FC<EpubEditModalProps> = ({
                             </div>
 
                             {/* Linked Series Card */}
-                            {(bookData.series_name || seriesData?.name || formData.series_id) && (
+                            {(currentBook?.series_name || currentBook?.series_spanish || seriesData?.name || formData.series_id) && (
                                 <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-4 space-y-2">
                                     <h4 className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-2">
                                         <Layers className="w-4 h-4 text-indigo-400" /> Serie Vinculada
                                     </h4>
                                     <p className="text-xs font-bold text-white truncate">
-                                        {seriesData?.name_spanish || seriesData?.name || bookData.series_spanish || bookData.series_name || 'Serie asociada'}
+                                        {seriesData?.name_spanish || seriesData?.name || currentBook?.series_spanish || currentBook?.series_name || 'Serie asociada'}
                                     </p>
                                     {formData.series_id && (
                                         <a
