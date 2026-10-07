@@ -11,7 +11,6 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from api.deps import require_admin_access
 from core.db_manager_pg import pg_manager
 from models.library import Book, Series, TranslatorsGroup
 from services.ai_service import AIService
