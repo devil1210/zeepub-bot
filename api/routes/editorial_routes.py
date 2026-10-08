@@ -9,7 +9,7 @@ y publicación enriquecida en canales de Telegram.
 import logging
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, File, UploadFile
 from pydantic import BaseModel, Field
 
 from core.db_manager_pg import pg_manager
@@ -460,7 +460,7 @@ class EditorialRoutes:
     async def update_volume(self, book_hash: str, payload: BookUpdateSchema):
         """Actualiza los metadatos de un volumen."""
         from sqlalchemy import or_, select
-        from core.cache_manager import cache_manager
+        from services.cache_service import cache_manager
 
         clean_hash = book_hash.strip()
         async with pg_manager.get_session() as session:
@@ -520,8 +520,8 @@ class EditorialRoutes:
     ):
         """Sube una nueva portada personalizada para el tomo."""
         import hashlib
-        from core.cache_manager import cache_manager
-        from core.database import pg_manager
+        from services.cache_service import cache_manager
+        from core.db_manager_pg import pg_manager
         from models.library import Book
         from sqlalchemy import or_, select
         from utils.library_db import COVERS_DIR
