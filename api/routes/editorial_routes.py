@@ -410,7 +410,9 @@ class EditorialRoutes:
             stmt = select(Book).options(selectinload(Book.series_info)).where(
                 or_(
                     Book.id == clean_hash,
+                    Book.id.startswith(clean_hash),
                     Book.hash_md5 == clean_hash,
+                    Book.hash_md5.startswith(clean_hash),
                     Book.short_link == clean_hash,
                 )
             )
