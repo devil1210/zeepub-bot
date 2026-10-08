@@ -18,18 +18,25 @@ async def get_telegram_user_id(
     cf_access_jwt_assertion: Annotated[str | None, Header(alias="Cf-Access-Jwt-Assertion")] = None,
     x_telegram_init_data: Annotated[str | None, Header(alias="x-telegram-init-data")] = None,
     x_telegram_data: Annotated[str | None, Header(alias="X-Telegram-Data")] = None,
+    x_telegram_user_id: Annotated[str | None, Header(alias="x-telegram-user-id")] = None,
+    x_telegram_id: Annotated[str | None, Header(alias="x-telegram-id")] = None,
     tg_session: Annotated[str | None, Cookie()] = None,
     uid: Annotated[int | None, Query()] = None,
 ) -> int:
     """
     Dependency that extracts and validates the Telegram User ID from headers, cookies or query.
-    Supports Cloudflare Access Email, Telegram OAuth Cookie, Telegram WebApp initData, and Supabase Auth.
+    Supports Direct X-Telegram-User-Id Header, Cloudflare Access Email, Telegram OAuth Cookie, Telegram WebApp initData, and Supabase Auth.
     """
-    # 0. Telegram OAuth Direct Session Cookie (Highest Priority for Web Authenticated via Telegram)
+    # 0. Direct Telegram ID Header (ZeeTools Editorial / Desktop Client)
+    raw_header_uid = (x_telegram_user_id or x_telegram_id or "").strip()
+    if raw_header_uid and raw_header_uid.isdigit():
+        return int(raw_header_uid)
+
+    # 0.1 Telegram OAuth Direct Session Cookie (Highest Priority for Web Authenticated via Telegram)
     if tg_session and str(tg_session).isdigit():
         return int(tg_session)
 
-    # 0.1 Cloudflare Access Email Auth (Web Standalone)
+    # 0.2 Cloudflare Access Email Auth (Web Standalone)
     cf_email = (cf_access_authenticated_user_email or cf_access_user_email or "").strip().lower()
 
     if not cf_email and cf_access_jwt_assertion:
@@ -60,6 +67,9 @@ async def get_telegram_user_id(
 
     # Local development bypass
     if init_data and "debug" in str(init_data).lower():
+        parts = str(init_data).split("_")
+        if len(parts) > 1 and parts[1].isdigit():
+            return int(parts[1])
         # Return first admin from config if available, else a default
         admin_id = list(config.ADMIN_USERS)[0] if config.ADMIN_USERS else 133994080
         return admin_id

@@ -118,7 +118,7 @@ export const FansubDetailPage: React.FC = () => {
 
         try {
             setSearching(true);
-            const res = await api.search(query.trim());
+            const res = await api.searchBooks(query.trim());
             const items = res.books || res.results || [];
             // Filter out already attached
             const attachedIds = new Set(books.map(b => b.id));

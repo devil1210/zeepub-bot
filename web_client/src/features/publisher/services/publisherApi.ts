@@ -5,13 +5,16 @@ export interface PublicationQueueItem {
     book_hash: string;
     channel: string;
     channel_id: number;
+    channel_name?: string;
     template_id?: number;
     platform: string;
     scheduled_for: string;
-    status: 'pending' | 'publishing' | 'sent' | 'failed';
+    status: 'pending' | 'publishing' | 'sent' | 'failed' | 'processing';
     published_at?: string;
     error?: string;
     payload?: any;
+    title?: string;
+    book_title?: string;
     series?: string;
     volume?: number;
     series_spanish?: string;

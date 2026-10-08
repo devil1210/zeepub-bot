@@ -574,12 +574,12 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
                     or ""
                 ).lower()
 
-                # 1. UUID v7 / Identificador único
+                # 1. UUID v7 / Identificador único (Estándar ZeeTools)
                 if lower_txt.startswith("urn:uuid:"):
                     clean_uuid = txt[9:].strip()
                     out["uuid"] = clean_uuid
                     continue
-                elif (el_id == unique_id or el_id.lower() == "bookid") and re.match(
+                elif re.match(
                     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
                     txt,
                     re.IGNORECASE,

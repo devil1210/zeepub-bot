@@ -34,11 +34,19 @@ class MetadataOrchestrator:
 
                 lb = None
 
-                # Check if it's a known hash
+                from sqlalchemy import or_
+
+                # Check if it's a known hash, UUID v7, or MD5
                 stmt_hash = (
                     select(LocalBook)
                     .options(selectinload(LocalBook.series_info))
-                    .where(LocalBook.book_hash == book_id)
+                    .where(
+                        or_(
+                            LocalBook.book_hash == book_id,
+                            LocalBook.uuid == str(book_id),
+                            LocalBook.hash_md5 == str(book_id),
+                        )
+                    )
                 )
                 res_hash = await session.execute(stmt_hash)
                 lb = res_hash.scalar_one_or_none()

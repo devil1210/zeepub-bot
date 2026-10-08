@@ -14,6 +14,7 @@ import { RatingModal } from '../components/RatingModal';
 import { useTheme } from '@shared/contexts/ThemeContext';
 import { useNavigation } from '@shared/contexts/NavigationContext';
 import { useTelegram } from '@shared/contexts/TelegramContext';
+import { supabase } from '@shared/services/supabase';
 import { BookCover } from '../components/BookCover';
 import { BookActions } from '../components/BookActions';
 import { BookHeader } from '../components/BookHeader';
@@ -39,7 +40,7 @@ export const BookDetail: React.FC<BookDetailProps> = ({
   onNavigate
 }) => {
   const { settings } = useTheme();
-  const { webApp, isAdmin, isStaff } = useTelegram();
+  const { webApp, isAdmin, isStaff, status, setIsLinkModalOpen } = useTelegram();
   const { setContextType, registerCallbacks, setVisible, setCustomActions } = useNavigation();
 
   const canViewStaffInfo = isAdmin || isStaff;

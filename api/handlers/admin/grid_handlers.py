@@ -612,6 +612,12 @@ async def handle_admin_sync_books(
     """Re-escanea y sincroniza la metadata física desde los archivos EPUB en disco."""
     check_staff(user_data)
     book_ids = data.get("book_ids") or []
+    if isinstance(book_ids, str):
+        book_ids = [book_ids]
+    book_hash = data.get("book_hash") or data.get("book_id") or data.get("id")
+    if book_hash and book_hash not in book_ids:
+        book_ids.append(book_hash)
+
     if not book_ids or not isinstance(book_ids, list):
         raise HTTPException(
             status_code=400, detail="book_ids es requerido y debe ser una lista"
@@ -619,13 +625,16 @@ async def handle_admin_sync_books(
 
     import os
     from datetime import datetime, timezone
+    from sqlalchemy import or_
     from services.epub_service import parse_opf_from_epub
 
     synced_items = []
     failed_items = []
 
     async with pg_manager.get_session() as session:
-        stmt = select(Book).where(Book.id.in_(book_ids))
+        stmt = select(Book).where(
+            or_(Book.id.in_(book_ids), Book.hash_md5.in_(book_ids))
+        )
         res = await session.execute(stmt)
         books = res.scalars().all()
 
@@ -689,3 +698,11 @@ async def handle_admin_sync_books(
         "failed_items": failed_items,
         "message": f"Sincronizados {len(synced_items)} libros desde sus archivos EPUB.",
     }
+
+
+async def handle_sync_book_file(
+    data: dict[str, Any], user_data: dict[str, Any]
+) -> dict[str, Any]:
+    """Sincroniza un libro o lista de libros a partir de su archivo EPUB en disco."""
+    return await handle_admin_sync_books(data, user_data)
+

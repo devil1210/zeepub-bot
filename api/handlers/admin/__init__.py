@@ -5,6 +5,7 @@ from .grid_handlers import (
     handle_admin_sync_books,
     handle_admin_update_book_grid,
     handle_admin_update_series_grid,
+    handle_sync_book_file,
 )
 from .library_handlers import (
     handle_admin_add_series_alias,
@@ -132,4 +133,5 @@ __all__ = [
     "handle_admin_update_system",
     "handle_get_upload_history",
     "handle_get_user_audit_history",
+    "handle_sync_book_file",
 ]

@@ -112,15 +112,20 @@ async def handle_pub_get_queue(data: dict[str, Any], user_data: dict[str, Any]):
             "id": i.id,
             "book_hash": i.book_hash,
             "channel": i.channel.name if i.channel else "Canal Oficial",
-            "channel_id": i.channel_id,
-            "template_id": i.template_id,
+            "channel_id": i.channel_id or (i.payload.get("channel_id") if i.payload else None),
+            "template_id": i.template_id or (i.payload.get("template_id") if i.payload else None),
             "platform": i.channel.platform if i.channel else "telegram",
             "scheduled_for": _fmt_iso(i.scheduled_for),
             "status": i.status,
             "published_at": _fmt_iso(i.published_at),
             "error": i.error_message,
             "payload": i.payload,
-            "caption": (i.payload.get("caption") if i.payload else None),
+            "caption": ((i.payload.get("custom_caption") or i.payload.get("caption")) if i.payload else None),
+            "send_as_file": (
+                bool(i.payload.get("send_as_file"))
+                if i.payload and "send_as_file" in i.payload
+                else (bool(i.payload.get("send_file")) if i.payload and "send_file" in i.payload else True)
+            ),
             "series": book_info_map.get(i.book_hash, {}).get("series"),
             "series_spanish": book_info_map.get(i.book_hash, {}).get("series_spanish"),
             "volume": book_info_map.get(i.book_hash, {}).get("volume"),
@@ -451,19 +456,38 @@ async def handle_pub_restore_templates(data: dict[str, Any], user_data: dict[str
 async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
 
-    book_hash = data["book_hash"]
-    channel_id = data["channel_id"]
-    scheduled_for_str = data["scheduled_for"]
-    template_id = data.get("template_id")
+    book_hash = data.get("book_hash") or data.get("book_id") or data.get("id") or data.get("bookHash")
+    if not book_hash:
+        raise HTTPException(status_code=400, detail="Falta el identificador del libro (book_hash)")
+
+    channel_id = data.get("channel_id") or data.get("channelId") or data.get("channel")
+    if not channel_id:
+        raise HTTPException(status_code=400, detail="Falta el canal de destino (channel_id)")
+
+    scheduled_for_str = (
+        data.get("scheduled_for")
+        or data.get("scheduled_at")
+        or data.get("scheduledFor")
+        or data.get("scheduledAt")
+    )
+    if not scheduled_for_str:
+        raise HTTPException(status_code=400, detail="Falta la fecha de programación (scheduled_for)")
+
+    template_id = data.get("template_id") or data.get("templateId")
     template_ids = data.get("template_ids", [])
-    payload = data.get("payload")
+    payload = data.get("payload") or {}
+
+    if "custom_caption" in data and data["custom_caption"] is not None:
+        payload["custom_caption"] = data["custom_caption"]
+    if "send_as_file" in data and data["send_as_file"] is not None:
+        payload["send_as_file"] = data["send_as_file"]
 
     if template_id and template_id not in template_ids:
         template_ids = [template_id] + template_ids
 
     # Parse ISO date and convert to naive UTC (SQLAlchemy DateTime default)
     try:
-        dt_aware = datetime.fromisoformat(scheduled_for_str.replace("Z", "+00:00"))
+        dt_aware = datetime.fromisoformat(str(scheduled_for_str).replace("Z", "+00:00"))
         if dt_aware.tzinfo is not None:
             from datetime import timezone
             scheduled_for = dt_aware.astimezone(timezone.utc).replace(tzinfo=None)
@@ -473,7 +497,6 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
         logger.error(f"Error parsing date {scheduled_for_str}: {e}")
         raise HTTPException(status_code=400, detail="Formato de fecha inválido") from e
 
-    payload = data.get("payload") or {}
     if data.get("fb_album_id"):
         payload["fb_album_id"] = data["fb_album_id"]
 
@@ -509,7 +532,7 @@ async def handle_pub_schedule(data: dict[str, Any], user_data: dict[str, Any]):
 async def handle_pub_update_queue_item(data: dict[str, Any], user_data: dict[str, Any]):
     check_staff(user_data)
 
-    item_id = data.get("id")
+    item_id = data.get("id") or data.get("queue_id")
     if not item_id:
         raise HTTPException(status_code=400, detail="Falta id")
 
@@ -521,9 +544,9 @@ async def handle_pub_update_queue_item(data: dict[str, Any], user_data: dict[str
             if not item:
                 raise HTTPException(status_code=404, detail="Item no encontrado")
 
-            if "scheduled_for" in data:
+            if "scheduled_for" in data and data["scheduled_for"]:
                 try:
-                    scheduled_for_str = data["scheduled_for"]
+                    scheduled_for_str = str(data["scheduled_for"])
                     # Parse ISO date
                     dt_aware = datetime.fromisoformat(scheduled_for_str.replace("Z", "+00:00"))
                     if dt_aware.tzinfo is not None:
@@ -532,25 +555,36 @@ async def handle_pub_update_queue_item(data: dict[str, Any], user_data: dict[str
                     else:
                         item.scheduled_for = dt_aware
                 except Exception as e:
-                    logger.error(f"Error parsing date: {e}")
+                    logger.error(f"Error parsing date {data['scheduled_for']}: {e}")
 
-            if "status" in data:
-                item.status = data["status"]
+            if "status" in data and data["status"]:
+                item.status = str(data["status"])
 
-            if "payload" in data:
-                item.payload = data["payload"]
-
-            if "fb_album_id" in data:
-                current_payload = dict(item.payload) if isinstance(item.payload, dict) else {}
-                current_payload["fb_album_id"] = data["fb_album_id"]
-                item.payload = current_payload
+            if "channel_id" in data and data["channel_id"] is not None:
+                item.channel_id = int(data["channel_id"])
 
             if "template_id" in data:
                 item.template_id = int(data["template_id"]) if data["template_id"] else None
 
+            current_payload = dict(item.payload) if isinstance(item.payload, dict) else {}
+            if "payload" in data and isinstance(data["payload"], dict):
+                current_payload.update(data["payload"])
+            if "custom_caption" in data:
+                current_payload["custom_caption"] = data["custom_caption"]
+            if "caption" in data:
+                current_payload["caption"] = data["caption"]
+            if "send_as_file" in data:
+                current_payload["send_as_file"] = data["send_as_file"]
+            if "fb_album_id" in data:
+                current_payload["fb_album_id"] = data["fb_album_id"]
+            item.payload = current_payload
+
             await session.commit()
         finally:
             pub_repo.session = None
+
+    if data.get("immediate") or data.get("publish_now"):
+        asyncio.create_task(publisher_service.process_queue())
 
     return {"success": True}
 

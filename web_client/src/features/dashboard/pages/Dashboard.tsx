@@ -61,7 +61,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     extendedInfo?.canUploadEpub
   );
 
-  const userName = status?.user?.name || (status?.user?.username && !status?.user?.username.startsWith('User_') ? status.user.username : (tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : "Administrador"));
+  const userName = (status?.user?.username && !status?.user?.username.startsWith('User_') ? status.user.username : (tgUser ? `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}` : "Administrador"));
   const userLevel = status?.user?.status_label || (isAdmin ? "Admin 🛠️" : "Lector 📚");
   const displayUsername = status?.user?.username ? `@${status.user.username}` : (tgUser?.username ? `@${tgUser.username}` : "@Admin");
   const displayPhoto = status?.user?.photo_url || tgUser?.photo_url;

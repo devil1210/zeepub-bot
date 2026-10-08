@@ -1,4 +1,7 @@
-# api/routes/editorial_routes.py
+# -*- coding: utf-8 -*-
+import os
+
+routes_code = r'''# api/routes/editorial_routes.py
 """
 REST Endpoints para la Consola Editorial y el cliente ZeeTools Desktop.
 Provee acceso modular y seguro al catálogo de tomos, series, fansubs,
@@ -138,21 +141,14 @@ class EditorialRoutes:
                     methods=["POST", "GET"],
                     summary="Re-escanear metadatos directamente del archivo EPUB físico",
                 )
-            self.router.add_api_route(
-                f"{prefix}/{{book_hash}}/cover",
-                self.upload_volume_cover,
-                methods=["POST"],
-                summary="Subir nueva portada de tomo",
-            )
 
-        # 2. Series (Soporte para /series, /series/grid, /grid y /library/series)
-        for s_path in ["/series", "/series/grid", "/grid", "/library/series"]:
-            self.router.add_api_route(
-                s_path,
-                self.get_series_list,
-                methods=["GET"],
-                summary="Listar todas las series del catálogo",
-            )
+        # 2. Series
+        self.router.add_api_route(
+            "/series",
+            self.get_series_list,
+            methods=["GET"],
+            summary="Listar todas las series del catálogo",
+        )
         self.router.add_api_route(
             "/series/{series_id}",
             self.get_series_detail,
@@ -255,12 +251,6 @@ class EditorialRoutes:
             methods=["POST"],
             summary="Reintentar item fallido en cola",
         )
-        self.router.add_api_route(
-            "/queue/update",
-            self.update_queue_item,
-            methods=["POST"],
-            summary="Actualizar item programado en cola",
-        )
 
         # 8. Historial de Posts
         self.router.add_api_route(
@@ -271,13 +261,12 @@ class EditorialRoutes:
         )
 
         # 9. Directorio de Fansubs para ZeeTools
-        for wg_path in ["/workgroups", "/groups"]:
-            self.router.add_api_route(
-                wg_path,
-                self.get_groups_directory,
-                methods=["GET"],
-                summary="Directorio oficial de Fansubs y enlaces para ZeeTools",
-            )
+        self.router.add_api_route(
+            "/groups",
+            self.get_groups_directory,
+            methods=["GET"],
+            summary="Directorio oficial de Fansubs y enlaces para ZeeTools",
+        )
 
     # ==========================================
     # Controladores de Rutas
@@ -513,56 +502,11 @@ class EditorialRoutes:
                 "book_id": b.id,
             }
 
-    async def upload_volume_cover(
-        self,
-        book_hash: str,
-        file: UploadFile = File(...),
-    ):
-        """Sube una nueva portada personalizada para el tomo."""
-        import hashlib
-        from core.cache_manager import cache_manager
-        from core.database import pg_manager
-        from models.library import Book
-        from sqlalchemy import or_, select
-        from utils.library_db import COVERS_DIR
-
-        os.makedirs(COVERS_DIR, exist_ok=True)
-        content = await file.read()
-        if not content:
-            raise HTTPException(status_code=400, detail="Archivo de imagen vacío")
-
-        ext = os.path.splitext(file.filename or "")[1] or ".jpg"
-        cover_filename = f"custom_{book_hash[:16]}_{hashlib.md5(content).hexdigest()[:8]}{ext}"
-        cover_path = os.path.join(COVERS_DIR, cover_filename)
-        with open(cover_path, "wb") as f:
-            f.write(content)
-
-        cover_url = f"/api/library/covers/{cover_filename}"
-
-        async with pg_manager.get_session() as session:
-            stmt = select(Book).where(
-                or_(Book.hash_md5 == book_hash, Book.id == book_hash)
-            )
-            res = await session.execute(stmt)
-            b = res.scalar_one_or_none()
-            if not b:
-                raise HTTPException(status_code=404, detail="Tomo no encontrado")
-
-            b.cover_url = cover_url
-            await session.commit()
-            await cache_manager.delete_book(b.id)
-
-        return {
-            "success": True,
-            "message": "Portada actualizada correctamente",
-            "cover_url": cover_url,
-        }
-
     async def sync_volume_file(self, book_hash: str):
         """Re-escanea metadatos directamente del archivo físico EPUB en disco."""
         from api.handlers.admin.grid_handlers import handle_admin_sync_books
         res = await handle_admin_sync_books(
-            {"book_ids": [book_hash], "book_hash": book_hash},
+            {"book_ids": [book_hash]},
             {"level": "admin", "is_admin": True, "is_real_admin": True},
         )
         return res
@@ -597,84 +541,33 @@ class EditorialRoutes:
             count_stmt = select(func.count()).select_from(stmt.subquery())
             total = (await session.execute(count_stmt)).scalar() or 0
 
-            if total > 0:
-                stmt = stmt.order_by(Series.name.asc()).offset(offset).limit(page_size)
-                result = await session.execute(stmt)
-                series_list = result.scalars().all()
+            stmt = stmt.order_by(Series.name.asc()).offset(offset).limit(page_size)
+            result = await session.execute(stmt)
+            series_list = result.scalars().all()
 
-                items = [
-                    {
-                        "id": s.id,
-                        "series_hash": s.id,
-                        "name": s.name,
-                        "series_spanish": s.series_spanish or getattr(s, "name_spanish", "") or "",
-                        "series_english": s.series_english or getattr(s, "name_english", "") or "",
-                        "slug": s.slug or "",
-                        "author": s.author or "",
-                        "illustrator": s.illustrator or "",
-                        "publisher": s.publisher or "",
-                        "book_count": len(s.books or []),
-                        "cover_url": s.cover_url or "",
-                    }
-                    for s in series_list
-                ]
-            else:
-                # Fallback resiliente: Agrupar desde la tabla Book si la tabla Series está vacía
-                fallback_stmt = select(Book).options(selectinload(Book.series_info))
-                if query:
-                    q_clean = f"%{query.strip()}%"
-                    fallback_stmt = fallback_stmt.where(
-                        or_(
-                            Book.title.ilike(q_clean),
-                            Book.spanish_title.ilike(q_clean),
-                            Book.english_title.ilike(q_clean),
-                            Book.author.ilike(q_clean),
-                            Book.translator.ilike(q_clean),
-                        )
-                    )
-                b_res = await session.execute(fallback_stmt)
-                all_books = b_res.scalars().all()
-                grouped: dict[str, dict[str, Any]] = {}
-                for b in all_books:
-                    s_name = (
-                        b.spanish_title
-                        or (b.series_info.name if b.series_info else None)
-                        or (b.series_info.series_spanish if b.series_info else None)
-                        or b.series_name
-                        or b.title
-                    )
-                    s_name = (s_name or "Serie Desconocida").strip()
-                    if s_name not in grouped:
-                        grouped[s_name] = {
-                            "id": b.series_id or f"series_{abs(hash(s_name))}",
-                            "series_hash": b.series_id or f"series_{abs(hash(s_name))}",
-                            "name": s_name,
-                            "series_spanish": b.spanish_title or s_name,
-                            "series_english": b.english_title or "",
-                            "slug": "",
-                            "author": b.author or "",
-                            "illustrator": b.illustrator or "",
-                            "publisher": b.publisher or "",
-                            "book_count": 0,
-                            "cover_url": b.cover_high or b.cover_medium or b.cover_low or "",
-                        }
-                    grouped[s_name]["book_count"] += 1
-
-                aggregated_items = sorted(grouped.values(), key=lambda x: x["name"])
-                total = len(aggregated_items)
-                items = aggregated_items[offset : offset + page_size]
+            items = [
+                {
+                    "id": s.id,
+                    "series_hash": s.id,
+                    "name": s.name,
+                    "series_spanish": s.series_spanish or getattr(s, "name_spanish", "") or "",
+                    "series_english": s.series_english or getattr(s, "name_english", "") or "",
+                    "slug": s.slug or "",
+                    "author": s.author or "",
+                    "illustrator": s.illustrator or "",
+                    "publisher": s.publisher or "",
+                    "book_count": len(s.books or []),
+                    "cover_url": s.cover_url or "",
+                }
+                for s in series_list
+            ]
 
             return {
                 "success": True,
                 "total": total,
-                "total_series": total,
-                "totalItems": total,
                 "page": page,
                 "page_size": page_size,
-                "total_pages": (total + page_size - 1) // page_size if total > 0 else 1,
                 "items": items,
-                "series": items,
-                "results": items,
             }
 
     async def get_series_detail(self, series_id: str):
@@ -847,11 +740,6 @@ class EditorialRoutes:
         from api.handlers.publisher import handle_pub_retry
         return await handle_pub_retry({"queue_id": payload.id}, {"level": "admin", "is_admin": True, "is_real_admin": True})
 
-    async def update_queue_item(self, payload: dict = Body(...)):
-        """Actualiza fecha, canal, plantilla o caption de un item programado en cola."""
-        from api.handlers.publisher import handle_pub_update_queue_item
-        return await handle_pub_update_queue_item(payload, {"level": "admin", "is_admin": True, "is_real_admin": True})
-
     async def get_posts_history(self, limit: int = Query(100)):
         """Retorna el historial de publicaciones enviadas."""
         from api.handlers.publisher import handle_pub_get_queue
@@ -893,3 +781,10 @@ class EditorialRoutes:
         from api.routes.legacy_routes import LegacyRoutes
         lr = LegacyRoutes()
         return await lr.get_public_workgroups()
+'''
+
+target_path = r'e:\Descargas\Zeepub-bot\api\routes\editorial_routes.py'
+with open(target_path, 'w', encoding='utf-8') as f:
+    f.write(routes_code)
+
+print('Updated editorial_routes.py successfully')

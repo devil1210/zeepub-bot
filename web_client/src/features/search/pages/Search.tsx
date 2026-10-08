@@ -82,14 +82,15 @@ export const Search: React.FC<SearchProps> = ({ onSelectSeries, onNavigate }) =>
   const abortControllerRef = useRef<AbortController | null>(null);
   const responsiveColumns = useResponsiveColumns();
 
-  // Columnas personalizadas con persistencia Premium
+  // Columnas personalizadas con persistencia Universal Premium
   const [customColumns, setCustomColumns] = useState<number | null>(() => {
-    const saved = sessionStorage.getItem('search_custom_columns');
+    const saved = localStorage.getItem('zeepub_custom_columns') || sessionStorage.getItem('search_custom_columns');
     return saved ? parseInt(saved) : null;
   });
 
   useEffect(() => {
     if (customColumns !== null) {
+      localStorage.setItem('zeepub_custom_columns', customColumns.toString());
       sessionStorage.setItem('search_custom_columns', customColumns.toString());
     }
   }, [customColumns]);

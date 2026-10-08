@@ -69,6 +69,7 @@ from api.handlers.admin import (
     handle_admin_update_system,
     handle_get_upload_history,
     handle_get_user_audit_history,
+    handle_sync_book_file,
 )
 from api.handlers.ai import (
     handle_ai_apply_changes,
@@ -271,6 +272,7 @@ __all__ = [
     "handle_search",
     "handle_search_volumes",
     "handle_status",
+    "handle_sync_book_file",
     "handle_telegram_widget_auth",
     "handle_ui_settings",
     "handle_unlink_telegram",

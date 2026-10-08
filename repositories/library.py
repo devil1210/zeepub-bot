@@ -174,8 +174,21 @@ class BookRepository(BaseRepository[Book]):
         super().__init__(Book, session)
 
     async def get_by_hash(self, book_hash: str) -> Book | None:
-        """Busca un libro por su hash."""
-        return await self.get_by_id(book_hash)
+        """Busca un libro por su hash único, UUID v7, ID o short_link."""
+        from sqlalchemy import or_
+        query = (
+            select(Book)
+            .where(
+                or_(
+                    Book.uuid == str(book_hash),
+                    Book.id == str(book_hash),
+                    Book.hash_md5 == str(book_hash),
+                    Book.short_link == str(book_hash),
+                )
+            )
+        )
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
 
     async def get_by_series(self, series_id: str) -> list[Book]:
         """Obtiene todos los libros de una serie."""
