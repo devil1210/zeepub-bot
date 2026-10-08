@@ -337,11 +337,12 @@ class LegacyRoutes:
     async def get_public_workgroups(self):
         """
         Endpoint público para ZeeTools y herramientas externas.
-        Devuelve el directorio completo de grupos/editoriales, siglas oficiales y enlaces.
+        Devuelve el directorio completo de grupos/editoriales, siglas oficiales, enlaces y estadísticas de tomos.
         """
+        from api.handlers.workgroup import check_epub_metadata_issue
         from core.db_manager_pg import pg_manager
         from models.library import TranslatorsGroup
-        from sqlalchemy import select
+        from sqlalchemy import select, text
         from sqlalchemy.orm import selectinload
 
         try:
@@ -354,21 +355,62 @@ class LegacyRoutes:
                 res = await session.execute(stmt)
                 groups = res.scalars().all()
 
-                data = [
-                    {
-                        "id": g.id,
-                        "name": g.name,
-                        "siglas": g.siglas or "",
-                        "url": g.get_preferred_link() or "",
-                        "description": g.description or "",
-                        "links": g.get_links_dict(),
-                    }
-                    for g in groups
-                ]
+                # Obtener libros asociados y su metadato publisher para auditoría OPF
+                books_stmt = text("""
+                    WITH linked AS (
+                        SELECT translator_group_id AS group_id, id AS book_id, publisher FROM books WHERE translator_group_id IS NOT NULL
+                        UNION
+                        SELECT editor_group_id AS group_id, id AS book_id, publisher FROM books WHERE editor_group_id IS NOT NULL
+                        UNION
+                        SELECT layout_group_id AS group_id, id AS book_id, publisher FROM books WHERE layout_group_id IS NOT NULL
+                        UNION
+                        SELECT bw.workgroup_id AS group_id, bk.id AS book_id, bk.publisher FROM book_workgroups bw JOIN books bk ON bk.id = bw.book_id
+                    )
+                    SELECT group_id, book_id, publisher
+                    FROM linked
+                """)
+                books_res = await session.execute(books_stmt)
+                group_books_map: dict[int, dict[int, str | None]] = {}
+                for gid, bid, pub in books_res.all():
+                    if gid is not None:
+                        if gid not in group_books_map:
+                            group_books_map[gid] = {}
+                        group_books_map[gid][bid] = pub
+
+                data = []
+                for g in groups:
+                    links_dict = g.get_links_dict()
+                    books_for_group = group_books_map.get(g.id, {})
+                    books_count = len(books_for_group)
+                    bad_count = 0
+                    if books_count > 0:
+                        for pub in books_for_group.values():
+                            has_bad, _ = check_epub_metadata_issue(pub, g.name)
+                            if has_bad:
+                                bad_count += 1
+                    good_count = books_count - bad_count
+
+                    data.append(
+                        {
+                            "id": g.id,
+                            "name": g.name,
+                            "siglas": g.siglas or "",
+                            "url": g.get_preferred_link() or "",
+                            "preferred_link": g.get_preferred_link() or "",
+                            "description": g.description or "",
+                            "books_count": books_count,
+                            "bad_metadata_count": bad_count,
+                            "good_metadata_count": good_count,
+                            "links": links_dict,
+                            "created_at": g.created_at.isoformat()
+                            if g.created_at
+                            else None,
+                        }
+                    )
                 return JSONResponse(
                     content=data,
                     headers={
-                        "Cache-Control": "public, max-age=600",
+                        "Cache-Control": "public, max-age=60",
                         "Access-Control-Allow-Origin": "*",
                     },
                 )
