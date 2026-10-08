@@ -9,7 +9,7 @@ y publicación enriquecida en canales de Telegram.
 import logging
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, File, UploadFile, Body
 from pydantic import BaseModel, Field
 
 from core.db_manager_pg import pg_manager
