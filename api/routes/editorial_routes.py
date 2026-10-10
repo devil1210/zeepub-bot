@@ -50,6 +50,12 @@ class BookUpdateSchema(BaseModel):
     cover_url: Optional[str] = None
     description: Optional[str] = None
     synopsis: Optional[str] = None
+    isbn: Optional[str] = None
+    asin: Optional[str] = None
+    uuid: Optional[str] = None
+    romaji_title: Optional[str] = None
+    series_romaji: Optional[str] = None
+    published_date: Optional[str] = None
 
 
 class SeriesCreateSchema(BaseModel):
@@ -389,37 +395,7 @@ class EditorialRoutes:
             result = await session.execute(stmt)
             books = result.scalars().all()
 
-            items = []
-            for b in books:
-                s_rel = b.series_info
-                s_name = (s_rel.name if s_rel else None) or b.series_name or b.series_spanish or b.title
-                items.append({
-                    "id": b.id,
-                    "book_hash": b.id,
-                    "title": b.title,
-                    "spanish_title": b.spanish_title or (s_rel.series_spanish if s_rel else None) or b.title,
-                    "english_title": b.english_title or (s_rel.series_english if s_rel else None) or "",
-                    "series_id": b.series_id,
-                    "series_name": s_name,
-                    "series_spanish": (s_rel.series_spanish if s_rel else None) or b.series_spanish or "",
-                    "series_english": (s_rel.series_english if s_rel else None) or b.english_title or "",
-                    "volume": b.volume,
-                    "edition": b.edition or "",
-                    "color_mode": b.color_mode or ("color" if "[color]" in (b.filename or "").lower() else "bw"),
-                    "is_uncensored": bool(b.is_uncensored),
-                    "author": b.author or (s_rel.author if s_rel else None) or "",
-                    "illustrator": b.illustrator or (s_rel.illustrator if s_rel else None) or "",
-                    "translator": b.translator or "",
-                    "layout_by": b.layout_by or "",
-                    "publisher": b.publisher or (s_rel.publisher if s_rel else None) or "",
-                    "description": b.description or (s_rel.description if s_rel else None) or "",
-                    "cover_url": b.cover_high or b.cover_medium or b.cover_low or "",
-                    "filepath": b.filepath or "",
-                    "filename": b.filename or "",
-                    "file_size": b.file_size or 0,
-                    "updated_at": (b.indexed_at or b.created_at).isoformat() if (b.indexed_at or b.created_at) else None,
-                    "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
-                })
+            items = [self._serialize_book(b, b.series_info) for b in books]
 
             return {
                 "success": True,
@@ -429,6 +405,61 @@ class EditorialRoutes:
                 "total_pages": (total_count + page_size - 1) // page_size if page_size > 0 else 1,
                 "items": items,
             }
+
+    @staticmethod
+    def _serialize_book(b: Book, s_rel: Series | None = None) -> dict[str, Any]:
+        """Serializa metadatos normalizados de un libro/volumen para ZeeTools y web."""
+        s_name = (s_rel.name if s_rel else None) or b.series_name or b.series_spanish or b.title
+        return {
+            "id": b.id,
+            "book_hash": b.id,
+            "title": b.title,
+            "spanish_title": b.spanish_title or (s_rel.series_spanish if s_rel else None) or b.title,
+            "english_title": b.english_title or (s_rel.series_english if s_rel else None) or "",
+            "romaji_title": b.romaji_title or "",
+            "japanese_title": getattr(b, "japanese_title", None) or getattr(s_rel, "name_japanese", None) or "",
+            "series_id": b.series_id,
+            "series_name": s_name,
+            "series_spanish": (s_rel.series_spanish if s_rel else None) or b.series_spanish or "",
+            "series_english": (s_rel.series_english if s_rel else None) or b.english_title or "",
+            "series_romaji": (s_rel.name if s_rel else None) or "",
+            "volume": b.volume,
+            "edition": b.edition or "",
+            "color_mode": b.color_mode or ("color" if "[color]" in (b.filename or "").lower() else "bw"),
+            "is_uncensored": bool(b.is_uncensored),
+            "author": b.author or (s_rel.author if s_rel else None) or "",
+            "author_jap": b.author_jap or (s_rel.author_jap if s_rel else None) or "",
+            "illustrator": b.illustrator or (s_rel.illustrator if s_rel else None) or "",
+            "illustrator_jap": b.illustrator_jap or (s_rel.illustrator_jap if s_rel else None) or "",
+            "demography": getattr(b, "demography", None) or "",
+            "demographics": b.demographics_json or (s_rel.demographics_json if s_rel else None) or [],
+            "tags": b.tags_json or (s_rel.tags_json if s_rel else None) or [],
+            "translator": b.translator or "",
+            "layout_by": b.layout_by or "",
+            "publisher": b.publisher or (s_rel.publisher if s_rel else None) or "",
+            "description": b.description or (s_rel.description if s_rel else None) or "",
+            "cover_url": b.cover_high or b.cover_medium or b.cover_low or "",
+            "filepath": b.filepath or "",
+            "filename": b.filename or "",
+            "file_size": b.file_size or 0,
+            "isbn": b.isbn or "",
+            "asin": b.asin or "",
+            "uuid": b.uuid or "",
+            "epub_version": b.epub_version or "v3.0",
+            "word_count": b.word_count,
+            "page_count": b.page_count,
+            "reading_time": b.reading_time,
+            "published_at": b.published_at.isoformat() if b.published_at else None,
+            "published_date": b.published_at.strftime("%Y-%m-%d") if b.published_at else "",
+            "updated_at": (b.indexed_at or b.created_at).isoformat() if (b.indexed_at or b.created_at) else None,
+            "indexed_at": b.indexed_at.isoformat() if b.indexed_at else None,
+            "has_bad_metadata": (
+                b.volume is None
+                or not (b.spanish_title or (s_rel.series_spanish if s_rel else None))
+                or not b.publisher
+                or not b.translator
+            ),
+        }
 
     async def get_volume_detail(self, book_hash: str):
         """Retorna el detalle completo de un volumen individual."""
@@ -452,41 +483,9 @@ class EditorialRoutes:
             if not b:
                 raise HTTPException(status_code=404, detail="Volumen no encontrado")
 
-            s_rel = b.series_info
             return {
                 "success": True,
-                "book": {
-                    "id": b.id,
-                    "book_hash": b.id,
-                    "title": b.title,
-                    "spanish_title": b.spanish_title or (s_rel.series_spanish if s_rel else None) or b.title,
-                    "english_title": b.english_title or (s_rel.series_english if s_rel else None) or "",
-                    "series_id": b.series_id,
-                    "series_name": (s_rel.name if s_rel else None) or b.series_name or b.title,
-                    "series_spanish": (s_rel.series_spanish if s_rel else None) or b.series_spanish or "",
-                    "series_english": (s_rel.series_english if s_rel else None) or b.english_title or "",
-                    "volume": b.volume,
-                    "edition": b.edition or "",
-                    "color_mode": b.color_mode or ("color" if "[color]" in (b.filename or "").lower() else "bw"),
-                    "is_uncensored": bool(b.is_uncensored),
-                    "author": b.author or (s_rel.author if s_rel else None) or "",
-                    "illustrator": b.illustrator or (s_rel.illustrator if s_rel else None) or "",
-                    "demography": getattr(b, "demography", None) or "",
-                    "translator": b.translator or "",
-                    "layout_by": b.layout_by or "",
-                    "publisher": b.publisher or (s_rel.publisher if s_rel else None) or "",
-                    "description": b.description or (s_rel.description if s_rel else None) or "",
-                    "cover_url": b.cover_high or b.cover_medium or b.cover_low or "",
-                    "filepath": b.filepath or "",
-                    "filename": b.filename or "",
-                    "file_size": b.file_size or 0,
-                    "has_bad_metadata": (
-                        b.volume is None
-                        or not (b.spanish_title or (s_rel.series_spanish if s_rel else None))
-                        or not b.publisher
-                        or not b.translator
-                    ),
-                }
+                "book": self._serialize_book(b, b.series_info)
             }
 
     async def update_volume(self, book_hash: str, payload: BookUpdateSchema):
@@ -536,6 +535,24 @@ class EditorialRoutes:
                 b.description = payload.description.strip() if payload.description else None
             elif payload.synopsis is not None:
                 b.description = payload.synopsis.strip() if payload.synopsis else None
+            if payload.isbn is not None:
+                b.isbn = payload.isbn.strip() if payload.isbn else None
+            if payload.asin is not None:
+                b.asin = payload.asin.strip() if payload.asin else None
+            if payload.uuid is not None:
+                b.uuid = payload.uuid.strip() if payload.uuid else None
+            if payload.romaji_title is not None:
+                b.romaji_title = payload.romaji_title.strip() if payload.romaji_title else None
+            if payload.published_date is not None:
+                if payload.published_date.strip():
+                    try:
+                        from datetime import datetime
+                        cleaned_date = payload.published_date.strip().split("T")[0]
+                        b.published_at = datetime.fromisoformat(cleaned_date)
+                    except (ValueError, TypeError) as date_err:
+                        logger.warning(f"Error parseando published_date '{payload.published_date}': {date_err}")
+                else:
+                    b.published_at = None
 
             await session.commit()
             await cache_manager.delete_book(b.id)
