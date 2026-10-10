@@ -7,9 +7,19 @@ y publicación enriquecida en canales de Telegram.
 """
 
 import logging
+import os
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, File, UploadFile, Body
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from pydantic import BaseModel, Field
 
 from core.db_manager_pg import pg_manager
@@ -40,6 +50,19 @@ class BookUpdateSchema(BaseModel):
     cover_url: Optional[str] = None
     description: Optional[str] = None
     synopsis: Optional[str] = None
+
+
+class SeriesCreateSchema(BaseModel):
+    name: str = Field(..., description="Nombre canónico de la serie")
+    series_spanish: Optional[str] = None
+    series_english: Optional[str] = None
+    author: Optional[str] = None
+    illustrator: Optional[str] = None
+    publisher: Optional[str] = None
+    description: Optional[str] = None
+    book_type: Optional[str] = "Novela Ligera"
+    demographics: Optional[list[str]] = None
+    tags: Optional[list[str]] = None
 
 
 class SeriesUpdateSchema(BaseModel):
@@ -165,6 +188,13 @@ class EditorialRoutes:
             methods=["PUT", "PATCH"],
             summary="Actualizar metadatos canónicos de una serie",
         )
+        for s_post in ["/series", "/library/series"]:
+            self.router.add_api_route(
+                s_post,
+                self.create_series,
+                methods=["POST"],
+                summary="Crear nueva serie en el catálogo",
+            )
 
         # 3. Inteligencia Artificial (Gemini)
         self.router.add_api_route(
@@ -462,6 +492,7 @@ class EditorialRoutes:
     async def update_volume(self, book_hash: str, payload: BookUpdateSchema):
         """Actualiza los metadatos de un volumen."""
         from sqlalchemy import or_, select
+
         from services.cache_service import cache_manager
 
         clean_hash = book_hash.strip()
@@ -522,10 +553,12 @@ class EditorialRoutes:
     ):
         """Sube una nueva portada personalizada para el tomo."""
         import hashlib
-        from services.cache_service import cache_manager
+
+        from sqlalchemy import or_, select
+
         from core.db_manager_pg import pg_manager
         from models.library import Book
-        from sqlalchemy import or_, select
+        from services.cache_service import cache_manager
         from utils.library_db import COVERS_DIR
 
         os.makedirs(COVERS_DIR, exist_ok=True)
@@ -765,6 +798,52 @@ class EditorialRoutes:
                 "success": True,
                 "message": "Serie actualizada correctamente",
                 "series_id": s.id,
+            }
+
+    async def create_series(self, payload: SeriesCreateSchema):
+        """Crea una nueva serie en el catálogo editorial."""
+        import hashlib
+
+        from slugify import slugify
+        from sqlalchemy import or_, select
+
+        clean_name = payload.name.strip()
+        series_id = hashlib.sha256(clean_name.lower().encode("utf-8")).hexdigest()[:16]
+        slug = slugify(clean_name)
+
+        async with pg_manager.get_session() as session:
+            stmt = select(Series).where(or_(Series.id == series_id, Series.name == clean_name))
+            res = await session.execute(stmt)
+            existing = res.scalar_one_or_none()
+
+            if existing:
+                return {
+                    "success": True,
+                    "message": "La serie ya existe en el catálogo",
+                    "series_id": existing.id,
+                    "id": existing.id,
+                }
+
+            new_series = Series(
+                id=series_id,
+                name=clean_name,
+                name_spanish=payload.series_spanish or clean_name,
+                name_english=payload.series_english,
+                slug=slug,
+                author=payload.author,
+                illustrator=payload.illustrator,
+                publisher=payload.publisher,
+                description=payload.description,
+                book_type=payload.book_type or "Novela Ligera",
+            )
+            session.add(new_series)
+            await session.commit()
+
+            return {
+                "success": True,
+                "message": "Serie creada exitosamente",
+                "series_id": series_id,
+                "id": series_id,
             }
 
     async def ai_suggest_metadata(self, request: AISuggestRequest):
