@@ -624,7 +624,7 @@ async def handle_admin_sync_books(
         )
 
     import os
-    from datetime import datetime, timezone
+    from datetime import datetime
     from sqlalchemy import or_
     from services.epub_service import parse_opf_from_epub
 
@@ -632,9 +632,15 @@ async def handle_admin_sync_books(
     failed_items = []
 
     async with pg_manager.get_session() as session:
-        stmt = select(Book).where(
-            or_(Book.id.in_(book_ids), Book.hash_md5.in_(book_ids))
-        )
+        conditions = [Book.id.in_(book_ids), Book.hash_md5.in_(book_ids)]
+        for bid in book_ids:
+            if isinstance(bid, str) and len(bid.strip()) >= 6:
+                clean_bid = bid.strip()
+                conditions.append(Book.id.startswith(clean_bid))
+                conditions.append(Book.hash_md5.startswith(clean_bid))
+                conditions.append(Book.short_link == clean_bid)
+
+        stmt = select(Book).where(or_(*conditions))
         res = await session.execute(stmt)
         books = res.scalars().all()
 
@@ -654,8 +660,9 @@ async def handle_admin_sync_books(
                 if opf_meta:
                     if opf_meta.get("publisher"):
                         b.publisher = str(opf_meta["publisher"]).strip()
-                    if opf_meta.get("sinopsis"):
-                        b.description = opf_meta["sinopsis"]
+                    desc = opf_meta.get("sinopsis") or opf_meta.get("description")
+                    if desc:
+                        b.description = str(desc).strip()
                     if opf_meta.get("is_uncensored") is not None:
                         b.is_uncensored = bool(opf_meta.get("is_uncensored"))
                     if opf_meta.get("color_mode"):
@@ -665,11 +672,49 @@ async def handle_admin_sync_books(
                             b.volume = float(opf_meta["volume_index"])
                         except (ValueError, TypeError):
                             pass
+                    if opf_meta.get("spanish_title"):
+                        b.spanish_title = str(opf_meta["spanish_title"]).strip()
+                    if opf_meta.get("english_title"):
+                        b.english_title = str(opf_meta["english_title"]).strip()
+                    if opf_meta.get("romaji_title"):
+                        b.romaji_title = str(opf_meta["romaji_title"]).strip()
+                    if opf_meta.get("series_spanish"):
+                        b.series_spanish = str(opf_meta["series_spanish"]).strip()
+                    if opf_meta.get("series_english"):
+                        b.series_english = str(opf_meta["series_english"]).strip()
+                    if opf_meta.get("autores"):
+                        b.author = ", ".join(opf_meta["autores"]).strip()
+                    if opf_meta.get("ilustrador"):
+                        b.illustrator = str(opf_meta["ilustrador"]).strip()
+                    if opf_meta.get("traductor"):
+                        b.translator = str(opf_meta["traductor"]).strip()
+                    if opf_meta.get("maquetadores"):
+                        b.layout_by = ", ".join(opf_meta["maquetadores"]).strip()
+                    if opf_meta.get("isbn"):
+                        b.isbn = str(opf_meta["isbn"]).strip()
+                    if opf_meta.get("asin"):
+                        b.asin = str(opf_meta["asin"]).strip()
+                    if opf_meta.get("uuid"):
+                        b.uuid = str(opf_meta["uuid"]).strip()
+                    if opf_meta.get("epub_version"):
+                        b.epub_version = str(opf_meta["epub_version"]).strip()
+                    if opf_meta.get("fecha_modificacion"):
+                        try:
+                            b.modified_at_opf = datetime.strptime(
+                                opf_meta["fecha_modificacion"], "%Y-%m-%d"
+                            )
+                        except Exception:
+                            pass
+                    if opf_meta.get("fecha_publicacion"):
+                        try:
+                            b.published_at = datetime.strptime(
+                                opf_meta["fecha_publicacion"], "%Y-%m-%d"
+                            )
+                        except Exception:
+                            pass
                     try:
                         mtime = os.path.getmtime(b.filepath)
-                        b.file_modified_at = datetime.fromtimestamp(
-                            mtime, tz=timezone.utc
-                        )
+                        b.file_modified_at = datetime.fromtimestamp(mtime)
                         b.file_size = os.path.getsize(b.filepath)
                     except Exception:
                         pass
@@ -680,6 +725,7 @@ async def handle_admin_sync_books(
                             "title": b.title,
                             "publisher": b.publisher,
                             "volume": b.volume,
+                            "description": b.description,
                         }
                     )
             except Exception as ex:
