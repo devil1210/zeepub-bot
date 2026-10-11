@@ -149,6 +149,12 @@ class EditorialRoutes:
                 summary="Listar tomos con filtros avanzados",
             )
             self.router.add_api_route(
+                prefix,
+                self.create_volume,
+                methods=["POST"],
+                summary="Crear o registrar un nuevo volumen en el catálogo",
+            )
+            self.router.add_api_route(
                 f"{prefix}/{{book_hash}}",
                 self.get_volume_detail,
                 methods=["GET"],
@@ -226,85 +232,22 @@ class EditorialRoutes:
                 summary="Publicar tomo inmediatamente en Telegram",
             )
 
-        # 5. Canales de Publicación
-        self.router.add_api_route(
-            "/channels",
-            self.get_channels,
-            methods=["GET"],
-            summary="Listar canales registrados y descubiertos",
-        )
-        self.router.add_api_route(
-            "/channels",
-            self.save_channel,
-            methods=["POST"],
-            summary="Crear o actualizar canal de publicación",
-        )
-        self.router.add_api_route(
-            "/channels/{channel_id}",
-            self.delete_channel,
-            methods=["DELETE"],
-            summary="Eliminar canal de publicación",
-        )
-
-        # 6. Biblioteca de Plantillas Editorial
-        self.router.add_api_route(
-            "/templates",
-            self.get_templates,
-            methods=["GET"],
-            summary="Listar plantillas de publicación",
-        )
-        self.router.add_api_route(
-            "/templates",
-            self.save_template,
-            methods=["POST"],
-            summary="Crear o actualizar plantilla",
-        )
-        self.router.add_api_route(
-            "/templates/{template_id}",
-            self.delete_template,
-            methods=["DELETE"],
-            summary="Eliminar plantilla",
-        )
-        self.router.add_api_route(
-            "/templates/restore",
-            self.restore_templates,
-            methods=["POST"],
-            summary="Restaurar plantillas predeterminadas oficiales",
-        )
-
-        # 7. Agenda y Cola de Publicación
-        self.router.add_api_route(
-            "/queue",
-            self.get_queue,
-            methods=["GET"],
-            summary="Obtener items de la cola / agenda de publicación",
-        )
-        self.router.add_api_route(
-            "/queue/cancel",
-            self.cancel_queue_item,
-            methods=["POST"],
-            summary="Cancelar item programado en cola",
-        )
-        self.router.add_api_route(
-            "/queue/retry",
-            self.retry_queue_item,
-            methods=["POST"],
-            summary="Reintentar item fallido en cola",
-        )
-        self.router.add_api_route(
-            "/queue/update",
-            self.update_queue_item,
-            methods=["POST"],
-            summary="Actualizar item programado en cola",
-        )
-
-        # 8. Historial de Posts
-        self.router.add_api_route(
-            "/posts",
-            self.get_posts_history,
-            methods=["GET"],
-            summary="Obtener historial de publicaciones enviadas",
-        )
+        # 5. Canales, Plantillas, Agenda y Publicaciones
+        for p, h, m in [
+            ("/channels", self.get_channels, ["GET"]),
+            ("/channels", self.save_channel, ["POST"]),
+            ("/channels/{channel_id}", self.delete_channel, ["DELETE"]),
+            ("/templates", self.get_templates, ["GET"]),
+            ("/templates", self.save_template, ["POST"]),
+            ("/templates/{template_id}", self.delete_template, ["DELETE"]),
+            ("/templates/restore", self.restore_templates, ["POST"]),
+            ("/queue", self.get_queue, ["GET"]),
+            ("/queue/cancel", self.cancel_queue_item, ["POST"]),
+            ("/queue/retry", self.retry_queue_item, ["POST"]),
+            ("/queue/update", self.update_queue_item, ["POST"]),
+            ("/posts", self.get_posts_history, ["GET"]),
+        ]:
+            self.router.add_api_route(p, h, methods=m)
 
         # 9. Directorio de Fansubs para ZeeTools
         for wg_path in ["/workgroups", "/groups"]:
@@ -486,6 +429,93 @@ class EditorialRoutes:
             return {
                 "success": True,
                 "book": self._serialize_book(b, b.series_info)
+            }
+
+    async def create_volume(self, payload: dict = Body(...)):
+        """Crea o registra un volumen en el catálogo."""
+        import hashlib
+        from sqlalchemy import or_, select
+        from services.cache_service import cache_manager
+
+        sid = payload.get("series_id")
+        if not sid:
+            raise HTTPException(status_code=400, detail="series_id es obligatorio")
+
+        title = payload.get("title") or payload.get("english_title") or "Sin título"
+        vol = payload.get("volume")
+        if vol is not None:
+            try:
+                vol = float(vol)
+            except (ValueError, TypeError):
+                vol = None
+
+        raw_id = payload.get("book_hash") or payload.get("id") or payload.get("uuid")
+        if not raw_id:
+            raw_id = hashlib.sha256(f"{sid}_{vol}_{title}".encode()).hexdigest()
+
+        async with pg_manager.get_session() as session:
+            stmt = select(Book).where(or_(Book.id == raw_id, Book.hash_md5 == raw_id))
+            res = await session.execute(stmt)
+            b = res.scalar_one_or_none()
+            is_new = False
+            if not b:
+                is_new = True
+                b = Book(
+                    id=raw_id,
+                    series_id=sid,
+                    source_id=1,
+                    filepath=payload.get("filepath") or f"/library/manual/{raw_id}.epub",
+                    filename=payload.get("filename") or f"{raw_id}.epub",
+                    file_size=int(payload.get("file_size") or 0),
+                    title=title,
+                )
+                session.add(b)
+
+            b.series_id = sid
+            b.title = title
+            b.volume = vol
+            if payload.get("spanish_title"):
+                b.spanish_title = payload.get("spanish_title").strip()
+            if payload.get("english_title"):
+                b.english_title = payload.get("english_title").strip()
+            if payload.get("romaji_title"):
+                b.romaji_title = payload.get("romaji_title").strip()
+            if payload.get("author"):
+                b.author = payload.get("author").strip()
+            if payload.get("illustrator"):
+                b.illustrator = payload.get("illustrator").strip()
+            if payload.get("translator"):
+                b.translator = payload.get("translator").strip()
+            if payload.get("layout_by"):
+                b.layout_by = payload.get("layout_by").strip()
+            if payload.get("publisher"):
+                b.publisher = payload.get("publisher").strip()
+            if payload.get("description"):
+                b.description = payload.get("description").strip()
+            if payload.get("isbn"):
+                b.isbn = payload.get("isbn").strip()
+            if payload.get("asin"):
+                b.asin = payload.get("asin").strip()
+            if payload.get("uuid"):
+                b.uuid = payload.get("uuid").strip()
+            if payload.get("color_mode"):
+                b.color_mode = payload.get("color_mode").strip()
+            if payload.get("published_date"):
+                try:
+                    from datetime import datetime
+                    c_date = str(payload.get("published_date")).strip().split("T")[0]
+                    b.published_at = datetime.fromisoformat(c_date)
+                except (ValueError, TypeError):
+                    pass
+
+            await session.commit()
+            await cache_manager.delete_book(b.id)
+
+            return {
+                "success": True,
+                "message": "Volumen registrado correctamente" if is_new else "Volumen actualizado correctamente",
+                "book_id": b.id,
+                "book": self._serialize_book(b, b.series_info),
             }
 
     async def update_volume(self, book_hash: str, payload: BookUpdateSchema):
@@ -896,93 +926,64 @@ class EditorialRoutes:
     # ==========================================
 
     async def get_channels(self):
-        """Retorna lista de canales registrados y descubiertos."""
         from api.handlers.publisher import handle_pub_get_channels
         return await handle_pub_get_channels({}, {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def save_channel(self, payload: ChannelSaveSchema):
-        """Crea o actualiza un canal de publicación."""
         from api.handlers.publisher import handle_pub_save_channel
         return await handle_pub_save_channel(payload.model_dump(), {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def delete_channel(self, channel_id: int):
-        """Elimina un canal de publicación."""
         from api.handlers.publisher import handle_pub_delete_channel
         return await handle_pub_delete_channel({"id": channel_id}, {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def get_templates(self, platform: Optional[str] = Query(None)):
-        """Retorna lista de plantillas de publicación."""
         from api.handlers.publisher import handle_pub_get_templates
         return await handle_pub_get_templates({"platform": platform}, {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def save_template(self, payload: TemplateSaveSchema):
-        """Crea o actualiza una plantilla."""
         from api.handlers.publisher import handle_pub_save_template
         return await handle_pub_save_template(payload.model_dump(), {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def delete_template(self, template_id: int):
-        """Elimina una plantilla."""
         from api.handlers.publisher import handle_pub_delete_template
         return await handle_pub_delete_template({"id": template_id}, {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def restore_templates(self):
-        """Restaura las plantillas oficiales predeterminadas."""
         from api.handlers.publisher import handle_pub_restore_templates
         return await handle_pub_restore_templates({}, {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def get_queue(self, status: Optional[str] = Query(None), limit: int = Query(100)):
-        """Retorna la cola o agenda de publicaciones."""
         from api.handlers.publisher import handle_pub_get_queue
         return await handle_pub_get_queue({"status": status, "limit": limit}, {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def cancel_queue_item(self, payload: QueueActionSchema):
-        """Cancela un item de la cola de publicación."""
         from api.handlers.publisher import handle_pub_cancel
         return await handle_pub_cancel({"queue_id": payload.id}, {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def retry_queue_item(self, payload: QueueActionSchema):
-        """Reintenta un item fallido de la cola."""
         from api.handlers.publisher import handle_pub_retry
         return await handle_pub_retry({"queue_id": payload.id}, {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def update_queue_item(self, payload: dict = Body(...)):
-        """Actualiza fecha, canal, plantilla o caption de un item programado en cola."""
         from api.handlers.publisher import handle_pub_update_queue_item
         return await handle_pub_update_queue_item(payload, {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def get_posts_history(self, limit: int = Query(100)):
-        """Retorna el historial de publicaciones enviadas."""
         from api.handlers.publisher import handle_pub_get_queue
         return await handle_pub_get_queue({"status": "sent", "limit": limit}, {"level": "admin", "is_admin": True, "is_real_admin": True})
 
     async def schedule_publication(self, payload: SchedulePostRequest):
-        """Programa publicación en canal de Telegram."""
         from api.handlers.publisher import handle_pub_schedule
         return await handle_pub_schedule(
-            {
-                "book_id": payload.book_hash,
-                "book_hash": payload.book_hash,
-                "channel_id": payload.channel_id,
-                "scheduled_for": payload.scheduled_for,
-                "template_id": payload.template_id,
-                "caption": payload.custom_caption,
-                "send_as_file": payload.send_as_file,
-            },
+            {"book_id": payload.book_hash, "book_hash": payload.book_hash, "channel_id": payload.channel_id, "scheduled_for": payload.scheduled_for, "template_id": payload.template_id, "caption": payload.custom_caption, "send_as_file": payload.send_as_file},
             {"level": "admin", "is_admin": True, "is_real_admin": True},
         )
 
     async def publish_now(self, payload: PublishNowRequest):
-        """Publica inmediatamente en canal de Telegram."""
         from api.handlers.publisher import handle_pub_quick_post
         return await handle_pub_quick_post(
-            {
-                "book_id": payload.book_hash,
-                "book_hash": payload.book_hash,
-                "channel_id": payload.channel_id,
-                "template_id": payload.template_id,
-                "caption": payload.custom_caption,
-                "send_as_file": payload.send_as_file,
-            },
+            {"book_id": payload.book_hash, "book_hash": payload.book_hash, "channel_id": payload.channel_id, "template_id": payload.template_id, "caption": payload.custom_caption, "send_as_file": payload.send_as_file},
             {"level": "admin", "is_admin": True, "is_real_admin": True},
         )
 
