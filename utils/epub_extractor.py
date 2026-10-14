@@ -257,7 +257,9 @@ class EpubMetadataExtractor:
                     self.metadata["illustrator"] = None
                     self.metadata["illustrator_jap"] = None
                     self.metadata["editor"] = None
+                    self.metadata["distributor"] = None
                     layout_by_list = []  # Acumular todos los maquetadores
+                    distributor_list = []  # Acumular distribuidores (dst)
 
                     for cid, text in creators.items():
                         role = role_map.get(cid, "aut")
@@ -279,9 +281,12 @@ class EpubMetadataExtractor:
                             self.metadata["translator"] = text
                         elif role in ("edt", "editor"):
                             self.metadata["editor"] = text
-                        elif role in ("mrk", "dst", "mqt", "mkr"):
+                        elif role in ("mrk", "mqt", "mkr"):
                             if text and text not in layout_by_list:
                                 layout_by_list.append(text)
+                        elif role in ("dst", "distributor"):
+                            if text and text not in distributor_list:
+                                distributor_list.append(text)
                         elif role in ("ill", "illustrator"):
                             if not self.metadata.get("illustrator"):
                                 self.metadata["illustrator"] = text
@@ -290,6 +295,8 @@ class EpubMetadataExtractor:
 
                     if layout_by_list:
                         self.metadata["layout_by"] = ", ".join(layout_by_list)
+                    if distributor_list:
+                        self.metadata["distributor"] = ", ".join(distributor_list)
 
                     # 3.2 Identificadores (ISBN, ASIN, URI, UUID v7)
                     uuid_val = None
