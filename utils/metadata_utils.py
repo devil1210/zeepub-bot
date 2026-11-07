@@ -950,7 +950,7 @@ DEMOGRAPHY_REGEX_MAP = [
     (
         "Kodomo",
         re.compile(
-            r"(?:^|[^\w])(?:kodomo|niñ[oa]s?|nin[oa]s?|infantil|juvenil)(?:$|[^\w])",
+            r"(?:^|[^\w])(?:kodomo|niñ[oa]s?|nin[oa]s?|infantil)(?:$|[^\w])",
             re.IGNORECASE,
         ),
     ),

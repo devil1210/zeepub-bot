@@ -504,6 +504,8 @@ async def parse_opf_from_epub(data_or_path: bytes | str) -> dict[str, Any]:
         # Garantizar a lo sumo una única demografía canónica
         if out["demografia"]:
             out["demografia"] = [normalize_demography(out["demografia"])]
+        elif any(s.strip().lower() == "juvenil" for s in subjects):
+            out["demografia"] = ["Shounen"]
 
         # Edition characteristics (Options 1 & 3)
         all_subjects = " ".join(subjects).lower()
