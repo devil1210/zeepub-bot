@@ -8,6 +8,7 @@ from .communications import (
     PublicationTemplate,
 )
 from .custom_messages_models import GlobalVariable, PluginSettings, StoredMessage
+from .donation_models import DonationTransaction
 from .download_models import DownloadHistory
 from .group_models import GroupSettings
 from .library import (
@@ -47,6 +48,7 @@ __all__ = [
     "BookWorkgroup",
     "Demographic",
     "DiscoveredChat",
+    "DonationTransaction",
     "DownloadHistory",
     "Genre",
     "GlobalVariable",

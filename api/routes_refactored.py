@@ -11,6 +11,7 @@ from .routes.legacy_routes import LegacyRoutes
 from .routes.library_routes import LibraryRoutes
 from .routes.media_routes import MediaRoutes
 from .routes.upload_routes import UploadRoutes
+from .routes.webhook_routes import WebhookRoutes
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class RoutesManager:
         self.upload_routes = UploadRoutes()  # 📤 REST upload endpoints para Web App
         self.agent_routes = AgentRoutes()  # 🌉 Puente MCP → SPbot
         self.editorial_routes = EditorialRoutes()  # 📚 REST editorial endpoints para ZeeTools
+        self.webhook_routes = WebhookRoutes()  # ☕ Pasarelas y Webhooks (Ko-fi)
 
         # Register endpoint methods into routers
         self.library_routes.register_routes()
@@ -44,6 +46,7 @@ class RoutesManager:
         self.upload_routes.register_routes()
         self.agent_routes.register_routes()
         self.editorial_routes.register_routes()
+        self.webhook_routes.register_routes()
 
     def register_all_routes(self, app):
         """
@@ -62,6 +65,7 @@ class RoutesManager:
             app.include_router(self.upload_routes.get_router())  # 📤 Upload REST & history
             app.include_router(self.agent_routes.get_router())  # 🌉 Puente MCP
             app.include_router(self.editorial_routes.get_router())  # 📚 Editorial / ZeeTools REST
+            app.include_router(self.webhook_routes.get_router())  # ☕ Webhooks / Ko-fi
 
             logger.info("✅ All API routes registered successfully")
 

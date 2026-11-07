@@ -596,7 +596,7 @@ class EpubScanner:
                 except Exception:
                     pass
 
-                if book.book_hash:
+                if not book.short_link and book.book_hash:
                     book.short_link = generate_short_link(book.book_hash)
 
             if translator_provider:

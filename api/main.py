@@ -370,6 +370,14 @@ if enable_miniapp:
 
 else:
     logger.info("Mini App desactivada por configuración (ENABLE_MINI_APP=False).")
+    try:
+        from api.routes.webhook_routes import WebhookRoutes
+
+        _wh = WebhookRoutes()
+        _wh.register_routes()
+        app.include_router(_wh.get_router())
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"Error registering webhooks when miniapp is disabled: {e}")
 
     @app.get("/{full_path:path}")
     async def disabled_root(full_path: str):

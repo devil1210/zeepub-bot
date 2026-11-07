@@ -25,6 +25,9 @@ class UserRepository(BaseRepository[User]):
 
     def __init__(self, db_manager=None):
         super().__init__(model=User, db_manager=db_manager or pg_manager)
+        from core.supabase_manager import supabase_manager
+
+        self.supabase = supabase_manager
 
     # --- Implementación de métodos abstractos de BaseRepository ---
 

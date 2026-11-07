@@ -143,8 +143,9 @@ class BotConfig:
     # ZITADEL Actions v2 - Signing Key para validación de webhooks
     ZITADEL_SIGNING_KEY: str = os.getenv("ZITADEL_SIGNING_KEY", "")
 
-    # Donation URL
+    # Donation URL & Webhook
     DONATION_URL: str = os.getenv("DONATION_URL", "")
+    KOFI_VERIFICATION_TOKEN: str = os.getenv("KOFI_VERIFICATION_TOKEN", "")
 
     # Límites por hora
     MAX_DOWNLOADS_PER_DAY: int = int(os.getenv("MAX_DOWNLOADS_PER_DAY", "5"))
