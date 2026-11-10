@@ -28,7 +28,9 @@ class BookRepository(BaseRepository[LocalBook]):
         """Obtiene un libro por hash con su información de serie cargada."""
         async with pg_manager.get_session() as session:
             stmt = (
-                select(LocalBook).options(selectinload(LocalBook.series_info)).where(LocalBook.book_hash == book_hash)
+                select(LocalBook)
+                .options(selectinload(LocalBook.series_info))
+                .where(LocalBook.book_hash == book_hash)
             )
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
@@ -61,13 +63,19 @@ class BookRepository(BaseRepository[LocalBook]):
                 # Las FKS en la DB deberían manejar el ON DELETE SET NULL o CASCADE
                 # Pero lo hacemos explícito para seguridad en el código
                 await session.execute(
-                    update(DownloadHistory).where(DownloadHistory.book_hash == book_hash).values(book_hash=None)
+                    update(DownloadHistory)
+                    .where(DownloadHistory.book_hash == book_hash)
+                    .values(book_hash=None)
                 )
                 await session.execute(
-                    update(UserDownload).where(UserDownload.book_hash == book_hash).values(book_hash=None)
+                    update(UserDownload)
+                    .where(UserDownload.book_hash == book_hash)
+                    .values(book_hash=None)
                 )
                 await session.execute(
-                    update(UserRating).where(UserRating.book_hash == book_hash).values(book_hash=None)
+                    update(UserRating)
+                    .where(UserRating.book_hash == book_hash)
+                    .values(book_hash=None)
                 )
 
                 stmt = delete(LocalBook).where(LocalBook.book_hash == book_hash)
@@ -100,9 +108,13 @@ class BookRepository(BaseRepository[LocalBook]):
     async def get_by_filepath(self, filepath: str) -> LocalBook | None:
         """Busca un libro por su ruta de archivo."""
         async with pg_manager.get_session() as session:
-            stmt = select(LocalBook).where(LocalBook.filepath == filepath)
+            stmt = (
+                select(LocalBook)
+                .where(LocalBook.filepath == filepath)
+                .order_by(LocalBook.created_at.desc())
+            )
             result = await session.execute(stmt)
-            return result.scalar_one_or_none()
+            return result.scalars().first()
 
     async def get_by_series_and_volume(
         self, series_id: str, volume: float
@@ -149,28 +161,79 @@ class BookRepository(BaseRepository[LocalBook]):
 
                 # Filtros base
                 filters = [
-                    func.unaccent(func.coalesce(LocalBook.title, "")).ilike(unacc_pattern),
-                    func.unaccent(func.coalesce(LocalBook.spanish_title, "")).ilike(unacc_pattern),
-                    func.unaccent(func.coalesce(SeriesMetadata.author, "")).ilike(unacc_pattern),
-                    func.unaccent(func.coalesce(SeriesMetadata.series_name, "")).ilike(unacc_pattern),
-                    func.unaccent(func.coalesce(SeriesMetadata.name_spanish, "")).ilike(unacc_pattern),
-                    func.unaccent(func.coalesce(SeriesMetadata.name_english, "")).ilike(unacc_pattern),
-                    func.unaccent(func.coalesce(LocalBook.romaji_title, "")).ilike(unacc_pattern),
+                    func.unaccent(func.coalesce(LocalBook.title, "")).ilike(
+                        unacc_pattern
+                    ),
+                    func.unaccent(func.coalesce(LocalBook.spanish_title, "")).ilike(
+                        unacc_pattern
+                    ),
+                    func.unaccent(func.coalesce(SeriesMetadata.author, "")).ilike(
+                        unacc_pattern
+                    ),
+                    func.unaccent(func.coalesce(SeriesMetadata.series_name, "")).ilike(
+                        unacc_pattern
+                    ),
+                    func.unaccent(func.coalesce(SeriesMetadata.name_spanish, "")).ilike(
+                        unacc_pattern
+                    ),
+                    func.unaccent(func.coalesce(SeriesMetadata.name_english, "")).ilike(
+                        unacc_pattern
+                    ),
+                    func.unaccent(func.coalesce(LocalBook.romaji_title, "")).ilike(
+                        unacc_pattern
+                    ),
                 ]
 
                 # Filtros extendidos según el tipo de búsqueda
                 if search_type in ("all", "todos", "genres", "géneros", "tags"):
-                    filters.append(func.unaccent(cast(SeriesMetadata.tags_json, String)).ilike(unacc_pattern))
+                    filters.append(
+                        func.unaccent(cast(SeriesMetadata.tags_json, String)).ilike(
+                            unacc_pattern
+                        )
+                    )
                 if search_type in ("all", "todos", "demographics", "demografía"):
-                    filters.append(func.unaccent(cast(SeriesMetadata.demographics_json, String)).ilike(unacc_pattern))
-                if search_type in ("all", "todos", "translator", "traductor", "group", "grupo"):
-                    filters.append(func.unaccent(func.coalesce(LocalBook.translator, "")).ilike(unacc_pattern))
+                    filters.append(
+                        func.unaccent(
+                            cast(SeriesMetadata.demographics_json, String)
+                        ).ilike(unacc_pattern)
+                    )
+                if search_type in (
+                    "all",
+                    "todos",
+                    "translator",
+                    "traductor",
+                    "group",
+                    "grupo",
+                ):
+                    filters.append(
+                        func.unaccent(func.coalesce(LocalBook.translator, "")).ilike(
+                            unacc_pattern
+                        )
+                    )
                 if search_type in ("all", "todos", "illustrator", "ilustrador"):
-                    filters.append(func.unaccent(func.coalesce(SeriesMetadata.author, "")).ilike(unacc_pattern))
-                if search_type in ("all", "todos", "layout", "maquetador", "typesetter"):
-                    filters.append(func.unaccent(func.coalesce(LocalBook.layout_by, "")).ilike(unacc_pattern))
+                    filters.append(
+                        func.unaccent(func.coalesce(SeriesMetadata.author, "")).ilike(
+                            unacc_pattern
+                        )
+                    )
+                if search_type in (
+                    "all",
+                    "todos",
+                    "layout",
+                    "maquetador",
+                    "typesetter",
+                ):
+                    filters.append(
+                        func.unaccent(func.coalesce(LocalBook.layout_by, "")).ilike(
+                            unacc_pattern
+                        )
+                    )
                 if search_type in ("all", "todos", "isbn"):
-                    filters.append(func.unaccent(func.coalesce(LocalBook.isbn, "")).ilike(unacc_pattern))
+                    filters.append(
+                        func.unaccent(func.coalesce(LocalBook.isbn, "")).ilike(
+                            unacc_pattern
+                        )
+                    )
 
                 # Subconsulta para conteo de descargas
                 dl_subquery = (
@@ -182,7 +245,10 @@ class BookRepository(BaseRepository[LocalBook]):
 
                 stmt = (
                     select(LocalBook, dl_subquery.label("download_count"))
-                    .outerjoin(SeriesMetadata, LocalBook.series_hash == SeriesMetadata.series_hash)
+                    .outerjoin(
+                        SeriesMetadata,
+                        LocalBook.series_hash == SeriesMetadata.series_hash,
+                    )
                     .options(selectinload(LocalBook.series_info))
                     .where(or_(*filters))
                 )
@@ -196,7 +262,11 @@ class BookRepository(BaseRepository[LocalBook]):
 
                 # Paginación y Orden
                 start = (page - 1) * items_per_page
-                stmt = stmt.order_by(LocalBook.title.asc()).offset(start).limit(items_per_page)
+                stmt = (
+                    stmt.order_by(LocalBook.title.asc())
+                    .offset(start)
+                    .limit(items_per_page)
+                )
 
                 result = await session.execute(stmt)
                 rows = result.all()  # [(book, dl_count), ...]
@@ -232,9 +302,17 @@ class BookRepository(BaseRepository[LocalBook]):
 
                     # Normalizar modified_at_opf (datetime) a string ISO
                     from datetime import datetime
-                    if "modified_at_opf" in book_dict and isinstance(book_dict["modified_at_opf"], datetime):
-                        book_dict["modified_at_opf"] = book_dict["modified_at_opf"].isoformat()
-                    elif "modified_at_opf" in book_dict and book_dict["modified_at_opf"] is None:
+
+                    if "modified_at_opf" in book_dict and isinstance(
+                        book_dict["modified_at_opf"], datetime
+                    ):
+                        book_dict["modified_at_opf"] = book_dict[
+                            "modified_at_opf"
+                        ].isoformat()
+                    elif (
+                        "modified_at_opf" in book_dict
+                        and book_dict["modified_at_opf"] is None
+                    ):
                         book_dict["modified_at_opf"] = None
 
                     # Mapear a DTO para consistencia con el frontend
@@ -258,7 +336,9 @@ class BookRepository(BaseRepository[LocalBook]):
                 logger.error(f"Error en search_books del repositorio: {e}")
                 return {"results": [], "totalItems": 0, "totalPages": 0}
 
-    async def get_recent_books(self, page: int = 1, items_per_page: int = 10) -> dict[str, Any]:
+    async def get_recent_books(
+        self, page: int = 1, items_per_page: int = 10
+    ) -> dict[str, Any]:
         """Obtiene los libros añadidos recientemente con soporte de paginación."""
         async with pg_manager.get_session() as session:
             # Subquery for download count
@@ -269,7 +349,9 @@ class BookRepository(BaseRepository[LocalBook]):
                 .scalar_subquery()
             )
 
-            stmt = select(LocalBook, dl_subquery.label("download_count")).options(selectinload(LocalBook.series_info))
+            stmt = select(LocalBook, dl_subquery.label("download_count")).options(
+                selectinload(LocalBook.series_info)
+            )
 
             # Contar total de resultados
             count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -277,7 +359,11 @@ class BookRepository(BaseRepository[LocalBook]):
 
             # Paginación y Orden
             start = (page - 1) * items_per_page
-            stmt = stmt.order_by(LocalBook.indexed_at.desc()).offset(start).limit(items_per_page)
+            stmt = (
+                stmt.order_by(LocalBook.indexed_at.desc())
+                .offset(start)
+                .limit(items_per_page)
+            )
 
             result = await session.execute(stmt)
             rows = result.all()
@@ -319,7 +405,11 @@ class BookRepository(BaseRepository[LocalBook]):
         """Obtiene todos los libros que comparten un hash."""
         async with pg_manager.get_session() as session:
             try:
-                stmt = select(LocalBook).where(LocalBook.book_hash == book_hash).order_by(LocalBook.indexed_at.asc())
+                stmt = (
+                    select(LocalBook)
+                    .where(LocalBook.book_hash == book_hash)
+                    .order_by(LocalBook.indexed_at.asc())
+                )
                 result = await session.execute(stmt)
                 return result.scalars().all()
             except Exception as e:
@@ -329,7 +419,9 @@ class BookRepository(BaseRepository[LocalBook]):
     async def get_total_downloads(self, book_hash: str) -> int:
         """Obtiene el conteo total de descargas para un hash de libro."""
         async with pg_manager.get_session() as session:
-            stmt = select(func.count(DownloadHistory.id)).where(DownloadHistory.book_hash == book_hash)
+            stmt = select(func.count(DownloadHistory.id)).where(
+                DownloadHistory.book_hash == book_hash
+            )
             result = await session.execute(stmt)
             return result.scalar() or 0
 

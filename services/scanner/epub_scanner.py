@@ -212,9 +212,25 @@ class EpubScanner:
                     selectinload(LocalBook.demographics),
                 )
                 .where(LocalBook.filepath == filepath)
+                .order_by(LocalBook.created_at.desc())
             )
             result = await session.execute(stmt)
-            book = result.scalar_one_or_none()
+            existing_books = list(result.scalars().all())
+            book = existing_books[0] if existing_books else None
+
+            # Limpieza preventiva si se detectan registros duplicados para esta ruta
+            if len(existing_books) > 1:
+                logger.warning(
+                    f"⚠️ Se detectaron {len(existing_books)} registros duplicados para '{filepath}'. Limpiando duplicados antiguos..."
+                )
+                from services.scanner.library_scanner import LibraryScanner
+
+                for old_dup in existing_books[1:]:
+                    await LibraryScanner._cleanup_book_references(
+                        session, old_dup.book_hash
+                    )
+                    await session.delete(old_dup)
+                await session.flush()
 
             # 2. Evaluación de necesidad de escaneo
             needs_processing = force_scan or not book
@@ -403,7 +419,7 @@ class EpubScanner:
                         LocalBook.id != target_book_hash,
                     )
                     dup_meta_res = await session.execute(dup_meta_stmt)
-                    logical_conflict = dup_meta_res.scalar_one_or_none()
+                    logical_conflict = dup_meta_res.scalars().first()
 
                     if logical_conflict:
                         logger.warning(

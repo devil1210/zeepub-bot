@@ -118,7 +118,9 @@ class ScannerService:
                     os.makedirs(path, exist_ok=True)
 
                     # Obtener fuente
-                    stmt_source = select(LibrarySource).where(LibrarySource.path == path)
+                    stmt_source = select(LibrarySource).where(
+                        LibrarySource.path == path
+                    )
                     res_source = await session.execute(stmt_source)
                     source = res_source.scalar_one_or_none()
 
@@ -144,7 +146,9 @@ class ScannerService:
 
                     # Pruning
                     if not soft_scan:
-                        archived, removed = await LibraryScanner.prune_source(session, source, found_files)
+                        archived, removed = await LibraryScanner.prune_source(
+                            session, source, found_files
+                        )
                         results["archived"] += archived
                         results["removed"] += removed
                         source.last_scanned = datetime.utcnow()
@@ -152,16 +156,22 @@ class ScannerService:
 
                 # Orphan Check
                 if results["sources_scanned"] > 0:
-                    stmt_scanned = select(LibrarySource.id).where(LibrarySource.path.in_(local_libs_map.values()))
+                    stmt_scanned = select(LibrarySource.id).where(
+                        LibrarySource.path.in_(local_libs_map.values())
+                    )
                     res_scanned = await session.execute(stmt_scanned)
                     scanned_ids = [row[0] for row in res_scanned]
 
-                    detected, moved = await LibraryScanner.resolve_orphans(session, scanned_ids)
+                    detected, moved = await LibraryScanner.resolve_orphans(
+                        session, scanned_ids
+                    )
                     results["removed"] += detected
 
                 # AI Gardener
                 if results["touched_series_hashes"]:
-                    await SeriesScanner.run_ai_gardener(session, results["touched_series_hashes"])
+                    await SeriesScanner.run_ai_gardener(
+                        session, results["touched_series_hashes"]
+                    )
 
                 # Sync Book Counts
                 await session.execute(
@@ -174,14 +184,18 @@ class ScannerService:
 
             # Notificar
             if all_new_books:
-                asyncio.create_task(notification_service.notify_new_books(all_new_books))
+                asyncio.create_task(
+                    notification_service.notify_new_books(all_new_books)
+                )
 
             # Auto-heal
             logger.info("🛠️ Ejecutando auto-correcciones de integridad y slugs...")
             await MaintenanceOrchestrator.run_tool("db_integrity")
             await MaintenanceOrchestrator.run_tool("slug_recalculate")
 
-            final_status = "cancelled" if ScannerService._stop_requested else "completed"
+            final_status = (
+                "cancelled" if ScannerService._stop_requested else "completed"
+            )
             ScannerService._current_progress.update(
                 {
                     "status": final_status,
@@ -203,7 +217,7 @@ class ScannerService:
             return results
 
         except Exception as e:
-            logger.error(f"Error en sync_all: {e}")
+            logger.error(f"Error en sync_all: {e}", exc_info=True)
             ScannerService._current_progress.update(
                 {
                     "status": "error",
@@ -215,7 +229,9 @@ class ScannerService:
         finally:
             ScannerService._is_scanning = False
 
-    async def _scan_directory(self, source, session, force_scan=False, soft_scan=False, max_files: int = 0) -> tuple:
+    async def _scan_directory(
+        self, source, session, force_scan=False, soft_scan=False, max_files: int = 0
+    ) -> tuple:
         results = {
             "total_scanned": 0,
             "added": 0,
@@ -245,7 +261,9 @@ class ScannerService:
 
                 # Modo diagnóstico: cortar tras N archivos
                 if max_files > 0 and results["total_scanned"] > max_files:
-                    logger.info(f"[quick-scan] Límite de {max_files} archivos alcanzado.")
+                    logger.info(
+                        f"[quick-scan] Límite de {max_files} archivos alcanzado."
+                    )
                     break
 
                 if soft_scan:
@@ -253,12 +271,12 @@ class ScannerService:
                     # Skip if older than 24h and already in DB
                     if (datetime.now() - mtime).total_seconds() > 86400:
                         stmt_exists = (
-                            select(LocalBook)
-                            .options(selectinload(LocalBook.series_info))
+                            select(LocalBook.id)
                             .where(LocalBook.filepath == full_path)
+                            .limit(1)
                         )
                         res_exists = await session.execute(stmt_exists)
-                        if res_exists.scalar_one_or_none():
+                        if res_exists.scalars().first():
                             continue
 
                 # Procesar libro por EpubScanner (async)
@@ -277,9 +295,10 @@ class ScannerService:
                         select(LocalBook)
                         .options(selectinload(LocalBook.series_info))
                         .where(LocalBook.filepath == full_path)
+                        .order_by(LocalBook.created_at.desc())
                     )
                     res_book = await session.execute(stmt_book)
-                    book = res_book.scalar_one_or_none()
+                    book = res_book.scalars().first()
 
                     if book and book.series_hash:
                         results["touched_series_hashes"].add(book.series_hash)
@@ -345,11 +364,15 @@ class ScannerService:
                 res_source = await session.execute(stmt_source)
                 source = (
                     res_source.scalar_one_or_none()
-                    or (await session.execute(select(LibrarySource))).scalar_one_or_none()
+                    or (
+                        await session.execute(select(LibrarySource))
+                    ).scalar_one_or_none()
                 )
 
                 if not source:
-                    logger.warning(f"No se encontró fuente de librería para id {source_id}")
+                    logger.warning(
+                        f"No se encontró fuente de librería para id {source_id}"
+                    )
                     return None
 
                 if os.path.isfile(abs_path) and abs_path.lower().endswith(".epub"):
@@ -367,12 +390,15 @@ class ScannerService:
                             select(LocalBook)
                             .options(selectinload(LocalBook.series_info))
                             .where(LocalBook.filepath == abs_path)
+                            .order_by(LocalBook.created_at.desc())
                         )
                         res_book = await session.execute(stmt_book)
-                        book = res_book.scalar_one_or_none()
+                        book = res_book.scalars().first()
 
                         if book and book.series_hash:
-                            await SeriesScanner.sync_series_metadata(session, book.series_hash)
+                            await SeriesScanner.sync_series_metadata(
+                                session, book.series_hash
+                            )
 
                         await session.commit()
 
@@ -381,7 +407,11 @@ class ScannerService:
                             from services.sync_service import SyncService
 
                             SyncService.trigger_auto_sync()
-                            return {"added": res == "added", "updated": res == "updated", "book_id": book.id}
+                            return {
+                                "added": res == "added",
+                                "updated": res == "updated",
+                                "book_id": book.id,
+                            }
 
                         # Trigger auto-sync even if book not found (it might be in DB but not returned as model)
                         from services.sync_service import SyncService
@@ -409,7 +439,9 @@ class ScannerService:
         ScannerService._is_scanning = True
         try:
             async with pg_manager.get_session() as session:
-                stmt_books = select(LocalBook).where(LocalBook.series_hash == series_hash)
+                stmt_books = select(LocalBook).where(
+                    LocalBook.series_hash == series_hash
+                )
                 res_books = await session.execute(stmt_books)
                 books = res_books.scalars().all()
                 if not books:
@@ -422,7 +454,9 @@ class ScannerService:
                 }
                 results = {"added": 0, "updated": 0, "total_scanned": 0}
 
-                source_stmt = select(LibrarySource).where(LibrarySource.id == books[0].source_id)
+                source_stmt = select(LibrarySource).where(
+                    LibrarySource.id == books[0].source_id
+                )
                 source_res = await session.execute(source_stmt)
                 source = source_res.scalar_one_or_none()
 
@@ -463,7 +497,9 @@ class ScannerService:
         return await LibraryScanner.cleanup_library_orphans(session, user_id)
 
     async def enrich_all_metadata(self, delay_seconds=2.0):
-        return await MaintenanceOrchestrator.run_tool("metadata_enrich", delay_seconds=delay_seconds)
+        return await MaintenanceOrchestrator.run_tool(
+            "metadata_enrich", delay_seconds=delay_seconds
+        )
 
     async def update_all_covers(self):
         return await MaintenanceOrchestrator.run_tool("cover_refresh")
