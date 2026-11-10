@@ -513,6 +513,7 @@ async def mostrar_resultados_locales(
     query: str,
     series: list,
     books_standalone: list = None,
+    force_new: bool = False,
 ):
     """Muestra los resultados de una búsqueda local agrupada por series en formato Rich Message unificado."""
     uid = update.effective_user.id
@@ -621,7 +622,7 @@ async def mostrar_resultados_locales(
         standalone_books=books_items,
     )
 
-    if hasattr(update, "callback_query") and update.callback_query:
+    if not force_new and hasattr(update, "callback_query") and update.callback_query:
         try:
             res_edit = await RichMessageService.edit_rich_message(
                 chat_id=chat_id,
