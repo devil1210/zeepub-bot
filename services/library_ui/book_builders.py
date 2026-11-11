@@ -544,16 +544,24 @@ def build_book_rich_blocks(
             else "⛔ Sin descargas disponibles"
         )
         cb_data = f"dl_confirm|{key}" if can_download else "noop"
+        act_row = [
+            {
+                "text": btn_text,
+                "callback_data": cb_data,
+            }
+        ]
+        if series_hash_short:
+            act_row.append(
+                {
+                    "text": "🧩 Carrusel (Dev)",
+                    "callback_data": f"widget_series|{series_hash_short}",
+                }
+            )
         blocks.append(
             {
                 "type": "buttons",
                 "align": "center",
-                "buttons": [
-                    {
-                        "text": btn_text,
-                        "callback_data": cb_data,
-                    }
-                ],
+                "buttons": act_row,
             }
         )
         if is_admin_or_staff:

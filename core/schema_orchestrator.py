@@ -113,6 +113,7 @@ class SchemaOrchestrator:
             await SchemaOrchestrator._check_and_add_column("books", "translator_group_id", "INTEGER")
             await SchemaOrchestrator._check_and_add_column("books", "editor_group_id", "INTEGER")
             await SchemaOrchestrator._check_and_add_column("books", "layout_group_id", "INTEGER")
+            await SchemaOrchestrator._check_and_add_column("books", "koreader_hash", "VARCHAR(32)")
 
             # Auto-Migration for TranslatorsGroup
             await SchemaOrchestrator._check_and_add_column("translators_groups", "description", "TEXT")

@@ -6,9 +6,9 @@ Cumple estrictamente con el principio de responsabilidad única y límite < 500 
 
 import logging
 import os
-import psutil
 import unicodedata
-from datetime import datetime, timezone
+
+import psutil
 from telegram import Update
 from telegram.ext import ContextTypes
 
@@ -18,7 +18,10 @@ from services.cover_service import _cover_file_id_cache
 from services.library_service import LibraryService
 from services.library_ui.catalog_views import mostrar_generos, mostrar_series
 from services.library_ui.info_views import check_is_admin_or_staff
-from services.library_ui.series_views import mostrar_volumenes_local
+from services.library_ui.series_views import (
+    mostrar_volumenes_local,
+    mostrar_volumenes_widget,
+)
 from services.rich_message_service import RichMessageService
 from utils.helpers import get_thread_id
 
@@ -59,6 +62,40 @@ class ExtraCommandsHandler:
 
         st.setdefault("historial", []).append(("main",))
         await mostrar_volumenes_local(update, context, series_hash=series["id"], force_new=True)
+
+    async def handle_widget_series(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Muestra una serie en formato Widget interactivo (HTML / QuickJS Telegram 10.4)."""
+        uid = update.effective_user.id
+        st = state_manager.get_user_state(uid)
+        args = context.args or []
+        query = " ".join(args).strip()
+
+        series_hash = None
+        if query:
+            if len(query) == 64:
+                series_hash = query
+            else:
+                search_res = await LibraryService.search_series(query=query, page=1, items_per_page=5)
+                results = search_res.get("results", [])
+                if results:
+                    series_hash = results[0].get("id")
+                else:
+                    await update.effective_message.reply_text(
+                        f"🔍 No se encontró ninguna serie con el término: <b>{query}</b>.\n"
+                        "💡 Usa <code>/carrusel</code> sin argumentos para probar con una serie aleatoria.",
+                        parse_mode="HTML",
+                    )
+                    return
+
+        if not series_hash:
+            series = await LibraryService.get_random_series()
+            if not series or not series.get("id"):
+                await update.effective_message.reply_text("⚠️ No se encontraron novelas en el catálogo.")
+                return
+            series_hash = series["id"]
+
+        st.setdefault("historial", []).append(("main",))
+        await mostrar_volumenes_widget(update, context, series_hash=series_hash, force_new=True)
 
     async def handle_top(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Muestra el Top 10 de novelas más descargadas."""
@@ -293,10 +330,11 @@ class ExtraCommandsHandler:
         hit_rate = cat_stats.get("hit_rate", 0) * 100
 
         # Conteo de libros y series
-        from core.db_manager_pg import pg_manager
         from sqlalchemy import func, select
-        from models.library import LocalBook, Series
+
+        from core.db_manager_pg import pg_manager
         from models.communications import PublicationQueue
+        from models.library import LocalBook, Series
 
         async with pg_manager.get_session() as session:
             s_count = (await session.execute(select(func.count(Series.id)))).scalar() or 0
@@ -364,8 +402,9 @@ class ExtraCommandsHandler:
         chat_id = update.effective_chat.id
         thread_id = get_thread_id(update)
 
+        from sqlalchemy import select
+
         from core.db_manager_pg import pg_manager
-        from sqlalchemy import select, desc
         from models.communications import PublicationQueue
 
         async with pg_manager.get_session() as session:

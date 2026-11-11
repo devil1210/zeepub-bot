@@ -10,6 +10,7 @@ from .communications import (
 from .custom_messages_models import GlobalVariable, PluginSettings, StoredMessage
 from .donation_models import DonationTransaction
 from .download_models import DownloadHistory
+from .reading import KoreaderBookHash, ReadingProgress
 from .group_models import GroupSettings
 from .library import (
     AILearningFeedback,
@@ -54,6 +55,7 @@ __all__ = [
     "GlobalVariable",
     "GroupContactLink",
     "GroupSettings",
+    "KoreaderBookHash",
     "LibraryCleanupLog",
     "LibrarySource",
     "LocalBook",
@@ -64,6 +66,7 @@ __all__ = [
     "PublicationChannel",
     "PublicationQueue",
     "PublicationTemplate",
+    "ReadingProgress",
     "SeriesAlias",
     "SeriesMetadata",
     "StoredMessage",

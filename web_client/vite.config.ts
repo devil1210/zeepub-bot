@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     build: {
       rollupOptions: {
+        external: ['/assets/foliate/view.js'],
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom', 'react-router-dom'],

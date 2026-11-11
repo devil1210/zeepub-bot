@@ -6,6 +6,8 @@ compatibilidad retroactiva total con el resto del proyecto bajo la regla de <500
 """
 
 from services.cover_service import resolve_cover_data, send_photo_bytes
+from services.koreader_service import KoreaderService
+from utils.koreader_hasher import calculate_koreader_fast_digest
 from services.library_ui import (
     build_admin_panel_rich_blocks,
     build_admin_scan_result_blocks,
@@ -44,6 +46,7 @@ from services.library_ui import (
     mostrar_resultados_locales,
     mostrar_series,
     mostrar_volumenes_local,
+    mostrar_volumenes_widget,
     pedir_termino_busqueda,
     schedule_message_lifecycle,
 )
@@ -52,6 +55,9 @@ __all__ = [
     # Portada Helpers
     "resolve_cover_data",
     "send_photo_bytes",
+    # KOReader & Reading Helpers
+    "KoreaderService",
+    "calculate_koreader_fast_digest",
     # Rich Blocks Builders
     "build_main_menu_rich_blocks",
     "build_genres_rich_blocks",
@@ -90,6 +96,7 @@ __all__ = [
     "ejecutar_set_timer",
     # Series Views
     "mostrar_volumenes_local",
+    "mostrar_volumenes_widget",
     "mostrar_detalles_libro",
     # Lifecycle
     "schedule_message_lifecycle",

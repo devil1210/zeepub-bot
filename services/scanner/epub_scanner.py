@@ -2,7 +2,7 @@ import hashlib
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import select
@@ -612,6 +612,16 @@ class EpubScanner:
                 except Exception:
                     pass
 
+                # Hash KOReader (fastDigest)
+                k_hash = None
+                try:
+                    from utils.koreader_hasher import calculate_koreader_fast_digest
+
+                    k_hash = calculate_koreader_fast_digest(filepath)
+                    book.koreader_hash = k_hash
+                except Exception as e_kh:
+                    logger.debug(f"Aviso al calcular koreader_hash para {filepath}: {e_kh}")
+
                 if not book.short_link and book.book_hash:
                     book.short_link = generate_short_link(book.book_hash)
 
@@ -635,6 +645,32 @@ class EpubScanner:
                     book.cover_low = base_url + os.path.basename(cover_paths["low"])
 
             await session.flush()
+
+            # Persistir mapeo en koreader_book_hashes
+            if k_hash and book.book_hash:
+                try:
+                    from sqlalchemy.dialects.postgresql import insert
+
+                    from models.reading import KoreaderBookHash
+
+                    stmt_kh = (
+                        insert(KoreaderBookHash)
+                        .values(
+                            koreader_hash=k_hash,
+                            book_id=book.book_hash,
+                            created_at=datetime.now(timezone.utc),
+                        )
+                        .on_conflict_do_update(
+                            index_elements=["koreader_hash"],
+                            set_={"book_id": book.book_hash},
+                        )
+                    )
+                    await session.execute(stmt_kh)
+                except Exception as e_kh_map:
+                    logger.debug(
+                        f"Aviso al mapear koreader_book_hashes para {book.book_hash}: {e_kh_map}"
+                    )
+
             return "added" if not book.book_hash else "updated"
 
         except Exception as e:

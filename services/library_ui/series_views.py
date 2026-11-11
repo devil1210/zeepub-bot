@@ -607,3 +607,89 @@ async def mostrar_detalles_libro(
         rich_msg_id = res.get("result", {}).get("message_id")
         if rich_msg_id:
             st["last_detalles_msg_ids"].append(rich_msg_id)
+
+
+async def mostrar_volumenes_widget(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    series_hash: str,
+) -> bool:
+    """
+    Despliega el Carrusel de Volúmenes interactivo mediante HTML Widgets (Telegram Bot API 10.4).
+    Si el cliente no soporta widgets o el método falla, conmuta automáticamente a mostrar_volumenes_local.
+    """
+    chat_id = update.effective_chat.id
+    query = update.callback_query
+
+    # 1. Resolver hash completo y volúmenes
+    full_series_hash = await LibraryService.resolve_series_hash(series_hash)
+    series_hash = full_series_hash or series_hash
+
+    volumes = await LibraryService.get_series_volumes(series_hash)
+    if not volumes:
+        if query:
+            await query.answer(
+                "⚠️ No se encontraron volúmenes para esta serie.",
+                show_alert=True,
+            )
+        return False
+
+    meta_serie = await LibraryService.get_series_metadata(series_hash)
+    meta_dict = (
+        meta_serie.to_dict()
+        if hasattr(meta_serie, "to_dict")
+        else (meta_serie if isinstance(meta_serie, dict) else {})
+    )
+    from utils.helpers import resolve_series_title
+
+    series_name = (
+        resolve_series_title(meta_dict, preference="english")
+        if meta_dict
+        else (meta_serie.series_name if meta_serie else "Serie")
+    )
+    author = (
+        meta_dict.get("author")
+        or (meta_serie.author if meta_serie else None)
+        or "Autor Desconocido"
+    )
+    synopsis = meta_dict.get("description") or (
+        meta_serie.description if meta_serie else ""
+    )
+
+    # 2. Generar HTML autónomo para el Widget
+    from services.widgets.series_carousel_widget import (
+        SeriesCarouselWidgetService,
+        build_series_carousel_widget_html,
+    )
+
+    base_url = config.BASE_URL or config.WEBAPP_URL or ""
+    html_widget = build_series_carousel_widget_html(
+        series_title=series_name,
+        author=author,
+        description=synopsis,
+        volumes=volumes,
+        current_index=0,
+        base_web_url=base_url,
+    )
+
+    # 3. Intentar despacho mediante sendWidget (Bot API 10.4)
+    success = await SeriesCarouselWidgetService.send_widget(
+        bot_token=config.TELEGRAM_TOKEN,
+        chat_id=chat_id,
+        html_content=html_widget,
+    )
+
+    if success:
+        if query:
+            await query.answer("🧩 Carrusel interactivo desplegado en el chat.")
+        return True
+
+    # 4. Fallback automático a Rich Message si el cliente no soporta widgets
+    if query:
+        await query.answer(
+            "ℹ️ Widget interactivo no disponible; abriendo vista tradicional..."
+        )
+    await mostrar_volumenes_local(
+        update, context, series_hash=series_hash, force_new=True
+    )
+    return False

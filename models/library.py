@@ -221,6 +221,7 @@ class Book(Base):
     filename: Mapped[str] = mapped_column(String(512))
     file_size: Mapped[int] = mapped_column(Integer)
     hash_md5: Mapped[str | None] = mapped_column(String(32))
+    koreader_hash: Mapped[str | None] = mapped_column(String(32), index=True, nullable=True)
     file_modified_at: Mapped[datetime | None] = mapped_column(DateTime)
 
     title: Mapped[str] = mapped_column(String(512))
@@ -752,6 +753,7 @@ class ArchivedBook(Base):
     last_filepath: Mapped[str | None] = mapped_column(String(1024))
     file_size: Mapped[int | None] = mapped_column(Integer)
     hash_md5: Mapped[str | None] = mapped_column(String(32))
+    koreader_hash: Mapped[str | None] = mapped_column(String(32), index=True, nullable=True)
     author: Mapped[str | None] = mapped_column(String(255))
     book_type: Mapped[str | None] = mapped_column(String(100))
 

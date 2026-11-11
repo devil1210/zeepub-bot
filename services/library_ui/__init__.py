@@ -54,6 +54,7 @@ from .lifecycle import (
 from .series_views import (
     mostrar_detalles_libro,
     mostrar_volumenes_local,
+    mostrar_volumenes_widget,
 )
 
 __all__ = [
@@ -93,6 +94,7 @@ __all__ = [
     "build_auto_delete_menu_blocks",
     # Series Views
     "mostrar_volumenes_local",
+    "mostrar_volumenes_widget",
     "mostrar_detalles_libro",
     # Lifecycle
     "schedule_message_lifecycle",

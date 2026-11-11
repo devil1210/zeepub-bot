@@ -445,6 +445,13 @@ class CallbackHandlerV6(BaseCommandHandler):
                     )
                 await mostrar_detalles_libro(update, context, key)
 
+            # 8.2 Despliegue de Carrusel Interactivo en HTML Widget (Bot API 10.4)
+            elif data.startswith("widget_series|"):
+                s_hash = data.split("|")[1]
+                from services.library_ui_service import mostrar_volumenes_widget
+
+                await mostrar_volumenes_widget(update, context, s_hash)
+
             # 9. Cambio de Volumen en Serie (Carrusel Interactivo)
             elif data.startswith("sel_vol|"):
                 key = data.split("|")[1]

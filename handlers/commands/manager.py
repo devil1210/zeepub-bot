@@ -97,6 +97,11 @@ class HandlerManagerV6:
             CommandHandler(["random", "aleatorio"], self.extra_h.handle_random)
         )
         self.app.add_handler(
+            CommandHandler(
+                ["carrusel", "widget"], self.extra_h.handle_widget_series
+            )
+        )
+        self.app.add_handler(
             CommandHandler(["top", "populares"], self.extra_h.handle_top)
         )
         self.app.add_handler(

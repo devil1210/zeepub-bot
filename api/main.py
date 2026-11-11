@@ -198,6 +198,11 @@ if enable_miniapp:
     # v4 Router central para nuevas funcionalidades
     app.include_router(v4_router, prefix="/api")
 
+    # Sincronización KOReader y Web Reader
+    from api.routes.koreader_routes import router as koreader_router
+
+    app.include_router(koreader_router)
+
     # ==========================================
     # Short Link Download - SIEMPRE activo con miniapp
     # Usa library_db (sync) porque LocalBook vive ahí

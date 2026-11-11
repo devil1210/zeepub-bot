@@ -130,6 +130,17 @@ class ZeePubBot:
         except Exception as e:
             logger.error(f"Error registering chat discovery: {e}")
 
+        # HTML Widgets (Bot API 10.4) Interaction Handler
+        try:
+            from handlers.widget_handlers import handle_widget_interaction
+
+            self.app.add_handler(
+                TypeHandler(Update, handle_widget_interaction), group=10
+            )
+            logger.info("Telegram HTML Widget handler registered")
+        except Exception as e:
+            logger.warning(f"Aviso al registrar handler de widgets: {e}")
+
     def start(self):
         """Arranca el bot en polling (bloqueante, modo legacy)."""
         logger.info("Bot iniciado, entrando en polling...")
