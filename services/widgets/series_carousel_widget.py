@@ -229,6 +229,25 @@ def prepare_carousel_payload(
     return html, files
 
 
+def build_series_carousel_widget_html(
+    series_title: str,
+    author: str,
+    description: str,
+    volumes: list[dict[str, Any]],
+    current_index: int = 0,
+    base_web_url: str = "",
+) -> str:
+    """Función de compatibilidad para generar el HTML autónomo del carrusel."""
+    html, _ = prepare_carousel_payload(
+        series_title=series_title,
+        author=author,
+        description=description,
+        volumes=volumes,
+        base_web_url=base_web_url,
+    )
+    return html
+
+
 class SeriesCarouselWidgetService:
     """
     Servicio para el despacho y manejo de Widgets HTML de series y volúmenes.
