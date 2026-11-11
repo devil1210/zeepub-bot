@@ -1,6 +1,12 @@
+# handlers/widget_handlers.py
+"""
+Manejador de interacciones de usuario provenientes de HTML Widgets (Telegram Bot API 10.4).
+Intercepta consultas de widget (widget_query) para acciones interactivas dentro del chat.
+"""
+
 import json
 import logging
-from pathlib import Path
+from typing import Any
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -17,21 +23,27 @@ async def handle_widget_interaction(update: Update, context: ContextTypes.DEFAUL
     Recibe la acción pulsada en el carrusel (leer o descargar) y responde
     mediante answerWidgetQuery y entrega directa.
     """
+    # Extraer widget_query de forma polimórfica (por si PTB no lo tiene tipado como atributo)
     raw_update = update.to_dict() if hasattr(update, "to_dict") else {}
-    widget_query = raw_update.get("widget_query")
+    unhandled = getattr(update, "_unhandled_fields", {}) or {}
+    widget_query: dict[str, Any] | None = (
+        getattr(update, "widget_query", None)
+        or raw_update.get("widget_query")
+        or unhandled.get("widget_query")
+    )
 
     if not widget_query:
         return
 
-    query_id = widget_query.get("id")
-    user = widget_query.get("from", {})
-    user_id = user.get("id")
-    raw_data = widget_query.get("data", "{}")
+    query_id = widget_query.get("id") if isinstance(widget_query, dict) else getattr(widget_query, "id", None)
+    user_info = widget_query.get("from", {}) if isinstance(widget_query, dict) else getattr(widget_query, "from_user", None)
+    user_id = user_info.get("id") if isinstance(user_info, dict) else getattr(user_info, "id", None)
+    raw_data = widget_query.get("data", "{}") if isinstance(widget_query, dict) else getattr(widget_query, "data", "{}")
 
     try:
-        data = json.loads(raw_data)
+        data = json.loads(raw_data) if isinstance(raw_data, str) else raw_data
     except (json.JSONDecodeError, TypeError):
-        data = {"action": raw_data}
+        data = {"action": str(raw_data)}
 
     action = data.get("action")
     book_id = data.get("book_id")
@@ -57,23 +69,24 @@ async def handle_widget_interaction(update: Update, context: ContextTypes.DEFAUL
             alert_text=f"Preparando entrega del Volumen {volume}...",
         )
 
-        # Enviar documento EPUB directamente si está disponible en disco
+        # Enviar documento EPUB directamente mediante enviar_libro_directo
         if book_id and context.bot and user_id:
             try:
                 from services.library_service import LibraryService
+                from services.telegram_service import enviar_libro_directo
 
                 book = await LibraryService.get_book_by_hash(book_id)
-                filepath = getattr(book, "filepath", None)
-                if filepath:
-                    p = Path(filepath)
-                    if p.is_file():
-                        file_bytes = p.read_bytes()
-                        await context.bot.send_document(
-                            chat_id=user_id,
-                            document=file_bytes,
-                            filename=getattr(book, "filename", "libro.epub"),
-                            caption=f"📖 <b>{getattr(book, 'title', 'Volumen')}</b>",
-                            parse_mode="HTML",
-                        )
-            except (OSError, RuntimeError) as e:
-                logger.warning(f"No se pudo despachar archivo directo tras widget query: {e}")
+                if book:
+                    b_dict = book if isinstance(book, dict) else (book.to_dict() if hasattr(book, "to_dict") else {})
+                    filepath = b_dict.get("filepath")
+                    title = b_dict.get("title") or f"Volumen {volume}"
+                    await enviar_libro_directo(
+                        bot=context.bot,
+                        user_id=user_id,
+                        title=title,
+                        download_url=filepath,
+                        target_chat_id=user_id,
+                        metadata_override=b_dict,
+                    )
+            except (OSError, RuntimeError, ValueError) as e:
+                logger.warning(f"No se pudo despachar libro tras widget query: {e}")

@@ -153,7 +153,10 @@ class ZeePubBot:
             asyncio.set_event_loop(loop)
 
         loop.run_until_complete(self.initialize())
-        self.app.run_polling(allowed_updates=Update.ALL_TYPES)
+        allowed_types = list(Update.ALL_TYPES)
+        if "widget_query" not in allowed_types:
+            allowed_types.append("widget_query")
+        self.app.run_polling(allowed_updates=allowed_types)
         loop.run_until_complete(session_manager.close())
 
     async def initialize(self):
@@ -311,7 +314,10 @@ class ZeePubBot:
                 logger.info(
                     f"Iniciando polling (intento {attempt + 1}/{max_retries})..."
                 )
-                await self.app.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+                allowed_types = list(Update.ALL_TYPES)
+                if "widget_query" not in allowed_types:
+                    allowed_types.append("widget_query")
+                await self.app.updater.start_polling(allowed_updates=allowed_types)
                 logger.info("Bot iniciado en modo asíncrono (API).")
                 break
             except Exception as e:

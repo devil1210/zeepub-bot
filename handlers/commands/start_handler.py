@@ -42,6 +42,33 @@ class StartHandler(BaseCommandHandler):
         # Check for deep-linking arguments (e.g. /start link_b64email or /start series_hash)
         if context.args and len(context.args) > 0:
             arg = context.args[0]
+            if arg.startswith("dl_"):
+                book_id = arg[3:]
+                try:
+                    from services.library_service import LibraryService
+                    from services.telegram_service import enviar_libro_directo
+
+                    book = await LibraryService.get_book_by_hash(book_id)
+                    if book:
+                        b_dict = (
+                            book
+                            if isinstance(book, dict)
+                            else (book.to_dict() if hasattr(book, "to_dict") else {})
+                        )
+                        filepath = b_dict.get("filepath")
+                        title = b_dict.get("title") or "Libro"
+                        await enviar_libro_directo(
+                            bot=context.bot,
+                            user_id=uid,
+                            title=title,
+                            download_url=filepath,
+                            target_chat_id=uid,
+                            metadata_override=b_dict,
+                        )
+                        return
+                except (OSError, RuntimeError, ValueError) as e:
+                    logger.error(f"Error procesando deep link de descarga: {e}")
+
             if arg.startswith(("series_", "serie_", "show_series_")):
                 series_hash_short = arg.split("_")[-1]
                 try:
