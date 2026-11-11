@@ -87,10 +87,8 @@ async def koreader_user_create(request: Request):
     return {"authorized": "OK", "message": "User registered in ZeePub sync"}
 
 
-@router.api_route(
-    ["/api/v1/koreader/users/auth", "/koreader/users/auth"],
-    methods=["GET", "POST"],
-)
+@router.api_route("/api/v1/koreader/users/auth", methods=["GET", "POST"])
+@router.api_route("/koreader/users/auth", methods=["GET", "POST"])
 async def koreader_user_auth(
     user_id: Annotated[int, Depends(get_koreader_user_id)],
 ):
