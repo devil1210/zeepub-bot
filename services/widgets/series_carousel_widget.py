@@ -359,6 +359,7 @@ class SeriesCarouselWidgetService:
         bot_token: str,
         chat_id: int,
         html_content: str,
+        message_thread_id: int | None = None,
     ) -> bool:
         """
         Envía un widget HTML mediante el método oficial sendWidget de Telegram Bot API 10.4.
@@ -372,6 +373,8 @@ class SeriesCarouselWidgetService:
             "chat_id": chat_id,
             "html": html_content,
         }
+        if message_thread_id:
+            payload["message_thread_id"] = message_thread_id
 
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:

@@ -9,6 +9,7 @@ import uuid
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from config.config_settings import config
 from core.state_manager import state_manager
 from services.cover_service import resolve_cover_data
 from services.keyboard_factory import BotKeyboards
@@ -613,6 +614,8 @@ async def mostrar_volumenes_widget(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
     series_hash: str,
+    force_new: bool = False,
+    **kwargs,
 ) -> bool:
     """
     Despliega el Carrusel de Volúmenes interactivo mediante HTML Widgets (Telegram Bot API 10.4).
@@ -620,6 +623,8 @@ async def mostrar_volumenes_widget(
     """
     chat_id = update.effective_chat.id
     query = update.callback_query
+    from utils.helpers import get_thread_id
+    thread_id = get_thread_id(update)
 
     # 1. Resolver hash completo y volúmenes
     full_series_hash = await LibraryService.resolve_series_hash(series_hash)
@@ -677,6 +682,7 @@ async def mostrar_volumenes_widget(
         bot_token=config.TELEGRAM_TOKEN,
         chat_id=chat_id,
         html_content=html_widget,
+        message_thread_id=thread_id,
     )
 
     if success:
@@ -690,6 +696,6 @@ async def mostrar_volumenes_widget(
             "ℹ️ Widget interactivo no disponible; abriendo vista tradicional..."
         )
     await mostrar_volumenes_local(
-        update, context, series_hash=series_hash, force_new=True
+        update, context, series_hash=series_hash, force_new=force_new
     )
     return False
