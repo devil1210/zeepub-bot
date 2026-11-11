@@ -2,10 +2,11 @@
 """
 Servicio para la generación y despacho de Widgets HTML interactivos (Telegram Bot API 10.4).
 Proporciona Carruseles de Volúmenes enriquecidos, renderizados dentro del chat mediante QuickJS.
-Diseñado para el entorno de desarrollo (Dev) con fallback resiliente.
+Diseñado para el entorno de desarrollo (Dev) con límite estricto de tamaño (<22 KB) para Telegram.
 """
 
 import base64
+import io
 import json
 import logging
 import os
@@ -28,26 +29,13 @@ def _clean_text(raw_text: str | None) -> str:
     return clean.replace("<", "&lt;").replace(">", "&gt;")
 
 
-def _resolve_cover_data_uri(v: dict[str, Any], base_web_url: str = "") -> str:
-    """
-    Resuelve la portada para el Widget HTML.
-    Prioriza leer la imagen local desde disco en Base64 (data:image/jpeg;base64,...)
-    para garantizar renderizado offline inmediato y evitar bloqueos de Cloudflare Access.
-    """
+def _find_cover_file_on_disk(v: dict[str, Any]) -> str | None:
+    """Localiza el archivo de portada en el almacenamiento local."""
     from utils.library_db import COVERS_DIR, THUMBNAILS_DIR
 
     book_id = str(v.get("id") or v.get("book_hash") or "")
-
-    # Lista de nombres/rutas candidatas a buscar en disco
     candidates: list[str] = []
-    for key in [
-        "cover_low",
-        "cover_medium",
-        "cover_high",
-        "cover_original",
-        "portada",
-        "coverUrl",
-    ]:
+    for key in ["cover_low", "cover_medium", "cover_high", "cover_original", "portada", "coverUrl"]:
         val = v.get(key)
         if val and isinstance(val, str):
             candidates.append(os.path.basename(val))
@@ -60,101 +48,73 @@ def _resolve_cover_data_uri(v: dict[str, Any], base_web_url: str = "") -> str:
             f"{book_id}_high.jpg",
         ])
 
-    # 1. Intentar leer en base64 desde disco (en THUMBNAILS_DIR o COVERS_DIR)
     search_dirs = [d for d in [THUMBNAILS_DIR, COVERS_DIR] if os.path.exists(d)]
     for target_dir in search_dirs:
         for cand in candidates:
             cand_path = os.path.join(target_dir, cand)
             if os.path.isfile(cand_path):
-                try:
-                    size = os.path.getsize(cand_path)
-                    # Aceptar imágenes hasta 128 KB para incrustar en widget
-                    if 0 < size <= 131072:
-                        with open(cand_path, "rb") as f:
-                            b64 = base64.b64encode(f.read()).decode("ascii")
-                            return f"data:image/jpeg;base64,{b64}"
-                except OSError:
-                    pass
+                return cand_path
 
-    # 2. Fallback a URL pública
-    for key in [
-        "cover_medium",
-        "cover_low",
-        "cover_high",
-        "cover_original",
-        "coverUrl",
-        "portada",
-    ]:
-        val = v.get(key)
-        if val and isinstance(val, str):
-            if val.startswith(("http://", "https://")):
-                return val
-            if val.startswith("/") and base_web_url:
-                return f"{base_web_url.rstrip('/')}{val}"
+    return None
+
+
+def _optimize_cover_thumbnail_base64(file_path: str, max_dim=(100, 150), quality=42) -> str:
+    """
+    Optimiza una portada local a miniatura ultra-liviana (2-3 KB) en Base64
+    para no saturar el límite estricto de 24 KB de Telegram sendWidget.
+    """
+    try:
+        from PIL import Image
+
+        with Image.open(file_path) as img:
+            if img.mode in ("RGBA", "P"):
+                img = img.convert("RGB")
+            img.thumbnail(max_dim, Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=quality, optimize=True)
+            raw = buf.getvalue()
+            if 0 < len(raw) <= 6144:  # Máximo 6 KB por miniatura
+                b64 = base64.b64encode(raw).decode("ascii")
+                return f"data:image/jpeg;base64,{b64}"
+    except (ImportError, OSError, ValueError) as e:
+        logger.debug(f"Pillow cover thumbnail error: {e}")
+
+    # Fallback lectura directa si ya es pequeña
+    try:
+        size = os.path.getsize(file_path)
+        if 0 < size <= 5120:
+            with open(file_path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode("ascii")
+                return f"data:image/jpeg;base64,{b64}"
+    except OSError:
+        pass
 
     return ""
 
 
-def build_series_carousel_widget_html(
+def _render_widget_html_template(
     series_title: str,
     author: str,
-    description: str,
-    volumes: list[dict[str, Any]],
-    current_index: int = 0,
-    base_web_url: str = "",
+    initial_title: str,
+    initial_synopsis: str,
+    total_vols: int,
+    volumes_json: str,
+    current_index: int,
+    clean_series_desc: str,
+    bot_username: str,
+    base_web_url: str,
 ) -> str:
-    """
-    Construye un documento HTML5 autónomo y con altura generosa para renderizar un
-    Carrusel de Volúmenes interactivo dentro de un mensaje de Telegram mediante Bot API 10.4.
-    """
-    clean_series_desc = _clean_text(description) or "Sin descripción disponible para esta serie."
-    if len(clean_series_desc) > 360:
-        clean_series_desc = clean_series_desc[:357] + "..."
-
-    bot_username = getattr(config, "BOT_USERNAME", "") or "ZeePubs_Bot"
-
-    # Preparar el payload de volúmenes con sinopsis y portadas individuales
-    volumes_payload = []
-    for idx, v in enumerate(volumes):
-        v_title = (
-            v.get("titulo")
-            or v.get("title")
-            or f"Volumen {v.get('vol_display', v.get('volume', idx + 1))}"
-        )
-        vol_desc_raw = v.get("description")
-        v_synopsis = _clean_text(vol_desc_raw) if vol_desc_raw else clean_series_desc
-        if len(v_synopsis) > 360:
-            v_synopsis = v_synopsis[:357] + "..."
-
-        cover_uri = _resolve_cover_data_uri(v, base_web_url)
-
-        volumes_payload.append({
-            "id": str(v.get("id") or v.get("book_hash") or ""),
-            "vol_num": str(v.get("vol_display", v.get("volume", idx + 1))),
-            "title": v_title,
-            "translator": v.get("translator_siglas") or v.get("translator") or "Oficial",
-            "is_color": bool(v.get("color")),
-            "cover": cover_uri,
-            "synopsis": v_synopsis,
-        })
-
-    volumes_json = json.dumps(volumes_payload, ensure_ascii=False)
-    initial_vol = volumes_payload[current_index] if volumes_payload else {}
-    initial_synopsis = initial_vol.get("synopsis", clean_series_desc)
-    initial_title = initial_vol.get("title", f"Volumen {current_index + 1}")
-    total_vols = len(volumes_payload)
-
-    html_template = f"""<!DOCTYPE html>
+    """Genera la plantilla HTML5 del widget interactivo."""
+    return f"""<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
   :root {{
-    --bg-card: rgba(15, 23, 42, 0.92);
+    --bg-card: rgba(15, 23, 42, 0.94);
     --border: rgba(255, 255, 255, 0.12);
     --primary: #2b6cee;
-    --primary-hover: #3b82f6;
     --text-primary: #f8fafc;
     --text-muted: #94a3b8;
     --badge-bg: rgba(43, 108, 238, 0.22);
@@ -163,7 +123,7 @@ def build_series_carousel_widget_html(
   * {{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }}
   body {{
     margin: 0;
-    padding: 8px;
+    padding: 6px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: var(--text-primary);
     background: transparent;
@@ -175,7 +135,7 @@ def build_series_carousel_widget_html(
     border: 1px solid var(--border);
     border-radius: 18px;
     padding: 16px;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -187,14 +147,14 @@ def build_series_carousel_widget_html(
   }}
   .cover-box {{
     position: relative;
-    width: 110px;
-    height: 162px;
+    width: 108px;
+    height: 160px;
     flex-shrink: 0;
     border-radius: 12px;
     overflow: hidden;
     background: linear-gradient(135deg, #1e293b, #0f172a);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.14);
   }}
   .cover-placeholder {{
     width: 100%;
@@ -207,12 +167,11 @@ def build_series_carousel_widget_html(
     background: linear-gradient(145deg, #1e293b, #0f172a);
   }}
   .ph-icon {{ font-size: 32px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }}
-  .ph-vol {{ font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; }}
+  .ph-vol {{ font-size: 11px; font-weight: 700; color: #94a3b8; }}
   .cover-box img {{
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: opacity 0.25s ease;
     display: none;
   }}
   .color-badge {{
@@ -225,8 +184,6 @@ def build_series_carousel_widget_html(
     font-weight: 800;
     padding: 2px 5px;
     border-radius: 4px;
-    letter-spacing: 0.3px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
   }}
   .info {{
     flex: 1;
@@ -290,7 +247,7 @@ def build_series_carousel_widget_html(
   }}
   .synopsis-box {{
     padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.035);
+    background: rgba(255, 255, 255, 0.04);
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.06);
   }}
@@ -330,11 +287,8 @@ def build_series_carousel_widget_html(
     padding: 8px 16px;
     border-radius: 8px;
     cursor: pointer;
-    transition: background 0.15s;
   }}
-  .nav-btn:active {{
-    background: rgba(255, 255, 255, 0.22);
-  }}
+  .nav-btn:active {{ background: rgba(255, 255, 255, 0.22); }}
   .counter {{
     font-size: 12px;
     font-weight: 700;
@@ -358,7 +312,7 @@ def build_series_carousel_widget_html(
     justify-content: center;
     gap: 8px;
     min-height: 42px;
-    transition: transform 0.1s, background 0.2s;
+    transition: transform 0.1s;
   }}
   .btn-act:active {{ transform: scale(0.97); }}
   .btn-read {{
@@ -367,7 +321,6 @@ def build_series_carousel_widget_html(
     border: 1px solid rgba(96, 165, 250, 0.3);
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
   }}
-  .btn-read:active {{ background: #1d4ed8; }}
   .btn-dl {{
     background: rgba(255, 255, 255, 0.08);
     color: var(--text-primary);
@@ -400,27 +353,20 @@ def build_series_carousel_widget_html(
       </div>
     </div>
 
-    <!-- Caja de Sinopsis Dinámica por Volumen -->
     <div class="synopsis-box">
       <div class="synopsis-header">Sinopsis del Volumen</div>
       <p class="synopsis-text" id="volSynopsis">{initial_synopsis}</p>
     </div>
 
-    <!-- Barra de Selección de Volúmenes Instantánea -->
     <div class="selector-row">
       <button class="nav-btn" onclick="prevVol()">◀ Ant</button>
       <span class="counter" id="volCounter">1 / {total_vols}</span>
       <button class="nav-btn" onclick="nextVol()">Sig ▶</button>
     </div>
 
-    <!-- Botones de Acción Interactivas -->
     <div class="action-row">
-      <button class="btn-act btn-read" onclick="triggerRead()">
-        📖 Leer Online
-      </button>
-      <button class="btn-act btn-dl" onclick="triggerDownload()">
-        ⬇️ Descargar
-      </button>
+      <button class="btn-act btn-read" onclick="triggerRead()">📖 Leer Online</button>
+      <button class="btn-act btn-dl" onclick="triggerDownload()">⬇️ Descargar</button>
     </div>
   </div>
 
@@ -462,38 +408,25 @@ def build_series_carousel_widget_html(
       document.getElementById('volCounter').innerText = (idx + 1) + ' / ' + vols.length;
       document.getElementById('colorBadge').style.display = cur.is_color ? 'block' : 'none';
 
-      // Feedback háptico nativo de Telegram al navegar entre volúmenes
       if (window.TelegramWidget && window.TelegramWidget.HapticFeedback) {{
-        try {{
-          window.TelegramWidget.HapticFeedback.selectionChanged();
-        }} catch(e) {{}}
+        try {{ window.TelegramWidget.HapticFeedback.selectionChanged(); }} catch(e) {{}}
       }}
     }}
 
     function prevVol() {{
-      if (idx > 0) {{
-        idx--;
-      }} else {{
-        idx = vols.length - 1;
-      }}
+      idx = (idx > 0) ? (idx - 1) : (vols.length - 1);
       renderVolume();
     }}
 
     function nextVol() {{
-      if (idx < vols.length - 1) {{
-        idx++;
-      }} else {{
-        idx = 0;
-      }}
+      idx = (idx < vols.length - 1) ? (idx + 1) : 0;
       renderVolume();
     }}
 
     function triggerRead() {{
       const cur = vols[idx];
       if (window.TelegramWidget && window.TelegramWidget.HapticFeedback) {{
-        try {{
-          window.TelegramWidget.HapticFeedback.impactOccurred('medium');
-        }} catch(e) {{}}
+        try {{ window.TelegramWidget.HapticFeedback.impactOccurred('medium'); }} catch(e) {{}}
       }}
       let handled = false;
       try {{
@@ -505,9 +438,7 @@ def build_series_carousel_widget_html(
           }}));
           handled = true;
         }}
-      }} catch(err) {{
-        console.warn(err);
-      }}
+      }} catch(err) {{}}
 
       if (!handled) {{
         const targetUrl = (baseWebUrl || 'https://zp-dev.sp-core.vip').replace(/\\/$/, '') + '/reader?bookId=' + cur.id;
@@ -518,9 +449,7 @@ def build_series_carousel_widget_html(
     function triggerDownload() {{
       const cur = vols[idx];
       if (window.TelegramWidget && window.TelegramWidget.HapticFeedback) {{
-        try {{
-          window.TelegramWidget.HapticFeedback.impactOccurred('light');
-        }} catch(e) {{}}
+        try {{ window.TelegramWidget.HapticFeedback.impactOccurred('light'); }} catch(e) {{}}
       }}
       let handled = false;
       try {{
@@ -532,11 +461,8 @@ def build_series_carousel_widget_html(
           }}));
           handled = true;
         }}
-      }} catch(err) {{
-        console.warn(err);
-      }}
+      }} catch(err) {{}}
 
-      // Fallback universal a deep link de Telegram si widget_query no está disponible
       if (!handled) {{
         const tgLink = 'tg://resolve?domain=' + botName + '&start=dl_' + cur.id;
         try {{
@@ -547,11 +473,110 @@ def build_series_carousel_widget_html(
       }}
     }}
 
-    // Iniciar renderizado
     renderVolume();
   </script>
 </body>
 </html>"""
+
+
+def build_series_carousel_widget_html(
+    series_title: str,
+    author: str,
+    description: str,
+    volumes: list[dict[str, Any]],
+    current_index: int = 0,
+    base_web_url: str = "",
+) -> str:
+    """
+    Construye un documento HTML5 autónomo y con altura generosa para renderizar un
+    Carrusel de Volúmenes interactivo dentro de un mensaje de Telegram mediante Bot API 10.4.
+    Controla estrictamente que el tamaño total del HTML nunca exceda los 20 KB permitidos por Telegram.
+    """
+    clean_series_desc = _clean_text(description) or "Sin descripción disponible para esta serie."
+    if len(clean_series_desc) > 240:
+        clean_series_desc = clean_series_desc[:237] + "..."
+
+    bot_username = getattr(config, "BOT_USERNAME", "") or "spcore_bot"
+
+    # Presupuesto para miniaturas en base64: máximo 7 KB en total para garantizar HTML < 18 KB
+    budget_remaining = 7168
+    volumes_payload = []
+
+    for idx, v in enumerate(volumes):
+        v_title = (
+            v.get("titulo")
+            or v.get("title")
+            or f"Volumen {v.get('vol_display', v.get('volume', idx + 1))}"
+        )
+        vol_desc_raw = v.get("description")
+        v_synopsis = _clean_text(vol_desc_raw) if vol_desc_raw else clean_series_desc
+        if len(v_synopsis) > 150:
+            v_synopsis = v_synopsis[:147] + "..."
+
+        cover_uri = ""
+        # Priorizar la miniatura del volumen activo o los primeros 2
+        if budget_remaining > 2048 and (idx == current_index or (current_index == 0 and idx == 1)):
+            cover_file = _find_cover_file_on_disk(v)
+            if cover_file:
+                thumb_b64 = _optimize_cover_thumbnail_base64(cover_file)
+                if thumb_b64:
+                    cover_uri = thumb_b64
+                    budget_remaining -= len(thumb_b64)
+
+        volumes_payload.append({
+            "id": str(v.get("id") or v.get("book_hash") or ""),
+            "vol_num": str(v.get("vol_display", v.get("volume", idx + 1))),
+            "title": v_title,
+            "translator": v.get("translator_siglas") or v.get("translator") or "Oficial",
+            "is_color": bool(v.get("color")),
+            "cover": cover_uri,
+            "synopsis": v_synopsis,
+        })
+
+    volumes_json = json.dumps(volumes_payload, ensure_ascii=False)
+    initial_vol = volumes_payload[current_index] if volumes_payload else {}
+    initial_synopsis = initial_vol.get("synopsis", clean_series_desc)
+    initial_title = initial_vol.get("title", f"Volumen {current_index + 1}")
+    total_vols = len(volumes_payload)
+
+    html_template = _render_widget_html_template(
+        series_title=series_title,
+        author=author,
+        initial_title=initial_title,
+        initial_synopsis=initial_synopsis,
+        total_vols=total_vols,
+        volumes_json=volumes_json,
+        current_index=current_index,
+        clean_series_desc=clean_series_desc,
+        bot_username=bot_username,
+        base_web_url=base_web_url,
+    )
+
+    # Verificación final de seguridad: si el HTML supera 21 KB, eliminar portadas secundarias
+    if len(html_template.encode("utf-8")) > 21500:
+        logger.warning(
+            f"HTML de widget excede límite seguro ({len(html_template.encode('utf-8'))} bytes). "
+            "Eliminando portadas secundarias para garantizar aceptación por Telegram..."
+        )
+        for idx, item in enumerate(volumes_payload):
+            if idx != current_index:
+                item["cover"] = ""
+
+        volumes_json = json.dumps(volumes_payload, ensure_ascii=False)
+        html_template = _render_widget_html_template(
+            series_title=series_title,
+            author=author,
+            initial_title=initial_title,
+            initial_synopsis=initial_synopsis,
+            total_vols=total_vols,
+            volumes_json=volumes_json,
+            current_index=current_index,
+            clean_series_desc=clean_series_desc,
+            bot_username=bot_username,
+            base_web_url=base_web_url,
+        )
+
+    logger.info(f"HTML Widget generado: {len(html_template.encode('utf-8'))} bytes para {total_vols} volúmenes.")
     return html_template
 
 
@@ -575,6 +600,9 @@ class SeriesCarouselWidgetService:
         """
         if not bot_token or not chat_id:
             return False
+
+        payload_bytes = len(html_content.encode("utf-8"))
+        logger.info(f"Enviando sendWidget a {chat_id} (tamaño: {payload_bytes} bytes)")
 
         url = f"https://api.telegram.org/bot{bot_token}/sendWidget"
         payload: dict[str, Any] = {
