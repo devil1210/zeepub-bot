@@ -24,15 +24,27 @@ async def handle_observatory_overview(data: dict[str, Any], user_data: dict[str,
 
     try:
         async with pg_manager.get_session() as session:
-            total_books = (await session.execute(text("SELECT COUNT(*) FROM books"))).scalar() or 0
-            total_users = (await session.execute(text("SELECT COUNT(*) FROM users"))).scalar() or 0
+            total_books = (
+                await session.execute(text("SELECT COUNT(*) FROM books"))
+            ).scalar() or 0
+            total_users = (
+                await session.execute(text("SELECT COUNT(*) FROM users"))
+            ).scalar() or 0
 
             downloads_today = (
-                await session.execute(text("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= CURRENT_DATE"))
+                await session.execute(
+                    text(
+                        "SELECT COUNT(*) FROM download_history WHERE downloaded_at >= CURRENT_DATE"
+                    )
+                )
             ).scalar() or 0
 
             pending_pubs = (
-                await session.execute(text("SELECT COUNT(*) FROM publication_queue WHERE status = 'pending'"))
+                await session.execute(
+                    text(
+                        "SELECT COUNT(*) FROM publication_queue WHERE status = 'pending'"
+                    )
+                )
             ).scalar() or 0
 
             result["totalBooks"] = total_books
@@ -52,7 +64,9 @@ async def handle_observatory_overview(data: dict[str, Any], user_data: dict[str,
                 """)
             )
             activity_rows = activity.fetchall()
-            result["activityLast7Days"] = [{"date": str(row[0]), "downloads": row[1]} for row in activity_rows]
+            result["activityLast7Days"] = [
+                {"date": str(row[0]), "downloads": row[1]} for row in activity_rows
+            ]
 
             levels = await session.execute(
                 text("""
@@ -66,7 +80,9 @@ async def handle_observatory_overview(data: dict[str, Any], user_data: dict[str,
                 """)
             )
             level_rows = levels.fetchall()
-            result["usersByLevel"] = [{"level": row[0], "count": row[1]} for row in level_rows]
+            result["usersByLevel"] = [
+                {"level": row[0], "count": row[1]} for row in level_rows
+            ]
 
     except Exception as e:
         logger.error(f"Error fetching observatory overview: {e}")
@@ -74,7 +90,9 @@ async def handle_observatory_overview(data: dict[str, Any], user_data: dict[str,
     return {"success": True, **result}
 
 
-async def handle_observatory_executions(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_observatory_executions(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     """Retorna las ejecuciones de agentes para el observatorio."""
     check_staff(user_data)
 
@@ -121,7 +139,9 @@ async def handle_observatory_executions(data: dict[str, Any], user_data: dict[st
                 for row in executions
             ]
 
-            success_count = sum(1 for e in result["executions"] if e["status"] == "success")
+            success_count = sum(
+                1 for e in result["executions"] if e["status"] == "success"
+            )
             error_count = sum(1 for e in result["executions"] if e["status"] == "error")
             durations = [e["duration"] for e in result["executions"] if e["duration"]]
             avg_duration = sum(durations) / len(durations) if durations else 0
@@ -136,7 +156,9 @@ async def handle_observatory_executions(data: dict[str, Any], user_data: dict[st
     return {"success": True, **result}
 
 
-async def handle_observatory_publications(data: dict[str, Any], user_data: dict[str, Any]):
+async def handle_observatory_publications(
+    data: dict[str, Any], user_data: dict[str, Any]
+):
     """Retorna el estado del sistema de publicaciones."""
     check_staff(user_data)
 
@@ -151,16 +173,30 @@ async def handle_observatory_publications(data: dict[str, Any], user_data: dict[
     try:
         async with pg_manager.get_session() as session:
             pending = (
-                await session.execute(text("SELECT COUNT(*) FROM publication_queue WHERE status = 'pending'"))
+                await session.execute(
+                    text(
+                        "SELECT COUNT(*) FROM publication_queue WHERE status = 'pending'"
+                    )
+                )
             ).scalar() or 0
             publishing = (
-                await session.execute(text("SELECT COUNT(*) FROM publication_queue WHERE status = 'publishing'"))
+                await session.execute(
+                    text(
+                        "SELECT COUNT(*) FROM publication_queue WHERE status = 'publishing'"
+                    )
+                )
             ).scalar() or 0
             sent = (
-                await session.execute(text("SELECT COUNT(*) FROM publication_queue WHERE status = 'sent'"))
+                await session.execute(
+                    text("SELECT COUNT(*) FROM publication_queue WHERE status = 'sent'")
+                )
             ).scalar() or 0
             failed = (
-                await session.execute(text("SELECT COUNT(*) FROM publication_queue WHERE status = 'failed'"))
+                await session.execute(
+                    text(
+                        "SELECT COUNT(*) FROM publication_queue WHERE status = 'failed'"
+                    )
+                )
             ).scalar() or 0
 
             result["queue"]["pending"] = pending
@@ -216,7 +252,9 @@ async def handle_observatory_publications(data: dict[str, Any], user_data: dict[
             ]
 
             templates = await session.execute(
-                text("SELECT id, name, platform, created_at FROM publication_templates ORDER BY created_at DESC")
+                text(
+                    "SELECT id, name, platform, created_at FROM publication_templates ORDER BY created_at DESC"
+                )
             )
             template_rows = templates.fetchall()
             result["templates"] = [
@@ -260,7 +298,12 @@ async def handle_observatory_metrics(data: dict[str, Any], user_data: dict[str, 
     check_staff(user_data)
 
     result = {
-        "library": {"totalBooks": 0, "totalSeries": 0, "totalRatings": 0, "avgRating": 0},
+        "library": {
+            "totalBooks": 0,
+            "totalSeries": 0,
+            "totalRatings": 0,
+            "avgRating": 0,
+        },
         "downloads": {"total": 0, "today": 0, "week": 0},
         "trend": [],
         "topBooks": [],
@@ -268,19 +311,35 @@ async def handle_observatory_metrics(data: dict[str, Any], user_data: dict[str, 
 
     try:
         async with pg_manager.get_session() as session:
-            total_books = (await session.execute(text("SELECT COUNT(*) FROM books"))).scalar() or 0
-            total_series = (await session.execute(text("SELECT COUNT(*) FROM series"))).scalar() or 0
-            total_ratings = (await session.execute(text("SELECT COUNT(*) FROM user_ratings"))).scalar() or 0
-            avg_rating = (await session.execute(text("SELECT AVG(rating) FROM user_ratings"))).scalar() or 0
+            total_books = (
+                await session.execute(text("SELECT COUNT(*) FROM books"))
+            ).scalar() or 0
+            total_series = (
+                await session.execute(text("SELECT COUNT(*) FROM series"))
+            ).scalar() or 0
+            total_ratings = (
+                await session.execute(text("SELECT COUNT(*) FROM user_ratings"))
+            ).scalar() or 0
+            avg_rating = (
+                await session.execute(text("SELECT AVG(rating) FROM user_ratings"))
+            ).scalar() or 0
 
             result["library"]["totalBooks"] = total_books
             result["library"]["totalSeries"] = total_series
             result["library"]["totalRatings"] = total_ratings
-            result["library"]["avgRating"] = round(float(avg_rating), 1) if avg_rating else 0
+            result["library"]["avgRating"] = (
+                round(float(avg_rating), 1) if avg_rating else 0
+            )
 
-            total_downloads = (await session.execute(text("SELECT COUNT(*) FROM download_history"))).scalar() or 0
+            total_downloads = (
+                await session.execute(text("SELECT COUNT(*) FROM download_history"))
+            ).scalar() or 0
             today_downloads = (
-                await session.execute(text("SELECT COUNT(*) FROM download_history WHERE downloaded_at >= CURRENT_DATE"))
+                await session.execute(
+                    text(
+                        "SELECT COUNT(*) FROM download_history WHERE downloaded_at >= CURRENT_DATE"
+                    )
+                )
             ).scalar() or 0
             week_downloads = (
                 await session.execute(
@@ -306,7 +365,9 @@ async def handle_observatory_metrics(data: dict[str, Any], user_data: dict[str, 
                 """)
             )
             trend_rows = trend.fetchall()
-            result["trend"] = [{"date": str(row[0]), "downloads": row[1]} for row in trend_rows]
+            result["trend"] = [
+                {"date": str(row[0]), "downloads": row[1]} for row in trend_rows
+            ]
 
             top = await session.execute(
                 text("""
@@ -314,14 +375,16 @@ async def handle_observatory_metrics(data: dict[str, Any], user_data: dict[str, 
                         COALESCE(lb.title, dh.title, 'Desconocido') as titulo,
                         COUNT(*) as descargas
                     FROM download_history dh
-                    LEFT JOIN books lb ON dh.book_hash = lb.book_hash
+                    LEFT JOIN books lb ON dh.book_id = lb.id
                     GROUP BY COALESCE(lb.title, dh.title, 'Desconocido')
                     ORDER BY descargas DESC
                     LIMIT 10
                 """)
             )
             top_rows = top.fetchall()
-            result["topBooks"] = [{"title": row[0], "downloads": row[1]} for row in top_rows]
+            result["topBooks"] = [
+                {"title": row[0], "downloads": row[1]} for row in top_rows
+            ]
 
     except Exception as e:
         logger.error(f"Error fetching observatory metrics: {e}")

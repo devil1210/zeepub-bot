@@ -341,7 +341,7 @@ class SeriesScanner:
             stmt = select(SeriesAlias).where(
                 func.lower(SeriesAlias.alias) == clean_t.lower()
             )
-            existing = (await session.execute(stmt)).scalar_one_or_none()
+            existing = (await session.execute(stmt)).scalars().first()
 
             if not existing:
                 alias_obj = SeriesAlias(series_id=series.id, alias=clean_t)
@@ -429,7 +429,7 @@ class SeriesScanner:
             .where(SeriesMetadata.series_hash == series_hash)
         )
         result = await session.execute(stmt)
-        series = result.scalar_one_or_none()
+        series = result.scalars().first()
 
         if not series:
             return
@@ -562,7 +562,7 @@ class SeriesScanner:
                     MetadataProposal.status == "pending",
                 )
                 exists_pending_res = await session.execute(exists_pending_stmt)
-                exists_pending = exists_pending_res.scalar_one_or_none()
+                exists_pending = exists_pending_res.scalars().first()
 
                 reviewed_res = await session.execute(
                     text(
@@ -577,7 +577,7 @@ class SeriesScanner:
                         SeriesMetadata.series_hash == s_hash
                     )
                     res_s = await session.execute(stmt_s)
-                    current_s = res_s.scalar_one_or_none()
+                    current_s = res_s.scalars().first()
 
                     current_name = (
                         current_s.series_name if current_s else "Serie Desconocida"

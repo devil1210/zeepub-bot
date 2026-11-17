@@ -242,7 +242,12 @@ class ScannerService:
             "added_books_details": [],
         }
         found_files = set()
-        source_path = source.path
+        source_id = (
+            getattr(source, "id", source)
+            if isinstance(source, int) or hasattr(source, "id")
+            else 1
+        )
+        source_path = source.path if hasattr(source, "path") else str(source)
 
         for root, _, files in os.walk(source_path):
             if ScannerService._stop_requested:
@@ -279,16 +284,21 @@ class ScannerService:
                         if res_exists.scalars().first():
                             continue
 
-                # Procesar libro por EpubScanner (async)
-                book_res = await EpubScanner.process_book(
-                    full_path,
-                    source,
-                    session,
-                    force_scan,
-                    series_provider=SeriesScanner.get_or_create_series,
-                    translator_provider=LibraryScanner.sync_translator_group,
-                    skip_ai=True,
-                )
+                # Procesar libro por EpubScanner (async con savepoint por libro)
+                try:
+                    async with session.begin_nested():
+                        book_res = await EpubScanner.process_book(
+                            full_path,
+                            source_id,
+                            session,
+                            force_scan,
+                            series_provider=SeriesScanner.get_or_create_series,
+                            translator_provider=LibraryScanner.sync_translator_group,
+                            skip_ai=True,
+                        )
+                except Exception as e_book:
+                    logger.error(f"Error procesando {full_path}: {e_book}")
+                    book_res = False
 
                 if book_res in ("added", "updated"):
                     stmt_book = (
@@ -378,7 +388,7 @@ class ScannerService:
                 if os.path.isfile(abs_path) and abs_path.lower().endswith(".epub"):
                     res = await EpubScanner.process_book(
                         abs_path,
-                        source,
+                        source.id if hasattr(source, "id") else source,
                         session,
                         force_scan,
                         series_provider=SeriesScanner.get_or_create_series,
@@ -465,15 +475,24 @@ class ScannerService:
                         for file in files:
                             if file.lower().endswith(".epub"):
                                 full_path = os.path.join(root, file)
-                                res = await EpubScanner.process_book(
-                                    full_path,
-                                    source,
-                                    session,
-                                    force_scan,
-                                    series_provider=SeriesScanner.get_or_create_series,
-                                    translator_provider=LibraryScanner.sync_translator_group,
-                                    skip_ai=True,
-                                )
+                                try:
+                                    async with session.begin_nested():
+                                        res = await EpubScanner.process_book(
+                                            full_path,
+                                            source.id
+                                            if hasattr(source, "id")
+                                            else source,
+                                            session,
+                                            force_scan,
+                                            series_provider=SeriesScanner.get_or_create_series,
+                                            translator_provider=LibraryScanner.sync_translator_group,
+                                            skip_ai=True,
+                                        )
+                                except Exception as e_proc:
+                                    logger.error(
+                                        f"Error procesando {full_path}: {e_proc}"
+                                    )
+                                    res = False
                                 if res == "added":
                                     results["added"] += 1
                                 elif res == "updated":

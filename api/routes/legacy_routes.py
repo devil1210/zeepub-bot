@@ -197,7 +197,18 @@ class LegacyRoutes:
         Generic dispatcher for /api/bot RPC calls.
         """
         try:
-            body = await request.json()
+            try:
+                body = await request.json()
+            except Exception:
+                return JSONResponse(
+                    content={"error": "Invalid or empty JSON body"}, status_code=400
+                )
+
+            if not isinstance(body, dict):
+                return JSONResponse(
+                    content={"error": "Body must be a JSON object"}, status_code=400
+                )
+
             action = body.get("action")
             data = body.get("data", {})
 

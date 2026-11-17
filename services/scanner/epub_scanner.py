@@ -188,6 +188,15 @@ class EpubScanner:
         Procesa un archivo individual de forma eficiente.
         """
         try:
+            source_id = 1
+            if isinstance(source, int):
+                source_id = source
+            elif hasattr(source, "id"):
+                try:
+                    source_id = int(source.id)
+                except Exception:
+                    source_id = 1
+
             filename = os.path.basename(filepath)
             stat = os.stat(filepath)
 
@@ -344,7 +353,7 @@ class EpubScanner:
                     )
                 )
                 conflict_res = await session.execute(conflict_stmt)
-                hash_conflict = conflict_res.scalar_one_or_none()
+                hash_conflict = conflict_res.scalars().first()
 
                 if hash_conflict:
                     if not os.path.exists(hash_conflict.filepath):
@@ -359,7 +368,7 @@ class EpubScanner:
                         hash_conflict.filename = filename
                         hash_conflict.file_size = size
                         hash_conflict.file_modified_at = mtime
-                        hash_conflict.source = source
+                        hash_conflict.source_id = source_id
                         book = hash_conflict
                     else:
                         # Conflicto con archivo existente: Mismo UUID pero archivos distintos.
@@ -379,7 +388,7 @@ class EpubScanner:
                             DuplicateBook.duplicate_filepath == filepath
                         )
                         dup_res = await session.execute(dup_stmt)
-                        dup_exists = dup_res.scalar_one_or_none()
+                        dup_exists = dup_res.scalars().first()
                         if not dup_exists:
                             base_title = (
                                 identity.get("title") or hash_conflict.title or filename
@@ -431,7 +440,7 @@ class EpubScanner:
                             DuplicateBook.duplicate_filepath == filepath
                         )
                         dup_res = await session.execute(dup_stmt)
-                        dup_exists = dup_res.scalar_one_or_none()
+                        dup_exists = dup_res.scalars().first()
                         if not dup_exists:
                             new_duplicate = DuplicateBook(
                                 book_hash=target_book_hash,
@@ -451,9 +460,7 @@ class EpubScanner:
                     book = LocalBook(
                         id=target_book_hash,
                         filepath=filepath,
-                        source_id=getattr(source, "id", source)
-                        if isinstance(source, int) or hasattr(source, "id")
-                        else 1,
+                        source_id=source_id,
                         genres=[],
                         demographics=[],
                     )
@@ -620,7 +627,9 @@ class EpubScanner:
                     k_hash = calculate_koreader_fast_digest(filepath)
                     book.koreader_hash = k_hash
                 except Exception as e_kh:
-                    logger.debug(f"Aviso al calcular koreader_hash para {filepath}: {e_kh}")
+                    logger.debug(
+                        f"Aviso al calcular koreader_hash para {filepath}: {e_kh}"
+                    )
 
                 if not book.short_link and book.book_hash:
                     book.short_link = generate_short_link(book.book_hash)
@@ -678,7 +687,6 @@ class EpubScanner:
             import traceback
 
             traceback.print_exc()
-            await session.rollback()
             return False
 
     @classmethod

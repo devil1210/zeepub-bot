@@ -147,7 +147,7 @@ class LibraryScanner:
                 func.lower(TranslatorsGroup.name) == group_name.lower()
             )
             result = await session.execute(stmt)
-            existing = result.scalar_one_or_none()
+            existing = result.scalars().first()
 
             if existing:
                 if siglas and (
@@ -192,7 +192,6 @@ class LibraryScanner:
             logger.info(
                 f"Detectados {len(missing_paths)} libros eliminados en {source.name}. Archivando..."
             )
-
 
             for b in db_books:
                 if b.filepath in missing_paths:
@@ -249,7 +248,7 @@ class LibraryScanner:
                 DuplicateBook.duplicate_filepath == orphan.filepath
             )
             dup_result = await session.execute(dup_stmt)
-            exists = dup_result.scalar_one_or_none()
+            exists = dup_result.scalars().first()
 
             if not exists:
                 dup = DuplicateBook(
@@ -274,7 +273,6 @@ class LibraryScanner:
         Verificación manual/profunda de integridad física de toda la librería.
         """
         logger.info("Iniciando auditoría de integridad física...")
-
 
         stmt = select(LocalBook)
         result = await session.execute(stmt)
@@ -325,7 +323,7 @@ class LibraryScanner:
                 ArchivedSeries.series_hash == s.series_hash
             )
             arch_result = await session.execute(arch_stmt)
-            existing = arch_result.scalar_one_or_none()
+            existing = arch_result.scalars().first()
 
             if not existing:
                 archived_s = ArchivedSeries(
