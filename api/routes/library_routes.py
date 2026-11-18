@@ -57,7 +57,7 @@ class LibraryRoutes:
                     return await self.public_download(url=source_url, title=title, url_hash=url_hash)
 
             # 2. Buscar por id, short_link o hash_md5 en la base de datos PostgreSQL (tabla books)
-            from sqlalchemy import select
+            from sqlalchemy import select, text
 
             from core.db_manager_pg import pg_manager
             from models.library import Book
@@ -72,6 +72,38 @@ class LibraryRoutes:
                 result = await session.execute(stmt)
                 book = result.scalars().first()
 
+                # Fallback de resiliencia histórica: Buscar en publicaciones previas
+                if not book:
+                    try:
+                        from models.communications import BookPublication
+                        pub_stmt = select(BookPublication).where(
+                            BookPublication.caption.like(f"%dl.zeepubs.com/{url_hash}%")
+                        )
+                        pub_res = await session.execute(pub_stmt)
+                        pub = pub_res.scalars().first()
+                        if pub:
+                            if pub.book_id:
+                                book = await session.get(Book, pub.book_id)
+                            
+                            if not book and pub.caption:
+                                import re
+                                first_line = pub.caption.strip().split("\n")[0]
+                                clean_line = re.sub(r"^[^\w\s]+", "", first_line).strip()
+                                parts = [p.strip() for p in clean_line.split("║") if p.strip()]
+                                for p_title in parts:
+                                    search_b = (await session.execute(
+                                        select(Book).where(
+                                            (Book.title.ilike(f"%{p_title}%"))
+                                            | (Book.series_spanish.ilike(f"%{p_title}%"))
+                                            | (Book.series_english.ilike(f"%{p_title}%"))
+                                        )
+                                    )).scalars().first()
+                                    if search_b:
+                                        book = search_b
+                                        break
+                    except Exception as pub_err:
+                        logger.warning(f"Error consultando book_publications fallback: {pub_err}")
+
                 if book:
                     target_path = book.filepath
                     if target_path and not os.path.exists(target_path):
@@ -85,6 +117,24 @@ class LibraryRoutes:
                             logger.info(f"🔄 Auto-recuperado filepath para '{fname}': {target_path}")
 
                     if target_path and os.path.exists(target_path):
+                        # Auto-guardar en url_mappings para acelerar futuras descargas
+                        try:
+                            ins_sql = text("""
+                                INSERT INTO url_mappings (hash, url, book_title, series_name, volume_number, is_valid)
+                                VALUES (:hash, :url, :title, :series, :volume, true)
+                                ON CONFLICT (hash) DO UPDATE SET url = EXCLUDED.url, is_valid = true;
+                            """)
+                            await session.execute(ins_sql, {
+                                "hash": url_hash,
+                                "url": target_path,
+                                "title": book.title,
+                                "series": book.series_spanish or book.series_english or "",
+                                "volume": str(book.volume) if book.volume is not None else ""
+                            })
+                            await session.commit()
+                        except Exception as cache_err:
+                            logger.debug(f"No se pudo guardar auto-mapping: {cache_err}")
+
                         filename = os.path.basename(target_path).replace(".epub", "")
                         logger.info(f"✅ Found book file for hash {url_hash}: {target_path}")
                         return await self._serve_local_file(target_path, title=filename)
